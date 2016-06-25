@@ -1,13 +1,11 @@
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, or_
 
 import tool_shed.repository_types.util as rt_util
 from galaxy.webapps.tool_shed import model
 from tool_shed.util import hg_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import metadata_util
 
 log = logging.getLogger( __name__ )
 
@@ -95,7 +93,7 @@ class Registry( object ):
                 self.load_repository_and_suite_tuple( repository )
                 if is_level_one_certified:
                     self.load_certified_level_one_repository_and_suite_tuple( repository )
-        except Exception, e:
+        except Exception as e:
             # The viewable repository numbers and the categorized (filtered) lists of repository tuples
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.
@@ -165,51 +163,15 @@ class Registry( object ):
             return ( None, False )
         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
         # Get the latest installable changeset revision since that is all that is currently configured for testing.
-        latest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( self.app, repository, repo )
+        latest_installable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision( self.app, repository, repo )
         if latest_installable_changeset_revision not in [ None, hg_util.INITIAL_CHANGELOG_HASH ]:
             encoded_repository_id = self.app.security.encode_id( repository.id )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                     encoded_repository_id,
-                                                                                     latest_installable_changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                               encoded_repository_id,
+                                                                                               latest_installable_changeset_revision )
             if repository_metadata:
-                # Filter out repository revisions that have not been tested.
-                if repository_metadata.time_last_tested is not None and repository_metadata.tool_test_results is not None:
-                    if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
-                        # Look in the tool_test_results dictionary for installation errors.
-                        try:
-                            tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
-                        except Exception, e:
-                            message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
-                            message += '%s' % str( e )
-                            log.exception( message )
-                            return ( latest_installable_changeset_revision, False )
-                        if 'installation_errors' in tool_test_results_dict:
-                            return ( latest_installable_changeset_revision, False )
-                        return ( latest_installable_changeset_revision, True )
-                    else:
-                        # We have a repository with type Unrestricted.
-                        if repository_metadata.includes_tools:
-                            if repository_metadata.tools_functionally_correct:
-                                return ( latest_installable_changeset_revision, True )
-                            return ( latest_installable_changeset_revision, False )
-                        else:
-                            # Look in the tool_test_results dictionary for installation errors.
-                            try:
-                                tool_test_results_dict = repository_metadata.tool_test_results[ 0 ]
-                            except Exception, e:
-                                message = 'Error attempting to retrieve install and test results for repository %s:\n' % str( repository.name )
-                                message += '%s' % str( e )
-                                log.exception( message )
-                                return ( latest_installable_changeset_revision, False )
-                            if 'installation_errors' in tool_test_results_dict:
-                                return ( latest_installable_changeset_revision, False )
-                            return ( latest_installable_changeset_revision, True )
-                else:
-                    # No test results.
-                    return ( latest_installable_changeset_revision, False )
-            else:
                 # No repository_metadata.
-                return ( latest_installable_changeset_revision, False )
+                return ( latest_installable_changeset_revision, True )
         else:
             # No installable changeset_revision.
             return ( None, False )
@@ -302,9 +264,9 @@ class Registry( object ):
                     is_valid = self.is_valid( repository )
                     encoded_repository_id = self.app.security.encode_id( repository.id )
                     tip_changeset_hash = repository.tip( self.app )
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                             encoded_repository_id,
-                                                                                             tip_changeset_hash )
+                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                                       encoded_repository_id,
+                                                                                                       tip_changeset_hash )
                     self.viewable_repositories_and_suites_by_category[ category_name ] += 1
                     if is_valid:
                         self.viewable_valid_repositories_and_suites_by_category[ category_name ] += 1
@@ -379,7 +341,7 @@ class Registry( object ):
                 self.unload_repository_and_suite_tuple( repository )
                 if is_level_one_certified:
                     self.unload_certified_level_one_repository_and_suite_tuple( repository )
-        except Exception, e:
+        except Exception as e:
             # The viewable repository numbers and the categorized (filtered) lists of repository tuples
             # may be slightly skewed, but that is no reason to result in a potential server error.  All
             # will be corrected at next server start.

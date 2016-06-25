@@ -9,6 +9,14 @@ galaxy.webapps.reports.controllers package
 Submodules
 ----------
 
+galaxy.webapps.reports.controllers.home module
+----------------------------------------------
+
+.. automodule:: galaxy.webapps.reports.controllers.home
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.reports.controllers.jobs module
 ----------------------------------------------
 

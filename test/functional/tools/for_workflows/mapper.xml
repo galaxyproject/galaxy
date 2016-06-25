@@ -1,0 +1,16 @@
+<tool id="mapper" name="Mapper" version="0.1.0">
+    <command>
+        cp $__tool_directory__/1.bam $out_file1
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="fastq" label="Fastq Input"/>
+        <param name="reference" type="data" format="fasta" label="Fasta Input"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="bam" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

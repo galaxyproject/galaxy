@@ -14,7 +14,7 @@ var View = Backbone.View.extend({
         this.multiple = options.multiple || false;
 
         // create message handler
-        this.message = new Ui.Message({ cls: 'ui-margin-top' });
+        this.message = new Ui.Message();
 
         // create portlet
         this.portlet = new Portlet.View({ cls: 'ui-portlet-section' });
@@ -87,7 +87,7 @@ var View = Backbone.View.extend({
     add: function(options) {
         var self = this;
         if (this.$('[id="' + options.id + '"]').length === 0) {
-            if (Utils.validate(options.id)) {
+            if (!Utils.isEmpty(options.id)) {
                 var $el = $(this._templateRow({
                     id      : options.id,
                     name    : options.name

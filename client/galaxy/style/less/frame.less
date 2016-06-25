@@ -11,7 +11,6 @@
     .frame-background {
         z-index         : @zindex-navbar;
         position        : absolute;
-        display         : none;
         top             : 0px;
         left            : 0px;
         height          : 100%;
@@ -98,13 +97,22 @@
             border          : 1px solid @black;
             background      : @base-color-1;
             color           : @white;
+            .f-icon-left{
+                cursor      : pointer;
+                font-size   : 15px;
+                margin-left : 3px;
+                float       : left;
+                &[disabled] {
+                    opacity : 0.25;
+                }
+            }
         }
 
         .f-title {
             position        : absolute;
             top             : 2px;
-            left            : 16px;
-            right           : 16px;
+            left            : 32px;
+            right           : 32px;
             font-size       : 12px;
             font-family     : @font-family-sans-serif;
             text-align      : center;
@@ -114,27 +122,22 @@
             frame icons
         */
 
-        .f-icon{
-            position        : absolute;
-            cursor          : pointer;
-            font-size       : 14px;
-        }
-
         .f-not-allowed{
             cursor          : not-allowed;
         }
 
         .f-close{
+            cursor          : pointer;
+            position        : absolute;
+            font-size       : 15px;
             right           : 5px;
-            top             : 3px;
-        }
-
-        .f-pin{
-            left            : 6px;
-            top             : 3px;
+            top             : 2px;
         }
 
         .f-resize{
+            cursor          : pointer;
+            position        : absolute;
+            font-size       : 15px;
             right           : 0px;
             bottom          : 0px;
             background      : @white;

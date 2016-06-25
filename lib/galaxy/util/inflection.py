@@ -12,12 +12,12 @@ class Base:
     '''Locale inflectors must inherit from this base class inorder to provide
     the basic Inflector functionality'''
 
-    def cond_plural(self, number_of_records, word) :
+    def cond_plural(self, number_of_records, word):
         '''Returns the plural form of a word if first parameter is greater than 1'''
 
         if number_of_records != 1:
             return self.pluralize(word)
-        else :
+        else:
             return word
 
     def titleize(self, word, uppercase=''):
@@ -29,7 +29,7 @@ class Base:
 
         if(uppercase == 'first'):
             return self.humanize(self.underscore(word)).capitalize()
-        else :
+        else:
             return self.humanize(self.underscore(word)).title()
 
     def camelize(self, word):
@@ -39,7 +39,7 @@ class Base:
         "who's online" will be converted to "WhoSOnline"'''
         return ''.join(w[0].upper() + w[1:] for w in re.sub('[^A-Z^a-z^0-9^:]+', ' ', word).split(' '))
 
-    def underscore(self, word) :
+    def underscore(self, word):
         ''' Converts a word "into_it_s_underscored_version"
         Convert any "CamelCased" or "ordinary Word" into an
         "underscored_word".
@@ -49,7 +49,7 @@ class Base:
                       re.sub('([a-z\d])([A-Z])', '\\1_\\2',
                              re.sub('([A-Z]+)([A-Z][a-z])', '\\1_\\2', re.sub('::', '/', word)))).lower()
 
-    def humanize(self, word, uppercase='') :
+    def humanize(self, word, uppercase=''):
         '''Returns a human-readable string from word
         Returns a human-readable string from word, by replacing
         underscores with a space, and by upper-casing the initial
@@ -59,10 +59,10 @@ class Base:
 
         if(uppercase == 'first'):
             return re.sub('_id$', '', word).replace('_', ' ').capitalize()
-        else :
+        else:
             return re.sub('_id$', '', word).replace('_', ' ').title()
 
-    def variablize(self, word) :
+    def variablize(self, word):
         '''Same as camelize but first char is lowercased
         Converts a word like "send_email" to "sendEmail". It
         will remove non alphanumeric character from the word, so
@@ -70,27 +70,27 @@ class Base:
         word = self.camelize(word)
         return word[0].lower() + word[1:]
 
-    def tableize(self, class_name) :
+    def tableize(self, class_name):
         ''' Converts a class name to its table name according to rails
         naming conventions. Example. Converts "Person" to "people" '''
         return self.pluralize(self.underscore(class_name))
 
-    def classify(self, table_name) :
+    def classify(self, table_name):
         '''Converts a table name to its class name according to rails
         naming conventions. Example: Converts "people" to "Person" '''
         return self.camelize(self.singularize(table_name))
 
-    def ordinalize(self, number) :
+    def ordinalize(self, number):
         '''Converts number to its ordinal English form.
         This method converts 13 to 13th, 2 to 2nd ...'''
         tail = 'th'
         if number % 100 == 11 or number % 100 == 12 or number % 100 == 13:
             tail = 'th'
-        elif number % 10 == 1 :
+        elif number % 10 == 1:
             tail = 'st'
-        elif number % 10 == 2 :
+        elif number % 10 == 2:
             tail = 'nd'
-        elif number % 10 == 3 :
+        elif number % 10 == 3:
             tail = 'rd'
 
         return str(number) + tail
@@ -119,15 +119,15 @@ class Base:
     def demodulize(self, module_name):
         return self.humanize(self.underscore(re.sub('^.*::', '', module_name)))
 
-    def modulize(self, module_description) :
+    def modulize(self, module_description):
         return self.camelize(self.singularize(module_description))
 
     def foreignKey(self, class_name, separate_class_name_and_id_with_underscore=1):
         ''' Returns class_name in underscored form, with "_id" tacked on at the end.
         This is for use in dealing with the database.'''
-        if separate_class_name_and_id_with_underscore :
+        if separate_class_name_and_id_with_underscore:
             tail = '_id'
-        else :
+        else:
             tail = 'id'
         return self.underscore(self.demodulize(class_name)) + tail
 
@@ -139,38 +139,38 @@ class English (Base):
     This is the default Inflector for the Inflector obj
     """
 
-    def pluralize(self, word) :
+    def pluralize(self, word):
         '''Pluralizes English nouns.'''
 
         rules = [
-            ['(?i)(quiz)$' , '\\1zes'],
-            ['^(?i)(ox)$' , '\\1en'],
-            ['(?i)([m|l])ouse$' , '\\1ice'],
-            ['(?i)(matr|vert|ind)ix|ex$' , '\\1ices'],
-            ['(?i)(x|ch|ss|sh)$' , '\\1es'],
-            ['(?i)([^aeiouy]|qu)ies$' , '\\1y'],
-            ['(?i)([^aeiouy]|qu)y$' , '\\1ies'],
-            ['(?i)(hive)$' , '\\1s'],
-            ['(?i)(?:([^f])fe|([lr])f)$' , '\\1\\2ves'],
-            ['(?i)sis$' , 'ses'],
-            ['(?i)([ti])um$' , '\\1a'],
-            ['(?i)(buffal|tomat)o$' , '\\1oes'],
-            ['(?i)(bu)s$' , '\\1ses'],
-            ['(?i)(alias|status)' , '\\1es'],
-            ['(?i)(octop|vir)us$' , '\\1i'],
-            ['(?i)(ax|test)is$' , '\\1es'],
-            ['(?i)s$' , 's'],
-            ['(?i)$' , 's']
+            ['(?i)(quiz)$', '\\1zes'],
+            ['^(?i)(ox)$', '\\1en'],
+            ['(?i)([m|l])ouse$', '\\1ice'],
+            ['(?i)(matr|vert|ind)ix|ex$', '\\1ices'],
+            ['(?i)(x|ch|ss|sh)$', '\\1es'],
+            ['(?i)([^aeiouy]|qu)ies$', '\\1y'],
+            ['(?i)([^aeiouy]|qu)y$', '\\1ies'],
+            ['(?i)(hive)$', '\\1s'],
+            ['(?i)(?:([^f])fe|([lr])f)$', '\\1\\2ves'],
+            ['(?i)sis$', 'ses'],
+            ['(?i)([ti])um$', '\\1a'],
+            ['(?i)(buffal|tomat)o$', '\\1oes'],
+            ['(?i)(bu)s$', '\\1ses'],
+            ['(?i)(alias|status)', '\\1es'],
+            ['(?i)(octop|vir)us$', '\\1i'],
+            ['(?i)(ax|test)is$', '\\1es'],
+            ['(?i)s$', 's'],
+            ['(?i)$', 's']
         ]
 
         uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep']
 
         irregular_words = {
-            'person' : 'people',
-            'man' : 'men',
-            'child' : 'children',
-            'sex' : 'sexes',
-            'move' : 'moves'
+            'person': 'people',
+            'man': 'men',
+            'child': 'children',
+            'sex': 'sexes',
+            'move': 'moves'
         }
 
         lower_cased_word = word.lower()
@@ -186,59 +186,59 @@ class English (Base):
 
         for rule in range(len(rules)):
             match = re.search(rules[rule][0], word, re.IGNORECASE)
-            if match :
+            if match:
                 groups = match.groups()
-                for k in range(0, len(groups)) :
-                    if groups[k] is None :
+                for k in range(0, len(groups)):
+                    if groups[k] is None:
                         rules[rule][1] = rules[rule][1].replace('\\' + str(k + 1), '')
 
                 return re.sub(rules[rule][0], rules[rule][1], word)
 
         return word
 
-    def singularize(self, word) :
+    def singularize(self, word):
         '''Singularizes English nouns.'''
 
         rules = [
-            ['(?i)(quiz)zes$' , '\\1'],
-            ['(?i)(matr)ices$' , '\\1ix'],
-            ['(?i)(vert|ind)ices$' , '\\1ex'],
-            ['(?i)^(ox)en' , '\\1'],
-            ['(?i)(alias|status)es$' , '\\1'],
-            ['(?i)([octop|vir])i$' , '\\1us'],
-            ['(?i)(cris|ax|test)es$' , '\\1is'],
-            ['(?i)(shoe)s$' , '\\1'],
-            ['(?i)(o)es$' , '\\1'],
-            ['(?i)(bus)es$' , '\\1'],
-            ['(?i)([m|l])ice$' , '\\1ouse'],
-            ['(?i)(x|ch|ss|sh)es$' , '\\1'],
-            ['(?i)(m)ovies$' , '\\1ovie'],
-            ['(?i)(s)eries$' , '\\1eries'],
-            ['(?i)([^aeiouy]|qu)ies$' , '\\1y'],
-            ['(?i)([lr])ves$' , '\\1f'],
-            ['(?i)(tive)s$' , '\\1'],
-            ['(?i)(hive)s$' , '\\1'],
-            ['(?i)([^f])ves$' , '\\1fe'],
-            ['(?i)(^analy)ses$' , '\\1sis'],
-            ['(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$' , '\\1\\2sis'],
-            ['(?i)([ti])a$' , '\\1um'],
-            ['(?i)(n)ews$' , '\\1ews'],
-            ['(?i)s$' , ''],
+            ['(?i)(quiz)zes$', '\\1'],
+            ['(?i)(matr)ices$', '\\1ix'],
+            ['(?i)(vert|ind)ices$', '\\1ex'],
+            ['(?i)^(ox)en', '\\1'],
+            ['(?i)(alias|status)es$', '\\1'],
+            ['(?i)([octop|vir])i$', '\\1us'],
+            ['(?i)(cris|ax|test)es$', '\\1is'],
+            ['(?i)(shoe)s$', '\\1'],
+            ['(?i)(o)es$', '\\1'],
+            ['(?i)(bus)es$', '\\1'],
+            ['(?i)([m|l])ice$', '\\1ouse'],
+            ['(?i)(x|ch|ss|sh)es$', '\\1'],
+            ['(?i)(m)ovies$', '\\1ovie'],
+            ['(?i)(s)eries$', '\\1eries'],
+            ['(?i)([^aeiouy]|qu)ies$', '\\1y'],
+            ['(?i)([lr])ves$', '\\1f'],
+            ['(?i)(tive)s$', '\\1'],
+            ['(?i)(hive)s$', '\\1'],
+            ['(?i)([^f])ves$', '\\1fe'],
+            ['(?i)(^analy)ses$', '\\1sis'],
+            ['(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$', '\\1\\2sis'],
+            ['(?i)([ti])a$', '\\1um'],
+            ['(?i)(n)ews$', '\\1ews'],
+            ['(?i)s$', ''],
         ]
 
         uncountable_words = ['equipment', 'information', 'rice', 'money', 'species', 'series', 'fish', 'sheep', 'sms']
 
         irregular_words = {
-            'people' : 'person',
-            'men' : 'man',
-            'children' : 'child',
-            'sexes' : 'sex',
-            'moves' : 'move'
+            'people': 'person',
+            'men': 'man',
+            'children': 'child',
+            'sexes': 'sex',
+            'moves': 'move'
         }
 
         lower_cased_word = word.lower()
         for uncountable_word in uncountable_words:
-            if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word :
+            if lower_cased_word[-1 * len(uncountable_word):] == uncountable_word:
                 return word
 
         for irregular in irregular_words.keys():
@@ -248,10 +248,10 @@ class English (Base):
 
         for rule in range(len(rules)):
             match = re.search(rules[rule][0], word, re.IGNORECASE)
-            if match :
+            if match:
                 groups = match.groups()
-                for k in range(0, len(groups)) :
-                    if groups[k] is None :
+                for k in range(0, len(groups)):
+                    if groups[k] is None:
                         rules[rule][1] = rules[rule][1].replace('\\' + str(k + 1), '')
 
                 return re.sub(rules[rule][0], rules[rule][1], word)
@@ -269,17 +269,17 @@ class Inflector:
 
     def __init__( self, Inflector=English ):
         assert callable(Inflector), "Inflector should be a callable obj"
-        self.Inflector = apply(Inflector)
+        self.Inflector = Inflector()
 
-    def pluralize(self, word) :
+    def pluralize(self, word):
         '''Pluralizes nouns.'''
         return self.Inflector.pluralize(word)
 
-    def singularize(self, word) :
+    def singularize(self, word):
         '''Singularizes nouns.'''
         return self.Inflector.singularize(word)
 
-    def cond_plural(self, number_of_records, word) :
+    def cond_plural(self, number_of_records, word):
         '''Returns the plural form of a word if first parameter is greater than 1'''
         return self.Inflector.cond_plural(number_of_records, word)
 
@@ -298,7 +298,7 @@ class Inflector:
         "who's online" will be converted to "WhoSOnline"'''
         return self.Inflector.camelize(word)
 
-    def underscore(self, word) :
+    def underscore(self, word):
         ''' Converts a word "into_it_s_underscored_version"
         Convert any "CamelCased" or "ordinary Word" into an
         "underscored_word".
@@ -321,17 +321,17 @@ class Inflector:
         "who's online" will be converted to "whoSOnline"'''
         return self.Inflector.variablize(word)
 
-    def tableize(self, class_name) :
+    def tableize(self, class_name):
         ''' Converts a class name to its table name according to rails
         naming conventions. Example. Converts "Person" to "people" '''
         return self.Inflector.tableize(class_name)
 
-    def classify(self, table_name) :
+    def classify(self, table_name):
         '''Converts a table name to its class name according to rails
         naming conventions. Example: Converts "people" to "Person" '''
         return self.Inflector.classify(table_name)
 
-    def ordinalize(self, number) :
+    def ordinalize(self, number):
         '''Converts number to its ordinal form.
         This method converts 13 to 13th, 2 to 2nd ...'''
         return self.Inflector.ordinalize(number)
@@ -341,7 +341,7 @@ class Inflector:
         This might be useful for generating "friendly" URLs'''
         return self.Inflector.unaccent(text)
 
-    def urlize(self, text) :
+    def urlize(self, text):
         '''Transform a string to its unaccented and underscored
         version ready to be inserted in friendly URLs'''
         return self.Inflector.urlize(text)
@@ -349,10 +349,10 @@ class Inflector:
     def demodulize(self, module_name):
         return self.Inflector.demodulize(module_name)
 
-    def modulize(self, module_description) :
+    def modulize(self, module_description):
         return self.Inflector.modulize(module_description)
 
-    def foreignKey(self, class_name, separate_class_name_and_id_with_underscore=1) :
+    def foreignKey(self, class_name, separate_class_name_and_id_with_underscore=1):
         ''' Returns class_name in underscored form, with "_id" tacked on at the end.
         This is for use in dealing with the database.'''
         return self.Inflector.foreignKey(class_name, separate_class_name_and_id_with_underscore)

@@ -3,7 +3,7 @@
 
 <%def name="javascripts()">
    ${parent.javascripts()}
-   ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+   ${h.js("libs/jquery/jquery.autocomplete")}
 </%def>
 
 <%def name="stylesheets()">
@@ -48,9 +48,9 @@
                             </div>
                             <div style="clear: both"></div>
                         </div>
-                    %endfor                    
+                    %endfor
                     <div class="form-row">
-                        <input type="submit" name="create_request_button" value="Save"/> 
+                        <input type="submit" name="create_request_button" value="Save"/>
                         <input type="submit" name="add_sample_button" value="Add samples"/>
                     </div>
                 %endif

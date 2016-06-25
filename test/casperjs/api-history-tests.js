@@ -37,7 +37,7 @@ spaceghost.openHomePage().then( function(){
     var historyShow = this.api.histories.show( firstHistory.id );
     //this.debug( this.jsonStr( historyShow ) );
     this.test.assert( this.hasKeys( historyShow, [
-            'id', 'name', 'annotation', 'nice_size', 'contents_url',
+            'id', 'name', 'annotation', 'size', 'contents_url',
             'state', 'state_details', 'state_ids' ]),
         'Has the proper keys' );
 

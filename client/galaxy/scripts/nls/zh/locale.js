@@ -2,7 +2,7 @@
 define({
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
-// ---- readonly-history-panel
+// ---- history-view
 "This history is empty" :
 "历史已空",
 "No matching datasets found" :
@@ -29,7 +29,7 @@ define({
 "For all selected" :
 "为每个选定",
 
-// ---- history-panel
+// ---- history-view-edit
 //"Edit history tags" :
 //false,
 //"Edit history Annotation" :
@@ -52,13 +52,13 @@ define({
 "This will permanently remove the data in your datasets. Are you sure?" :
 "这将永久在你的数据集删除数据。你确定？",
 
-// ---- annotated-history-panel
+// ---- history-view-annotated
 "Dataset" :
 "数据集",
 //"Annotation" :
 //false,
 
-// ---- current-history-panel
+// ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
 "历史已空，请单击左边窗格中‘获取数据’",
 "No matching datasets found" :

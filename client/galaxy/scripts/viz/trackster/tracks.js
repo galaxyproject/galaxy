@@ -1,7 +1,17 @@
-define( ["libs/underscore", "viz/visualization", "viz/viz_views", "viz/trackster/util",
-         "viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/filters",
-         "mvc/data", "mvc/tools", "utils/config" ],
-         function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+define([
+    "libs/underscore",
+    "viz/visualization",
+    "viz/viz_views",
+    "viz/trackster/util",
+    "viz/trackster/slotting",
+    "viz/trackster/painters",
+    "viz/trackster/filters",
+    "mvc/dataset/data",
+    "mvc/tool/tools",
+    "utils/config",
+    "ui/editable-text",
+], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+
 
 var extend = _.extend;
 
@@ -879,7 +889,7 @@ var TracksterView = Backbone.View.extend({
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container);
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
+            visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );
                 });
@@ -1154,8 +1164,8 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
     },
 
     update_location: function(low, high) {
-        this.location_span.text( commatize(low) + ' - ' + commatize(high) );
-        this.nav_input.val( this.chrom + ':' + commatize(low) + '-' + commatize(high) );
+        this.location_span.text( util.commatize(low) + ' - ' + util.commatize(high) );
+        this.nav_input.val( this.chrom + ':' + util.commatize(low) + '-' + util.commatize(high) );
 
         // Update location. Only update when there is a valid chrom; when loading vis, there may
         // not be a valid chrom.
@@ -1176,7 +1186,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             view = this,
             chrom_data = $.Deferred();
         $.ajax({
-            url: galaxy_config.root + "api/genomes/" + this.dbkey,
+            url: Galaxy.root + "api/genomes/" + this.dbkey,
             data: url_parms,
             dataType: "json",
             success: function (result) {
@@ -1825,7 +1835,7 @@ var TracksterToolView = Backbone.View.extend({
         url_params.inputs = this.model.get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
-                url: galaxy_config.root + "api/tools",
+                url: Galaxy.root + "api/tools",
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: 'application/json',
@@ -2247,7 +2257,7 @@ extend(Track.prototype, Drawable.prototype, {
 
                         // Go to visualization.
                         window.location.href =
-                            galaxy_config.root + "visualization/sweepster" + "?" +
+                            Galaxy.root + "visualization/sweepster" + "?" +
                             $.param({
                                 dataset_id: track.dataset.id,
                                 hda_ldda: track.dataset.get('hda_ldda'),
@@ -2497,7 +2507,7 @@ extend(Track.prototype, Drawable.prototype, {
             var data = result.data;
 
             // Tracks may not have stat data either because there is no data or data is not yet ready.
-            if (data !== undefined && data.min !== undefined && data.max !== undefined) {
+            if (data && data.min !== undefined && data.max !== undefined) {
                 // Compute default minimum and maximum values
                 var min_value = data.min,
                     max_value = data.max;
@@ -3249,7 +3259,7 @@ extend(LabelTrack.prototype, Track.prototype, {
             new_div = $("<div/>").addClass('label-container');
         while ( position < view.high ) {
             var screenPosition = Math.floor( ( position - view.low ) / range * width );
-            new_div.append( $("<div/>").addClass('label').text(commatize( position )).css( {
+            new_div.append( $("<div/>").addClass('pos-label').text(util.commatize( position )).css( {
                 left: screenPosition
             }));
             position += tickDistance;
@@ -3496,7 +3506,7 @@ var ReferenceTrack = function (view) {
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
     this.container_div.addClass("reference-track");
-    this.data_url = galaxy_config.root + "api/genomes/" + this.view.dbkey;
+    this.data_url = Galaxy.root + "api/genomes/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,

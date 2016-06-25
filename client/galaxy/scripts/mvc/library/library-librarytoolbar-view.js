@@ -10,15 +10,19 @@ function(mod_toastr,
 var LibraryToolbarView = Backbone.View.extend({
   el: '#center',
 
+  defaults: {
+    search_term: ''
+  },
+
   events: {
-    'click #create_new_library_btn' : 'showLibraryModal',
+    'click #create_new_library_btn' : 'createLibraryFromModal',
     'click #include_deleted_chk'    : 'includeDeletedChecked',
-    'click #page_size_prompt'       : 'showPageSizePrompt',
+    'click #lib_page_size_prompt'   : 'showPageSizePrompt',
     'keyup .library-search-input'   : 'searchLibraries'
   },
 
   initialize: function( options ){
-    this.options = _.defaults( this.options || {}, options );
+    this.options = _.defaults( this.options || {}, options, this.defaults );
     this.render();
   },
 
@@ -26,9 +30,9 @@ var LibraryToolbarView = Backbone.View.extend({
     var toolbar_template = this.templateToolBar();
     var is_admin = false;
     var is_anonym = true;
-    if ( Galaxy.currUser ){
-      is_admin = Galaxy.currUser.isAdmin();
-      is_anonym = Galaxy.currUser.isAnonymous();
+    if ( Galaxy.user ){
+      is_admin = Galaxy.user.isAdmin();
+      is_anonym = Galaxy.user.isAnonymous();
     }
     this.$el.html(toolbar_template( { admin_user: is_admin, anon_user: is_anonym } ) );
     if ( is_admin ){
@@ -42,7 +46,7 @@ var LibraryToolbarView = Backbone.View.extend({
   renderPaginator: function( options ){
     this.options = _.extend( this.options, options );
     var paginator_template = this.templatePaginator();
-    this.$el.find( '#library_paginator' ).html( paginator_template({ 
+    this.$el.find( '#library_paginator' ).html( paginator_template({
       show_page: parseInt( this.options.show_page ),
       page_count: parseInt( this.options.page_count ),
       total_libraries_count: this.options.total_libraries_count,
@@ -54,7 +58,7 @@ var LibraryToolbarView = Backbone.View.extend({
    * User clicked on 'New library' button. Show modal to
    * satisfy the wish.
    */
-  showLibraryModal : function (event){
+  createLibraryFromModal : function (event){
     event.preventDefault();
     event.stopPropagation();
     var self = this;
@@ -144,7 +148,7 @@ var LibraryToolbarView = Backbone.View.extend({
   includeDeletedChecked: function( event ){
     if (event.target.checked){
         Galaxy.libraries.preferences.set( { 'with_deleted': true } );
-        Galaxy.libraries.libraryListView.render();
+        Galaxy.libraries.libraryListView.fetchDeleted();
     } else{
         Galaxy.libraries.preferences.set( { 'with_deleted': false } );
         Galaxy.libraries.libraryListView.render();
@@ -157,6 +161,7 @@ var LibraryToolbarView = Backbone.View.extend({
    */
   searchLibraries: function(event){
     var search_term = $(".library-search-input").val();
+    this.options.search_term = search_term;
     Galaxy.libraries.libraryListView.searchLibraries(search_term);
   },
 
@@ -167,28 +172,30 @@ var LibraryToolbarView = Backbone.View.extend({
           '<div id="library_toolbar">',
             '<form class="form-inline" role="form">',
               '<span><strong><a href="#" title="Go to first page">DATA LIBRARIES</a></strong></span>',
+              '<span id="library_paginator" class="library-paginator">',
+              // paginator will append here
+              '</span>',
+              '<div class="form-group toolbar-item">',
+                '<input type="text" class="form-control library-search-input" placeholder="Search" size="30">',
+              '</div>',
+              // only admins see the following
+              '<% if(admin_user === true) { %>',
+                  '<div class="checkbox toolbar-item" style="height: 20px;">',
+                    '<label>',
+                      '<input id="include_deleted_chk" type="checkbox">',
+                        '&nbsp;include deleted ',
+                      '</input>',
+                    '</label>',
+                  '</div>',
+                  '<span class="toolbar-item" data-toggle="tooltip" data-placement="top" title="Create New Library">',
+                    '<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>',
+                '</span>',
+              '<% } %>',
               '<span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki">',
                 '<a href="https://wiki.galaxyproject.org/DataLibraries/screen/ListOfLibraries" target="_blank">',
                   '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',
                 '</a>',
-                '</span>',
-              '<span id="library_paginator" class="library-paginator">',
-              // paginator will append here
               '</span>',
-              '<div class="form-group">',
-                '<input type="text" class="form-control library-search-input" placeholder="Search">',
-              '</div>',
-              // only admins see the following
-              '<% if(admin_user === true) { %>',
-                '<div class="checkbox" style="height: 20px;">',
-                  '<label>',
-                    '<input id="include_deleted_chk" type="checkbox"> include deleted </input>',
-                  '</label>',
-                '</div>',
-                '<span data-toggle="tooltip" data-placement="top" title="Create New Library">',
-                  '<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>',
-                '</span>',
-              '<% } %>',
             '</form>',
           '</div>',
         '</div>',
@@ -225,8 +232,8 @@ var LibraryToolbarView = Backbone.View.extend({
         '<li class="disabled"><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
       '<% } %>',
     '</ul>',
-    '<span>',
-      'showing <a data-toggle="tooltip" data-placement="top" title="Click to change the number of libraries on page" id="page_size_prompt"><%- libraries_shown %></a> of <%- total_libraries_count %> libraries',
+    '<span id="lib_page_size_prompt">',
+      ' showing <a data-toggle="tooltip" data-placement="top" title="Click to change the number of libraries on page"><%- libraries_shown %></a> of <%- total_libraries_count %> libraries',
     '</span>'
     ].join(''));
   },
@@ -235,7 +242,7 @@ var LibraryToolbarView = Backbone.View.extend({
     return _.template([
       '<div id="new_library_modal">',
         '<form>',
-          '<input type="text" name="Name" value="" placeholder="Name">',
+          '<input type="text" name="Name" value="" placeholder="Name" autofocus>',
           '<input type="text" name="Description" value="" placeholder="Description">',
           '<input type="text" name="Synopsis" value="" placeholder="Synopsis">',
         '</form>',

@@ -5,18 +5,18 @@ import os
 import sqlalchemy
 import sys
 import tempfile
+import urlparse
 from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
+from six import string_types
 
-from galaxy.util import asbool
+from galaxy.util import asbool, safe_relpath
 from galaxy.util.hash_util import new_secure_hash
 from tool_shed.util import hg_util
 from tool_shed.util import commit_util
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 import mercurial.__version__
 
 log = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ CHUNK_SIZE = 65536
 class Hg( object ):
 
     def __init__( self, app, config ):
-        print "mercurial version is:", mercurial.__version__.version
+        log.debug( "mercurial version is: %s", mercurial.__version__.version )
         self.app = app
         self.config = config
         # Authenticate this mercurial request using basic authentication
@@ -51,11 +51,11 @@ class Hg( object ):
         # a clone or a pull.  However, we do not want to increment the times_downloaded count if we're only setting repository
         # metadata.
         if cmd == 'getbundle' and not self.setting_repository_metadata:
-            common, _ = environ[ 'HTTP_X_HGARG_1' ].split( '&' )
+            hg_args = urlparse.parse_qs( environ[ 'HTTP_X_HGARG_1' ] )
             # The 'common' parameter indicates the full sha-1 hash of the changeset the client currently has checked out. If
             # this is 0000000000000000000000000000000000000000, then the client is performing a fresh checkout. If it has any
             # other value, the client is getting updates to an existing checkout.
-            if common == 'common=0000000000000000000000000000000000000000':
+            if 'common' in hg_args and hg_args[ 'common' ][-1] == '0000000000000000000000000000000000000000':
                 # Increment the value of the times_downloaded column in the repository table for the cloned repository.
                 if 'PATH_INFO' in environ:
                     # Instantiate a database connection
@@ -75,6 +75,9 @@ class Hg( object ):
                     connection.execute( sql_cmd )
                     connection.close()
         elif cmd in [ 'unbundle', 'pushkey' ]:
+            if self.config.get('disable_push', True):
+                msg = 'Pushing to Tool Shed is disabled. Please use Galaxy Planemo to upload your changes.'
+                return self.__display_exception_remotely( start_response, msg )
             # This is an hg push from the command line.  When doing this, the following commands, in order,
             # will be retrieved from environ (see the docs at http://mercurial.selenic.com/wiki/WireProtocol):
             # # If mercurial version >= '2.2.3': capabilities -> batch -> branchmap -> unbundle -> listkeys -> pushkey -> listkeys
@@ -100,7 +103,7 @@ class Hg( object ):
             # If all of these mechanisms fail, Mercurial will fail, printing an error message. In this case, it
             # will not let you commit until you set up a username.
             result = self.authentication( environ )
-            if not isinstance( result, str ) and cmd == 'unbundle' and 'wsgi.input' in environ:
+            if not isinstance( result, string_types ) and cmd == 'unbundle' and 'wsgi.input' in environ:
                 bundle_data_stream = environ[ 'wsgi.input' ]
                 # Convert the incoming mercurial bundle into a json object and persit it to a temporary file for inspection.
                 fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-hg-bundle"  )
@@ -114,7 +117,11 @@ class Hg( object ):
                     fh.write( chunk )
                 fh.close()
                 fh = open( tmp_filename, 'rb' )
-                changeset_groups = json.loads( hg_util.bundle_to_json( fh ) )
+                try:
+                    changeset_groups = json.loads( hg_util.bundle_to_json( fh ) )
+                except AttributeError:
+                    msg = 'Your version of Mercurial is not supported. Please use a version < 3.5'
+                    return self.__display_exception_remotely( start_response, msg )
                 fh.close()
                 try:
                     os.unlink( tmp_filename )
@@ -123,6 +130,19 @@ class Hg( object ):
                 if changeset_groups:
                     # Check the repository type to make sure inappropriate files are not being pushed.
                     if 'PATH_INFO' in environ:
+                        # Ensure there are no symlinks with targets outside the repo
+                        for entry in changeset_groups:
+                            if len( entry ) == 2:
+                                filename, change_list = entry
+                                if not isinstance(change_list, list):
+                                    change_list = [change_list]
+                                for change in change_list:
+                                    for patch in change['data']:
+                                        target = patch['block'].strip()
+                                        if ( ( patch['end'] - patch['start'] == 0 ) and not safe_relpath( target ) ):
+                                            msg = "Changes include a symlink outside of the repository: %s -> %s" % ( filename, target )
+                                            log.warning( msg )
+                                            return self.__display_exception_remotely( start_response, msg )
                         # Instantiate a database connection
                         engine = sqlalchemy.create_engine( self.db_url )
                         connection = engine.connect()
@@ -140,7 +160,7 @@ class Hg( object ):
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
-                                    if filename and isinstance( filename, str ):
+                                    if filename and isinstance( filename, string_types ):
                                         if filename == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
                                             is_valid, error_msg = self.repository_tags_are_valid( filename, change_list )
@@ -159,7 +179,7 @@ class Hg( object ):
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
-                                    if filename and isinstance( filename, str ):
+                                    if filename and isinstance( filename, string_types ):
                                         if filename == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
                                             is_valid, error_msg = self.repository_tags_are_valid( filename, change_list )
@@ -180,7 +200,7 @@ class Hg( object ):
                                 if len( entry ) == 2:
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
-                                    if filename and isinstance( filename, str ):
+                                    if filename and isinstance( filename, string_types ):
                                         if filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
                                                          rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                                             # We check both files since tool dependency definitions files can contain complex
@@ -189,7 +209,7 @@ class Hg( object ):
                                             if not is_valid:
                                                 log.debug( error_msg )
                                                 return self.__display_exception_remotely( start_response, error_msg )
-            if isinstance( result, str ):
+            if isinstance( result, string_types ):
                 # Authentication was successful
                 AUTH_TYPE.update( environ, 'basic' )
                 REMOTE_USER.update( environ, result )

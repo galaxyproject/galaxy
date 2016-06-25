@@ -2,29 +2,28 @@
 API operations on the library datasets.
 """
 import glob
+import logging
 import os
 import os.path
 import string
 import sys
 import tempfile
 import zipfile
+from json import dumps
+
+from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
+
 from galaxy import exceptions
 from galaxy import util
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import folders, roles
 from galaxy.tools.actions import upload_common
-from galaxy.util.json import dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
-from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
 
-
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -107,7 +106,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         try:
             ldda = self.get_library_dataset_dataset_association( trans, id=encoded_ldda_id, check_ownership=False, check_accessible=False )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.ObjectNotFound( 'Requested version of library dataset was not found.' + str(e) )
 
         if ldda not in library_dataset.expired_datasets:
@@ -138,7 +137,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         current_user_roles = trans.get_current_user_roles()
         try:
             library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
         dataset = library_dataset.library_dataset_dataset_association.dataset
 
@@ -171,7 +170,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
             return_roles = []
             for role in roles:
-                return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
+                role_id = trans.security.encode_id( role.id )
+                return_roles.append( dict( id=role_id, name=role.name, type=role.type ) )
             return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
         else:
             raise exceptions.RequestParameterInvalidException( "The value of 'scope' parameter is invalid. Alllowed values: current, available" )
@@ -194,54 +194,51 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         modify_roles = set( trans.app.security_agent.get_roles_for_action( library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
         manage_roles = set( dataset.get_manage_permissions_roles( trans ) )
 
-        access_dataset_role_list = [ access_role.name for access_role in access_roles ]
-        manage_dataset_role_list = [ manage_role.name for manage_role in manage_roles ]
-        modify_item_role_list = [ modify_role.name for modify_role in modify_roles ]
+        access_dataset_role_list = [ ( access_role.name, trans.security.encode_id( access_role.id ) ) for access_role in access_roles ]
+        manage_dataset_role_list = [ ( manage_role.name, trans.security.encode_id( manage_role.id ) ) for manage_role in manage_roles ]
+        modify_item_role_list = [ ( modify_role.name, trans.security.encode_id( modify_role.id ) ) for modify_role in modify_roles ]
 
         return dict( access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list )
 
     @expose_api
-    def update_permissions( self, trans, encoded_dataset_id, **kwd ):
+    def update_permissions( self, trans, encoded_dataset_id, payload=None, **kwd ):
         """
-        def update( self, trans, encoded_dataset_id, **kwd ):
-            *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
+        *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
+            Set permissions of the given dataset to the given role ids.
 
         :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
         :type   encoded_dataset_id:      an encoded id string
-
-        :param  action:     (required) describes what action should be performed
-                            available actions: make_private, remove_restrictions, set_permissions
-        :type   action:     string
-
-        :param  access_ids[]:      list of Role.name defining roles that should have access permission on the dataset
-        :type   access_ids[]:      string or list
-        :param  manage_ids[]:      list of Role.name defining roles that should have manage permission on the dataset
-        :type   manage_ids[]:      string or list
-        :param  modify_ids[]:      list of Role.name defining roles that should have modify permission on the library dataset item
-        :type   modify_ids[]:      string or list
-
-        :rtype:     dictionary
+        :param   payload: dictionary structure containing:
+            :param  action:     (required) describes what action should be performed
+                                available actions: make_private, remove_restrictions, set_permissions
+            :type   action:     string
+            :param  access_ids[]:      list of Role.id defining roles that should have access permission on the dataset
+            :type   access_ids[]:      string or list
+            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the dataset
+            :type   manage_ids[]:      string or list
+            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
+            :type   modify_ids[]:      string or list
+        :type:      dictionary
         :returns:   dict of current roles for all available permission types
+        :rtype:     dictionary
 
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
+        if payload:
+            kwd.update(payload)
         try:
             library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
-
         dataset = library_dataset.library_dataset_dataset_association.dataset
-
         current_user_roles = trans.get_current_user_roles()
         can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, dataset ) or trans.user_is_admin()
         if not can_manage:
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to manage permissions on this dataset.' )
-
-        new_access_roles_ids = kwd.get( 'access_ids[]', None )
-        new_manage_roles_ids = kwd.get( 'manage_ids[]', None )
-        new_modify_roles_ids = kwd.get( 'modify_ids[]', None )
-
+        new_access_roles_ids = util.listify( kwd.get( 'access_ids[]', None ) )
+        new_manage_roles_ids = util.listify( kwd.get( 'manage_ids[]', None ) )
+        new_modify_roles_ids = util.listify( kwd.get( 'modify_ids[]', None ) )
         action = kwd.get( 'action', None )
         if action is None:
             raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
@@ -250,81 +247,75 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if not trans.app.security_agent.dataset_is_public( dataset ):
                 raise exceptions.InternalServerError( 'An error occured while making dataset public.' )
         elif action == 'make_private':
-            trans.app.security_agent.make_dataset_public( dataset )
-            private_role = trans.app.security_agent.get_private_user_role( trans.user )
-            dp = trans.app.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role )
-            trans.sa_session.add( dp )
-            trans.sa_session.flush()
             if not trans.app.security_agent.dataset_is_private_to_user( trans, library_dataset ):
-                raise exceptions.InternalServerError( 'An error occured while making dataset private.' )
+                private_role = trans.app.security_agent.get_private_user_role( trans.user )
+                dp = trans.app.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role )
+                trans.sa_session.add( dp )
+                trans.sa_session.flush()
+            if not trans.app.security_agent.dataset_is_private_to_user( trans, library_dataset ):
+                # Check again and inform the user if dataset is not private.
+                raise exceptions.InternalServerError( 'An error occured and the dataset is NOT private.' )
         elif action == 'set_permissions':
-
             # ACCESS DATASET ROLES
             valid_access_roles = []
-            invalid_access_roles_names = []
+            invalid_access_roles_ids = []
             if new_access_roles_ids is None:
                 trans.app.security_agent.make_dataset_public( dataset )
             else:
-                #  Check whether we receive only one role, then it is not a list so we make it into one.
-                if isinstance(new_access_roles_ids, basestring):
-                    new_access_roles_ids = [ new_access_roles_ids ]
                 for role_id in new_access_roles_ids:
-                    role = self._load_role( trans, role_id )
-
+                    role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
                     #  Check whether role is in the set of allowed roles
                     valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, dataset )
                     if role in valid_roles:
                         valid_access_roles.append( role )
                     else:
-                        invalid_access_roles_names.append( role_id )
-                if len( invalid_access_roles_names ) > 0:
-                    log.warning( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_names ) )
+                        invalid_access_roles_ids.append( role_id )
+                if len( invalid_access_roles_ids ) > 0:
+                    log.warning( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_ids ) )
 
                 access_permission = dict( access=valid_access_roles )
                 trans.app.security_agent.set_dataset_permission( dataset, access_permission )
 
             # MANAGE DATASET ROLES
             valid_manage_roles = []
-            invalid_manage_roles_names = []
+            invalid_manage_roles_ids = []
             new_manage_roles_ids = util.listify( new_manage_roles_ids )
 
             #  Load all access roles to check
             active_access_roles = dataset.get_access_roles( trans )
 
             for role_id in new_manage_roles_ids:
-                role = self._load_role( trans, role_id )
-
+                role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
                 #  Check whether role is in the set of access roles
                 if role in active_access_roles:
                     valid_manage_roles.append( role )
                 else:
-                    invalid_manage_roles_names.append( role_id )
+                    invalid_manage_roles_ids.append( role_id )
 
-            if len( invalid_manage_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )
+            if len( invalid_manage_roles_ids ) > 0:
+                log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_ids ) )
 
             manage_permission = { trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: valid_manage_roles }
             trans.app.security_agent.set_dataset_permission( dataset, manage_permission )
 
             # MODIFY LIBRARY ITEM ROLES
             valid_modify_roles = []
-            invalid_modify_roles_names = []
+            invalid_modify_roles_ids = []
             new_modify_roles_ids = util.listify( new_modify_roles_ids )
 
             #  Load all access roles to check
             active_access_roles = dataset.get_access_roles( trans )
 
             for role_id in new_modify_roles_ids:
-                role = self._load_role( trans, role_id )
-
+                role = self.role_manager.get( trans, self.__decode_id( trans, role_id, 'role' ) )
                 #  Check whether role is in the set of access roles
                 if role in active_access_roles:
                     valid_modify_roles.append( role )
                 else:
-                    invalid_modify_roles_names.append( role_id )
+                    invalid_modify_roles_ids.append( role_id )
 
-            if len( invalid_modify_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_names ) )
+            if len( invalid_modify_roles_ids ) > 0:
+                log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_ids ) )
 
             modify_permission = { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles }
             trans.app.security_agent.set_library_item_permission( library_dataset, modify_permission )
@@ -334,28 +325,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                                                                'Allowed values are: "remove_restrictions", "make_private", "set_permissions"' )
 
         return self._get_current_roles( trans, library_dataset )
-
-    def _load_role( self, trans, role_name ):
-        """
-        Method loads the role from the DB based on the given role name.
-
-        :param  role_name:      name of the role to load from the DB
-        :type   role_name:      string
-
-        :rtype:     Role
-        :returns:   the loaded Role object
-
-        :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
-        """
-        try:
-            role = trans.sa_session.query( trans.app.model.Role ).filter( trans.model.Role.table.c.name == role_name ).one()
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase( 'Multiple roles found with the same name. Name: ' + str( role_name ) )
-        except NoResultFound:
-            raise exceptions.RequestParameterInvalidException( 'No role found with the name provided. Name: ' + str( role_name ) )
-        except Exception, e:
-            raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
-        return role
 
     @expose_api
     def delete( self, trans, encoded_dataset_id, **kwd ):
@@ -376,7 +345,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         try:
             dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
         current_user_roles = trans.get_current_user_roles()
         allowed = trans.app.security_agent.can_modify_library_item( current_user_roles, dataset )
@@ -392,15 +361,16 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         trans.sa_session.flush()
 
         rval = trans.security.encode_all_ids( dataset.to_dict() )
+        nice_size = util.nice_size( int( dataset.library_dataset_dataset_association.get_size() ) )
+        rval[ 'file_size' ] = nice_size
         rval[ 'update_time' ] = dataset.update_time.strftime( "%Y-%m-%d %I:%M %p" )
         rval[ 'deleted' ] = dataset.deleted
         rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
         return rval
 
     @expose_api
-    def load( self, trans, **kwd ):
+    def load( self, trans, payload=None, **kwd ):
         """
-        load( self, trans, **kwd ):
         * POST /api/libraries/datasets
         Load dataset from the given source into the library.
         Source can be:
@@ -411,30 +381,34 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
             (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
 
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
-        :type   encoded_folder_id:      an encoded id string
-        :param  source:                 source the datasets should be loaded form
-        :type   source:                 str
-        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
-                                        while linking is set to True all symlinks will be resolved _once_
-        :type   link_data:              bool
-        :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
-                                        if False only datasets will be imported
-        :type   preserve_dirs:          bool
-        :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
-        :type   file_type:              str
-        :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
-        :type   dbkey:                  str
-
+        :param   payload: dictionary structure containing:
+            :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
+            :type   encoded_folder_id:      an encoded id string
+            :param  source:                 source the datasets should be loaded from
+            :type   source:                 str
+            :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                                            while linking is set to True all symlinks will be resolved _once_
+            :type   link_data:              bool
+            :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
+                                            if False only datasets will be imported
+            :type   preserve_dirs:          bool
+            :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
+            :type   file_type:              str
+            :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
+            :type   dbkey:                  str
+        :type   dictionary
         :returns:   dict containing information about the created upload job
         :rtype:     dictionary
+        :raises: RequestParameterMissingException, AdminRequiredException, ConfigDoesNotAllowException, RequestParameterInvalidException
+                    InsufficientPermissionsException, ObjectNotFound
         """
-
-        kwd[ 'space_to_tab' ] = 'False'
-        kwd[ 'to_posix_lines' ] = 'True'
+        if payload:
+            kwd.update(payload)
+        kwd['space_to_tab'] = False
+        kwd['to_posix_lines'] = True
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
-        kwd[' link_data_only' ] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
+        kwd['link_data_only'] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
         encoded_folder_id = kwd.get( 'encoded_folder_id', None )
         if encoded_folder_id is not None:
             folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
@@ -477,7 +451,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        tool.populate_state( trans, tool.inputs, state.inputs, kwd )
+        tool.populate_state( trans, tool.inputs, kwd, state.inputs )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input in tool.inputs.itervalues():
@@ -488,16 +462,15 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         kwd[ 'filesystem_paths' ] = path
         if source in [ 'importdir_folder' ]:
             kwd[ 'filesystem_paths' ] = os.path.join( import_base_dir, path )
-        params = util.Params( kwd )
         # user wants to import one file only
         if source in [ "userdir_file", "importdir_file" ]:
             file = os.path.abspath( path )
             abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
-                trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
+                trans, 'api', kwd, os.path.basename( file ), file, 'server_dir', library_bunch ) )
         # user wants to import whole folder
         if source == "userdir_folder":
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
-                trans, 'api', params, library_bunch, 200, '' )
+                trans, 'api', kwd, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[ 0 ]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
@@ -508,7 +481,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if source in [ "admin_path", "importdir_folder" ]:
             # validate the path is within root
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
-                trans, 'api', params, library_bunch, 200, '' )
+                trans, 'api', kwd, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
@@ -517,10 +490,10 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 abspath_datasets.append( ud )
         json_file_path = upload_common.create_paramfile( trans, abspath_datasets )
         data_list = [ ud.data for ud in abspath_datasets ]
-        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder )
-        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
-        job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
-        job.add_parameter( 'uuid', dumps( kwd.get( 'uuid', None ) ) )
+        job_params = {}
+        job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
+        job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder, job_params=job_params )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         job_dict = job.to_dict()
@@ -562,12 +535,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 try:
                     library_dataset = self.get_library_dataset( trans, id=dataset_id, check_ownership=False, check_accessible=True )
                     library_datasets.append( library_dataset )
-                except HTTPBadRequest, e:
+                except HTTPBadRequest:
                     raise exceptions.RequestParameterInvalidException( 'Bad Request.' )
-                except HTTPInternalServerError, e:
+                except HTTPInternalServerError:
                     raise exceptions.InternalServerError( 'Internal error.' )
-                except Exception, e:
-                    raise exceptions.InternalServerError( 'Unknown error.' )
+                except Exception as e:
+                    raise exceptions.InternalServerError( 'Unknown error.' + str(e) )
 
         folders_to_download = kwd.get( 'folder_ids%5B%5D', None )
         if folders_to_download is None:
@@ -671,7 +644,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     except ObjectNotFound:
                         log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
                         raise exceptions.ObjectNotFound( "Requested dataset not found. " )
-                    except Exception, e:
+                    except Exception as e:
                         log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
                         raise exceptions.InternalServerError( "Unable to add composite parent to temporary library download archive. " + str( e ) )
 
@@ -691,7 +664,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                         except ObjectNotFound:
                             log.exception( "Requested dataset %s does not exist on the host." % fpath )
                             raise exceptions.ObjectNotFound( "Requested dataset not found." )
-                        except Exception, e:
+                        except Exception as e:
                             log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
                             raise exceptions.InternalServerError( "Unable to add dataset to temporary library download archive . " + str( e ) )
 
@@ -707,7 +680,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     except ObjectNotFound:
                         log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
                         raise exceptions.ObjectNotFound( "Requested dataset not found." )
-                    except Exception, e:
+                    except Exception as e:
                         log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
                         raise exceptions.InternalServerError( "Unknown error. " + str( e ) )
             lname = 'selected_dataset'
@@ -768,3 +741,17 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
             path_to_root.extend( self._build_path( trans, upper_folder ) )
         return path_to_root
+
+    def __decode_id( self, trans, encoded_id, object_name=None ):
+        """
+        Try to decode the id.
+
+        :param  object_name:      Name of the object the id belongs to. (optional)
+        :type   object_name:      str
+        """
+        try:
+            return trans.security.decode_id( encoded_id )
+        except TypeError:
+            raise exceptions.MalformedId( 'Malformed %s id specified, unable to decode.' % object_name if object_name is not None else '' )
+        except ValueError:
+            raise exceptions.MalformedId( 'Wrong %s id specified, unable to decode.' % object_name if object_name is not None else '' )

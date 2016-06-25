@@ -1,0 +1,17 @@
+<tool id="validation_empty_dataset" name="validation_empty_dataset">
+  <command>
+    echo "Hello World" > out1;
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="non-empty input">
+      <validator type="empty_dataset" />
+    </param>
+  </inputs>
+  <outputs>
+    <data name="out_file1" from_work_dir="out1" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+  </help>
+</tool>

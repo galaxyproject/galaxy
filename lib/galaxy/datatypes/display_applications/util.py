@@ -1,5 +1,3 @@
-from galaxy import eggs
-eggs.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
 
 

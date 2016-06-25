@@ -5,14 +5,12 @@ are encapsulated here.
 
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, ForeignKey, Integer,
-    MetaData, not_, Numeric, select, String, Table, TEXT, true, Unicode, UniqueConstraint )
+    MetaData, not_, Numeric, select, String, Table, Text, TEXT, true, Unicode, UniqueConstraint )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.types import BigInteger
-from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper
+from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper, deferred
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from galaxy import model
@@ -39,7 +37,7 @@ model.User.table = Table(
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
-    Column( "disk_usage", Numeric( 15, 0 ), index=True ) ,
+    Column( "disk_usage", Numeric( 15, 0 ), index=True ),
     Column( "active", Boolean, index=True, default=True, nullable=False ),
     Column( "activation_token", TrimmedString( 64 ), nullable=True, index=True ) )
 
@@ -108,14 +106,14 @@ model.HistoryDatasetAssociation.table = Table(
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "state", TrimmedString( 64 ), index=True, key="_state" ),
     Column( "copied_from_history_dataset_association_id", Integer,
-        ForeignKey( "history_dataset_association.id" ), nullable=True ),
+            ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "copied_from_library_dataset_dataset_association_id", Integer,
-        ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
+            ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
-    Column( "tool_version" , TEXT ),
+    Column( "peek", TEXT ),
+    Column( "tool_version", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
@@ -126,7 +124,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column( "hid", Integer ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "hidden_beneath_collection_instance_id",
-        ForeignKey( "history_dataset_collection_association.id" ), nullable=True ) )
+            ForeignKey( "history_dataset_collection_association.id" ), nullable=True ) )
 
 model.Dataset.table = Table(
     "dataset", metadata,
@@ -138,7 +136,7 @@ model.Dataset.table = Table(
     Column( "purged", Boolean, index=True, default=False ),
     Column( "purgable", Boolean, default=True ),
     Column( "object_store_id", TrimmedString( 255 ), index=True ),
-    Column( "external_filename" , TEXT ),
+    Column( "external_filename", TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ),
     Column( 'total_size', Numeric( 15, 0 ) ),
@@ -356,8 +354,8 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
-    Column( "tool_version" , TEXT ),
+    Column( "peek", TEXT ),
+    Column( "tool_version", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
@@ -774,7 +772,9 @@ model.Workflow.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True, nullable=False ),
+    # workflows will belong to either a stored workflow or a parent/nesting workflow.
+    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True, nullable=True ),
+    Column( "parent_workflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=True ),
     Column( "name", TEXT ),
     Column( "has_cycles", Boolean ),
     Column( "has_errors", Boolean ),
@@ -786,6 +786,7 @@ model.WorkflowStep.table = Table(
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=False ),
+    Column( "subworkflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=True ),
     Column( "type", String(64) ),
     Column( "tool_id", TEXT ),
     # Reserved for future
@@ -816,6 +817,14 @@ model.WorkflowRequestInputParameter.table = Table(
     Column( "value", TEXT ),
     Column( "type", Unicode(255) ) )
 
+model.WorkflowRequestInputStepParmeter.table = Table(
+    "workflow_request_input_step_parameter", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
+    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+    Column( "parameter_value", JSONType ),
+)
+
 model.WorkflowRequestToInputDatasetAssociation.table = Table(
     "workflow_request_to_input_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -838,13 +847,18 @@ model.WorkflowStepConnection.table = Table(
     Column( "output_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "input_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "output_name", TEXT ),
-    Column( "input_name", TEXT ) )
+    Column( "input_name", TEXT ),
+    Column( "input_subworkflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
+)
 
 model.WorkflowOutput.table = Table(
     "workflow_output", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False ),
-    Column( "output_name", String(255), nullable=True ) )
+    Column( "output_name", String(255), nullable=True ),
+    Column( "label", Unicode(255) ),
+    Column( "uuid", UUIDType ),
+)
 
 model.WorkflowInvocation.table = Table(
     "workflow_invocation", metadata,
@@ -867,6 +881,14 @@ model.WorkflowInvocationStep.table = Table(
     Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True, nullable=False ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True, nullable=True ),
     Column( "action", JSONType, nullable=True ) )
+
+model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
+    "workflow_invocation_to_subworkflow_invocation_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "workflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
+    Column( "subworkflow_invocation_id", Integer, ForeignKey( "workflow_invocation.id" ), index=True ),
+    Column( "workflow_step_id", Integer, ForeignKey("workflow_step.id") ),
+)
 
 model.StoredWorkflowUserShareAssociation.table = Table(
     "stored_workflow_user_share_connection", metadata,
@@ -1360,7 +1382,7 @@ model.UserPreference.table = Table(
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "name", Unicode( 255 ), index=True),
-    Column( "value", Unicode( 1024 ) ) )
+    Column( "value", Text ) )
 
 model.UserAction.table = Table(
     "user_action", metadata,
@@ -1579,7 +1601,8 @@ simple_mapping( model.HistoryDatasetAssociation,
         primaryjoin=( ( model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id ==
                         model.HistoryDatasetCollectionAssociation.table.c.id ) ),
         uselist=False,
-        backref="hidden_dataset_instances" )
+        backref="hidden_dataset_instances"),
+    _metadata=deferred(model.HistoryDatasetAssociation.table.c._metadata)
 )
 
 simple_mapping( model.Dataset,
@@ -1947,7 +1970,8 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
         remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ),
     extended_metadata=relation( model.ExtendedMetadata,
         primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
-    )
+    ),
+    _metadata=deferred(model.LibraryDatasetDatasetAssociation.table.c._metadata)
 ) )
 
 mapper( model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table, properties=dict(
@@ -2076,16 +2100,16 @@ mapper( model.Job, model.Job.table, properties=dict(
     user=relation( model.User ),
     galaxy_session=relation( model.GalaxySession ),
     history=relation( model.History ),
-    library_folder=relation( model.LibraryFolder ),
-    parameters=relation( model.JobParameter, lazy=False ),
+    library_folder=relation( model.LibraryFolder, lazy=True ),
+    parameters=relation( model.JobParameter, lazy=True ),
     input_datasets=relation( model.JobToInputDatasetAssociation ),
-    output_datasets=relation( model.JobToOutputDatasetAssociation ),
-    output_dataset_collection_instances=relation( model.JobToOutputDatasetCollectionAssociation ),
-    output_dataset_collections=relation( model.JobToImplicitOutputDatasetCollectionAssociation ),
+    output_datasets=relation( model.JobToOutputDatasetAssociation, lazy=True ),
+    output_dataset_collection_instances=relation( model.JobToOutputDatasetCollectionAssociation, lazy=True ),
+    output_dataset_collections=relation( model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True ),
     post_job_actions=relation( model.PostJobActionAssociation, lazy=False ),
     input_library_datasets=relation( model.JobToInputLibraryDatasetAssociation ),
-    output_library_datasets=relation( model.JobToOutputLibraryDatasetAssociation ),
-    external_output_metadata=relation( model.JobExternalOutputMetadata, lazy=False ),
+    output_library_datasets=relation( model.JobToOutputLibraryDatasetAssociation, lazy=True ),
+    external_output_metadata=relation( model.JobExternalOutputMetadata, lazy=True ),
     tasks=relation( model.Task )
 ) )
 
@@ -2178,12 +2202,16 @@ mapper( model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAss
 mapper( model.Workflow, model.Workflow.table, properties=dict(
     steps=relation( model.WorkflowStep,
         backref='workflow',
+        primaryjoin=( ( model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id ) ),
         order_by=asc( model.WorkflowStep.table.c.order_index ),
         cascade="all, delete-orphan",
         lazy=False )
 ) )
 
 mapper( model.WorkflowStep, model.WorkflowStep.table, properties=dict(
+    subworkflow=relation( model.Workflow,
+        primaryjoin=( ( model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id ) ),
+        backref="parent_workflow_steps"),
     tags=relation( model.WorkflowStepTagAssociation,
         order_by=model.WorkflowStepTagAssociation.table.c.id,
         backref="workflow_steps" ),
@@ -2203,10 +2231,14 @@ mapper( model.WorkflowStepConnection, model.WorkflowStepConnection.table, proper
         backref="input_connections",
         cascade="all",
         primaryjoin=( model.WorkflowStepConnection.table.c.input_step_id == model.WorkflowStep.table.c.id ) ),
+    input_subworkflow_step=relation( model.WorkflowStep,
+        backref=backref("parent_workflow_input_connections", uselist=True),
+        primaryjoin=( model.WorkflowStepConnection.table.c.input_subworkflow_step_id == model.WorkflowStep.table.c.id ),
+    ),
     output_step=relation( model.WorkflowStep,
         backref="output_connections",
         cascade="all",
-        primaryjoin=( model.WorkflowStepConnection.table.c.output_step_id == model.WorkflowStep.table.c.id ) )
+        primaryjoin=( model.WorkflowStepConnection.table.c.output_step_id == model.WorkflowStep.table.c.id ) ),
 ) )
 
 
@@ -2259,12 +2291,27 @@ mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dic
     history=relation( model.History ),
     input_parameters=relation( model.WorkflowRequestInputParameter ),
     step_states=relation( model.WorkflowRequestStepState ),
+    input_step_parameters=relation( model.WorkflowRequestInputStepParmeter ),
     input_datasets=relation( model.WorkflowRequestToInputDatasetAssociation ),
     input_dataset_collections=relation( model.WorkflowRequestToInputDatasetCollectionAssociation ),
+    subworkflow_invocations=relation( model.WorkflowInvocationToSubworkflowInvocationAssociation,
+        primaryjoin=( ( model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.workflow_invocation_id == model.WorkflowInvocation.table.c.id ) ),
+        backref=backref("parent_workflow_invocation", uselist=False),
+        uselist=True,
+    ),
     steps=relation( model.WorkflowInvocationStep,
         backref='workflow_invocation',
         lazy=False ),
     workflow=relation( model.Workflow )
+) )
+
+mapper( model.WorkflowInvocationToSubworkflowInvocationAssociation, model.WorkflowInvocationToSubworkflowInvocationAssociation.table, properties=dict(
+    subworkflow_invocation=relation( model.WorkflowInvocation,
+        primaryjoin=( ( model.WorkflowInvocationToSubworkflowInvocationAssociation.table.c.subworkflow_invocation_id == model.WorkflowInvocation.table.c.id ) ),
+        backref="parent_workflow_invocation_association",
+        uselist=False,
+    ),
+    workflow_step=relation( model.WorkflowStep ),
 ) )
 
 mapper( model.WorkflowInvocationStep, model.WorkflowInvocationStep.table, properties=dict(
@@ -2278,6 +2325,10 @@ simple_mapping( model.WorkflowRequestInputParameter,
     workflow_invocation=relation( model.WorkflowInvocation ) )
 
 simple_mapping( model.WorkflowRequestStepState,
+    workflow_invocation=relation( model.WorkflowInvocation ),
+    workflow_step=relation( model.WorkflowStep ) )
+
+simple_mapping( model.WorkflowRequestInputStepParmeter,
     workflow_invocation=relation( model.WorkflowInvocation ),
     workflow_step=relation( model.WorkflowStep ) )
 
@@ -2451,7 +2502,7 @@ class_mapper( model.HistoryDatasetCollectionAssociation ).add_property(
 
 
 # Helper methods.
-def db_next_hid( self ):
+def db_next_hid( self, n=1 ):
     """
     db_next_hid( self )
 
@@ -2467,7 +2518,7 @@ def db_next_hid( self ):
     trans = conn.begin()
     try:
         next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
-        table.update( table.c.id == self.id ).execute( hid_counter=( next_hid + 1 ) )
+        table.update( table.c.id == self.id ).execute( hid_counter=( next_hid + n ) )
         trans.commit()
         return next_hid
     except:

@@ -1,7 +1,5 @@
 import logging
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import hg
 from mercurial import ui
 
@@ -18,7 +16,7 @@ class Metadata( object ):
         return repo.changelog
 
     def is_valid_for_type( self, app, repository, revisions_to_check=None ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
 
 class TipOnly( Metadata ):

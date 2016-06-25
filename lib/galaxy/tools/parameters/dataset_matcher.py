@@ -23,7 +23,7 @@ class DatasetMatcher( object ):
         self.value = value
         self.current_user_roles = ROLES_UNSET
         filter_value = None
-        if param.options:
+        if param.options and other_values:
             try:
                 filter_value = param.options.get_options( trans, other_values )[0][0]
             except IndexError:
@@ -35,7 +35,7 @@ class DatasetMatcher( object ):
         accessible to user.
         """
         dataset = hda.dataset
-        state_valid = dataset.state not in INVALID_STATES
+        state_valid = dataset.state in self.tool.valid_input_states
         return state_valid and ( not check_security or self.__can_access_dataset( dataset ) )
 
     def valid_hda_match( self, hda, check_implicit_conversions=True, check_security=False ):

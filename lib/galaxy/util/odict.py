@@ -2,7 +2,8 @@
 Ordered dictionary implementation.
 """
 
-from UserDict import UserDict
+from six.moves import UserDict
+dict_alias = dict
 
 
 class odict(UserDict):
@@ -14,8 +15,15 @@ class odict(UserDict):
     order.
     """
     def __init__( self, dict=None ):
+        item = dict
         self._keys = []
-        UserDict.__init__( self, dict )
+        if isinstance(item, dict_alias):
+            UserDict.__init__( self, item )
+        else:
+            UserDict.__init__( self, None )
+        if isinstance(item, list):
+            for (key, value) in item:
+                self[key] = value
 
     def __delitem__( self, key ):
         UserDict.__delitem__( self, key )

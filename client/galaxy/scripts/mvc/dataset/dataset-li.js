@@ -5,7 +5,9 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
-/* global Backbone */
+'use strict';
+
+var logNamespace = 'dataset';
 /*==============================================================================
 TODO:
     straighten out state rendering and templates used
@@ -19,9 +21,7 @@ var _super = LIST_ITEM.ListItemView;
  */
 var DatasetListItemView = _super.extend(
 /** @lends DatasetListItemView.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger      : console,
+    _logNamespace : logNamespace,
 
     className   : _super.prototype.className + " dataset",
     //TODO:?? doesn't exactly match an hda's type_id
@@ -44,7 +44,7 @@ var DatasetListItemView = _super.extend(
         _super.prototype._setUpListeners.call( this );
 
         // re-rendering on any model changes
-        this.model.on( 'change', function( model, options ){
+        this.listenTo( this.model, 'change', function( model, options ){
             // if the model moved into the ready state and is expanded without details, fetch those details now
             if( this.model.changedAttributes().state && this.model.inReadyState()
             &&  this.expanded && !this.model.hasDetails() ){
@@ -54,7 +54,7 @@ var DatasetListItemView = _super.extend(
             } else {
                 this.render();
             }
-        }, this );
+        });
     },
 
     // ......................................................................... expandable
@@ -161,7 +161,7 @@ var DatasetListItemView = _super.extend(
             displayBtnData.onclick = function( ev ){
                 if (Galaxy.frame && Galaxy.frame.active) {
                     // Add dataset to frames.
-                    Galaxy.frame.add_dataset(self.model.get('id'));
+                    Galaxy.frame.addDataset(self.model.get('id'));
                     ev.preventDefault();
                 }
             };
@@ -267,7 +267,7 @@ var DatasetListItemView = _super.extend(
         }
 
         return $([
-            '<a class="download-btn icon-btn" href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '">',
+            '<a class="download-btn icon-btn" href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '" download>',
                 '<span class="fa fa-floppy-o"></span>',
             '</a>'
         ].join( '' ));
@@ -283,7 +283,7 @@ var DatasetListItemView = _super.extend(
                     '<span class="fa fa-floppy-o"></span>',
                 '</a>',
                 '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">',
-                    '<li><a href="' + urls.download + '">', _l( 'Download dataset' ), '</a></li>',
+                    '<li><a href="' + urls.download + '" download>', _l( 'Download dataset' ), '</a></li>',
                     _.map( this.model.get( 'meta_files' ), function( meta_file ){
                         return [
                             '<li><a href="', urls.meta_download + meta_file.file_type, '">',
@@ -471,7 +471,7 @@ DatasetListItemView.prototype.templates = (function(){
                 '<span class="display-application-location"><%- app.label %></span> ',
                 '<span class="display-application-links">',
                     '<% _.each( app.links, function( link ){ %>',
-                        '<a target="<%= link.target %>" href="<%= link.href %>">',
+                        '<a target="<%- link.target %>" href="<%- link.href %>">',
                             '<% print( _l( link.text ) ); %>',
                         '</a> ',
                     '<% }); %>',

@@ -1,4 +1,4 @@
-#post processing, add sequence and additional annoation info if available
+# post processing, add sequence and additional annoation info if available
 from urllib import urlencode
 from galaxy.datatypes.images import create_applet_tag_peek
 
@@ -6,7 +6,7 @@ from galaxy.datatypes.images import create_applet_tag_peek
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
     primary_data = out_data.items()[0][1]
 
-    #default params for LAJ type
+    # default params for LAJ type
     params = {
         "alignfile1": "display?id=%s" % primary_data.id,
         "buttonlabel": "Launch LAJ",

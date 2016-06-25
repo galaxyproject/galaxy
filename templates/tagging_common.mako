@@ -146,7 +146,7 @@
         var default_get_toggle_link_text_fn = function(tags)
         {
             var text = "";
-            var num_tags = obj_length(tags);
+            var num_tags = _.size(tags);
             if (num_tags != 0)
               {
                 text = num_tags + (num_tags != 1 ? " Tags" : " Tag");

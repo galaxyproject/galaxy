@@ -18,7 +18,7 @@ todo:
     Drag & Drop other splots onto current (redraw with new axis and differentiate the datasets)
     Remove 'chart' namessave
     Somehow link out from info box?
-    
+
     Subclass on specific datatypes? (vcf, cuffdiff, etc.)
     What can be common/useful to other visualizations?
 
@@ -33,7 +33,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
     //TODO: !should be a view on a visualization model
     //logger      : console,
     className   : 'scatterplot-control-form',
-    
+
     /** initialize requires a configuration Object containing a dataset Object */
     initialize : function( attributes ){
         if( !this.model ){
@@ -139,7 +139,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
         $dataControl.find( '[title]' ).tooltip();
         return $dataControl;
     },
-    
+
     /** tab content to control how the chart is rendered (data glyph size, chart size, etc.) */
     _render_chartControls : function( $where ){
 //TODO: as controls on actual chart
@@ -147,7 +147,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
         var editor = this,
             config = this.model.get( 'config' ),
             $chartControls = $where.find( '#chart-control' );
-            
+
         // ---- skeleton/form for controls
         $chartControls.html( ScatterplotConfigEditor.templates.chartControl( config ) );
         //console.debug( '$chartControl:', $chartControls );
@@ -258,9 +258,130 @@ var ScatterplotConfigEditor = Backbone.View.extend({
 });
 
 ScatterplotConfigEditor.templates = {
-    mainLayout      : scatterplot.editor,
-    dataControl     : scatterplot.datacontrol,
-    chartControl    : scatterplot.chartcontrol
+    // tabbed, main layout for the editor (not used for scatterplot-display)
+    mainLayout : _.template([
+        '<div class="scatterplot-editor tabbable tabs-left">',
+            // tab buttons/headers using Bootstrap
+            '<ul class="nav nav-tabs">',
+                // start with the data controls as the displayed tab
+                '<li class="active">',
+                    '<a title="Use this tab to change which data are used"',
+                       'href="#data-control" data-toggle="tab">Data Controls</a>',
+                '</li>',
+                '<li>',
+                    '<a title="Use this tab to change how the chart is drawn"',
+                       'href="#chart-control" data-toggle="tab" >Chart Controls</a>',
+                '</li>',
+                // chart starts as disabled since there's no info yet
+                '<li class="disabled">',
+                    '<a title="This tab will display the chart"',
+                       'href="#chart-display" data-toggle="tab">Chart</a>',
+                '</li>',
+                // button for saving the visualization config on the server
+                '<li class="file-controls">',
+                    '<button class="save-btn btn btn-default">Save</button>',
+                '</li>',
+            '</ul>',
+
+            // data form, chart config form, chart all get their own tab
+            '<div class="tab-content">',
+                // tab for data settings form
+                '<div id="data-control" class="scatterplot-config-control tab-pane active"></div>',
+
+                // tab for chart graphics control form
+                '<div id="chart-control" class="scatterplot-config-control tab-pane"></div>',
+
+                // tab for actual chart
+                '<div id="chart-display" class="scatterplot-display tab-pane"></div>',
+
+            '</div>',
+        '</div>',
+    ].join('')),
+
+    // the controls for data selection (this is mostly done with column selector now)
+    // TODO: this could be moved to the main template above
+    // TODO: localize
+    dataControl : _.template([
+        '<p class="help-text">',
+            'Use the following control to change which columns are used by the chart. Click any cell ',
+            'from the last three rows of the table to select the column for the appropriate data. ',
+            'Use the \'Draw\' button to render (or re-render) the chart with the current settings. ',
+        '</p>',
+
+        '<ul class="help-text" style="margin-left: 8px">',
+            '<li><b>X Column</b>: which column values will be used for the x axis of the chart.</li>',
+            '<li><b>Y Column</b>: which column values will be used for the y axis of the chart.</li>',
+            '<li><b>ID Column</b>: an additional column value displayed when the user hovers over a data point. ',
+            'It may be useful to select unique or categorical identifiers here (such as gene ids).',
+            '</li>',
+        '</ul>',
+
+        '<div class="column-selection">',
+            // the only dynamic thing
+            '<pre class="peek"><%= peek %></pre>',
+        '</div>',
+
+        '<p class="help-text help-text-small">',
+            '<b>Note</b>: If it can be determined from the dataset\'s filetype that a column is not numeric, ',
+            'that column choice may be disabled for either the x or y axis.',
+        '</p>',
+
+        '<button class="render-button btn btn-primary active">Draw</button>',
+    ].join('')),
+
+    chartControl : _.template([
+        '<p class="help-text">',
+            'Use the following controls to how the chart is displayed. The slide controls can be moved ',
+            'by the mouse or, if the \'handle\' is in focus, your keyboard\'s arrow keys. ',
+            'Move the focus between controls by using the tab or shift+tab keys on your keyboard. ',
+            'Use the \'Draw\' button to render (or re-render) the chart with the current settings. ',
+        '</p>',
+
+        '<div data-config-key="datapointSize" class="form-input numeric-slider-input">',
+            '<label for="datapointSize">Size of data point: </label>',
+            '<div class="slider-output"><%- datapointSize %></div>',
+            '<div class="slider"></div>',
+            '<p class="form-help help-text-small">',
+                'Size of the graphic representation of each data point',
+            '</p>',
+        '</div>',
+
+        '<div data-config-key="width" class="form-input numeric-slider-input">',
+            '<label for="width">Chart width: </label>',
+            '<div class="slider-output"><%- width %></div>',
+            '<div class="slider"></div>',
+            '<p class="form-help help-text-small">',
+                '(not including chart margins and axes)',
+            '</p>',
+        '</div>',
+
+        '<div data-config-key="height" class="form-input numeric-slider-input">',
+            '<label for="height">Chart height: </label>',
+            '<div class="slider-output"><%- height %></div>',
+            '<div class="slider"></div>',
+            '<p class="form-help help-text-small">',
+                '(not including chart margins and axes)',
+            '</p>',
+        '</div>',
+
+        '<div data-config-key="X-axis-label"class="text-input form-input">',
+            '<label for="X-axis-label">Re-label the X axis: </label>',
+            '<input type="text" name="X-axis-label" id="X-axis-label" value="<%- xLabel %>" />',
+            '<p class="form-help help-text-small"></p>',
+        '</div>',
+
+        '<div data-config-key="Y-axis-label" class="text-input form-input">',
+            '<label for="Y-axis-label">Re-label the Y axis: </label>',
+            '<input type="text" name="Y-axis-label" id="Y-axis-label" value="<%- yLabel %>" />',
+            '<p class="form-help help-text-small"></p>',
+        '</div>',
+
+        '<button class="render-button btn btn-primary active">Draw</button>',
+        ].join('')),
+
+    // mainLayout      : scatterplot.editor,
+    // dataControl     : scatterplot.datacontrol,
+    // chartControl    : scatterplot.chartcontrol
 };
 
 //==============================================================================

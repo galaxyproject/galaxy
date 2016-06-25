@@ -14,10 +14,11 @@ var PopupMenu = Backbone.View.extend({
     initialize: function( $button, options ){
         // default settings
         this.$button = $button;
-        if( !this.$button.size() ){
+        if( !this.$button.length ){
             this.$button = $( '<div/>' );
         }
         this.options = options || [];
+        this.$button.data( 'popupmenu', this );
 
         // set up button click -> open menu behavior
         var menu = this;
@@ -119,7 +120,7 @@ var PopupMenu = Backbone.View.extend({
         // function to close popup and unbind itself
         function closePopup( event ){
             $( document ).off( 'click.close_popup' );
-            if( window.parent !== window ){
+            if( window && window.parent !== window ){
                 try {
                     $( window.parent.document ).off( "click.close_popup" );
                 } catch( err ){}
@@ -132,7 +133,7 @@ var PopupMenu = Backbone.View.extend({
         }
 
         $( 'html' ).one( "click.close_popup", closePopup );
-        if( window.parent !== window ){
+        if( window && window.parent !== window ){
             try {
                 $( window.parent.document ).find( 'html' ).one( "click.close_popup", closePopup );
             } catch( err ){}

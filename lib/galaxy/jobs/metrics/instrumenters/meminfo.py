@@ -1,9 +1,13 @@
 import re
-
+import sys
 from galaxy import util
 
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
+
+if sys.version_info > (3,):
+    long = int
+
 
 MEMINFO_LINE = re.compile(r"(\w+)\s*\:\s*(\d+) kB")
 

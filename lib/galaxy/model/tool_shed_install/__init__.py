@@ -1,6 +1,6 @@
 import logging
 import os
-from galaxy.model.item_attrs import Dictifiable
+from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.bunch import Bunch
 from galaxy.util import asbool
 from tool_shed.util import common_util
@@ -96,7 +96,14 @@ class ToolShedRepository( object ):
         Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
         in the shed_tool_conf_dict.
         """
-        if not self.shed_config_filename:
+
+        def _is_valid_shed_config_filename( filename ):
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
+                if filename == shed_tool_conf_dict[ 'config_filename' ]:
+                    return True
+            return False
+
+        if not self.shed_config_filename or not _is_valid_shed_config_filename( self.shed_config_filename ):
             self.guess_shed_config( app, default=default )
         if self.shed_config_filename:
             for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):

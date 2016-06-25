@@ -7,8 +7,7 @@ API operations on a jobs.
 import json
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
+from six import string_types
 from sqlalchemy import and_, false, or_
 from sqlalchemy.orm import aliased
 
@@ -29,6 +28,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def __init__( self, app ):
         super( JobController, self ).__init__( app )
         self.hda_manager = managers.hdas.HDAManager( app )
+        self.dataset_manager = managers.datasets.DatasetManager( app )
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -74,7 +74,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
 
         def build_and_apply_filters( query, objects, filter_func ):
             if objects is not None:
-                if isinstance( objects, basestring ):
+                if isinstance( objects, string_types ):
                     query = query.filter( filter_func( objects ) )
                 elif isinstance( objects, list ):
                     t = []
@@ -230,19 +230,15 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
             decoded_job_id = self.decode_id( id )
         except Exception:
             raise exceptions.MalformedId()
-        query = trans.sa_session.query( trans.app.model.Job )
-        if trans.user_is_admin():
-            query = query.filter(
-                trans.app.model.Job.id == decoded_job_id
-            )
-        else:
-            query = query.filter(
-                trans.app.model.Job.user == trans.user,
-                trans.app.model.Job.id == decoded_job_id
-            )
-        job = query.first()
+        job = trans.sa_session.query( trans.app.model.Job ).filter( trans.app.model.Job.id == decoded_job_id ).first()
         if job is None:
             raise exceptions.ObjectNotFound()
+        if not trans.user_is_admin() and job.user != trans.user:
+            if not job.output_datasets:
+                raise exceptions.ItemAccessibilityException( "Job has no output datasets." )
+            for data_assoc in job.output_datasets:
+                if not self.dataset_manager.is_accessible( data_assoc.dataset.dataset, trans.user ):
+                    raise exceptions.ItemAccessibilityException( "You are not allowed to rerun this job." )
         return job
 
     @expose_api
@@ -315,7 +311,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
                 )
             )
         else:
-            if isinstance( payload[ 'state' ], basestring ):
+            if isinstance( payload[ 'state' ], string_types ):
                 query = query.filter( trans.app.model.Job.state == payload[ 'state' ] )
             elif isinstance( payload[ 'state' ], list ):
                 o = []

@@ -42,12 +42,13 @@ Members
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
-- Ross Lazarus (@fubar2)
 - Anton Nekrutenko (@nekrut)
 - Eric Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
 - Nitesh Turaga (@nitesh1989)
+- Marius van den Beek (@mvdbeek)
+
 
 Membership
 ----------
@@ -178,5 +179,21 @@ following two categories of patches:
 * Patches for serious security vulnerabilities.
 * Cherry-picking and/or merging of existing approved commits to other branches.
 
+Labeling and Milestones
+-----------------------
+
+Pull request handling, labeling, and milestone usage follows the procedures
+described in ISSUES_.
+
+
+Issue Reporting
+===============
+
+Issues (bugs, feature requests, etc.) should be reported at ISSUE_REPORT_, and
+handling of issues follows the procedures described in ISSUES_.
+
+
 .. _LICENSE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
+.. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
+.. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/

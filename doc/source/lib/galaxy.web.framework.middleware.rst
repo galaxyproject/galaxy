@@ -57,6 +57,14 @@ galaxy.web.framework.middleware.static module
     :undoc-members:
     :show-inheritance:
 
+galaxy.web.framework.middleware.statsd module
+---------------------------------------------
+
+.. automodule:: galaxy.web.framework.middleware.statsd
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.web.framework.middleware.translogger module
 --------------------------------------------------
 

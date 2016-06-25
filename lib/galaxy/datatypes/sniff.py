@@ -1,20 +1,24 @@
 """
 File format detector
 """
+from __future__ import absolute_import
+
 import gzip
 import logging
 import os
 import re
-import registry
 import shutil
 import sys
 import tempfile
 import zipfile
 
 from encodings import search_function as encodings_search_function
+from six import text_type
 
 from galaxy import util
-from galaxy.datatypes.checkers import check_binary, check_html, is_gzip
+from galaxy.util import multi_byte
+from galaxy.util import unicodify
+from galaxy.util.checkers import check_binary, check_html, is_gzip
 from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
@@ -49,19 +53,19 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
                 is_compressed = True
             else:
                 try:
-                    if unicode( chunk[:2] ) == unicode( util.gzip_magic ):
+                    if text_type( chunk[:2] ) == text_type( util.gzip_magic ):
                         is_compressed = True
                 except:
                     pass
             if not is_compressed:
                 # See if we have a multi-byte character file
                 chars = chunk[:100]
-                is_multi_byte = util.is_multi_byte( chars )
+                is_multi_byte = multi_byte.is_multi_byte( chars )
                 if not is_multi_byte:
                     is_binary = util.is_binary( chunk )
             data_checked = True
         if not is_compressed and not is_binary:
-            if not isinstance( chunk, unicode ):
+            if not isinstance( chunk, text_type ):
                 chunk = chunk.decode( source_encoding, source_error )
             os.write( fd, chunk.encode( target_encoding, target_error ) )
         else:
@@ -101,16 +105,16 @@ def convert_newlines( fname, in_place=True, tmp_dir=None, tmp_prefix=None ):
     to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
-    >>> file(fname, 'wt').write("1 2\\r3 4")
+    >>> open(fname, 'wt').write("1 2\\r3 4")
     >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
-    >>> file(fname).read()
+    >>> open(fname).read()
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp( prefix=tmp_prefix, dir=tmp_dir )
     fp = os.fdopen( fd, "wt" )
     i = None
-    for i, line in enumerate( file( fname, "U" ) ):
+    for i, line in enumerate( open( fname, "U" ) ):
         fp.write( "%s\n" % line.rstrip( "\r\n" ) )
     fp.close()
     if i is None:
@@ -130,17 +134,17 @@ def sep2tabs( fname, in_place=True, patt="\\s+" ):
     Transforms in place a 'sep' separated file to a tab separated one
 
     >>> fname = get_test_fname('temp.txt')
-    >>> file(fname, 'wt').write("1 2\\n3 4\\n")
+    >>> open(fname, 'wt').write("1 2\\n3 4\\n")
     >>> sep2tabs(fname)
     (2, None)
-    >>> file(fname).read()
+    >>> open(fname).read()
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile( patt )
     fd, temp_name = tempfile.mkstemp()
     fp = os.fdopen( fd, "wt" )
     i = None
-    for i, line in enumerate( file( fname ) ):
+    for i, line in enumerate( open( fname ) ):
         line = line.rstrip( '\r\n' )
         elems = regexp.split( line )
         fp.write( "%s\n" % '\t'.join( elems ) )
@@ -163,16 +167,16 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
     so that files do not need to be read twice
 
     >>> fname = get_test_fname('temp.txt')
-    >>> file(fname, 'wt').write("1 2\\r3 4")
+    >>> open(fname, 'wt').write("1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
-    >>> file(fname).read()
+    >>> open(fname).read()
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile( patt )
     fd, temp_name = tempfile.mkstemp( prefix=tmp_prefix, dir=tmp_dir )
     fp = os.fdopen( fd, "wt" )
-    for i, line in enumerate( file( fname, "U" ) ):
+    for i, line in enumerate( open( fname, "U" ) ):
         line = line.rstrip( '\r\n' )
         elems = regexp.split( line )
         fp.write( "%s\n" % '\t'.join( elems ) )
@@ -198,7 +202,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         line = line.rstrip('\n\r')
         if is_multi_byte:
             # TODO: fix this - sep is never found in line
-            line = unicode( line, 'utf-8' )
+            line = unicodify( line, 'utf-8' )
             sep = sep.encode( 'utf-8' )
         headers.append( line.split(sep) )
         if idx == count:
@@ -252,69 +256,105 @@ def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     return True
 
 
-def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
+def guess_ext( fname, sniff_order, is_multi_byte=False ):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
-    >>> guess_ext(fname)
+    >>> from galaxy.datatypes import registry
+    >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
+    >>> datatypes_registry = registry.Registry()
+    >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
+    >>> sniff_order = datatypes_registry.sniff_order
+    >>> guess_ext(fname, sniff_order)
     'xml'
     >>> fname = get_test_fname('interval.interval')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'interval'
     >>> fname = get_test_fname('interval1.bed')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bed'
     >>> fname = get_test_fname('test_tab.bed')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bed'
     >>> fname = get_test_fname('sequence.maf')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'maf'
     >>> fname = get_test_fname('sequence.fasta')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'fasta'
     >>> fname = get_test_fname('file.html')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'html'
     >>> fname = get_test_fname('test.gtf')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'gtf'
     >>> fname = get_test_fname('test.gff')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'gff'
     >>> fname = get_test_fname('gff_version_3.gff')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('temp.txt')
-    >>> file(fname, 'wt').write("a\\t2\\nc\\t1\\nd\\t0")
-    >>> guess_ext(fname)
+    >>> open(fname, 'wt').write("a\\t2")
+    >>> guess_ext(fname, sniff_order)
+    'txt'
+    >>> fname = get_test_fname('temp.txt')
+    >>> open(fname, 'wt').write("a\\t2\\nc\\t1\\nd\\t0")
+    >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('temp.txt')
-    >>> file(fname, 'wt').write("a 1 2 x\\nb 3 4 y\\nc 5 6 z")
-    >>> guess_ext(fname)
+    >>> open(fname, 'wt').write("a 1 2 x\\nb 3 4 y\\nc 5 6 z")
+    >>> guess_ext(fname, sniff_order)
     'txt'
     >>> fname = get_test_fname('test_tab1.tabular')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('alignment.lav')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'lav'
     >>> fname = get_test_fname('1.sff')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'sff'
     >>> fname = get_test_fname('1.bam')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bam'
     >>> fname = get_test_fname('3unsorted.bam')
-    >>> guess_ext(fname)
+    >>> guess_ext(fname, sniff_order)
     'bam'
+    >>> fname = get_test_fname('test.idpDB')
+    >>> guess_ext(fname, sniff_order)
+    'idpdb'
+    >>> fname = get_test_fname('test.mz5')
+    >>> guess_ext(fname, sniff_order)
+    'h5'
+    >>> fname = get_test_fname('issue1818.tabular')
+    >>> guess_ext(fname, sniff_order)
+    'tabular'
+    >>> fname = get_test_fname('drugbank_drugs.cml')
+    >>> guess_ext(fname, sniff_order)
+    'cml'
+    >>> fname = get_test_fname('q.fps')
+    >>> guess_ext(fname, sniff_order)
+    'fps'
+    >>> fname = get_test_fname('drugbank_drugs.inchi')
+    >>> guess_ext(fname, sniff_order)
+    'inchi'
+    >>> fname = get_test_fname('drugbank_drugs.mol2')
+    >>> guess_ext(fname, sniff_order)
+    'mol2'
+    >>> fname = get_test_fname('drugbank_drugs.sdf')
+    >>> guess_ext(fname, sniff_order)
+    'sdf'
+    >>> fname = get_test_fname('5e5z.pdb')
+    >>> guess_ext(fname, sniff_order)
+    'pdb'
+    >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
+    >>> guess_ext(fname, sniff_order)
+    'mothur.otu'
     """
-    if sniff_order is None:
-        datatypes_registry = registry.Registry()
-        datatypes_registry.load_datatypes()
-        sniff_order = datatypes_registry.sniff_order
+    file_ext = None
     for datatype in sniff_order:
         """
         Some classes may not have a sniff function, which is ok.  In fact, the
@@ -326,9 +366,19 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
         """
         try:
             if datatype.sniff( fname ):
-                return datatype.file_ext
+                file_ext = datatype.file_ext
+                break
         except:
             pass
+    # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
+    # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
+    # if it is an okay tabular and use that instead.
+    if file_ext == 'tsv':
+        if is_column_based( fname, '\t', 1, is_multi_byte=is_multi_byte ):
+            file_ext = 'tabular'
+    if file_ext is not None:
+        return file_ext
+
     headers = get_headers( fname, None )
     is_binary = False
     if is_multi_byte:

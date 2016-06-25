@@ -6,10 +6,12 @@ from .panel import ToolSection
 from .panel import ToolSectionLabel
 
 from .base import AbstractToolBox
+from .base import BaseGalaxyToolBox
 
 __all__ = [
     "ToolSection",
     "ToolSectionLabel",
     "panel_item_types",
     "AbstractToolBox",
+    "BaseGalaxyToolBox"
 ]

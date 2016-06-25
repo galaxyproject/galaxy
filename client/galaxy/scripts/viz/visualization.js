@@ -1,7 +1,7 @@
-define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"], function(_, data_mod, util_mod, config_mod) {
+define( ["libs/underscore", "mvc/dataset/data", "viz/trackster/util", "utils/config"], function(_, data_mod, util_mod, config_mod) {
 
 /**
- * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes 
+ * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes
  * to include in the representation; to_json_mappers defines mappers for returned objects.
  */
 var CustomToJSON = {
@@ -25,8 +25,8 @@ var CustomToJSON = {
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
  *
- * Models have no references to views, instead using events to indicate state 
- * changes; this is advantageous because multiple views can use the same object 
+ * Models have no references to views, instead using events to indicate state
+ * changes; this is advantageous because multiple views can use the same object
  * and models can be used without views.
  */
 
@@ -66,13 +66,13 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
                                     dataType: "json"
                                 });
                         });
-                        // To preserve order, wait until there are definitions for all tracks and then add 
+                        // To preserve order, wait until there are definitions for all tracks and then add
                         // them sequentially.
                         $.when.apply($, requests).then(function() {
                             // jQuery always returns an Array for arguments, so need to look at first element
-                            // to determine whether multiple requests were made and consequently how to 
+                            // to determine whether multiple requests were made and consequently how to
                             // map arguments to track definitions.
-                            var track_defs = (arguments[0] instanceof Array ?  
+                            var track_defs = (arguments[0] instanceof Array ?
                                                $.map(arguments, function(arg) { return arg[0]; }) :
                                                [ arguments[0] ]
                                                );
@@ -89,18 +89,17 @@ var select_datasets = function(dataset_url, add_track_async_url, filters, succes
 // --------- Models ---------
 
 /**
- * Canvas manager is used to create canvases, for browsers, this deals with
- * backward comparibility using excanvas, as well as providing a pattern cache
+ * Canvas manager is used to create canvases for browsers as well as providing a pattern cache
  */
 var CanvasManager = function(default_font) {
     this.default_font = default_font !== undefined ? default_font : "9px Monaco, Lucida Console, monospace";
-    
+
     this.dummy_canvas = this.new_canvas();
     this.dummy_context = this.dummy_canvas.getContext('2d');
     this.dummy_context.font = this.default_font;
-    
+
     this.char_width_px = this.dummy_context.measureText("A").width;
-    
+
     this.patterns = {};
 
     // FIXME: move somewhere to make this more general
@@ -115,7 +114,7 @@ _.extend( CanvasManager.prototype, {
         var patterns = this.patterns,
             dummy_context = this.dummy_context,
             image = new Image();
-        image.src = galaxy_config.root + "static/images" + path;
+        image.src = Galaxy.root + "static/images" + path;
         image.onload = function() {
             patterns[key] = dummy_context.createPattern( image, "repeat" );
         };
@@ -125,9 +124,6 @@ _.extend( CanvasManager.prototype, {
     },
     new_canvas: function() {
         var canvas = $("<canvas/>")[0];
-        // If using excanvas in IE, we need to explicately attach the canvas
-        // methods to the DOM element
-        if (window.G_vmlCanvasManager) { G_vmlCanvasManager.initElement(canvas); }
         // Keep a reference back to the manager
         canvas.manager = this;
         return canvas;
@@ -135,13 +131,13 @@ _.extend( CanvasManager.prototype, {
 });
 
 /**
- * Generic cache that handles key/value pairs. Keys can be any object that can be 
+ * Generic cache that handles key/value pairs. Keys can be any object that can be
  * converted to a String and compared.
- */ 
+ */
 var Cache = Backbone.Model.extend({
     defaults: {
         num_elements: 20,
-        // Objects in cache; indexes into cache are strings of keys. 
+        // Objects in cache; indexes into cache are strings of keys.
         obj_cache: null,
         // key_ary contains keys for objects in cache.
         key_ary: null
@@ -153,7 +149,7 @@ var Cache = Backbone.Model.extend({
 
     /**
      * Get an element from the cache using its key.
-     */    
+     */
     get_elt: function(key) {
         var obj_cache = this.attributes.obj_cache,
             key_ary = this.attributes.key_ary,
@@ -178,7 +174,7 @@ var Cache = Backbone.Model.extend({
 
         return obj_cache[key_str];
     },
-    
+
     /**
      * Put an element into the cache.
      */
@@ -206,16 +202,16 @@ var Cache = Backbone.Model.extend({
         obj_cache[key_str] = value;
         return value;
     },
-    
-    /** 
-     * Move key to end of cache. Keys are removed from the front, so moving a key to the end 
+
+    /**
+     * Move key to end of cache. Keys are removed from the front, so moving a key to the end
      * delays the key's removal.
      */
     move_key_to_end: function(key, index) {
         this.attributes.key_ary.splice(index, 1);
         this.attributes.key_ary.push(key);
     },
-    
+
     /**
      * Clear all elements from the cache.
      */
@@ -223,7 +219,7 @@ var Cache = Backbone.Model.extend({
         this.attributes.obj_cache = {};
         this.attributes.key_ary = [];
     },
-    
+
     /** Returns the number of elements in the cache. */
     size: function() {
         return this.attributes.key_ary.length;
@@ -231,8 +227,8 @@ var Cache = Backbone.Model.extend({
 
     /** Returns key most recently added to cache. */
     most_recently_added: function() {
-        return this.size() === 0 ? null : 
-               // Most recent key is at the end of key array. 
+        return this.size() === 0 ? null :
+               // Most recent key is at the end of key array.
                this.attributes.key_ary[this.attributes.key_ary.length - 1];
     }
 });
@@ -289,9 +285,9 @@ var GenomeDataManager = Cache.extend({
     data_is_ready: function() {
         var dataset = this.get('dataset'),
             ready_deferred = $.Deferred(),
-            // If requesting raw data, query dataset state; if requesting (converted) data, 
+            // If requesting raw data, query dataset state; if requesting (converted) data,
             // need to query converted datasets state.
-            query_type = (this.get('data_type') === 'raw_data' ? 'state' : 
+            query_type = (this.get('data_type') === 'raw_data' ? 'state' :
                           this.get('data_type') === 'data' ? 'converted_datasets_state' : "error" ),
             ss_deferred = new util_mod.ServerStateDeferred({
                 ajax_settings: {
@@ -324,7 +320,7 @@ var GenomeDataManager = Cache.extend({
             };
         return $.getJSON(dataset.url(), params);
     },
-    
+
     /**
      * Load data from server and manages data entries. Adds a Deferred to manager
      * for region; when data becomes available, replaces Deferred with data.
@@ -335,16 +331,16 @@ var GenomeDataManager = Cache.extend({
         var dataset = this.get('dataset'),
             params = {
                         "data_type": this.get('data_type'),
-                        "chrom": region.get('chrom'), 
-                        "low": region.get('start'), 
-                        "high": region.get('end'), 
+                        "chrom": region.get('chrom'),
+                        "low": region.get('start'),
+                        "high": region.get('end'),
                         "mode": mode,
                         "resolution": resolution,
                         "hda_ldda": dataset.get('hda_ldda')
                      };
 
         $.extend(params, extra_params);
-        
+
         // Add track filters to params.
         var filters_manager = this.get('filters_manager');
         if (filters_manager) {
@@ -355,7 +351,7 @@ var GenomeDataManager = Cache.extend({
             }
             params.filter_cols = JSON.stringify(filter_names);
         }
-                        
+
         // Do request.
         var manager = this,
             entry = $.getJSON(dataset.url(), params, function (result) {
@@ -367,14 +363,14 @@ var GenomeDataManager = Cache.extend({
         this.set_data(region, entry);
         return entry;
     },
-    
+
     /**
      * Get data from dataset.
      */
     get_data: function(region, mode, resolution, extra_params) {
         // Look for entry and return if it's a deferred or if data available is compatible with mode.
         var entry = this.get_elt(region);
-        if ( entry && 
+        if ( entry &&
              ( util_mod.is_deferred(entry) || this.get('data_mode_compatible')(entry, mode) ) ) {
             return entry;
         }
@@ -389,14 +385,14 @@ var GenomeDataManager = Cache.extend({
             entry_region, is_subregion;
         for (var i = 0; i < key_ary.length; i++) {
             entry_region = key_ary[i];
-            
+
             if (entry_region.contains(region)) {
                 is_subregion = true;
 
                 // This entry has data in the requested range. Return if data
                 // is compatible and can be subsetted.
                 entry = obj_cache[entry_region.toString()];
-                if ( util_mod.is_deferred(entry) || 
+                if ( util_mod.is_deferred(entry) ||
                     ( this.get('data_mode_compatible')(entry, mode) && this.get('can_subset')(entry) ) ) {
                     this.move_key_to_end(entry_region, i);
 
@@ -412,7 +408,7 @@ var GenomeDataManager = Cache.extend({
             }
         }
 
-        // FIXME: There _may_ be instances where region is a subregion of another entry but cannot be 
+        // FIXME: There _may_ be instances where region is a subregion of another entry but cannot be
         // subsetted. For these cases, do not increase length because region will never be found (and
         // an infinite loop will occur.)
         // If needed, extend region to make it minimum size.
@@ -442,20 +438,20 @@ var GenomeDataManager = Cache.extend({
 
         return this.load_data(region, mode, resolution, extra_params);
     },
-    
+
     /**
      * Alias for set_elt for readbility.
      */
     set_data: function(region, entry) {
-        this.set_elt(region, entry);  
+        this.set_elt(region, entry);
     },
-    
+
     /** "Deep" data request; used as a parameter for DataManager.get_more_data() */
     DEEP_DATA_REQ: "deep",
-    
+
     /** "Broad" data request; used as a parameter for DataManager.get_more_data() */
     BROAD_DATA_REQ: "breadth",
-    
+
     /**
      * Gets more data for a region using either a depth-first or a breadth-first approach.
      */
@@ -465,7 +461,7 @@ var GenomeDataManager = Cache.extend({
             console.log('ERROR: problem with getting more data: current data is not compatible');
             return;
         }
-        
+
         //
         // Set parameters based on request type.
         //
@@ -480,7 +476,7 @@ var GenomeDataManager = Cache.extend({
             query_low = (cur_data.max_high ? cur_data.max_high : cur_data.data[cur_data.data.length - 1][2]) + 1;
         }
         var query_region = region.copy().set('start', query_low);
-        
+
         //
         // Get additional data, append to current data, and set new data. Use a custom deferred object
         // to signal when new data is available.
@@ -605,7 +601,7 @@ var GenomeDataManager = Cache.extend({
         var subset_fns = {
             bigwig: function(data, subregion) {
                 return _.filter(data, function(data_point) {
-                    return data_point[0] >= subregion.get('start') && 
+                    return data_point[0] >= subregion.get('start') &&
                            data_point[0] <= subregion.get('end');
                 });
             },
@@ -640,12 +636,12 @@ var GenomeReferenceDataManager = GenomeDataManager.extend({
 
     load_data: function(region, mode, resolution, extra_params) {
         // Fetch data if region is not too large.
-        return ( region.length() <= 100000 ? 
+        return ( region.length() <= 100000 ?
                  GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params) :
                  { data: null, region: region } );
     }
 });
- 
+
 /**
  * A genome build.
  */
@@ -659,20 +655,20 @@ var Genome = Backbone.Model.extend({
     initialize: function(options) {
         this.id = options.dbkey;
     },
-    
+
     /**
      * Shorthand for getting to chromosome information.
      */
     get_chroms_info: function() {
-        return this.attributes.chroms_info.chrom_info;  
+        return this.attributes.chroms_info.chrom_info;
     },
 
-    /** 
+    /**
      * Returns a GenomeRegion object denoting a complete chromosome.
      */
     get_chrom_region: function(chr_name) {
         // FIXME: use findWhere in underscore 1.4
-        var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) { 
+        var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) {
             return chrom_info.chrom === chr_name;
         });
         return new GenomeRegion({
@@ -684,7 +680,7 @@ var Genome = Backbone.Model.extend({
     /** Returns the length of a chromosome. */
     get_chrom_len: function(chr_name) {
         // FIXME: use findWhere in underscore 1.4
-        return _.find(this.get_chroms_info(), function(chrom_info) { 
+        return _.find(this.get_chroms_info(), function(chrom_info) {
             return chrom_info.chrom === chr_name;
         }).len;
     }
@@ -711,7 +707,7 @@ var GenomeRegion = Backbone.Model.extend({
                this.attributes.start === region.get('start') &&
                this.attributes.end === region.get('end');
     },
-    
+
     /**
      * If from_str specified, use it to initialize attributes.
      */
@@ -732,27 +728,27 @@ var GenomeRegion = Backbone.Model.extend({
 
         // Set str_val on attribute change.
         this.on('change', function() {
-            this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');            
+            this.attributes.str_val = this.get('chrom') + ":" + this.get('start') + "-" + this.get('end');
         }, this);
     },
-    
+
     copy: function() {
         return new GenomeRegion({
             chrom: this.get('chrom'),
             start: this.get('start'),
-            end: this.get('end') 
+            end: this.get('end')
         });
     },
 
     length: function() {
         return this.get('end') - this.get('start');
     },
-    
+
     /** Returns region in canonical form chrom:start-end */
     toString: function() {
         return this.attributes.str_val;
     },
-    
+
     toJSON: function() {
         return {
             chrom: this.get('chrom'),
@@ -760,9 +756,9 @@ var GenomeRegion = Backbone.Model.extend({
             end: this.get('end')
         };
     },
-    
+
     /**
-     * Compute the type of overlap between this region and another region. The overlap is computed relative to the given/second region; 
+     * Compute the type of overlap between this region and another region. The overlap is computed relative to the given/second region;
      * hence, OVERLAP_START indicates that the first region overlaps the start (but not the end) of the second region.
      */
     compute_overlap: function(a_region) {
@@ -770,12 +766,12 @@ var GenomeRegion = Backbone.Model.extend({
             first_start = this.get('start'), second_start = a_region.get('start'),
             first_end = this.get('end'), second_end = a_region.get('end'),
             overlap;
-            
+
         // Compare chroms.
         if (first_chrom && second_chrom && first_chrom !== second_chrom) {
             return GenomeRegion.overlap_results.DIF_CHROMS;
         }
-        
+
         // Compare regions.
         if (first_start < second_start) {
             if (first_end < second_start) {
@@ -800,8 +796,8 @@ var GenomeRegion = Backbone.Model.extend({
             }
         }
         else { // first_start === second_start
-            overlap = (first_end >= second_end ? 
-                       GenomeRegion.overlap_results.CONTAINS : 
+            overlap = (first_end >= second_end ?
+                       GenomeRegion.overlap_results.CONTAINS :
                        GenomeRegion.overlap_results.CONTAINED_BY);
         }
 
@@ -827,7 +823,7 @@ var GenomeRegion = Backbone.Model.extend({
 
         return this;
     },
-    
+
     /**
      * Returns true if this region contains a given region.
      */
@@ -839,18 +835,18 @@ var GenomeRegion = Backbone.Model.extend({
      * Returns true if regions overlap.
      */
     overlaps: function(a_region) {
-        return _.intersection( [this.compute_overlap(a_region)], 
-                               [GenomeRegion.overlap_results.DIF_CHROMS, GenomeRegion.overlap_results.BEFORE, GenomeRegion.overlap_results.AFTER] ).length === 0;  
+        return _.intersection( [this.compute_overlap(a_region)],
+                               [GenomeRegion.overlap_results.DIF_CHROMS, GenomeRegion.overlap_results.BEFORE, GenomeRegion.overlap_results.AFTER] ).length === 0;
     }
 },
 {
     overlap_results: {
         DIF_CHROMS: 1000,
-        BEFORE: 1001, 
-        CONTAINS: 1002, 
-        OVERLAP_START: 1003, 
-        OVERLAP_END: 1004, 
-        CONTAINED_BY: 1005, 
+        BEFORE: 1001,
+        CONTAINS: 1002,
+        OVERLAP_START: 1003,
+        OVERLAP_END: 1004,
+        CONTAINED_BY: 1005,
         AFTER: 1006
     }
 });
@@ -892,7 +888,7 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend({
     initialize: function(options) {
         this.set('dataset', new data_mod.Dataset(options.dataset));
 
-        // -- Set up config settings. -- 
+        // -- Set up config settings. --
         var models =  [
             { key: 'name', default_value: this.get('dataset').get('name') },
             { key: 'color' },
@@ -958,11 +954,11 @@ var Visualization = Backbone.Model.extend({
         type: ''
     },
 
-    urlRoot: galaxy_config.root + "api/visualizations",
-    
+    urlRoot: Galaxy.root + "api/visualizations",
+
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'
-     * Note: This is necessary because (a) Galaxy requires keyword args and 
+     * Note: This is necessary because (a) Galaxy requires keyword args and
      * (b) Galaxy does not handle PUT now.
      */
     save: function() {
@@ -970,7 +966,7 @@ var Visualization = Backbone.Model.extend({
             url: this.url(),
             type: "POST",
             dataType: "json",
-            data: { 
+            data: {
                 vis_json: JSON.stringify(this)
             }
         });
@@ -994,7 +990,7 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend({
 
         var models = [];
         this.set('config', config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs));
-        
+
         // Clear track and data definitions to avoid storing large objects.
         this.unset('tracks');
         this.get('drawables').each(function(d) {
@@ -1039,22 +1035,22 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend({
 /**
  * Router for track browser.
  */
-var TrackBrowserRouter = Backbone.Router.extend({    
+var TrackBrowserRouter = Backbone.Router.extend({
     initialize: function(options) {
         this.view = options.view;
-        
+
         // Can't put regular expression in routes dictionary.
         // NOTE: parentheses are used to denote parameters returned to callback.
         this.route(/([\w]+)$/, 'change_location');
         this.route(/([\w\+]+\:[\d,]+-[\d,]+)$/, 'change_location');
-        
+
         // Handle navigate events from view.
         var self = this;
         self.view.on("navigate", function(new_loc) {
             self.navigate(new_loc);
         });
     },
-    
+
     change_location: function(new_loc) {
         this.view.go_to(new_loc);
     }

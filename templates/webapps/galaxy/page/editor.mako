@@ -23,7 +23,13 @@
             iframe_base_path = "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
             save_url = "${h.url_for(controller='page', action='save' )}";
     </script>
-    ${h.js( "libs/jquery/jquery.form", "libs/jquery/jstorage", "libs/jquery/jquery.wymeditor", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "galaxy.pages")}
+    ${h.js(
+        "libs/jquery/jquery.form",
+        "libs/jquery/jstorage",
+        "libs/jquery/jquery.wymeditor",
+        "libs/jquery/jquery.autocomplete",
+        "galaxy.pages"
+    )}
 </%def>
 
 <%def name="stylesheets()">
@@ -33,9 +39,9 @@
         .galaxy-page-editor-button
         {
             position: relative;
-            float: left; 
+            float: left;
             padding: 0.2em;
-        } 
+        }
     </style>
 </%def>
 

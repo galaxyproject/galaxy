@@ -22,7 +22,8 @@
 <%def name="stylesheets()">
     ${h.css(
         'base',
-        'jquery.rating'
+        'jquery.rating',
+        'bootstrap-tour'
     )}
     <style type="text/css">
     #center {
@@ -38,10 +39,9 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-
-    ## Send errors to Sntry server if configured
+    ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
-        ${h.js( "libs/tracekit", "libs/raven" )}
+        ${h.js( "libs/raven" )}
         <script>
             Raven.config('${app.config.sentry_dsn_public}').install();
             %if trans.user:
@@ -51,46 +51,34 @@
     %endif
 
     ${h.js(
-        'libs/jquery/jquery',
-        'libs/jquery/jquery.migrate',
-        'libs/jquery/select2',
-        'libs/bootstrap',
-        'libs/underscore',
-        'libs/backbone/backbone',
-        'libs/handlebars.runtime',
-        'galaxy.base',
-        'libs/require'
+        ## TODO: remove when all libs are required directly in modules
+        'bundled/libs.bundled',
+        'libs/require',
     )}
 
     <script type="text/javascript">
-        ## global configuration object
-        var galaxy_config =
-        {
-            root: '${h.url_for( "/" )}'
-        };
+        // configure require
+        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
+        // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
+        window.Galaxy = window.Galaxy || {};
+        window.Galaxy.root = '${h.url_for( "/" )}';
+        define( 'jquery', [], function(){ return jQuery; })
+        // TODO: use one system
 
-        //## load additional style sheet
-        //if (window != window.top)
-        //    $('<link href="' + galaxy_config.root + 'static/style/galaxy.frame.masthead.css" rel="stylesheet">').appendTo('head');
-
-        // console protection
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-
-        ## configure require
+        // shims and paths
         require.config({
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone/backbone": { exports: "Backbone" }
+                "libs/underscore": {
+                    exports: "_"
+                },
+                "libs/backbone": {
+                    deps: [ 'jquery', 'libs/underscore' ],
+                    exports: "Backbone"
+                }
             },
-            urlArgs: 'v=${app.server_starttime}'
+            // cache busting using time server was restarted
+            urlArgs: 'v=${app.server_starttime}',
         });
     </script>
 
@@ -105,23 +93,15 @@
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js(
-        'libs/jquery/jquery.event.hover',
-        'libs/jquery/jquery.form',
-        'libs/jquery/jquery.rating',
-        'galaxy.panels'
-    )}
     <script type="text/javascript">
 
-    ensure_dd_helper();
-
     %if self.has_left_panel:
-        var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
+        var lp = new panels.LeftPanel({ el: '#left' });
         force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
 
     %if self.has_right_panel:
-        var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
+        var rp = new panels.RightPanel({ el: '#right' });
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
         force_right_panel = function( x ) { rp.force_panel( x ) };
     %endif
@@ -190,6 +170,8 @@
         <meta name = "viewport" content = "maximum-scale=1.0">
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.stylesheets()}
         ${self.javascripts()}
         ${self.javascript_app()}
@@ -221,9 +203,11 @@
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
-            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
-                ${app.config.message_box_content}
-            </div>
+            %if self.message_box_visible:
+                <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
+                    ${app.config.message_box_content}
+                </div>
+            %endif
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
@@ -252,9 +236,10 @@
                 </div><!--end right-->
             %endif
         </div><!--end everything-->
+        <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements
+        ## Scripts can be loaded later since they progressively add features to
+        ## the panels, but do not change layout
+        ${self.late_javascripts()}
     </body>
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
-    ${self.late_javascripts()}
 </html>

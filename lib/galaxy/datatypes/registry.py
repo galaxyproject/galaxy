@@ -1,23 +1,26 @@
 """
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
+from __future__ import absolute_import
+
 import os
 import tempfile
 import logging
 import imp
-import data
-import tabular
-import interval
-import images
-import sequence
-import qualityscore
-import xml
-import coverage
-import tracks
-import binary
+from . import data
+from . import tabular
+from . import interval
+from . import images
+from . import sequence
+from . import qualityscore
+from . import xml
+from . import coverage
+from . import tracks
+from . import binary
+from . import text
 import galaxy.util
 from galaxy.util.odict import odict
-from display_applications.application import DisplayApplication
+from .display_applications.application import DisplayApplication
 
 
 class ConfigurationError( Exception ):
@@ -116,9 +119,7 @@ class Registry( object ):
             for elem in registration.findall( 'datatype' ):
                 # Keep a status of the process steps to enable stopping the process of handling the datatype if necessary.
                 ok = True
-                extension = elem.get( 'extension', None )
-                if extension:
-                    extension = extension.lower()
+                extension = self.get_extension( elem )
                 dtype = elem.get( 'type', None )
                 type_extension = elem.get( 'type_extension', None )
                 mimetype = elem.get( 'mimetype', None )
@@ -128,7 +129,11 @@ class Registry( object ):
                 make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                 edam_format = elem.get( 'edam_format', None )
                 if edam_format and not make_subclass:
-                    self.log.warn("Cannot specify edam_format without setting subclass to True, skipping datatype.")
+                    self.log.warning("Cannot specify edam_format without setting subclass to True, skipping datatype.")
+                    continue
+                edam_data = elem.get( 'edam_data', None )
+                if edam_data and not make_subclass:
+                    self.log.warning("Cannot specify edam_data without setting subclass to True, skipping datatype.")
                     continue
                 # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
@@ -229,6 +234,8 @@ class Registry( object ):
                                     datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
                                     if edam_format:
                                         datatype_class.edam_format = edam_format
+                                    if edam_data:
+                                        datatype_class.edam_data = edam_data
                                 self.datatypes_by_extension[ extension ] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
@@ -549,7 +556,7 @@ class Registry( object ):
             # Load display applications defined by local datatypes_conf.xml.
             datatype_elems = self.display_app_containers
         for elem in datatype_elems:
-            extension = elem.get( 'extension', None )
+            extension = self.get_extension( elem )
             for display_app in elem.findall( 'display' ):
                 display_file = display_app.get( 'file', None )
                 if installed_repository_dict:
@@ -644,71 +651,81 @@ class Registry( object ):
         # Default values.
         if not self.datatypes_by_extension:
             self.datatypes_by_extension = {
-                'ab1'         : binary.Ab1(),
-                'axt'         : sequence.Axt(),
-                'bam'         : binary.Bam(),
-                'bed'         : interval.Bed(),
-                'coverage'    : coverage.LastzCoverage(),
-                'customtrack' : interval.CustomTrack(),
-                'csfasta'     : sequence.csFasta(),
-                'fasta'       : sequence.Fasta(),
-                'eland'       : tabular.Eland(),
-                'fastq'       : sequence.Fastq(),
-                'fastqsanger' : sequence.FastqSanger(),
-                'gtf'         : interval.Gtf(),
-                'gff'         : interval.Gff(),
-                'gff3'        : interval.Gff3(),
-                'genetrack'   : tracks.GeneTrack(),
-                'interval'    : interval.Interval(),
-                'laj'         : images.Laj(),
-                'lav'         : sequence.Lav(),
-                'maf'         : sequence.Maf(),
-                'pileup'      : tabular.Pileup(),
-                'qualsolid'   : qualityscore.QualityScoreSOLiD(),
-                'qualsolexa'  : qualityscore.QualityScoreSolexa(),
-                'qual454'     : qualityscore.QualityScore454(),
-                'sam'         : tabular.Sam(),
-                'scf'         : binary.Scf(),
-                'sff'         : binary.Sff(),
-                'tabular'     : tabular.Tabular(),
-                'csv'         : tabular.CSV(),
-                'taxonomy'    : tabular.Taxonomy(),
-                'txt'         : data.Text(),
-                'wig'         : interval.Wiggle(),
-                'xml'         : xml.GenericXml(),
+                'ab1'           : binary.Ab1(),
+                'axt'           : sequence.Axt(),
+                'bam'           : binary.Bam(),
+                'bed'           : interval.Bed(),
+                'coverage'      : coverage.LastzCoverage(),
+                'customtrack'   : interval.CustomTrack(),
+                'csfasta'       : sequence.csFasta(),
+                'db3'           : binary.SQlite(),
+                'fasta'         : sequence.Fasta(),
+                'eland'         : tabular.Eland(),
+                'fastq'         : sequence.Fastq(),
+                'fastqsanger'   : sequence.FastqSanger(),
+                'gemini.sqlite' : binary.GeminiSQLite(),
+                'gtf'           : interval.Gtf(),
+                'gff'           : interval.Gff(),
+                'gff3'          : interval.Gff3(),
+                'genetrack'     : tracks.GeneTrack(),
+                'h5'            : binary.H5(),
+                'idpdb'         : binary.IdpDB(),
+                'interval'      : interval.Interval(),
+                'laj'           : images.Laj(),
+                'lav'           : sequence.Lav(),
+                'maf'           : sequence.Maf(),
+                'mz.sqlite'     : binary.MzSQlite(),
+                'pileup'        : tabular.Pileup(),
+                'qualsolid'     : qualityscore.QualityScoreSOLiD(),
+                'qualsolexa'    : qualityscore.QualityScoreSolexa(),
+                'qual454'       : qualityscore.QualityScore454(),
+                'sam'           : tabular.Sam(),
+                'scf'           : binary.Scf(),
+                'sff'           : binary.Sff(),
+                'tabular'       : tabular.Tabular(),
+                'csv'           : tabular.CSV(),
+                'taxonomy'      : tabular.Taxonomy(),
+                'txt'           : data.Text(),
+                'wig'           : interval.Wiggle(),
+                'xml'           : xml.GenericXml(),
             }
             self.mimetypes_by_extension = {
-                'ab1'         : 'application/octet-stream',
-                'axt'         : 'text/plain',
-                'bam'         : 'application/octet-stream',
-                'bed'         : 'text/plain',
-                'customtrack' : 'text/plain',
-                'csfasta'     : 'text/plain',
-                'eland'       : 'application/octet-stream',
-                'fasta'       : 'text/plain',
-                'fastq'       : 'text/plain',
-                'fastqsanger' : 'text/plain',
-                'gtf'         : 'text/plain',
-                'gff'         : 'text/plain',
-                'gff3'        : 'text/plain',
-                'interval'    : 'text/plain',
-                'laj'         : 'text/plain',
-                'lav'         : 'text/plain',
-                'maf'         : 'text/plain',
-                'memexml'     : 'application/xml',
-                'pileup'      : 'text/plain',
-                'qualsolid'   : 'text/plain',
-                'qualsolexa'  : 'text/plain',
-                'qual454'     : 'text/plain',
-                'sam'         : 'text/plain',
-                'scf'         : 'application/octet-stream',
-                'sff'         : 'application/octet-stream',
-                'tabular'     : 'text/plain',
-                'csv'         : 'text/plain',
-                'taxonomy'    : 'text/plain',
-                'txt'         : 'text/plain',
-                'wig'         : 'text/plain',
-                'xml'         : 'application/xml',
+                'ab1'           : 'application/octet-stream',
+                'axt'           : 'text/plain',
+                'bam'           : 'application/octet-stream',
+                'bed'           : 'text/plain',
+                'customtrack'   : 'text/plain',
+                'csfasta'       : 'text/plain',
+                'db3'           : 'application/octet-stream',
+                'eland'         : 'application/octet-stream',
+                'fasta'         : 'text/plain',
+                'fastq'         : 'text/plain',
+                'fastqsanger'   : 'text/plain',
+                'gemini.sqlite' : 'application/octet-stream',
+                'gtf'           : 'text/plain',
+                'gff'           : 'text/plain',
+                'gff3'          : 'text/plain',
+                'h5'            : 'application/octet-stream',
+                'idpdb'         : 'application/octet-stream',
+                'interval'      : 'text/plain',
+                'laj'           : 'text/plain',
+                'lav'           : 'text/plain',
+                'maf'           : 'text/plain',
+                'memexml'       : 'application/xml',
+                'mz.sqlite'     : 'application/octet-stream',
+                'pileup'        : 'text/plain',
+                'qualsolid'     : 'text/plain',
+                'qualsolexa'    : 'text/plain',
+                'qual454'       : 'text/plain',
+                'sam'           : 'text/plain',
+                'scf'           : 'application/octet-stream',
+                'sff'           : 'application/octet-stream',
+                'tabular'       : 'text/plain',
+                'csv'           : 'text/plain',
+                'taxonomy'      : 'text/plain',
+                'txt'           : 'text/plain',
+                'wig'           : 'text/plain',
+                'xml'           : 'application/xml',
             }
         # super supertype fix for input steps in workflows.
         if 'data' not in self.datatypes_by_extension:
@@ -720,6 +737,11 @@ class Registry( object ):
             self.sniff_order = [
                 binary.Bam(),
                 binary.Sff(),
+                binary.H5(),
+                binary.GeminiSQLite(),
+                binary.MzSQlite(),
+                binary.IdpDB(),
+                binary.SQlite(),
                 xml.GenericXml(),
                 sequence.Maf(),
                 sequence.Lav(),
@@ -729,7 +751,7 @@ class Registry( object ):
                 sequence.Fasta(),
                 sequence.Fastq(),
                 interval.Wiggle(),
-                images.Html(),
+                text.Html(),
                 sequence.Axt(),
                 interval.Bed(),
                 interval.CustomTrack(),
@@ -800,9 +822,14 @@ class Registry( object ):
     def edam_formats( self ):
         """
         """
-        mapping = {}
-        for k, v in self.datatypes_by_extension.iteritems():
-            mapping[k] = v.edam_format
+        mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
+        return mapping
+
+    @property
+    def edam_data( self ):
+        """
+        """
+        mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
         return mapping
 
     @property
@@ -843,3 +870,17 @@ class Registry( object ):
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
         os.chmod( self.xml_filename, 0o644 )
+
+    def get_extension( self, elem ):
+        """
+        Function which returns the extension lowercased
+        :param elem:
+        :return extension:
+        """
+        extension = elem.get('extension', None)
+        # If extension is not None and is uppercase or mixed case, we need to lowercase it
+        if extension is not None and not extension.islower():
+            self.log.debug( "%s is not lower case, that could cause troubles in the future. \
+            Please change it to lower case" % extension )
+            extension = extension.lower()
+        return extension

@@ -3,8 +3,8 @@
     ## This avoids making two separate requests since the classic form requires the mako anyway.
     from galaxy.tools.parameters import params_to_incoming
     incoming = {}
-    params_to_incoming( incoming, tool.inputs, module.state.inputs, trans.app, to_html=False)
-    self.form_config = tool.to_json(trans, incoming, is_workflow=True)
+    params_to_incoming( incoming, tool.inputs, module.state.inputs, trans.app )
+    self.form_config = tool.to_json(trans, incoming, workflow_building_mode=True)
     self.form_config.update({
         'id'                : tool.id,
         'job_id'            : trans.security.encode_id( job.id ) if job else None,

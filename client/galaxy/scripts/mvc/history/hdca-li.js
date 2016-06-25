@@ -1,11 +1,13 @@
 define([
     "mvc/dataset/states",
     "mvc/collection/collection-li",
-    "mvc/collection/collection-panel",
+    "mvc/collection/collection-view",
     "mvc/base-mvc",
     "utils/localization"
-], function( STATES, DC_LI, DC_PANEL, BASE_MVC, _l ){
-/* global Backbone */
+], function( STATES, DC_LI, DC_VIEW, BASE_MVC, _l ){
+
+'use strict';
+
 //==============================================================================
 var _super = DC_LI.DCListItemView;
 /** @class Read only view for HistoryDatasetCollectionAssociation (a dataset collection inside a history).
@@ -22,20 +24,20 @@ var HDCAListItemView = _super.extend(
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
 
-        this.model.on({
+        this.listenTo( this.model, {
             'change:populated change:visible' : function( model, options ){ this.render(); },
-        }, this );
+        });
     },
 
     /** Override to provide the proper collections panels as the foldout */
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){
             case 'list':
-                return DC_PANEL.ListCollectionPanel;
+                return DC_VIEW.ListCollectionView;
             case 'paired':
-                return DC_PANEL.PairCollectionPanel;
+                return DC_VIEW.PairCollectionView;
             case 'list:paired':
-                return DC_PANEL.ListOfPairsCollectionPanel;
+                return DC_VIEW.ListOfPairsCollectionView;
         }
         throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
     },

@@ -1,6 +1,3 @@
-import pkg_resources
-pkg_resources.require( "Cheetah" )
-
 from Cheetah.Template import Template
 
 

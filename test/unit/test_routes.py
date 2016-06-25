@@ -84,6 +84,30 @@ def test_galaxy_routes( ):
         "/api/histories/123/contents/datasets/456"
     )
 
+    test_webapp.assert_maps(
+        "/api/dependency_resolvers",
+        controller="tool_dependencies",
+        action="index"
+    )
+
+    test_webapp.assert_maps(
+        "/api/dependency_resolvers/dependency",
+        controller="tool_dependencies",
+        action="manager_dependency"
+    )
+
+    test_webapp.assert_maps(
+        "/api/dependency_resolvers/0",
+        controller="tool_dependencies",
+        action="show"
+    )
+
+    test_webapp.assert_maps(
+        "/api/dependency_resolvers/0/dependency",
+        controller="tool_dependencies",
+        action="resolver_dependency"
+    )
+
 
 def assert_url_is( actual, expected ):
     assert actual == expected, "Expected URL [%s] but obtained [%s]" % ( expected, actual )

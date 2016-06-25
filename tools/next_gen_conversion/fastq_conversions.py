@@ -7,23 +7,25 @@ usage: %prog [options]
    -c, --command=c: Command to run
    -i, --input=i: Input file to be converted
    -o, --outputFastqsanger=o: FASTQ Sanger converted output file for sol2std
-   -s, --outputFastqsolexa=s: FASTQ Solexa converted output file 
+   -s, --outputFastqsolexa=s: FASTQ Solexa converted output file
    -f, --outputFasta=f: FASTA converted output file
 
 usage: %prog command input_file output_file
 """
 
-import os, sys, tempfile
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import os
+import sys
+
 from bx.cookbook import doc_optparse
+
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
- 
+
+
 def __main__():
-    #Parse Command Line
+    # Parse Command Line
     options, args = doc_optparse.parse( __doc__ )
 
     cmd = "fq_all2std.pl %s %s > %s"
@@ -35,7 +37,8 @@ def __main__():
         cmd = cmd % (options.command, options.input, options.outputFasta)
     try:
         os.system(cmd)
-    except Exception, eq:
-        stop_err("Error converting data format.\n" + str(eq))        
+    except Exception as eq:
+        stop_err("Error converting data format.\n" + str(eq))
 
-if __name__=="__main__": __main__()
+if __name__ == "__main__":
+    __main__()

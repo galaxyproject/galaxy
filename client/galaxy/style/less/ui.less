@@ -19,13 +19,26 @@
   transition: none !important;
 }
 
+.fa-rotate-45 {
+    -webkit-transform: rotate(45deg);
+    -moz-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    -o-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
 // default margins
 @ui-margin-vertical: 5px;
+@ui-margin-vertical-large: 10px;
 @ui-margin-horizontal: 5px;
 
 // margins
 .ui-margin-top {
     padding-top: @ui-margin-vertical !important;
+}
+
+.ui-margin-top-large {
+    padding-top: @ui-margin-vertical-large !important;
 }
 
 .ui-margin-bottom {
@@ -51,7 +64,38 @@
 
 .ui-message {
     padding: 2px 10px 2px 10px;
-    margin: 0px;
+    margin-top: @ui-margin-vertical-large;
+    margin-bottom: 0px;
+    float: left;
+    width: 100%;
+    display: none;
+}
+
+.ui-modal {
+    display: none;
+    .modal-header.no-separator {
+        border: none !important;
+        padding-bottom: 0px !important;
+    }
+    .modal-backdrop {
+        z-index: -1;
+    }
+    .modal-body {
+        position: static;
+    }
+    .modal-footer {
+        .buttons {
+            float: right;
+        }
+    }
+}
+
+.ui-modal-styled {
+    &:extend(.ui-modal all);
+    ul {
+        list-style-type: square;
+        padding: 5px 25px;
+    }
 }
 
 // icons
@@ -67,7 +111,7 @@
 // buttons
 .ui-button {
     i {
-        font-size: 1.2em;
+        font-size: 1.1em;
     }
 }
 .ui-button-icon {
@@ -181,40 +225,111 @@
 }
 
 // table form elements
-.ui-table-form-element {
-    .ui-table-form-title {
-        word-break: break-word;
-        font-weight: bold;
-        .ui-table-form-optional {
-            cursor: pointer;
-            .icon {
-                margin-right: 5px;
-                font-size: 1.2em;
-            }
-        }
-    }
-    .ui-table-form-field {
-        margin-top: @ui-margin-vertical;
-    }
+.ui-form-element {
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
     overflow: visible;
+    .ui-form-title {
+        word-break: break-word;
+        font-weight: bold;
+        .ui-form-collapsible {
+            cursor: pointer;
+            .icon {
+                font-size: 1.2em;
+                width: 20px;
+                position: relative;
+                top: 1px;
+            }
+        }
+    }
+    .ui-form-field {
+        position: relative;
+        margin-top: @ui-margin-vertical;
+        .ui-form-wp-source {
+            border-left-width: 10px;
+        }
+        .ui-form-wp-target {
+            box-shadow: none;
+            border-top: none;
+            border-bottom: none;
+            border-right: none;
+            border-left-width: 5px;
+            font-style: italic;
+        }
+        .ui-form-backdrop {
+            display: none;
+            z-index: 10;
+            position: absolute;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            background: @white;
+            display: block;
+            opacity: 0.0;
+            cursor: default;
+        }
+    }
+    .ui-form-preview {
+        &:extend(.ui-input);
+        margin-top: @ui-margin-vertical;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
+}
+.ui-form-element-disabled {
+    &:extend(.ui-form-element all);
+    .ui-form-title {
+        font-weight: normal;
+    }
 }
 
-.ui-table-form-separator {
+.ui-form-separator {
 	font-weight: bold;
 	font-size: 0.9em;
 }
 
-.ui-table-form-info {
-        &:extend(.toolParamHelp);
-        clear: both !important;
+.ui-form-help {
+    overflow: auto;
 }
 
-.ui-table-form-error {
+.ui-form-info {
+    &:extend(.toolParamHelp);
+    clear: both !important;
+    i {
+        font-size: 1.2em;
+        padding: 2px 5px;
+    }
+    .ui-form-title {
+        clear:both;
+        font-weight: bold;
+        padding-right: @ui-margin-horizontal;
+    }
+}
+
+.ui-form-error {
     display: none;
-    .ui-table-form-error-text  {
+    .ui-form-error-text  {
         padding-left: @ui-margin-horizontal;
+    }
+}
+
+.ui-form-composite {
+    max-width: 900px;
+    .ui-form-header {
+        &:extend(h3);
+        margin-top: 0px;
+        .ui-label {
+            width: ~'calc(100% - 200px)';
+        }
+    }
+    .ui-button {
+        &:extend(.btn all);
+        &:extend(.btn-default all);
+        margin-left: @ui-margin-horizontal;
+    }
+    .ui-message {
+        margin-top: 0px;
+        margin-bottom:10px;
     }
 }
 
@@ -222,12 +337,10 @@
 .ui-portlet {
     border: solid @form-border 1px;
     border-radius: @border-radius-base;
-
     position: relative;
     clear: both;
     width: auto;
     height: 100%;
-
     .portlet-header {
         background: @form-heading-bg;
         border-bottom: solid @form-border 1px;
@@ -243,9 +356,14 @@
                 vertical-align: middle;
                 line-height: 22px;
             }
-            .icon {
+            .portlet-title-text.no-highlight.collapsible {
+                cursor: pointer;
+                text-decoration: underline;
+            }
+            .portlet-title-icon {
                 font-size: 1.2em;
                 vertical-align: middle;
+                margin-right: 5px;
             }
         }
         .portlet-operations {
@@ -254,23 +372,29 @@
             }
         }
     }
-
     .portlet-content {
         height: inherit;
         padding-left: 10px;
         padding-right: 10px;
         clear: both;
-        .content {
+        .portlet-body {
             padding     : 0px;
             height      : 100%;
             width       : 100%;
         }
-        .buttons {
+        .portlet-buttons {
             margin-top: @ui-margin-vertical;
             margin-bottom: @ui-margin-vertical;
         }
     }
-
+    .portlet-content.nopadding, .portlet-body.nopadding {
+        padding: 0px;
+    }
+    .portlet-footer {
+        margin-top: 5px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
     .portlet-backdrop {
         display: none;
         z-index: 10;
@@ -303,6 +427,9 @@
     }
     .portlet-content {
         padding-right: 0px;
+    }
+    .portlet-footer {
+        margin-top: 0px;
     }
 }
 
@@ -354,7 +481,6 @@
 .ui-popover {
     max-width: 700px;
     display: none;
-
     .popover-close {
         position: absolute;
         right: 10px;
@@ -362,7 +488,6 @@
         font-size: 1.2em;
         cursor: pointer;
     }
-    
     .popover-title {
         padding: 4px 10px;
     }
@@ -373,7 +498,7 @@
     width: 100%;
     display: block;
     height: @input-height-base;
-    padding: @padding-base-vertical @padding-base-horizontal;
+    padding: @padding-base-vertical @ui-margin-horizontal !important;
     font-size: @font-size-base;
     line-height: @line-height-base;
     color: @input-color;
@@ -414,11 +539,16 @@
             cursor: pointer;
         }
         .ui-drilldown-button {
-            position: relative;
-            top: 2px;
-            left: -3px;
-            margin-right: 3px;
+            float:left;
             cursor: pointer;
+            font-size: 1.2em;
+            margin-right: 5px;
+            margin-top: 3px;
+
+        }
+        .ui-drilldown-subgroup {
+            display: none;
+            margin-left: 25px;
         }
         input[type=checkbox] + label:before {
             font-family: FontAwesome;
@@ -477,6 +607,7 @@
     
     i {
         padding-right: @ui-margin-horizontal;
+        font-size: 1.1em;
     }
 }
 
@@ -566,10 +697,14 @@
 
 .ui-select {
     position: relative;
-    .button {
+    .icon-dropdown {
         position: absolute;
-        top: 5px;
-        right: 5px;
+        top: 7px;
+        right: 8px;
+        cursor: pointer;
+    }
+    .icon-resize {
+        display: none;
     }
     select {
         position: relative;
@@ -601,8 +736,22 @@
 }
 
 .ui-select-multiple {
+    .icon-resize {
+        display: block;
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+        width: 20px;
+        height: 20px;
+        cursor: row-resize;
+        i {
+            position: absolute;
+            right: 3px;
+            bottom: 2px;
+        }
+    }
     select {
-        height: 80px !important;
+        height: 80px;
         .box-shadow(inset 0 1px 1px rgba(0,0,0,.075));
     }
 }

@@ -1,6 +1,8 @@
 """
 API operations on the contents of a history dataset.
 """
+from six import string_types
+
 from galaxy import model
 from galaxy import exceptions as galaxy_exceptions
 from galaxy import web
@@ -30,7 +32,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def _parse_serialization_params( self, kwd, default_view ):
         view = kwd.get( 'view', None )
         keys = kwd.get( 'keys' )
-        if isinstance( keys, basestring ):
+        if isinstance( keys, string_types ):
             keys = keys.split( ',' )
         return dict( view=view, keys=keys, default_view=default_view )
 
@@ -154,7 +156,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if msg:
             return msg
 
-        # Get datasources and check for essages.
+        # Get datasources and check for messages.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
         return_message = self._get_highest_priority_msg( messages_list )
@@ -249,7 +251,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         registry = trans.app.data_provider_registry
 
-        # allow the caller to specifiy which provider is used
+        # allow the caller to specify which provider is used
         #   pulling from the original providers if possible, then the new providers
         if provider:
             if provider in registry.dataset_type_name_to_data_provider:

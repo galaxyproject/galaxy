@@ -243,12 +243,11 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         datasets.DatasetAssociationSerializer,
         taggable.TaggableSerializerMixin,
         annotatable.AnnotatableSerializerMixin ):
-    # TODO: inherit from datasets.DatasetAssociationSerializer
-    # TODO: move what makes sense into DatasetSerializer
+    model_manager_class = HDAManager
 
     def __init__( self, app ):
         super( HDASerializer, self ).__init__( app )
-        self.hda_manager = HDAManager( app )
+        self.hda_manager = self.manager
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
@@ -304,6 +303,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         # keyset returned to create show a dataset where the owner has no access
         self.add_view( 'inaccessible', [
+            'accessible',
             'id', 'name', 'history_id', 'hid', 'history_content_type',
             'state', 'deleted', 'visible'
         ])
@@ -346,13 +346,20 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                                                               history_id=self.app.security.encode_id( i.history.id ),
                                                               history_content_id=self.app.security.encode_id( i.id ) ),
             'parent_id'     : self.serialize_id,
-            'accessible'    : lambda *a, **c: True,
+            # TODO: to DatasetAssociationSerializer
+            'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible( i, user ),
             'api_type'      : lambda *a, **c: 'file',
             'type'          : lambda *a, **c: 'file'
         })
 
-    def serialize_type_id( self, hda, key, **context ):
-        return 'dataset-' + self.serializers[ 'id' ]( hda, 'id' )
+    def serialize( self, hda, keys, user=None, **context ):
+        """
+        Override to hide information to users not able to access.
+        """
+        # TODO: to DatasetAssociationSerializer
+        if not self.manager.is_accessible( hda, user, **context ):
+            keys = self._view_to_keys( 'inaccessible' )
+        return super( HDASerializer, self ).serialize( hda, keys, user=user, **context )
 
     def serialize_display_apps( self, hda, key, trans=None, **context ):
         """
@@ -463,6 +470,7 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
 class HDAFilterParser( datasets.DatasetAssociationFilterParser,
                        taggable.TaggableFilterMixin,
                        annotatable.AnnotatableFilterMixin ):
+    model_manager_class = HDAManager
     model_class = model.HistoryDatasetAssociation
 
     def _add_parsers( self ):

@@ -109,7 +109,7 @@ return Backbone.View.extend({
         var $main = $('<div/>');
         $main.append((new Ui.Label({ title : 'Provide a chart title:'}).$el));
         $main.append(this.title.$el);
-        $main.append($('<div/>').addClass('ui-table-form-info').html('This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.'));
+        $main.append($('<div/>').addClass('ui-form-info').html('This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.'));
         $main.append(this.types.$el.addClass('ui-margin-top'));
         
         // add tab

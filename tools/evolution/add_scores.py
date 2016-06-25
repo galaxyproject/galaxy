@@ -2,29 +2,24 @@
 from __future__ import with_statement
 
 import sys
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
-pkg_resources.require( "numpy" )
-from bx.bbi.bigwig_file import BigWigFile
-import os
 
-################################################################################
+from bx.bbi.bigwig_file import BigWigFile
+
 
 def die( message ):
     print >> sys.stderr, message
     sys.exit(1)
+
 
 def open_or_die( filename, mode='r', message=None ):
     if message is None:
         message = 'Error opening %s' % filename
     try:
         fh = open( filename, mode )
-    except IOError, err:
+    except IOError as err:
         die( '%s: %s' % ( message, err.strerror ) )
     return fh
 
-################################################################################
 
 class LocationFile( object ):
     def __init__( self, filename, comment_chars=None, delimiter='\t', key_column=0 ):
@@ -56,7 +51,7 @@ class LocationFile( object ):
                                     die( 'Location file %s line %d: duplicate key "%s"' % ( self.filename, line_number, key ) )
                             else:
                                 self._map[key] = elems
-        except IOError, err:
+        except IOError as err:
             die( 'Error opening location file %s: %s' % ( self.filename, err.strerror ) )
 
     def get_values( self, key ):
@@ -69,7 +64,6 @@ class LocationFile( object ):
         else:
             die( 'key "%s" not found in location file %s' % ( key, self.filename ) )
 
-################################################################################
 
 def main():
     input_filename, output_filename, loc_filename, loc_key, chrom_col, start_col = sys.argv[1:]
@@ -114,8 +108,5 @@ def main():
     ifh.close()
     ofh.close()
 
-################################################################################
-
 if __name__ == "__main__":
     main()
-

@@ -17,7 +17,6 @@
     "grunt": "~0.4.1",
     "grunt-cli": "~0.1.9",
     "grunt-contrib-concat": "~0.3.0",
-    "grunt-contrib-handlebars": "^0.9.3",
     "grunt-contrib-uglify": "~0.2.2",
     "grunt-contrib-watch": "~0.5.3"
   }

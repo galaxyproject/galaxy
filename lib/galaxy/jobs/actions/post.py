@@ -6,11 +6,11 @@ immediate_actions listed below.  Currently only used in workflows.
 import datetime
 import logging
 import socket
-from galaxy.util import send_mail
-from galaxy.util.json import dumps
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
+from json import dumps
+
 from markupsafe import escape
+
+from galaxy.util import send_mail
 
 log = logging.getLogger( __name__ )
 
@@ -80,7 +80,7 @@ class EmailAction(DefaultJobAction):
         body = "Your Galaxy job generating dataset '%s' is complete as of %s." % (outdata, datetime.datetime.now().strftime( "%I:%M" ))
         try:
             send_mail( frm, to, subject, body, app.config )
-        except Exception, e:
+        except Exception as e:
             log.error("EmailAction PJA Failed, exception: %s" % e)
 
     @classmethod
@@ -404,23 +404,36 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # POTENTIAL ISSUES:  When many outputs are being finish()ed
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
+        sa_session.flush()
         if not job.workflow_invocation_step:
             log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
             return
         wfi = job.workflow_invocation_step.workflow_invocation
+        sa_session.refresh(wfi)
         if wfi.active:
             log.debug("Workflow still scheduling so new jobs may appear, skipping deletion of intermediate files.")
             # Still evaluating workflow so we don't yet have all workflow invocation
             # steps to start looking at.
             return
-        if wfi.workflow.has_outputs_defined():
-            jobs_to_check = [wfistep.job for wfistep in wfi.steps if not wfistep.workflow_step.workflow_outputs]
+        outputs_defined = wfi.workflow.has_outputs_defined()
+        if outputs_defined:
+            wfi_steps = [wfistep for wfistep in wfi.steps if not wfistep.workflow_step.workflow_outputs and wfistep.workflow_step.type == "tool"]
+            jobs_to_check = []
+            for wfi_step in wfi_steps:
+                sa_session.refresh(wfi_step)
+                wfi_step_job = wfi_step.job
+                if wfi_step_job:
+                    jobs_to_check.append(wfi_step_job)
+                else:
+                    log.debug("No job found yet for wfi_step %s, (step %s)" % (wfi_step, wfi_step.workflow_step))
             for j2c in jobs_to_check:
-                if j2c is None:
-                    # Job not yet created, this will be re-evaluated after subsequent jobs in
-                    # workflow.
-                    return
-                for input_dataset in [x.dataset for x in j2c.input_datasets if x.dataset.creating_job.workflow_invocation_step and x.dataset.creating_job.workflow_invocation_step.workflow_invocation == wfi]:
+                sa_session.refresh(j2c)
+                creating_jobs = []
+                for input_dataset in j2c.input_datasets:
+                    sa_session.refresh(input_dataset)
+                    sa_session.refresh(input_dataset.dataset.creating_job)
+                    creating_jobs.append( (input_dataset, input_dataset.dataset.creating_job) )
+                for input_dataset in [x.dataset for (x, creating_job) in creating_jobs if creating_job.workflow_invocation_step and creating_job.workflow_invocation_step.workflow_invocation == wfi]:
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
                         if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:

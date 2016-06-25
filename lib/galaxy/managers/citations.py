@@ -1,10 +1,7 @@
-import pkg_resources
-
 import functools
 import os
 import urllib2
 
-pkg_resources.require('Beaker')
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
@@ -68,7 +65,7 @@ def parse_citation( elem, directory, citation_manager ):
     citation_type = elem.attrib.get( 'type', None )
     citation_class = CITATION_CLASSES.get( citation_type, None )
     if not citation_class:
-        log.warn("Unknown or unspecified citation type: %s" % citation_type)
+        log.warning("Unknown or unspecified citation type: %s" % citation_type)
         return None
     return citation_class( elem, directory, citation_manager )
 

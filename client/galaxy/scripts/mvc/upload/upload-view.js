@@ -74,7 +74,7 @@ return Backbone.View.extend({
         // load extensions
         var self = this;
         Utils.get({
-            url     : galaxy_config.root + 'api/datatypes?extension_only=False',
+            url     : Galaxy.root + 'api/datatypes?extension_only=False',
             success : function( datatypes ) {
                 for ( key in datatypes ) {
                     self.list_extensions.push({
@@ -98,7 +98,7 @@ return Backbone.View.extend({
 
         // load genomes
         Utils.get({
-            url     : galaxy_config.root + 'api/genomes',
+            url     : Galaxy.root + 'api/genomes',
             success : function( genomes ) {
                 for ( key in genomes ) {
                     self.list_genomes.push({

@@ -114,7 +114,7 @@ AjaxQueue.prototype.progress = function progress( fn ){
  *  @returns {Deferred} the queue's main deferred
  */
 AjaxQueue.create = function create( initialFunctions ){
-    return new AjaxQeueue( initialFunctions ).deferred;
+    return new AjaxQueue( initialFunctions ).deferred;
 };
 
 

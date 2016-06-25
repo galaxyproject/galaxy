@@ -11,6 +11,7 @@ import logging
 
 from galaxy import util
 from galaxy.tools.toolbox import ToolSection
+from galaxy.tools.toolbox.parser import ensure_tool_conf_item
 from galaxy.util.odict import odict
 
 from tool_shed.galaxy_install import install_manager
@@ -24,6 +25,7 @@ from tool_shed.tools import tool_version_manager
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
@@ -62,16 +64,16 @@ class ToolMigrationManager( object ):
         # setting from migrated_tools_config.
         tree, error_message = xml_util.parse_xml( migrated_tools_config )
         if tree is None:
-            print error_message
+            log.error( error_message )
         else:
             root = tree.getroot()
             self.tool_path = root.get( 'tool_path' )
-            print "Repositories will be installed into configured tool_path location ", str( self.tool_path )
+            log.debug( "Repositories will be installed into configured tool_path location ", str( self.tool_path ) )
             # Parse tool_shed_install_config to check each of the tools.
             self.tool_shed_install_config = tool_shed_install_config
             tree, error_message = xml_util.parse_xml( tool_shed_install_config )
             if tree is None:
-                print error_message
+                log.error( error_message )
             else:
                 root = tree.getroot()
                 defined_tool_shed_url = root.get( 'name' )
@@ -157,12 +159,12 @@ class ToolMigrationManager( object ):
                             str( latest_migration_script_number )
                         message += "file%s named %s,\nso no repositories will be installed on disk.\n" % \
                             ( plural, file_names )
-                        print message
+                        log.info( message )
                 else:
                     message = "\nThe main Galaxy tool shed is not currently available, so skipped migration stage %s.\n" % \
                         str( latest_migration_script_number )
                     message += "Try again later.\n"
-                    print message
+                    log.error( message )
 
     def create_or_update_tool_shed_repository_record( self, name, owner, changeset_revision, description=None ):
 
@@ -172,17 +174,17 @@ class ToolMigrationManager( object ):
         if not self.__iscloned( clone_dir ):
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', owner, name )
             ctx_rev = suc.get_ctx_rev( self.app, self.tool_shed_url, name, owner, changeset_revision )
-            tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
-                                                                              name=name,
-                                                                              description=description,
-                                                                              installed_changeset_revision=changeset_revision,
-                                                                              ctx_rev=ctx_rev,
-                                                                              repository_clone_url=repository_clone_url,
-                                                                              metadata_dict={},
-                                                                              status=self.app.install_model.ToolShedRepository.installation_status.NEW,
-                                                                              current_changeset_revision=None,
-                                                                              owner=self.repository_owner,
-                                                                              dist_to_shed=True )
+            tool_shed_repository = repository_util.create_or_update_tool_shed_repository( app=self.app,
+                                                                                          name=name,
+                                                                                          description=description,
+                                                                                          installed_changeset_revision=changeset_revision,
+                                                                                          ctx_rev=ctx_rev,
+                                                                                          repository_clone_url=repository_clone_url,
+                                                                                          metadata_dict={},
+                                                                                          status=self.app.install_model.ToolShedRepository.installation_status.NEW,
+                                                                                          current_changeset_revision=None,
+                                                                                          owner=self.repository_owner,
+                                                                                          dist_to_shed=True )
             return tool_shed_repository
         return None
 
@@ -272,7 +274,7 @@ class ToolMigrationManager( object ):
                         proprietary_tool_config = section_elem.get( 'file' )
                         if tool_config == proprietary_tool_config:
                             # The tool is loaded inside of the section_elem.
-                            tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
+                            tool_sections.append( ToolSection( ensure_tool_conf_item( proprietary_tool_panel_elem ) ) )
                             if not is_displayed:
                                 is_displayed = True
         return is_displayed, tool_sections
@@ -289,7 +291,7 @@ class ToolMigrationManager( object ):
                     filename = basic_util.strip_path( name )
                     if filename == tool_config_filename:
                         full_path = str( os.path.abspath( os.path.join( root, name ) ) )
-                        tool = self.toolbox.load_tool( full_path )
+                        tool = self.toolbox.load_tool( full_path, use_cached=False )
                         return suc.generate_tool_guid( repository_clone_url, tool )
         # Not quite sure what should happen here, throw an exception or what?
         return None
@@ -403,14 +405,14 @@ class ToolMigrationManager( object ):
                             if tool_config not in tool_configs_to_filter:
                                 tool_configs_to_filter.append( tool_config )
                 else:
-                    print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
-                        % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
+                    log.error( 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).'
+                        % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) ) )
             if tool_configs_to_filter:
                 lock = threading.Lock()
                 lock.acquire( True )
                 try:
                     self.filter_and_persist_proprietary_tool_panel_configs( tool_configs_to_filter )
-                except Exception, e:
+                except Exception as e:
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
@@ -489,8 +491,9 @@ class ToolMigrationManager( object ):
                                                                                     from_tool_migration_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
-                    print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
-                    print installed_tool_dependency.error_message, '\n\n'
+                    log.error(
+                        'The ToolMigrationManager returned the following error while installing tool dependency %s: %s',
+                        installed_tool_dependency.name, installed_tool_dependency.error_message )
         if 'datatypes' in irmm_metadata_dict:
             cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
             tool_shed_repository.status = self.app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
@@ -544,7 +547,8 @@ class ToolMigrationManager( object ):
                                             self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             is_installed = True
         if cloned_ok and is_installed:
-            print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
+            log.info( "Skipping automatic install of repository '%s' because it has already been installed in location %s",
+                     tool_shed_repository.name, clone_dir )
         else:
             irm = install_manager.InstallRepositoryManager( self.app, self.tpm )
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', tool_shed_repository.owner, tool_shed_repository.name )
@@ -578,7 +582,7 @@ class ToolMigrationManager( object ):
                                    owner=self.repository_owner,
                                    changeset_revision=tool_shed_repository.installed_changeset_revision )
                     pathspec = [ 'repository', 'get_tool_versions' ]
-                    text = common_util.tool_shed_get( self.app, self.tool_shed_url, pathspec=pathspec, params=params )
+                    text = util.url_get( self.tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( self.tool_shed_url ), pathspec=pathspec, params=params )
                     if text:
                         tool_version_dicts = json.loads( text )
                         tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )
@@ -614,7 +618,7 @@ class ToolMigrationManager( object ):
                 irm.update_tool_shed_repository_status( tool_shed_repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
             else:
-                print 'Error attempting to clone repository %s: %s' % ( str( tool_shed_repository.name ), str( error_message ) )
+                log.error('Error attempting to clone repository %s: %s', str( tool_shed_repository.name ), str( error_message ) )
                 irm.update_tool_shed_repository_status( tool_shed_repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.ERROR,
                                                         error_message=error_message )

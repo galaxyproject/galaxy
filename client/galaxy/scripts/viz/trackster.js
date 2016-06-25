@@ -19,7 +19,8 @@ require(
     'libs/jquery/select2',
     'libs/farbtastic',
     'libs/jquery/jquery.form',
-    'libs/jquery/jquery.rating'
+    'libs/jquery/jquery.rating',
+    "ui/editable-text",
 ], function(mod_utils, mod_icon_btn)
 {
     // load css
@@ -31,12 +32,28 @@ require(
 });
 
 // trackster viewer
-define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization", "mvc/ui/icon-button", "utils/query-string-parsing" ],
-        function(_, base, tracks, visualization, mod_icon_btn, query_string ) {
+define([
+    "libs/underscore",
+    "viz/trackster/tracks",
+    "viz/visualization",
+    "mvc/ui/icon-button",
+    "utils/query-string-parsing"
+], function(_, tracks, visualization, mod_icon_btn, query_string) {
+
+/**
+ * Base Object/Model for inhertiance.
+ */
+var Base = function() {
+    if( this.initialize ) {
+        this.initialize.apply(this, arguments);
+    }
+};
+Base.extend = Backbone.Model.extend;
+
 /**
  * User interface controls for trackster
  */
-var TracksterUI = base.Base.extend({
+var TracksterUI = Base.extend({
     initialize: function( baseURL ) {
         this.baseURL = baseURL;
     },
@@ -67,7 +84,7 @@ var TracksterUI = base.Base.extend({
 
         // Make call to save visualization.
         return $.ajax({
-            url: galaxy_config.root + "visualization/save",
+            url: Galaxy.root + "visualization/save",
             type: "POST",
             dataType: "json",
             data: {
@@ -101,7 +118,7 @@ var TracksterUI = base.Base.extend({
         var self = this,
             menu = mod_icon_btn.create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() {
-                visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey },
+                visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", { 'f-dbkey': view.dbkey },
                 function(new_tracks) {
                     _.each(new_tracks, function(track) {
                         view.add_drawable( tracks.object_from_template(track, view, view) );
@@ -356,11 +373,11 @@ var TracksterUI = base.Base.extend({
                     "Cancel": function() { Galaxy.modal.hide(); },
                     "Leave without Saving" : function() {
                         $(window).off('beforeunload');
-                        window.location = galaxy_config.root + 'visualization';
+                        window.location = Galaxy.root + 'visualization';
                     },
                     "Save" : function() {
                         $.when(self.save_viz()).then(function() {
-                            window.location = galaxy_config.root + 'visualization';
+                            window.location = Galaxy.root + 'visualization';
                         });
                     }
                 }
@@ -368,7 +385,7 @@ var TracksterUI = base.Base.extend({
 
         }
         else {
-            window.location = galaxy_config.root + 'visualization';
+            window.location = Galaxy.root + 'visualization';
         }
     }
 
@@ -380,7 +397,7 @@ var TracksterView = Backbone.View.extend(
     initialize : function ()
     {
         // load ui
-        ui = new TracksterUI(galaxy_config.root);
+        ui = new TracksterUI(Galaxy.root);
 
         // create button menu
         ui.createButtonMenu();
@@ -425,7 +442,7 @@ var TracksterView = Backbone.View.extend(
             listTracksParams[ 'f-dbkey' ] = dbkey;
         }
         $.ajax({
-            url: galaxy_config.root + 'visualization/list_tracks?' + $.param( listTracksParams ),
+            url: Galaxy.root + 'visualization/list_tracks?' + $.param( listTracksParams ),
             dataType: "html",
             error: function() { alert( "Could not add this dataset to browser." ); },
 
@@ -445,7 +462,7 @@ var TracksterView = Backbone.View.extend(
                                 $(parent.document).find('input[name=id]:checked').each(function() {
                                     var vis_id = $(this).val();
                                     dataset_params.id = vis_id;
-                                    window.location = galaxy_config.root + "visualization/trackster?" + $.param(dataset_params);
+                                    window.location = Galaxy.root + "visualization/trackster?" + $.param(dataset_params);
                                 });
                             }
                         }
@@ -465,7 +482,7 @@ var TracksterView = Backbone.View.extend(
                         ),
                         buttons : {
                             "Cancel": function() {
-                                window.location = galaxy_config.root + "visualization/list";
+                                window.location = Galaxy.root + "visualization/list";
                             },
                             "View in saved visualization": function() {
                                 view_in_saved();
@@ -516,7 +533,7 @@ var TracksterView = Backbone.View.extend(
         // ajax
         $.ajax(
         {
-            url: galaxy_config.root + "api/genomes?chrom_info=True",
+            url: Galaxy.root + "api/genomes?chrom_info=True",
             data: {},
             error: function() { alert( "Couldn't create new browser." ); },
             success: function(response)
@@ -526,7 +543,7 @@ var TracksterView = Backbone.View.extend(
                     title   : "New Visualization",
                     body    : self.template_view_new(response),
                     buttons : {
-                        "Cancel": function() { window.location = galaxy_config.root + "visualization/list"; },
+                        "Cancel": function() { window.location = Galaxy.root + "visualization/list"; },
                         "Create": function() { self.create_browser($("#new-title").val(), $("#new-dbkey").val()); Galaxy.modal.hide(); }
                     }
                 });
@@ -576,7 +593,7 @@ var TracksterView = Backbone.View.extend(
                         '</div>' +
                         '<div class="form-row">' +
                             'Is the build not listed here? ' +
-                            '<a href="' + galaxy_config.root + 'user/dbkeys?use_panels=True">Add a Custom Build</a>' +
+                            '<a href="' + Galaxy.root + 'user/dbkeys?use_panels=True">Add a Custom Build</a>' +
                         '</div>' +
                     '</form>';
 
@@ -612,7 +629,7 @@ var TracksterView = Backbone.View.extend(
         // add dataset
         if (galaxy_config.app.add_dataset)
             $.ajax({
-                url: galaxy_config.root + "api/datasets/" + galaxy_config.app.add_dataset,
+                url: Galaxy.root + "api/datasets/" + galaxy_config.app.add_dataset,
                 data: { hda_ldda: 'hda', data_type: 'track_config' },
                 dataType: "json",
                 success: function(track_data) { view.add_drawable( tracks.object_from_template(track_data, view, view) ); }

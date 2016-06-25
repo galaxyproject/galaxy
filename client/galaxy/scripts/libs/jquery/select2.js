@@ -2980,13 +2980,12 @@ the specific language governing permissions and limitations under the Apache Lic
 
             // keep track of the search's value before it gets cleared
             this.nextSearchTerm = this.opts.nextSearchTerm(data, this.search.val());
-
-            this.clearSearch();
-            this.updateResults();
-
+            this.moveHighlight(1);
             if (this.select || !this.opts.closeOnSelect) this.postprocessResults(data, false, this.opts.closeOnSelect===true);
 
             if (this.opts.closeOnSelect) {
+                this.clearSearch()
+                this.updateResults()
                 this.close();
                 this.search.width(10);
             } else {

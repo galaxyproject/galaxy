@@ -101,7 +101,8 @@ class MockJobWrapper( object ):
 
     def __init__( self, app, test_directory, tool ):
         working_directory = os.path.join( test_directory, "workdir" )
-        os.makedirs( working_directory )
+        tool_working_directory = os.path.join( working_directory, "working" )
+        os.makedirs( tool_working_directory )
         self.app = app
         self.tool = tool
         self.state = model.Job.states.QUEUED
@@ -112,6 +113,7 @@ class MockJobWrapper( object ):
         self.write_version_cmd = None
         self.dependency_shell_commands = None
         self.working_directory = working_directory
+        self.tool_working_directory = tool_working_directory
         self.requires_setting_metadata = True
         self.job_destination = bunch.Bunch( id="default", params={} )
         self.galaxy_lib_dir = os.path.abspath( "lib" )
@@ -120,6 +122,8 @@ class MockJobWrapper( object ):
         self.output_paths = [ '/tmp/output1.dat' ]
         self.mock_metadata_path = os.path.abspath( os.path.join( test_directory, "METADATA_SET" ) )
         self.metadata_command = "touch %s" % self.mock_metadata_path
+        self.galaxy_virtual_env = None
+        self.shell = "/bin/bash"
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(

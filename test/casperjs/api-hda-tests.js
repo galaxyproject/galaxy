@@ -124,7 +124,7 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         //this.test.comment( 'update should sanitize any new name' );
 
         this.test.comment( 'update should allow unicode in names' );
-        var unicodeName = 'Ржевский сапоги';
+        var unicodeName = 'ржевский сапоги';
         returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
             name : unicodeName
         });

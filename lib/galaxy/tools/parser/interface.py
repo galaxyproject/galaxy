@@ -1,9 +1,12 @@
 from abc import ABCMeta
 from abc import abstractmethod
 
+import six
+
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
+@six.python_2_unicode_compatible
 class ToolSource(object):
     """ This interface represents an abstract source to parse tool
     information from.
@@ -125,6 +128,16 @@ class ToolSource(object):
         """
         return False
 
+    def parse_sanitize(self):
+        """ Return boolean indicating whether tool should be sanitized or not.
+        """
+        return True
+
+    def parse_refresh(self):
+        """ Return boolean indicating ... I have no clue...
+        """
+        return False
+
     @abstractmethod
     def parse_requirements_and_containers(self):
         """ Return pair of ToolRequirement and ContainerDescription lists. """
@@ -140,6 +153,12 @@ class ToolSource(object):
         """
 
     @abstractmethod
+    def parse_strict_shell(self):
+        """ Return True if tool commands should be executed with
+        set -e.
+        """
+
+    @abstractmethod
     def parse_stdio(self):
         """ Builds lists of ToolStdioExitCode and ToolStdioRegex objects
         to describe tool execution error conditions.
@@ -152,8 +171,21 @@ class ToolSource(object):
         doesn't define help text.
         """
 
+    @abstractmethod
+    def parse_profile(self):
+        """ Return tool profile version as Galaxy major e.g. 16.01 or 16.04.
+        """
+
     def parse_tests_to_dict(self):
         return {'tests': []}
+
+    def __str__(self):
+        source_path = getattr(self, "_soure_path", None)
+        if source_path:
+            as_str = u'%s[%s]' % (self.__class__.__name__, source_path)
+        else:
+            as_str = u'%s[In-memory]' % (self.__class__.__name__)
+        return as_str
 
 
 class PagesSource(object):
@@ -207,7 +239,7 @@ class InputSource(object):
         return self.get("label")
 
     def parse_help(self):
-        return self.get("label")
+        return self.get("help")
 
     def parse_sanitizer_elem(self):
         """ Return an XML description of sanitizers. This is a stop gap
@@ -229,9 +261,8 @@ class InputSource(object):
             default = self.default_optional
         return self.get_bool( "optional", default )
 
-    def parse_dynamic_options(self, param):
-        """ Return a galaxy.tools.parameters.dynamic_options.DynamicOptions
-        if appropriate.
+    def parse_dynamic_options_elem(self):
+        """ Return an XML elemnt describing dynamic options.
         """
         return None
 
@@ -316,10 +347,11 @@ class TestCollectionDef( object ):
 
 
 class TestCollectionOutputDef( object ):
-    # TODO: do not require XML directly here.
 
     def __init__( self, name, attrib, element_tests ):
         self.name = name
         self.collection_type = attrib.get( "type", None )
+        count = attrib.get("count", None)
+        self.count = int(count) if count is not None else None
         self.attrib = attrib
         self.element_tests = element_tests

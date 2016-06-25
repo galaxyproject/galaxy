@@ -6,9 +6,6 @@ from a query string and render a webpage based on those data.
 import os
 import copy
 
-import pkg_resources
-pkg_resources.require( 'MarkupSafe' )
-pkg_resources.require( 'Mako' )
 import mako
 
 from galaxy.managers import api_keys
@@ -249,7 +246,7 @@ class InteractiveEnvironmentPlugin( VisualizationPlugin ):
     """
     Serves web-based REPLs such as IPython and RStudio.
     """
-    INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnviornmentRequest
+    INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnvironmentRequest
 
     def __init__( self, app, path, name, config, context=None, **kwargs ):
         # TODO: this is a hack until we can get int envs seperated from the vis reg and into their own framework

@@ -12,12 +12,6 @@ import os
 import pwd
 import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
-from galaxy import eggs
-eggs.require("drmaa")
 import drmaa
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
@@ -102,7 +96,7 @@ def set_user(uid, assign_all_groups):
             os.setgroups(groups)
         os.setuid(uid)
 
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EPERM:
             sys.stderr.write( "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid )
             exit(1)

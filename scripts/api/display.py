@@ -1,14 +1,19 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
-import os, sys, urllib2
-sys.path.insert( 0, os.path.dirname( __file__ ) )
+import os
+import sys
+
+from six.moves.urllib.error import URLError
+
 from common import display
 
 try:
     display( *sys.argv[1:3] )
-except TypeError:
-    print 'usage: %s key url' % os.path.basename( sys.argv[0] )
+except TypeError as e:
+    print('usage: %s key url' % os.path.basename( sys.argv[0] ))
+    print(e)
     sys.exit( 1 )
-except urllib2.URLError, e:
-    print str(e)
+except URLError as e:
+    print(e)
     sys.exit( 1 )

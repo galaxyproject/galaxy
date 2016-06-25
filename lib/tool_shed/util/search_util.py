@@ -1,7 +1,5 @@
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, true
 
 log = logging.getLogger( __name__ )

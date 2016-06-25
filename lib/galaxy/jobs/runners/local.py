@@ -52,7 +52,7 @@ class LocalJobRunner( BaseJobRunner ):
 
         # slots would be cleaner name, but don't want deployers to see examples and think it
         # is going to work with other job runners.
-        slots = job_wrapper.job_destination.params.get( "local_slots", None )
+        slots = job_wrapper.job_destination.params.get( "local_slots", None ) or os.environ.get("GALAXY_SLOTS", None)
         if slots:
             slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % ( int( slots ) )
         else:
@@ -107,7 +107,7 @@ class LocalJobRunner( BaseJobRunner ):
             try:
                 exit_code = int( open( exit_code_path, 'r' ).read() )
             except Exception:
-                log.warn( "Failed to read exit code from path %s" % exit_code_path )
+                log.warning( "Failed to read exit code from path %s" % exit_code_path )
                 pass
             stdout_file.seek( 0 )
             stderr_file.seek( 0 )

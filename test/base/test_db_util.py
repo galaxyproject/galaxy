@@ -1,5 +1,3 @@
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, desc, false
 
 import galaxy.model

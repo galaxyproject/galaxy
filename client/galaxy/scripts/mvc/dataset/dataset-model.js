@@ -3,14 +3,19 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
+'use strict';
+
+var logNamespace = 'dataset';
 //==============================================================================
 var searchableMixin = BASE_MVC.SearchableModelMixin;
 /** @class base model for any DatasetAssociation (HDAs, LDDAs, DatasetCollectionDAs).
  *      No knowledge of what type (HDA/LDDA/DCDA) should be needed here.
  *  The DA's are made searchable (by attribute) by mixing in SearchableModelMixin.
  */
-var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
-        BASE_MVC.mixin( searchableMixin, /** @lends DatasetAssociation.prototype */{
+var DatasetAssociation = Backbone.Model
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( BASE_MVC.mixin( searchableMixin, /** @lends DatasetAssociation.prototype */{
+    _logNamespace : logNamespace,
 
     /** default attributes for a model */
     defaults : {
@@ -75,9 +80,8 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
             'meta_download' : 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
         };
 //TODO: global
-        var root = ( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' );
         _.each( urls, function( value, key ){
-            urls[ key ] = root + value;
+            urls[ key ] = Galaxy.root + value;
         });
         this.urls = urls;
         return urls;
@@ -126,6 +130,8 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
+        // if it's inaccessible assume it has everything it needs
+        if( !this.get( 'accessible' ) ){ return true; }
         //?? this may not be reliable
         return _.has( this.attributes, 'genome_build' );
     },
@@ -242,18 +248,16 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
  */
 var DatasetAssociationCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends HistoryContents.prototype */{
+    _logNamespace : logNamespace,
+
     model : DatasetAssociation,
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** root api url */
-    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ))
-        + 'api/datasets',
+    urlRoot : Galaxy.root + 'api/datasets',
 
     /** url fn */
     url : function(){
-        return this.urlRoot
+        return this.urlRoot;
     },
 
     // ........................................................................ common queries

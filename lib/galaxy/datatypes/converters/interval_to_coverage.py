@@ -11,8 +11,6 @@ import tempfile
 from bisect import bisect
 from os import environ
 
-from galaxy import eggs
-eggs.require( "bx-python" )
 from bx.cookbook import doc_optparse
 from bx.intervals import io
 

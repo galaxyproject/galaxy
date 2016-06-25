@@ -5,15 +5,16 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_CONTENTS, STATES, AJAX_QUEUE, BASE_MVC, _l ){
+
+var logNamespace = 'jobs';
 //==============================================================================
 var searchableMixin = BASE_MVC.SearchableModelMixin;
 /** @class Represents a job running or ran on the server job handlers.
  */
-var Job = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
-        BASE_MVC.mixin( searchableMixin, /** @lends Job.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var Job = Backbone.Model
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( BASE_MVC.mixin( searchableMixin, /** @lends Job.prototype */{
+    _logNamespace : logNamespace,
 
     /** default attributes for a model */
     defaults : {
@@ -85,7 +86,7 @@ var Job = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 
     // ........................................................................ ajax
     /** root api url */
-    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' )) + 'api/jobs',
+    urlRoot : Galaxy.root + 'api/jobs',
     //url : function(){ return this.urlRoot; },
 
     // ........................................................................ searching
@@ -106,15 +107,15 @@ var Job = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 //==============================================================================
 /** @class Backbone collection for Jobs.
  */
-var JobCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
-/** @lends JobCollection.prototype */{
+var JobCollection = Backbone.Collection
+        .extend( BASE_MVC.LoggableMixin )
+        .extend(/** @lends JobCollection.prototype */{
+    _logNamespace : logNamespace,
+
     model : Job,
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** root api url */
-    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' )) + 'api/jobs',
+    urlRoot : Galaxy.root + 'api/jobs',
     url : function(){ return this.urlRoot; },
 
     intialize : function( models, options ){

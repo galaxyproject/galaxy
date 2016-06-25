@@ -5,7 +5,7 @@
 
 <%def name="javascripts()">
    ${parent.javascripts()}
-   ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+   ${h.js("libs/jquery/jquery.autocomplete")}
 </%def>
 
 <%def name="stylesheets()">
@@ -57,7 +57,7 @@
                     <label>Info:</label>
                     <input type="text" name="info" value="${util.unicodify( ldda.info ) | h}" size="40"/>
                     <div style="clear: both"></div>
-                </div> 
+                </div>
                 <div class="form-row">
                     <label>Message:</label>
                     %if ldda.message:

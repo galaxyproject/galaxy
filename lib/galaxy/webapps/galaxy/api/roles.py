@@ -3,8 +3,6 @@ API operations on Role objects.
 """
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false
 
 from galaxy import web

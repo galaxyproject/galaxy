@@ -116,7 +116,7 @@
                 %else:
                     <input type="text" id="name_input" name="username" size="40" value="${username | h}"/>
                     <div class="toolParamHelp" style="clear: both;">
-                        Your public name is an optional identifier that will be used to generate addresses for information
+                        Your public name is an identifier that will be used to generate addresses for information
                         you share publicly. Public names must be at least three characters in length and contain only lower-case
                         letters, numbers, and the '-' character.
                     </div>

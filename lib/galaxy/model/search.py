@@ -26,10 +26,11 @@ select * from history where name='Unnamed history'
 
 import logging
 import re
+from json import dumps
 
-from galaxy import eggs
-eggs.require("Parsley")
 import parsley
+from sqlalchemy import and_
+from sqlalchemy.orm import aliased
 
 from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation,
                           History, Library, LibraryFolder, LibraryDataset, StoredWorkflowTagAssociation,
@@ -38,10 +39,6 @@ from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssoci
                           JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation,
                           Page, PageRevision)
 from galaxy.model.tool_shed_install import ToolVersion
-
-from galaxy.util.json import dumps
-from sqlalchemy import and_
-from sqlalchemy.orm import aliased
 
 log = logging.getLogger( __name__ )
 

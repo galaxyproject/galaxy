@@ -1,8 +1,8 @@
 <tool id="Cut1" name="Cut" version="1.0.2">
   <description>columns from a table</description>
-  <command interpreter="perl">cutWrapper.pl $input "$columnList" $delimiter $out_file1</command>
+  <command interpreter="perl">cutWrapper.pl "${input}" "${columnList}" "${delimiter}" "${out_file1}"</command>
   <inputs>
-    <param name="columnList" size="10" type="text" value="c1,c2" label="Cut columns"/>
+    <param name="columnList" type="text" value="c1,c2" label="Cut columns"/>
     <param name="delimiter" type="select" label="Delimited by">
       <option value="T">Tab</option>
       <option value="Sp">Whitespace</option>

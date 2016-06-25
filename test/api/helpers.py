@@ -70,10 +70,14 @@ class BaseDatasetPopulator( object ):
     Galaxy - implementations must implement _get and _post.
     """
 
-    def new_dataset( self, history_id, content='TestData123', **kwds ):
+    def new_dataset( self, history_id, content='TestData123', wait=False, **kwds ):
         payload = self.upload_payload( history_id, content, **kwds )
-        run_response = self._post( "tools", data=payload )
-        return run_response.json()["outputs"][0]
+        run_response = self._post( "tools", data=payload ).json()
+        if wait:
+            job = run_response["jobs"][0]
+            self.wait_for_job(job["id"])
+            self.wait_for_history(history_id, assert_ok=True)
+        return run_response["outputs"][0]
 
     def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         try:
@@ -83,7 +87,10 @@ class BaseDatasetPopulator( object ):
             raise
 
     def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
-        return wait_on_state( lambda: self._get( "jobs/%s" % job_id ), assert_ok=assert_ok, timeout=timeout )
+        return wait_on_state( lambda: self.get_job_details( job_id ), assert_ok=assert_ok, timeout=timeout )
+
+    def get_job_details( self, job_id, full=False ):
+        return self._get( "jobs/%s?full=%s" % (job_id, full) )
 
     def _summarize_history_errors( self, history_id ):
         pass
@@ -138,18 +145,24 @@ class BaseDatasetPopulator( object ):
         return tool_response.json()
 
     def get_history_dataset_content( self, history_id, wait=True, **kwds ):
-        dataset_id = self.__history_dataset_id( history_id, wait=wait, **kwds )
+        dataset_id = self.__history_content_id( history_id, wait=wait, **kwds )
         display_response = self.__get_contents_request( history_id, "/%s/display" % dataset_id )
         assert display_response.status_code == 200, display_response.content
         return display_response.content
 
     def get_history_dataset_details( self, history_id, **kwds ):
-        dataset_id = self.__history_dataset_id( history_id, **kwds )
+        dataset_id = self.__history_content_id( history_id, **kwds )
         details_response = self.__get_contents_request( history_id, "/datasets/%s" % dataset_id )
         assert details_response.status_code == 200
         return details_response.json()
 
-    def __history_dataset_id( self, history_id, wait=True, **kwds ):
+    def get_history_collection_details( self, history_id, **kwds ):
+        hdca_id = self.__history_content_id( history_id, **kwds )
+        details_response = self.__get_contents_request( history_id, "/dataset_collections/%s" % hdca_id )
+        assert details_response.status_code == 200, details_response.content
+        return details_response.json()
+
+    def __history_content_id( self, history_id, wait=True, **kwds ):
         if wait:
             assert_ok = kwds.get( "assert_ok", True )
             self.wait_for_history( history_id, assert_ok=assert_ok )
@@ -409,11 +422,15 @@ class BaseDatasetCollectionPopulator( object ):
         # 2-tuples of form (name, dataset_content).
         if contents and isinstance(contents[0], tuple):
             hdas = self.__datasets( history_id, count=count, contents=[c[1] for c in contents] )
-            hda_to_identifier = lambda ( i, hda ): dict( name=contents[i][0], src="hda", id=hda[ "id" ] )
+
+            def hda_to_identifier(i, hda):
+                return dict(name=contents[i][0], src="hda", id=hda["id"])
         else:
             hdas = self.__datasets( history_id, count=count, contents=contents )
-            hda_to_identifier = lambda ( i, hda ): dict( name="data%d" % ( i + 1 ), src="hda", id=hda[ "id" ] )
-        element_identifiers = map( hda_to_identifier, enumerate( hdas ) )
+
+            def hda_to_identifier(i, hda):
+                return dict(name="data%d" % (i + 1), src="hda", id=hda["id"])
+        element_identifiers = [hda_to_identifier(i, hda) for (i, hda) in enumerate(hdas)]
         return element_identifiers
 
     def __create( self, payload ):
@@ -454,12 +471,16 @@ def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     return wait_on( get_state, desc="state", timeout=timeout)
 
 
-def wait_on( function, desc, timeout=5 ):
+def wait_on( function, desc, timeout=DEFAULT_TIMEOUT ):
     delta = .25
     iteration = 0
     while True:
-        if (delta * iteration) > timeout:
-            assert False, "Timed out waiting on %s." % desc
+        total_wait = delta * iteration
+        if total_wait > timeout:
+            timeout_message = "Timed out after %s seconds waiting on %s." % (
+                total_wait, desc
+            )
+            assert False, timeout_message
         iteration += 1
         value = function()
         if value is not None:

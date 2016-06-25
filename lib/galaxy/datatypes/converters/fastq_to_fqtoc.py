@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-from galaxy.datatypes.checkers import is_gzip
+from galaxy.util.checkers import is_gzip
 
 
 def main():

@@ -4,12 +4,14 @@ import time
 
 import galaxy.model
 from galaxy.web import security
+import logging
+log = logging.getLogger( __name__ )
 
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
-        print >> sys.stderr, "python path is: " + ", ".join( sys.path )
+        log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = "reports"
         # Read config file and check for errors
         self.config = config.Configuration( **kwargs )

@@ -1,21 +1,18 @@
+<%def name="render_json( dictionary )">
+${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
+</%def>
 
 ## ============================================================================
 <%def name="bootstrap( **kwargs )">
     ## 1) Bootstap all kwargs to json, assigning to:
     ##      global 'bootstrapped' var
     ##      named require module 'bootstrapped-data'
-    ## 2) and automatically include json for config and user in bootstapped data
-    <%
-        kwargs.update({
-            'config'    : get_config_dict(),
-            'user'      : get_user_dict(),
-        })
-    %>
     <script type="text/javascript">
         //TODO: global...
         %for key in kwargs:
             ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
-                ${ h.dumps( kwargs[ key ], indent=( 2 if trans.debug else 0 ) ) } );
+                ${ render_json( kwargs[ key ] ) }
+            );
         %endfor
         define( 'bootstrapped-data', function(){
             return window.bootstrapped;
@@ -27,13 +24,13 @@
     ## 1) bootstrap kwargs (as above), 2) build Galaxy global var, 3) load 'app' by AMD (optional)
     ${ self.bootstrap( **kwargs ) }
     <script type="text/javascript">
-        require([ 'require', 'galaxy-app-base' ], function( require, galaxy ){
+        require([ 'require', 'galaxy' ], function( require, galaxy ){
             //TODO: global...
             window.Galaxy = new galaxy.GalaxyApp({
-                root            : '${h.url_for( "/" )}',
-                //TODO: get these options from the server
-                loggerOptions   : {}
-            });
+                root    : '${h.url_for( "/" )}',
+                config  : ${ render_json( get_config_dict() )},
+                user    : ${ render_json( get_user_dict() )},
+            }, window.bootstrapped );
 
             %if app:
                 require([ '${app}' ]);

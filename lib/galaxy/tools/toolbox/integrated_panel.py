@@ -101,4 +101,4 @@ class ManagesIntegratedToolPanelMixin:
             shutil.copy( filename, filename + ".copy" )
             filename = filename + ".copy"
         shutil.move( filename, destination )
-        os.chmod( self._integrated_tool_panel_config, 0644 )
+        os.chmod( self._integrated_tool_panel_config, 0o644 )

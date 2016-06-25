@@ -3,14 +3,48 @@ Classes for wrapping Objects and Sanitizing string output.
 """
 
 import inspect
-import copy_reg
 import logging
 import string
 from numbers import Number
-from types import ( NoneType, NotImplementedType, EllipsisType, FunctionType, MethodType, GeneratorType, CodeType,
-                    BuiltinFunctionType, BuiltinMethodType, ModuleType, XRangeType, SliceType, TracebackType, FrameType,
-                    BufferType, DictProxyType, GetSetDescriptorType, MemberDescriptorType )
-from UserDict import UserDict
+try:
+    from types import NoneType
+except ImportError:
+    NoneType = type(None)
+try:
+    from types import NotImplementedType
+except ImportError:
+    NotImplementedType = type(NotImplemented)
+
+try:
+    from types import EllipsisType
+except ImportError:
+    EllipsisType = type(Ellipsis)
+
+try:
+    from types import XRangeType
+except ImportError:
+    XRangeType = type(range(0))
+
+try:
+    from types import SliceType
+except ImportError:
+    SliceType = type([][:])
+
+try:
+    from types import BufferType
+    from types import DictProxyType
+except ImportError:
+    # Py3 doesn't have these concepts, just treat them like SliceType that
+    # so they are __WRAP_NO_SUBCLASS__.
+    BufferType = SliceType
+    DictProxyType = SliceType
+
+from types import ( FunctionType, MethodType, GeneratorType, CodeType,
+                    BuiltinFunctionType, BuiltinMethodType, ModuleType, TracebackType, FrameType,
+                    GetSetDescriptorType, MemberDescriptorType )
+from six.moves import UserDict
+from six.moves import copyreg as copy_reg
+import sys
 
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
@@ -39,7 +73,7 @@ __WRAP_MAPPINGS__ = ( dict, UserDict, )
 
 # Define the set of characters that are not sanitized, and define a set of mappings for those that are.
 # characters that are valid
-VALID_CHARACTERS = set( string.letters + string.digits + " -=_.()/+*^,:?!@" )
+VALID_CHARACTERS = set( string.ascii_letters + string.digits + " -=_.()/+*^,:?!@" )
 
 # characters that are allowed but need to be escaped
 CHARACTER_MAP = { '>': '__gt__',
@@ -56,6 +90,16 @@ CHARACTER_MAP = { '>': '__gt__',
                   '#': '__pd__'}
 
 INVALID_CHARACTER = "X"
+
+if sys.version_info > (3, 0):
+    # __coerce__ doesn't do anything under Python anyway.
+    def coerce(x, y):
+        return x
+
+
+def cmp(x, y):
+    # Builtin in Python 2, but not Python 3.
+    return (x > y) - (x < y)
 
 
 def sanitize_lists_to_string( values, valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP, invalid_character=INVALID_CHARACTER  ):
@@ -110,7 +154,7 @@ def wrap_with_safe_string( value, no_wrap_classes=None ):
         else:
             try:
                 wrapped_class = type( wrapped_class_name, ( safe_class, wrapped_class, ), {} )
-            except TypeError, e:
+            except TypeError as e:
                 # Fail-safe for when a class cannot be dynamically subclassed.
                 log.warning( "Unable to create dynamic subclass for %s, %s: %s", type( value), value, e )
                 wrapped_class = type( wrapped_class_name, ( safe_class, ), {} )
@@ -162,7 +206,7 @@ class SafeStringWrapper( object ):
         # that will be used when other + this (this + other is handled by __add__)
         try:
             return super( SafeStringWrapper, cls ).__new__( cls, sanitize_lists_to_string( arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP ) )
-        except Exception, e:
+        except Exception as e:
             log.warning( "Could not provide an argument to %s.__new__: %s; will try without arguments.", cls, e )
             return super( SafeStringWrapper, cls ).__new__( cls )
 

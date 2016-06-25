@@ -20,8 +20,6 @@ import sys
 # insert *this* galaxy before all others on sys.path
 sys.path.insert( 1, os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) ) )
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.orm import clear_mappers
 
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
@@ -139,7 +137,7 @@ def set_metadata():
                         dataset.metadata.remove_key(k)
             dataset.metadata.to_JSON_dict( filename_out )  # write out results of set_meta
             json.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
-        except Exception, e:
+        except Exception as e:
             json.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) )  # setting metadata has failed somehow
 
     for i, ( filename, file_dict ) in enumerate( new_job_metadata_dict.iteritems(), start=1 ):

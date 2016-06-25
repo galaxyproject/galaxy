@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-__all__ = [ "dumps", "loads", "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
+__all__ = [ "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
 
 import copy
 import collections
@@ -10,21 +10,20 @@ import math
 import random
 import string
 
-dumps = json.dumps
-loads = json.loads
+from six import text_type, string_types, iteritems
 
 log = logging.getLogger( __name__ )
 
-to_json_string = dumps
-from_json_string = loads
+to_json_string = json.dumps
+from_json_string = json.loads
 
 
 def json_fix( val ):
     if isinstance( val, list ):
         return [ json_fix( v ) for v in val ]
     elif isinstance( val, dict ):
-        return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in val.iteritems() ] )
-    elif isinstance( val, unicode ):
+        return dict( [ ( json_fix( k ), json_fix( v ) ) for ( k, v ) in iteritems(val) ] )
+    elif isinstance( val, text_type ):
         return val.encode( "utf8" )
     else:
         return val
@@ -34,13 +33,13 @@ def swap_inf_nan( val ):
     """
     This takes an arbitrary object and preps it for jsonifying safely, templating Inf/NaN.
     """
-    if isinstance(val, basestring):
+    if isinstance(val, string_types):
         # basestring first, because it's a sequence and would otherwise get caught below.
         return val
     elif isinstance( val, collections.Sequence ):
         return [ swap_inf_nan( v ) for v in val ]
     elif isinstance( val, collections.Mapping ):
-        return dict( [ ( swap_inf_nan( k ), swap_inf_nan( v ) ) for ( k, v ) in val.iteritems() ] )
+        return dict( [ ( swap_inf_nan( k ), swap_inf_nan( v ) ) for ( k, v ) in iteritems(val) ] )
     elif isinstance(val, float):
         if math.isnan(val):
             return "__NaN__"
@@ -75,8 +74,8 @@ def safe_dumps( *args, **kwargs ):
 
 def validate_jsonrpc_request( request, regular_methods, notification_methods ):
     try:
-        request = loads( request )
-    except Exception, e:
+        request = json.loads( request )
+    except Exception as e:
         return False, request, jsonrpc_response( id=None,
                                                  error=dict( code=-32700,
                                                              message='Parse error',
@@ -87,14 +86,14 @@ def validate_jsonrpc_request( request, regular_methods, notification_methods ):
         assert request['jsonrpc'] == '2.0', \
             'Requested JSON-RPC version "%s" != required version "2.0".' % request['jsonrpc']
         assert 'method' in request, 'No "method" member was sent with the Request object'
-    except AssertionError, e:
+    except AssertionError as e:
         return False, request, jsonrpc_response( request=request,
                                                  error=dict( code=-32600,
                                                              message='Invalid Request',
                                                              data=str( e ) ) )
     try:
         assert request['method'] in ( regular_methods + notification_methods )
-    except AssertionError, e:
+    except AssertionError as e:
         return False, request, jsonrpc_response( request=request,
                                                  error=dict( code=-32601,
                                                              message='Method not found',
@@ -102,7 +101,7 @@ def validate_jsonrpc_request( request, regular_methods, notification_methods ):
     try:
         if request['method'] in regular_methods:
             assert 'id' in request, 'No "id" member was sent with the Request object and the requested method "%s" is not a notification method' % request['method']
-    except AssertionError, e:
+    except AssertionError as e:
         return False, request, jsonrpc_response( request=request,
                                                  error=dict( code=-32600,
                                                              message='Invalid Request',
@@ -112,8 +111,8 @@ def validate_jsonrpc_request( request, regular_methods, notification_methods ):
 
 def validate_jsonrpc_response( response, id=None ):
     try:
-        response = loads( response )
-    except Exception, e:
+        response = json.loads( response )
+    except Exception as e:
         log.error( 'Response was not valid JSON: %s' % str( e ) )
         log.debug( 'Response was: %s' % response )
         return False, response
@@ -127,14 +126,14 @@ def validate_jsonrpc_response( response, id=None ):
                 'The "code" member of the "error" object in the Response is missing or not an integer.'
             assert 'message' in response, \
                 'The "message" member of the "error" object in the Response is missing.'
-    except Exception, e:
+    except Exception as e:
         log.error( 'Response was not valid JSON-RPC: %s' % str( e ) )
         log.debug( 'Response was: %s' % response )
         return False, response
     if id is not None:
         try:
             assert 'id' in response and response['id'] == id
-        except Exception, e:
+        except Exception as e:
             log.error( 'The response id "%s" does not match the request id "%s"' % ( response['id'], id ) )
             return False, response
     return True, response

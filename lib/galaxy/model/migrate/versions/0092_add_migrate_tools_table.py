@@ -37,7 +37,7 @@ def upgrade(migrate_engine):
         MigrateTools_table.create()
         cmd = "INSERT INTO migrate_tools VALUES ('GalaxyTools', 'lib/galaxy/tool_shed/migrate', %d)" % 1
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating migrate_tools table failed: %s" % str( e ) )
 
 
@@ -46,5 +46,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         MigrateTools_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping migrate_tools table failed: %s" % str( e ) )

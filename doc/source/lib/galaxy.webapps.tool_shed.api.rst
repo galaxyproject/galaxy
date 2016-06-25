@@ -25,6 +25,14 @@ galaxy.webapps.tool_shed.api.categories module
     :undoc-members:
     :show-inheritance:
 
+galaxy.webapps.tool_shed.api.configuration module
+-------------------------------------------------
+
+.. automodule:: galaxy.webapps.tool_shed.api.configuration
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.webapps.tool_shed.api.groups module
 ------------------------------------------
 

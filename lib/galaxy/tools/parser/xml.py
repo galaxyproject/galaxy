@@ -19,13 +19,17 @@ from .util import (
     error_on_exit_code,
     aggressive_error_checks,
 )
+from .output_collection_def import dataset_collector_descriptions_from_elem
+from .output_actions import ToolOutputActionGroup
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
-import galaxy.tools
-from galaxy.tools.parameters import output_collect
-from galaxy.tools.parameters import dynamic_options
-from galaxy.tools.parameters.output import ToolOutputActionGroup
+from .output_objects import (
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputCollectionStructure
+)
+
 
 log = logging.getLogger( __name__ )
 
@@ -34,8 +38,11 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, xml_tree, source_path=None):
+        self.xml_tree = xml_tree
+        self.root = xml_tree.getroot()
+        self._source_path = source_path
+        self.legacy_defaults = self.parse_profile() == "16.01"
 
     def parse_version(self):
         return self.root.get("version", None)
@@ -70,6 +77,18 @@ class XmlToolSource(ToolSource):
 
     def parse_name(self):
         return self.root.get( "name" )
+
+    def parse_edam_operations(self):
+        edam_ops = self.root.find("edam_operations")
+        if edam_ops is None:
+            return []
+        return [ edam_op.text for edam_op in edam_ops.findall("edam_operation") ]
+
+    def parse_edam_topics(self):
+        edam_topics = self.root.find("edam_topics")
+        if edam_topics is None:
+            return []
+        return [ edam_topic.text for edam_topic in edam_topics.findall("edam_topic") ]
 
     def parse_description(self):
         return xml_text(self.root, "description")
@@ -108,7 +127,12 @@ class XmlToolSource(ToolSource):
 
     def parse_interpreter(self):
         command_el = self._command_el
-        return (command_el is not None) and command_el.get("interpreter", None)
+        interpreter = (command_el is not None) and command_el.get("interpreter", None)
+        if not self.legacy_defaults:
+            log.warning("Deprecated interpeter attribute on command element is now ignored.")
+            interpreter = None
+
+        return interpreter
 
     def parse_version_command(self):
         version_cmd = self.root.find("version_command")
@@ -141,6 +165,20 @@ class XmlToolSource(ToolSource):
 
     def parse_redirect_url_params_elem(self):
         return self.root.find("redirect_url_params")
+
+    def parse_sanitize(self):
+        return self._get_option_value("sanitize", True)
+
+    def parse_refresh(self):
+        return self._get_option_value("refresh", False)
+
+    def _get_option_value(self, key, default):
+        root = self.root
+        for option_elem in root.findall("options"):
+            if key in option_elem.attrib:
+                return string_as_bool(option_elem.get(key))
+
+        return default
 
     @property
     def _command_el(self):
@@ -178,6 +216,7 @@ class XmlToolSource(ToolSource):
             label = xml_text( collection_elem, "label" )
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
+            collection_type_source = collection_elem.get( "type_source", None )
             structured_like = collection_elem.get( "structured_like", None )
             inherit_format = False
             inherit_metadata = False
@@ -188,15 +227,16 @@ class XmlToolSource(ToolSource):
             default_metadata_source = collection_elem.get( "metadata_source", "" )
             filters = collection_elem.findall( 'filter' )
 
-            dataset_collectors = None
+            dataset_collector_descriptions = None
             if collection_elem.find( "discover_datasets" ) is not None:
-                dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
-            structure = galaxy.tools.ToolOutputCollectionStructure(
+                dataset_collector_descriptions = dataset_collector_descriptions_from_elem( collection_elem, legacy=False )
+            structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
+                collection_type_source=collection_type_source,
                 structured_like=structured_like,
-                dataset_collectors=dataset_collectors,
+                dataset_collector_descriptions=dataset_collector_descriptions,
             )
-            output_collection = galaxy.tools.ToolOutputCollection(
+            output_collection = ToolOutputCollection(
                 name,
                 structure,
                 label=label,
@@ -237,7 +277,7 @@ class XmlToolSource(ToolSource):
         default_format_source=None,
         default_metadata_source="",
     ):
-        output = galaxy.tools.ToolOutput( data_elem.get("name") )
+        output = ToolOutput( data_elem.get("name") )
         output_format = data_elem.get("format", default_format)
         auto_format = string_as_bool( data_elem.get( "auto_format", "false" ) )
         if auto_format and output_format != "data":
@@ -256,7 +296,7 @@ class XmlToolSource(ToolSource):
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
         output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
-        output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem( data_elem, legacy=self.legacy_defaults )
         return output
 
     def parse_stdio(self):
@@ -271,9 +311,20 @@ class XmlToolSource(ToolSource):
                 return aggressive_error_checks()
             else:
                 raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+        elif len(self.root.findall('stdio')) == 0 and not self.legacy_defaults:
+            return error_on_exit_code()
         else:
             parser = StdioParser(self.root)
             return parser.stdio_exit_codes, parser.stdio_regexes
+
+    def parse_strict_shell(self):
+        command_el = self._command_el
+        if command_el is not None:
+            return string_as_bool(command_el.get("strict", "False"))
+        elif self.legacy_defaults:
+            return False
+        else:
+            return True
 
     def parse_help(self):
         help_elem = self.root.find( 'help' )
@@ -294,6 +345,15 @@ class XmlToolSource(ToolSource):
 
         return rval
 
+    def parse_profile(self):
+        # Pre-16.04 or default XML defaults
+        # - Use standard error for error detection.
+        # - Don't run shells with -e
+        # - Auto-check for implicit multiple outputs.
+        # - Auto-check for $param_file.
+        # - Enable buggy interpreter attribute.
+        return self.root.get("profile", "16.01")
+
 
 def _test_elem_to_dict(test_elem, i):
     rval = dict(
@@ -306,6 +366,7 @@ def _test_elem_to_dict(test_elem, i):
         stderr=__parse_assert_list_from_elem( test_elem.find("assert_stderr") ),
         expect_exit_code=test_elem.get("expect_exit_code"),
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
+        maxseconds=test_elem.get("maxseconds", None),
     )
     _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
     return rval
@@ -377,7 +438,11 @@ def __parse_element_tests( parent_element ):
 
 def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     assert_list = __parse_assert_list( output_elem )
-    file = attrib.pop( 'file', None )
+
+    # Allow either file or value to specify a target file to compare result with
+    # file was traditionally used by outputs and value by extra files.
+    file = attrib.pop( 'file', attrib.pop( 'value', None ) )
+
     # File no longer required if an list of assertions was present.
     attributes = {}
     # Method of comparison
@@ -396,16 +461,19 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
     md5sum = attrib.get("md5", None)
+    checksum = attrib.get("checksum", None)
     element_tests = {}
     if parse_elements:
         element_tests = __parse_element_tests( output_elem )
 
-    if not (assert_list or file or extra_files or metadata or md5sum or element_tests):
-        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
+    has_checksum = md5sum or checksum
+    if not (assert_list or file or extra_files or metadata or has_checksum or element_tests):
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
     attributes['md5'] = md5sum
+    attributes['checksum'] = checksum
     attributes['elements'] = element_tests
     return file, attributes
 
@@ -435,20 +503,15 @@ def __parse_assert_list_from_elem( assert_elem ):
     return assert_list
 
 
-def __parse_extra_files_elem( extra ):
+def __parse_extra_files_elem(extra):
     # File or directory, when directory, compare basename
     # by basename
-    extra_type = extra.get( 'type', 'file' )
-    extra_name = extra.get( 'name', None )
+    attrib = dict(extra.attrib)
+    extra_type = attrib.pop('type', 'file')
+    extra_name = attrib.pop('name', None)
     assert extra_type == 'directory' or extra_name is not None, \
         'extra_files type (%s) requires a name attribute' % extra_type
-    extra_value = extra.get( 'value', None )
-    assert extra_value is not None, 'extra_files requires a value attribute'
-    extra_attributes = {}
-    extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
-    extra_attributes['delta'] = extra.get( 'delta', '0' )
-    extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
-    extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
+    extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
     return extra_type, extra_value, extra_name, extra_attributes
 
 
@@ -819,16 +882,12 @@ class XmlInputSource(InputSource):
     def parse_validator_elems(self):
         return self.input_elem.findall("validator")
 
-    def parse_dynamic_options(self, param):
+    def parse_dynamic_options_elem(self):
         """ Return a galaxy.tools.parameters.dynamic_options.DynamicOptions
         if appropriate.
         """
         options_elem = self.input_elem.find( 'options' )
-        if options_elem is None:
-            options = None
-        else:
-            options = dynamic_options.DynamicOptions( options_elem, param )
-        return options
+        return options_elem
 
     def parse_static_options(self):
         static_options = list()

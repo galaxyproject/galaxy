@@ -1,7 +1,12 @@
 define([
+    'libs/underscore',
+    'libs/backbone',
     'utils/add-logging',
     'utils/localization'
-], function( addLogging, _l ){
+], function( _, Backbone, addLogging, _l ){
+
+'use strict';
+
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central
@@ -25,29 +30,14 @@ define([
  *
  */
 var LoggableMixin =  /** @lends LoggableMixin# */{
-
+    // replace null with console (if available) to see all logs for a particular view/model
     /** The logging object whose log function will be used to output
      *      messages. Null will supress all logging. Commonly set to console.
      */
-    // replace null with console (if available) to see all logs
-    logger       : null,
-    _logNamespace : '?',
+    logger        : null,
+    /** @type {String} a namespace for filtering/focusing log output */
+    _logNamespace : '.',
 
-    /** Output log messages/arguments to logger.
-     *  @param {Arguments} ... (this function is variadic)
-     *  @returns undefined if not this.logger
-     */
-    log : function(){
-        if( this.logger ){
-            var log = this.logger.log;
-            if( typeof this.logger.log === 'object' ){
-//TODO:! there has to be a way to get the lineno/file into this
-                log = Function.prototype.bind.call( this.logger.log, this.logger );
-            }
-            return log.apply( this.logger, arguments );
-        }
-        return undefined;
-    }
 };
 addLogging( LoggableMixin );
 
@@ -79,7 +69,7 @@ var SessionStorageModel = Backbone.Model.extend({
 
     _checkEnabledSessionStorage : function(){
         try {
-            return sessionStorage.length;
+            return window.sessionStorage.length >= 0;
         } catch( err ){
             alert( 'Please enable cookies in your browser for this Galaxy site' );
             return false;
@@ -181,7 +171,7 @@ function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
  * @example:
  *      see hda-model for searchAttribute and searchAliases definition examples.
  *      see history-contents.matches for how collections are filtered
- *      and see readonly-history-panel.searchHdas for how user input is connected to the filtering
+ *      and see readonly-history-view.searchHdas for how user input is connected to the filtering
  */
 var SearchableModelMixin = {
 
@@ -478,7 +468,11 @@ var SelectableViewMixin = {
         this.selectable = true;
         this.trigger( 'selectable', true, this );
         this._renderSelected();
-        this.$selector().show( speed );
+        if( speed ){
+            this.$selector().show( speed );
+        } else {
+            this.$selector().show();
+        }
     },
 
     /** remove the selector control
@@ -490,7 +484,11 @@ var SelectableViewMixin = {
         // reverse the process from showSelect
         this.selectable = false;
         this.trigger( 'selectable', false, this );
-        this.$selector().hide( speed );
+        if( speed ){
+            this.$selector().hide( speed );
+        } else {
+            this.$selector().hide();
+        }
     },
 
     /** Toggle whether the view is selected */

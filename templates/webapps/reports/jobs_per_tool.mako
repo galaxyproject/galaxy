@@ -25,44 +25,18 @@ ${get_css()}
         <table id="formHeader">
             <tr>
                 <td>
-                    ${
-                        get_pages(
-                            sort_id,
-                            order,
-                            page_specs,
-                            'jobs',
-                            'per_tool',
-                            spark_time=time_period)
-                    }
+                    ${get_pages(sort_id, order, page_specs, 'jobs', 'per_tool', spark_time=time_period)}
                 </td>
                 <td>
                     <h4 align="center">Jobs Per Tool</h4>
                     <h5 align="center">
-                        Click Tool ID to view details. 
-                        Graph goes from present to past 
-                        ${
-                            make_spark_settings(
-                                "jobs",
-                                "per_tool",
-                                spark_limit,
-                                sort_id,
-                                order,
-                                time_period,
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        Click Tool ID to view details.
+                        Graph goes from present to past
+                        ${make_spark_settings("jobs", "per_tool", spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries)}
                     </h5>
                 </td>
                 <td align="right">
-                    ${
-                        get_entry_selector(
-                            "jobs",
-                            "per_tool",
-                            page_specs.entries,
-                            sort_id,
-                            order)
-                    }
+                    ${get_entry_selector("jobs", "per_tool", page_specs.entries, sort_id, order)}
                 </td>
             </tr>
         </table>
@@ -72,59 +46,23 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'tool_id',
-                                'jobs',
-                                'per_tool',
-                                'Tool ID',
-                                spark_time=time_period,
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'per_tool', 'Tool ID', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow tool_id'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
                         <td class="third_width">
-                            ${
-                                get_sort_url(
-                                    sort_id,
-                                    order,
-                                    'total_jobs',
-                                    'jobs',
-                                    'per_tool',
-                                    'User Jobs',
-                                    spark_time=time_period,
-                                    page=page,
-                                    offset=offset,
-                                    entries=entries)
-                            }
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User Jobs', spark_time=time_period, page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
                         <td class="third_width">
-                            ${
-                                get_sort_url(
-                                    sort_id,
-                                    order,
-                                    'total_jobs',
-                                    'jobs',
-                                    'per_tool',
-                                    'User and Monitor Jobs',
-                                    spark_time=time_period,
-                                    page=page,
-                                    offset=offset,
-                                    entries=entries)
-                            }
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User and Monitor Jobs', spark_time=time_period, page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
                     <td></td>
                 </tr>
-                <% 
+                <%
                    ctr = 0
                    entries = 1
                 %>
@@ -148,18 +86,12 @@ ${get_css()}
                         </td>
                         <td>${job[1]}</td>
                         %try:
-                            ${
-                                make_sparkline(
-                                    key,
-                                    trends[key],
-                                    "bar",
-                                    "/ " + time_period[:-1])
-                            }
+                            ${make_sparkline(key, trends[key], "bar", "/ " + time_period[:-1])}
                         %except KeyError:
                         %endtry
                         <td id="${key}"></td>
                     </tr>
-                    <% 
+                    <%
                        ctr += 1
                        entries += 1
                     %>

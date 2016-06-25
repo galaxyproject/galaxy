@@ -1,5 +1,5 @@
 define([
-    "galaxy.masthead",
+    "layout/masthead",
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
@@ -102,7 +102,7 @@ var FolderListView = Backbone.View.extend({
           upper_folder_id = path[ path.length-2 ][ 0 ];
         }
 
-        this.$el.html( template( { 
+        this.$el.html( template( {
             path: this.folderContainer.attributes.metadata.full_path,
             parent_library_id: this.folderContainer.attributes.metadata.parent_library_id,
             id: this.options.id,
@@ -178,11 +178,6 @@ var FolderListView = Backbone.View.extend({
         var fetched_metadata = this.folderContainer.attributes.metadata;
         fetched_metadata.contains_file_or_folder = typeof this.collection.findWhere({type: 'file'}) !== 'undefined' || typeof this.collection.findWhere({type: 'folder'}) !== 'undefined';
         Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
-        $('.library-row').hover(function() {
-          $(this).find('.show_on_hover').show();
-        }, function () {
-          $(this).find('.show_on_hover').hide();
-        });
     },
 
     /**
@@ -207,18 +202,12 @@ var FolderListView = Backbone.View.extend({
             // model.set('readable_size', this.size_to_string(model.get('file_size')));
         //}
         model.set('folder_id', this.id);
-        var rowView = new mod_library_folderrow_view.FolderRowView(model);
+        var rowView = new mod_library_folderrow_view.FolderRowView({model: model});
 
         // save new rowView to cache
         this.rowViews[model.get('id')] = rowView;
 
         this.$el.find('#first_folder_item').after(rowView.el);
-
-        $('.library-row').hover(function() {
-          $(this).find('.show_on_hover').show();
-        }, function () {
-          $(this).find('.show_on_hover').hide();
-        });
     },
 
     /**
@@ -226,7 +215,9 @@ var FolderListView = Backbone.View.extend({
      * @param {Item or FolderAsModel} model of the view that will be removed
      */
     removeOne: function( model ){
-       this.$el.find( '#' + model.id ).remove();
+       this.$el.find('tr').filter(function(){
+           return $(this).data('id') && $(this).data('id') === model.id;
+       }).remove();
     },
 
     /**
@@ -259,11 +250,10 @@ var FolderListView = Backbone.View.extend({
     },
 
     /**
-     *  Sorts the underlying collection according to the parameters received. 
-     *  Currently supports only sorting by name. 
+     *  Sorts the underlying collection according to the parameters received.
+     *  Currently supports only sorting by name.
      */
     sortFolder: function(sort_by, order){
-        console.log('sorting');
         // default to asc sort by name
         if (sort_by === 'undefined' && order === 'undefined'){
             return this.collection.sortByNameAsc();
@@ -293,13 +283,13 @@ var FolderListView = Backbone.View.extend({
               that.makeDarkRow($row);
             } else {
               that.makeWhiteRow($row);
-            } 
+            }
         });
      },
 
-    /** 
-     * Check checkbox if user clicks on the whole row or 
-     *  on the checkbox itself 
+    /**
+     * Check checkbox if user clicks on the whole row or
+     *  on the checkbox itself
      */
     selectClickedRow : function (event) {
         var checkbox = '';
@@ -310,8 +300,8 @@ var FolderListView = Backbone.View.extend({
             $row = $(event.target.parentElement.parentElement);
             source = 'input';
         } else if (event.target.localName === 'td') {
-            checkbox = $("#" + event.target.parentElement.id).find(':checkbox')[0];
             $row = $(event.target.parentElement);
+            checkbox = $row.find(':checkbox')[0];
             source = 'td';
         }
         if (checkbox.checked){
@@ -354,49 +344,54 @@ var FolderListView = Backbone.View.extend({
     },
 
     templateFolder : function (){
-        var tmpl_array = [];
+      return _.template([
+      // BREADCRUMBS
+      '<ol class="breadcrumb">',
+        '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+        '<% _.each(path, function(path_item) { %>',
+          '<% if (path_item[0] != id) { %>',
+            '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+          '<% } else { %>',
+            '<li class="active"><span title="You are in this folder"><%- path_item[1] %></span></li>',
+          '<% } %>',
+        '<% }); %>',
+      '</ol>',
 
-        // BREADCRUMBS
-        tmpl_array.push('<ol class="breadcrumb">');
-        tmpl_array.push('   <li><a title="Return to the list of libraries" href="#">Libraries</a></li>');
-        tmpl_array.push('   <% _.each(path, function(path_item) { %>');
-        tmpl_array.push('   <% if (path_item[0] != id) { %>');
-        tmpl_array.push('   <li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ');
-        tmpl_array.push(    '<% } else { %>');
-        tmpl_array.push('   <li class="active"><span title="You are in this folder"><%- path_item[1] %></span></li>');
-        tmpl_array.push('   <% } %>');
-        tmpl_array.push('   <% }); %>');
-        tmpl_array.push('</ol>');
-
-        // FOLDER CONTENT
-        tmpl_array.push('<table data-library-id="<%- parent_library_id  %>" id="folder_table" class="grid table table-condensed">');
-        tmpl_array.push('   <thead>');
-        tmpl_array.push('       <th class="button_heading"></th>');
-        tmpl_array.push('       <th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
-        tmpl_array.push('       <th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon fa fa-sort-alpha-<%- order %>"></span></th>');
-        tmpl_array.push('       <th style="width:5%;">data type</th>');
-        tmpl_array.push('       <th style="width:10%;">size</th>');
-        tmpl_array.push('       <th style="width:160px;">time updated (UTC)</th>');
-        tmpl_array.push('       <th style="width:10%;"></th> ');
-        tmpl_array.push('   </thead>');
-        tmpl_array.push('   <tbody id="folder_list_body">');
-        tmpl_array.push('       <tr id="first_folder_item">');
-        tmpl_array.push('           <td><a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('           <td></td>');
-        tmpl_array.push('       </tr>');
-
-        tmpl_array.push('   </tbody>');
-        tmpl_array.push('</table>');
-        tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.</div>');
-
-        return _.template(tmpl_array.join(''));
+      // FOLDER CONTENT
+      '<table data-library-id="<%- parent_library_id  %>" id="folder_table" class="grid table table-condensed">',
+        '<thead>',
+          '<th class="button_heading"></th>',
+          '<th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
+          '<th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon fa fa-sort-alpha-<%- order %>"></span></th>',
+          '<th style="width:25%;">description</th>',
+          '<th style="width:5%;">data type</th>',
+          '<th style="width:10%;">size</th>',
+          '<th style="width:160px;">time updated (UTC)</th>',
+          '<th style="width:10%;"></th> ',
+        '</thead>',
+        '<tbody id="folder_list_body">',
+          '<tr id="first_folder_item">',
+          '<td>',
+            '<a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a>',
+          '</td>',
+          '<td></td>',
+          '<td></td>',
+          '<td></td>',
+          '<td></td>',
+          '<td></td>',
+          '<td></td>',
+          '<td></td>',
+          '</tr>',
+        '</tbody>',
+      '</table>',
+      '<div class="empty-folder-message" style="display:none;">',
+          'This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up',
+          ' please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">library security wikipage</a>',
+          ' or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.',
+      '</div>'
+      ].join(''));
     }
-    
+
 });
 
 return {

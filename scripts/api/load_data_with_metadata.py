@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
-
-This script scans a directory for files with companion '.json' files, then loads 
+This script scans a directory for files with companion '.json' files, then loads
 the data from the file, and attaches the .json contents using the 'extended_metadata'
 system in the library
 
@@ -10,15 +9,13 @@ python load_data_with_metadata.py <api_key> <api_url> /data/folder "API Imports"
 
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
-import os
-import shutil
-import sys
-import json
-import time
 import argparse
+import json
+import os
+import sys
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import submit, display
+from common import display, submit
+
 
 def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field=None):
     data = {}
@@ -38,7 +35,7 @@ def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_fi
     if uuid_field is not None and uuid_field in ext_meta:
         data['uuid'] = ext_meta[uuid_field]
 
-    libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted = True)
+    libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted=True)
     print libset
 
 
@@ -50,10 +47,10 @@ def main(api_key, api_url, in_folder, data_library, uuid_field=None):
         if library['name'] == data_library:
             library_id = library['id']
     if not library_id:
-        lib_create_data = {'name':data_library}
+        lib_create_data = {'name': data_library}
         library = submit(api_key, api_url + 'libraries', lib_create_data, return_formatted=False)
         library_id = library['id']
-    folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted = False)
+    folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted=False)
     for f in folders:
         if f['name'] == "/":
             library_folder_id = f['id']

@@ -1,10 +1,8 @@
 import logging
 import urllib
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('SQLAlchemy')
+from six import string_types
 from sqlalchemy import and_, false, func, null, true
 from sqlalchemy.orm import eagerload_all
 
@@ -12,7 +10,6 @@ import galaxy.util
 from galaxy import exceptions
 from galaxy import managers
 from galaxy import model
-from galaxy import util
 from galaxy import web
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings
@@ -33,7 +30,7 @@ log = logging.getLogger( __name__ )
 
 class NameColumn( grids.TextColumn ):
     def get_value( self, trans, grid, history ):
-        return history.get_display_name()
+        return escape(history.get_display_name())
 
 
 class HistoryListGrid( grids.Grid ):
@@ -41,18 +38,23 @@ class HistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            state_counts = {
-                'ok' : 0,
-                'running' : 0,
-                'queued' : 0,
-                'error' : 0,
-            }
-            for hda in history.datasets:
-                if hda.visible and not hda.deleted and hda.state in state_counts.keys():
-                    state_counts[ hda.state ] += 1
+            # States to show in column.
+            states_to_show = ( 'ok', 'running', 'queued', 'new', 'error' )
 
+            # Get dataset counts for each state in a state-count dictionary.
+            state_counts = dict( ( state, count ) for state, count in
+                                 trans.sa_session.query( model.Dataset.state, func.count(model.Dataset.state) )
+                                      .join( model.HistoryDatasetAssociation )
+                                      .group_by( model.Dataset.state )
+                                      .filter( model.HistoryDatasetAssociation.history_id == history.id,
+                                               model.HistoryDatasetAssociation.visible == true(),
+                                               model.HistoryDatasetAssociation.deleted == false(),
+                                               model.Dataset.state.in_(states_to_show) )
+                                 )
+
+            # Create HTML.
             rval = ''
-            for state in state_counts.keys():
+            for state in states_to_show:
                 count = state_counts.get( state )
                 if count:
                     rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
@@ -147,11 +149,12 @@ class SharedHistoryListGrid( grids.Grid ):
 
     class SharedByColumn( grids.GridColumn ):
         def get_value( self, trans, grid, history ):
-            return history.user.email
+            return escape(history.user.email)
 
     # Grid definition
     title = "Histories shared with you by others"
     model_class = model.History
+    template = '/history/shared_grid.mako'
     default_sort_key = "-update_time"
     default_filter = {}
     columns = [
@@ -164,6 +167,7 @@ class SharedHistoryListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "View", allow_multiple=False, target="_top" ),
         grids.GridOperation( "Copy" ),
+        # grids.GridOperation( "Copy", allow_multiple=False ),
         grids.GridOperation( "Unshare" )
     ]
     standard_filters = []
@@ -266,8 +270,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                                               id=kwargs['id'],
                                                               show_deleted=history.deleted,
                                                               use_panels=False ) )
-            if operation == 'copy' and kwargs.get( 'id', None ):
-                return self.copy( trans, id=kwargs.get( 'id', None ) )
             history_ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
@@ -281,7 +283,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                         assert trans.user.id == history.user_id, "History does not belong to current user"
                     histories.append( history )
                 else:
-                    log.warn( "Invalid history id '%r' passed to list", history_id )
+                    log.warning( "Invalid history id '%r' passed to list", history_id )
             if histories:
                 if operation == "switch":
                     status, message = self._list_switch( trans, histories )
@@ -447,13 +449,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 # Display history.
                 history = self.history_manager.get_accessible( self.decode_id( ids[0] ), trans.user, current_history=trans.history )
                 return self.display_by_username_and_slug( trans, history.user.username, history.slug )
-            elif operation == "copy":
-                if not ids:
-                    message = "Select a history to copy"
-                    return self.shared_list_grid( trans, status='error', message=message, **kwargs )
-                # When copying shared histories, only copy active datasets
-                new_kwargs = { 'copy_choice' : 'active' }
-                return self.copy( trans, ids, **new_kwargs )
             elif operation == 'unshare':
                 if not ids:
                     message = "Select a history to unshare"
@@ -636,7 +631,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             contents = self.history_serializer.serialize_contents( history_to_view,
                 'contents', trans=trans, user=trans.user )
 
-        except Exception, exc:
+        except Exception as exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
             log.exception( 'Error bootstrapping history for user %s: %s', user_id, exc )
             if isinstance( exc, exceptions.ItemAccessibilityException ):
@@ -1278,9 +1273,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if self.create_item_slug( trans.sa_session, history ):
             trans.sa_session.flush()
         return_dict = {
-            "name" : history.name,
-            "link" : url_for(controller='history', action="display_by_username_and_slug",
-                             username=history.user.username, slug=history.slug ) }
+            "name": history.name,
+            "link": url_for(controller='history', action="display_by_username_and_slug",
+                            username=history.user.username, slug=history.slug ) }
         return return_dict
         # TODO: used in page/editor.mako
 
@@ -1316,82 +1311,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # TODO: used in grid_base.mako
 
     @web.expose
-    def imp( self, trans, id=None, confirm=False, **kwd ):
-        """Import another user's history via a shared URL"""
-        user = trans.get_user()
-        user_history = trans.get_history()
-        # Set referer message
-        if 'referer' in kwd:
-            referer = kwd['referer']
-        else:
-            referer = trans.request.referer
-        if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
-        else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
-
-        # include all datasets when copying?
-        all_datasets = util.string_as_bool( kwd.get( 'all_datasets', False ) )
-
-        # Do import.
-        if not id:
-            return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
-        import_history = self.history_manager.by_id( self.decode_id( id ) )
-        if not import_history:
-            return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
-        # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
-        if not self.history_manager.is_accessible( import_history, trans.user, current_history=trans.history ):
-            return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
-        if user:
-            # dan: I can import my own history.
-            # if import_history.user_id == user.id:
-            #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
-            new_history = import_history.copy( target_user=user, all_datasets=all_datasets )
-            new_history.name = "imported: " + new_history.name
-            new_history.user_id = user.id
-            galaxy_session = trans.get_galaxy_session()
-            try:
-                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
-                                              .first()
-            except:
-                association = None
-            new_history.add_galaxy_session( galaxy_session, association=association )
-            trans.sa_session.add( new_history )
-            trans.sa_session.flush()
-            # Set imported history to be user's current history.
-            trans.set_history( new_history )
-            return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
-
-        elif not user_history or not user_history.datasets or confirm:
-            # TODO:?? should anon-users be allowed to include deleted datasets when importing?
-            # new_history = import_history.copy( activatable=include_deleted )
-            new_history = import_history.copy()
-            new_history.name = "imported: " + new_history.name
-            new_history.user_id = None
-            galaxy_session = trans.get_galaxy_session()
-            try:
-                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
-                                              .first()
-            except:
-                association = None
-            new_history.add_galaxy_session( galaxy_session, association=association )
-            trans.sa_session.add( new_history )
-            trans.sa_session.flush()
-            trans.set_history( new_history )
-            return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
-        return trans.show_warn_message( """
-            Warning! If you import this history, you will lose your current
-            history. <br>You can <a href="%s">continue and import this history</a> or %s.
-            """ % ( web.url_for(controller='history', action='imp', id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
-        # TODO: used in history/view, display, embed
-
-    @web.expose
     @web.require_login( "rename histories" )
     def rename( self, trans, id=None, name=None, **kwd ):
         user = trans.get_user()
@@ -1418,7 +1337,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             new_name = name[i]
 
             # skip if name is empty
-            if not isinstance( new_name, basestring ) or not new_name.strip():
+            if not isinstance( new_name, string_types ) or not new_name.strip():
                 change_msgs.append( "You must specify a valid name for History: " + cur_name )
                 continue
 
@@ -1445,51 +1364,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         change_msg = '<br />'.join( change_msgs )
         return trans.show_message( change_msg, refresh_frames=['history'] )
 
-    @web.expose
-    @web.require_login( "copy shared Galaxy history" )
-    def copy( self, trans, id=None, **kwd ):
-        """Copy one or more histories"""
-        params = Params( kwd )
-        # If copy_choice was not specified, display form passing along id
-        # argument
-        copy_choice = params.get( 'copy_choice', None )
-        if not copy_choice:
-            return trans.fill_template( "/history/copy.mako", id_argument=id )
-
-        # Extract histories for id argument, defaulting to current
-        if id is None:
-            histories = [ trans.history ]
-        else:
-            ids = galaxy.util.listify( id )
-            histories = []
-            for history_id in ids:
-                history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
-                histories.append( history )
-        user = trans.get_user()
-        for history in histories:
-            if history.user == user:
-                owner = True
-            else:
-                if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
-                                   .filter_by( user=user, history=history ) \
-                                   .count() == 0:
-                    return trans.show_error_message( "The history you are attempting to copy is not owned by you or shared with you.  " )
-                owner = False
-            name = "Copy of '%s'" % history.name
-            if not owner:
-                name += " shared by '%s'" % history.user.email
-            if copy_choice == 'activatable':
-                new_history = history.copy( name=name, target_user=user, activatable=True )
-            elif copy_choice == 'active':
-                name += " (active items only)"
-                new_history = history.copy( name=name, target_user=user )
-        if len( histories ) == 1:
-            switch_url = url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) )
-            msg = 'New history "<a href="%s" target="_top">%s</a>" has been created.' % ( switch_url, new_history.name )
-        else:
-            msg = 'Copied and created %d new histories.' % len( histories )
-        return trans.show_ok_message( msg )
-
     # ------------------------------------------------------------------------- current history
     @web.expose
     @web.require_login( "switch to a history" )
@@ -1512,17 +1386,21 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.json
     def set_as_current( self, trans, id ):
         """Change the current user's current history to one with `id`."""
+        # Prevent IE11 from caching this, since we actually use it via GET.
+        trans.response.headers[ 'Cache-Control' ] = ["max-age=0", "no-cache", "no-store"]
         try:
             history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
             trans.set_history( history )
             return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
-        except exceptions.MessageException, msg_exc:
+        except exceptions.MessageException as msg_exc:
             trans.response.status = msg_exc.err_code.code
             return { 'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code }
 
     @web.json
     def current_history_json( self, trans ):
         """Return the current user's current history in a serialized, dictionary form."""
+        # Prevent IE11 from caching this
+        trans.response.headers[ 'Cache-Control' ] = ["max-age=0", "no-cache", "no-store"]
         history = trans.get_history( create=True )
         return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 

@@ -3,8 +3,6 @@ Provides utilities for working with GFF files.
 """
 import copy
 
-from galaxy import eggs
-eggs.require( "bx-python" )
 from bx.intervals.io import GenomicInterval, MissingFieldError, NiceReaderWrapper, ParseError, GenomicIntervalReader
 from bx.tabular.io import Header, Comment
 

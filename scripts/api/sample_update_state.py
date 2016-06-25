@@ -1,10 +1,7 @@
 #!/usr/bin/env python
+import os
+import sys
 
-
-import os, sys, traceback
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import display
-from common import submit
 from common import update
 
 try:

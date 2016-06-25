@@ -24,9 +24,9 @@ ${get_css()}
                             ${len( users ) }
                         %else:
                             0
-                        %endif 
-                        &nbsp;users have not logged in to Galaxy for 
-                        <input type="textfield" 
+                        %endif
+                        &nbsp;users have not logged in to Galaxy for
+                        <input type="textfield"
                                value="${days_not_logged_in}"
                                size="3"
                                name="days_not_logged_in">
@@ -46,29 +46,11 @@ ${get_css()}
         %if users:
             <tr class="header">
                 <td class="half_width">
-                    ${
-                        get_sort_url(
-                            sort_id,
-                            order,
-                            'zero',
-                            'users',
-                            'last_access_date',
-                            'Email',
-                            days_not_logged_in=days_not_logged_in)
-                    }
+                    ${get_sort_url(sort_id, order, 'zero', 'users', 'last_access_date', 'Email', days_not_logged_in=days_not_logged_in)}
                     <span class='dir_arrow zero'>${arrow}</span>
                 </td>
                 <td class="half_width">
-                    ${
-                        get_sort_url(
-                            sort_id,
-                            order,
-                            'one',
-                            'users',
-                            'last_access_date',
-                            'Date of last Login',
-                            days_not_logged_in=days_not_logged_in)
-                    }
+                    ${get_sort_url(sort_id, order, 'one', 'users', 'last_access_date', 'Date of last Login', days_not_logged_in=days_not_logged_in)}
                     <span class='dir_arrow one'>${arrow}</span>
                 </td>
             </tr>

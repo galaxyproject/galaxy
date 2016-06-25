@@ -13,7 +13,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+    ${h.js("libs/jquery/jquery.autocomplete")}
 </%def>
 
 <%def name="stylesheets()">

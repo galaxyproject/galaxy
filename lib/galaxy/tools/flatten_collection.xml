@@ -1,0 +1,56 @@
+<tool id="__FLATTEN__"
+      name="Flatten Collection"
+      version="1.0.0"
+      tool_type="filter_collection">
+    <description>into a flat list of datasets</description>
+    <type class="FlattenTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection" />
+        <param type="select" name="join_identifier" label="Join collection identifiers using" help="">
+            <option value="_">_</option>
+            <option value=":">:</option>
+            <option value="-">-</option>
+        </param>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type="list" label="${on_string} (flattened)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <output_collection name="output" type="list">
+              <element name="i1_forward">
+                <assert_contents>
+                  <has_text_matching expression="^This is a line of text.\n$" />
+                </assert_contents>
+              </element>
+              <element name="i1_reverse">
+                <assert_contents>
+                  <has_text_matching expression="^This is a different line of text.\n$" />
+                </assert_contents>
+              </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help>
+        This tool takes nested collections such as a list of lists or a list of
+        dataset pairs - and produces a flat list from the inputs. The collection
+        identifiers are merged together to create new collection identifiers in
+        the flattened result.
+
+        This tool will create new history datasets from your collection
+        but your quota usage will not increase.
+    </help>
+</tool>

@@ -18,6 +18,11 @@ from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.jobs import NoopQueue
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.deps.containers import NullContainerFinder
+import galaxy.datatypes.registry
+
+datatypes_registry = galaxy.datatypes.registry.Registry()
+datatypes_registry.load_datatypes()
+galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
 class UsesApp( object ):
@@ -106,6 +111,7 @@ class MockApp( object ):
 
         self.config = Bunch(
             outputs_to_working_directory=False,
+            commands_in_new_shell=True,
             new_file_path=os.path.join(test_directory, "new_files"),
             tool_data_path=os.path.join(test_directory, "tools"),
             root=os.path.join(test_directory, "galaxy"),
@@ -154,6 +160,7 @@ class MockContext(object):
         self.flushed = False
         self.model_objects = model_objects or defaultdict( lambda: {} )
         self.created_objects = []
+        self.current = self
 
     def expunge_all(self):
         self.expunged_all = True

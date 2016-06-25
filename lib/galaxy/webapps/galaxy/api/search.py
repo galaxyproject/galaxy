@@ -24,14 +24,14 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
             se = GalaxySearchEngine()
             try:
                 query = se.query(query_txt)
-            except Exception, e:
+            except Exception as e:
                 return {'error': str(e)}
             if query is not None:
                 query.decode_query_ids(trans)
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)
-                except Exception, e:
+                except Exception as e:
                     return {'error': str(e)}
                 for item in results:
                     append = False

@@ -43,7 +43,7 @@ def upgrade(migrate_engine):
     # Create the job_to_output_library_dataset table
     try:
         JobToOutputLibraryDatasetAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print "Creating job_to_output_library_dataset table failed: %s" % str( e )
         log.debug( "Creating job_to_output_library_dataset table failed: %s" % str( e ) )
     # Create the library_folder_id column
@@ -57,7 +57,7 @@ def upgrade(migrate_engine):
             col = Column( "library_folder_id", Integer, index=True )
             col.create( Job_table, index_name='ix_job_library_folder_id')
             assert col is Job_table.c.library_folder_id
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'library_folder_id' to job table failed: %s" % ( str( e ) ) )
         try:
             LibraryFolder_table = Table( "library_folder", metadata, autoload=True )
@@ -74,7 +74,7 @@ def upgrade(migrate_engine):
                                                  name='job_library_folder_id_fk' )
                     # Create the constraint
                     cons.create()
-                except Exception, e:
+                except Exception as e:
                     log.debug( "Adding foreign key constraint 'job_library_folder_id_fk' to table 'library_folder' failed: %s" % ( str( e ) ) )
     # Create the ix_dataset_state index
     try:
@@ -85,7 +85,7 @@ def upgrade(migrate_engine):
     i = Index( "ix_dataset_state", Dataset_table.c.state )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Adding index 'ix_dataset_state' to dataset table failed: %s" % str( e ) )
 
@@ -103,12 +103,12 @@ def downgrade(migrate_engine):
         try:
             col = Job_table.c.library_folder_id
             col.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Dropping column 'library_folder_id' from job table failed: %s" % ( str( e ) ) )
     # Drop the job_to_output_library_dataset table
     try:
         JobToOutputLibraryDatasetAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping job_to_output_library_dataset table failed: %s" % str( e ) )
     # Drop the ix_dataset_state index
@@ -120,6 +120,6 @@ def downgrade(migrate_engine):
     i = Index( "ix_dataset_state", Dataset_table.c.state )
     try:
         i.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping index 'ix_dataset_state' from dataset table failed: %s" % str( e ) )

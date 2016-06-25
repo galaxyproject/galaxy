@@ -4,8 +4,6 @@ API operations on Quota objects.
 import logging
 
 from paste.httpexceptions import HTTPBadRequest
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false, true
 
 from galaxy import web, util
@@ -52,7 +50,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         Displays information about a quota.
         """
         quota = self.get_quota( trans, id, deleted=util.string_as_bool( deleted ) )
-        return quota.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        return quota.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'total_disk_usage': float } )
 
     @web.expose_api
     @web.require_admin
@@ -63,12 +61,12 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         """
         try:
             self.validate_in_users_and_groups( trans, payload )
-        except Exception, e:
+        except Exception as e:
             raise HTTPBadRequest( detail=str( e ) )
         params = self.get_quota_params( payload )
         try:
             quota, message = self._create_quota( params )
-        except ActionInputError, e:
+        except ActionInputError as e:
             raise HTTPBadRequest( detail=str( e ) )
         item = quota.to_dict( value_mapper={ 'id': trans.security.encode_id } )
         item['url'] = url_for( 'quota', id=trans.security.encode_id( quota.id ) )
@@ -84,7 +82,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         """
         try:
             self.validate_in_users_and_groups( trans, payload )
-        except Exception, e:
+        except Exception as e:
             raise HTTPBadRequest( detail=str( e ) )
 
         quota = self.get_quota( trans, id, deleted=False )
@@ -108,7 +106,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         for method in methods:
             try:
                 message = method( quota, params )
-            except ActionInputError, e:
+            except ActionInputError as e:
                 raise HTTPBadRequest( detail=str( e ) )
             messages.append( message )
         return '; '.join( messages )
@@ -131,7 +129,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
             message = self._mark_quota_deleted( quota, params )
             if util.string_as_bool( payload.get( 'purge', False ) ):
                 message += self._purge_quota( quota, params )
-        except ActionInputError, e:
+        except ActionInputError as e:
             raise HTTPBadRequest( detail=str( e ) )
         return message
 
@@ -145,5 +143,5 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         quota = self.get_quota( trans, id, deleted=True )
         try:
             return self._undelete_quota( quota )
-        except ActionInputError, e:
+        except ActionInputError as e:
             raise HTTPBadRequest( detail=str( e ) )

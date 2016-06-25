@@ -2,21 +2,16 @@
 Galaxy web framework helpers
 """
 
-import time
+from ..base import server_starttime
 from datetime import datetime, timedelta
-from galaxy import eggs
+
 from galaxy.util import hash_util
+from galaxy.util import unicodify
 from galaxy.util.json import safe_dumps as dumps  # noqa (used by mako templates)
-eggs.require( "MarkupSafe" )  # required by WebHelpers
-eggs.require( "WebHelpers" )
 from webhelpers import date
 from webhelpers.html.tags import stylesheet_link, javascript_link
 
-eggs.require( "repoze.lru" )  # used by Routes
-eggs.require( "Routes" )
 from routes import url_for
-
-server_starttime = int(time.time())
 
 
 def time_ago( x ):
@@ -108,11 +103,7 @@ def to_unicode( a_string ):
     Convert a string to unicode in utf-8 format; if string is already unicode,
     does nothing because string's encoding cannot be determined by introspection.
     """
-    a_string_type = type( a_string )
-    if a_string_type is str:
-        return unicode( a_string, 'utf-8' )
-    elif a_string_type is unicode:
-        return a_string
+    return unicodify( a_string, 'utf-8' )
 
 
 def is_true( val ):

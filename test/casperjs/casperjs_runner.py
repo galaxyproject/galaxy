@@ -1,6 +1,6 @@
 """Test runner for casperjs headless browser tests with the Galaxy distribution.
 
-Allows integration of casperjs tests with buildbot, run_functional_tests.sh
+Allows integration of casperjs tests with run_functional_tests.sh
 
 Tests can be run in any of the following ways:
 * casperjs test mytests.js --url='http://localhost:8080'
@@ -54,7 +54,7 @@ if minor < 6:
         # if nose is installed do a skip test
         from nose.plugins.skip import SkipTest
         raise SkipTest( msg )
-    except ImportError, i_err:
+    except ImportError as i_err:
         raise AssertionError( msg )
 
 # --------------------------------------------------------------------
@@ -112,8 +112,10 @@ class CasperJSTestCase( unittest.TestCase ):
         process_command_list = self.build_command_line( rel_script_path, *args, **kwargs )
         log.debug( 'process_command_list: %s', str( process_command_list ) )
         try:
-            process = subprocess.Popen( process_command_list, shell=False,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            process = subprocess.Popen( process_command_list,
+                                        shell=False,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE )
 
             # output from the browser (stderr only) immediately
             while process.poll() is None:
@@ -143,11 +145,11 @@ class CasperJSTestCase( unittest.TestCase ):
 
         # couldn't find the headless browser,
         #   provide information (as it won't be included by default with galaxy)
-        except OSError, os_err:
+        except OSError as os_err:
             if os_err.errno == errno.ENOENT:
-                log.error( 'No path to headless browser executable: %s\n'
-                    + 'These tests were designed to use the following headless browser:\n%s',
-                    self.exec_path, self.casper_info )
+                log.error( 'No path to headless browser executable: %s\n' +
+                           'These tests were designed to use the following headless browser:\n%s',
+                           self.exec_path, self.casper_info )
             raise
 
         return self.handle_js_results( stdout_output )
@@ -198,18 +200,15 @@ class CasperJSTestCase( unittest.TestCase ):
         """Converts the headless' error from JSON into a more informative
         python HeadlessJSJavascriptError.
         """
-        get_error = lambda d: d[ 'errors' ][0]
-        get_msg = lambda err: err[ 'msg' ]
-        get_trace = lambda err: err[ 'backtrace' ]
         try:
             # assume it's json and located in errors (and first)
             js_test_results = json.loads( stdout_output )
-            last_error = get_error( js_test_results )
-            err_string = ( "%s\n%s" % ( get_msg( last_error ),
-                self.browser_backtrace_to_string( get_trace( last_error ) ) ) )
+            last_error = js_test_results['errors'][0]
+            err_string = ( "%s\n%s" % ( last_error['msg'],
+                           self.browser_backtrace_to_string( last_error['backtrace'] ) ) )
 
         # if we couldn't parse json from what's returned on the error, dump stdout
-        except ValueError, val_err:
+        except ValueError as val_err:
             if str( val_err ) == 'No JSON object could be decoded':
                 log.debug( '(error parsing returned JSON from casperjs, dumping stdout...)\n:%s', stdout_output )
                 return HeadlessJSJavascriptError( 'see log for details' )
@@ -217,7 +216,7 @@ class CasperJSTestCase( unittest.TestCase ):
                 raise
 
         # otherwise, raise a vanilla exc
-        except Exception, exc:
+        except Exception as exc:
             log.debug( '(failed to parse error returned from %s: %s)', _PATH_TO_HEADLESS, str( exc ) )
             return HeadlessJSJavascriptError(
                 "ERROR in headless browser script %s" % ( script_path ) )
@@ -250,8 +249,8 @@ class CasperJSTestCase( unittest.TestCase ):
             js_test_results = json.loads( results )
             failures = js_test_results[ 'failures' ]
             assert len( failures ) == 0, (
-                "%d assertions failed in the headless browser tests" % ( len( failures ) )
-                + " (see the log for details)" )
+                "%d assertions failed in the headless browser tests" % ( len( failures ) ) +
+                " (see the log for details)" )
 
     # ---------------------------------------------------------------- TestCase overrides
     def setUp( self ):
@@ -431,11 +430,6 @@ class Test_05_API( CasperJSTestCase ):
         """Test API permissions for importable, published histories using anonymous user.
         """
         self.run_js_script( 'api-anon-history-permission-tests.js' )
-
-    def test_05_workflow_api( self ):
-        """Test API for workflows.
-        """
-        self.run_js_script( 'api-workflow-tests.js' )
 
     def test_06_visualization_api( self ):
         """Test API for visualizations.

@@ -5,13 +5,12 @@ import logging
 import os
 import shutil
 import tempfile
+from collections import namedtuple
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
-from galaxy.datatypes import checkers
+from galaxy.util import checkers, safe_relpath
 from tool_shed.tools import data_table_manager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
 
@@ -22,30 +21,44 @@ UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store', 'tool_test_output
 
 
 def check_archive( repository, archive ):
+    valid = []
+    invalid = []
+    errors = []
+    undesirable_files = []
+    undesirable_dirs = []
     for member in archive.getmembers():
         # Allow regular files and directories only
         if not ( member.isdir() or member.isfile() or member.islnk() ):
-            message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc).  "
-            message += "The problematic member in this archive is %s," % str( member.name )
-            return False, message
-        for item in [ '.hg', '..', '/' ]:
-            if member.name.startswith( item ):
-                message = "Uploaded archives cannot contain .hg directories, absolute filenames starting with '/', or filenames with two dots '..'.  "
-                message += "The problematic member in this archive is %s." % str( member.name )
-                return False, message
-        if member.name in [ 'hgrc' ]:
-            message = "Uploaded archives cannot contain hgrc files.  "
-            message += "The problematic member in this archive is %s." % str( member.name )
-            return False, message
+            errors.append( "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc)." )
+            invalid.append( member )
+            continue
+        if not safe_relpath( member.name ):
+            errors.append( "Uploaded archives cannot contain files that would extract outside of the archive." )
+            invalid.append( member )
+            continue
+        if os.path.basename( member.name ) in UNDESIRABLE_FILES:
+            undesirable_files.append( member )
+            continue
+        head = tail = member.name
+        try:
+            while tail:
+                head, tail = os.path.split(head)
+                if tail in UNDESIRABLE_DIRS:
+                    undesirable_dirs.append( member )
+                    assert False
+        except AssertionError:
+            continue
         if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION and member.name != rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
-            message = 'Repositories of type <b>Repository suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.'
-            message += 'This archive contains a member named %s.' % str( member.name )
-            return False, message
+            errors.append( 'Repositories of type <b>Repository suite definition</b> can contain only a single file named <b>repository_dependencies.xml</b>.' )
+            invalid.append( member )
+            continue
         if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and member.name != rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
-            message = 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.'
-            message += 'This archive contains a member named %s.' % str( member.name )
-            return False, message
-    return True, ''
+            errors.append( 'Repositories of type <b>Tool dependency definition</b> can contain only a single file named <b>tool_dependencies.xml</b>.' )
+            invalid.append( member )
+            continue
+        valid.append( member )
+    ArchiveCheckResults = namedtuple( 'ArchiveCheckResults', [ 'valid', 'invalid', 'undesirable_files', 'undesirable_dirs', 'errors' ] )
+    return ArchiveCheckResults( valid, invalid, undesirable_files, undesirable_dirs, errors )
 
 
 def check_file_contents_for_email_alerts( app ):
@@ -163,7 +176,7 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
             # the uploaded archive.
             try:
                 hg_util.remove_file( repo.ui, repo, repo_file, force=True )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
                 relative_selected_file = repo_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
                 repo.dirstate.remove( relative_selected_file )
@@ -172,7 +185,7 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
                 if os.path.isdir( absolute_selected_file ):
                     try:
                         os.rmdir( absolute_selected_file )
-                    except OSError, e:
+                    except OSError as e:
                         # The directory is not empty.
                         pass
                 elif os.path.isfile( absolute_selected_file ):
@@ -180,7 +193,7 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
                     dir = os.path.split( absolute_selected_file )[0]
                     try:
                         os.rmdir( dir )
-                    except OSError, e:
+                    except OSError as e:
                         # The directory is not empty.
                         pass
     # See if any admin users have chosen to receive email alerts when a repository is updated.
@@ -222,7 +235,7 @@ def handle_gzip( repository, uploaded_file_name ):
     while 1:
         try:
             chunk = gzipped_file.read( basic_util.CHUNK_SIZE )
-        except IOError, e:
+        except IOError as e:
             os.close( fd )
             os.remove( uncompressed )
             log.exception( 'Problem uncompressing gz data "%s": %s' % ( uploaded_file_name, str( e ) ) )

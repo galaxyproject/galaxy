@@ -1,17 +1,16 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from six import string_types
 from string import punctuation as PUNCTUATION
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, func, or_
 
 import galaxy.queue_worker
 from galaxy import util, web
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import repository_util
 from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
@@ -36,7 +35,7 @@ class Admin( object ):
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
             is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
-            installing_repository_ids = suc.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
+            installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
                                         is_repo_installed=is_repo_installed,
                                         installing_repository_ids=installing_repository_ids,
@@ -54,7 +53,7 @@ class Admin( object ):
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
             is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
-            installing_repository_ids = suc.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
+            installing_repository_ids = repository_util.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
             return trans.fill_template( '/webapps/galaxy/admin/center.mako',
                                         is_repo_installed=is_repo_installed,
                                         installing_repository_ids=installing_repository_ids,
@@ -70,26 +69,24 @@ class Admin( object ):
     def package_tool( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
         toolbox = self.app.toolbox
         tool_id = None
         if params.get( 'package_tool_button', False ):
             tool_id = params.get('tool_id', None)
-            tool_tarball, success, message = trans.app.toolbox.package_tool( trans, tool_id )
-            if success:
+            try:
+                tool_tarball = trans.app.toolbox.package_tool( trans, tool_id )
                 trans.response.set_content_type( 'application/x-gzip' )
                 download_file = open( tool_tarball )
                 os.unlink( tool_tarball )
                 tarball_path, filename = os.path.split( tool_tarball )
                 trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( tool_id )
                 return download_file
-            else:
-                status = 'error'
-        return trans.fill_template( '/admin/package_tool.mako',
-                                    tool_id=tool_id,
-                                    toolbox=toolbox,
-                                    message=message,
-                                    status=status )
+            except Exception:
+                return trans.fill_template( '/admin/package_tool.mako',
+                                            tool_id=tool_id,
+                                            toolbox=toolbox,
+                                            message=message,
+                                            status='error' )
 
     @web.expose
     @web.require_admin
@@ -100,7 +97,7 @@ class Admin( object ):
         toolbox = self.app.toolbox
         tool_id = None
         if params.get( 'reload_tool_button', False ):
-            tool_id = params.get('tool_id', None)
+            tool_id = kwd.get( 'tool_id', None )
             galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
             message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
         return trans.fill_template( '/admin/reload_tool.mako',
@@ -315,7 +312,7 @@ class Admin( object ):
             else:
                 out_groups.append( ( group.id, group.name ) )
         library_dataset_actions = {}
-        if trans.webapp.name == 'galaxy':
+        if trans.webapp.name == 'galaxy' and len(role.dataset_actions) < 25:
             # Build a list of tuples that are LibraryDatasetDatasetAssociationss followed by a list of actions
             # whose DatasetPermissions is associated with the Role
             # [ ( LibraryDatasetDatasetAssociation [ action, action ] ) ]
@@ -341,6 +338,9 @@ class Admin( object ):
                         library_dataset_actions[ library ][ folder_path ].append( dp.action )
                     except:
                         library_dataset_actions[ library ][ folder_path ] = [ dp.action ]
+        else:
+            message = "Not showing associated datasets, there are too many."
+            status = 'info'
         return trans.fill_template( '/admin/dataset_security/role/role.mako',
                                     role=role,
                                     in_users=in_users,
@@ -756,7 +756,7 @@ class Admin( object ):
             for user_id in user_ids:
                 user = get_user( trans, user_id )
                 password = kwd.get( 'password', None )
-                confirm = kwd.get( 'confirm' , None )
+                confirm = kwd.get( 'confirm', None )
                 if len( password ) < 6:
                     message = "Use a password of at least 6 characters."
                     status = 'error'
@@ -1130,7 +1130,7 @@ class Admin( object ):
             # write the configured sanitize_whitelist_file with new whitelist
             # and update in-memory list.
             with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
-                if isinstance(tools_to_whitelist, basestring):
+                if isinstance(tools_to_whitelist, string_types):
                     tools_to_whitelist = [tools_to_whitelist]
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))

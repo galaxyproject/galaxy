@@ -173,8 +173,8 @@ spaceghost.test.begin( 'Test the form of various HDA states', 0, function suite(
         // different states, datatypes will have different action buttons
         testIconButton.call( this, hdaDbId, buttonsSelector, 'info',
             this.historypanel.data.hdaPrimaryActionButtons.info );
-        testIconButton.call( this, hdaDbId, buttonsSelector, 'rerun',
-            this.historypanel.data.hdaPrimaryActionButtons.rerun );
+        // testIconButton.call( this, hdaDbId, buttonsSelector, 'rerun',
+        //     this.historypanel.data.hdaPrimaryActionButtons.rerun );
 
         //TODO: move to testDownloadButton as its own step
         if( !expectedMetadataFiles ){

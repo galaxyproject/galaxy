@@ -15,46 +15,47 @@ options:
   -o, --output=outputfile     output file
 """
 
-import optparse, string, sys
+import optparse
+import string
+import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
-def main():
 
-    # Parse command line    
+def main():
     parser = optparse.OptionParser( usage="%prog [options] " )
     parser.add_option( "-r", "--region", dest="region", default="transcribed",
                        help="Limit to region: one of coding, utr3, utr5, transcribed [default]" )
-    parser.add_option( "-e", "--exons",  action="store_true", dest="exons",
+    parser.add_option( "-e", "--exons", action="store_true", dest="exons",
                        help="Only print intervals overlapping an exon" )
-    parser.add_option( "-s", "--strand",  action="store_true", dest="strand",
+    parser.add_option( "-s", "--strand", action="store_true", dest="strand",
                        help="Print strand after interval" )
-    parser.add_option( "-i", "--input",  dest="input",  default=None,
+    parser.add_option( "-i", "--input", dest="input", default=None,
                        help="Input file" )
     parser.add_option( "-o", "--output", dest="output", default=None,
                        help="Output file" )
     options, args = parser.parse_args()
     assert options.region in ( 'coding', 'utr3', 'utr5', 'transcribed' ), "Invalid region argument"
-    
+
     try:
-        out_file = open (options.output,"w")
+        out_file = open(options.output, "w")
     except:
         print >> sys.stderr, "Bad output file."
         sys.exit(0)
-    
+
     try:
-        in_file = open (options.input)
+        in_file = open(options.input)
     except:
         print >> sys.stderr, "Bad input file."
         sys.exit(0)
-    
-    print "Region:", options.region+";"
+
+    print "Region:", options.region + ";"
     print "Only overlap with Exons:",
     if options.exons:
         print "Yes"
     else:
         print "No"
-    
+
     # Read table and handle each gene
     for line in in_file:
         try:
@@ -64,7 +65,7 @@ def main():
             fields = line.split( '\t' )
             name = fields[0]
             chrom = fields[1]
-            strand = fields[2].replace(" ","_")
+            strand = fields[2].replace(" ", "_")
             tx_start = int( fields[3] )
             tx_end = int( fields[4] )
             cds_start = int( fields[5] )
@@ -72,11 +73,15 @@ def main():
 
             # Determine the subset of the transcribed region we are interested in
             if options.region == 'utr3':
-                if strand == '-': region_start, region_end = tx_start, cds_start
-                else: region_start, region_end = cds_end, tx_end 
+                if strand == '-':
+                    region_start, region_end = tx_start, cds_start
+                else:
+                    region_start, region_end = cds_end, tx_end
             elif options.region == 'utr5':
-                if strand == '-': region_start, region_end = cds_end, tx_end
-                else: region_start, region_end = tx_start, cds_start
+                if strand == '-':
+                    region_start, region_end = cds_end, tx_end
+                else:
+                    region_start, region_end = tx_start, cds_start
             elif options.region == 'coding':
                 region_start, region_end = cds_start, cds_end
             else:
@@ -91,16 +96,22 @@ def main():
                     start = max( start, region_start )
                     end = min( end, region_end )
                     if start < end:
-                        if strand: print_tab_sep(out_file, chrom, start, end, name, "0", strand )
-                        else: print_tab_sep(out_file, chrom, start, end )
+                        if strand:
+                            print_tab_sep(out_file, chrom, start, end, name, "0", strand )
+                        else:
+                            print_tab_sep(out_file, chrom, start, end )
             else:
-                if strand: print_tab_sep(out_file, chrom, region_start, region_end, name, "0", strand )
-                else: print_tab_sep(out_file, chrom, region_start, region_end )
+                if strand:
+                    print_tab_sep(out_file, chrom, region_start, region_end, name, "0", strand )
+                else:
+                    print_tab_sep(out_file, chrom, region_start, region_end )
         except:
             continue
+
 
 def print_tab_sep(out_file, *args ):
     """Print items in `l` to stdout separated by tabs"""
     print >>out_file, string.join( [ str( f ) for f in args ], '\t' )
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

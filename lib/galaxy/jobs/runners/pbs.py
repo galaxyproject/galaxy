@@ -1,35 +1,26 @@
+from __future__ import absolute_import
+
 import os
 import logging
 import time
 import traceback
 from datetime import timedelta
 
+try:
+    import pbs
+    PBS_IMPORT_MESSAGE = None
+except ImportError as exc:
+    pbs = None
+    PBS_IMPORT_MESSAGE = ('The Python pbs-python package is required to use '
+                          'this feature, please install it or correct the '
+                          'following error:\nImportError %s' % str(exc))
+
 from galaxy import model
 from galaxy import util
 from galaxy.util.bunch import Bunch
-from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
-import pkg_resources
-
-egg_message = """
-
-The 'pbs' runner depends on 'pbs_python' which is not installed or not
-configured properly.  Galaxy's "scramble" system should make this installation
-simple, please follow the instructions found at:
-
-    http://wiki.galaxyproject.org/Admin/Config/Performance/Cluster
-
-Additional errors may follow:
-%s
-"""
-
-try:
-    pkg_resources.require( "pbs_python" )
-    pbs = __import__( "pbs" )
-except Exception as e:
-    raise Exception( egg_message % str( e ) )
 
 log = logging.getLogger( __name__ )
 
@@ -99,8 +90,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
     def __init__( self, app, nworkers ):
         """Start the job runner """
         # Check if PBS was importable, fail if not
-        if pbs is None:
-            raise Exception( "PBSJobRunner requires pbs_python which was not found" )
+        assert pbs is not None, PBS_IMPORT_MESSAGE
         if app.config.pbs_application_server and app.config.outputs_to_working_directory:
             raise Exception( "pbs_application_server (file staging) and outputs_to_working_directory options are mutually exclusive" )
 
@@ -282,7 +272,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         # write the job script
         if self.app.config.pbs_stage_path != '':
             # touch the ecfile so that it gets staged
-            with file(ecfile, 'a'):
+            with open(ecfile, 'a'):
                 os.utime(ecfile, None)
 
             stage_commands = pbs_symlink_template % (
@@ -301,7 +291,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         if job_wrapper.get_state() == model.Job.states.DELETED:
             log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
             pbs.pbs_disconnect(c)
-            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+            if job_wrapper.cleanup_job in ( "always", "onsuccess" ):
                 self.cleanup( ( ofile, efile, ecfile, job_file ) )
                 job_wrapper.cleanup()
             return
@@ -481,49 +471,6 @@ class PBSJobRunner( AsynchronousJobRunner ):
         pbs.pbs_disconnect( c )
         return jobs[0].attribs[0].value
 
-    def finish_job( self, pbs_job_state ):
-        """
-        Get the output/error for a finished job, pass to `job_wrapper.finish`
-        and cleanup all the PBS temporary files.
-        """
-        ofile = pbs_job_state.output_file
-        efile = pbs_job_state.error_file
-        ecfile = pbs_job_state.exit_code_file
-        job_file = pbs_job_state.job_file
-        # collect the output
-        try:
-            ofh = file(ofile, "r")
-            efh = file(efile, "r")
-            ecfh = file(ecfile, "r")
-            stdout = shrink_stream_by_size( ofh, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-            stderr = shrink_stream_by_size( efh, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-            # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = ecfh.read(32)
-        except:
-            stdout = ''
-            stderr = 'Job output not returned by PBS: the output datasets were deleted while the job was running, the job was manually dequeued or there was a cluster error.'
-            # By default, the exit code is 0, which usually indicates success
-            # (although clearly some error happened).
-            exit_code_str = ""
-
-        # Translate the exit code string to an integer; use 0 on failure.
-        try:
-            exit_code = int( exit_code_str )
-        except:
-            log.warning( "Exit code " + exit_code_str + " was invalid. Using 0." )
-            exit_code = 0
-
-        # Call on the job wrapper to complete the call:
-        try:
-            pbs_job_state.job_wrapper.finish( stdout, stderr, exit_code )
-        except:
-            log.exception("Job wrapper finish method failed")
-            pbs_job_state.job_wrapper.fail("Unable to finish job", exception=True)
-
-        # clean up the pbs files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
-            self.cleanup( ( ofile, efile, ecfile, job_file ) )
-
     def fail_job( self, pbs_job_state ):
         """
         Separated out so we can use the worker threads for it.
@@ -533,15 +480,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
         if pbs_job_state.stop_job:
             self.stop_job( self.sa_session.query( self.app.model.Job ).get( pbs_job_state.job_wrapper.job_id ) )
         pbs_job_state.job_wrapper.fail( pbs_job_state.fail_message )
-        if self.app.config.cleanup_job == "always":
+        if pbs_job_state.job_wrapper.cleanup_job == "always":
             self.cleanup( ( pbs_job_state.output_file, pbs_job_state.error_file, pbs_job_state.exit_code_file, pbs_job_state.job_file ) )
-
-    def cleanup( self, files ):
-        for file in files:
-            try:
-                os.unlink( file )
-            except Exception as e:
-                log.warning( "Unable to cleanup: %s" % str( e ) )
 
     def get_stage_in_out( self, fnames, symlink=False ):
         """Convenience function to create a stagein/stageout list"""

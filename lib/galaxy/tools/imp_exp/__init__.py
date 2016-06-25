@@ -4,32 +4,17 @@ import logging
 import os
 import shutil
 import tempfile
+from json import dumps, loads
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.orm import eagerload, eagerload_all
-
-from galaxy import model
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.tools.parameters.basic import UnvalidatedValue
-from galaxy.util.json import dumps, loads
-from galaxy.web.framework.helpers import to_unicode
-
 from sqlalchemy.sql import expression
 
+from galaxy import model
+from galaxy.exceptions import MalformedContents
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.web.framework.helpers import to_unicode
+
 log = logging.getLogger(__name__)
-
-
-def load_history_imp_exp_tools( toolbox ):
-    """ Adds tools for importing/exporting histories to archives. """
-
-    # Load export tool.
-    history_exp_tool = toolbox.load_hidden_lib_tool( "galaxy/tools/imp_exp/exp_history_to_archive.xml" )
-    log.debug( "Loaded history export tool: %s", history_exp_tool.id )
-
-    # Load import tool.
-    history_imp_tool = toolbox.load_hidden_lib_tool( "galaxy/tools/imp_exp/imp_history_from_archive.xml" )
-    log.debug( "Loaded history import tool: %s", history_imp_tool.id )
 
 
 class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
@@ -170,11 +155,26 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                     if dataset_attrs.get('exported', True) is True:
                         # Do security check and move/copy dataset data.
                         temp_dataset_file_name = \
-                            os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
+                            os.path.realpath( os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) ) )
                         if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
-                            raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
+                            raise MalformedContents( "Invalid dataset path: %s" % temp_dataset_file_name )
                         if datasets_usage_counts[ temp_dataset_file_name ] == 1:
-                            shutil.move( temp_dataset_file_name, hda.file_name )
+                            self.app.object_store.update_from_file( hda.dataset, file_name=temp_dataset_file_name, create=True )
+
+                            # Import additional files if present. Histories exported previously might not have this attribute set.
+                            dataset_extra_files_path = dataset_attrs.get( 'extra_files_path', None )
+                            if dataset_extra_files_path:
+                                try:
+                                    file_list = os.listdir( os.path.join( archive_dir, dataset_extra_files_path ) )
+                                except OSError:
+                                    file_list = []
+
+                                if file_list:
+                                    for extra_file in file_list:
+                                        self.app.object_store.update_from_file(
+                                            hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id,
+                                            alt_name=extra_file, file_name=os.path.join( archive_dir, dataset_extra_files_path, extra_file ),
+                                            create=True )
                         else:
                             datasets_usage_counts[ temp_dataset_file_name ] -= 1
                             shutil.copyfile( temp_dataset_file_name, hda.file_name )
@@ -291,9 +291,10 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                 # Cleanup.
                 if os.path.exists( archive_dir ):
                     shutil.rmtree( archive_dir )
-            except Exception, e:
+            except Exception as e:
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
+                raise
 
 
 class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
@@ -372,6 +373,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                         "uuid": ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
+                        "extra_files_path": obj.extra_files_path
                     }
                     if not obj.visible and not include_hidden:
                         rval['exported'] = False
@@ -380,8 +382,6 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                     else:
                         rval['exported'] = True
                     return rval
-                if isinstance( obj, UnvalidatedValue ):
-                    return obj.__str__()
                 return json.JSONEncoder.default( self, obj )
 
         #
@@ -525,10 +525,10 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
             for filename in [ jeha.history_attrs_filename, jeha.datasets_attrs_filename, jeha.jobs_attrs_filename ]:
                 try:
                     os.remove( filename )
-                except Exception, e:
+                except Exception as e:
                     log.debug( 'Failed to cleanup attributes file (%s): %s' % ( filename, e ) )
             temp_dir = os.path.split( jeha.history_attrs_filename )[0]
             try:
                 shutil.rmtree( temp_dir )
-            except Exception, e:
+            except Exception as e:
                 log.debug( 'Error deleting directory containing attribute files (%s): %s' % ( temp_dir, e ) )

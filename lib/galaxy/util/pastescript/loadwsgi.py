@@ -7,10 +7,13 @@ from __future__ import with_statement
 
 import inspect
 import os
-import sys
 import re
+import sys
+
+from galaxy.util.properties import NicerConfigParser
 
 import pkg_resources
+from six import iteritems
 
 __all__ = ['loadapp', 'loadserver', 'loadfilter', 'appconfig']
 
@@ -28,20 +31,12 @@ def print_(template, *args, **kwargs):
     sys.stdout.writelines(template)
 
 if sys.version_info < (3, 0):
-    basestring = basestring
-    from ConfigParser import ConfigParser
     from urllib import unquote
-    iteritems = lambda d: d.iteritems()
-    dictkeys = lambda d: d.keys()
 
     def reraise(t, e, tb):
         exec('raise t, e, tb', dict(t=t, e=e, tb=tb))
 else:
-    basestring = str
-    from configparser import ConfigParser
     from urllib.parse import unquote
-    iteritems = lambda d: d.items()
-    dictkeys = lambda d: list(d.keys())
 
     def reraise(t, e, tb):
         exec('raise e from tb', dict(e=e, tb=tb))
@@ -65,9 +60,9 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     """
     if exc_info is None:
         exc_info = sys.exc_info()
-    if (exc_info[0] != TypeError
-            or str(exc_info[1]).find('arguments') == -1
-            or getattr(exc_info[1], '_type_error_fixed', False)):
+    if (exc_info[0] != TypeError or
+            str(exc_info[1]).find('arguments') == -1 or
+            getattr(exc_info[1], '_type_error_fixed', False)):
         return exc_info
     exc_info[1]._type_error_fixed = True
     argspec = inspect.formatargspec(*inspect.getargspec(callable))
@@ -150,61 +145,6 @@ def _flatten(lst):
     for item in lst:
         result.extend(_flatten(item))
     return result
-
-
-class NicerConfigParser(ConfigParser):
-
-    def __init__(self, filename, *args, **kw):
-        ConfigParser.__init__(self, *args, **kw)
-        self.filename = filename
-        if hasattr(self, '_interpolation'):
-            self._interpolation = self.InterpolateWrapper(self._interpolation)
-
-    read_file = getattr(ConfigParser, 'read_file', ConfigParser.readfp)
-
-    def defaults(self):
-        """Return the defaults, with their values interpolated (with the
-        defaults dict itself)
-
-        Mainly to support defaults using values such as %(here)s
-        """
-        defaults = ConfigParser.defaults(self).copy()
-        for key, val in iteritems(defaults):
-            defaults[key] = self.get('DEFAULT', key) or val
-        return defaults
-
-    def _interpolate(self, section, option, rawval, vars):
-        # Python < 3.2
-        try:
-            return ConfigParser._interpolate(
-                self, section, option, rawval, vars)
-        except Exception:
-            e = sys.exc_info()[1]
-            args = list(e.args)
-            args[0] = 'Error in file %s: %s' % (self.filename, e)
-            e.args = tuple(args)
-            e.message = args[0]
-            raise
-
-    class InterpolateWrapper(object):
-        # Python >= 3.2
-        def __init__(self, original):
-            self._original = original
-
-        def __getattr__(self, name):
-            return getattr(self._original, name)
-
-        def before_get(self, parser, section, option, value, defaults):
-            try:
-                return self._original.before_get(parser, section, option,
-                                                 value, defaults)
-            except Exception:
-                e = sys.exc_info()[1]
-                args = list(e.args)
-                args[0] = 'Error in file %s: %s' % (parser.filename, e)
-                e.args = tuple(args)
-                e.message = args[0]
-                raise
 
 
 ############################################################
@@ -760,7 +700,7 @@ class EggLoader(_Loader):
                     dist.location,
                     ', '.join(_flatten(object_type.egg_protocols)),
                     ', '.join(_flatten([
-                        dictkeys(pkg_resources.get_entry_info(self.spec, prot, name) or {})
+                        list((pkg_resources.get_entry_info(self.spec, prot, name) or {}).keys())
                         for prot in protocol_options] or '(no entry points)'))))
         if len(possible) > 1:
             raise LookupError(

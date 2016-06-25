@@ -5,21 +5,20 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
+
+'use strict';
+
+var logNamespace = 'history';
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
  *  @name History
- *
  *  @augments Backbone.Model
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
-var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
-        BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var History = Backbone.Model
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
+    _logNamespace : logNamespace,
 
     // values from api (may need more)
     defaults : {
@@ -28,12 +27,11 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         name            : 'Unnamed History',
         state           : 'new',
 
-        diskSize        : 0,
         deleted         : false
     },
 
     // ........................................................................ urls
-    urlRoot: galaxy_config.root + 'api/histories',
+    urlRoot: Galaxy.root + 'api/histories',
 
     // ........................................................................ set up/tear down
     /** Set up the model
@@ -82,7 +80,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
             if( this.contents ){
                 this.contents.historyId = newId;
             }
-        }, this );
+        });
     },
 
     //TODO: see base-mvc
@@ -119,16 +117,16 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     },
 
     // ........................................................................ common queries
-    /** T/F is this history owned by the current user (Galaxy.currUser)
+    /** T/F is this history owned by the current user (Galaxy.user)
      *      Note: that this will return false for an anon user even if the history is theirs.
      */
     ownedByCurrUser : function(){
         // no currUser
-        if( !Galaxy || !Galaxy.currUser ){
+        if( !Galaxy || !Galaxy.user ){
             return false;
         }
         // user is anon or history isn't owned
-        if( Galaxy.currUser.isAnonymous() || Galaxy.currUser.id !== this.get( 'user_id' ) ){
+        if( Galaxy.user.isAnonymous() || Galaxy.user.id !== this.get( 'user_id' ) ){
             return false;
         }
         return true;
@@ -137,6 +135,18 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     /**  */
     contentsCount : function(){
         return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
+    },
+
+    /** Return the number of running jobs assoc with this history (note: unknown === 0) */
+    numOfUnfinishedJobs : function(){
+        var unfinishedJobIds = this.get( 'non_ready_jobs' );
+        return unfinishedJobIds? unfinishedJobIds.length : 0;
+    },
+
+    /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
+    numOfUnfinishedShownContents : function(){
+        var contents = this.contents.running().visibleAndUndeleted();
+        return contents? contents.length : 0;
     },
 
     // ........................................................................ search
@@ -152,39 +162,61 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     },
 
     // ........................................................................ updates
-    /** does the contents collection indicate they're still running and need to be updated later?
-     *      delay + update if needed
-     *  @param {Function} onReadyCallback   function to run when all contents are in the ready state
-     *  events: ready
-     */
-    checkForUpdates : function( onReadyCallback ){
-        //this.info( 'checkForUpdates' )
-
-        // get overall History state from collection, run updater if History has running/queued contents
-        //  boiling it down on the client to running/not
-        if( this.contents.running().length ){
-            this.setUpdateTimeout();
-
-        } else {
-            this.trigger( 'ready' );
-            if( _.isFunction( onReadyCallback ) ){
-                onReadyCallback.call( this );
-            }
-        }
-        return this;
+    _getSizeAndRunning : function(){
+        return this.fetch({ data : $.param({ keys : 'size,non_ready_jobs' }) });
     },
 
-    /** create a timeout (after UPDATE_DELAY or delay ms) to refetch the contents. Clear any prev. timeout */
-    setUpdateTimeout : function( delay ){
-        delay = delay || History.UPDATE_DELAY;
-        var history = this;
+    /**  */
+    refresh : function( options ){
+        options = options || {};
+        var self = this;
 
-        // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
-        this.clearUpdateTimeout();
-        this.updateTimeoutId = setTimeout( function(){
-            history.refresh();
-        }, delay );
-        return this.updateTimeoutId;
+        var lastUpdateTime = self.lastUpdateTime;
+        // note: if there was no previous update time, all summary contents will be fetched
+        return self.contents.fetchUpdated( lastUpdateTime )
+            .done( function( response, status, xhr ){
+                var serverResponseDatetime;
+                try {
+                    serverResponseDatetime = new Date( xhr.getResponseHeader( 'Date' ) );
+                } catch( err ){}
+                self.lastUpdateTime = serverResponseDatetime || new Date();
+                self.checkForUpdates( options );
+            });
+    },
+
+    /**  */
+    checkForUpdates : function( options ){
+        options = options || {};
+        var delay = History.UPDATE_DELAY;
+        var self = this;
+
+        function _delayThenUpdate(){
+            // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
+            self.clearUpdateTimeout();
+            self.updateTimeoutId = setTimeout( function(){
+                self.refresh( options );
+            }, delay );
+        }
+
+        // if there are still datasets in the non-ready state, recurse into this function with the new time
+        if( this.numOfUnfinishedShownContents() > 0 ){
+            _delayThenUpdate();
+
+        } else {
+            // no datasets are running, but currently runnning jobs may still produce new datasets
+            // see if the history has any running jobs and continue to update if so
+            // (also update the size for the user in either case)
+            self._getSizeAndRunning()
+                .done( function( historyData ){
+                    if( self.numOfUnfinishedJobs() > 0 ){
+                        _delayThenUpdate();
+
+                    } else {
+                        // otherwise, let listeners know that all updates have stopped
+                        self.trigger( 'ready' );
+                    }
+                });
+        }
     },
 
     /** clear the timeout and the cached timeout id */
@@ -193,32 +225,6 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
             clearTimeout( this.updateTimeoutId );
             this.updateTimeoutId = null;
         }
-    },
-
-    /* update the contents, getting full detailed model data for any whose id is in detailIds
-     *  set up to run this again in some interval of time
-     *  @param {String[]} detailIds list of content ids to get detailed model data for
-     *  @param {Object} options     std. backbone fetch options map
-     */
-    refresh : function( detailIds, options ){
-        //this.info( 'refresh:', detailIds, this.contents );
-        detailIds = detailIds || [];
-        options = options || {};
-        var history = this;
-
-        // add detailIds to options as CSV string
-        options.data = options.data || {};
-        if( detailIds.length ){
-            options.data.details = detailIds.join( ',' );
-        }
-        var xhr = this.contents.fetch( options );
-        xhr.done( function( models ){
-            history.checkForUpdates( function(){
-                // fetch the history inside onReadyCallback in order to recalc history size
-                this.fetch();
-            });
-        });
-        return xhr;
     },
 
     // ........................................................................ ajax
@@ -280,7 +286,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 
     setAsCurrent : function(){
         var history = this,
-            xhr = jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + this.id );
+            xhr = jQuery.getJSON( Galaxy.root + 'history/set_as_current?id=' + this.id );
 
         xhr.done( function(){
             history.trigger( 'set-as-current', history );
@@ -313,9 +319,9 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     function getHistory( id ){
         // get the history data
         if( historyId === 'current' ){
-            return jQuery.getJSON( galaxy_config.root + 'history/current_history_json' );
+            return jQuery.getJSON( Galaxy.root + 'history/current_history_json' );
         }
-        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
+        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyId );
     }
     function isEmpty( historyData ){
         // get the number of hdas accrd. to the history
@@ -332,16 +338,13 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         if( _.isFunction( hdcaDetailIds ) ){
             hdcaDetailIds = hdcaDetailIds( historyData );
         }
-        var data = {};
+        var data = {
+            v : 'dev'
+        };
         if( detailIdsFn.length ) {
-            data.dataset_details = detailIdsFn.join( ',' );
+            data.details = detailIdsFn.join( ',' );
         }
-        if( hdcaDetailIds.length ) {
-            // for symmetry, not actually used by backend of consumed
-            // by frontend.
-            data.dataset_collection_details = hdcaDetailIds.join( ',' );
-        }
-        return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
+        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyData.id + '/contents', { data: data });
     }
 
     // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
@@ -432,6 +435,7 @@ var ControlledFetchMixin = {
         _.each( filters, function( v, k ){
             if( v === true ){ v = 'True'; }
             if( v === false ){ v = 'False'; }
+            if( v === null ){ v = 'None'; }
             filterMap.q.push( k );
             filterMap.qv.push( v );
         });
@@ -443,12 +447,13 @@ var ControlledFetchMixin = {
 /** @class A collection of histories (per user).
  *      (stub) currently unused.
  */
-var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend( ControlledFetchMixin ).extend(
-/** @lends HistoryCollection.prototype */{
-    model   : History,
+var HistoryCollection = Backbone.Collection
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( ControlledFetchMixin )
+        .extend(/** @lends HistoryCollection.prototype */{
+    _logNamespace : logNamespace,
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+    model   : History,
 
     /** @type {String} the default sortOrders key for sorting */
     DEFAULT_ORDER : 'update_time',
@@ -503,7 +508,7 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
         this.setUpListeners();
     },
 
-    urlRoot : ( window.galaxy_config? galaxy_config.root : '/' ) + 'api/histories',
+    urlRoot : Galaxy.root + 'api/histories',
     url     : function(){ return this.urlRoot; },
 
     /** returns map of default filters and settings for fetching from the API */
@@ -517,6 +522,11 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
             defaults.filters = {
                 deleted : false,
                 purged  : false,
+            };
+        } else {
+            defaults.filters = {
+                // TODO: for bypassing defaults on current API
+                deleted : null,
             };
         }
         return defaults;
@@ -543,7 +553,7 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
                 this.trigger( 'no-longer-current', oldCurrentId );
                 this.currentHistoryId = history.id;
             }
-        }, this );
+        });
     },
 
     /** override to allow passing options.order and setting the sort order to one of sortOrders */
@@ -611,7 +621,7 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
     create : function create( data, hdas, historyOptions, xhrOptions ){
         //TODO: .create is actually a collection function that's overridden here
         var collection = this,
-            xhr = jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
+            xhr = jQuery.getJSON( Galaxy.root + 'history/create_new_current'  );
         return xhr.done( function( newData ){
             collection.setCurrent( new History( newData, [], historyOptions || {} ) );
         });

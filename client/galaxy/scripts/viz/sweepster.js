@@ -3,8 +3,18 @@
  * genomic visualization.
  */
 
-define(["libs/underscore", "libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks", "mvc/tools", "mvc/data", "utils/config", "mvc/ui/icon-button"],
-       function(_, d3, util, visualization, tracks, tools, data, config, mod_icon_btn) {
+define([
+    "libs/underscore",
+    "libs/d3",
+    "viz/trackster/util",
+    "viz/visualization",
+    "viz/trackster/tracks",
+    "mvc/tool/tools",
+    "mvc/dataset/data",
+    "utils/config",
+    "mvc/ui/icon-button"
+
+], function(_, d3, util, visualization, tracks, tools, data, config, mod_icon_btn) {
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings
@@ -261,8 +271,8 @@ var SweepsterTrack = Backbone.Model.extend({
         if (options.track) {
             // FIXME: find a better way to deal with needed URLs:
             var track_config = _.extend({
-                                    data_url: galaxy_config.root + 'dummy1',
-                                    converted_datasets_state_url: galaxy_config.root + 'dummy2'
+                                    data_url: Galaxy.root + 'dummy1',
+                                    converted_datasets_state_url: Galaxy.root + 'dummy2'
                                 }, options.track);
             this.set('track', tracks.object_from_template(track_config, {}, null));
         }
@@ -398,7 +408,7 @@ var SweepsterTrackView = Backbone.View.extend({
         // Render tile placeholders.
         this.model.get('regions').each(function() {
             self.$el.append($('<td/>').addClass('tile').html(
-                $('<img/>').attr('src', galaxy_config.root + 'images/loading_large_white_bg.gif')
+                $('<img/>').attr('src', Galaxy.root + 'images/loading_large_white_bg.gif')
             ));
         });
 

@@ -1,98 +1,43 @@
 /** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tab conversion **/
-define(['utils/utils'], function(Utils) {
+define( [ 'utils/utils' ], function( Utils ) {
 return Backbone.View.extend({
-    // options
     options: {
-        class_check     : 'upload-icon-button fa fa-check-square-o',
-        class_uncheck   : 'upload-icon-button fa fa-square-o'
+        class_check     : 'fa-check-square-o',
+        class_uncheck   : 'fa-square-o',
+        parameters      : [{
+            id          : 'space_to_tab',
+            title       : 'Convert spaces to tabs',
+        },{
+            id          : 'to_posix_lines',
+            title       : 'Use POSIX standard'
+        }]
     },
 
-    // initialize
-    initialize: function(app) {
-        // link app
-        this.app = app;
-
-        // link this
+    initialize: function( options ) {
         var self = this;
-
-        // set template
-        this.setElement(this._template());
-
-        // link model
-        this.model = this.app.model;
-
-        // ui event: space-to-tab
-        this.$('#upload-space-to-tab').on('click', function() {
-            self._switchState('#upload-space-to-tab', 'space_to_tab');
-        });
-
-        // ui event: to-posix-lines
-        this.$('#upload-to-posix-lines').on('click', function() {
-            self._switchState('#upload-to-posix-lines', 'to_posix_lines');
-        });
-
-        // render
-        this.render();
+        this.model = options.model;
+        this.setElement( $( '<div/>' ).addClass( 'upload-settings' ) );
+        this.$el.append( $( '<div/>' ).addClass( 'upload-settings-cover' ) );
+        this.$el.append( $( '<table/>' ).addClass( 'upload-settings-table ui-table-striped' ).append( '<tbody/>' ) );
+        this.$cover = this.$( '.upload-settings-cover' );
+        this.$table = this.$( '.upload-settings-table > tbody' );
+        this.listenTo ( this.model, 'change', this.render, this );
+        this.model.trigger( 'change' );
     },
 
-    // events
-    events: {
-        'mousedown' : function(e) { e.preventDefault(); }
-    },
-
-    // render
     render: function() {
-        // render states
-        this._renderState('#upload-space-to-tab', this.model.get('space_to_tab'));
-        this._renderState('#upload-to-posix-lines', this.model.get('to_posix_lines'));
-
-        // disable options
-        var $cover = this.$('#upload-settings-cover');
-        if (!this.model.get('enabled')) {
-            $cover.show();
-        } else {
-            $cover.hide();
-        }
-    },
-
-    // switch state
-    _switchState: function (element_id, parameter_id) {
-        if (this.model.get('enabled')) {
-            var checked = !this.model.get(parameter_id);
-            this.model.set(parameter_id, checked);
-            this._renderState(element_id, checked);
-        }
-    },
-
-    // render state
-    _renderState: function (element_id, checked) {
-        var $it = this.$(element_id);
-        $it.removeClass();
-        if (checked) {
-            $it.addClass(this.options.class_check);
-        } else {
-            $it.addClass(this.options.class_uncheck);
-        }
-    },
-
-    // load template
-    _template: function() {
-        return  '<div class="upload-settings" style="position: relative;">' +
-                    '<div id="upload-settings-cover" class="upload-settings-cover"/>' +
-                    '<table class="ui-table-striped">' +
-                        '<tbody>' +
-                            '<tr>' +
-                                '<td><div id="upload-space-to-tab"/></td>' +
-                                '<td>Convert spaces to tabs</td>' +
-                            '</tr>' +
-                            '<tr>' +
-                                '<td><div id="upload-to-posix-lines"/></td>' +
-                                '<td>Use POSIX standard</td>' +
-                            '</tr>' +
-                        '</tbody>' +
-                    '</table>' +
-                '</div>';
+        var self = this;
+        this.$table.empty();
+        _.each( this.options.parameters, function( parameter ) {
+            var $checkbox = $( '<div/>' ).addClass( 'upload-' + parameter.id + ' upload-icon-button fa' )
+                                         .addClass( self.model.get( parameter.id ) && self.options.class_check || self.options.class_uncheck )
+                                         .on( 'click', function() {
+                                            self.model.get( 'enabled' ) && self.model.set( parameter.id, !self.model.get( parameter.id ) )
+                                         });
+            self.$table.append( $( '<tr/>' ).append( $( '<td/>' ).append( $checkbox ) )
+                                            .append( $( '<td/>' ).append( parameter.title ) ) )
+        });
+        this.$cover[ this.model.get( 'enabled' ) && 'hide' || 'show' ]();
     }
 });
-
 });

@@ -1,0 +1,21 @@
+[main]
+# Unused
+
+[docker]
+# Command to execute docker. For example `sudo docker` or `docker-lxc`.
+command = docker {docker_args}
+
+# The docker image name that should be started.
+image = shiltemann/docker-phinch-galaxy:16.04
+
+# Additional arguments that are passed to the `docker run` command.
+#command_inject = --sig-proxy=true -e DEBUG=false
+
+# URL to access the Galaxy API with from the spawn Docker container, if empty
+# this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
+# Docker host of the spawned container if that is also not set.
+#galaxy_url =
+
+# The Docker hostname. It can be useful to run the Docker daemon on a different
+# host than Galaxy.
+#docker_hostname = localhost

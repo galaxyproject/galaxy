@@ -3,10 +3,7 @@ import logging
 import operator
 from datetime import datetime, date, timedelta
 
-from galaxy import eggs
-eggs.require('MarkupSafe')
 from markupsafe import escape
-eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from sqlalchemy import false
 

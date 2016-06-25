@@ -4,6 +4,7 @@ Visualizations resource control over the API.
 NOTE!: this is a work in progress and functionality and data structures
 may change often.
 """
+from six import string_types
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
@@ -14,7 +15,7 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy import web
 from galaxy import util
 from galaxy import exceptions
-
+import json
 import logging
 log = logging.getLogger( __name__ )
 
@@ -103,7 +104,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
             try:
                 # generate defaults - this will err if given a weird key?
                 visualization = self.create_visualization( trans, vis_type, **payload )
-            except ValueError, val_err:
+            except ValueError as val_err:
                 raise exceptions.RequestParameterMissingException( str( val_err ) )
 
         rval = { 'id' : trans.security.encode_id( visualization.id ) }
@@ -135,7 +136,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         latest_config = visualization.latest_revision.config
         if( ( title != visualization.latest_revision.title ) or
                 ( dbkey != visualization.latest_revision.dbkey ) or
-                ( util.json.dumps( config ) != util.json.dumps( latest_config ) ) ):
+                ( json.dumps( config ) != json.dumps( latest_config ) ) ):
             revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
             rval = { 'id' : id, 'revision' : revision.id }
 
@@ -170,7 +171,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         for key, val in payload.items():
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == 'type':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'config':
@@ -178,22 +179,22 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
                     raise ValidationError( '%s must be a dictionary: %s' % ( key, str( type( val ) ) ) )
 
             elif key == 'annotation':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'slug':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'dbkey':
-                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                if not isinstance( val, string_types ):
                     raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 

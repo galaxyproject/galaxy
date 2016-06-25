@@ -1,20 +1,18 @@
-import pwd
+import logging
 import os
+import pwd
 import StringIO
 import subprocess
 import tempfile
 from cgi import FieldStorage
+from json import dumps
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.orm import eagerload_all
 
 from galaxy import datatypes, util
-from galaxy.util.odict import odict
-from galaxy.util.json import dumps
 from galaxy.exceptions import ObjectInvalid
+from galaxy.util.odict import odict
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -290,7 +288,7 @@ def create_paramfile( trans, uploaded_datasets ):
             p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             assert p.returncode == 0, stderr
-        except Exception, e:
+        except Exception as e:
             log.warning( 'Changing ownership of uploaded file %s failed: %s' % ( path, str( e ) ) )
 
     # TODO: json_file should go in the working directory
@@ -327,6 +325,10 @@ def create_paramfile( trans, uploaded_datasets ):
                 uuid_str = uploaded_dataset.uuid
             except:
                 uuid_str = None
+            try:
+                purge_source = uploaded_dataset.purge_source
+            except:
+                purge_source = True
             json = dict( file_type=uploaded_dataset.file_type,
                          ext=uploaded_dataset.ext,
                          name=uploaded_dataset.name,
@@ -337,6 +339,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          link_data_only=link_data_only,
                          uuid=uuid_str,
                          to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
+                         purge_source=purge_source,
                          space_to_tab=uploaded_dataset.space_to_tab,
                          in_place=trans.app.config.external_chown_script is None,
                          path=uploaded_dataset.path )
@@ -352,7 +355,7 @@ def create_paramfile( trans, uploaded_datasets ):
     return json_file_path
 
 
-def create_job( trans, params, tool, json_file_path, data_list, folder=None, history=None ):
+def create_job( trans, params, tool, json_file_path, data_list, folder=None, history=None, job_params=None ):
     """
     Create the upload job.
     """
@@ -397,7 +400,10 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
             # open( dataset.file_name, "w" ).close()
     job.object_store_id = object_store_id
     job.set_state( job.states.NEW )
-    job.set_handler(tool.get_job_handler(None))
+    job.set_handler( tool.get_job_handler( None ) )
+    if job_params:
+        for name, value in job_params.iteritems():
+            job.add_parameter( name, value )
     trans.sa_session.add( job )
     trans.sa_session.flush()
 

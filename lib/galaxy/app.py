@@ -1,8 +1,17 @@
 from __future__ import absolute_import
+import logging
+import signal
 import sys
+import time
 import os
 
-import time
+try:
+    from uwsgidecorators import postfork
+except:
+    def pf_dec(func):
+        return func
+    postfork = pf_dec
+
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
@@ -13,16 +22,18 @@ from galaxy.managers.tags import GalaxyTagManager
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.tools.imp_exp import load_history_imp_exp_tools
+from galaxy.tools.special_tools import load_lib_tools
+from galaxy.tours import ToursRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.util import heartbeat
 from tool_shed.galaxy_install import update_repository_manager
 
-import logging
+
 log = logging.getLogger( __name__ )
 app = None
 
@@ -30,7 +41,12 @@ app = None
 class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
-        print >> sys.stderr, "python path is: " + ", ".join( sys.path )
+        if not log.handlers:
+            # Paste didn't handle it, so we need a temporary basic log
+            # configured.  The handler added here gets dumped and replaced with
+            # an appropriately configured logger in configure_logging below.
+            logging.basicConfig(level=logging.DEBUG)
+        log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = 'galaxy'
         self.new_installation = False
         # Read config file and check for errors
@@ -38,7 +54,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.config.check()
         config.configure_logging( self.config )
         self.configure_fluent_log()
-
+        self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # control_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
@@ -99,12 +115,14 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load external metadata tool
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
-        load_history_imp_exp_tools( self.toolbox )
+        load_lib_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = VisualizationsRegistry(
             self,
             directories_setting=self.config.visualization_plugins_directory,
             template_cache_dir=self.config.template_cache )
+        # Tours registry
+        self.tour_registry = ToursRegistry(self.config.tour_config_dir)
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent(
@@ -124,15 +142,29 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.openid_providers = OpenIDProviders.from_file( self.config.openid_config_file )
         else:
             self.openid_providers = OpenIDProviders()
-        # Start the heartbeat process if configured and available
         from galaxy import auth
         self.auth_manager = auth.AuthManager( self )
+        # Start the heartbeat process if configured and available (wait until
+        # postfork if using uWSGI)
         if self.config.use_heartbeat:
-            from galaxy.util import heartbeat
             if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat( fname=self.config.heartbeat_log )
+                self.heartbeat = heartbeat.Heartbeat(
+                    self.config,
+                    period=self.config.heartbeat_interval,
+                    fname=self.config.heartbeat_log
+                )
                 self.heartbeat.daemon = True
-                self.heartbeat.start()
+
+                @postfork
+                def _start():
+                    self.heartbeat.start()
+                if not config.process_is_uwsgi:
+                    _start()
+        if self.config.sentry_dsn:
+            import raven
+            self.sentry_client = raven.Client(self.config.sentry_dsn)
+        else:
+            self.sentry_client = None
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager
@@ -153,6 +185,12 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager( self )
+
+        # Configure handling of signals
+        handlers = {}
+        if self.heartbeat:
+            handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
+        self._configure_signal_handlers( handlers )
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting

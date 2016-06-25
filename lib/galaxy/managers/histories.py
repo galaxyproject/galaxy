@@ -4,18 +4,17 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
-import operator
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-from sqlalchemy import desc, asc
+from sqlalchemy import desc
+from sqlalchemy import asc
 
 from galaxy import model
 from galaxy import exceptions as glx_exceptions
 from galaxy.managers import sharable
 from galaxy.managers import deletable
-from galaxy.managers import containers
 from galaxy.managers import hdas
+# from galaxy.managers import hdcas
+from galaxy.managers import history_contents
 from galaxy.managers import collections_util
 
 
@@ -23,7 +22,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin, containers.ContainerManagerMixin ):
+class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin ):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -33,16 +32,13 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
     annotation_assoc = model.HistoryAnnotationAssociation
     rating_assoc = model.HistoryRatingAssociation
 
-    contained_class = model.HistoryDatasetAssociation
-    subcontainer_class = model.HistoryDatasetCollectionAssociation
-    order_contents_on = operator.attrgetter( 'hid' )
-
     # TODO: incorporate imp/exp (or alias to)
 
     def __init__( self, app, *args, **kwargs ):
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
-
         self.hda_manager = hdas.HDAManager( app )
+        self.contents_manager = history_contents.HistoryContentsManager( app )
+        self.contents_filters = history_contents.HistoryContentsFilters( app )
 
     def copy( self, history, user, **kwargs ):
         """
@@ -83,7 +79,7 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         """
         if self.user_manager.is_anonymous( user ):
             return None if ( not current_history or current_history.deleted ) else current_history
-        desc_update_time = self.model_class.table.c.update_time
+        desc_update_time = desc( self.model_class.table.c.update_time )
         filters = self._munge_filters( filters, self.model_class.user_id == user.id )
         # TODO: normalize this return value
         return self.query( filters=filters, order_by=desc_update_time, limit=1, **kwargs ).first()
@@ -150,34 +146,37 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
             return desc( self.model_class.disk_size )
         if order_by_string == 'size-asc':
             return asc( self.model_class.disk_size )
+        # TODO: add functional/non-orm orders (such as rating)
         if default:
             return self.parse_order_by( default )
         raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
             available=[ 'create_time', 'update_time', 'name', 'size' ])
 
-    # container interface
-    def _filter_to_contained( self, container, content_class ):
-        return content_class.history == container
+    def non_ready_jobs( self, history ):
+        """Return the currently running job objects associated with this history.
 
-    def _content_manager( self, content ):
-        # type sniffing is inevitable
-        if isinstance( content, model.HistoryDatasetAssociation ):
-            return self.hda_manager
-        elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-            return self.hdca_manager
-        raise TypeError( 'Unknown contents class: ' + str( content ) )
+        Where running is defined as new, waiting, queued, running, resubmitted,
+        and upload.
+        """
+        # TODO: defer to jobModelManager (if there was one)
+        # TODO: genericize the params to allow other filters
+        jobs = ( self.session().query( model.Job )
+            .filter( model.Job.history == history )
+            .filter( model.Job.state.in_( model.Job.non_ready_states ) ) )
+        return jobs
 
 
 class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSerializerMixin ):
     """
     Interface/service object for serializing histories into dictionaries.
     """
+    model_manager_class = HistoryManager
     SINGLE_CHAR_ABBR = 'h'
 
-    def __init__( self, app ):
-        super( HistorySerializer, self ).__init__( app )
+    def __init__( self, app, **kwargs ):
+        super( HistorySerializer, self ).__init__( app, **kwargs )
 
-        self.history_manager = HistoryManager( app )
+        self.history_manager = self.manager
         self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
 
@@ -209,8 +208,10 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'state',
             'state_details',
             'state_ids',
-            # in the Historys' case, each of these views includes the keys from the previous
+            # 'community_rating',
+            # 'user_rating',
         ], include_keys_from='summary' )
+        # in the Historys' case, each of these views includes the keys from the previous
 
     # assumes: outgoing to json.dumps and sanitized
     def add_serializers( self ):
@@ -219,9 +220,6 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'History',
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
             'size'          : lambda i, k, **c: int( i.disk_size ),
             'nice_size'     : lambda i, k, **c: i.disk_nice_size,
             'state'         : self.serialize_history_state,
@@ -235,7 +233,9 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'hdas'          : lambda i, k, **c: [ self.app.security.encode_id( hda.id ) for hda in i.datasets ],
             'state_details' : self.serialize_state_counts,
             'state_ids'     : self.serialize_state_ids,
-            'contents'      : self.serialize_contents
+            'contents'      : self.serialize_contents,
+            'non_ready_jobs': lambda i, k, **c: [ self.app.security.encode_id( job.id ) for job
+                                                  in self.manager.non_ready_jobs( i ) ],
         })
 
     # remove this
@@ -296,7 +296,8 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
                     hda_state_counts[states.UPLOAD] > 0):
                 state = states.RUNNING
             # TODO: this method may be more useful if we *also* polled the histories jobs here too
-            elif hda_state_counts[ states.QUEUED ] > 0:
+            elif (hda_state_counts[ states.QUEUED ] > 0 or
+                    hda_state_counts[states.NEW] > 0):
                 state = states.QUEUED
             elif (hda_state_counts[states.ERROR] > 0 or
                     hda_state_counts[states.FAILED_METADATA] > 0):
@@ -356,9 +357,9 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.Purgabl
         })
 
 
-class HistoryFilters( sharable.SharableModelFilters,
-                      deletable.PurgableFiltersMixin ):
+class HistoryFilters( sharable.SharableModelFilters, deletable.PurgableFiltersMixin ):
     model_class = model.History
+    model_manager_class = HistoryManager
 
     def _add_parsers( self ):
         super( HistoryFilters, self )._add_parsers()

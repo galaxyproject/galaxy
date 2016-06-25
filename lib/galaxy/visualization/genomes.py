@@ -2,9 +2,11 @@ import logging
 import os
 import re
 import sys
+from json import loads
+
 from bx.seq.twobit import TwoBitFile
+
 from galaxy.util.bunch import Bunch
-from galaxy.util.json import loads
 
 log = logging.getLogger( __name__ )
 
@@ -212,7 +214,7 @@ class Genomes( object ):
                     if len( val ) == 2:
                         key, path = val
                         twobit_fields[ key ] = path
-            except IOError, e:
+            except IOError as e:
                 # Thrown if twobit.loc does not exist.
                 log.exception( "Error reading twobit.loc: %s", e )
         for key, description in self.app.genome_builds.get_genome_build_names():
@@ -260,9 +262,12 @@ class Genomes( object ):
         # Add app keys to dbkeys.
 
         # If chrom_info is True, only include keys with len files (which contain chromosome info).
-        filter_fn = lambda b: True
         if chrom_info:
-            filter_fn = lambda b: b.len_file is not None
+            def filter_fn(b):
+                return b.len_file is not None
+        else:
+            def filter_fn(b):
+                return True
 
         dbkeys.extend( [ ( genome.description, genome.key ) for key, genome in self.genomes.items() if filter_fn( genome ) ] )
 

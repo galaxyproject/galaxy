@@ -6,9 +6,10 @@ Usage:
 %prog input_name output_name feature_name condition
 """
 import sys
-from galaxy import eggs
-from galaxy.datatypes.util.gff_util import GFFReaderWrapper
+
 from bx.intervals.io import GenomicInterval
+
+from galaxy.datatypes.util.gff_util import GFFReaderWrapper
 
 # Valid operators, ordered so that complex operators (e.g. '>=') are
 # recognized before simple operators (e.g. '>')
@@ -38,11 +39,11 @@ def __main__():
     output_name = sys.argv[2]
     feature_name = sys.argv[3]
     condition = sys.argv[4]
-    
+
     # Unescape operations in condition str.
     for key, value in mapped_ops.items():
         condition = condition.replace( key, value )
-    
+
     # Error checking: condition should be of the form <operator><number>
     for op in ops:
         if op in condition:
@@ -80,9 +81,10 @@ def __main__():
     # Clean up.
     out.close()
     info_msg = "%i of %i features kept (%.2f%%) using condition %s.  " % \
-        ( kept_features, i, float(kept_features)/i * 100.0, feature_name + condition )
+        ( kept_features, i, float(kept_features) / i * 100.0, feature_name + condition )
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." %( skipped_lines, first_skipped_line )
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
     print info_msg
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

@@ -1,11 +1,9 @@
 #!/usr/bin/env python
+import os
+import sys
 
-
-import os, sys, traceback
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import display
-from common import submit
 from common import update
+
 try:
     data = {}
     data[ 'update_type' ] = 'sample_dataset_transfer_status'
@@ -17,6 +15,6 @@ except IndexError:
 try:
     data[ 'error_msg' ] = sys.argv[5]
 except IndexError:
-    data[ 'error_msg' ] = ''    
+    data[ 'error_msg' ] = ''
 print data
 update( sys.argv[1], sys.argv[2], data, return_formatted=True )

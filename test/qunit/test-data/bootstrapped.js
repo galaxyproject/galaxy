@@ -1,4 +1,4 @@
-define( 'bootstrapped-data', function(){
+define([], function(){
     return {
         config  : {
             "allow_user_deletion": false,

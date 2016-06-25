@@ -52,17 +52,19 @@ class WrappedParameters( object ):
                 current = values[ "__current_case__" ]
                 self.wrap_values( input.cases[current].inputs, values, skip_missing_values=skip_missing_values )
             elif isinstance( input, Section ):
-                values = input_values[ input.name ]
+                values = value
                 self.wrap_values( input.inputs, values, skip_missing_values=skip_missing_values )
             elif isinstance( input, DataToolParameter ) and input.multiple:
+                dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
-                    DatasetListWrapper( input_values[ input.name ],
+                    DatasetListWrapper( None,
+                                        dataset_instances,
                                         datatypes_registry=trans.app.datatypes_registry,
                                         tool=tool,
                                         name=input.name )
             elif isinstance( input, DataToolParameter ):
                 input_values[ input.name ] = \
-                    DatasetFilenameWrapper( input_values[ input.name ],
+                    DatasetFilenameWrapper( value,
                                             datatypes_registry=trans.app.datatypes_registry,
                                             tool=tool,
                                             name=input.name )
@@ -70,7 +72,8 @@ class WrappedParameters( object ):
                 input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
             elif isinstance( input, DataCollectionToolParameter ):
                 input_values[ input.name ] = DatasetCollectionWrapper(
-                    input_values[ input.name ],
+                    None,
+                    value,
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,
                     name=input.name,

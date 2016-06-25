@@ -2,8 +2,6 @@
 # Dan Blankenberg
 import sys
 
-from galaxy import eggs
-eggs.require( "bx-python" )
 import bx.intervals.io
 
 assert sys.version_info[:2] >= ( 2, 4 )

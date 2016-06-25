@@ -12,7 +12,6 @@ import subprocess
 
 from Queue import Queue, Empty
 
-import galaxy.eggs
 import galaxy.jobs
 from galaxy.jobs.command_factory import build_command
 from galaxy import model
@@ -21,6 +20,7 @@ from galaxy.util import in_directory
 from galaxy.util import ParamsWithSpecs
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
+from galaxy.jobs.runners.util.job_script import write_script
 from galaxy.jobs.runners.util.job_script import job_script
 from galaxy.jobs.runners.util.env import env_to_statement
 
@@ -36,6 +36,7 @@ JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s'
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
 
 GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
+GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
 
 
 class RunnerParams( ParamsWithSpecs ):
@@ -88,8 +89,11 @@ class BaseJobRunner( object ):
                 return
             # id and name are collected first so that the call of method() is the last exception.
             try:
-                # arg should be a JobWrapper/TaskWrapper
-                job_id = arg.get_id_tag()
+                if isinstance(arg, AsynchronousJobState):
+                    job_id = arg.job_wrapper.get_id_tag()
+                else:
+                    # arg should be a JobWrapper/TaskWrapper
+                    job_id = arg.get_id_tag()
             except:
                 job_id = 'unknown'
             try:
@@ -106,10 +110,12 @@ class BaseJobRunner( object ):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
         put_timer = ExecutionTimer()
+        job = job_wrapper.get_job()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( model.Job.states.QUEUED )
+        job_wrapper.change_state( model.Job.states.QUEUED, flush=False, job=job )
         # Persist the destination so that the job will be included in counts if using concurrency limits
-        job_wrapper.set_job_destination( job_wrapper.job_destination, None )
+        job_wrapper.set_job_destination( job_wrapper.job_destination, None, flush=False, job=job )
+        self.sa_session.flush()
         self.mark_as_queued(job_wrapper)
         log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
 
@@ -139,7 +145,8 @@ class BaseJobRunner( object ):
         """
         raise NotImplementedError()
 
-    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                    modify_command_for_container=True):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
@@ -164,11 +171,12 @@ class BaseJobRunner( object ):
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
-                include_work_dir_outputs=include_work_dir_outputs
+                include_work_dir_outputs=include_work_dir_outputs,
+                modify_command_for_container=modify_command_for_container
             )
-        except:
+        except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail( "failure preparing job", exception=True )
+            job_wrapper.fail( e.message if hasattr( e, 'message' ) else "Job preparation failed", exception=True )
             return False
 
         if not job_wrapper.runner_command_line:
@@ -187,13 +195,15 @@ class BaseJobRunner( object ):
     def recover(self, job, job_wrapper):
         raise NotImplementedError()
 
-    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
+    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                            modify_command_for_container=True ):
         container = self._find_container( job_wrapper )
         return build_command(
             self,
             job_wrapper,
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
+            modify_command_for_container=modify_command_for_container,
             container=container
         )
 
@@ -224,7 +234,7 @@ class BaseJobRunner( object ):
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
-                    source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
+                    source_file = os.path.join( job_working_directory, 'working', hda_tool_output.from_work_dir )
                     destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                     if in_directory( source_file, job_working_directory ):
                         output_pairs.append( ( source_file, destination ) )
@@ -254,14 +264,15 @@ class BaseJobRunner( object ):
         # so that long running set_meta()s can be canceled without having to reboot the server
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
+            venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames=job_wrapper.get_output_fnames(),
                                                                             set_extension=True,
                                                                             tmp_dir=job_wrapper.working_directory,
                                                                             # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
-            external_metadata_script = "%s %s" % (lib_adjust, external_metadata_script)
+            external_metadata_script = "%s %s %s" % (lib_adjust, venv, external_metadata_script)
             if resolve_requirements:
-                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
+                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
                 if dependency_shell_commands:
                     if isinstance( dependency_shell_commands, list ):
                         dependency_shell_commands = "&&".join( dependency_shell_commands )
@@ -269,18 +280,12 @@ class BaseJobRunner( object ):
             log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
             external_metadata_proc = subprocess.Popen( args=external_metadata_script,
                                                        shell=True,
+                                                       cwd=job_wrapper.working_directory,
                                                        env=os.environ,
                                                        preexec_fn=os.setpgrp )
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
-
-    def _get_egg_env_opts(self):
-        env = []
-        crate = galaxy.eggs.Crate()
-        for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
-            env.append('GALAXY_%s="%s"; export GALAXY_%s' % (opt.upper(), getattr(crate, opt), opt.upper()))
-        return env
 
     def get_job_file(self, job_wrapper, **kwds):
         job_metrics = job_wrapper.app.job_metrics
@@ -288,7 +293,6 @@ class BaseJobRunner( object ):
 
         env_setup_commands = kwds.get( 'env_setup_commands', [] )
         env_setup_commands.append( job_wrapper.get_env_setup_clause() or '' )
-        env_setup_commands.extend( self._get_egg_env_opts() or [] )
         destination = job_wrapper.job_destination or {}
         envs = destination.get( "env", [] )
         envs.extend( job_wrapper.environment_variables )
@@ -298,9 +302,11 @@ class BaseJobRunner( object ):
         options = dict(
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
+            galaxy_virtual_env=job_wrapper.galaxy_virtual_env,
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
+            shell=job_wrapper.shell,
         )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
@@ -310,43 +316,7 @@ class BaseJobRunner( object ):
         return job_script(**options)
 
     def write_executable_script( self, path, contents, mode=0o755 ):
-        with open( path, 'w' ) as f:
-            f.write( contents )
-        os.chmod( path, mode )
-        self._handle_script_integrity( path )
-
-    def _handle_script_integrity( self, path ):
-        if not getattr( self.app.config, "check_job_script_integrity", True ):
-            return
-
-        script_integrity_verified = False
-        for i in range(5):
-            try:
-                proc = subprocess.Popen( [path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"} )
-                proc.wait()
-                if proc.returncode == 42:
-                    script_integrity_verified = True
-                    break
-
-                # Else we will sync and wait to see if the script becomes
-                # executable.
-                try:
-                    # sync file system to avoid "Text file busy" problems.
-                    # These have occurred both in Docker containers and on EC2 clusters
-                    # under high load.
-                    subprocess.check_call(["/bin/sync"])
-                except Exception:
-                    pass
-                time.sleep( .1 )
-            except Exception:
-                pass
-
-        if not script_integrity_verified:
-            raise Exception("Failed to write job script, could not verify job script integrity.")
-
-    def _complete_terminal_job( self, ajs, **kwargs ):
-        if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
-            self.work_queue.put( ( self.finish_job, ajs ) )
+        write_script( path, contents, self.app.config, mode=mode )
 
     def _find_container(
         self,
@@ -356,7 +326,7 @@ class BaseJobRunner( object ):
         compute_job_directory=None
     ):
         if not compute_working_directory:
-            compute_working_directory = job_wrapper.working_directory
+            compute_working_directory = job_wrapper.tool_working_directory
 
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir
@@ -590,8 +560,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
         which_try = 0
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
-                stdout = shrink_stream_by_size( file( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-                stderr = shrink_stream_by_size( file( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                stdout = shrink_stream_by_size( open( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                stderr = shrink_stream_by_size( open( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 which_try = (self.app.config.retry_job_output_collection + 1)
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
@@ -604,7 +574,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
 
         try:
             # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = file( job_state.exit_code_file, "r" ).read(32)
+            exit_code_str = open( job_state.exit_code_file, "r" ).read(32)
         except:
             # By default, the exit code is 0, which typically indicates success.
             exit_code_str = "0"
@@ -617,7 +587,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
             exit_code = 0
 
         # clean up the job files
-        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+        cleanup_job = job_state.job_wrapper.cleanup_job
+        if cleanup_job == "always" or ( not stderr and cleanup_job == "onsuccess" ):
             job_state.cleanup()
 
         try:
@@ -634,7 +605,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
         # something necessary
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
-            if self.app.config.cleanup_job == "always":
+            if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
     def mark_as_finished(self, job_state):

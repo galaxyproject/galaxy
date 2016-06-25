@@ -43,7 +43,7 @@ def upgrade(migrate_engine):
         try:
             c.create( HistoryTagAssociation_table, index_name='ix_history_tag_association_user_id')
             assert c is HistoryTagAssociation_table.c.user_id
-        except Exception, e:
+        except Exception as e:
             # SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so catch exception if it arises.
             print str(e)
             log.debug( "Adding user_id column to history_tag_association table failed: %s" % str( e ) )
@@ -52,7 +52,7 @@ def upgrade(migrate_engine):
         try:
             c.create( HistoryTagAssociation_table)
             assert c is HistoryTagAssociation_table.c.user_id
-        except Exception, e:
+        except Exception as e:
             # SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so catch exception if it arises.
             print str(e)
             log.debug( "Adding user_id column to history_tag_association table failed: %s" % str( e ) )
@@ -69,7 +69,7 @@ def upgrade(migrate_engine):
         try:
             c.create( HistoryDatasetAssociationTagAssociation_table, index_name='ix_history_dataset_association_tag_association_user_id')
             assert c is HistoryDatasetAssociationTagAssociation_table.c.user_id
-        except Exception, e:
+        except Exception as e:
             # SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so catch exception if it arises.
             print str(e)
             log.debug( "Adding user_id column to history_dataset_association_tag_association table failed: %s" % str( e ) )
@@ -81,7 +81,7 @@ def upgrade(migrate_engine):
         try:
             c.create( HistoryDatasetAssociationTagAssociation_table)
             assert c is HistoryDatasetAssociationTagAssociation_table.c.user_id
-        except Exception, e:
+        except Exception as e:
             # SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so catch exception if it arises.
             print str(e)
             log.debug( "Adding user_id column to history_dataset_association_tag_association table failed: %s" % str( e ) )
@@ -97,7 +97,7 @@ def upgrade(migrate_engine):
         try:
             c.create( PageTagAssociation_table, index_name='ix_page_tag_association_user_id')
             assert c is PageTagAssociation_table.c.user_id
-        except Exception, e:
+        except Exception as e:
             # SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so catch exception if it arises.
             print str(e)
             log.debug( "Adding user_id column to page_tag_association table failed: %s" % str( e ) )
@@ -108,7 +108,7 @@ def upgrade(migrate_engine):
         try:
             c.create( PageTagAssociation_table )
             assert c is PageTagAssociation_table.c.user_id
-        except Exception, e:
+        except Exception as e:
             # SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so catch exception if it arises.
             print str(e)
             log.debug( "Adding user_id column to page_tag_association table failed: %s" % str( e ) )
@@ -121,14 +121,14 @@ def upgrade(migrate_engine):
     # Create stored_workflow_tag_association table.
     try:
         StoredWorkflowTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating stored_workflow_tag_association table failed: %s" % str( e ) )
 
     # Create workflow_tag_association table.
     try:
         WorkflowTagAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Creating workflow_tag_association table failed: %s" % str( e ) )
 
@@ -141,7 +141,7 @@ def downgrade(migrate_engine):
     HistoryTagAssociation_table = Table( "history_tag_association", metadata, autoload=True )
     try:
         HistoryTagAssociation_table.c.user_id.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping column user_id from history_tag_association table failed: %s" % str( e ) )
 
@@ -149,7 +149,7 @@ def downgrade(migrate_engine):
     HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_association_tag_association", metadata, autoload=True )
     try:
         HistoryDatasetAssociationTagAssociation_table.c.user_id.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping column user_id from history_dataset_association_tag_association table failed: %s" % str( e ) )
 
@@ -157,20 +157,20 @@ def downgrade(migrate_engine):
     PageTagAssociation_table = Table( "page_tag_association", metadata, autoload=True )
     try:
         PageTagAssociation_table.c.user_id.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping column user_id from page_tag_association table failed: %s" % str( e ) )
 
     # Drop stored_workflow_tag_association table.
     try:
         StoredWorkflowTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping stored_workflow_tag_association table failed: %s" % str( e ) )
 
     # Drop workflow_tag_association table.
     try:
         WorkflowTagAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.debug( "Dropping workflow_tag_association table failed: %s" % str( e ) )

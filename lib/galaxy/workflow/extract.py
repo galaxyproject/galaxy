@@ -6,15 +6,13 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
-    DataCollectionToolParameter,
-    DrillDownSelectToolParameter,
-    SelectToolParameter,
-    UnvalidatedValue
+    DataCollectionToolParameter
 )
-from galaxy.tools import ToolOutputCollectionPart
+from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.grouping import (
     Conditional,
-    Repeat
+    Repeat,
+    Section
 )
 from .steps import (
     attach_ordered_steps,
@@ -99,13 +97,14 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     # Tool steps
     for job_id in job_ids:
         if job_id not in jobs_by_id:
-            log.warn( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
+            log.warning( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
             raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
         step = model.WorkflowStep()
         step.type = 'tool'
         step.tool_id = job.tool_id
+        step.tool_version = job.tool_version
         step.tool_inputs = tool_inputs
         # NOTE: We shouldn't need to do two passes here since only
         #       an earlier job can be used as an input to a later
@@ -142,7 +141,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
                 if hid is None:
                     template = "Failed to find matching implicit job - job is %s, jobs are %s, assoc_name is %s."
                     message = template % ( job.id, jobs, assoc.name )
-                    log.warn( message )
+                    log.warning( message )
                     raise Exception( "Failed to extract job." )
             else:
                 if hasattr( assoc, "dataset" ):
@@ -242,7 +241,7 @@ class WorkflowSummary( object ):
 
             job_hda = self.__original_hda( dataset_instance )
             if not job_hda.creating_job_associations:
-                log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                log.warning( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
                 job = DatasetCollectionCreationJob( dataset_collection )
                 self.jobs[ job ] = [ ( None, dataset_collection ) ]
 
@@ -315,9 +314,6 @@ def __cleanup_param_values( inputs, values ):
     # Recursively clean data inputs and dynamic selects
     def cleanup( prefix, inputs, values ):
         for key, input in inputs.items():
-            if isinstance( input, ( SelectToolParameter, DrillDownSelectToolParameter ) ):
-                if input.is_dynamic and not isinstance( values[key], UnvalidatedValue ):
-                    values[key] = UnvalidatedValue( values[key] )
             if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 tmp = values[key]
                 values[key] = None
@@ -340,21 +336,26 @@ def __cleanup_param_values( inputs, values ):
                     if k.startswith( key ):
                         del root_values[k]
             elif isinstance( input, Repeat ):
-                group_values = values[key]
-                for i, rep_values in enumerate( group_values ):
-                    rep_index = rep_values['__index__']
-                    cleanup( "%s%s_%d|" % (prefix, key, rep_index ), input.inputs, group_values[i] )
+                if key in values:
+                    group_values = values[key]
+                    for i, rep_values in enumerate( group_values ):
+                        rep_index = rep_values['__index__']
+                        cleanup( "%s%s_%d|" % (prefix, key, rep_index ), input.inputs, group_values[i] )
             elif isinstance( input, Conditional ):
                 # Scrub dynamic resource related parameters from workflows,
                 # they cause problems and the workflow probably should include
                 # their state in workflow encoding.
-                if input.is_job_resource_conditional:
+                if input.name == '__job_resource':
                     if input.name in values:
                         del values[input.name]
                     return
-                group_values = values[input.name]
-                current_case = group_values['__current_case__']
-                cleanup( "%s%s|" % ( prefix, key ), input.cases[current_case].inputs, group_values )
+                if input.name in values:
+                    group_values = values[input.name]
+                    current_case = group_values['__current_case__']
+                    cleanup( "%s%s|" % ( prefix, key ), input.cases[current_case].inputs, group_values )
+            elif isinstance( input, Section ):
+                if input.name in values:
+                    cleanup( "%s%s|" % ( prefix, key ), input.inputs, values[input.name] )
     cleanup( "", inputs, values )
     return associations
 

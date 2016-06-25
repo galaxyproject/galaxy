@@ -1,22 +1,18 @@
 """
 Common methods used by the API sample scripts.
 """
+from __future__ import print_function
+
 import json
 import logging
-import os
 import sys
-import urllib2
-
-new_path = [ os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, 'lib' ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
-
-from galaxy import eggs
-eggs.require( "pycrypto" )
 
 from Crypto.Cipher import Blowfish
+from six.moves.urllib.error import HTTPError
+from six.moves.urllib.request import Request, urlopen
 
 log = logging.getLogger( __name__ )
+
 
 def make_url( api_key, url, args=None ):
     """
@@ -31,42 +27,46 @@ def make_url( api_key, url, args=None ):
         args.insert( 0, ( 'key', api_key ) )
     return url + argsep + '&'.join( [ '='.join( t ) for t in args ] )
 
+
 def get( api_key, url ):
     """
     Do the actual GET.
     """
     url = make_url( api_key, url )
     try:
-        return json.loads( urllib2.urlopen( url ).read() )
-    except ValueError, e:
-        print "URL did not return JSON data: %s" % e
+        return json.loads( urlopen( url ).read() )
+    except ValueError as e:
+        print("URL did not return JSON data: %s" % e)
         sys.exit(1)
+
 
 def post( api_key, url, data ):
     """
     Do the actual POST.
     """
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
-    return json.loads( urllib2.urlopen( req ).read() )
+    req = Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ) )
+    return json.loads( urlopen( req ).read() )
+
 
 def put( api_key, url, data ):
     """
     Do the actual PUT
     """
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
+    req = Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ))
     req.get_method = lambda: 'PUT'
-    return json.loads( urllib2.urlopen( req ).read() )
+    return json.loads( urlopen( req ).read() )
+
 
 def __del( api_key, url, data ):
     """
     Do the actual DELETE
     """
     url = make_url( api_key, url )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
+    req = Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ))
     req.get_method = lambda: 'DELETE'
-    return json.loads( urllib2.urlopen( req ).read() )
+    return json.loads( urlopen( req ).read() )
 
 
 def display( api_key, url, return_formatted=True ):
@@ -75,40 +75,38 @@ def display( api_key, url, return_formatted=True ):
     """
     try:
         r = get( api_key, url )
-    except urllib2.HTTPError, e:
-        print e
-        print e.read( 1024 ) # Only return the first 1K of errors.
+    except HTTPError as e:
+        print(e)
+        print(e.read( 1024 ))  # Only return the first 1K of errors.
         sys.exit( 1 )
-    if type( r ) == unicode:
-        print 'error: %s' % r
-        return None
     if not return_formatted:
         return r
     elif type( r ) == list:
         # Response is a collection as defined in the REST style.
-        print 'Collection Members'
-        print '------------------'
+        print('Collection Members')
+        print('------------------')
         for n, i in enumerate(r):
             # All collection members should have a name in the response.
             # url is optional
             if 'url' in i:
-                print '#%d: %s' % (n+1, i.pop( 'url' ) )
+                print('#%d: %s' % (n + 1, i.pop( 'url' ) ))
             if 'name' in i:
-                print '  name: %s' % i.pop( 'name' )
+                print('  name: %s' % i.pop( 'name' ))
             for k, v in i.items():
-                print '  %s: %s' % ( k, v )
-        print ''
-        print '%d element(s) in collection' % len( r )
+                print('  %s: %s' % ( k, v ))
+        print('')
+        print('%d element(s) in collection' % len( r ))
     elif type( r ) == dict:
         # Response is an element as defined in the REST style.
-        print 'Member Information'
-        print '------------------'
+        print('Member Information')
+        print('------------------')
         for k, v in r.items():
-            print '%s: %s' % ( k, v )
+            print('%s: %s' % ( k, v ))
     elif type( r ) == str:
-        print r
+        print(r)
     else:
-        print 'response is unknown type: %s' % type( r )
+        print('response is unknown type: %s' % type( r ))
+
 
 def submit( api_key, url, data, return_formatted=True ):
     """
@@ -117,34 +115,35 @@ def submit( api_key, url, data, return_formatted=True ):
     """
     try:
         r = post( api_key, url, data )
-    except urllib2.HTTPError, e:
+    except HTTPError as e:
         if return_formatted:
-            print e
-            print e.read( 1024 )
+            print(e)
+            print(e.read( 1024 ))
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
-    print 'Response'
-    print '--------'
+    print('Response')
+    print('--------')
     if type( r ) == list:
         # Currently the only implemented responses are lists of dicts, because
         # submission creates some number of collection elements.
         for i in r:
             if type( i ) == dict:
                 if 'url' in i:
-                    print i.pop( 'url' )
+                    print(i.pop( 'url' ))
                 else:
-                    print '----'
+                    print('----')
                 if 'name' in i:
-                    print '  name: %s' % i.pop( 'name' )
+                    print('  name: %s' % i.pop( 'name' ))
                 for k, v in i.items():
-                    print '  %s: %s' % ( k, v )
+                    print('  %s: %s' % ( k, v ))
             else:
-                print i
+                print(i)
     else:
-        print r
+        print(r)
+
 
 def update( api_key, url, data, return_formatted=True ):
     """
@@ -153,18 +152,19 @@ def update( api_key, url, data, return_formatted=True ):
     """
     try:
         r = put( api_key, url, data )
-    except urllib2.HTTPError, e:
+    except HTTPError as e:
         if return_formatted:
-            print e
-            print e.read( 1024 )
+            print(e)
+            print(e.read( 1024 ))
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
-    print 'Response'
-    print '--------'
-    print r
+    print('Response')
+    print('--------')
+    print(r)
+
 
 def delete( api_key, url, data, return_formatted=True ):
     """
@@ -173,18 +173,19 @@ def delete( api_key, url, data, return_formatted=True ):
     """
     try:
         r = __del( api_key, url, data )
-    except urllib2.HTTPError, e:
+    except HTTPError as e:
         if return_formatted:
-            print e
-            print e.read( 1024 )
+            print(e)
+            print(e.read( 1024 ))
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return 'Error. ' + str( e.read( 1024 ) )
     if not return_formatted:
         return r
-    print 'Response'
-    print '--------'
-    print r
+    print('Response')
+    print('--------')
+    print(r)
+
 
 def encode_id( config_id_secret, obj_id ):
     """
@@ -197,4 +198,3 @@ def encode_id( config_id_secret, obj_id ):
     s = ( "!" * ( 8 - len(s) % 8 ) ) + s
     # Encrypt
     return id_cipher.encrypt( s ).encode( 'hex' )
-

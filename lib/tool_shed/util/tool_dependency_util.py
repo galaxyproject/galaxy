@@ -2,8 +2,6 @@ import logging
 import os
 import shutil
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_
 
 from galaxy import util
@@ -50,14 +48,7 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
         # In some cases we should not override the current status of an existing tool_dependency, so do so only
         # if set_status is True.
         if set_status:
-            if str( tool_dependency.status ) != str( status ):
-                debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
-                    ( str( version ), str( name ), str( tool_shed_repository.changeset_revision ), str( tool_shed_repository.name ) )
-                debug_msg += 'by updating the status from %s to %s.' % ( str( tool_dependency.status ), str( status ) )
-                log.debug( debug_msg )
-            tool_dependency.status = status
-            context.add( tool_dependency )
-            context.flush()
+            set_tool_dependency_attributes(app, tool_dependency=tool_dependency, status=status)
     else:
         # Create a new tool_dependency record for the tool_shed_repository.
         debug_msg = 'Creating a new record for version %s of tool dependency %s for revision %s of repository %s.  ' % \
@@ -229,38 +220,6 @@ def get_tool_dependency_install_dir( app, repository_name, repository_owner, rep
                                               repository_changeset_revision ) )
 
 
-def handle_tool_dependency_installation_error( app, tool_dependency, error_message, remove_installation_path=False ):
-    # Since there was an installation error, remove the installation directory because the install_package method uses
-    # this: "if os.path.exists( install_dir ):". Setting remove_installation_path to True should rarely occur. It is
-    # currently set to True only to handle issues with installing tool dependencies into an Amazon S3 bucket.
-    sa_session = app.install_model.context
-    tool_shed_repository = tool_dependency.tool_shed_repository
-    install_dir = get_tool_dependency_install_dir( app=app,
-                                                   repository_name=tool_shed_repository.name,
-                                                   repository_owner=tool_shed_repository.owner,
-                                                   repository_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                   tool_dependency_type=tool_dependency.type,
-                                                   tool_dependency_name=tool_dependency.name,
-                                                   tool_dependency_version=tool_dependency.version )
-    if remove_installation_path:
-        # This will be True only in the case where an exception was encountered during the installation process after
-        # the installation path was created but before any information was written to the installation log and the
-        # tool dependency status was not set to "Installed" or "Error".
-        if os.path.exists( install_dir ):
-            log.debug( 'Attempting to remove installation directory %s for version %s of tool dependency %s %s' %
-                ( str( install_dir ), str( tool_dependency.version ), str( tool_dependency.type ), str( tool_dependency.name ) ) )
-            log.debug( 'due to the following installation error:\n%s' % str( error_message ) )
-            try:
-                shutil.rmtree( install_dir )
-            except Exception, e:
-                log.exception( 'Error removing existing installation directory %s: %s', (install_dir, str(e)) )
-    tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
-    tool_dependency.error_message = error_message
-    sa_session.add( tool_dependency )
-    sa_session.flush()
-    return tool_dependency
-
-
 def parse_package_elem( package_elem, platform_info_dict=None, include_after_install_actions=True ):
     """
     Parse a <package> element within a tool dependency definition and return a list of action tuples.
@@ -404,22 +363,28 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
             removed = True
             error_message = ''
             log.debug( "Removed tool dependency installation directory: %s" % str( dependency_install_dir ) )
-        except Exception, e:
+        except Exception as e:
             removed = False
             error_message = "Error removing tool dependency installation directory %s: %s" % ( str( dependency_install_dir ), str( e ) )
-            log.debug( error_message )
+            log.warning( error_message )
     else:
         removed = True
         error_message = ''
     return removed, error_message
 
 
-def set_tool_dependency_attributes( app, tool_dependency, status, error_message=None, remove_from_disk=False ):
+def set_tool_dependency_attributes( app, tool_dependency, status, error_message=None ):
     sa_session = app.install_model.context
-    if remove_from_disk:
+    if status == app.install_model.ToolDependency.installation_status.UNINSTALLED:
         installation_directory = tool_dependency.installation_directory( app )
-        removed, err_msg = remove_tool_dependency_installation_directory( installation_directory )
+        remove_tool_dependency_installation_directory( installation_directory )
     tool_dependency.error_message = error_message
+    if str( tool_dependency.status ) != str( status ):
+        tool_shed_repository = tool_dependency.tool_shed_repository
+        debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
+            ( str( tool_dependency.version ), str( tool_dependency.name ), str( tool_shed_repository.changeset_revision ), str( tool_shed_repository.name ) )
+        debug_msg += 'by updating the status from %s to %s.' % ( str( tool_dependency.status ), str( status ) )
+        log.debug( debug_msg )
     tool_dependency.status = status
     sa_session.add( tool_dependency )
     sa_session.flush()

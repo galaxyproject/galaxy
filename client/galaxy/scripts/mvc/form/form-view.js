@@ -1,49 +1,23 @@
 /**
     This is the main class of the form plugin. It is referenced as 'app' in all lower level modules.
 */
-define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
-        'mvc/form/form-section', 'mvc/form/form-data'],
+define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-section', 'mvc/form/form-data'],
     function(Utils, Portlet, Ui, FormSection, FormData) {
-
-    // create form view
     return Backbone.View.extend({
-        // initialize
         initialize: function(options) {
-            // options
-            this.optionsDefault = {
-                // uses workflow editor mode i.e. text instead of select fields
-                is_workflow     : false,
-                // shows errors on start
+            this.options = Utils.merge(options, {
                 initial_errors  : false,
-                // portlet style
-                cls             : 'ui-portlet-limited'
-            };
-
-            // configure options
-            this.options = Utils.merge(options, this.optionsDefault);
-
-            // log options
-            console.debug(this.options);
-
-            // link galaxy modal or create one
-            var galaxy = parent.Galaxy;
-            if (galaxy && galaxy.modal) {
-                this.modal = galaxy.modal;
-            } else {
-                this.modal = new Ui.Modal.View();
-            }
-
-            // set element
+                cls             : 'ui-portlet-limited',
+                icon            : null
+            });
             this.setElement('<div/>');
-
-            // build this form
-            this._build();
+            this.render();
         },
 
         /** Update available options */
         update: function(new_model){
             var self = this;
-            this.data.matchModel(new_model, function(input_id, node) {
+            this.data.matchModel(new_model, function(node, input_id) {
                 var input = self.input_list[input_id];
                 if (input && input.options) {
                     if (!_.isEqual(input.options, node.options)) {
@@ -69,7 +43,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                             }
                             field.update(new_options);
                             field.trigger('change');
-                            console.debug('Updating options for ' + input_id);
+                            Galaxy.emit.debug('form-view::update()', 'Updating options for ' + input_id);
                         }
                     }
                 }
@@ -94,18 +68,11 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         /** Highlight and scroll to input element (currently only used for error notifications)
         */
         highlight: function (input_id, message, silent) {
-            // get input field
             var input_element = this.element_list[input_id];
-
-            // check input element
             if (input_element) {
-                // mark error
                 input_element.error(message || 'Please verify this parameter.');
-
-                // trigger expand event for parent containers
+                this.portlet.expand();
                 this.trigger('expand', input_id);
-
-                // scroll to first input element
                 if (!silent) {
                     if (self==top) {
                         var $panel = this.$el.parents().filter(function() {
@@ -122,10 +89,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         /** Highlights errors
         */
         errors: function(options) {
-            // hide previous error statements
             this.trigger('reset');
-
-            // highlight all errors
             if (options && options.errors) {
                 var error_messages = this.data.matchResponse(options.errors);
                 for (var input_id in this.element_list) {
@@ -137,9 +101,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
 
-        /** Main tool form build function. This function is called once a new model is available.
+        /** Render tool form
         */
-        _build: function() {
+        render: function() {
             // link this
             var self = this;
 
@@ -157,7 +121,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.element_list = {};
 
             // creates a json data structure from the input form
-            this.data = new FormData(this);
+            this.data = new FormData.Manager(this);
 
             // create ui elements
             this._renderForm();
@@ -172,9 +136,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // add listener which triggers on checksum change
             var current_check = this.data.checksum();
-            this.on('change', function() {
+            this.on('change', function( force ) {
                 var new_check = self.data.checksum();
-                if (new_check != current_check) {
+                if (new_check != current_check || force ) {
                     current_check = new_check;
                     self.options.onchange && self.options.onchange();
                 }
@@ -186,6 +150,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     this.element_list[i].reset();
                 }
             });
+            return this;
         },
 
         /** Renders the UI elements required for the form
@@ -204,15 +169,17 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // create portlet
             this.portlet = new Portlet.View({
-                icon        : 'fa-wrench',
+                icon        : this.options.icon,
                 title       : this.options.title,
                 cls         : this.options.cls,
                 operations  : this.options.operations,
-                buttons     : this.options.buttons
+                buttons     : this.options.buttons,
+                collapsible : this.options.collapsible,
+                collapsed   : this.options.collapsed
             });
 
             // append message
-            this.portlet.append(this.message.$el.addClass('ui-margin-top'));
+            this.portlet.append(this.message.$el);
 
             // append tool section
             this.portlet.append(this.section.$el);
@@ -231,7 +198,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
 
             // log
-            console.debug('tools-form-base::initialize() - Completed.');
+            Galaxy.emit.debug('form-view::initialize()', 'Completed');
         }
     });
 });

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-usage = "USAGE: copy_hda_to_library_folder.py <base url> <api key> <hda id> <library id> <folder id> [ message ]"
+import sys
 
-import os, sys
-sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import submit
 
-# -----------------------------------------------------------------------------
+usage = "USAGE: copy_hda_to_library_folder.py <base url> <api key> <hda id> <library id> <folder id> [ message ]"
+
+
 def copy_hda_to_library_folder( base_url, key, hda_id, library_id, folder_id, message='' ):
-    url = 'http://%s/api/libraries/%s/contents' %( base_url, library_id )
+    url = 'http://%s/api/libraries/%s/contents' % ( base_url, library_id )
     payload = {
         'folder_id'     : folder_id,
         'create_type'   : 'file',
@@ -19,7 +19,6 @@ def copy_hda_to_library_folder( base_url, key, hda_id, library_id, folder_id, me
     return submit( key, url, payload )
 
 
-# -----------------------------------------------------------------------------
 if __name__ == '__main__':
     num_args = len( sys.argv )
     if num_args < 6:

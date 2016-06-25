@@ -2,21 +2,9 @@ import logging
 import os.path
 import sys
 
-from galaxy import eggs
-
-eggs.require( "SQLAlchemy" )
-eggs.require( "decorator" )
-eggs.require( "six" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlalchemy-migrate" )
-eggs.require( "Tempita" )
-
-
 from migrate.versioning import repository, schema
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
-
-from galaxy.model.orm import dialect_to_egg
 
 log = logging.getLogger( __name__ )
 
@@ -37,18 +25,6 @@ def create_or_verify_database( url, engine_options={} ):
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
 
     """
-    dialect = ( url.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[dialect]
-        try:
-            eggs.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create engine and metadata
     engine = create_engine( url, **engine_options )
     meta = MetaData( bind=engine )

@@ -1,5 +1,7 @@
 define([
 ], function(){
+
+'use strict';
 //==============================================================================
 /** Map of possible HDA/collection/job states to their string equivalents.
  *      A port of galaxy.model.Dataset.states.

@@ -10,8 +10,7 @@ import ConfigParser
 import os
 import sys
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(0, os.path.join(galaxy_root, 'lib'))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.app
 import galaxy.datatypes.tabular
@@ -19,7 +18,7 @@ import galaxy.datatypes.tabular
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
-def usage(prog) :
+def usage(prog):
     print "usage: %s galaxy.ini" % prog
     print """
 Updates the metadata in the database to match rev 1981.
@@ -29,7 +28,7 @@ Remember to backup your database before running.
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help" :
+    if len(sys.argv) != 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
         usage(sys.argv[0])
         sys.exit()
     ini_file = sys.argv.pop(1)

@@ -1,6 +1,10 @@
 from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 from ..objectstore import ObjectStore
-from pulsar.client.manager import ObjectStoreClientManager
+
+try:
+    from pulsar.client.manager import ObjectStoreClientManager
+except ImportError:
+    ObjectStoreClientManager = None
 
 
 class PulsarObjectStore(ObjectStore):
@@ -61,6 +65,8 @@ class PulsarObjectStore(ObjectStore):
         pass
 
     def __build_pulsar_client(self, config_xml):
+        if ObjectStoreClientManager is None:
+            raise Exception("Pulsar client code not available, cannot use this module.")
         url = config_xml.get("url")
         private_token = config_xml.get("private_token", None)
         transport = config_xml.get("transport", None)

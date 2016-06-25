@@ -15,12 +15,9 @@ from ConfigParser import ConfigParser
 from optparse import OptionParser
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(0, os.path.join(galaxy_root, 'lib'))
+sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
 
-from galaxy import eggs
-eggs.require('psycopg2')
 import psycopg2
-eggs.require('SQLAlchemy')
 from sqlalchemy.engine.url import make_url
 
 import galaxy.config
@@ -242,14 +239,14 @@ class Cleanup(object):
         try:
             filename = self.object_store.get_filename(metadata_file, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % id)
             self._log('Removing from disk: %s' % filename, action_name)
-        except (ObjectNotFound, AttributeError), e:
+        except (ObjectNotFound, AttributeError) as e:
             log.error('Unable to get MetadataFile %s filename: %s' % (id, e))
             return
 
         if not self.options.dry_run:
             try:
                 os.unlink(filename)
-            except Exception, e:
+            except Exception as e:
                 self._log('Removal of %s failed with error: %s' % (filename, e), action_name)
 
     def _update_user_disk_usage(self):
@@ -742,7 +739,7 @@ class Cleanup(object):
             dataset = Dataset(id=tup[0], object_store_id=tup[1])
             try:
                 filename = self.object_store.get_filename(dataset)
-            except (ObjectNotFound, AttributeError), e:
+            except (ObjectNotFound, AttributeError) as e:
                 log.error('Unable to get Dataset %s filename: %s' % (tup[0], e))
                 continue
 
@@ -756,7 +753,7 @@ class Cleanup(object):
             if not self.options.dry_run:
                 try:
                     os.unlink(filename)
-                except Exception, e:
+                except Exception as e:
                     self._log('Removal of %s failed with error: %s' % (filename, e))
 
             # extra_files_dir is optional so it's checked first
@@ -765,7 +762,7 @@ class Cleanup(object):
                 if not self.options.dry_run:
                     try:
                         shutil.rmtree(extra_files_dir)
-                    except Exception, e:
+                    except Exception as e:
                         self._log('Removal of %s failed with error: %s' % (extra_files_dir, e))
 
         self._close_logfile()

@@ -1,24 +1,12 @@
-import sys
-import os.path
 import logging
-
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
-from galaxy import eggs
-
-eggs.require( "SQLAlchemy" )
-eggs.require( "decorator" )
-eggs.require( "Tempita " )
-eggs.require( "six" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlalchemy-migrate" )
-
-from migrate.versioning.shell import main
+import os.path
+import sys
 from ConfigParser import SafeConfigParser
 
-from galaxy.model.orm.scripts import require_dialect_egg
+from migrate.versioning.shell import main
+
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+
 from galaxy.model.orm.scripts import read_config_file_arg
 from galaxy.util.properties import load_app_properties
 
@@ -45,7 +33,5 @@ elif "database_file" in properties:
     db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % properties[ "database_file" ]
 else:
     db_url = "sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE"
-
-require_dialect_egg( db_url )
 
 main( repository=repo, url=db_url )

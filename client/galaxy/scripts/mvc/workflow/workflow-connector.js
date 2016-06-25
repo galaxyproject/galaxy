@@ -31,16 +31,12 @@ define([], function(){
         destroyIfInvalid: function() {
             if( this.handle1 && this.handle2 && ! this.handle2.attachable( this.handle1 ) ) {
                 this.destroy();
-            }        
+            }
         },
         redraw : function () {
             var canvas_container = $("#canvas-container");
             if ( ! this.canvas ) {
                 this.canvas = document.createElement( "canvas" );
-                // excanvas specific hack
-                if ( window.G_vmlCanvasManager ) {
-                    G_vmlCanvasManager.initElement( this.canvas );
-                }
                 canvas_container.append( $(this.canvas) );
                 if ( this.dragging ) {
                     this.canvas.style.zIndex = "300";
@@ -108,7 +104,7 @@ define([], function(){
                     inner_width = 1;
                     outer_width = 3;
                 }
-                connector.draw_outlined_curve( start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, start_offsets[ i % start_offsets.length ], end_offsets[ i % end_offsets.length ] ); 
+                connector.draw_outlined_curve( start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, start_offsets[ i % start_offsets.length ], end_offsets[ i % end_offsets.length ] );
             }
         },
         draw_outlined_curve : function( start_x, start_y, end_x, end_y, cp_shift, inner_width, outer_width, offset_start, offset_end ) {

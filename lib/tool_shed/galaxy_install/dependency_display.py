@@ -5,8 +5,11 @@ import threading
 
 from galaxy import util
 from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
-from tool_shed.util import common_util, container_util, readme_util
-from tool_shed.util import shed_util_common as suc, tool_dependency_util
+from tool_shed.util import common_util
+from tool_shed.util import container_util
+from tool_shed.util import readme_util
+from tool_shed.util import repository_util
+from tool_shed.util import tool_dependency_util
 from tool_shed.utility_containers import utility_container_manager
 
 log = logging.getLogger( __name__ )
@@ -286,7 +289,7 @@ class DependencyDisplayer( object ):
                         folder_id += 1
                         repository_components_tuple = \
                             container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
-                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                        components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                         name = components_list[ 1 ]
                         # Generate the label by retrieving the repository name.
                         old_container_repository_dependencies_folder.label = str( name )
@@ -318,7 +321,7 @@ class DependencyDisplayer( object ):
                 if tool_dependencies_root_folder:
                     tool_dependencies_root_folder.folders.append( tool_dependencies_folder )
                     new_containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Exception in merge_containers_dicts_for_new_install: %s" % str( e ) )
             finally:
                 lock.release()
@@ -455,7 +458,7 @@ class DependencyDisplayer( object ):
                                    owner=str( repository.owner ),
                                    changeset_revision=str( repository.installed_changeset_revision ) )
                     pathspec = [ 'repository', 'get_readme_files' ]
-                    raw_text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
+                    raw_text = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
                     readme_files_dict = json.loads( raw_text )
                 else:
                     readme_files_dict = readme_util.build_readme_files_dict( self.app,
@@ -553,17 +556,17 @@ class DependencyDisplayer( object ):
                     description, repository_clone_url, changeset_revision, \
                         ctx_rev, repository_owner, repository_dependencies, \
                         tool_dependencies = \
-                        suc.get_repo_info_tuple_contents( repo_info_tuple )
+                        repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                     if tool_dependencies:
                         # Add the install_dir attribute to the tool_dependencies.
                         tool_dependencies = self.add_installation_directories_to_tool_dependencies( tool_dependencies )
                         # The required_repository may have been installed with a different changeset revision.
                         required_repository, installed_changeset_revision = \
-                            suc.repository_was_previously_installed( self.app,
-                                                                     tool_shed_url,
-                                                                     name,
-                                                                     repo_info_tuple,
-                                                                     from_tip=False )
+                            repository_util.repository_was_previously_installed( self.app,
+                                                                                 tool_shed_url,
+                                                                                 name,
+                                                                                 repo_info_tuple,
+                                                                                 from_tip=False )
                         if required_repository:
                             required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
                                 self.get_installed_and_missing_tool_dependencies_for_installed_repository( required_repository,

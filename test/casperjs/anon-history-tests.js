@@ -40,7 +40,7 @@ spaceghost.test.begin( 'Testing histories for anonymous users', 0, function suit
         this.test.assertVisible( nameSelector, 'History name is visible' );
         this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
 
-        this.test.comment( "history should display size and size should be 0 bytes" );
+        this.test.comment( "history should display size and size should be " + initialSizeStr );
         this.test.assertExists( sizeSelector, 'Found ' + sizeSelector );
         this.test.assertVisible( sizeSelector, 'History size is visible' );
         this.test.assertSelectorHasText( sizeSelector, initialSizeStr,

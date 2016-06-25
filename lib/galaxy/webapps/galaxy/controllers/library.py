@@ -1,9 +1,6 @@
 import logging
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, not_, or_
 
 from galaxy import model, util
@@ -20,12 +17,12 @@ class LibraryListGrid( grids.Grid ):
 
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
-            return library.name
+            return escape(library.name)
 
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
             if library.description:
-                return library.description
+                return escape(library.description)
             return ''
 
     # Grid definition

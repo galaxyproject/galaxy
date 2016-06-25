@@ -19,10 +19,10 @@ var Visualization = Backbone.Model.extend(
         config : {}
     },
 
-    /** override urlRoot to handle presence/absence of galaxy_config */
+    /** override urlRoot to handle prefix */
     urlRoot : function(){
-        var apiUrl = '/api/visualizations';
-        return (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root + apiUrl ):( apiUrl ));
+        var apiUrl = 'api/visualizations';
+        return Galaxy.root + apiUrl;
     },
 
     /** Set up the model, determine if accessible, bind listeners
@@ -78,8 +78,6 @@ var Visualization = Backbone.Model.extend(
 //==============================================================================
 /** @class Backbone collection of visualization models
  *
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
 var VisualizationCollection = Backbone.Collection.extend(
@@ -91,7 +89,7 @@ var VisualizationCollection = Backbone.Collection.extend(
     //logger              : console,
 
     url : function(){
-        return galaxy_config.root + 'api/visualizations';
+        return Galaxy.root + 'api/visualizations';
     },
 
     /** Set up.

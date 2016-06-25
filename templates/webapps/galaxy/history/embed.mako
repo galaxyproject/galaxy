@@ -3,7 +3,6 @@
 ## Some duplication with embed_base here, needed a way to override the main embedded-item html for histories
 <%
     encoded_history_id = trans.security.encode_id( item.id )
-    import_href = h.url_for( controller='history', action='imp', id=encoded_history_id )
     display_href = h.url_for( controller='history', action='display_by_username_and_slug',
         username=item.user.username, slug=item.slug )
 %>
@@ -14,7 +13,7 @@
                title="Show or hide history contents"></a>
         </div>
         <div style="float: right;">
-            <a title="Import history" class="icon-button import" href="${import_href}"></a>
+            <a title="Import history" class="icon-button import" href="javascript:void(0)"></a>
             <a title="View history" class="icon-button go-to-full-screen" href="${display_href}"></a>
         </div>
         <h4>
@@ -23,7 +22,6 @@
             </a>
         </h4>
         %if hasattr( item, "annotation") and item.annotation:
-        <% print type( item.annotation ), item.annotation %>
         <div class="annotation">${ item.annotation | h }</div>
         %endif
     </div>
@@ -51,29 +49,61 @@
         baseUrl : "${h.url_for( '/static/scripts' )}",
         urlArgs: 'v=${app.server_starttime}'
     });
-    require([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
-
-        function toggleExpanded( ev ){
-            var $embeddedHistory = $( thisScript ).prev();
-            $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
-            $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
-            $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
-            $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
-            ev.preventDefault();
-        }
+    require([
+        'mvc/history/history-view-annotated',
+        'mvc/history/copy-dialog'
+    ], function( viewMod, historyCopyDialog ){
+        var $embeddedHistory = $( thisScript ).prev();
 
         $(function(){
-            var historyModel = require( 'mvc/history/history-model' ),
-                panel = new panelMod.AnnotatedHistoryPanel({
+            var historyMod = require( 'mvc/history/history-model' ),
+                historyModel = new historyMod.History(
+                    ${h.dumps( history_dict )},
+                    ${h.dumps( content_dicts )}
+                ),
+                view = new viewMod.AnnotatedHistoryView({
                     el      : $embeddedHistory.find( ".history-panel" ),
-                    model   : new historyModel.History(
-                        ${h.dumps( history_dict )},
-                        ${h.dumps( content_dicts )}
-                    )
+                    model   : historyModel
                 }).render();
+
+            function toggleExpanded( ev ){
+                ev.preventDefault();
+                $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
+                $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
+                $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
+                $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
+            }
 
             $embeddedHistory.find( '.expand-content-btn' ).click( toggleExpanded );
             $embeddedHistory.find( '.toggle-embed' ).click( toggleExpanded );
+
+            function showConfirmationModal( name ){
+                var body = [
+                        '<div class="donemessagelarge">',
+                            _l( 'History imported' ), ': ', _.escape( historyModel.get( 'name' ) ),
+                        '</div>'
+                    ].join('');
+                Galaxy.modal.show({
+                    title : _l( 'Success!' ),
+                    body : $( body ),
+                    buttons : {
+                        'Return to the published page' : function(){
+                            Galaxy.modal.hide();
+                        },
+                        'Start using the history' : function(){
+                            window.location = Galaxy.root;
+                        },
+                    }
+                });
+                Galaxy.modal.$( '.modal-header' ).hide();
+                Galaxy.modal.$( '.modal-body' ).css( 'padding-bottom', 0 );
+                Galaxy.modal.$( '.modal-footer' ).css({ border : 0, 'padding-top': 0 });
+            }
+
+            $embeddedHistory.find( '.import' ).click( function( ev ){
+                var dialogOptions = { useImport: true, allowAll: false, autoClose: false };
+                historyCopyDialog( historyModel, dialogOptions ).done( showConfirmationModal );
+            })
         });
     });
 })();

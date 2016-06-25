@@ -157,7 +157,7 @@ then
 fi
 echo 'FOO="bar"'
 ''')
-        resolver = Bunch(modulecmd=mock_modulecmd)
+        resolver = Bunch(modulecmd=mock_modulecmd, modulepath='/something')
         dependency = ModuleDependency(resolver, "foomodule", "1.0")
         __assert_foo_exported( dependency.shell_commands( Bunch( type="package" ) ) )
 

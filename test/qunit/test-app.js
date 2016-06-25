@@ -5,7 +5,7 @@ define([
     "libs/bootstrap",
     "test-data/bootstrapped",
     "test-data/fakeserver",
-    "galaxy-app-base",
+    "galaxy",
     "libs/jquery/select2",
     "libs/jquery/jstorage"
 ], function(
@@ -18,11 +18,16 @@ define([
 ){
     return {
         create: function() {
-            window.Galaxy = new appBase.GalaxyApp({});
-            window.Galaxy.currHistoryPanel = { model: new Backbone.Model() }
+            window.Galaxy = new appBase.GalaxyApp( bootstrapped );
+            window.Galaxy.currHistoryPanel = { model: new Backbone.Model() };
+            window.Galaxy.emit = {
+                debug : function(){},
+                error : function( v ){ window.console.error( v ) }
+            };
+            window.WAIT_FADE = 300;
             window.fakeserver = sinon.fakeServer.create();
             for (var route in serverdata) {
-                window.fakeserver.respondWith('GET', galaxy_config.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
+                window.fakeserver.respondWith('GET', Galaxy.root + route, [ 200, { 'Content-Type': 'application/json' }, serverdata[ route ].data ]);
             }
         },
         destroy: function() {

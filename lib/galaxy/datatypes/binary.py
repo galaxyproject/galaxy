@@ -8,22 +8,16 @@ import shutil
 import struct
 import subprocess
 import tempfile
-import warnings
 import zipfile
 
-from galaxy import eggs
-eggs.require( "bx-python" )
+import pysam
+
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
-from galaxy.util import nice_size, sqlite
+from galaxy.util import nice_size, sqlite, which
 from . import data, dataproviders
-
-with warnings.catch_warnings():
-    warnings.simplefilter( "ignore" )
-    eggs.require( "pysam" )
-    from pysam import csamtools
 
 
 log = logging.getLogger(__name__)
@@ -93,6 +87,8 @@ class Binary( data.Data ):
 class Ab1( Binary ):
     """Class describing an ab1 binary sequence file"""
     file_ext = "ab1"
+    edam_format = "format_3000"
+    edam_data = "data_0924"
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
@@ -114,6 +110,8 @@ Binary.register_unsniffable_binary_ext("ab1")
 class Idat( Binary ):
     """Binary data in idat format"""
     file_ext = "idat"
+    edam_format = "format_2058"
+    edam_data = "data_2603"
 
     def sniff( self, filename ):
         try:
@@ -152,9 +150,36 @@ class CompressedArchive( Binary ):
 Binary.register_unsniffable_binary_ext("compressed_archive")
 
 
+class CompressedZipArchive( CompressedArchive ):
+    """
+        Class describing an compressed binary file
+        This class can be sublass'ed to implement archive filetypes that will not be unpacked by upload.py.
+    """
+    file_ext = "zip"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Compressed zip file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Compressed zip file (%s)" % ( nice_size( dataset.get_size() ) )
+
+
+Binary.register_unsniffable_binary_ext("zip")
+
+
 class GenericAsn1Binary( Binary ):
     """Class for generic ASN.1 binary format"""
     file_ext = "asn1-binary"
+    edam_format = "format_1966"
+    edam_data = "data_0849"
 
 Binary.register_unsniffable_binary_ext("asn1-binary")
 
@@ -163,6 +188,7 @@ Binary.register_unsniffable_binary_ext("asn1-binary")
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     edam_format = "format_2572"
+    edam_data = "data_0863"
     file_ext = "bam"
     track_type = "ReadTrack"
     data_sources = { "data": "bai", "index": "bigwig" }
@@ -179,6 +205,11 @@ class Bam( Binary ):
         # Determine the version of samtools being used.  Wouldn't it be nice if
         # samtools provided a version flag to make this much simpler?
         version = '0.0.0'
+        samtools_exec = which('samtools')
+        if not samtools_exec:
+            message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
+            raise Exception(message)
+
         output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
         lines = output.split( '\n' )
         for line in lines:
@@ -340,7 +371,7 @@ class Bam( Binary ):
         os.unlink( stderr_name )
         # Now use pysam with BAI index to determine additional metadata
         try:
-            bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            bam_file = pysam.AlignmentFile( dataset.file_name, mode='rb', index_filename=index_file.file_name )
             dataset.metadata.reference_names = list( bam_file.references )
             dataset.metadata.reference_lengths = list( bam_file.lengths )
             dataset.metadata.bam_header = bam_file.header
@@ -348,6 +379,8 @@ class Bam( Binary ):
             dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
             dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
         except:
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
             pass
 
     def sniff( self, filename ):
@@ -460,9 +493,81 @@ class Bam( Binary ):
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
 
+class CRAM( Binary ):
+    file_ext = "cram"
+    edam_format = "format_3462"
+    edam_data = "format_0863"
+
+    MetadataElement( name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None )
+    MetadataElement( name="cram_index", desc="CRAM Index File", param=metadata.FileParameter, file_ext="crai", readonly=True, no_value=None, visible=False, optional=True )
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        major_version, minor_version = self.get_cram_version( dataset.file_name )
+        if major_version != -1:
+            dataset.metadata.cram_version = str(major_version) + "." + str(minor_version)
+
+        if not dataset.metadata.cram_index:
+            index_file = dataset.metadata.spec['cram_index'].param.new_file( dataset=dataset )
+            if self.set_index_file(dataset, index_file):
+                dataset.metadata.cram_index = index_file
+
+    def get_cram_version( self, filename):
+        try:
+            with open( filename, "r") as fh:
+                header = fh.read(6)
+                return ord( header[4] ), ord( header[5] )
+        except Exception as exc:
+            log.warning( '%s, get_cram_version Exception: %s', self, exc )
+            return -1, -1
+
+    def set_index_file(self, dataset, index_file):
+        try:
+            # @todo when pysam 1.2.1 or pysam 1.3.0 gets released and becomes
+            # a dependency of galaxy, use pysam.index(alignment, target_idx)
+            # This currently gives coredump in the current release but is
+            # fixed in the dev branch:
+            # xref: https://github.com/samtools/samtools/issues/199
+
+            dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ), '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+            os.symlink( dataset.file_name, dataset_symlink )
+            pysam.index( dataset_symlink )
+
+            tmp_index = dataset_symlink + ".crai"
+            if os.path.isfile( tmp_index ):
+                shutil.move( tmp_index, index_file.file_name )
+                return index_file.file_name
+            else:
+                os.unlink( dataset_symlink )
+                log.warning( '%s, expected crai index not created for: %s', self, dataset.file_name )
+                return False
+        except Exception as exc:
+            log.warning( '%s, set_index_file Exception: %s', self, exc )
+            return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = 'CRAM binary alignment file'
+            dataset.blurb = 'binary data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff( self, filename ):
+        try:
+            header = open( filename ).read(4)
+            if header[0:4] == "CRAM":
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
+
+
 class Bcf( Binary):
     """Class describing a BCF file"""
     edam_format = "format_3020"
+    edam_data = "data_3498"
     file_ext = "bcf"
 
     MetadataElement( name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True )
@@ -510,12 +615,37 @@ Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
 
 class H5( Binary ):
-    """Class describing an HDF5 file"""
+    """
+    Class describing an HDF5 file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.mz5' )
+    >>> H5().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> H5().sniff( fname )
+    False
+    """
     file_ext = "h5"
+    edam_format = "format_3590"
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+        self._magic = binascii.unhexlify("894844460d0a1a0a")
+
+    def sniff( self, filename ):
+        # The first 8 bytes of any hdf5 file are 0x894844460d0a1a0a
+        try:
+            header = open( filename ).read(8)
+            if header == self._magic:
+                return True
+            return False
+        except:
+            return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
-            dataset.peek = "Binary h5 file"
+            dataset.peek = "Binary HDF5 file"
             dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -525,14 +655,15 @@ class H5( Binary ):
         try:
             return dataset.peek
         except:
-            return "Binary h5 sequence file (%s)" % ( nice_size( dataset.get_size() ) )
+            return "Binary HDF5 file (%s)" % ( nice_size( dataset.get_size() ) )
 
-Binary.register_unsniffable_binary_ext("h5")
+Binary.register_sniffable_binary_format("h5", "h5", H5)
 
 
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     edam_format = "format_1632"
+    edam_data = "data_0924"
     file_ext = "scf"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -555,6 +686,7 @@ Binary.register_unsniffable_binary_ext("scf")
 class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
     edam_format = "format_3284"
+    edam_data = "data_0924"
     file_ext = "sff"
 
     def sniff( self, filename ):
@@ -592,6 +724,7 @@ class BigWig(Binary):
     http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
     """
     edam_format = "format_3006"
+    edam_data = "data_3002"
     track_type = "LineTrack"
     data_sources = { "data_standalone": "bigwig" }
 
@@ -630,6 +763,7 @@ Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 class BigBed(BigWig):
     """BigBed support from UCSC."""
     edam_format = "format_3004"
+    edam_data = "data_3002"
     data_sources = { "data_standalone": "bigbed" }
 
     def __init__( self, **kwd ):
@@ -643,6 +777,7 @@ Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 class TwoBit (Binary):
     """Class describing a TwoBit format nucleotide file"""
     edam_format = "format_3009"
+    edam_data = "data_0848"
     file_ext = "twobit"
 
     def sniff(self, filename):
@@ -650,7 +785,7 @@ class TwoBit (Binary):
             # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
             if os.path.getsize(filename) < 16:
                 return False
-            input = file(filename)
+            input = open(filename)
             magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
                 return True
@@ -680,6 +815,7 @@ class SQlite ( Binary ):
     MetadataElement( name="table_columns", default={}, param=DictParameter, desc="Database Table Columns", readonly=True, visible=True, no_value={} )
     MetadataElement( name="table_row_count", default={}, param=DictParameter, desc="Database Table Row Count", readonly=True, visible=True, no_value={} )
     file_ext = "sqlite"
+    edam_format = "format_3621"
 
     def init_meta( self, dataset, copy_from=None ):
         Binary.init_meta( self, dataset, copy_from=copy_from )
@@ -701,18 +837,18 @@ class SQlite ( Binary ):
                     cols = [col[0] for col in cur.description]
                     columns[table] = cols
                 except Exception as exc:
-                    log.warn( '%s, set_meta Exception: %s', self, exc )
+                    log.warning( '%s, set_meta Exception: %s', self, exc )
             for table in tables:
                 try:
                     row_query = "SELECT count(*) FROM %s" % table
                     rowcounts[table] = c.execute(row_query).fetchone()[0]
                 except Exception as exc:
-                    log.warn( '%s, set_meta Exception: %s', self, exc )
+                    log.warning( '%s, set_meta Exception: %s', self, exc )
             dataset.metadata.tables = tables
             dataset.metadata.table_columns = columns
             dataset.metadata.table_row_count = rowcounts
         except Exception as exc:
-            log.warn( '%s, set_meta Exception: %s', self, exc )
+            log.warning( '%s, set_meta Exception: %s', self, exc )
 
     def sniff( self, filename ):
         # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
@@ -768,9 +904,11 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
+    MetadataElement( name="gemini_version", default='0.10.0', param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
+    edam_format = "format_3622"
+    edam_data = "data_3498"
 
     def set_meta( self, dataset, overwrite=True, **kwd ):
         super( GeminiSQLite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
@@ -783,7 +921,7 @@ class GeminiSQLite( SQlite ):
                 dataset.metadata.gemini_version = version
             # TODO: Can/should we detect even more attributes, such as use of PED file, what was input annotation type, etc.
         except Exception as e:
-            log.warn( '%s, set_meta Exception: %s', self, e )
+            log.warning( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
@@ -800,7 +938,7 @@ class GeminiSQLite( SQlite ):
                         return False
                 return True
             except Exception as e:
-                log.warn( '%s, sniff Exception: %s', self, e )
+                log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -817,8 +955,84 @@ class GeminiSQLite( SQlite ):
         except:
             return "Gemini SQLite Database, version %s" % ( dataset.metadata.gemini_version or 'unknown' )
 
+
+class MzSQlite( SQlite ):
+    """Class describing a Proteomics Sqlite database """
+    file_ext = "mz.sqlite"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( MzSQlite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+
+    def sniff( self, filename ):
+        if super( MzSQlite, self ).sniff( filename ):
+            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            try:
+                conn = sqlite.connect( filename )
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute( tables_query ).fetchall()
+                result = map( lambda x: x[0], result )
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning( '%s, sniff Exception: %s', self, e )
+        return False
+
+
+class IdpDB( SQlite ):
+    """
+    Class describing an IDPicker 3 idpDB (sqlite) database
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.idpDB' )
+    >>> IdpDB().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> IdpDB().sniff( fname )
+    False
+    """
+    file_ext = "idpdb"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( IdpDB, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+
+    def sniff( self, filename ):
+        if super( IdpDB, self ).sniff( filename ):
+            mz_table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch", "Spectrum", "SpectrumSource"]
+            try:
+                conn = sqlite.connect( filename )
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute( tables_query ).fetchall()
+                result = map( lambda x: x[0], result )
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning( '%s, sniff Exception: %s', self, e )
+        return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "IDPickerDB SQLite file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "IDPickerDB SQLite file (%s)" % ( nice_size( dataset.get_size() ) )
+
 Binary.register_sniffable_binary_format( "gemini.sqlite", "gemini.sqlite", GeminiSQLite )
-# FIXME: We need to register gemini.sqlite before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
+Binary.register_sniffable_binary_format( "idpdb", "idpdb", IdpDB )
+Binary.register_sniffable_binary_format( "mz.sqlite", "mz.sqlite", MzSQlite )
+# FIXME: We need to register specialized sqlite formats before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
 # ignores sniff order declared in datatypes_conf.xml
 Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 
@@ -1057,9 +1271,9 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
 
 class SearchGuiArchive ( CompressedArchive ):
     """Class describing a SearchGUI archive """
-    MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
+    MetadataElement( name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
                      readonly=True, visible=True, no_value=None )
-    MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
+    MetadataElement( name="searchgui_major_version", default='1', param=MetadataParameter, desc="SearchGui Major Version",
                      readonly=True, visible=True, no_value=None )
     file_ext = "searchgui_archive"
 
@@ -1078,7 +1292,7 @@ class SearchGuiArchive ( CompressedArchive ):
                     fh.close()
                 tempzip.close()
         except Exception as e:
-            log.warn( '%s, set_meta Exception: %s', self, e )
+            log.warning( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
         try:
@@ -1088,7 +1302,7 @@ class SearchGuiArchive ( CompressedArchive ):
                 tempzip.close()
                 return is_searchgui
         except Exception as e:
-            log.warn( '%s, sniff Exception: %s', self, e )
+            log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):

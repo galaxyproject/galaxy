@@ -315,12 +315,9 @@ define(['utils/utils'], function( Utils ) {
 
             // add events
             $item.on( 'click', function( e ) {
-                // prevent default
-                e.preventDefault();
-
-                // add click event
                 if( menuOptions.onclick ) {
-                    menuOptions.onclick ();
+                    e.preventDefault();
+                    menuOptions.onclick();
                 }
             });
 
@@ -336,7 +333,11 @@ define(['utils/utils'], function( Utils ) {
         // fill template header
         _templateMenuItem: function ( options ) {
             var tmpl =  '<li>' +
-                            '<a class="dropdown-item" href="' + options.href + '" target="' + options.target + '">';
+                            '<a class="dropdown-item" href="' + options.href + '" target="' + options.target + '" ';
+            if ( options.download ) {
+                tmpl +=         'download="' + options.download + '"';
+            }
+            tmpl +=         '>';
             if ( options.icon ) {
                 tmpl +=         '<i class="fa ' + options.icon + '"/>';
             }

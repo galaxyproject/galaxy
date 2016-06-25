@@ -30,7 +30,7 @@ var View = Backbone.View.extend({
         this.table = new Table.View({content: this.options.content});
 
         // create element
-        var $view = $('<div class="ui-table-form"/>');
+        var $view = $('<div class="ui-form"/>');
         if (this.options.title) {
             $view.append(this.table_title.$el);
         }
@@ -211,7 +211,7 @@ var View = Backbone.View.extend({
             var $input = $('<div/>');
             $input.append(field.$el);
             if (settings_def.info) {
-                $input.append('<div class="ui-table-form-info">' + settings_def.info + '</div>');
+                $input.append('<div class="ui-form-info">' + settings_def.info + '</div>');
             }
             
             // add row to table
@@ -219,11 +219,11 @@ var View = Backbone.View.extend({
                 this.table.add(new Ui.Label({title: settings_def.title, cls: 'form-label'}).$el);
                 this.table.add($input);
             } else {
-                this.table.add('<span class="ui-table-form-title">' + settings_def.title + '</span>', '25%');
+                this.table.add('<span class="ui-form-title">' + settings_def.title + '</span>', '25%');
                 this.table.add($input);
             }
         } else {
-            this.table.add('<div class="ui-table-form-separator">' + settings_def.title + ':<div/>');
+            this.table.add('<div class="ui-form-separator">' + settings_def.title + ':<div/>');
             this.table.add($('<div/>'));
         }
         

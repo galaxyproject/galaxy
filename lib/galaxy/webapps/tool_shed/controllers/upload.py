@@ -7,7 +7,7 @@ import urllib
 
 from galaxy import util
 from galaxy import web
-from galaxy.datatypes import checkers
+from galaxy.util import checkers
 from galaxy.web.base.controller import BaseUIController
 from tool_shed.util.web_util import escape
 
@@ -20,12 +20,11 @@ from tool_shed.tools import data_table_manager
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import repository_content_util
 from tool_shed.util import xml_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import commands
 
 log = logging.getLogger( __name__ )
@@ -40,7 +39,7 @@ class UploadController( BaseUIController ):
         status = kwd.get( 'status', 'done' )
         commit_message = escape( kwd.get( 'commit_message', 'Uploaded'  ) )
         repository_id = kwd.get( 'repository_id', '' )
-        repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
+        repository = repository_util.get_repository_in_tool_shed( trans.app, repository_id )
         repo_dir = repository.repo_path( trans.app )
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
         uncompress_file = util.string_as_bool( kwd.get( 'uncompress_file', 'true' ) )
@@ -67,7 +66,7 @@ class UploadController( BaseUIController ):
                 repo_url = repo_url.encode( 'ascii', 'replace' )
                 try:
                     commands.clone( hg_util.get_configured_ui(), repo_url, uploaded_directory )
-                except Exception, e:
+                except Exception as e:
                     message = 'Error uploading via mercurial clone: %s' % basic_util.to_html_string( str( e ) )
                     status = 'error'
                     basic_util.remove_dir( uploaded_directory )
@@ -76,7 +75,7 @@ class UploadController( BaseUIController ):
                 valid_url = True
                 try:
                     stream = urllib.urlopen( url )
-                except Exception, e:
+                except Exception as e:
                     valid_url = False
                     message = 'Error uploading file via http: %s' % str( e )
                     status = 'error'
@@ -121,7 +120,7 @@ class UploadController( BaseUIController ):
                             else:
                                 tar = tarfile.open( uploaded_file_name )
                             istar = True
-                        except tarfile.ReadError, e:
+                        except tarfile.ReadError as e:
                             tar = None
                             istar = False
                 else:

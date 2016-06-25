@@ -2,6 +2,7 @@
 define([
     "sinon-qunit",
     "test-app",
+    'utils/utils',
     "mvc/workflow/workflow-view",
     "mvc/workflow/workflow-node",
     "mvc/workflow/workflow-view-node",
@@ -11,6 +12,7 @@ define([
 ], function(
     sinon,
     testApp,
+    Utils,
     App,
     Node,
     NodeView,
@@ -36,7 +38,8 @@ define([
         // build app
         return new App({
             id      : null,
-            urls    : { get_datatypes : galaxy_config.root + 'api/datatypes/mapping' }
+            urls    : { get_datatypes : Galaxy.root + 'api/datatypes/mapping' },
+            workflows : []
         });
     };
 
@@ -167,6 +170,13 @@ define([
         ok( this.test_accept( other ) );
     } );
 
+    test( "input type can accept any datatype", function() {
+        this.input.extensions = [ "input" ];
+        this.input_terminal.update( this.input );
+        var other = { node: {}, datatypes: [ "binary" ] };
+        ok( this.test_accept( other ) );
+    } );
+
     test( "cannot accept when already connected", function() {
         var self = this;
         // If other is subtype but already connected, cannot accept
@@ -263,8 +273,9 @@ define([
 
     module( "Input collection terminal model test", {
         setup: function( ) {
+            testApp.create();
             this.node = new Node(  create_app(), {  } );
-            this.input = { extensions: [ "txt" ], collection_type: "list" };
+            this.input = { extensions: [ "txt" ], collection_types: ["list"] };
             this.input_terminal = new Terminals.InputCollectionTerminal( { input: this.input } );
             this.input_terminal.node = this.node;
         }
@@ -273,12 +284,13 @@ define([
     test( "Collection output can connect to same collection input type", function() {
         var self = this;
         var inputTerminal = self.input_terminal;
+        ok( inputTerminal );
         var outputTerminal = new Terminals.OutputCollectionTerminal( {
             datatypes: 'txt',
             collection_type: 'list'
         } );
         outputTerminal.node = {};
-        ok( this.input_terminal.canAccept( outputTerminal ) );
+        ok( inputTerminal.canAccept( outputTerminal ), "Input terminal " + inputTerminal + " can not accept " + outputTerminal );
     } );
 
     test( "Collection output cannot connect to different collection input type", function() {
@@ -289,15 +301,16 @@ define([
             collection_type: 'paired'
         } );
         outputTerminal.node = {};
-        ok( ! this.input_terminal.canAccept( outputTerminal ) );
+        ok( ! inputTerminal.canAccept( outputTerminal ) );
     } );
 
     module( "Node unit test", {
         setup: function() {
+            testApp.create();
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
-            this.element = $("<div><div class='toolFormBody'></div></div>");
             this.app = create_app();
+            this.element = this.app.$newNodeElement( "tool", "newnode" );
             this.node = new Node( this.app, { element: this.element } );
             this.node.input_terminals.i1 = this.input_terminal;
             this.node.output_terminals.o1 = this.output_terminal;
@@ -311,22 +324,24 @@ define([
             f();
             ok( node_changed_spy.calledWith( node ) );
         },
-        init_field_data_simple: function() {
-            var data = {
+        init_field_data_simple: function(option_overrides) {
+            var data = Utils.merge(option_overrides, {
                 data_inputs: [ {name: "input1", extensions: [ "data" ] } ],
                 data_outputs: [ {name: "output1", extensions: [ "data" ] } ],
-            };
+                label: null,
+            });
             this.node.init_field_data( data );
         },
-        update_field_data_with_new_input: function() {
-            var new_data = {
+        update_field_data_with_new_input: function(option_overrides) {
+            var new_data = Utils.merge(option_overrides, {
                 data_inputs: [
                     { name: "input1", extensions: [ "data" ] },
                     { name: "extra_0|input1", extensions: [ "data" ] },
                 ],
                 data_outputs: [ {name: "output1", extensions: [ "data" ] } ],
-                post_job_actions: "{}"
-            };
+                post_job_actions: "{}",
+                label: "New Label"
+            });
             this.node.update_field_data( new_data );
         }
     } );
@@ -367,7 +382,8 @@ define([
                 tool_errors: false,
                 tooltip: "tool tooltip",
                 annotation: "tool annotation",
-                workflow_outputs: [ "out1" ],
+                workflow_outputs: [ {"output_name": "out1"} ],
+                label: "Cat that data.",
             };
             node.init_field_data( data );
             equal( node.type, "tool" );
@@ -376,8 +392,9 @@ define([
             equal( node.tool_state, "ok" );
             equal( node.tooltip, "tool tooltip" );
             equal( node.annotation, "tool annotation" );
+            equal( node.label, "Cat that data." );
             deepEqual( node.post_job_actions, {} );
-            deepEqual( node.workflow_outputs, [ "out1" ] );
+            deepEqual( node.workflow_outputs, [  {"output_name": "out1"} ] );
         } );
     } );
 
@@ -394,8 +411,25 @@ define([
             equal( test.$( ".input-terminal" ).length, 1 );
             equal( test.$( ".rule" ).length, 1 );
             equal( test.$( ".toolFormBody" ).children().length, 3 );
+            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            ok( test.$( ".toolFormTitle" ).find("i").hasClass("fa-wrench") );
         } );
     } );
+
+    test( "node title behavior", function() {
+        var test = this;
+        this.expect_workflow_node_changed( function( ) {
+            // Node created with name newnode
+            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            // init_field_data_simple doesn't change label, so it should
+            // remain original name.
+            test.init_field_data_simple();
+            equal( test.$( ".nodeTitle" ).text(), "newnode" );
+            // Despite awkward name, update does change the label...
+            test.update_field_data_with_new_input();
+            equal( test.$( ".nodeTitle" ).text(), "New Label" );
+        });
+    });
 
     test( "update_field_data updated data inputs and outputs", function() {
         var test = this;
@@ -480,7 +514,7 @@ define([
 
             var outputTerminal = new Terminals.OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
             outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
-            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION }; 
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION };
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -859,8 +893,8 @@ define([
                 outputTerminal = output;
             }
 
-            ok( inputTerminal.attachable( outputTerminal ) );
-            
+            ok( inputTerminal.attachable( outputTerminal ), 'Cannot attach '+ outputTerminal + " to " + inputTerminal );
+
             // Go further... make sure datatypes are being enforced
             inputTerminal.datatypes = [ "bam" ];
             outputTerminal.datatypes = [ "txt" ];
@@ -984,23 +1018,23 @@ define([
     } );
 
     test( "unconstrained collection input can be mapped over", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "paired" } );
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["paired"] } );
         this.verifyAttachable( inputTerminal1, "list:paired" );
     } );
 
     test( "unconstrained collection input cannot be mapped over by incompatible type", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "list" } ); // Would need to be paired...
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["list"] } ); // Would need to be paired...
         this.verifyNotAttachable( inputTerminal1, "list:paired" );
     } );
 
     test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "paired" } );
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["paired"] } );
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         this.verifyAttachable( inputTerminal1, "list:paired" );
     } );
 
     test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
-        var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "list:paired" } );
+        var inputTerminal1 = this.newInputCollectionTerminal( { collection_types: ["list:paired"] } );
         inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         // effectively input is list:list:paired so shouldn't be able to attach
         this.verifyNotAttachable( inputTerminal1, "list:paired" );

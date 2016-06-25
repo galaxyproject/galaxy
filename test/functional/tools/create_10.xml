@@ -1,0 +1,35 @@
+<tool id="create_10" name="Create 10">
+    <description>create 10</description>
+    <command>
+        echo "1" > 1;
+        echo "2" > 2;
+        echo "3" > 3;
+        echo "4" > 4;
+        echo "5" > 5;
+        echo "6" > 6;
+        echo "7" > 7;
+        echo "8" > 8;
+        echo "9" > 9;
+        echo "10" > 10;
+    </command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset"/>
+        <param name="input2" type="data" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" from_work_dir="1" />
+        <data name="out_file2" format="txt" from_work_dir="2" />
+        <data name="out_file3" format="txt" from_work_dir="3" />
+        <data name="out_file4" format="txt" from_work_dir="4" />
+        <data name="out_file5" format="txt" from_work_dir="5" />
+        <data name="out_file6" format="txt" from_work_dir="6" />
+        <data name="out_file7" format="txt" from_work_dir="7" />
+        <data name="out_file8" format="txt" from_work_dir="8" />
+        <data name="out_file9" format="txt" from_work_dir="9" />
+        <data name="out_file10" format="txt" from_work_dir="10" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

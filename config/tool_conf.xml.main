@@ -28,18 +28,18 @@
   </section>
   <section id="textutil" name="Text Manipulation">
     <tool file="filters/fixedValueColumn.xml" />
-    <tool file="filters/catWrapper.xml" />
+    <tool file="filters/catWrapper.xml" hidden="True" />
     <tool file="filters/condense_characters.xml" />
     <tool file="filters/convert_characters.xml" />
     <tool file="filters/mergeCols.xml" />
     <tool file="filters/CreateInterval.xml" />
-    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/cutWrapper.xml" hidden="True" />
     <tool file="filters/changeCase.xml" />
     <tool file="filters/pasteWrapper.xml" />
     <tool file="filters/remove_beginning.xml" />
     <tool file="filters/randomlines.xml" />
-    <tool file="filters/headWrapper.xml" />
-    <tool file="filters/tailWrapper.xml" />
+    <tool file="filters/headWrapper.xml" hidden="True" />
+    <tool file="filters/tailWrapper.xml" hidden="True" />
     <tool file="filters/trimmer.xml" />
     <tool file="filters/wc_gnu.xml" />
     <tool file="filters/secure_hash_message_digest.xml" />

@@ -1,6 +1,19 @@
-define( 'bootstrapped-data', function(){
-    return {
-        config  : {
+define([
+    "galaxy",
+    "jquery",
+    "sinon-qunit"
+], function(
+    appBase,
+    $,
+    sinon
+){
+    /*globals equal test module expect deepEqual strictEqual throws ok */
+    "use strict";
+
+    module( "Galaxy client app tests" );
+
+    var options = {
+        config : {
             "allow_user_deletion": false,
             "allow_user_creation": true,
             "wiki_url": "https://wiki.galaxyproject.org/",
@@ -15,7 +28,7 @@ define( 'bootstrapped-data', function(){
             "logo_url": null,
             "enable_unique_workflow_defaults": false
         },
-        user    : {
+        user : {
             "username": "test",
             "quota_percent": null,
             "total_disk_usage": 61815527,
@@ -28,22 +41,6 @@ define( 'bootstrapped-data', function(){
             "id": "f2db41e1fa331b3e"
         }
     };
-});
-define([
-    "galaxy-app-base",
-    'bootstrapped-data',
-    "jquery",
-    "sinon-qunit"
-], function(
-    appBase,
-    bootstrapped,
-    $,
-    sinon
-){
-    /*globals equal test module expect deepEqual strictEqual throws ok */
-    "use strict";
-
-    module( "Galaxy client app tests" );
 
     test( "App base construction/initializiation defaults", function() {
         var app = new appBase.GalaxyApp({});
@@ -53,6 +50,7 @@ define([
         ok( app.hasOwnProperty( 'config' )      && typeof app.config === 'object' );
         ok( app.hasOwnProperty( 'user' )        && typeof app.config === 'object' );
 
+        // equal( true );
         equal( app.localize, window._l );
     });
 
@@ -62,7 +60,7 @@ define([
         equal( app.options.root,            '/' );
         equal( app.options.patchExisting,   true );
     });
-    
+
     test( "App base extends from Backbone.Events", function() {
         var app = new appBase.GalaxyApp({});
         [ 'on', 'off', 'trigger', 'listenTo', 'stopListening' ].forEach( function( fn ){
@@ -94,7 +92,7 @@ define([
     });
 
     test( "App base config", function() {
-        var app = new appBase.GalaxyApp({});
+        var app = new appBase.GalaxyApp( options );
         ok( app.hasOwnProperty( 'config' ) && typeof app.config === 'object' );
         equal( app.config.allow_user_deletion,  false );
         equal( app.config.allow_user_creation,  true );
@@ -106,7 +104,6 @@ define([
     test( "App base user", function() {
         var app = new appBase.GalaxyApp({});
         ok( app.hasOwnProperty( 'user' ) && typeof app.user === 'object' );
-        ok( app.hasOwnProperty( 'currUser' ) && app.user === app.currUser );
         ok( app.user.isAdmin() === false );
     });
 

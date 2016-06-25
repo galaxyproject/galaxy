@@ -15,7 +15,9 @@
       <display file="ensembl/ensembl_bam.xml" />
       <display file="igv/bam.xml" />
       <display file="igb/bam.xml" />
+      <display file="iobio/bam.xml" />
     </datatype>
+    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage"/>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -50,9 +52,8 @@
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
-    <!-- MSI added Datatypes -->
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
-    <!-- End MSI added Datatypes -->
+    <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true" />
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="False"/>
@@ -106,8 +107,8 @@
         <display file="igb/gtf.xml" />
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="True" />
-    <datatype extension="h5" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="True"/>
-    <datatype extension="html" type="galaxy.datatypes.images:Html" mimetype="text/html"/>
+    <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="True"/>
+    <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
       <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
@@ -131,7 +132,7 @@
     <datatype extension="gatk_tranche" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
     <datatype extension="gatk_recal" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
     <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
-    <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff"/>
+    <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff" display_in_upload="true"/>
     <datatype extension="bmp" type="galaxy.datatypes.images:Bmp" mimetype="image/bmp"/>
     <datatype extension="im" type="galaxy.datatypes.images:Im" mimetype="image/im"/>
     <datatype extension="pcd" type="galaxy.datatypes.images:Pcd" mimetype="image/pcd"/>
@@ -144,6 +145,7 @@
     <datatype extension="pbm" type="galaxy.datatypes.images:Pbm" mimetype="image/pbm"/>
     <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
     <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="True"/>
+    <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="True"/>
     <!-- Proteomics Datatypes -->
     <datatype extension="pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" display_in_upload="True"/>
     <datatype extension="raw_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="True"/>
@@ -167,15 +169,16 @@
     <datatype extension="mzxml" type="galaxy.datatypes.proteomics:MzXML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="ms2" type="galaxy.datatypes.proteomics:Ms2" display_in_upload="true" />
     <datatype extension="mzq" type="galaxy.datatypes.proteomics:MzQuantML" mimetype="application/xml" display_in_upload="true" />
-    <datatype extension="mz.sqlite" type="galaxy.datatypes.proteomics:MzSQlite" mimetype="application/octet-stream" display_in_upload="true" />
+    <datatype extension="mz.sqlite" type="galaxy.datatypes.binary:MzSQlite" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="traml" type="galaxy.datatypes.proteomics:TraML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="featurexml" type="galaxy.datatypes.proteomics:FeatureXML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="consensusxml" type="galaxy.datatypes.proteomics:ConsensusXML" mimetype="application/xml" display_in_upload="true" />
+    <datatype extension="uniprotxml" type="galaxy.datatypes.proteomics:UniProtXML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="msp" type="galaxy.datatypes.proteomics:Msp" display_in_upload="true" />
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true" />
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true" />
     <datatype extension="hlf" type="galaxy.datatypes.proteomics:XHunterAslFormat" mimetype="application/octet-stream" display_in_upload="true" />
-    <datatype extension="idpdb" type="galaxy.datatypes.proteomics:IdpDB" display_in_upload="true" />
+    <datatype extension="idpdb" type="galaxy.datatypes.binary:IdpDB" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="sf3" type="galaxy.datatypes.proteomics:Sf3" display_in_upload="true" />
     <datatype extension="cps" type="galaxy.datatypes.binary:Binary" subclass="True" display_in_upload="true" />
     <datatype extension="ct" type="galaxy.datatypes.tabular:ConnectivityTable" display_in_upload="True"/>
@@ -244,8 +247,14 @@
       <display file="ucsc/vcf.xml" />
       <display file="igv/vcf.xml" />
       <display file="rviewer/vcf.xml" inherit="True"/>
+      <display file="iobio/vcf.xml" />
     </datatype>
-    <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="True"/>
+    <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="True">
+      <converter file="bcf_to_bcf_bgzip_converter.xml" target_datatype="bcf_bgzip"/>
+    </datatype>
+    <datatype extension="bcf_bgzip" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True">
+      <converter file="bcf_bgzip_to_bcf_converter.xml" target_datatype="bcf"/>
+    </datatype>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
@@ -306,7 +315,13 @@
     <!-- graph datatypes -->
     <datatype extension="xgmml" type="galaxy.datatypes.graph:Xgmml" display_in_upload="true"/>
     <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="true"/>
-    <datatype extension="rdf" type="galaxy.datatypes.graph:Rdf" display_in_upload="true"/>
+    <!-- datatypes storing triples -->
+    <datatype extension="triples" type="galaxy.datatypes.triples:Triples" display_in_upload="false"/>
+    <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="true"/>
+    <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="true"/>
+    <datatype extension="ttl" type="galaxy.datatypes.triples:Turtle" display_in_upload="true"/>
+    <datatype extension="rdf" type="galaxy.datatypes.triples:Rdf" display_in_upload="true"/>
+    <datatype extension="jsonld" type="galaxy.datatypes.triples:Jsonld" display_in_upload="true"/>
     <!-- Excel datatypes -->
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="True"/>
@@ -423,6 +438,99 @@
     <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
+    <!-- Metagenomic Datatype -->
+    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json">
+        <display file="biom/biom_simple.xml" />
+    </datatype>
+    <!-- Strand-specific Coordinate Count Datatype used by the Center for Eukaryotic Gene Regulation labs at Penn State -->
+    <datatype extension="scidx" type="galaxy.datatypes.interval:ScIdx" display_in_upload="true" />
+
+    <!--Cheminformatics Datatypes -->
+    <datatype extension="smi" type="galaxy.datatypes.molecules:SMILES" display_in_upload="True">
+        <!-- The ordering is important. The first one is considered as default converter in the build-in conversion function -> (as sdf)-->
+        <converter file="smi_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="smi_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="smi_to_cml_converter.xml" target_datatype="cml"/>
+        <converter file="smi_to_mol_converter.xml" target_datatype="mol"/>
+        <converter file="smi_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="smi_to_smi_converter.xml" target_datatype="smi"/>
+    </datatype>
+    <datatype extension="sdf" type="galaxy.datatypes.molecules:SDF" display_in_upload="True">
+        <converter file="sdf_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="sdf_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="sdf_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="sdf_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="inchi" type="galaxy.datatypes.molecules:InChI" display_in_upload="True">
+        <converter file="inchi_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="inchi_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="inchi_to_mol_converter.xml" target_datatype="mol"/>
+        <converter file="inchi_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="inchi_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="mol" type="galaxy.datatypes.molecules:MOL" display_in_upload="True">
+        <converter file="mol_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="mol_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="mol_to_mol2_converter.xml" target_datatype="mol2"/>
+        <converter file="mol_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="mol2" type="galaxy.datatypes.molecules:MOL2" display_in_upload="False">
+        <converter file="mol2_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="mol2_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="mol2_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="mol2_to_mol_converter.xml" target_datatype="mol"/>
+        <converter file="mol2_to_cml_converter.xml" target_datatype="cml"/>
+    </datatype>
+    <datatype extension="cml" type="galaxy.datatypes.molecules:CML" display_in_upload="True">
+        <converter file="cml_to_smi_converter.xml" target_datatype="smi"/>
+        <converter file="cml_to_inchi_converter.xml" target_datatype="inchi"/>
+        <converter file="cml_to_sdf_converter.xml" target_datatype="sdf"/>
+        <converter file="cml_to_mol2_converter.xml" target_datatype="mol2"/>
+        </datatype>
+    <datatype extension="fps" type="galaxy.datatypes.molecules:FPS" mimetype="text/html" display_in_upload="True" />
+    <datatype extension="obfs" type="galaxy.datatypes.molecules:OBFS" mimetype="text/html" display_in_upload="True" />
+    <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="False" />
+    <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="True" />
+    <!-- mothur formats -->
+    <datatype extension="mothur.otu" type="galaxy.datatypes.mothur:Otu" display_in_upload="true"/>
+    <datatype extension="mothur.list" type="galaxy.datatypes.mothur:Otu" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.sabund" type="galaxy.datatypes.mothur:Sabund" display_in_upload="true"/>
+    <datatype extension="mothur.rabund" type="galaxy.datatypes.mothur:Sabund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.shared" type="galaxy.datatypes.mothur:GroupAbund" display_in_upload="true"/>
+    <datatype extension="mothur.relabund" type="galaxy.datatypes.mothur:GroupAbund" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.names" type="galaxy.datatypes.mothur:Names" display_in_upload="true"/>
+    <datatype extension="mothur.design" type="galaxy.datatypes.mothur:Group" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.summary" type="galaxy.datatypes.mothur:Summary" display_in_upload="true"/>
+    <datatype extension="mothur.groups" type="galaxy.datatypes.mothur:Group" display_in_upload="true"/>
+    <datatype extension="mothur.oligos" type="galaxy.datatypes.mothur:Oligos" display_in_upload="true"/>
+    <datatype extension="mothur.align" type="galaxy.datatypes.sequence:Fasta" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.accnos" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
+    <datatype extension="mothur.otulabels" type="galaxy.datatypes.mothur:AccNos" display_in_upload="true"/>
+    <datatype extension="mothur.otu.corr" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.map" type="galaxy.datatypes.mothur:SecondaryStructureMap" display_in_upload="true"/>
+    <datatype extension="mothur.align.check" type="galaxy.datatypes.mothur:AlignCheck" display_in_upload="true"/>
+    <datatype extension="mothur.align.report" type="galaxy.datatypes.mothur:AlignReport" display_in_upload="true"/>
+    <datatype extension="mothur.filter" type="galaxy.datatypes.mothur:LaneMask" display_in_upload="true"/>
+    <datatype extension="mothur.dist" type="galaxy.datatypes.mothur:DistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.tre" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.pair.dist" type="galaxy.datatypes.mothur:PairwiseDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.square.dist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.lower.dist" type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.ref.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" display_in_upload="true">
+      <converter file="ref_to_seq_taxonomy_converter.xml" target_datatype="mothur.seq.taxonomy"/>
+    </datatype>
+    <datatype extension="mothur.seq.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.rdp.taxonomy" type="galaxy.datatypes.mothur:RefTaxonomy" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.cons.taxonomy" type="galaxy.datatypes.mothur:ConsensusTaxonomy" display_in_upload="true"/>
+    <datatype extension="mothur.tax.summary" type="galaxy.datatypes.mothur:TaxonomySummary" display_in_upload="true"/>
+    <datatype extension="mothur.freq" type="galaxy.datatypes.mothur:Frequency" display_in_upload="true"/>
+    <datatype extension="mothur.quan" type="galaxy.datatypes.mothur:Quantile" display_in_upload="true"/>
+    <datatype extension="mothur.filtered.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.filtered.masked.quan" type="galaxy.datatypes.mothur:Quantile" subclass="True" display_in_upload="true"/>
+    <datatype extension="mothur.axes" type="galaxy.datatypes.mothur:Axes" display_in_upload="true"/>
+    <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
+    <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -432,18 +540,36 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
+    <sniffer type="galaxy.datatypes.mothur:Sabund"/>
+    <sniffer type="galaxy.datatypes.mothur:Otu"/>
+    <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
+    <sniffer type="galaxy.datatypes.mothur:SecondaryStructureMap"/>
+    <sniffer type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix"/>
+    <sniffer type="galaxy.datatypes.mothur:SquareDistanceMatrix"/>
+    <sniffer type="galaxy.datatypes.mothur:PairwiseDistanceMatrix"/>
+    <sniffer type="galaxy.datatypes.mothur:Oligos"/>
+    <sniffer type="galaxy.datatypes.mothur:Quantile"/>
+    <sniffer type="galaxy.datatypes.mothur:Frequency"/>
+    <sniffer type="galaxy.datatypes.mothur:LaneMask"/>
+    <sniffer type="galaxy.datatypes.mothur:RefTaxonomy"/>
+    <sniffer type="galaxy.datatypes.mothur:Axes"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
+    <sniffer type="galaxy.datatypes.interval:ScIdx"/>
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
-    <sniffer type="galaxy.datatypes.proteomics:MzSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
+    <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
+    <sniffer type="galaxy.datatypes.binary:CRAM"/>
     <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.binary:Sra"/>
+    <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.proteomics:MzML"/>
@@ -455,19 +581,30 @@
     <sniffer type="galaxy.datatypes.proteomics:TraML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzIdentML"/>
     <sniffer type="galaxy.datatypes.proteomics:MzQuantML"/>
+    <sniffer type="galaxy.datatypes.proteomics:UniProtXML"/>
     <sniffer type="galaxy.datatypes.proteomics:Msp"/>
     <sniffer type="galaxy.datatypes.proteomics:SPLib"/>
     <sniffer type="galaxy.datatypes.proteomics:ThermoRAW"/>
+    <sniffer type="galaxy.datatypes.molecules:CML"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>
+    <sniffer type="galaxy.datatypes.triples:Turtle"/>
+    <sniffer type="galaxy.datatypes.triples:NTriples"/>
+    <sniffer type="galaxy.datatypes.triples:Jsonld"/>
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>
     <sniffer type="galaxy.datatypes.sequence:csFasta"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScoreSOLiD"/>
     <sniffer type="galaxy.datatypes.qualityscore:QualityScore454"/>
+    <sniffer type="galaxy.datatypes.molecules:SDF"/>
+    <sniffer type="galaxy.datatypes.molecules:PDB"/>
+    <sniffer type="galaxy.datatypes.molecules:MOL2"/>
+    <sniffer type="galaxy.datatypes.molecules:InChI"/>
+    <sniffer type="galaxy.datatypes.molecules:FPS"/>
+    <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
-    <sniffer type="galaxy.datatypes.images:Html"/>
+    <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>
     <sniffer type="galaxy.datatypes.sequence:Axt"/>
     <sniffer type="galaxy.datatypes.interval:Bed"/>
@@ -483,11 +620,13 @@
     <sniffer type="galaxy.datatypes.text:Obo"/>
     <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
+    <sniffer type="galaxy.datatypes.text:Biom1"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
+    <sniffer type="galaxy.datatypes.tabular:TSV"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2" />
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />

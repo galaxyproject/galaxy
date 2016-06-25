@@ -109,6 +109,7 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
             # If we encountered a fatal error, then we'll need to set the
             # job state accordingly. Otherwise the job is ok:
             if max_error_level >= StdioErrorLevel.FATAL:
+                log.debug("Tool exit code indicates an error, failing job.")
                 success = False
             else:
                 success = True
@@ -121,6 +122,8 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
             # log.debug( "Tool did not define exit code or stdio handling; "
             #          + "checking stderr for success" )
             if stderr:
+                peak = stderr[0:250]
+                log.debug("Tool produced standard error failing job - [%s]" % peak)
                 success = False
             else:
                 success = True
@@ -133,9 +136,8 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
         success = True
 
     # Store the modified stdout and stderr in the job:
-    if None is not job:
-        job.stdout = stdout
-        job.stderr = stderr
+    if job is not None:
+        job.set_streams( stdout, stderr )
 
     return success
 

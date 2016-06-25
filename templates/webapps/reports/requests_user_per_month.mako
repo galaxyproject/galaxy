@@ -9,7 +9,7 @@
 %if message:
     ${render_msg( message, 'done' )}
 %endif
-    
+
 ${get_css()}
 
 <div class="report">
@@ -29,27 +29,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'date',
-                                'users',
-                                'requests_users_per_month',
-                                'Month')
-                        }
+                        ${get_sort_url(sort_id, order, 'date', 'users', 'requests_users_per_month', 'Month')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td class="half_width">Total
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'num_users',
-                                'users',
-                                'requests_users_per_month',
-                                'Month')
-                        }
+                        ${get_sort_url(sort_id, order, 'num_users', 'users', 'requests_users_per_month', 'Month')}
                         <span class='dir_arrow num_users'>${arrow}</span>
                     </td>
                 </tr>

@@ -8,8 +8,6 @@ import unittest
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
 import sqlalchemy
 
 from galaxy import model
@@ -354,7 +352,7 @@ class DatasetDeserializerTestCase( BaseTestCase ):
 
         self.log( 'deserializing permissions with a single access should make the dataset private' )
         private_role = self.user_manager.private_role( who_manages )
-        private_role = private_role.to_dict( value_mapper={ 'id' : self.app.security.encode_id } )
+        private_role = private_role.to_dict( value_mapper={ 'id': self.app.security.encode_id } )
         permissions = dict( manage=existing_manage_permissions, access=[ private_role[ 'id' ] ] )
         self.dataset_deserializer.deserialize( dataset, user=who_manages, data={
             'permissions': permissions

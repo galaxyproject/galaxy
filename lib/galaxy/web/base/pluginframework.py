@@ -16,9 +16,6 @@ from galaxy import util
 from galaxy.util import odict
 from galaxy.util import bunch
 
-import pkg_resources
-pkg_resources.require( 'MarkupSafe' )
-pkg_resources.require( 'Mako' )
 import mako.lookup
 import logging
 log = logging.getLogger( __name__ )
@@ -67,38 +64,10 @@ class PluginManager( object ):
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = odict.odict()
 
-        self.directories = self.parse_directories_setting( app.config.root, directories_setting )
+        self.directories = util.config_directories_from_setting( directories_setting, app.config.root )
 
         self.load_configuration()
         self.load_plugins()
-
-    def parse_directories_setting( self, galaxy_root, directories_setting ):
-        """
-        Parse the ``directories_setting`` into a list of relative or absolute
-        filesystem paths that will be searched to discover plugins.
-
-        :type   galaxy_root:    string
-        :param  galaxy_root:    the root path of this galaxy installation
-        :type   directories_setting: string (default: None)
-        :param  directories_setting: the filesystem path (or paths)
-            to search for plugins. Can be CSV string of paths. Will be treated as
-            absolute if a path starts with '/', relative otherwise.
-        :rtype:                 list of strings
-        :returns:               list of filesystem paths
-        """
-        directories = []
-        if not directories_setting:
-            return directories
-
-        for directory in util.listify( directories_setting ):
-            directory = directory.strip()
-            if not directory.startswith( '/' ):
-                directory = os.path.join( galaxy_root, directory )
-            if not os.path.exists( directory ):
-                log.warn( '%s, directory not found: %s', self, directory )
-                continue
-            directories.append( directory )
-        return directories
 
     def load_configuration( self ):
         """
@@ -124,7 +93,7 @@ class PluginManager( object ):
                 # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
                 # TODO: overwriting may be desired
                 elif plugin and plugin.name in self.plugins:
-                    log.warn( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
+                    log.warning( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
 
             except Exception:
                 if not self.skip_bad_plugins:

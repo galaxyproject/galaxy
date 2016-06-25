@@ -1,15 +1,25 @@
 <tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.0">
   <description>converter</description>
-  <command>grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1 
+  <requirements>
+    <requirement type="package">ucsc_tools</requirement>
+  </requirements>
+  <stdio>
+      <!-- Anything other than zero is an error -->
+      <regex match="needLargeMem: trying to allocate 0 bytes"
+          description="Your input file might be empty or wrongly formatted"/>
+      <regex match="^Error"/>
+  </stdio>
+  <command>
+      <![CDATA[
+      grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.clip} ${settings.unc}
     #else:
       -clip
     #end if
-    2&gt;&amp;1 || echo "Error running wigToBigWig." >&amp;2</command>
-  <requirements>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
+    2>&1 || echo "Error running wigToBigWig." >&2
+    ]]>
+  </command>
   <inputs>
     <param format="wig,bedgraph" name="input1" type="data" label="Convert">
       <validator type="unspecified_build" />

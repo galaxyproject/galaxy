@@ -4,10 +4,6 @@ API operations on a history.
 .. seealso:: :class:`galaxy.model.History`
 """
 
-import pkg_resources
-pkg_resources.require( "Paste" )
-
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import true, false
 
 from galaxy import exceptions
@@ -92,6 +88,10 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
                     skip the first ( offset - 1 ) items and begin returning
                     at the Nth item
 
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=5&offset=3'
+
         The list returned can be ordered using the optional parameter:
             order:  string containing one of the valid ordering attributes followed
                     (optionally) by '-asc' or '-dsc' for ascending and descending
@@ -108,10 +108,6 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             name    defaults to 'name-asc'
 
         'order' defaults to 'create_time-dsc'
-
-        ..example:
-            limit and offset can be combined. Skip the first two and return five:
-                '?limit=5&offset=3'
         """
         serialization_params = self._parse_serialization_params( kwd, 'summary' )
         limit, offset = self.parse_limit_offset( kwd )
@@ -250,6 +246,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             rval.append( history_dict )
         return rval
 
+    # TODO: does this need to be anonymous_and_sessionless? Not just expose_api?
     @expose_api_anonymous_and_sessionless
     def shared_with_me( self, trans, **kwd ):
         """
@@ -276,7 +273,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             rval.append( history_dict )
         return rval
 
-    @expose_api
+    @expose_api_anonymous
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
@@ -324,6 +321,10 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
+
+        # an anonymous user can only have one history
+        if self.user_manager.is_anonymous( trans.user ):
+            self.history_manager.set_current( trans, new_history )
 
         return self.history_serializer.serialize_to_view( new_history,
             user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
@@ -418,7 +419,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         self.history_deserializer.deserialize( history, payload, user=trans.user, trans=trans )
         return self.history_serializer.serialize_to_view( history,
-                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def archive_export( self, trans, id, **kwds ):

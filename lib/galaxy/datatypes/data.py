@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 import mimetypes
 import os
@@ -6,19 +7,19 @@ import tempfile
 import zipfile
 from cgi import escape
 from inspect import isclass
+from six import string_types
 
-import metadata
+from . import metadata
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 
-import dataproviders
+from . import dataproviders
 
-from galaxy import eggs
-eggs.require( "Paste" )
 import paste
 
 XSS_VULNERABLE_MIME_TYPES = [
@@ -60,9 +61,10 @@ class Data( object ):
     >>> DataTest.metadata_spec.test.desc
     'test'
     >>> type( DataTest.metadata_spec.test.param )
-    <class 'galaxy.datatypes.metadata.MetadataParameter'>
+    <class 'galaxy.model.metadata.MetadataParameter'>
 
     """
+    edam_data = "data_0006"
     edam_format = "format_1915"
     # Data is not chunkable by default.
     CHUNKABLE = False
@@ -122,7 +124,7 @@ class Data( object ):
     def get_raw_data( self, dataset ):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
-            return file(dataset.file_name, 'rb').read(-1)
+            return open(dataset.file_name, 'rb').read(-1)
         except OSError:
             log.exception('%s reading a file that does not exist %s' % (self.__class__.__name__, dataset.file_name))
             return ''
@@ -202,10 +204,7 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                if isinstance(line, unicode):
-                    out.append( '<tr><td>%s</td></tr>' % escape( line ) )
-                else:
-                    out.append( '<tr><td>%s</td></tr>' % escape( unicode( line, 'utf-8' ) ) )
+                out.append( '<tr><td>%s</td></tr>' % escape( unicodify( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
         except Exception as exc:
@@ -328,7 +327,7 @@ class Data( object ):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
-        if isinstance( data, basestring ):
+        if isinstance( data, string_types ):
             return data
         if filename and filename != "index":
             # For files in extra_files_path
@@ -345,7 +344,7 @@ class Data( object ):
                 self._clean_and_set_mime_type( trans, mime )
                 return open( file_path )
             else:
-                return trans.show_error_message( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
+                return paste.httpexceptions.HTTPNotFound( "Could not find '%s' on the extra files path %s." % ( filename, file_path ) )
         self._clean_and_set_mime_type( trans, data.get_mime() )
 
         trans.log_event( "Display dataset id: %s" % str( data.id ) )
@@ -365,7 +364,7 @@ class Data( object ):
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         max_peek_size = 1000000  # 1 MB
-        if isinstance(data.datatype, datatypes.images.Html):
+        if isinstance(data.datatype, datatypes.text.Html):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool( preview )
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
@@ -375,7 +374,10 @@ class Data( object ):
                 # We cannot currently trust imported datasets for rendering.
                 if not data.creating_job.imported and data.creating_job.tool_id in trans.app.config.sanitize_whitelist:
                     return open(data.file_name).read()
-                return sanitize_html(open( data.file_name ).read())
+                # This is returning to the browser, it needs to be encoded.
+                # TODO Ideally this happens a layer higher, but this is a bad
+                # issue affecting many tools
+                return sanitize_html(open( data.file_name ).read()).encode('utf-8')
             return open( data.file_name )
         else:
             trans.response.set_content_type( "text/html" )
@@ -386,11 +388,8 @@ class Data( object ):
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
         try:
-            if isinstance(dataset.name, unicode):
-                return escape( dataset.name )
-            else:
-                return escape( unicode( dataset.name, 'utf-8 ') )
-        except:
+            return escape( unicodify( dataset.name, 'utf-8' ) )
+        except Exception:
             return "name unavailable"
 
     def display_info(self, dataset):
@@ -405,9 +404,7 @@ class Data( object ):
             if info.find( '\n' ) >= 0:
                 info = info.replace( '\n', '<br/>' )
 
-            # Convert to unicode to display non-ascii characters.
-            if not isinstance(info, unicode):
-                info = unicode( info, 'utf-8')
+            info = unicodify( info, 'utf-8' )
 
             return info
         except:
@@ -692,7 +689,7 @@ class Text( Data ):
         os.close(fd)
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'w')
-        for line in file(temp_name, "U"):
+        for line in open(temp_name, "U"):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
@@ -704,7 +701,7 @@ class Text( Data ):
         os.close(fd)
         # rewrite the file with unix newlines
         fp = open(dataset.file_name, 'w')
-        for line in file(temp_name, "U"):
+        for line in open(temp_name, "U"):
             line = line.strip() + '\n'
             fp.write(line)
         fp.close()
@@ -738,19 +735,19 @@ class Text( Data ):
         skipping all blank lines and comments.
         """
         data_lines = 0
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             line = line.strip()
             if line and not line.startswith( '#' ):
                 data_lines += 1
         return data_lines
 
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True ):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars )
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap )
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -871,6 +868,8 @@ class Text( Data ):
 
 class GenericAsn1( Text ):
     """Class for generic ASN.1 text format"""
+    edam_data = "data_0849"
+    edam_format = "format_1966"
     file_ext = 'asn1'
 
 
@@ -884,6 +883,7 @@ class LineCount( Text ):
 
 class Newick( Text ):
     """New Hampshire/Newick Format"""
+    edam_data = "data_0872"
     edam_format = "format_1910"
     file_ext = "nhx"
 
@@ -908,6 +908,7 @@ class Newick( Text ):
 
 class Nexus( Text ):
     """Nexus format as used By Paup, Mr Bayes, etc"""
+    edam_data = "data_0872"
     edam_format = "format_1912"
     file_ext = "nex"
 
@@ -952,7 +953,7 @@ def get_test_fname( fname ):
     return full_path
 
 
-def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None ):
+def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
 
@@ -973,8 +974,9 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     file_type = None
     data_checked = False
     temp = open( file_name, "U" )
+    last_line = ''
     while count <= LINE_COUNT:
-        line = temp.readline( WIDTH )
+        line = last_line + temp.readline( WIDTH - len( last_line ) )
         if line and not is_multi_byte and not data_checked:
             # See if we have a compressed or binary file
             if line[0:2] == util.gzip_magic:
@@ -988,6 +990,17 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
             data_checked = True
         if file_type in [ 'gzipped', 'binary' ]:
             break
+        if not line_wrap:
+            if '\n' in line:
+                i = line.index( '\n' )
+                last_line = line[i:]
+                line = line[:i]
+            else:
+                last_line = ''
+                while True:
+                    i = temp.read(1)
+                    if not i or i == '\n':
+                        break
         skip_line = False
         for skipchar in skipchars:
             if line.startswith( skipchar ):

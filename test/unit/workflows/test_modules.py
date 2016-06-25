@@ -1,14 +1,12 @@
-from galaxy import eggs
-eggs.require( "mock" )
-
 import json
+
 import mock
 
 from galaxy import model
 from galaxy.util import bunch
 
 from galaxy.workflow import modules
-from .workflow_support import MockTrans
+from .workflow_support import MockTrans, yaml_to_model
 
 
 def test_input_has_no_errors():
@@ -21,7 +19,7 @@ def test_valid_new_tool_has_no_errors():
     trans = MockTrans()
     mock_tool = mock.Mock()
     trans.app.toolbox.tools[ "cat1" ] = mock_tool
-    tool_module = modules.module_factory.new( trans, "tool", tool_id="cat1" )
+    tool_module = modules.module_factory.new( trans, "tool", content_id="cat1" )
     assert not tool_module.get_errors()
 
 
@@ -63,7 +61,7 @@ def test_data_input_compute_runtime_state_args():
     module = __from_step(
         type="data_input",
     )
-    tool_state = module.encode_runtime_state( module.trans, module.test_step.state )
+    tool_state = module.get_state()
 
     hda = model.HistoryDatasetAssociation()
     with mock.patch('galaxy.workflow.modules.check_param') as check_method:
@@ -196,7 +194,7 @@ def test_cannot_create_tool_modules_for_missing_tools():
     trans = MockTrans()
     exception = False
     try:
-        modules.module_factory.new( trans, "tool", tool_id="cat1" )
+        modules.module_factory.new( trans, "tool", content_id="cat1" )
     except Exception:
         exception = True
     assert exception
@@ -232,6 +230,72 @@ def test_tool_version_same():
     )
     assert not module.version_changes
 
+TEST_WORKFLOW_YAML = """
+steps:
+  - type: "data_input"
+    label: "input1"
+    tool_inputs: {"name": "input1"}
+  - type: "data_collection_input"
+    tool_inputs: {"name": "input2"}
+  - type: "tool"
+    tool_id: "cat1"
+    input_connections:
+    -  input_name: "input1"
+       "@output_step": 0
+       output_name: "output"
+  - type: "tool"
+    tool_id: "cat1"
+    input_connections:
+    -  input_name: "input1"
+       "@output_step": 0
+       output_name: "output"
+    workflow_outputs:
+    -   output_name: "out_file1"
+        label: "out1"
+  - type: "tool"
+    tool_id: "cat1"
+    input_connections:
+    -  input_name: "input1"
+       "@output_step": 2
+       output_name: "out_file1"
+    workflow_outputs:
+    -   output_name: "out_file1"
+"""
+
+
+def test_subworkflow_new_inputs():
+    subworkflow_module = __new_subworkflow_module()
+    inputs = subworkflow_module.get_data_inputs()
+    assert len(inputs) == 2, len(inputs)
+    input1, input2 = inputs
+    assert input1["input_type"] == "dataset"
+    assert input1["name"] == "input1"
+
+    assert input2["input_type"] == "dataset_collection"
+    assert input2["name"] == "input2", input2["name"]
+
+
+def test_subworkflow_new_outputs():
+    subworkflow_module = __new_subworkflow_module()
+    outputs = subworkflow_module.get_data_outputs()
+    assert len(outputs) == 2, len(outputs)
+    output1, output2 = outputs
+    assert output1["name"] == "out1"
+    assert output1["label"] == "out1"
+    assert output1["extensions"] == ["input"]
+
+    assert output2["name"] == "4:out_file1", output2["name"]
+    assert output2["label"] == "4:out_file1", output2["label"]
+
+
+def __new_subworkflow_module():
+    trans = MockTrans()
+    workflow = yaml_to_model(TEST_WORKFLOW_YAML)
+    stored_workflow = trans.save_workflow(workflow)
+    workflow_id = trans.app.security.encode_id(stored_workflow.id)
+    subworkflow_module = modules.module_factory.new( trans, "subworkflow", workflow_id )
+    return subworkflow_module
+
 
 def __assert_has_runtime_input( module, label=None, collection_type=None ):
     inputs = module.get_runtime_inputs()
@@ -242,7 +306,7 @@ def __assert_has_runtime_input( module, label=None, collection_type=None ):
     if label is not None:
         assert input_param.get_label() == label, input_param.get_label()
     if collection_type is not None:
-        assert input_param.collection_type == collection_type
+        assert input_param.collection_types == [collection_type]
     return input_param
 
 

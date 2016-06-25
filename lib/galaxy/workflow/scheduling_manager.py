@@ -73,6 +73,7 @@ class WorkflowSchedulingManager( object ):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
         scheduler = request_params.get( "scheduler", None ) or self.default_scheduler_id
         handler = self._get_handler()
+        log.info("Queueing workflow invocation for handler [%s]" % handler)
 
         workflow_invocation.scheduler = scheduler
         workflow_invocation.handler = handler
@@ -156,7 +157,8 @@ class WorkflowRequestMonitor( object ):
                     return
 
                 self.__schedule( workflow_scheduler_id, workflow_scheduler )
-                time.sleep(1)  # TODO: wake if stopped
+                # TODO: wake if stopped
+                time.sleep(1)
 
     def __schedule( self, workflow_scheduler_id, workflow_scheduler ):
         invocation_ids = self.__active_invocation_ids( workflow_scheduler_id )

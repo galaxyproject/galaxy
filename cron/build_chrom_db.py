@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Connects to a UCSC table browser and scrapes chrominfo for every build
 specified by an input file (such as one output by parse_builds.py).
@@ -12,34 +11,41 @@ All chromInfo is placed in a path with the convention
 Usage:
 python build_chrom_db.py dbpath/ [builds_file]
 """
+from __future__ import print_function
 
-import sys
-import parse_builds
-import urllib
 import fileinput
+import os
+import sys
+
+from six.moves.urllib.parse import urlencode
+from six.moves.urllib.request import urlopen
+
+import parse_builds
 
 
 def getchrominfo(url, db):
     tableURL = "http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?"
-    URL = tableURL + urllib.urlencode({
-        "clade" : "",
-        "org" : "",
-        "db" : db,
+    URL = tableURL + urlencode({
+        "clade": "",
+        "org": "",
+        "db": db,
         "hgta_outputType": "primaryTable",
-        "hgta_group" : "allTables",
-        "hgta_table" : "chromInfo",
-        "hgta_track" : db,
+        "hgta_group": "allTables",
+        "hgta_table": "chromInfo",
+        "hgta_track": db,
         "hgta_regionType": "",
         "position": "",
         "hgta_doTopSubmit": "get info"})
-    page = urllib.urlopen(URL)
+    page = urlopen(URL)
     for line in page:
         line = line.rstrip( "\r\n" )
         if line.startswith("#"):
             continue
         fields = line.split("\t")
-        if len(fields) > 1:
+        if len(fields) > 1 and len(fields[0]) > 0 and int(fields[1]) > 0:
             yield [fields[0], fields[1]]
+        else:
+            raise Exception("Problem parsing line '%s'" % line)
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -57,15 +63,19 @@ if __name__ == "__main__":
             sys.exit("Bad input file.")
     else:
         try:
-            for build in parse_builds.getbuilds("http://genome-test.cse.ucsc.edu/cgi-bin/das/dsn"):
+            for build in parse_builds.getbuilds("http://genome.cse.ucsc.edu/cgi-bin/das/dsn"):
                 builds.append(build[0])
         except:
             sys.exit("Unable to retrieve builds.")
     for build in builds:
         if build == "?":
             continue  # no lengths for unspecified chrom
-        outfile = open(dbpath + build + ".len", "w")
-        print "Retrieving " + build
-        for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?", build):
-            print >> outfile, "\t".join(chrominfo)
-        outfile.close()
+        print("Retrieving " + build)
+        outfile_name = dbpath + build + ".len"
+        try:
+            with open(outfile_name, "w") as outfile:
+                for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?", build):
+                    print("\t".join(chrominfo), file=outfile)
+        except Exception as e:
+            print("Failed to retrieve %s: %s" % (build, e))
+            os.remove(outfile_name)

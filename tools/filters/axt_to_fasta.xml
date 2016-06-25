@@ -1,5 +1,8 @@
 <tool id="axt_to_fasta" name="AXT to FASTA" version="1.0.0">
   <description>Converts an AXT formatted file to FASTA format</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
   <command interpreter="python">axt_to_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
   <inputs>
     <param format="axt" name="axt_input" type="data" label="AXT file"/>

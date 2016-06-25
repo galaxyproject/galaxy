@@ -28,15 +28,10 @@ return Backbone.View.extend({
 
         // load extension
         Utils.get({
-            url     : galaxy_config.root + 'api/remote_files',
+            url     : Galaxy.root + 'api/remote_files',
             success : function(ftp_files) { self._fill(ftp_files); },
             error   : function() { self._fill(); }
         });
-    },
-
-    // events
-    events: {
-        'mousedown': function(e) { e.preventDefault(); }
     },
 
     // fill table

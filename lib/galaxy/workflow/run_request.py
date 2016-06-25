@@ -5,7 +5,7 @@ from galaxy import model
 
 from galaxy.managers import histories
 
-INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input' ]
+INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input', 'parameter_input' ]
 
 import logging
 log = logging.getLogger( __name__ )
@@ -76,12 +76,12 @@ def normalize_inputs(steps, inputs, inputs_by):
             message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
             raise exceptions.MessageException( message )
 
-        normalized_inputs[ step.id ] = inputs[ inputs_key ][ 'content' ]
+        normalized_inputs[ step.id ] = inputs[ inputs_key ]
 
     return normalized_inputs
 
 
-def normalize_step_parameters(steps, param_map):
+def normalize_step_parameters(steps, param_map, legacy=False):
     """ Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
     per tep fashion or by tool id and normalize the parameters so
@@ -89,19 +89,19 @@ def normalize_step_parameters(steps, param_map):
     """
     normalized_param_map = {}
     for step in steps:
-        param_dict = _step_parameters(step, param_map)
+        param_dict = _step_parameters(step, param_map, legacy=legacy)
         if param_dict:
             normalized_param_map[step.id] = param_dict
     return normalized_param_map
 
 
-def _step_parameters(step, param_map):
+def _step_parameters(step, param_map, legacy=False):
     """
     Update ``step`` parameters based on the user-provided ``param_map`` dict.
 
     ``param_map`` should be structured as follows::
 
-      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
+      PARAM_MAP = {STEP_ID_OR_UUID: PARAM_DICT, ...}
       PARAM_DICT = {NAME: VALUE, ...}
 
     For backwards compatibility, the following (deprecated) format is
@@ -121,7 +121,10 @@ def _step_parameters(step, param_map):
     Note that this format allows only one parameter to be set per step.
     """
     param_dict = param_map.get(step.tool_id, {}).copy()
-    param_dict.update(param_map.get(str(step.id), {}))
+    if legacy:
+        param_dict.update(param_map.get(str(step.id), {}))
+    else:
+        param_dict.update(param_map.get(str(step.order_index), {}))
     step_uuid = step.uuid
     if step_uuid:
         uuid_params = param_map.get(str(step_uuid), {})
@@ -163,22 +166,36 @@ def build_workflow_run_config( trans, workflow, payload ):
     app = trans.app
     history_manager = histories.HistoryManager( app )
 
-    # Pull other parameters out of payload.
+    if "step_parameters" in payload and "parameters" in payload:
+        message = "Cannot specify both legacy parameters and step_parameters attributes."
+        raise exceptions.RequestParameterInvalidException( message )
+
+    if "inputs" in payload and "ds_map" in payload:
+        message = "Cannot specify both legacy ds_map and input attributes."
+        raise exceptions.RequestParameterInvalidException( message )
+
     param_map = payload.get( 'parameters', {} )
-    param_map = normalize_step_parameters( workflow.steps, param_map )
+    legacy = payload.get("legacy", False)
+    param_map = normalize_step_parameters( workflow.steps, param_map, legacy=legacy )
+
     inputs = payload.get( 'inputs', None )
     inputs_by = payload.get( 'inputs_by', None )
+    # New default is to reference steps by index of workflow step
+    # which is intrinsic to the workflow and independent of the state
+    # of Galaxy at the time of workflow import.
+    default_inputs_by = 'step_index|step_uuid'
+
     if inputs is None:
         # Default to legacy behavior - read ds_map and reference steps
         # by unencoded step id (a raw database id).
         inputs = payload.get( 'ds_map', {} )
-        inputs_by = inputs_by or 'step_id|step_uuid'
+        if legacy:
+            default_inputs_by = 'step_id|step_uuid'
+        inputs_by = inputs_by or default_inputs_by
     else:
         inputs = inputs or {}
-        # New default is to reference steps by index of workflow step
-        # which is intrinsic to the workflow and independent of the state
-        # of Galaxy at the time of workflow import.
-        inputs_by = inputs_by or 'step_index|step_uuid'
+
+    inputs_by = inputs_by or default_inputs_by
 
     add_to_history = 'no_add_to_history' not in payload
     history_param = payload.get('history', '')
@@ -205,8 +222,15 @@ def build_workflow_run_config( trans, workflow, payload ):
         trans.sa_session.add(history)
         trans.sa_session.flush()
 
+    normalized_inputs = normalize_inputs( workflow.steps, inputs, inputs_by )
+    steps_by_id = workflow.steps_by_id
+
     # Set workflow inputs.
-    for input_dict in inputs.itervalues():
+    for key, input_dict in normalized_inputs.iteritems():
+        step = steps_by_id[key]
+        if step.type == "parameter_input":
+            continue
+
         if 'src' not in input_dict:
             message = "Not input source type defined for input '%s'." % input_dict
             raise exceptions.RequestParameterInvalidException( message )
@@ -263,7 +287,12 @@ def build_workflow_run_config( trans, workflow, payload ):
             message = "Invalid workflow input '%s' specified" % input_id
             raise exceptions.ItemAccessibilityException( message )
 
-    normalized_inputs = normalize_inputs( workflow.steps, inputs, inputs_by )
+    for key in set(normalized_inputs.keys()):
+        value = normalized_inputs[key]
+        if isinstance(value, dict) and 'content' in value:
+            normalized_inputs[key] = value['content']
+        else:
+            normalized_inputs[key] = value
 
     # Run each step, connecting outputs to inputs
     replacement_dict = payload.get('replacement_params', {})
@@ -293,6 +322,35 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         )
         workflow_invocation.input_parameters.append( parameter )
 
+    steps_by_id = {}
+    for step in workflow.steps:
+        steps_by_id[step.id] = step
+        serializable_runtime_state = step.module.get_state( step.state )
+        step_state = model.WorkflowRequestStepState()
+        step_state.workflow_step = step
+        log.info("Creating a step_state for step.id %s" % step.id)
+        step_state.value = serializable_runtime_state
+        workflow_invocation.step_states.append( step_state )
+
+        if step.type == "subworkflow":
+            subworkflow_run_config = WorkflowRunConfig(
+                target_history=run_config.target_history,
+                replacement_dict=run_config.replacement_dict,
+                copy_inputs_to_history=False,
+                inputs={},
+                param_map={},
+                allow_tool_state_corrections=run_config.allow_tool_state_corrections
+            )
+            subworkflow_invocation = workflow_run_config_to_request(
+                trans,
+                subworkflow_run_config,
+                step.subworkflow,
+            )
+            workflow_invocation.attach_subworkflow_invocation_for_step(
+                step,
+                subworkflow_invocation,
+            )
+
     replacement_dict = run_config.replacement_dict
     for name, value in replacement_dict.iteritems():
         add_parameter(
@@ -302,14 +360,6 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         )
     for step_id, content in run_config.inputs.iteritems():
         workflow_invocation.add_input( content, step_id )
-
-    for step in workflow.steps:
-        state = step.state
-        serializable_runtime_state = step.module.normalize_runtime_state( state )
-        step_state = model.WorkflowRequestStepState()
-        step_state.workflow_step = step
-        step_state.value = serializable_runtime_state
-        workflow_invocation.step_states.append( step_state )
 
     add_parameter( "copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS )
     return workflow_invocation
@@ -344,6 +394,9 @@ def workflow_request_to_run_config( work_request_context, workflow_invocation ):
 
     for input_association in workflow_invocation.input_dataset_collections:
         inputs[ input_association.workflow_step_id ] = input_association.dataset_collection
+
+    for input_association in workflow_invocation.input_step_parameters:
+        inputs[ input_association.workflow_step_id ] = input_association.parameter_value
 
     if copy_inputs_to_history is None:
         raise exceptions.InconsistentDatabase("Failed to find copy_inputs_to_history parameter loading workflow_invocation from database.")

@@ -42,7 +42,9 @@ function get_utc_time_hours() {
 function refresh() {
     window.location.reload(true);
 }
-setTimeout(refresh, 60000); //1 minute = 60000 ms
+
+// This is commented out until we make Reports more responsive.
+// setTimeout(refresh, 60000); //1 minute = 60000 ms
 
 function create_chart( inp_data, name, time, title ) {
     // Initialize starting variables

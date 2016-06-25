@@ -1,17 +1,14 @@
-import datetime
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
-from sqlalchemy import and_, not_, select
+from sqlalchemy import and_
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.capsule import capsule_manager
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -50,7 +47,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         # We'll currently support only gzip-compressed tar archives.
         export_repository_dependencies = util.asbool( export_repository_dependencies )
         # Get the repository information.
-        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        repository = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
         if repository is None:
             error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
             log.debug( error_message )
@@ -88,35 +85,14 @@ class RepositoryRevisionsController( BaseAPIController ):
         malicious = kwd.get( 'malicious', None )
         if malicious is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.malicious == util.asbool( malicious ) )
-        # Filter by tools_functionally_correct if received.
-        tools_functionally_correct = kwd.get( 'tools_functionally_correct', None )
-        if tools_functionally_correct is not None:
-            clause_list.append( trans.model.RepositoryMetadata.table.c.tools_functionally_correct == util.asbool( tools_functionally_correct ) )
         # Filter by missing_test_components if received.
         missing_test_components = kwd.get( 'missing_test_components', None )
         if missing_test_components is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.missing_test_components == util.asbool( missing_test_components ) )
-        # Filter by do_not_test if received.
-        do_not_test = kwd.get( 'do_not_test', None )
-        if do_not_test is not None:
-            clause_list.append( trans.model.RepositoryMetadata.table.c.do_not_test == util.asbool( do_not_test ) )
         # Filter by includes_tools if received.
         includes_tools = kwd.get( 'includes_tools', None )
         if includes_tools is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.includes_tools == util.asbool( includes_tools ) )
-        # Filter by test_install_error if received.
-        test_install_error = kwd.get( 'test_install_error', None )
-        if test_install_error is not None:
-            clause_list.append( trans.model.RepositoryMetadata.table.c.test_install_error == util.asbool( test_install_error ) )
-        # Filter by skip_tool_test if received.
-        skip_tool_test = kwd.get( 'skip_tool_test', None )
-        if skip_tool_test is not None:
-            skip_tool_test = util.asbool( skip_tool_test )
-            skipped_metadata_ids_subquery = select( [ trans.app.model.SkipToolTest.table.c.repository_metadata_id ] )
-            if skip_tool_test:
-                clause_list.append( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) )
-            else:
-                clause_list.append( not_( trans.model.RepositoryMetadata.id.in_( skipped_metadata_ids_subquery ) ) )
         for repository_metadata in trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
                                                    .filter( and_( *clause_list ) ) \
                                                    .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id.desc() ):
@@ -155,13 +131,13 @@ class RepositoryRevisionsController( BaseAPIController ):
             rd_tups = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
-                repository_dependency = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                repository_dependency = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
                 if repository_dependency is None:
                     log.dbug( 'Cannot locate repository dependency %s owned by %s.' % ( name, owner ) )
                     continue
                 repository_dependency_id = trans.security.encode_id( repository_dependency.id )
                 repository_dependency_repository_metadata = \
-                    suc.get_repository_metadata_by_changeset_revision( trans.app, repository_dependency_id, changeset_revision )
+                    metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_dependency_id, changeset_revision )
                 if repository_dependency_repository_metadata is None:
                     # The changeset_revision column in the repository_metadata table has been updated with a new
                     # value value, so find the changeset_revision to which we need to update.
@@ -169,14 +145,16 @@ class RepositoryRevisionsController( BaseAPIController ):
                                                             repository=repository_dependency,
                                                             repo_path=None,
                                                             create=False )
-                    new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository_dependency,
-                                                                                           repo,
-                                                                                           changeset_revision )
-                    repository_dependency_repository_metadata = \
-                        suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                           repository_dependency_id,
-                                                                           new_changeset_revision )
-                    if repository_dependency_repository_metadata is None:
+                    new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository_dependency,
+                                                                                                     repo,
+                                                                                                     changeset_revision )
+                    if new_changeset_revision != changeset_revision:
+                        repository_dependency_repository_metadata = \
+                            metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                         repository_dependency_id,
+                                                                                         new_changeset_revision )
+                        changeset_revision = new_changeset_revision
+                    else:
                         decoded_repository_dependency_id = trans.security.decode_id( repository_dependency_id )
                         debug_msg = 'Cannot locate repository_metadata with id %d for repository dependency %s owned by %s ' % \
                             ( decoded_repository_dependency_id, str( name ), str( owner ) )
@@ -184,8 +162,6 @@ class RepositoryRevisionsController( BaseAPIController ):
                             ( str( changeset_revision ), str( new_changeset_revision ) )
                         log.debug( debug_msg )
                         continue
-                    else:
-                        changeset_revision = new_changeset_revision
                 repository_dependency_metadata_dict = \
                     repository_dependency_repository_metadata.to_dict( view='element',
                                                                        value_mapper=self.__get_value_mapper( trans ) )
@@ -247,13 +223,9 @@ class RepositoryRevisionsController( BaseAPIController ):
             decoded_repository_metadata_id = repository_metadata.id
         flush_needed = False
         for key, new_value in payload.items():
-            if key == 'time_last_tested':
-                repository_metadata.time_last_tested = datetime.datetime.utcnow()
-                flush_needed = True
-            elif hasattr( repository_metadata, key ):
+            if hasattr( repository_metadata, key ):
                 # log information when setting attributes associated with the Tool Shed's install and test framework.
-                if key in [ 'do_not_test', 'includes_tools', 'missing_test_components', 'test_install_error',
-                            'tools_functionally_correct' ]:
+                if key in [ 'includes_tools', 'missing_test_components' ]:
                     log.debug( 'Setting repository_metadata column %s to value %s for changeset_revision %s via the Tool Shed API.' %
                                ( str( key ), str( new_value ), str( repository_metadata.changeset_revision ) ) )
                 setattr( repository_metadata, key, new_value )

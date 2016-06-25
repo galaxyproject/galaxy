@@ -4,7 +4,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( LIST_ITEM, DATASET_LI, BASE_MVC, _l ){
-/* global Backbone, LoggableMixin */
+
+'use strict';
 //==============================================================================
 var FoldoutListItemView = LIST_ITEM.FoldoutListItemView,
     ListItemView = LIST_ITEM.ListItemView;
@@ -32,30 +33,23 @@ var DCListItemView = FoldoutListItemView.extend(
     /** event listeners */
     _setUpListeners : function(){
         FoldoutListItemView.prototype._setUpListeners.call( this );
-        // re-rendering on deletion
-        this.model.on( 'change', function( model, options ){
-            if( _.isEqual( _.keys( model.changed ), [ 'deleted' ] ) ){
+        this.listenTo( this.model, 'change', function( model, options ){
+            // if the model has changed deletion status render it entirely
+            if( _.has( model.changed, 'deleted' ) ){
                 this.render();
+
+            // if the model has been decorated after the fact with the element count,
+            // render the subtitle where the count is displayed
+            } else if( _.has( model.changed, 'element_count' ) ){
+                this.$( '> .title-bar .subtitle' ).replaceWith( this._renderSubtitle() );
             }
-        }, this );
+        });
     },
 
     // ......................................................................... rendering
-    //TODO:?? possibly move to listItem
     /** render a subtitle to show the user what sort of collection this is */
     _renderSubtitle : function(){
-        var $subtitle = $( '<div class="subtitle"></div>' );
-        //TODO: would be good to get this in the subtitle
-        //var len = this.model.elements.length;
-        switch( this.model.get( 'collection_type' ) ){
-            case 'list':
-                return $subtitle.text( _l( 'a list of datasets' ) );
-            case 'paired':
-                return $subtitle.text( _l( 'a pair of datasets' ) );
-            case 'list:paired':
-                return $subtitle.text( _l( 'a list of paired datasets' ) );
-        }
-        return $subtitle;
+        return $( this.templates.subtitle( this.model.toJSON(), this ) );
     },
 
     // ......................................................................... foldout
@@ -121,9 +115,24 @@ DCListItemView.prototype.templates = (function(){
         '</div>'
     ], 'collection' );
 
+    // use element identifier
+    var subtitleTemplate = BASE_MVC.wrapTemplate([
+        '<div class="subtitle">',
+            '<% var countText = collection.element_count? ( collection.element_count + " " ) : ""; %>',
+            '<%        if( collection.collection_type === "list" ){ %>',
+                _l( 'a list of <%- countText %>datasets' ),
+            '<% } else if( collection.collection_type === "paired" ){ %>',
+                _l( 'a pair of datasets' ),
+            '<% } else if( collection.collection_type === "list:paired" ){ %>',
+                _l( 'a list of <%- countText %>dataset pairs' ),
+            '<% } %>',
+        '</div>'
+    ], 'collection' );
+
     return _.extend( {}, FoldoutListItemView.prototype.templates, {
-        warnings : warnings,
-        titleBar : titleBarTemplate
+        warnings    : warnings,
+        titleBar    : titleBarTemplate,
+        subtitle    : subtitleTemplate
     });
 }());
 

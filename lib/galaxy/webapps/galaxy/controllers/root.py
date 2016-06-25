@@ -7,49 +7,126 @@ import urllib
 
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
-from galaxy.web.base.controller import BaseUIController
-from galaxy import managers
-
 from galaxy import web
-from galaxy.web import url_for
-from galaxy.model.item_attrs import UsesAnnotations
+from galaxy import util
 from galaxy.util import listify, Params, string_as_bool
+
+from galaxy.web.base import controller
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy import managers
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class RootController( BaseUIController, UsesAnnotations ):
+# =============================================================================
+class RootController( controller.JSAppLauncher, UsesAnnotations ):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
     def __init__( self, app ):
         super( RootController, self ).__init__( app )
         self.history_manager = managers.histories.HistoryManager( app )
-        self.history_serializer = managers.histories.HistorySerializer( self.app )
+        self.history_serializer = managers.histories.HistorySerializer( app )
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
-        """Called on any url that does not match a controller method.
+        """
+        Called on any url that does not match a controller method.
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
 
     @web.expose
-    def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
+    def client(self, trans, **kwd):
         """
-        Called on the root url to display the main Galaxy page.
+        Endpoint for clientside routes.  Currently a passthrough to index
+        (minus kwargs) though we can differentiate it more in the future.
+        Should not be used with url_for -- see
+        (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
-        if history_id is not None:
-            # Get history or throw exception.
+        return self.index(trans)
+
+    def _get_extended_config( self, trans ):
+        app = trans.app
+        configured_for_inactivity_warning = app.config.user_activation_on and app.config.inactivity_box_content is not None
+        user_requests = bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) )
+        config = {
+            'active_view'                   : 'analysis',
+            'params'                        : dict( trans.request.params ),
+            'enable_cloud_launch'           : app.config.get_bool( 'enable_cloud_launch', False ),
+            'search_url'                    : web.url_for( controller='root', action='tool_search' ),
+            # TODO: next two should be redundant - why can't we build one from the other?
+            'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),
+            'toolbox_in_panel'              : app.toolbox.to_dict( trans ),
+            'message_box_visible'           : app.config.message_box_visible,
+            'show_inactivity_warning'       : configured_for_inactivity_warning and trans.user and not trans.user.active,
+            # TODO: move to user
+            'user_requests'                 : user_requests
+        }
+
+        # TODO: move to user
+        stored_workflow_menu_entries = config[ 'stored_workflow_menu_entries' ] = []
+        for menu_item in getattr( trans.user, 'stored_workflow_menu_entries', [] ):
+            stored_workflow_menu_entries.append({
+                'encoded_stored_workflow_id': trans.security.encode_id( menu_item.stored_workflow_id ),
+                'stored_workflow': {
+                    'name': util.unicodify( menu_item.stored_workflow.name )
+                }
+            })
+
+        return config
+
+    @web.expose
+    def index( self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd ):
+        """
+        Root and entry point for client-side web app.
+
+        :type       tool_id: str or None
+        :param      tool_id: load center panel with given tool if not None
+        :type   workflow_id: encoded id or None
+        :param  workflow_id: load center panel with given workflow if not None
+        :type    history_id: encoded id or None
+        :param   history_id: switch current history to given history if not None
+        :type           m_c: str or None
+        :param          m_c: controller name (e.g. 'user')
+        :type           m_a: str or None
+        :param          m_a: controller method/action (e.g. 'dbkeys')
+
+        If m_c and m_a are present, the center panel will be loaded using the
+        controller and action as a url: (e.g. 'user/dbkeys').
+        """
+        if trans.app.config.require_login and self.user_manager.is_anonymous( trans.user ):
+            # TODO: this doesn't properly redirect when login is done
+            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
+            login_url = web.url_for( controller="root", action="login" )
+            trans.response.send_redirect( login_url )
+
+        # if a history_id was sent, attempt to switch to that history
+        history = trans.history
+        if history_id:
             unencoded_id = trans.security.decode_id( history_id )
             history = self.history_manager.get_owned( unencoded_id, trans.user )
             trans.set_history( history )
 
-        return trans.fill_template( "root/index.mako",
-                                    tool_id=tool_id,
-                                    workflow_id=workflow_id,
-                                    m_c=m_c, m_a=m_a,
-                                    params=kwd )
+        # index/analysis needs an extended configuration
+        js_options = self._get_js_options( trans )
+        config = js_options[ 'config' ]
+        config.update( self._get_extended_config( trans ) )
+
+        return self.template( trans, 'analysis', options=js_options )
+
+    @web.expose
+    def login( self, trans, redirect=None, **kwd ):
+        """
+        User login path for client-side.
+        """
+        return self.template( trans, 'login',
+                              redirect=redirect,
+                              # TODO: move into config
+                              openid_providers=[ p.name for p in trans.app.openid_providers ],
+                              # an installation may have it's own welcome_url - show it here if they've set that
+                              welcome_url=web.url_for( controller='root', action='welcome' ),
+                              show_welcome_with_login=trans.app.config.show_welcome_with_login )
 
     # ---- Tool related -----------------------------------------------------
 
@@ -62,7 +139,7 @@ class RootController( BaseUIController, UsesAnnotations ):
         """
         query = kwd.get( 'query', '' )
         tags = listify( kwd.get( 'tags[]', [] ) )
-        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
+        trans.log_action( trans.get_user(), "tool_search.search", "", { "query": query, "tags": tags } )
         results = []
         if tags:
             tags = trans.sa_session.query( trans.app.model.Tag ).filter( trans.app.model.Tag.name.in_( tags ) ).all()
@@ -215,14 +292,6 @@ class RootController( BaseUIController, UsesAnnotations ):
 
     # ---- History management -----------------------------------------------
     @web.expose
-    def history_options( self, trans ):
-        """Displays a list of history related actions.
-        """
-        return trans.fill_template( "/history/options.mako",
-                                    user=trans.get_user(),
-                                    history=trans.get_history( create=True ) )
-
-    @web.expose
     def history_delete( self, trans, id ):
         """Backward compatibility with check_galaxy script.
         """
@@ -240,7 +309,7 @@ class RootController( BaseUIController, UsesAnnotations ):
             dataset.clear_associated_files()
         trans.sa_session.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
-        trans.response.send_redirect( url_for("/index" ) )
+        trans.response.send_redirect( web.url_for("/index" ) )
 
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
@@ -271,7 +340,7 @@ class RootController( BaseUIController, UsesAnnotations ):
             trans.sa_session.flush()
             if not user_history.datasets:
                 trans.set_history( new_history )
-            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id), new_history.name ) )
             return trans.show_ok_message( """
                 History "%s" has been imported. Click <a href="%s">here</a>
                 to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
@@ -290,7 +359,7 @@ class RootController( BaseUIController, UsesAnnotations ):
             trans.sa_session.add( new_history )
             trans.sa_session.flush()
             trans.set_history( new_history )
-            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id), new_history.name ) )
             return trans.show_ok_message( """
                 History "%s" has been imported. Click <a href="%s">here</a>
                 to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
@@ -345,7 +414,7 @@ class RootController( BaseUIController, UsesAnnotations ):
             trans.sa_session.flush()
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id))
             return trans.show_ok_message( "Dataset " + str(data.hid) + " added to history " + str(history_id) + "." )
-        except Exception, e:
+        except Exception as e:
             msg = "Failed to add dataset to history: %s" % ( e )
             log.error( msg )
             trans.log_event( msg )
@@ -408,7 +477,7 @@ class RootController( BaseUIController, UsesAnnotations ):
     @web.expose
     def welcome( self, trans ):
         welcome_url = trans.app.config.welcome_url
-        return trans.response.send_redirect( url_for( welcome_url  ) )
+        return trans.response.send_redirect( web.url_for( welcome_url  ) )
 
     @web.expose
     def bucket_proxy( self, trans, bucket=None, **kwd):

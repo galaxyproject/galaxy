@@ -9,8 +9,6 @@ from inspect import isclass
 from paste import httpexceptions
 from galaxy.util import asbool
 
-import pkg_resources
-
 import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
@@ -18,6 +16,7 @@ from galaxy.webapps.util import build_template_error_formatters
 from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
 from galaxy.config import process_is_uwsgi
+from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger( __name__ )
 
@@ -51,6 +50,10 @@ def add_ui_controllers( webapp, app ):
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy tool shed application unless passed in
+    kwargs = load_app_properties(
+        kwds=kwargs,
+        config_prefix='TOOL_SHED_CONFIG_'
+    )
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
     else:
@@ -106,24 +109,30 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='category_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='category', collection_name='categories' ) )
+    webapp.mapper.connect( 'repositories_in_category',
+                           '/api/categories/{category_id}/repositories',
+                           controller='categories',
+                           action='get_repositories',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'repository',
                             'repositories',
                             controller='repositories',
-                            collection={ 'add_repository_registry_entry' : 'POST',
-                                         'get_repository_revision_install_info' : 'GET',
-                                         'get_ordered_installable_revisions' : 'GET',
-                                         'remove_repository_registry_entry' : 'POST',
-                                         'repository_ids_for_setting_metadata' : 'GET',
-                                         'reset_metadata_on_repositories' : 'POST',
-                                         'reset_metadata_on_repository' : 'POST' },
+                            collection={ 'add_repository_registry_entry': 'POST',
+                                         'get_repository_revision_install_info': 'GET',
+                                         'get_ordered_installable_revisions': 'GET',
+                                         'get_installable_revisions': 'GET',
+                                         'remove_repository_registry_entry': 'POST',
+                                         'repository_ids_for_setting_metadata': 'GET',
+                                         'reset_metadata_on_repositories': 'POST',
+                                         'reset_metadata_on_repository': 'POST' },
                             name_prefix='repository_',
                             path_prefix='/api',
-                            new={ 'import_capsule' : 'POST' },
+                            new={ 'import_capsule': 'POST' },
                             parent_resources=dict( member_name='repository', collection_name='repositories' ) )
     webapp.mapper.resource( 'repository_revision',
                             'repository_revisions',
-                            member={ 'repository_dependencies' : 'GET',
-                                     'export' : 'POST' },
+                            member={ 'repository_dependencies': 'GET',
+                                     'export': 'POST' },
                             controller='repository_revisions',
                             name_prefix='repository_revision_',
                             path_prefix='/api',
@@ -144,6 +153,16 @@ def app_factory( global_conf, **kwargs ):
                            controller='repositories',
                            action='create_changeset_revision',
                            conditions=dict( method=[ "POST" ] ) )
+    webapp.mapper.connect( 'repository_get_metadata',
+                           '/api/repositories/{id}/metadata',
+                           controller='repositories',
+                           action='metadata',
+                           conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'repository_show_tools',
+                           '/api/repositories/{id}/{changeset}/show_tools',
+                           controller='repositories',
+                           action='show_tools',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( 'create_repository',
                            '/api/repositories',
                            controller='repositories',
@@ -185,6 +204,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # Then load the Hg middleware.
+    app = hg.Hg( app, conf )
+    log.debug( "Enabling 'hg' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
@@ -201,31 +223,10 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
-    # Various debug middleware that can only be turned on if the debug
-    # flag is set, either because they are insecure or greatly hurt
-    # performance
-    if debug:
-        # Middleware to check for WSGI compliance
-        if asbool( conf.get( 'use_lint', True ) ):
-            from paste import lint
-            app = lint.make_middleware( app, conf )
-            log.debug( "Enabling 'lint' middleware" )
-        # Middleware to run the python profiler on each request
-        if asbool( conf.get( 'use_profile', False ) ):
-            import profile
-            app = profile.ProfileMiddleware( app, conf )
-            log.debug( "Enabling 'profile' middleware" )
-        # Middleware that intercepts print statements and shows them on the
-        # returned page
-        if asbool( conf.get( 'use_printdebug', True ) ):
-            from paste.debug import prints
-            app = prints.PrintDebugMiddleware( app, conf )
-            log.debug( "Enabling 'print debug' middleware" )
     if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        pkg_resources.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )
@@ -255,8 +256,28 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
     log.debug( "Enabling 'x-forwarded-host' middleware" )
-    app = hg.Hg( app, conf )
-    log.debug( "Enabling hg middleware" )
+    # Various debug middleware that can only be turned on if the debug
+    # flag is set, either because they are insecure or greatly hurt
+    # performance. The print debug middleware needs to be loaded last,
+    # since there is a quirk in its behavior that breaks some (but not
+    # all) subsequent middlewares.
+    if debug:
+        # Middleware to check for WSGI compliance
+        if asbool( conf.get( 'use_lint', True ) ):
+            from paste import lint
+            app = lint.make_middleware( app, conf )
+            log.debug( "Enabling 'lint' middleware" )
+        # Middleware to run the python profiler on each request
+        if asbool( conf.get( 'use_profile', False ) ):
+            import profile
+            app = profile.ProfileMiddleware( app, conf )
+            log.debug( "Enabling 'profile' middleware" )
+        # Middleware that intercepts print statements and shows them on the
+        # returned page
+        if asbool( conf.get( 'use_printdebug', True ) ):
+            from paste.debug import prints
+            app = prints.PrintDebugMiddleware( app, conf )
+            log.debug( "Enabling 'print debug' middleware" )
     return app
 
 

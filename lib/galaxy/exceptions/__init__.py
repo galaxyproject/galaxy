@@ -2,9 +2,6 @@
 Custom exceptions for Galaxy
 """
 
-from galaxy import eggs
-eggs.require( "Paste" )
-
 from ..exceptions import error_codes
 
 
@@ -68,6 +65,11 @@ class ObjectAttributeMissingException( MessageException ):
 class MalformedId( MessageException ):
     status_code = 400
     err_code = error_codes.MALFORMED_ID
+
+
+class MalformedContents( MessageException ):
+    status_code = 400
+    err_code = error_codes.MALFORMED_CONTENTS
 
 
 class UnknownContentsType( MessageException ):

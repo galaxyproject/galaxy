@@ -1,0 +1,62 @@
+<tool id="collection_type_source" name="collection_type_source" version="0.1.0">
+  <command>
+    mkdir output;
+    #for $key in $input_collect.keys()#
+    cat "$header" > output/"$key";
+    cat "$input_collect[$key]" >> output/"$key";
+    #end for#
+  </command>
+  <inputs>
+    <param name="header" type="data" label="Input Data" help="Input data..." />
+    <param name="input_collect" type="data_collection" label="Input Collect" help="Input collection..." />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type_source="input_collect" label="Duplicate List" format_source="header">
+      <discover_datasets pattern="__name__" directory="output" visible="true" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="header" value="simple_line.txt" />
+      <param name="input_collect">
+        <collection type="list">
+          <element name="samp1" value="simple_line.txt" />
+          <element name="samp2" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output_collection name="list_output" type="list">
+        <element name="samp1">
+            <assert_contents>
+              <has_text_matching expression="This is a line of text.\nThis is a line of text." />
+            </assert_contents>
+        </element>
+        <element name="samp2">
+          <assert_contents>
+            <has_text_matching expression="This is a line of text.\nThis is a different line of text." />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <param name="header" value="simple_line.txt" />
+      <param name="input_collect">
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output_collection name="list_output" type="paired">
+        <element name="forward">
+            <assert_contents>
+              <has_text_matching expression="This is a line of text.\nThis is a line of text." />
+            </assert_contents>
+        </element>
+        <element name="reverse">
+          <assert_contents>
+            <has_text_matching expression="This is a line of text.\nThis is a different line of text." />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

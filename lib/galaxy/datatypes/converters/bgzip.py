@@ -9,9 +9,7 @@ import optparse
 import subprocess
 import tempfile
 
-from galaxy import eggs
-eggs.require( "pysam" )
-import ctabix
+from pysam import ctabix
 
 
 def main():

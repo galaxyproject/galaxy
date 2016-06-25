@@ -51,7 +51,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         SampleDataset_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating sample_dataset table failed: %s" % str( e ) )
 
     cmd = "SELECT id, dataset_files FROM sample"
@@ -61,7 +61,7 @@ def upgrade(migrate_engine):
         if r[1]:
             dataset_files = loads(r[1])
             for df in dataset_files:
-                if type(df) == type(dict()):
+                if isinstance(df, dict):
                     cmd = "INSERT INTO sample_dataset VALUES (%s, %s, %s, %s, '%s', '%s', '%s', '%s', '%s')"
                     cmd = cmd % ( nextval(migrate_engine, 'sample_dataset'),
                                   localtimestamp(migrate_engine),
@@ -83,7 +83,7 @@ def upgrade(migrate_engine):
     if Sample_table is not None:
         try:
             Sample_table.c.dataset_files.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Deleting column 'dataset_files' from the 'sample' table failed: %s" % ( str( e ) ) )
 
 

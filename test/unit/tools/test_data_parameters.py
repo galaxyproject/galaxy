@@ -7,9 +7,9 @@ from .test_parameter_parsing import BaseParameterTestCase
 class DataToolParameterTestCase( BaseParameterTestCase ):
 
     def test_to_python_none_values( self ):
-        assert None is self.param.to_python( None, self.app )
-        assert 'None' == self.param.to_python( 'None', self.app )
-        assert '' == self.param.to_python( '', self.app )
+        assert self.param.to_python( None, self.app ) is None
+        assert self.param.to_python( 'None', self.app ) is None
+        assert self.param.to_python( '', self.app ) is None
 
     def test_to_python_hda( self ):
         hda = self._new_hda()
@@ -28,7 +28,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         # Selection is Optional. may be selected with other stuff,
         # not sure the UI should really allow this but easy enough
         # to just filter it out.
-        assert [hda] == self.param.to_python( '%s,None' % hda.id, self.app )
+        self.assertEquals([hda], self.param.to_python( '%s,None' % hda.id, self.app ))
 
     def test_field_filter_on_types( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
@@ -154,6 +154,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
             get_current_user_roles=lambda: [],
             workflow_building_mode=False,
             webapp=bunch.Bunch( name="galaxy" ),
+            history=self.test_history,
         )
         self.multiple = False
         self.optional = False
@@ -192,6 +193,7 @@ class MockHistoryDatasetAssociation( object ):
     def __init__( self, test_dataset=None, name="Test Dataset", id=1 ):
         if not test_dataset:
             test_dataset = model.Dataset()
+            test_dataset.state = model.Dataset.states.OK
         self.states = model.HistoryDatasetAssociation.states
         self.deleted = False
         self.dataset = test_dataset

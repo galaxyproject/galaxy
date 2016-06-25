@@ -44,7 +44,9 @@ return Backbone.View.extend({
         // events
         var self = this;
         this.chart.on('redraw', function() {
-            self._draw(self.chart);
+            self.app.deferred.execute(function(process) {
+                self._draw(process, self.chart);
+            });
         });
         
         // link status handler
@@ -133,13 +135,10 @@ return Backbone.View.extend({
     },
     
     // add
-    _draw: function(chart) {
+    _draw: function(process, chart) {
         // link this
         var self = this;
         
-        // register process
-        var process_id = this.app.deferred.register();
-
         // identify chart type
         var chart_type = chart.get('type');
         
@@ -176,19 +175,19 @@ return Backbone.View.extend({
                 self.app.jobs.request(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
                     function() {
                         var view = new ChartView(self.app, {
-                            process_id          : process_id,
+                            process             : process,
                             chart               : chart,
                             request_dictionary  : self._defaultRequestDictionary(chart),
                             canvas_list         : self.canvas_list
                         });
                     },
                     function() {
-                        this.app.deferred.done(process_id);
+                        process.reject();
                     }
                 );
             } else {
                 var view = new ChartView(self.app, {
-                    process_id          : process_id,
+                    process             : process,
                     chart               : chart,
                     request_dictionary  : self._defaultRequestDictionary(chart),
                     canvas_list         : self.canvas_list

@@ -24,8 +24,6 @@ from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 
-from galaxy import eggs
-eggs.require('Paste')
 from paste import httpexceptions
 
 import logging
@@ -73,11 +71,23 @@ def paste_app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
+
+    # CLIENTSIDE ROUTES
+    # The following are routes that are handled completely on the clientside.
+    # The following routes don't bootstrap any information, simply provide the
+    # base analysis interface at which point the application takes over.
+
+    webapp.add_client_route( '/tours' )
+    webapp.add_client_route( '/tours/{tour_id}' )
+
+    # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
     webapp.add_route( '/history', controller='history', action='view' )
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
+    webapp.add_route( '/login', controller='root', action='login' )
+
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
     webapp.add_route( '/{controller}/{action}', action='index' )
@@ -137,8 +147,8 @@ def uwsgi_app_factory():
     root = os.path.abspath(uwsgi.opt.get('galaxy_root', os.getcwd()))
     config_file = uwsgi.opt.get('galaxy_config_file', os.path.join(root, 'config', 'galaxy.ini'))
     global_conf = {
-        '__file__' : config_file if os.path.exists(__file__) else None,
-        'here' : root }
+        '__file__': config_file if os.path.exists(__file__) else None,
+        'here': root }
     parser = configparser.ConfigParser()
     parser.read(config_file)
     try:
@@ -250,6 +260,13 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
 
+    webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies" )
+    webapp.mapper.connect( '/api/dependency_resolvers/requirements', action="manager_requirements", controller="tool_dependencies" )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies", method=['GET'] )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="install_dependency", controller="tool_dependencies", method=['POST'] )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/requirements', action="resolver_requirements", controller="tool_dependencies" )
+    webapp.mapper.resource( 'dependency_resolver', 'dependency_resolvers', controller="tool_dependencies", path_prefix='api' )
+
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
@@ -269,6 +286,12 @@ def populate_api_routes( webapp, app ):
         controller="configuration",
         action="tool_lineages"
     )
+    webapp.mapper.connect(
+        '/api/configuration/toolbox',
+        controller="configuration",
+        action="reload_toolbox",
+        conditions=dict( method=["PUT"] )
+    )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     webapp.mapper.connect( "configuration_version",
                            "/api/version", controller="configuration",
@@ -276,7 +299,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_formats': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
@@ -296,8 +319,21 @@ def populate_api_routes( webapp, app ):
                            controller="users", action="api_key", user_id=None,
                            conditions=dict( method=["POST"] ) )
 
-    # visualizations registry generic template renderer
+    # ---- visualizations registry ---- generic template renderer
+    # @deprecated: this route should be considered deprecated
     webapp.add_route( '/visualization/show/{visualization_name}', controller='visualization', action='render', visualization_name=None )
+
+    # provide an alternate route to visualization plugins that's closer to their static assets
+    # (/plugins/visualizations/{visualization_name}/static) and allow them to use relative urls to those
+    webapp.mapper.connect( 'visualization_plugin', '/plugins/visualizations/{visualization_name}/show',
+        controller='visualization', action='render' )
+    webapp.mapper.connect( 'saved_visualization', '/plugins/visualizations/{visualization_name}/saved',
+        controller='visualization', action='saved' )
+    # same with IE's
+    webapp.mapper.connect( 'interactive_environment_plugin', '/plugins/interactive_environments/{visualization_name}/show',
+        controller='visualization', action='render' )
+    webapp.mapper.connect( 'saved_interactive_environment', '/plugins/interactive_environments/{visualization_name}/saved',
+        controller='visualization', action='saved' )
 
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect( 'import_workflow_deprecated',
@@ -391,6 +427,28 @@ def populate_api_routes( webapp, app ):
                            controller='authenticate',
                            action='get_api_key',
                            conditions=dict( method=[ "GET" ] ) )
+
+    # =====================
+    # ===== TOURS API =====
+    # =====================
+
+    webapp.mapper.connect( 'index',
+                           '/api/tours',
+                           controller='tours',
+                           action='index',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'show',
+                           '/api/tours/{tour_id}',
+                           controller='tours',
+                           action='show',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'update_tour',
+                           '/api/tours/{tour_id}',
+                           controller='tours',
+                           action='update_tour',
+                           conditions=dict( method=[ "POST" ] ) )
 
     # =======================
     # ===== LIBRARY API =====
@@ -569,6 +627,18 @@ def populate_api_routes( webapp, app ):
                             new={ 'install_repository_revision': 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
 
+    webapp.mapper.connect( 'tool_shed_repository',
+                           '/api/tool_shed_repositories/:id/status',
+                           controller='tool_shed_repositories',
+                           action='status',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'install_repository',
+                           '/api/tool_shed_repositories/install',
+                           controller='tool_shed_repositories',
+                           action='install',
+                           conditions=dict( method=[ 'POST' ] ) )
+
     # ==== Trace/Metrics Logger
     # Connect logger from app
     if app.trace_logger:
@@ -643,16 +713,29 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # Statsd request timing and profiling
+    statsd_host = conf.get('statsd_host', None)
+    if statsd_host:
+        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
+        app = StatsdMiddleware( app,
+                                statsd_host,
+                                conf.get('statsd_port', 8125),
+                                conf.get('statsd_prefix', 'galaxy') )
+        log.debug( "Enabling 'statsd' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
-    if asbool(conf.get( 'use_remote_user', False )):
+    single_user = conf.get( 'single_user', None )
+    use_remote_user = asbool(conf.get( 'use_remote_user', False )) or single_user
+    if use_remote_user:
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
         app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
                           display_servers=util.listify( conf.get( 'display_servers', '' ) ),
+                          single_user=single_user,
                           admin_users=conf.get( 'admin_users', '' ).split( ',' ),
                           remote_user_header=conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ),
-                          remote_user_secret_header=conf.get('remote_user_secret', None) )
+                          remote_user_secret_header=conf.get('remote_user_secret', None),
+                          normalize_remote_user_email=conf.get('normalize_remote_user_email', False))
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
@@ -683,7 +766,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        eggs.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )
@@ -701,13 +783,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Statsd request timing and profiling
-    statsd_host = conf.get('statsd_host', None)
-    if statsd_host:
-        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
-        app = StatsdMiddleware( app, statsd_host, conf.get('statsd_port'))
-        log.debug( "Enabling 'statsd' middleware" )
-
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )

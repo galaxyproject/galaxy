@@ -4,7 +4,7 @@ define({
 
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
-// ---- readonly-history-panel
+// ---- history-view
 "This history is empty" :
 false,
 "No matching datasets found" :
@@ -31,7 +31,7 @@ false,
 "For all selected" :
 false,
 
-// ---- history-panel
+// ---- history-view-edit
 "Edit history tags" :
 false,
 "Edit history Annotation" :
@@ -54,13 +54,13 @@ false,
 "This will permanently remove the data in your datasets. Are you sure?" :
 false,
 
-// ---- annotated-history-panel
+// ---- history-view-annotated
 "Dataset" :
 false,
 "Annotation" :
 false,
 
-// ---- current-history-panel
+// ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
 false,
 "No matching datasets found" :

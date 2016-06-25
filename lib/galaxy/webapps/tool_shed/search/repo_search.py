@@ -1,11 +1,9 @@
 """Module for searching the toolshed repositories"""
 from galaxy import exceptions
-from galaxy import eggs
 from galaxy.exceptions import ObjectNotFound
 import logging
 log = logging.getLogger( __name__ )
 
-eggs.require( "Whoosh" )
 import whoosh.index
 from whoosh import scoring
 from whoosh.fields import Schema, STORED, TEXT

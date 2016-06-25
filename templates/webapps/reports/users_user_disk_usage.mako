@@ -15,11 +15,11 @@ ${get_css()}
     <table class="colored diskUsageForm">
         <tr>
             <td>
-                <form method="post" 
+                <form method="post"
                       controller="users"
                       action="user_disk_usage">
                     <p>
-                        Top <input type="textfield" 
+                        Top <input type="textfield"
                                    value="${user_cutoff}"
                                    size="3"
                                    name="user_cutoff">
@@ -36,27 +36,11 @@ ${get_css()}
         %if users:
             <tr class="header">
                 <td class="half_width">
-                    ${
-                        get_sort_url(
-                            sort_id,
-                            order,
-                            'email',
-                            'users',
-                            'user_disk_usage',
-                            'Email')
-                    }
+                    ${get_sort_url(sort_id, order, 'email', 'users', 'user_disk_usage', 'Email')}
                     <span class='dir_arrow email'>${arrow}</span>
                 </td>
                 <td class="half_width">
-                    ${
-                        get_sort_url(
-                            sort_id,
-                            order,
-                            'disk_usage',
-                            'users',
-                            'user_disk_usage',
-                            'Disk Usage')
-                    }
+                    ${get_sort_url(sort_id, order, 'disk_usage', 'users', 'user_disk_usage', 'Disk Usage')}
                     <span class='dir_arrow disk_usage'>${arrow}</span>
                 </td>
             </tr>

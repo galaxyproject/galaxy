@@ -4,14 +4,3 @@ database/
 doc/patch.py
 doc/source/conf.py
 lib/galaxy/util/jstree.py
-lib/pkg_resources.py
-scripts/api/
-scripts/data_libraries/
-scripts/loc_files/
-scripts/microbes/
-scripts/others/
-scripts/scramble/
-scripts/tool_shed/
-scripts/tools/
-scripts/transfer.py
-tools/

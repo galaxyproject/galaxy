@@ -1,8 +1,6 @@
 """Tool Shed Security"""
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 from galaxy.util import listify
@@ -24,10 +22,10 @@ class RBACAgent:
     permitted_actions = Bunch()
 
     def associate_components( self, **kwd ):
-        raise 'No valid method of associating provided components: %s' % kwd
+        raise Exception( 'No valid method of associating provided components: %s' % kwd )
 
     def associate_user_role( self, user, role ):
-        raise 'No valid method of associating a user with a role'
+        raise Exception( 'No valid method of associating a user with a role' )
 
     def convert_permitted_action_strings( self, permitted_action_strings ):
         """
@@ -37,7 +35,7 @@ class RBACAgent:
         return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
 
     def create_private_user_role( self, user ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
     def get_action( self, name, default=None ):
         """Get a permitted action by its dict key or action name"""
@@ -51,10 +49,10 @@ class RBACAgent:
         return self.permitted_actions.__dict__.values()
 
     def get_item_actions( self, action, item ):
-        raise 'No valid method of retrieving action (%s) for item %s.' % ( action, item )
+        raise Exception( 'No valid method of retrieving action (%s) for item %s.' % ( action, item ) )
 
     def get_private_user_role( self, user ):
-        raise "Unimplemented Method"
+        raise Exception( "Unimplemented Method" )
 
 
 class CommunityRBACAgent( RBACAgent ):
@@ -95,7 +93,7 @@ class CommunityRBACAgent( RBACAgent ):
                 return self.associate_group_role( kwd['group'], kwd['role'] )
         elif 'repository' in kwd:
             return self.associate_repository_category( kwd[ 'repository' ], kwd[ 'category' ] )
-        raise 'No valid method of associating provided components: %s' % kwd
+        raise Exception( 'No valid method of associating provided components: %s' % kwd )
 
     def associate_group_role( self, group, role ):
         assoc = self.model.GroupRoleAssociation( group, role )

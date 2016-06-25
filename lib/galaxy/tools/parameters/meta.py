@@ -2,9 +2,66 @@ from galaxy.util import permutations
 from galaxy import model
 from galaxy import util
 from galaxy import exceptions
-
+import itertools
+import copy
 import logging
 log = logging.getLogger( __name__ )
+
+
+def expand_workflow_inputs( inputs ):
+        """
+        Expands incoming encoded multiple payloads, into the set of all individual payload combinations
+        >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}} )
+        >>> print sorted( [ "%s" % ( p[ '1' ][ 'input' ][ 'hid' ] ) for p in params ] )
+        ['1', '2']
+        >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}} )
+        >>> print sorted( [ "%s" % ( p[ '1' ][ 'input' ][ 'hid' ] ) for p in params ] )
+        ['1', '2']
+        >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}] }}} )
+        >>> print sorted( [ "%s%s" % ( p[ '1' ][ 'input' ][ 'hid' ], p[ '2' ][ 'input' ][ 'hid' ] ) for p in params ] )
+        ['13', '24']
+        >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}} )
+        >>> print sorted( [ "%s%s" % ( p[ '1' ][ 'input' ][ 'hid' ], p[ '2' ][ 'input' ][ 'hid' ] ) for p in params ] )
+        ['13', '14', '15', '23', '24', '25']
+        >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'product': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}, '3': {'input': {'batch': True, 'product': True, 'values': [{'hid': '6'}, {'hid': '7'}, {'hid': '8'}] }}} )
+        >>> print sorted( [ "%s%s%s" % ( p[ '1' ][ 'input' ][ 'hid' ], p[ '2' ][ 'input' ][ 'hid' ], p[ '3' ][ 'input' ][ 'hid' ] ) for p in params ] )
+        ['136', '137', '138', '146', '147', '148', '156', '157', '158', '236', '237', '238', '246', '247', '248', '256', '257', '258']
+        """
+        linked_n = None
+        linked = []
+        product = []
+        linked_keys = []
+        product_keys = []
+        for step_id, step in inputs.items():
+            for key, value in step.items():
+                if isinstance( value, dict ) and 'batch' in value and value[ 'batch' ] is True and 'values' in value and isinstance( value[ 'values' ], list ):
+                    nval = len( value[ 'values' ] )
+                    if 'product' in value and value[ 'product' ] is True:
+                        product.append( value[ 'values' ] )
+                        product_keys.append( ( step_id, key ) )
+                    else:
+                        if linked_n is None:
+                            linked_n = nval
+                        elif linked_n != nval or nval is 0:
+                            raise exceptions.RequestParameterInvalidException( 'Failed to match linked batch selections. Please select equal number of data files.' )
+                        linked.append( value[ 'values' ] )
+                        linked_keys.append( ( step_id, key ) )
+        params = []
+        params_keys = []
+        linked = linked or [ [ None ] ]
+        product = product or [ [ None ] ]
+        linked_keys = linked_keys or [ ( None, None ) ]
+        product_keys = product_keys or [ ( None, None ) ]
+        for linked_values, product_values in itertools.product( *[ zip( *linked ), itertools.product( *product ) ] ):
+            new_params = copy.deepcopy( inputs )
+            new_keys = []
+            for ( step_id, key ), value in zip( linked_keys, linked_values ) + zip( product_keys, product_values ):
+                if step_id is not None:
+                    new_params[ step_id ][ key ] = value
+                    new_keys.append( value[ 'hid' ] )
+            params_keys.append( new_keys )
+            params.append( new_params )
+        return params, params_keys
 
 
 def expand_meta_parameters( trans, tool, incoming ):
@@ -21,7 +78,7 @@ def expand_meta_parameters( trans, tool, incoming ):
     for key in to_remove:
         incoming.pop(key)
 
-    def classify_unmodified_parameter( input_key ):
+    def classifier( input_key ):
         value = incoming[ input_key ]
         if isinstance( value, dict ) and 'values' in value:
             # Explicit meta wrapper for inputs...
@@ -46,53 +103,9 @@ def expand_meta_parameters( trans, tool, incoming ):
     from galaxy.dataset_collections import matching
     collections_to_match = matching.CollectionsToMatch()
 
-    def classifier( input_key ):
-        collection_multirun_key = "%s|__collection_multirun__" % input_key
-        multirun_key = "%s|__multirun__" % input_key
-        if multirun_key in incoming:
-            multi_value = util.listify( incoming[ multirun_key ] )
-            if len( multi_value ) > 1:
-                return permutations.input_classification.MATCHED, multi_value
-            else:
-                if len( multi_value ) == 0:
-                    multi_value = None
-                return permutations.input_classification.SINGLE, multi_value[ 0 ]
-        elif collection_multirun_key in incoming:
-            incoming_val = incoming[ collection_multirun_key ]
-            values = __expand_collection_parameter( trans, input_key, incoming_val, collections_to_match )
-            return permutations.input_classification.MATCHED, values
-        else:
-            return classify_unmodified_parameter( input_key )
-
     # Stick an unexpanded version of multirun keys so they can be replaced,
     # by expand_mult_inputs.
     incoming_template = incoming.copy()
-
-    # Will reuse this in subsequent work, so design this way now...
-    def try_replace_key( key, suffix ):
-        found = key.endswith( suffix )
-        if found:
-            simple_key = key[ 0:-len( suffix ) ]
-            if simple_key not in incoming_template:
-                incoming_template[ simple_key ] = None
-        return found
-
-    multirun_found = False
-    collection_multirun_found = False
-    for key, value in incoming.iteritems():
-        if isinstance( value, dict ) and 'values' in value:
-            batch = value.get( 'batch', False )
-            if batch:
-                if __collection_multirun_parameter( value ):
-                    collection_multirun_found = True
-                else:
-                    multirun_found = True
-            else:
-                continue
-        else:
-            # Old-style batching (remove someday? - pretty hacky and didn't live in API long)
-            try_replace_key( key, "|__multirun__" ) or multirun_found
-            try_replace_key( key, "|__collection_multirun__" ) or collection_multirun_found
 
     expanded_incomings = permutations.expand_multi_inputs( incoming_template, classifier )
     if collections_to_match.has_collections():

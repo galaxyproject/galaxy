@@ -1,7 +1,10 @@
 from .interface import ToolLineage
 from .interface import ToolLineageVersion
 
-from galaxy.model.tool_shed_install import ToolVersion
+try:
+    from galaxy.model.tool_shed_install import ToolVersion
+except ImportError:
+    ToolVersion = None
 
 
 class ToolShedLineage(ToolLineage):
@@ -9,6 +12,8 @@ class ToolShedLineage(ToolLineage):
     installations. """
 
     def __init__(self, app, tool_version, tool_shed_repository=None):
+        if ToolVersion is None:
+            raise Exception("Tool shed models not present, can't create tool shed lineages.")
         self.app = app
         self.tool_version_id = tool_version.id
         # Only used for logging

@@ -1,13 +1,14 @@
 define([
     "mvc/dataset/states",
     "mvc/dataset/dataset-li",
-    "mvc/tags",
-    "mvc/annotations",
+    "mvc/tag",
+    "mvc/annotation",
     "ui/fa-icon-button",
     "mvc/base-mvc",
-    "mvc/tools/tools-form",
     "utils/localization"
-], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, ToolsForm, _l ){
+], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
+
+'use strict';
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Editing view for DatasetAssociation.
@@ -131,7 +132,6 @@ var DatasetListItemEdit = _super.extend(
         var actions = _super.prototype._renderSecondaryActions.call( this );
         switch( this.model.get( 'state' ) ){
             case STATES.UPLOAD:
-            case STATES.NEW:
             case STATES.NOT_VIEWABLE:
                 return actions;
             case STATES.ERROR:
@@ -158,19 +158,23 @@ var DatasetListItemEdit = _super.extend(
 
     /** Render icon-button to re-run the job that created this dataset. */
     _renderRerunButton : function(){
-        var creating_job = this.model.get('creating_job');
-        if (this.model.get('rerunnable')){
+        var creating_job = this.model.get( 'creating_job' );
+        if( this.model.get( 'rerunnable' ) ){
             return faIconButton({
                 title       : _l( 'Run this job again' ),
                 href        : this.model.urls.rerun,
                 classes     : 'rerun-btn',
                 target      : this.linkTarget,
                 faIcon      : 'fa-refresh',
-                onclick     : function(ev) {
+                onclick     : function( ev ) {
                     ev.preventDefault();
-                    var form = new ToolsForm.View({'job_id' : creating_job});
-                    form.deferred.execute(function(){
-                        Galaxy.app.display(form.$el);
+                    // create webpack split point in order to load the tool form async
+                    // TODO: split not working (tool loads fine)
+                    require([ 'mvc/tool/tool-form' ], function( ToolForm ){
+                        var form = new ToolForm.View({ 'job_id' : creating_job });
+                        form.deferred.execute( function(){
+                            Galaxy.app.display( form );
+                        });
                     });
                 }
             });
@@ -206,9 +210,8 @@ var DatasetListItemEdit = _super.extend(
         $links.click( function( ev ){
             if( Galaxy.frame && Galaxy.frame.active ){
                 Galaxy.frame.add({
-                    title       : "Visualization",
-                    type        : "url",
-                    content     : $( this ).attr( 'href' )
+                    title       : 'Visualization',
+                    url         : $( this ).attr( 'href' )
                 });
                 ev.preventDefault();
                 ev.stopPropagation();
@@ -317,7 +320,7 @@ DatasetListItemEdit.prototype.templates = (function(){
             '<% if( dataset.state === "failed_metadata" ){ %>',
                 '<div class="failed_metadata-warning warningmessagesmall">',
                     _l( 'An error occurred setting the metadata for this dataset' ),
-                    '<br /><a href="<%= dataset.urls.edit %>" target="<%= view.linkTarget %>">',
+                    '<br /><a href="<%- dataset.urls.edit %>" target="<%- view.linkTarget %>">',
                         _l( 'Set it manually or retry auto-detection' ),
                     '</a>',
                 '</div>',
@@ -343,9 +346,9 @@ DatasetListItemEdit.prototype.templates = (function(){
 
     var visualizationsTemplate = BASE_MVC.wrapTemplate([
         '<% if( visualizations.length === 1 ){ %>',
-            '<a class="visualization-btn visualization-link icon-btn" href="<%= visualizations[0].href %>"',
-                    ' target="<%= visualizations[0].target %>" title="', _l( 'Visualize in' ),
-                    ' <%= visualizations[0].html %>">',
+            '<a class="visualization-btn visualization-link icon-btn" href="<%- visualizations[0].href %>"',
+                    ' target="<%- visualizations[0].target %>" title="', _l( 'Visualize in' ),
+                    ' <%- visualizations[0].html %>">',
                 '<span class="fa fa-bar-chart-o"></span>',
             '</a>',
 
@@ -356,9 +359,9 @@ DatasetListItemEdit.prototype.templates = (function(){
                 '</a>',
                 '<ul class="dropdown-menu" role="menu">',
                     '<% _.each( visualizations, function( visualization ){ %>',
-                        '<li><a class="visualization-link" href="<%= visualization.href %>"',
-                                ' target="<%= visualization.target %>">',
-                            '<%= visualization.html %>',
+                        '<li><a class="visualization-link" href="<%- visualization.href %>"',
+                                ' target="<%- visualization.target %>">',
+                            '<%- visualization.html %>',
                         '</a></li>',
                     '<% }); %>',
                 '</ul>',

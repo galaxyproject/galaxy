@@ -2,14 +2,9 @@
 Provides a `TraceLogger` implementation that logs to a fluentd collector
 """
 
+import json
 import threading
-
-try:
-    import galaxy.eggs
-    galaxy.eggs.require( "fluent-logger" )
-    galaxy.eggs.require( "msgpack_python" )
-except Exception:
-    pass
+import time
 
 try:
     from fluent.sender import FluentSender
@@ -17,10 +12,13 @@ except ImportError:
     FluentSender = None
 
 
+FLUENT_IMPORT_MESSAGE = ('The Python fluent package is required to use this '
+                         'feature, please install it')
+
+
 class FluentTraceLogger( object ):
     def __init__( self, name, host='localhost', port=24224 ):
-        if FluentSender is None:
-            raise Exception("Attempted to use FluentTraceLogger with not Fluent dependency available.")
+        assert FluentSender is not None, FLUENT_IMPORT_MESSAGE
         self.lock = threading.Lock()
         self.thread_local = threading.local()
         self.name = name
@@ -38,11 +36,10 @@ class FluentTraceLogger( object ):
         del self.thread_local.context[key]
         self.lock.release()
 
-    def log( self, label, time=None, **kwargs ):
+    def log( self, label, event_time=None, **kwargs ):
         self.lock.acquire()
         if hasattr( self.thread_local, 'context' ):
             kwargs.update( self.thread_local.context )
         self.lock.release()
-        if time is None:
-            time = int( time.time() )
-        self.sender.emit_with_time( label, time, kwargs )
+        event_time = event_time or time.time()
+        self.sender.emit_with_time( label, int(event_time), json.dumps(kwargs, default=str))

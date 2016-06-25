@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from galaxy import model
 from galaxy.tools.parameters import basic
 from galaxy.util import bunch
 from xml.etree.ElementTree import XML
@@ -14,6 +15,7 @@ class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
         self.mock_tool = bunch.Bunch(
             app=self.app,
             tool_type="default",
+            valid_input_states=model.Dataset.valid_input_states,
         )
 
     def _parameter_for(self, **kwds):
@@ -241,7 +243,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         """)
         assert param.data_ref == "input1"
         assert param.usecolnames is False
-        assert param.force_select is True
+        assert param.optional is False
         assert param.numerical is False
 
         param = self._parameter_for(xml="""
@@ -250,7 +252,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         """)
         assert param.data_ref == "input1"
         assert param.usecolnames is True
-        assert param.force_select is False
+        assert param.optional is True
         assert param.numerical is True
 
     def test_data_param_no_validation(self):
@@ -344,11 +346,11 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_tool_collection(self):
         param = self._parameter_for(xml="""
-            <param name="datac" type="data_collection" collection_type="list" format="txt">
+            <param name="datac" type="data_collection" collection_type="list,list:paired" format="txt">
             </param>
         """)
         assert param.type == "data_collection"
-        assert param.collection_type == "list"
+        assert param.collection_types == ["list", "list:paired"]
 
     def test_library(self):
         param = self._parameter_for(xml="""

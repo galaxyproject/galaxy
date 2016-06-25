@@ -17,13 +17,43 @@ def test_watcher():
         tool_path = path.join(t, "test.xml")
         toolbox = Toolbox()
         open(tool_path, "w").write("a")
-        tool_watcher = watcher.get_watcher(toolbox, bunch.Bunch(
+        tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(
             watch_tools=True
         ))
         tool_watcher.watch_file(tool_path, "cool_tool")
+        assert not toolbox.was_reloaded("cool_tool")
         open(tool_path, "w").write("b")
-        time.sleep(2)
-        toolbox.assert_reloaded("cool_tool")
+        wait_for_reload(lambda: toolbox.was_reloaded("cool_tool"))
+        tool_watcher.shutdown()
+        assert not tool_watcher.observer.is_alive()
+
+
+def test_tool_conf_watcher():
+    if not watcher.can_watch:
+        from nose.plugins.skip import SkipTest
+        raise SkipTest()
+
+    callback = CallbackRecorder()
+    conf_watcher = watcher.get_tool_conf_watcher(callback.call)
+
+    with __test_directory() as t:
+        tool_conf_path = path.join(t, "test_conf.xml")
+        conf_watcher.watch_file(tool_conf_path)
+
+        open(tool_conf_path, "w").write("b")
+        wait_for_reload(lambda: callback.called)
+        conf_watcher.shutdown()
+        assert not conf_watcher.thread.is_alive()
+
+
+def wait_for_reload(check):
+    reloaded = False
+    for i in range(10):
+        reloaded = check()
+        if reloaded:
+            break
+        time.sleep(.2)
+    assert reloaded
 
 
 class Toolbox(object):
@@ -34,8 +64,8 @@ class Toolbox(object):
     def reload_tool_by_id( self, tool_id ):
         self.reloaded[ tool_id ] = True
 
-    def assert_reloaded(self, tool_id):
-        assert self.reloaded.get( tool_id, False )
+    def was_reloaded(self, tool_id):
+        return self.reloaded.get( tool_id, False )
 
 
 class CallbackRecorder(object):

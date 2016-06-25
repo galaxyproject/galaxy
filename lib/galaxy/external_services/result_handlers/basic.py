@@ -1,5 +1,5 @@
-from galaxy.util.json import loads
 import logging
+from json import loads
 
 log = logging.getLogger( __name__ )
 

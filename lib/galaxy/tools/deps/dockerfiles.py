@@ -39,11 +39,16 @@ def dockerfile_build(path, dockerfile=None, error=log.error, **kwds):
     image_identifier = expected_container_names.pop()
 
     dockerfile = __find_dockerfile(dockerfile, tool_directories)
-    docker_command_parts = docker_util.build_command(
-        image_identifier,
-        dockerfile,
-        **docker_host_args(**kwds)
-    )
+    if dockerfile is not None:
+        docker_command_parts = docker_util.build_command(
+            image_identifier,
+            dockerfile,
+            **docker_host_args(**kwds)
+        )
+    else:
+        docker_command_parts = docker_util.build_pull_command(image_identifier, **docker_host_args(**kwds))
+        commands.execute(docker_command_parts)
+
     commands.execute(docker_command_parts)
     docker_image_cache = kwds['docker_image_cache']
     if docker_image_cache:
@@ -67,4 +72,4 @@ def __find_dockerfile(dockerfile, tool_directories):
         potential_dockerfile = os.path.join(directory, "Dockerfile")
         if os.path.exists(potential_dockerfile):
             return potential_dockerfile
-    raise Exception("Could not find dockerfile to build.")
+    return None

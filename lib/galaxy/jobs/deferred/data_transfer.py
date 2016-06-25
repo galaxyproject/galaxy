@@ -105,7 +105,7 @@ class DataTransfer( object ):
                     tj = self.sa_session.query( self.app.model.TransferJob ).get( int( job.params['transfer_job_id'] ) )
                     result_dict = tj.params
                     result_dict['local_path'] = tj.path
-                except Exception, e:
+                except Exception as e:
                     log.error( "Updated transfer result unavailable, using old result.  Error was: %s" % str( e ) )
                     result_dict = job.params[ 'result' ]
                 library_dataset_name = result_dict[ 'name' ]
@@ -151,7 +151,7 @@ class DataTransfer( object ):
                 # TODO: not sure if this flush is necessary
                 self.sa_session.add( ldda )
                 self.sa_session.flush()
-            except Exception, e:
+            except Exception as e:
                 log.exception( 'Failure preparing library dataset for finished transfer job (id: %s) via deferred job (id: %s):' %
                                ( str( job.transfer_job.id ), str( job.id ) ) )
                 ldda.state = ldda.states.ERROR
@@ -357,7 +357,7 @@ class DataTransfer( object ):
             if step.type == 'tool' or step.type is None:
                 tool = self.app.toolbox.get_tool( step.tool_id )
 
-                def callback( input, value, prefixed_name, prefixed_label ):
+                def callback( input, prefixed_name, **kwargs ):
                     if isinstance( input, DataToolParameter ):
                         if prefixed_name in step.input_connections_by_name:
                             conn = step.input_connections_by_name[ prefixed_name ]

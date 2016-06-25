@@ -40,13 +40,18 @@ errorpage = """
 
 
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_header=None, remote_user_secret_header=None ):
+
+    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None,
+                  single_user=None, remote_user_header=None, remote_user_secret_header=None,
+                  normalize_remote_user_email=False ):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []
         self.admin_users = admin_users or []
         self.remote_user_header = remote_user_header or 'HTTP_REMOTE_USER'
+        self.single_user = single_user
         self.config_secret_header = remote_user_secret_header
+        self.normalize_remote_user_email = normalize_remote_user_email
 
     def __call__( self, environ, start_response ):
         # Allow display servers
@@ -59,10 +64,27 @@ class RemoteUser( object ):
             if host in self.display_servers:
                 environ[ self.remote_user_header ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
                 return self.app( environ, start_response )
+
+        if self.single_user:
+            assert self.remote_user_header not in environ
+            environ[ self.remote_user_header ] = self.single_user
+
         # Apache sets REMOTE_USER to the string '(null)' when using the
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
+        if self.remote_user_header in environ:
+            # process remote user with configuration options.
+            if self.normalize_remote_user_email:
+                environ[self.remote_user_header] = environ[self.remote_user_header].lower()
+            if self.maildomain and '@' not in environ[self.remote_user_header]:
+                environ[self.remote_user_header] = "%s@%s" % (environ[self.remote_user_header], self.maildomain)
+
         path_info = environ.get('PATH_INFO', '')
+
+        # The API handles its own authentication via keys
+        # Check for API key before checking for header
+        if path_info.startswith( '/api/' ):
+            return self.app( environ, start_response )
 
         # If the secret header is enabled, we expect upstream to send along some key
         # in HTTP_GX_SECRET, so we'll need to compare that here to the correct value
@@ -90,8 +112,7 @@ class RemoteUser( object ):
                 access Galaxy.
                 """
                 return self.error( start_response, title, message )
-
-            if not safe_str_cmp(environ.get('HTTP_GX_SECRET'), self.config_secret_header):
+            if not safe_str_cmp(environ.get('HTTP_GX_SECRET', ''), self.config_secret_header):
                 title = "Access to Galaxy is denied"
                 message = """
                 Galaxy is configured to authenticate users via an external
@@ -105,6 +126,9 @@ class RemoteUser( object ):
                 """
                 return self.error( start_response, title, message )
 
+        # Apache sets REMOTE_USER to the string '(null)' when using the
+        # Rewrite* method for passing REMOTE_USER and a user is
+        # un-authenticated.  Any other possible values need to go here as well.
         if not environ.get(self.remote_user_header, '(null)').startswith('(null)'):
             if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
@@ -122,7 +146,6 @@ class RemoteUser( object ):
                         before you may access Galaxy.
                     """
                     return self.error( start_response, title, message )
-
             user_accessible_paths = (
                 '/user/api_keys',
                 '/user/edit_username',
@@ -161,13 +184,10 @@ class RemoteUser( object ):
                 """
                 return self.error( start_response, title, message )
             return self.app( environ, start_response )
-        elif path_info.startswith( '/api/' ):
-            # The API handles its own authentication via keys
-            return self.app( environ, start_response )
         else:
             log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
             for k, v in environ.iteritems():
-                log.debug("%s = %s" , k, v)
+                log.debug("%s = %s", k, v)
 
             title = "Access to Galaxy is denied"
             message = """

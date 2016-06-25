@@ -1,9 +1,3 @@
-import os
-import pkg_resources; pkg_resources.require( "bx-python" )
-from bx.align import maf
-from galaxy import datatypes, config, jobs 
-from shutil import move
-
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
     output_data = out_data.items()[0][1]
     new_stdout = ""

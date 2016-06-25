@@ -2,8 +2,6 @@
 # Dan Blankenberg
 import sys
 
-from galaxy import eggs
-eggs.require( "bx-python" )
 import bx.align.maf
 
 from galaxy.tools.util import maf_utilities

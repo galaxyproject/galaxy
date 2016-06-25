@@ -23,7 +23,7 @@ def upgrade(migrate_engine):
         hda_table = Table( "history_dataset_association", metadata, autoload=True )
         extended_metadata_hda_col.create( hda_table )
         assert extended_metadata_hda_col is hda_table.c.extended_metadata_id
-    except Exception, e:
+    except Exception as e:
         print str(e)
         log.error( "Adding column 'extended_metadata_id' to history_dataset_association table failed: %s" % str( e ) )
 
@@ -37,5 +37,5 @@ def downgrade(migrate_engine):
         hda_table = Table( "history_dataset_association", metadata, autoload=True )
         extended_metadata_id = hda_table.c.extended_metadata_id
         extended_metadata_id.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'extended_metadata_id' column from history_dataset_association table failed: %s" % ( str( e ) ) )

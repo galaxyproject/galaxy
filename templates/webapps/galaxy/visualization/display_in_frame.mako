@@ -14,13 +14,13 @@
         });
     </script>
 
-    <!--[if lt IE 9]>
-      <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
-    <![endif]-->
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
+    ${h.css(
+        "trackster"
+    )}
 
     ## Style changes needed for display.
     <style type="text/css">

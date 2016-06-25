@@ -2,13 +2,15 @@
 Manage transfers from arbitrary URLs to temporary files.  Socket interface for
 IPC with multiple process configurations.
 """
+import json
 import logging
 import os
-import subprocess
 import socket
+import subprocess
 import threading
 
-from galaxy.util import listify, json, sleeper
+from galaxy.util import listify, sleeper
+from galaxy.util.json import jsonrpc_request, validate_jsonrpc_response
 
 log = logging.getLogger( __name__ )
 
@@ -83,13 +85,13 @@ class TransferManager( object ):
         for tj in transfer_jobs:
             if via_socket and tj.state not in tj.terminal_states and tj.socket:
                 try:
-                    request = json.jsonrpc_request( method='get_state', id=True )
+                    request = jsonrpc_request( method='get_state', id=True )
                     sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
                     sock.settimeout( 5 )
                     sock.connect( ( 'localhost', tj.socket ) )
                     sock.send( json.dumps( request ) )
                     response = sock.recv( 8192 )
-                    valid, response = json.validate_jsonrpc_response( response, id=request['id'] )
+                    valid, response = validate_jsonrpc_response( response, id=request['id'] )
                     if not valid:
                         # No valid response received, make some pseudo-json-rpc
                         raise Exception( dict( code=128, message='Did not receive valid response from transfer daemon for state' ) )
@@ -100,7 +102,7 @@ class TransferManager( object ):
                         # Request was valid
                         response['result']['transfer_job_id'] = tj.id
                         rval.append( response['result'] )
-                except Exception, e:
+                except Exception as e:
                     # State checking via the transfer daemon failed, just
                     # return the state from the database instead.  Callers can
                     # look for the 'error' member of the response to see why

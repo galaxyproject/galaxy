@@ -30,22 +30,22 @@ class RepairRepositoryManager():
                 # rd_key is something like: 'http://localhost:9009__ESEP__package_rdkit_2012_12__ESEP__test__ESEP__d635ffb9c665__ESEP__True'
                 # rd_val is something like: [['http://localhost:9009', 'package_numpy_1_7', 'test', 'cddd64ecd985', 'True']]
                 repository_components_tuple = container_util.get_components_from_key( rd_key )
-                components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
                 tool_shed, name, owner, changeset_revision = components_list[ 0:4 ]
-                installed_repository = suc.get_installed_repository( self.app,
-                                                                     tool_shed=tool_shed,
-                                                                     name=name,
-                                                                     owner=owner,
-                                                                     changeset_revision=changeset_revision )
+                installed_repository = repository_util.get_installed_repository( self.app,
+                                                                                 tool_shed=tool_shed,
+                                                                                 name=name,
+                                                                                 owner=owner,
+                                                                                 changeset_revision=changeset_revision )
                 if ( installed_repository ) and ( installed_repository not in installed_repositories ):
                     installed_repositories.append( installed_repository )
                 for rd_val in rd_vals:
                     tool_shed, name, owner, changeset_revision = rd_val[ 0:4 ]
-                    installed_repository = suc.get_installed_repository( self.app,
-                                                                         tool_shed=tool_shed,
-                                                                         name=name,
-                                                                         owner=owner,
-                                                                         changeset_revision=changeset_revision )
+                    installed_repository = repository_util.get_installed_repository( self.app,
+                                                                                     tool_shed=tool_shed,
+                                                                                     name=name,
+                                                                                     owner=owner,
+                                                                                     changeset_revision=changeset_revision )
                     if ( installed_repository ) and ( installed_repository not in installed_repositories ):
                         installed_repositories.append( installed_repository )
         return installed_repositories
@@ -56,7 +56,8 @@ class RepairRepositoryManager():
         and attempt to make sure they are all properly installed as well as each repository's
         tool dependencies.  This method is called only from Galaxy when attempting to correct
         issues with an installed repository that has installation problems somewhere in its
-        dependency hierarchy.
+        dependency hierarchy. Problems with dependencies that have never been installed
+        cannot be resolved with a repair.
         """
         rdim = repository_dependency_manager.RepositoryDependencyInstallManager( self.app )
         tsr_ids = []
@@ -150,14 +151,18 @@ class RepairRepositoryManager():
             else:
                 repair_dict[ repository_name ] = [ error_message ]
             return repair_dict
-
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, repository.tool_shed )
         metadata = repository.metadata
+        # The repository.metadata contains dependency information that corresponds to the current changeset revision,
+        # which may be different from what is stored in the database
+        # If any of these repository-repository dependency associations is obsolete, clean_dependency_relationships removes them.
+        suc.clean_dependency_relationships(self.app, metadata, repository, tool_shed_url)
         repair_dict = {}
         tpm = tool_panel_manager.ToolPanelManager( self.app )
         if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             try:
                 self.app.installed_repository_manager.activate_repository( repository )
-            except Exception, e:
+            except Exception as e:
                 error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
                 log.debug( error_message )
                 repair_dict[ repository.name ] = error_message
@@ -175,13 +180,13 @@ class RepairRepositoryManager():
             else:
                 # The tools will be loaded outside of any sections in the tool panel.
                 tool_panel_section_key = None
-            suc.set_repository_attributes( self.app,
-                                           repository,
-                                           status=self.app.install_model.ToolShedRepository.installation_status.NEW,
-                                           error_message=None,
-                                           deleted=False,
-                                           uninstalled=False,
-                                           remove_from_disk=True )
+            repository_util.set_repository_attributes( self.app,
+                                                       repository,
+                                                       status=self.app.install_model.ToolShedRepository.installation_status.NEW,
+                                                       error_message=None,
+                                                       deleted=False,
+                                                       uninstalled=False,
+                                                       remove_from_disk=True )
             irm = install_manager.InstallRepositoryManager( self.app, tpm )
             irm.install_tool_shed_repository( repository,
                                               repo_info_dict,
@@ -204,9 +209,7 @@ class RepairRepositoryManager():
                         tool_dependency = \
                             tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                  tool_dependency=tool_dependency,
-                                                                                 status=self.app.install_model.ToolDependency.installation_status.UNINSTALLED,
-                                                                                 error_message=None,
-                                                                                 remove_from_disk=True )
+                                                                                 status=self.app.install_model.ToolDependency.installation_status.UNINSTALLED )
                 # Install tool dependencies.
                 irm.update_tool_shed_repository_status( repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )

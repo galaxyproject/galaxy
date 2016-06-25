@@ -1,16 +1,16 @@
 import logging
 import math
+from json import dumps, loads
+
+from markupsafe import escape
+from six import string_types, text_type
+from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
-from galaxy.util import sanitize_text
-from galaxy.util.json import loads, dumps
+from galaxy.util import sanitize_text, unicodify
 from galaxy.util.odict import odict
-from galaxy.web.framework import decorators
-from galaxy.web.framework import url_for
+from galaxy.web.framework import decorators, url_for
 from galaxy.web.framework.helpers import iff
-from markupsafe import escape
-
-from sqlalchemy.sql.expression import and_, func, or_, null, false, true
 
 
 log = logging.getLogger( __name__ )
@@ -73,11 +73,11 @@ class Grid( object ):
             base_filter = self.default_filter.copy()
         base_sort_key = self.default_sort_key
         if self.preserve_state:
-            pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
+            pref_name = text_type( self.__class__.__name__ + self.cur_filter_pref_name )
             if pref_name in trans.get_user().preferences:
                 saved_filter = loads( trans.get_user().preferences[pref_name] )
                 base_filter.update( saved_filter )
-            pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
+            pref_name = text_type( self.__class__.__name__ + self.cur_sort_key_pref_name )
             if pref_name in trans.get_user().preferences:
                 base_sort_key = loads( trans.get_user().preferences[pref_name] )
         # Build initial query
@@ -113,16 +113,16 @@ class Grid( object ):
                 # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
                 def loads_recurse(item):
                     decoded_list = []
-                    if isinstance( item, basestring):
+                    if isinstance( item, string_types):
                         try:
                             # Not clear what we're decoding, so recurse to ensure that we catch everything.
                             decoded_item = loads( item )
                             if isinstance( decoded_item, list):
                                 decoded_list = loads_recurse( decoded_item )
                             else:
-                                decoded_list = [ unicode( decoded_item ) ]
+                                decoded_list = [ text_type( decoded_item ) ]
                         except ValueError:
-                            decoded_list = [ unicode( item ) ]
+                            decoded_list = [ text_type( item ) ]
                     elif isinstance( item, list):
                         for element in item:
                             a_list = loads_recurse( element )
@@ -136,7 +136,7 @@ class Grid( object ):
                         if len( column_filter ) == 1:
                             column_filter = column_filter[0]
                     # Interpret ',' as a separator for multiple terms.
-                    if isinstance( column_filter, basestring ) and column_filter.find(',') != -1:
+                    if isinstance( column_filter, string_types ) and column_filter.find(',') != -1:
                         column_filter = column_filter.split(',')
 
                     # Check if filter is empty
@@ -145,7 +145,7 @@ class Grid( object ):
                         column_filter = [x for x in column_filter if x != '']
                         if len(column_filter) == 0:
                             continue
-                    elif isinstance(column_filter, basestring):
+                    elif isinstance(column_filter, string_types):
                         # If filter criterion is empty, do nothing.
                         if column_filter == '':
                             continue
@@ -159,14 +159,12 @@ class Grid( object ):
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance( column_filter, list ):
                         # Filter is a list; process each item.
-                        for filter in column_filter:
-                            if not isinstance( filter, basestring ):
-                                filter = unicode( filter ).encode("utf-8")
+                        column_filter = [ text_type(_).encode('utf-8') if not isinstance(_, string_types) else _ for _ in column_filter ]
                         extra_url_args[ "f-" + column.key ] = dumps( column_filter )
                     else:
                         # Process singleton filter.
-                        if not isinstance( column_filter, basestring ):
-                            column_filter = unicode(column_filter)
+                        if not isinstance( column_filter, string_types ):
+                            column_filter = text_type(column_filter)
                         extra_url_args[ "f-" + column.key ] = column_filter.encode("utf-8")
         # Process sort arguments.
         sort_key = None
@@ -231,14 +229,14 @@ class Grid( object ):
         self.cur_filter_dict = cur_filter_dict
         # Preserve grid state: save current filter and sort key.
         if self.preserve_state:
-            pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
-            trans.get_user().preferences[pref_name] = unicode( dumps( cur_filter_dict ) )
+            pref_name = text_type( self.__class__.__name__ + self.cur_filter_pref_name )
+            trans.get_user().preferences[pref_name] = text_type( dumps( cur_filter_dict ) )
             if sort_key:
-                pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
-                trans.get_user().preferences[pref_name] = unicode( dumps( sort_key ) )
+                pref_name = text_type( self.__class__.__name__ + self.cur_sort_key_pref_name )
+                trans.get_user().preferences[pref_name] = text_type( dumps( sort_key ) )
             trans.sa_session.flush()
         # Log grid view.
-        context = unicode( self.__class__.__name__ )
+        context = text_type( self.__class__.__name__ )
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
         params['async'] = ( 'async' in kwargs )
@@ -248,10 +246,11 @@ class Grid( object ):
         # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
         # in mapping.py. If you change that to False, the log_action doesn't affect the query
         # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
-        # trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
+        # trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
 
         # Render grid.
         def url( *args, **kwargs ):
+            route_name = kwargs.pop( '__route_name__', None )
             # Only include sort/filter arguments if not linking to another
             # page. This is a bit of a hack.
             if 'action' in kwargs:
@@ -274,7 +273,9 @@ class Grid( object ):
                 new_kwargs['controller'] = trans.controller
             if 'action' not in new_kwargs:
                 new_kwargs['action'] = trans.action
-            return url_for( **new_kwargs)
+            if route_name:
+                return url_for( route_name, **new_kwargs )
+            return url_for( **new_kwargs )
 
         self.use_panels = ( kwargs.get( 'use_panels', False ) in [ True, 'True', 'true' ] )
         self.advanced_search = ( kwargs.get( 'advanced_search', False ) in [ True, 'True', 'true' ] )
@@ -307,7 +308,7 @@ class Grid( object ):
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )
-        trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
+        trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
         return page
 
     def get_ids( self, **kwargs ):
@@ -371,7 +372,7 @@ class GridColumn( object ):
             value = None
         if self.format:
             value = self.format( value )
-        return escape(value)
+        return escape(unicodify(value))
 
     def get_link( self, trans, grid, item ):
         if self.link and self.link( item ):
@@ -426,7 +427,7 @@ class TextColumn( GridColumn ):
 
     def get_filter( self, trans, user, column_filter ):
         """ Returns a SQLAlchemy criterion derived from column_filter. """
-        if isinstance( column_filter, basestring ):
+        if isinstance( column_filter, string_types ):
             return self.get_single_filter( user, column_filter )
         elif isinstance( column_filter, list ):
             clause_list = []

@@ -6,8 +6,6 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import cmdutil, commands, hg, ui
 from mercurial.changegroup import readexactly
 from mercurial.exchange import readbundle
@@ -33,7 +31,7 @@ def archive_repository_revision( app, repository, archive_dir, changeset_revisio
     return_code = None
     try:
         return_code = commands.archive( get_configured_ui, repo, archive_dir, **options_dict )
-    except Exception, e:
+    except Exception as e:
         error_message = "Error attempting to archive revision <b>%s</b> of repository %s: %s\nReturn code: %s\n" % \
             ( str( changeset_revision ), str( repository.name ), str( e ), str( return_code ) )
         log.exception( error_message )
@@ -46,7 +44,7 @@ def bundle_to_json( fh ):
     command line) to a json object.
     """
     # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
-    hg_unbundle10_obj = readbundle( None, fh, None )
+    hg_unbundle10_obj = readbundle( get_configured_ui(), fh, None )
     groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
     return json.dumps( groups, indent=4 )
 
@@ -64,7 +62,7 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
                         noupdate=False,
                         rev=listify( str( ctx_rev ) ) )
         return True, None
-    except Exception, e:
+    except Exception as e:
         error_message = 'Error cloning repository: %s' % str( e )
         log.debug( error_message )
         return False, error_message
@@ -198,9 +196,12 @@ def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
     if command_table is None:
         command_table = commands.table
     possible = cmdutil.findpossible( command, command_table )
+    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
+    if type(possible) is tuple:
+        possible = possible[0]
     if len( possible ) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    default_options_dict = dict( ( r[ 1 ].replace( '-', '_' ), r[ 2 ] ) for r in possible[ possible.keys()[ 0 ] ][ 1 ][ 1 ] )
+    default_options_dict = dict( ( r[1].replace( '-', '_' ), r[2] ) for r in possible.values()[0][1][1] )
     for option in kwd:
         default_options_dict[ option ] = kwd[ option ]
     return default_options_dict
@@ -438,7 +439,7 @@ def unpack_patches( hg_unbundle10_obj, remaining ):
                 'blocklen': blocklen,
                 'block': block.encode( 'string_escape' ) }
     if remaining > 0:
-        print remaining
+        log.error("Unexpected end of patch stream, %s remaining", remaining)
         raise Exception( "unexpected end of patch stream" )
 
 

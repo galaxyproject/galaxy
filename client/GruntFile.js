@@ -20,8 +20,9 @@ module.exports = function(grunt) {
 	    grunt.config.set( 'paths', TOOLSHED_PATHS );
     }
 
+    grunt.loadNpmTasks('grunt-check-modules');
     // see the sub directory grunt-tasks/ for individual task definitions
     grunt.loadTasks( 'grunt-tasks' );
     // note: 'handlebars' *not* 'templates' since handlebars doesn't call uglify
-    grunt.registerTask( 'default', [ 'handlebars', 'uglify' ] );
+    grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );
 };

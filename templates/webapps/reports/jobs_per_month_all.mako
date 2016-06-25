@@ -22,14 +22,7 @@ ${get_css()}
         <table id="formHeader">
             <tr>
                 <td>
-                    ${
-                        get_pages(
-                            sort_id,
-                            order,
-                            page_specs,
-                            'jobs',
-                            'per_month_all')
-                    }
+                    ${get_pages(sort_id, order, page_specs, 'jobs', 'per_month_all')}
                 </td>
                 <td>
                     <h4 align="center">Jobs Per Month</h4>
@@ -39,68 +32,28 @@ ${get_css()}
                     </h5>
                 </td>
                 <td align="right">
-                    ${
-                        get_entry_selector(
-                            "jobs",
-                            "per_month_all",
-                            page_specs.entries,
-                            sort_id,
-                            order)
-                    }
+                    ${get_entry_selector("jobs", "per_month_all", page_specs.entries, sort_id, order)}
                 </td>
             </tr>
         </table>
-        
+
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="4">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
                     <td class="third_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'date',
-                                'jobs',
-                                'per_month_all',
-                                'Month',
-                                page=page,
-                                offset=offset,
-                                entries=entries)
-                        }
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'per_month_all', 'Month', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td class="third_width">
-                            ${
-                                get_sort_url(
-                                    sort_id,
-                                    order,
-                                    'total_jobs',
-                                    'jobs',
-                                    'per_month_all',
-                                    'User Jobs',
-                                    page=page,
-                                    offset=offset,
-                                    entries=entries)
-                            }
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User Jobs', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td class="third_width">
-                            ${
-                                get_sort_url(
-                                    sort_id,
-                                    order,
-                                    'total_jobs',
-                                    'jobs',
-                                    'per_month_all',
-                                    'User and Monitor Jobs',
-                                    page=page,
-                                    offset=offset,
-                                    entries=entries)
-                            }
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User and Monitor Jobs', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
@@ -129,16 +82,10 @@ ${get_css()}
                             </a>
                         </td>
                         <td>${job[1]}</td>
-                        ${
-                            make_sparkline(
-                                key,
-                                trends[key],
-                                "bar",
-                                "/ day")
-                        }
+                        ${make_sparkline(key, trends[key], "bar", "/ day")}
                         <td id="${key}"></td>
                     </tr>
-                    <% 
+                    <%
                        ctr += 1
                        entries += 1
                     %>

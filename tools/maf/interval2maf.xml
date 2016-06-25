@@ -4,12 +4,15 @@
       <import>macros.xml</import>
   </macros>
   <command interpreter="python">
-    #if $maf_source_type.maf_source == "user" #interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafFile=$maf_source_type.mafFile --mafIndex=$maf_source_type.mafFile.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
-    #else                                     #interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
-    #end if# --split_blocks_by_species=$split_blocks_by_species_selector.split_blocks_by_species
-    #if $split_blocks_by_species_selector.split_blocks_by_species == "split_blocks_by_species"#
-        --remove_all_gap_columns=$split_blocks_by_species_selector.remove_all_gap_columns
-    #end if
+#if $maf_source_type.maf_source == "user"
+    interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafFile=$maf_source_type.mafFile --mafIndex=$maf_source_type.mafFile.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
+#else
+    interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
+#end if
+--split_blocks_by_species=$split_blocks_by_species_selector.split_blocks_by_species
+#if $split_blocks_by_species_selector.split_blocks_by_species == "split_blocks_by_species"
+    --remove_all_gap_columns=$split_blocks_by_species_selector.remove_all_gap_columns
+#end if
   </command>
   <inputs>
     <param format="interval" name="input1" type="data" label="Choose intervals">

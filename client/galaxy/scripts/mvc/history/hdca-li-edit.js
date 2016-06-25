@@ -1,9 +1,12 @@
 define([
     "mvc/history/hdca-li",
-    "mvc/collection/collection-panel-edit",
+    "mvc/collection/collection-view-edit",
     "ui/fa-icon-button",
     "utils/localization"
-], function( HDCA_LI, DC_PANEL_EDIT, faIconButton, _l ){
+], function( HDCA_LI, DC_VIEW_EDIT, faIconButton, _l ){
+
+'use strict';
+
 //==============================================================================
 var _super = HDCA_LI.HDCAListItemView;
 /** @class Editing view for HistoryDatasetCollectionAssociation.
@@ -18,11 +21,11 @@ var HDCAListItemEdit = _super.extend(
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){
             case 'list':
-                return DC_PANEL_EDIT.ListCollectionPanelEdit;
+                return DC_VIEW_EDIT.ListCollectionViewEdit;
             case 'paired':
-                return DC_PANEL_EDIT.PairCollectionPanelEdit;
+                return DC_VIEW_EDIT.PairCollectionViewEdit;
             case 'list:paired':
-                return DC_PANEL_EDIT.ListOfPairsCollectionPanelEdit;
+                return DC_VIEW_EDIT.ListOfPairsCollectionViewEdit;
         }
         throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
     },

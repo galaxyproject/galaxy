@@ -21,27 +21,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'date',
-                                'users',
-                                'registered_users_per_month',
-                                'Month')
-                        }
+                        ${get_sort_url(sort_id, order, 'date', 'users', 'registered_users_per_month', 'Month')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td class="half_width">
-                        ${
-                            get_sort_url(
-                                sort_id,
-                                order,
-                                'num_users',
-                                'users',
-                                'registered_users_per_month',
-                                'Number of Registrations')
-                        }
+                        ${get_sort_url(sort_id, order, 'num_users', 'users', 'registered_users_per_month', 'Number of Registrations')}
                         <span class='dir_arrow num_users'>${arrow}</span>
                     </td>
                 </tr>

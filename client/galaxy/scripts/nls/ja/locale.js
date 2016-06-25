@@ -3,7 +3,7 @@ define({
 
 // ---------------------------------------------------------------------------- histories
 // ---- history-model
-// ---- readonly-history-panel
+// ---- history-view
 "This history is empty" :
 "ヒストリーは空です",
 "No matching datasets found" :
@@ -30,7 +30,7 @@ define({
 "For all selected" :
 "各項目を",
 
-// ---- history-panel
+// ---- history-view-edit
 //"Edit history tags" :
 //false,
 //"Edit history Annotation" :
@@ -53,13 +53,13 @@ define({
 "This will permanently remove the data in your datasets. Are you sure?" :
 "これは永久にあなたのデータセット内のデータを削除します。本当に？",
 
-// ---- annotated-history-panel
+// ---- history-view-annotated
 "Dataset" :
 "データセット",
 //"Annotation" :
 //false,
 
-// ---- current-history-panel
+// ---- history-view-edit-current
 "This history is empty. Click 'Get Data' on the left tool menu to start" :
 "ヒストリーは空です。解析をはじめるには、左パネルの 'データ取得' をクリック",
 "No matching datasets found" :

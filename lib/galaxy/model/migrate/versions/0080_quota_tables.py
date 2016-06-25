@@ -52,25 +52,25 @@ def upgrade(migrate_engine):
     # Create quota table
     try:
         Quota_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating quota table failed: %s" % str( e ) )
 
     # Create user_quota_association table
     try:
         UserQuotaAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating user_quota_association table failed: %s" % str( e ) )
 
     # Create group_quota_association table
     try:
         GroupQuotaAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating group_quota_association table failed: %s" % str( e ) )
 
     # Create default_quota_association table
     try:
         DefaultQuotaAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating default_quota_association table failed: %s" % str( e ) )
 
 
@@ -81,23 +81,23 @@ def downgrade(migrate_engine):
     # Drop default_quota_association table
     try:
         DefaultQuotaAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping default_quota_association table failed: %s" % str( e ) )
 
     # Drop group_quota_association table
     try:
         GroupQuotaAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping group_quota_association table failed: %s" % str( e ) )
 
     # Drop user_quota_association table
     try:
         UserQuotaAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping user_quota_association table failed: %s" % str( e ) )
 
     # Drop quota table
     try:
         Quota_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping quota table failed: %s" % str( e ) )

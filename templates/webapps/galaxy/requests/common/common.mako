@@ -333,7 +333,6 @@
        can_add_samples = is_unsubmitted
     can_delete_samples = not adding_new_samples and request.samples and ( ( is_admin and not is_complete ) or is_unsubmitted )
     can_edit_samples = request.samples and ( is_admin or not is_complete )
-    can_select_datasets = is_admin and displayable_sample_widgets and ( is_submitted or is_complete )
     can_transfer_datasets = is_admin and request.samples and not request.is_rejected
     display_checkboxes = not adding_new_samples and ( is_complete or is_rejected or is_submitted )
     display_bar_code = request.samples and ( is_complete or is_rejected or is_submitted )
@@ -407,7 +406,7 @@
                 %elif sample:
                     <tr>
                         <td>
-                            %if sample.state and ( can_select_datasets or can_transfer_datasets ):
+                            %if sample.state and can_transfer_datasets:
                                 ## A sample will have a state only after the request has been submitted.
                                 <%
                                     encoded_id = trans.security.encode_id( sample.id )
@@ -419,14 +418,6 @@
                                     <a class="view-info" href="${h.url_for( controller='requests_common', action='view_sample', cntrller=cntrller, id=trans.security.encode_id( sample.id ) )}">${sample.name | h}</a>
                                 </div>
                                 <div popupmenu="sample-${sample.id}-popup">
-                                    %if can_select_datasets:
-                                        %for external_service in sample.request.type.get_external_services_for_manual_data_transfer( trans ):
-                                            <%
-                                                menu_item_label = "Select datasets to transfer using %s" % external_service.name
-                                            %>
-                                            <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='select_datasets_to_transfer', external_service_id=trans.security.encode_id( external_service.id ), request_id=trans.security.encode_id( request.id ), sample_id=trans.security.encode_id( sample.id ) )}">${menu_item_label}</a></li>
-                                        %endfor
-                                    %endif
                                     %if sample.datasets and len( sample.datasets ) > len( transferred_dataset_files ) and sample.library and sample.folder:
                                         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Manage selected datasets</a></li>
                                     %elif sample.datasets and len( sample.datasets ) == len( transferred_dataset_files ):
@@ -665,7 +656,6 @@
             is_admin = cntrller == 'requests_admin' and trans.user_is_admin()
             is_complete = sample.request.is_complete
             is_submitted = sample.request.is_submitted
-            can_select_datasets = is_admin and ( is_complete or is_submitted )
             can_transfer_datasets = is_admin and sample.untransferred_dataset_files
         %>
         ## The transfer status should update only when the request has been submitted or complete

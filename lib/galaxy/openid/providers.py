@@ -107,7 +107,7 @@ class OpenIDProviders( object ):
     def from_file( cls, filename ):
         try:
             return cls.from_elem( parse_xml( filename ).getroot() )
-        except Exception, e:
+        except Exception as e:
             log.error( 'Failed to load OpenID Providers: %s' % ( e ) )
             return cls()
 
@@ -120,7 +120,7 @@ class OpenIDProviders( object ):
                 provider = OpenIDProvider.from_file( os.path.join( 'openid', elem.get( 'file' ) ) )
                 providers[ provider.id ] = provider
                 log.debug( 'Loaded OpenID provider: %s (%s)' % ( provider.name, provider.id ) )
-            except Exception, e:
+            except Exception as e:
                 log.error( 'Failed to add OpenID provider: %s' % ( e ) )
         return cls( providers )
 

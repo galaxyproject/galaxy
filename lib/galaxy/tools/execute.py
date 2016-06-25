@@ -4,9 +4,11 @@ from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
 import collections
-import galaxy.tools
+from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer
-from galaxy.tools.actions import on_text_for_names
+from galaxy.tools.actions import on_text_for_names, ToolExecutionCache
+from threading import Thread
+from Queue import Queue
 
 import logging
 log = logging.getLogger( __name__ )
@@ -19,8 +21,12 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
+    all_jobs_timer = ExecutionTimer()
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
-    for params in execution_tracker.param_combinations:
+    app = trans.app
+    execution_cache = ToolExecutionCache(trans)
+
+    def execute_single_job(params):
         job_timer = ExecutionTimer()
         if workflow_invocation_uuid:
             params[ '__workflow_invocation_uuid__' ] = workflow_invocation_uuid
@@ -28,7 +34,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params[ '__workflow_invocation_uuid__' ]
-        job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history, collection_info )
+        job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history, collection_info, execution_cache )
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -36,8 +42,48 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
         else:
             execution_tracker.record_error( result )
 
+    config = app.config
+    burst_at = getattr( config, 'tool_submission_burst_at', 10 )
+    burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
+
+    tool_action = tool.action
+    if hasattr( tool_action, "check_inputs_ready" ):
+        for params in execution_tracker.param_combinations:
+            # This will throw an exception if the tool is not ready.
+            tool_action.check_inputs_ready(
+                tool,
+                trans,
+                params,
+                history
+            )
+
+    job_count = len(execution_tracker.param_combinations)
+    if job_count < burst_at or burst_threads < 2:
+        for params in execution_tracker.param_combinations:
+            execute_single_job(params)
+    else:
+        q = Queue()
+
+        def worker():
+            while True:
+                params = q.get()
+                execute_single_job(params)
+                q.task_done()
+
+        for i in range(burst_threads):
+            t = Thread(target=worker)
+            t.daemon = True
+            t.start()
+
+        for params in execution_tracker.param_combinations:
+            q.put(params)
+
+        q.join()
+
+    log.debug("Executed %d job(s) for tool %s request: %s" % (job_count, tool.id, all_jobs_timer))
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
+        params = param_combinations[0]
         execution_tracker.create_output_collections( trans, history, params )
 
     return execution_tracker
@@ -61,7 +107,7 @@ class ToolExecutionTracker( object ):
         self.successful_jobs.append( job )
         self.output_datasets.extend( outputs )
         for output_name, output_dataset in outputs:
-            if galaxy.tools.ToolOutputCollectionPart.is_named_collection_part_name( output_name ):
+            if ToolOutputCollectionPart.is_named_collection_part_name( output_name ):
                 # Skip known collection outputs, these will be covered by
                 # output collections.
                 continue
@@ -73,6 +119,8 @@ class ToolExecutionTracker( object ):
 
     def record_error( self, error ):
         self.failed_jobs += 1
+        message = "There was a failure executing a job for tool [%s] - %s"
+        log.warning(message, self.tool.id, error)
         self.execution_errors.append( error )
 
     def create_output_collections( self, trans, history, params ):
@@ -100,7 +148,7 @@ class ToolExecutionTracker( object ):
             if not len( structure ) == len( outputs ):
                 # Output does not have the same structure, if all jobs were
                 # successfully submitted this shouldn't have happened.
-                log.warn( "Problem matching up datasets while attempting to create implicit dataset collections")
+                log.warning( "Problem matching up datasets while attempting to create implicit dataset collections")
                 continue
             output = self.tool.outputs[ output_name ]
             element_identifiers = structure.element_identifiers_for_outputs( trans, outputs )
@@ -139,6 +187,8 @@ class ToolExecutionTracker( object ):
                 # TODO: Think through this, may only want this for output
                 # collections - or we may be already recording data in some
                 # other way.
+                if job not in trans.sa_session:
+                    job = trans.sa_session.query( trans.app.model.Job ).get( job.id )
                 job.add_output_dataset_collection( output_name, collection )
             collections[ output_name ] = collection
 

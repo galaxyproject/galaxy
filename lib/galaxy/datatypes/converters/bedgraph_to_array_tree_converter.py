@@ -4,10 +4,6 @@ from __future__ import division
 
 import sys
 
-from galaxy import eggs
-
-eggs.require('numpy')  # noqa
-eggs.require('bx-python')  # noqa
 from bx.arrays.array_tree import array_tree_dict_from_reader, FileArrayTreeDict
 
 BLOCK_SIZE = 100

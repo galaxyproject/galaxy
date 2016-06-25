@@ -15,6 +15,7 @@ class UsersController( BaseAPIController ):
     """RESTful controller for interactions with users in the Tool Shed."""
 
     @web.expose_api
+    @web.require_admin
     def create( self, trans, payload, **kwd ):
         """
         POST /api/users
@@ -29,33 +30,28 @@ class UsersController( BaseAPIController ):
         """
         user_dict = dict( message='',
                           status='ok' )
-        # Make sure the current user's API key proves he is an admin user in this Tool Shed.
-        if trans.user_is_admin():
-            # Get the information about the user to be created from the payload.
-            email = payload.get( 'email', '' )
-            password = payload.get( 'password', '' )
-            username = payload.get( 'username', '' )
-            message = self.__validate( trans,
-                                       email=email,
-                                       password=password,
-                                       confirm=password,
-                                       username=username )
-            if message:
-                message = 'email: %s, username: %s - %s' % ( email, username, message )
-                user_dict[ 'message' ] = message
-                user_dict[ 'status' ] = 'error'
-            else:
-                # Create the user.
-                user = self.__create_user( trans, email, username, password )
-                user_dict = user.to_dict( view='element',
-                                          value_mapper=self.__get_value_mapper( trans ) )
-                user_dict[ 'message' ] = "User '%s' has been created." % str( user.username )
-                user_dict[ 'url' ] = web.url_for( controller='users',
-                                                  action='show',
-                                                  id=trans.security.encode_id( user.id ) )
-        else:
-            user_dict[ 'message' ] = 'You are not authorized to create a user in this Tool Shed.'
+        # Get the information about the user to be created from the payload.
+        email = payload.get( 'email', '' )
+        password = payload.get( 'password', '' )
+        username = payload.get( 'username', '' )
+        message = self.__validate( trans,
+                                   email=email,
+                                   password=password,
+                                   confirm=password,
+                                   username=username )
+        if message:
+            message = 'email: %s, username: %s - %s' % ( email, username, message )
+            user_dict[ 'message' ] = message
             user_dict[ 'status' ] = 'error'
+        else:
+            # Create the user.
+            user = self.__create_user( trans, email, username, password )
+            user_dict = user.to_dict( view='element',
+                                      value_mapper=self.__get_value_mapper( trans ) )
+            user_dict[ 'message' ] = "User '%s' has been created." % str( user.username )
+            user_dict[ 'url' ] = web.url_for( controller='users',
+                                              action='show',
+                                              id=trans.security.encode_id( user.id ) )
         return user_dict
 
     def __create_user( self, trans, email, username, password ):
@@ -99,12 +95,18 @@ class UsersController( BaseAPIController ):
     def show( self, trans, id, **kwd ):
         """
         GET /api/users/{encoded_user_id}
+        GET /api/users/current
         Returns a dictionary of information about a user.
 
         :param id: the encoded id of the User object.
         """
-        # Example URL: http://localhost:9009/api/users/f9cad7b01a472135
-        user = suc.get_user( trans.app, id )
+        user = None
+        # user is requesting data about themselves
+        if id == "current" and trans.user:
+            user = trans.user
+        else:
+            user = suc.get_user( trans.app, id )
+
         if user is None:
             user_dict = dict( message='Unable to locate user record for id %s.' % ( str( id ) ),
                               status='error' )

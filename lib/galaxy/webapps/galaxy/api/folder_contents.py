@@ -84,6 +84,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 can_modify = is_admin or ( trans.user and trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) )
                 can_manage = is_admin or ( trans.user and trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) )
                 return_item.update( dict( can_modify=can_modify, can_manage=can_manage ) )
+                if content_item.description:
+                    return_item.update( dict( description=content_item.description ) )
 
             if content_item.api_type == 'file':
                 #  Is the dataset public or private?
@@ -107,7 +109,10 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                                           is_unrestricted=is_unrestricted,
                                           is_private=is_private,
                                           can_manage=can_manage,
-                                          file_size=nice_size ) )
+                                          file_size=nice_size
+                                          ) )
+                if content_item.library_dataset_dataset_association.message:
+                    return_item.update( dict( message=content_item.library_dataset_dataset_association.message ) )
 
             # For every item include the default metadata
             return_item.update( dict( id=encoded_id,
@@ -135,6 +140,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         metadata = dict( full_path=full_path,
                          can_add_library_item=can_add_library_item,
                          can_modify_folder=can_modify_folder,
+                         folder_name=folder.name,
+                         folder_description=folder.description,
                          parent_library_id=parent_library_id )
         folder_container = dict( metadata=metadata, folder_contents=folder_contents )
         return folder_container
@@ -235,23 +242,21 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def create( self, trans, encoded_folder_id, payload, **kwd ):
         """
-        create( self, trans, library_id, payload, **kwd )
         * POST /api/folders/{encoded_id}/contents
             create a new library file from an HDA
 
+        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
+        :type   encoded_folder_id:      an encoded id string
         :param  payload:    dictionary structure containing:
+            :param from_hda_id:         (optional) the id of an accessible HDA to copy into the library
+            :type  from_hda_id:         encoded id
+            :param ldda_message:        (optional) the new message attribute of the LDDA created
+            :type   ldda_message:       str
+            :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
+            :type  extended_metadata:   dict
         :type   payload:    dict
 
-            * folder_id:    the parent folder of the new item
-            * from_hda_id:  (optional) the id of an accessible HDA to copy
-                into the library
-            * ldda_message: (optional) the new message attribute of the LDDA
-                 created
-            * extended_metadata: (optional) dub-dictionary containing any
-                extended metadata to associate with the item
-
-        :returns:   a dictionary containing the id, name,
-            and 'show' url of the new item
+        :returns:   a dictionary containing the id, name, and 'show' url of the new item
         :rtype:     dict
 
         :raises:    ObjectAttributeInvalidException,
@@ -285,7 +290,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             raise exceptions.ObjectAttributeInvalidException( 'You cannot add datasets into deleted library. Undelete it first.' )
         except exceptions.InsufficientPermissionsException:
             raise exceptions.exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
-        except Exception, exc:
+        except Exception as exc:
             # TODO handle exceptions better within the mixins
             if ( ( 'not accessible to the current user' in str( exc ) ) or ( 'You are not allowed to access this dataset' in str( exc ) ) ):
                 raise exceptions.ItemAccessibilityException( 'You do not have access to the requested item' )

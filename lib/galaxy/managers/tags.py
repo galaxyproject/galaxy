@@ -1,6 +1,8 @@
 import logging
 import re
 
+from galaxy.util import unicodify
+from six import string_types
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
@@ -41,7 +43,7 @@ class TagManager( object ):
 
         self.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
-        self.apply_item_tags( user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
+        self.apply_item_tags( user, item, unicodify( new_tags_str, 'utf-8' ) )
         self.app.model.context.flush()
         return item.tags
 
@@ -114,7 +116,7 @@ class TagManager( object ):
     def item_has_tag( self, user, item, tag ):
         """Returns true if item is has a given tag."""
         # Get tag name.
-        if isinstance( tag, basestring ):
+        if isinstance( tag, string_types ):
             tag_name = tag
         elif isinstance( tag, self.app.model.Tag ):
             tag_name = tag.name
@@ -134,7 +136,7 @@ class TagManager( object ):
             # Create tag; if None, skip the tag (and log error).
             tag = self._get_or_create_tag( lc_name )
             if not tag:
-                log.warn( "Failed to create tag with name %s" % lc_name )
+                log.warning( "Failed to create tag with name %s" % lc_name )
                 return
             # Create tag association based on item class.
             item_tag_assoc_class = self.get_tag_assoc_class( item.__class__ )

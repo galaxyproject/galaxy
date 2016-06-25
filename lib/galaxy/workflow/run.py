@@ -118,9 +118,13 @@ def queue_invoke( trans, workflow, workflow_run_config, request_params={}, popul
 
 class WorkflowInvoker( object ):
 
-    def __init__( self, trans, workflow, workflow_run_config, workflow_invocation=None ):
+    def __init__( self, trans, workflow, workflow_run_config, workflow_invocation=None, progress=None ):
         self.trans = trans
         self.workflow = workflow
+        if progress is not None:
+            assert workflow_invocation is None
+            workflow_invocation = progress.workflow_invocation
+
         if workflow_invocation is None:
             invocation_uuid = uuid.uuid1()
 
@@ -140,29 +144,45 @@ class WorkflowInvoker( object ):
         self.workflow_invocation.replacement_dict = workflow_run_config.replacement_dict
 
         module_injector = modules.WorkflowModuleInjector( trans )
-        self.progress = WorkflowProgress( self.workflow_invocation, workflow_run_config.inputs, module_injector )
+        if progress is None:
+            progress = WorkflowProgress( self.workflow_invocation, workflow_run_config.inputs, module_injector )
+        self.progress = progress
 
     def invoke( self ):
         workflow_invocation = self.workflow_invocation
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         for step in remaining_steps:
+            step_delayed = False
             step_timer = ExecutionTimer()
             jobs = None
             try:
                 self.__check_implicitly_dependent_steps(step)
 
+                # TODO: step may fail to invoke, do something about that.
                 jobs = self._invoke_step( step )
                 for job in (util.listify( jobs ) or [None]):
                     # Record invocation
                     workflow_invocation_step = model.WorkflowInvocationStep()
                     workflow_invocation_step.workflow_invocation = workflow_invocation
                     workflow_invocation_step.workflow_step = step
-                    workflow_invocation_step.job = job
+                    # Job may not be generated in this thread if bursting is enabled
+                    # https://github.com/galaxyproject/galaxy/issues/2259
+                    if job:
+                        workflow_invocation_step.job_id = job.id
             except modules.DelayedWorkflowEvaluation:
-                delayed_steps = True
+                step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed( step )
-            log.debug("Workflow step %s invoked %s" % (step.id, step_timer))
+            except Exception:
+                log.exception(
+                    "Failed to schedule %s, problem occurred on %s.",
+                    self.workflow_invocation.workflow.log_str(),
+                    step.log_str(),
+                )
+                raise
+
+            step_verb = "invoked" if not step_delayed else "delayed"
+            log.debug("Workflow step %s of invocation %s %s %s" % (step.id, workflow_invocation.id, step_verb, step_timer))
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY
@@ -231,12 +251,17 @@ class WorkflowProgress( object ):
         remaining_steps = []
         step_invocations_by_id = self.workflow_invocation.step_invocations_by_step_id()
         for step in steps:
+            step_id = step.id
             if not hasattr( step, 'module' ):
                 self.module_injector.inject( step )
-                runtime_state = step_states[ step.id ].value
+                if step_id not in step_states:
+                    template = "Workflow invocation [%s] has no step state for step id [%s]. States ids are %s."
+                    message = template % (self.workflow_invocation.id, step_id, step_states.keys())
+                    raise Exception(message)
+                runtime_state = step_states[ step_id ].value
                 step.state = step.module.recover_runtime_state( runtime_state )
 
-            invocation_steps = step_invocations_by_id.get( step.id, None )
+            invocation_steps = step_invocations_by_id.get( step_id, None )
             if invocation_steps:
                 self._recover_mapping( step, invocation_steps )
             else:
@@ -247,10 +272,10 @@ class WorkflowProgress( object ):
         """ For given workflow 'step' that has had input_connections_by_name
         populated fetch the actual runtime input for the given tool 'input'.
         """
-        replacement = None
+        replacement = modules.NO_REPLACEMENT
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[ prefixed_name ]
-            if input.multiple:
+            if input.type == "data" and input.multiple:
                 replacement = [ self.replacement_for_connection( c ) for c in connection ]
                 # If replacement is just one dataset collection, replace tool
                 # input with dataset collection - tool framework will extract
@@ -259,20 +284,30 @@ class WorkflowProgress( object ):
                     if isinstance( replacement[ 0 ], model.HistoryDatasetCollectionAssociation ):
                         replacement = replacement[ 0 ]
             else:
-                replacement = self.replacement_for_connection( connection[ 0 ] )
+                is_data = input.type in ["data", "data_collection"]
+                replacement = self.replacement_for_connection( connection[ 0 ], is_data=is_data )
         return replacement
 
-    def replacement_for_connection( self, connection ):
-        step_outputs = self.outputs[ connection.output_step.id ]
+    def replacement_for_connection( self, connection, is_data=True ):
+        output_step_id = connection.output_step.id
+        if output_step_id not in self.outputs:
+            template = "No outputs found for step id %s, outputs are %s"
+            message = template % (output_step_id, self.outputs)
+            raise Exception(message)
+        step_outputs = self.outputs[ output_step_id ]
         if step_outputs is STEP_OUTPUT_DELAYED:
             raise modules.DelayedWorkflowEvaluation()
         output_name = connection.output_name
         try:
             replacement = step_outputs[ output_name ]
         except KeyError:
-            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-            message = template % ( output_name, step_outputs )
-            raise Exception( message )
+            if is_data:
+                # Must resolve.
+                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+                message = template % ( output_name, step_outputs )
+                raise Exception( message )
+            else:
+                replacement = modules.NO_REPLACEMENT
         if isinstance( replacement, model.HistoryDatasetCollectionAssociation ):
             if not replacement.collection.populated:
                 if not replacement.collection.waiting_for_elements:
@@ -285,12 +320,22 @@ class WorkflowProgress( object ):
                 raise modules.DelayedWorkflowEvaluation()
         return replacement
 
+    def get_replacement_workflow_output( self, workflow_output ):
+        step = workflow_output.workflow_step
+        output_name = workflow_output.output_name
+        return self.outputs[ step.id ][ output_name ]
+
     def set_outputs_for_input( self, step, outputs=None ):
         if outputs is None:
             outputs = {}
 
         if self.inputs_by_step_id:
-            outputs[ 'output' ] = self.inputs_by_step_id[ step.id ]
+            step_id = step.id
+            if step_id not in self.inputs_by_step_id:
+                template = "Step with id %s not found in inputs_step_id (%s)"
+                message = template % (step_id, self.inputs_by_step_id)
+                raise ValueError(message)
+            outputs[ 'output' ] = self.inputs_by_step_id[ step_id ]
 
         self.set_step_outputs( step, outputs )
 
@@ -299,6 +344,57 @@ class WorkflowProgress( object ):
 
     def mark_step_outputs_delayed(self, step):
         self.outputs[ step.id ] = STEP_OUTPUT_DELAYED
+
+    def _subworkflow_invocation(self, step):
+        workflow_invocation = self.workflow_invocation
+        subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
+        if subworkflow_invocation is None:
+            raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
+        return subworkflow_invocation
+
+    def subworkflow_invoker(self, trans, step):
+        subworkflow_progress = self.subworkflow_progress(step)
+        subworkflow_invocation = subworkflow_progress.workflow_invocation
+        workflow_run_config = WorkflowRunConfig(
+            target_history=subworkflow_invocation.history,
+            replacement_dict={},
+            inputs={},
+            param_map={},
+            copy_inputs_to_history=False,
+        )
+        return WorkflowInvoker(
+            trans,
+            workflow=subworkflow_invocation.workflow,
+            workflow_run_config=workflow_run_config,
+            progress=subworkflow_progress,
+        )
+
+    def subworkflow_progress(self, step):
+        subworkflow_invocation = self._subworkflow_invocation(step)
+        subworkflow = subworkflow_invocation.workflow
+        subworkflow_inputs = {}
+        for input_subworkflow_step in subworkflow.input_steps:
+            connection_found = False
+            for input_connection in step.input_connections:
+                if input_connection.input_subworkflow_step == input_subworkflow_step:
+                    subworkflow_step_id = input_subworkflow_step.id
+                    is_data = input_connection.output_step.type != "parameter_input"
+                    replacement = self.replacement_for_connection(
+                        input_connection,
+                        is_data=is_data,
+                    )
+                    subworkflow_inputs[subworkflow_step_id] = replacement
+                    connection_found = True
+                    break
+
+            if not connection_found:
+                raise Exception("Could not find connections for all subworkflow inputs.")
+
+        return WorkflowProgress(
+            subworkflow_invocation,
+            subworkflow_inputs,
+            self.module_injector,
+        )
 
     def _recover_mapping( self, step, step_invocations ):
         try:

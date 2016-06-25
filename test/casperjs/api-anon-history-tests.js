@@ -23,17 +23,15 @@ spaceghost.test.begin( 'Test API functions for histories with an anonymous user'
         this.test.assert( historyShow.id === index[0].id, 'Is the first history' );
         this.test.assert( this.hasKeys( historyShow, [ 'id', 'name', 'user_id' ] ) );
 
+        this.test.comment( 'Calling create should work for an anonymous user' );
+        this.test.assert( this.api.histories.index().length === 1, 'Now has two histories' );
+
 
         // ------------------------------------------------------------------------------------------- anon forbidden
         //TODO: why not return the current history?
         this.test.comment( 'calling show with "most_recently_used" should return current history for an anon user' );
         var recent = this.api.histories.show( 'most_recently_used' );
         this.test.assert( recent.id === historyShow.id, 'most_recently_used returned current' );
-
-        this.test.comment( 'Calling create should fail for an anonymous user' );
-        this.api.assertRaises( function(){
-            this.api.histories.create({ name: 'new' });
-        }, 403, 'API authentication required for this request', 'create failed with error' );
 
         this.test.comment( 'Calling delete should fail for an anonymous user' );
         this.api.assertRaises( function(){

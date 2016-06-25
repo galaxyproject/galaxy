@@ -51,8 +51,13 @@
 <%def name="load( embedded=False, insert=None )">
     <!-- grid_base.mako -->
     ## imports
-    ${h.css( "autocomplete_tagging", "jquery.rating" )}
-    ${h.js("libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging", "libs/jquery/jquery.rating" )}
+    ${h.css(
+        "autocomplete_tagging",
+        "jquery.rating"
+    )}
+    ${h.js(
+        "libs/jquery/jquery.autocomplete",
+    )}
 
     ## grid container
     <div id="grid-container"></div>
@@ -83,6 +88,7 @@
 <%def name="get_grid_config( embedded=False, insert=None )">
 ## generates dictionary
 <%
+    item_class = grid.model_class.__name__
     self.grid_config = {
         'title'                         : grid.title,
         'url_base'                      : trans.request.path_url,
@@ -95,8 +101,8 @@
         'cur_page_num'                  : cur_page_num,
         'num_pages'                     : num_pages,
         'num_page_links'                : num_page_links,
-        'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class='History' ),
-        'history_name_autocomplete_url' : url( controller='history', action='name_autocomplete_data' ),
+        'history_tag_autocomplete_url'  : url( controller='tag', action='tag_autocomplete_data', item_class=item_class ),
+        ## 'history_name_autocomplete_url' : url( controller='history', action='name_autocomplete_data' ),
         'status'                        : status,
         'message'                       : util.restore_text(message),
         'global_actions'                : [],

@@ -1084,7 +1084,7 @@ var Circster = Backbone.View.extend(
         {
             icon_class: 'plus-button', title: 'Add tracks', on_click: function()
             {
-                visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", vis.get('dbkey'), function(tracks)
+                visualization.select_datasets(Galaxy.root + "visualization/list_current_history_datasets", Galaxy.root + "api/datasets", vis.get('dbkey'), function(tracks)
                 {
                     vis.add_tracks(tracks);
                 });
@@ -1107,7 +1107,7 @@ var Circster = Backbone.View.extend(
 
                 // send to server
                 $.ajax({
-                    url: galaxy_config.root + "visualization/save",
+                    url: Galaxy.root + "visualization/save",
                     type: "POST",
                     dataType: "json",
                     data: {
@@ -1133,7 +1133,7 @@ var Circster = Backbone.View.extend(
         {
             icon_class: 'cross-circle', title: 'Close', on_click: function()
             {
-                window.location = galaxy_config.root + "visualization/list";
+                window.location = Galaxy.root + "visualization/list";
             }
         }], { tooltip_config: { placement: 'bottom' } });
 

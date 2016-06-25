@@ -11,7 +11,9 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${handle_refresh_frames()}
-    ${h.js( "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+    ${h.js(
+        "libs/jquery/jquery.autocomplete",
+    )}
 </%def>
 
 <%def name="datatype( dataset, datatypes )">
@@ -64,7 +66,7 @@
                 <div style="clear: both"></div>
             </div>
             %if trans.get_user() is not None:
-                <div class="form-row">                    
+                <div class="form-row">
                     <label>
                         Annotation / Notes:
                     </label>
@@ -126,7 +128,7 @@
                         </select>
                     </div>
                     <div class="toolParamHelp" style="clear: both;">
-                        This will create a new dataset with the contents of this dataset converted to a new format. 
+                        This will create a new dataset with the contents of this dataset converted to a new format.
                     </div>
                     <div style="clear: both"></div>
                 </div>

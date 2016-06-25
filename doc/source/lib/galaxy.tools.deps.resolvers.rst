@@ -57,4 +57,12 @@ galaxy.tools.deps.resolvers.tool_shed_packages module
     :undoc-members:
     :show-inheritance:
 
+galaxy.tools.deps.resolvers.unlinked_tool_shed_packages module
+--------------------------------------------------------------
+
+.. automodule:: galaxy.tools.deps.resolvers.unlinked_tool_shed_packages
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

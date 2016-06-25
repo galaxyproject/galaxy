@@ -11,9 +11,9 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
     :target: https://webchat.freenode.net/?channels=galaxyproject
     :alt: Chat with us
 
-.. image:: https://readthedocs.org/projects/galaxy/badge/?version=master
-    :target: https://galaxy.readthedocs.org/en/master/
-    :alt: Documentation Status
+.. image:: https://img.shields.io/badge/docs-release-green.svg
+    :target: https://docs.galaxyproject.org/en/master/
+    :alt: Release Documentation
 
 .. image:: https://travis-ci.org/galaxyproject/galaxy.svg?branch=dev
     :target: https://travis-ci.org/galaxyproject/galaxy
@@ -22,7 +22,7 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
 Galaxy Quickstart
 =================
 
-Galaxy requires Python 2.6 or 2.7. To check your python version, run:
+Galaxy requires Python 2.7 To check your python version, run:
 
 .. code:: console
 
@@ -56,3 +56,8 @@ Issues and Galaxy Development
 =============================
 
 Please see `CONTRIBUTING.md <CONTRIBUTING.md>`_ .
+
+Roadmap
+=============================
+
+Interested in the next steps for Galaxy? Take a look here: https://github.com/galaxyproject/galaxy/issues/1928

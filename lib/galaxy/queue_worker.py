@@ -5,16 +5,9 @@ reloading the toolbox, etc., across multiple processes.
 
 import logging
 import threading
-import sys
 
 import galaxy.queues
-from galaxy import eggs, util
-eggs.require('anyjson')
-if sys.version_info < (2, 7, 0):
-    # Kombu requires importlib and ordereddict to function under Python 2.6.
-    eggs.require('importlib')
-    eggs.require('ordereddict')
-eggs.require('kombu')
+from galaxy import util
 
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
@@ -97,7 +90,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
     """
     def __init__(self, app, queue=None, task_mapping=control_message_to_task, connection=None):
         super(GalaxyQueueWorker, self).__init__()
-        log.info("Initalizing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
+        log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
         self.daemon = True
         if connection:
             self.connection = connection

@@ -24,7 +24,7 @@ return Backbone.View.extend(
         
         // create plot
         var plot = new Plot(app, {
-            process_id          : options.process_id,
+            process             : options.process,
             chart               : options.chart,
             request_dictionary  : options.request_dictionary,
             canvas_list         : options.canvas_list,

@@ -121,7 +121,7 @@ JobListItemView.prototype.templates = (function(){
 
     var elTemplate = BASE_MVC.wrapTemplate([
         '<div class="list-element">',
-            '<div class="id"><%= model.id %></div>',
+            '<div class="id"><%- model.id %></div>',
             // errors, messages, etc.
             '<div class="warnings"></div>',
 
@@ -161,7 +161,7 @@ JobListItemView.prototype.templates = (function(){
             //    ' ', _l( 'Created' ), ': <%= new Date( job.create_time ).toString() %>, ',
             //'</span',
             //'<span class="version">',
-            //    ' (', _l( 'version' ), ': <%= view.tool.version %>)',
+            //    ' (', _l( 'version' ), ': <%- view.tool.version %>)',
             //'</span',
         '</div>'
     ], 'job' );
@@ -170,20 +170,20 @@ JobListItemView.prototype.templates = (function(){
         '<div class="details">',
             //'<div class="version">',
             //    '<label class="prompt">', _l( 'Version' ), '</label>',
-            //    '<span class="value"><%= view.tool.version %></span>',
+            //    '<span class="value"><%- view.tool.version %></span>',
             //'</div>',
             '<div class="params">',
                 '<% _.each( view._labelInputMap(), function( input, label ){ %>',
-                    '<div class="input" data-input-name="<%= input.name %>" data-input-id="<%= input.id %>">',
-                        '<label class="prompt"><%= label %></label>',
+                    '<div class="input" data-input-name="<%- input.name %>" data-input-id="<%- input.id %>">',
+                        '<label class="prompt"><%- label %></label>',
 //TODO: input dataset name
-                        '<span class="value"><%= input.content.name %></span>',
+                        '<span class="value"><%- input.content.name %></span>',
                     '</div>',
                 '<% }) %>',
                 '<% _.each( view._labelParamMap(), function( param, label ){ %>',
-                    '<div class="param" data-input-name="<%= param.name %>">',
-                        '<label class="prompt"><%= label %></label>',
-                        '<span class="value"><%= param %></span>',
+                    '<div class="param" data-input-name="<%- param.name %>">',
+                        '<label class="prompt"><%- label %></label>',
+                        '<span class="value"><%- param %></span>',
                     '</div>',
                 '<% }) %>',
             '</div>',

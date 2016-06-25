@@ -6,6 +6,10 @@ define([
     "utils/localization",
     "ui/hoverhighlight"
 ], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
+
+'use strict';
+
+var logNamespace = 'collections';
 /* ============================================================================
 TODO:
 
@@ -21,6 +25,7 @@ currPanel.once( 'rendered', function(){
 /** A view for paired datasets in the collections creator.
  */
 var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
     tagName     : 'li',
     className   : 'dataset paired',
@@ -30,11 +35,11 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     },
 
     template : _.template([
-        '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
+        '<span class="forward-dataset-name flex-column"><%- pair.forward.name %></span>',
         '<span class="pair-name-column flex-column">',
-            '<span class="pair-name"><%= pair.name %></span>',
+            '<span class="pair-name"><%- pair.name %></span>',
         '</span>',
-        '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
+        '<span class="reverse-dataset-name flex-column"><%- pair.reverse.name %></span>'
     ].join('')),
 
     render : function(){
@@ -87,13 +92,14 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 function autoPairFnBuilder( options ){
     options = options || {};
     options.createPair = options.createPair || function _defaultCreatePair( params ){
-        this.debug( 'creating pair:', params.listA[ params.indexA ].name, params.listB[ params.indexB ].name );
         params = params || {};
-        return this._pair(
-            params.listA.splice( params.indexA, 1 )[0],
-            params.listB.splice( params.indexB, 1 )[0],
-            { silent: true }
-        );
+        var a = params.listA.splice( params.indexA, 1 )[0],
+            b = params.listB.splice( params.indexB, 1 )[0],
+            aInBIndex = params.listB.indexOf( a ),
+            bInAIndex = params.listA.indexOf( b );
+        if( aInBIndex !== -1 ){ params.listB.splice( aInBIndex, 1 ); }
+        if( bInAIndex !== -1 ){ params.listA.splice( bInAIndex, 1 ); }
+        return this._pair( a, b, { silent: true });
     };
     // compile these here outside of the loop
     var _regexps = [];
@@ -159,14 +165,14 @@ function autoPairFnBuilder( options ){
             this.debug( 'bestMatch.score:', bestMatch.score );
 
             if( bestMatch.score >= scoreThreshold ){
-                this.debug( 'creating pair' );
+                //console.debug( 'autoPairFnBuilder.strategy', listA[ indexA ].name, listB[ bestMatch.index ].name );
                 paired.push( options.createPair.call( this, {
                     listA   : listA,
                     indexA  : indexA,
                     listB   : listB,
                     indexB  : bestMatch.index
                 }));
-                this.debug( 'list lens now:', listA.length, listB.length );
+                //console.debug( 'list lens now:', listA.length, listB.length );
             } else {
                 indexA += 1;
             }
@@ -185,6 +191,7 @@ function autoPairFnBuilder( options ){
 /** An interface for building collections of paired datasets.
  */
 var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
     className: 'list-of-pairs-collection-creator collection-creator flex-row-container',
 
@@ -389,8 +396,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         strategy = strategy || this.strategy;
         split = this._splitByFilters();
         paired = paired.concat( this[ strategy ].call( this, {
-                listA : split[0],
-                listB : split[1]
+            listA : split[0],
+            listB : split[1]
         }));
         return paired;
     },
@@ -476,7 +483,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** create a pair from fwd and rev, removing them from unpaired, and placing the new pair in paired */
     _pair : function( fwd, rev, options ){
         options = options || {};
-        //this.debug( '_pair:', fwd, rev );
+        this.debug( '_pair:', fwd, rev );
         var pair = this._createPair( fwd, rev, options.name );
         this.paired.push( pair );
         this.unpaired = _.without( this.unpaired, fwd, rev );
@@ -502,8 +509,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var fwdName = fwd.name,
             revName = rev.name,
             lcs = this._naiveStartingAndEndingLCS(
-                fwdName.replace( this.filters[0], '' ),
-                revName.replace( this.filters[1], '' )
+                fwdName.replace( new RegExp( this.filters[0] ), '' ),
+                revName.replace( new RegExp( this.filters[1] ), '' )
             );
         if( removeExtensions ){
             var lastDotIndex = lcs.lastIndexOf( '.' );
@@ -568,8 +575,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
      */
     createList : function( name ){
         var creator = this,
-            root = ( window.Galaxy && Galaxy.options.root )? Galaxy.options.root : '/',
-            url = root + 'api/histories/' + this.historyId + '/contents/dataset_collections';
+            url = Galaxy.root + 'api/histories/' + this.historyId + '/contents/dataset_collections';
 
         //TODO: use ListPairedCollection.create()
         var ajaxData = {
@@ -758,7 +764,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     _adjUnpairedOnScrollbar : function(){
         var $unpairedColumns = this.$( '.unpaired-columns' ).last(),
             $firstDataset = this.$( '.unpaired-columns .reverse-column .dataset' ).first();
-        if( !$firstDataset.size() ){ return; }
+        if( !$firstDataset.length ){ return; }
         var ucRight = $unpairedColumns.offset().left + $unpairedColumns.outerWidth(),
             dsRight = $firstDataset.offset().left + $firstDataset.outerWidth(),
             rightDiff = Math.floor( ucRight ) - Math.floor( dsRight );
@@ -917,7 +923,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                     this.$( '.collection-name' ).focus();
                 }
             } else {
-                message = _l( 'Could not automatically create any pairs from the given dataset names' );
+                message = _l([
+                    'Could not automatically create any pairs from the given dataset names.',
+                    'You may want to choose or enter different filters and try auto-pairing again.',
+                    'Close this message using the X on the right to view more help.'
+                ].join( ' ' ));
             }
             this._showAlert( message, msgClass );
         });
@@ -1095,7 +1105,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var dataset = $dataset.data( 'dataset' ),
             select = options.force !== undefined? options.force: !$dataset.hasClass( 'selected' );
         //this.debug( id, options.force, $dataset, dataset );
-        if( !$dataset.size() || dataset === undefined ){ return $dataset; }
+        if( !$dataset.length || dataset === undefined ){ return $dataset; }
 
         if( select ){
             $dataset.addClass( 'selected' );
@@ -1311,7 +1321,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
         $( '.element-drop-placeholder' ).remove();
         var $placeholder = $( '<div class="element-drop-placeholder"></div>' );
-        if( !$nearest.size() ){
+        if( !$nearest.length ){
             $list.append( $placeholder );
         } else {
             $nearest.before( $placeholder );
@@ -1357,7 +1367,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         ev.dataTransfer.dropEffect = 'move';
 
         var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
-        if( $nearest.size() ){
+        if( $nearest.length ){
             this.$dragging.insertBefore( $nearest );
 
         } else {

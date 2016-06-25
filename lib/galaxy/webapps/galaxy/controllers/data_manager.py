@@ -1,16 +1,14 @@
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
-from markupsafe import escape
-eggs.require( "Paste" )
+import logging
+from json import loads
+
 import paste.httpexceptions
+from markupsafe import escape
+from six import string_types
 
 import galaxy.queue_worker
 from galaxy import web
-from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController
 
-# set up logger
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -50,7 +48,7 @@ class DataManager( BaseUIController ):
         try:
             job_id = trans.security.decode_id( job_id )
             job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-        except Exception, e:
+        except Exception as e:
             job = None
             log.error( "Bad job id (%s) passed to view_job: %s" % ( job_id, e ) )
         if not job:
@@ -63,7 +61,7 @@ class DataManager( BaseUIController ):
         for hda in hdas:
             try:
                 data_manager_json = loads( open( hda.get_file_name() ).read() )
-            except Exception, e:
+            except Exception as e:
                 data_manager_json = {}
                 error_messages.append( escape( "Unable to obtain data_table info for hda (%s): %s" % ( hda.id, e ) ) )
             values = []
@@ -90,7 +88,7 @@ class DataManager( BaseUIController ):
     @web.expose
     @web.require_admin
     def reload_tool_data_tables( self, trans, table_name=None, **kwd ):
-        if table_name and isinstance( table_name, basestring ):
+        if table_name and isinstance( table_name, string_types ):
             table_name = table_name.split( "," )
         # Reload the tool data tables
         table_names = self.app.tool_data_tables.reload_tables( table_names=table_name )

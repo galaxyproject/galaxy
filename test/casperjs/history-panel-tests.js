@@ -33,12 +33,13 @@ spaceghost.test.begin( 'Testing the form of the main/current history panel', 0, 
         annoIconSelector = spaceghost.historypanel.data.selectors.history.annoIcon,
         emptyMsgSelector = spaceghost.historypanel.data.selectors.history.emptyMsg,
         emptyMsgStr      = spaceghost.historypanel.data.text.history.emptyMsg,
-        tagAreaSelector     = spaceghost.historypanel.data.selectors.history.tagArea,
-        annoAreaSelector    = spaceghost.historypanel.data.selectors.history.annoArea,
+        tagAreaSelector  = spaceghost.historypanel.data.selectors.history.tagArea,
+        annoAreaSelector = spaceghost.historypanel.data.selectors.history.annoArea,
         nameTooltip      = spaceghost.historypanel.data.text.history.tooltips.name,
 
         refreshButtonSelector       = 'a#history-refresh-button',
-        refreshButtonIconSelector   = 'span.fa-refresh';
+        refreshButtonIconSelector   = 'span.fa-refresh',
+        bytesString = 'b';
 
     // local
     var newHistoryName = "Test History",
@@ -145,8 +146,8 @@ spaceghost.test.begin( 'Testing the form of the main/current history panel', 0, 
         this.test.assertSelectorHasText( nameSelector, newHistoryName, 'History name is ' + newHistoryName );
 
         var onetxtFilesize = require( 'fs' ).size( filepathToUpload ),
-            expectedSize = onetxtFilesize + ' bytes';
-        this.test.comment( "history should display size and size should be " + onetxtFilesize + " bytes" );
+            expectedSize = onetxtFilesize + ' ' + bytesString;
+        this.test.comment( "history should display size and size should be " + onetxtFilesize + " " + bytesString );
         this.test.assertExists( sizeSelector, 'Found ' + sizeSelector );
         this.test.assertVisible( sizeSelector, 'History size is visible' );
         this.test.assertSelectorHasText( sizeSelector, expectedSize,

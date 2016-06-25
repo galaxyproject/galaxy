@@ -1,0 +1,19 @@
+<tool id="cheetah_problem_unbound_var_input" name="cheetah_problem_unbound_var_input" version="0.1.0">
+    <!-- input is special because we want to throw a syntax
+         error when it is undefined even though it appears 
+         in Python's default environment. -->
+    <command>
+        echo "$input" > $out_file1
+    </command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
