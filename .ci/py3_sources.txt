@@ -50,6 +50,7 @@ scripts/cleanup_datasets/cleanup_datasets.py
 test/api/test_workflows_from_yaml.py
 test/base/
 test/casperjs/
+test/unit/managers/test_DatasetManager.py
 test/functional/
 test/integration/
 test/manual/
