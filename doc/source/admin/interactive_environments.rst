@@ -78,7 +78,7 @@ Running ``node lib/main.js --help`` should produce some useful help text
 There are two ways to handle actually running the proxy. The first is to have
 Galaxy automatically launches the proxy as needed. This is the default configuration
 as of 2014. Alternately, the proxy can be stated manually or via a system such as
-Supervisord. Assuming that the `$GALAXY_ROOT` environment variable refers to the location of
+Supervisord. Assuming that the ``$GALAXY_ROOT`` environment variable refers to the location of
 the Galaxy installation, the command for launching the proxy is:
 
 .. code-block::  console
@@ -101,7 +101,7 @@ And this can be configured in your supervisord config by adding:
     startsecs       = 5
     redirect_stderr = true
 
-where `GALAXY_ROOT` is the location of your Galaxy installation and `GALAXY_USER` is the username of the user that
+where ``GALAXY_ROOT`` is the location of your Galaxy installation and ``GALAXY_USER`` is the username of the user that
 Galaxy runs as.
 
 Configuring the Proxy
