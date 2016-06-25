@@ -152,7 +152,7 @@ class CondaContext(object):
         return self.exec_command("create", create_base_args)
 
     def exec_remove(self, args):
-        remove_base_args = [ 
+        remove_base_args = [
             "remove",
             "-y",
             "--name"

@@ -119,7 +119,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             if return_code != 0:
                 is_installed = False
                 log.debug('Cleaning up after failed install of {}, {}'.format(name, version))
-                cleanup_failed_install(conda_target, conda_context=self.conda_context) 
+                cleanup_failed_install(conda_target, conda_context=self.conda_context)
             else:
                 # Recheck if installed
                 is_installed = is_conda_target_installed(
@@ -127,7 +127,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 )
                 if not is_installed:
                     log.debug('Cleaning up after failing to verify installed environment for {}, {}'.format(name, version))
-                    cleanup_failed_install(conda_target, conda_context=self.conda_context) 
+                    cleanup_failed_install(conda_target, conda_context=self.conda_context)
 
         if not is_installed:
             return INDETERMINATE_DEPENDENCY
