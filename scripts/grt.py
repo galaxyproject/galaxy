@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-c', '--config', dest='config', help='Path to GRT config file (scripts/grt.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
-    parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)', default='https://radio-telescope.galaxyproject.org/api/v1/upload')
+    parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)')
     args = parser.parse_args()
 
     print 'Loading GRT ini...'
