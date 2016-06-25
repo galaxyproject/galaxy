@@ -284,8 +284,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def stop_job(self, job):
         """Attempts to delete a dispatched job to the k8s cluster"""
         try:
-            jobs = Job.objects(self._pykube_api).filter(selector="app=" + job.job_runner_external_id)
-            if jobs.response['items'].len() >= 0:
+            jobs = Job.objects(self._pykube_api).filter(selector="app=" +
+                                                                 self.__produce_unique_k8s_job_name(job.get_id_tag()))
+            if len(jobs.response['items']) >= 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
                 job_to_delete.scale(replicas=0)
             # TODO assert whether job parallelism == 0
