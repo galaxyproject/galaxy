@@ -15,10 +15,11 @@ How GIEs Work
 
 A GIE is primarily composed of a Docker container, and the Galaxy visualization
 component. Galaxy vizualisation plugins are rendered using Mako templates and
-Mako templates in turn can run Python code. This Python code in the Mako templates
-is used to launch the Docker container within which a GIEs run. Once this container
-is launched, we notify a proxy built into Galaxy which helps coordinate a 1:1
-mapping of users and their docker containers.
+Mako templates in turn can run Python code. GIEs build upon visualization plugins,
+adding features to allow for container management and proxying. This Python code
+in the Mako templates is used to launch the Docker container within which a GIE
+runs. Once this container is launched, we notify a proxy built into Galaxy which
+helps coordinate a 1:1 mapping of users and their docker containers.
 
 Here's a simple diagram recapping the above:
 
@@ -75,9 +76,10 @@ Running ``node lib/main.js --help`` should produce some useful help text
     --verbose
 
 There are two ways to handle actually running the proxy. The first is to have
-Galaxy automatically launch the proxy as needed. This is the default configuration
+Galaxy automatically launches the proxy as needed. This is the default configuration
 as of 2014. Alternately, the proxy can be stated manually or via a system such as
-Supervisord. The command for launching the proxy is:
+Supervisord. Assuming that the `$GALAXY_ROOT` environment variable refers to the location of
+the Galaxy installation, the command for launching the proxy is:
 
 .. code-block::  console
 
@@ -99,7 +101,7 @@ And this can be configured in your supervisord config by adding:
     startsecs       = 5
     redirect_stderr = true
 
-where GALAXY_ROOT is the location of your Galaxy installation and GALAXY_USER is the username of the user that
+where `GALAXY_ROOT` is the location of your Galaxy installation and `GALAXY_USER` is the username of the user that
 Galaxy runs as.
 
 Configuring the Proxy
@@ -155,7 +157,7 @@ accordingly.
 
 .. code-block:: apache
 
-    # Project Jupyter / IPython specific. Other IEs may require their own routes.
+    # Project Jupyter specific. Other IEs may require their own routes.
     ProxyPass        /galaxy/gie_proxy/ipython/api/kernels ws://localhost:8800/galaxy/gie_proxy/ipython/api/kernels
 
     # Global GIE configuration
@@ -201,8 +203,9 @@ Docker on Another Host
 
 You might want to run your IEs on a host different to the one that hosts your
 Galaxy webserver, since IEs on the same host as the webserver compete for
-resources with that webserver. This feature has been available since
-15.07 and is used in production at the University of Freiburg.
+resources with that webserver and introduce some security considerations which
+could be mitigated by moving containers to a separate host. This feature has
+been available since 15.07 and is used in production at the University of Freiburg.
 
 First you need to configure a second host to be Docker enabled. In the
 following we call this host ``gx-docker`` You need to start the Docker daemon
