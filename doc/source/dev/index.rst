@@ -11,4 +11,5 @@ Additionally there is an `FAQ`_ document for new Galaxy developers answering com
 
 .. _Codebase Documentation: ../lib/modules.html
 .. _API Documentation: ../api_doc.html
+.. _Interactive Environments: interactive_environments.html
 .. _FAQ: faq.html
