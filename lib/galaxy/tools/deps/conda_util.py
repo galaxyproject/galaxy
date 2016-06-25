@@ -142,7 +142,7 @@ class CondaContext(object):
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
-        self.shell_exec(command, env=env)
+        return self.shell_exec(command, env=env)
 
     def exec_create(self, args):
         create_base_args = [
@@ -150,6 +150,15 @@ class CondaContext(object):
         ]
         create_base_args.extend(args)
         return self.exec_command("create", create_base_args)
+
+    def exec_remove(self, args):
+        remove_base_args = [ 
+            "remove",
+            "-y",
+            "--name"
+        ]
+        remove_base_args.extend(args)
+        return self.exec_command("env", remove_base_args)
 
     def exec_install(self, args):
         install_base_args = [
@@ -283,7 +292,13 @@ def install_conda_target(conda_target, conda_context=None):
         "--name", conda_target.install_environment,  # enviornment for package
         conda_target.package_specifier,
     ]
-    conda_context.exec_create(create_args)
+    return conda_context.exec_create(create_args)
+
+
+def cleanup_failed_install(conda_target, conda_context=None):
+    conda_context = _ensure_conda_context(conda_context)
+    if conda_context.has_env(conda_target.install_environment):
+        conda_context.exec_remove([conda_target.install_environment])
 
 
 def is_target_available(conda_target, conda_context=None):
@@ -309,7 +324,20 @@ def is_target_available(conda_target, conda_context=None):
 
 def is_conda_target_installed(conda_target, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    return conda_context.has_env(conda_target.install_environment)
+    if conda_context.has_env(conda_target.install_environment):
+        tempdir = tempfile.mkdtemp(prefix="jobdeps")
+        package_list_file = os.path.join(tempdir, 'installed')
+        conda_context.export_list(conda_target.install_environment, package_list_file)
+        search_pattern = conda_target.package_specifier + '='
+        with open(package_list_file) as input_file:
+            for line in open(package_list_file):
+                if line.startswith(search_pattern):
+                    return True
+            else:
+                # got to the end of the loop without finding the package
+                return False
+    else:
+        return False
 
 
 def filter_installed_targets(conda_targets, conda_context=None):
