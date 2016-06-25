@@ -15,12 +15,14 @@ import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
 
-default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'config/galaxy.ini'))
-sample_grt_ini = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini.sample'))
-grt_ini = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini'))
+sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini.sample'))
+default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini'))
 
 def init(config):
-    config = os.path.abspath(config)
+    if config.startswith('/'):
+        config = os.path.abspath(config)
+    else:
+        config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
 
     config_parser = ConfigParser(dict(
         here=os.getcwd(),
@@ -51,32 +53,39 @@ if __name__ == '__main__':
     parser.add_argument('instance_id', help='Galactic Radio Telescope Instance ID')
     parser.add_argument('api_key', help='Galactic Radio Telescope API Key')
 
-    parser.add_argument('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config)
+    parser.add_argument('-c', '--config', dest='config', help='Path to GRT config file (scripts/grt.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
     parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)', default='https://radio-telescope.galaxyproject.org/api/v1/upload')
     args = parser.parse_args()
 
     print 'Loading GRT ini...'
     try:
-        with open(grt_ini) as f:
-            grt_config = yaml.load(f)
+        with open(config) as f:
+            config_dict = yaml.load(f)
     except:
-        with open(sample_grt_ini) as f:
-            grt_config = yaml.load(f)
+        with open(sample_config) as f:
+            config_dict = yaml.load(f)
 
     # set to 0 by default
-    if not grt_config.has_key('last_job_id_sent'):
-        grt_config['last_job_id_sent'] = 0
+    if not config_dict.has_key('last_job_id_sent'):
+        config_dict['last_job_id_sent'] = 0
+
+    if args.instance_id:
+        config_dict['instance_id'] = args.instance_id
+    if args.api_key:
+        config_dict['api_key'] = args.api_key
+    if args.grt_url:
+        config_dict['grt_url'] = args.grt_url
 
     print 'Loading Galaxy...'
-    model, object_store, engine = init(args.config)
+    model, object_store, engine = init(config_dict['galaxy_config'])
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
     jobs = sa_session.query(model.Job)\
         .filter(sa.and_(
             model.Job.table.c.state == "ok",
-            model.Job.table.c.id > grt_config['last_job_id_sent']
+            model.Job.table.c.id > config_dict['last_job_id_sent']
         ))\
         .all()
 
@@ -93,7 +102,7 @@ if __name__ == '__main__':
 
     # For every job
     for job in jobs:
-        if job.tool_id in grt_config['tool_blacklist']:
+        if job.tool_id in config_dict['tool_blacklist']:
             continue
 
         # Append an active user, we'll reduce at the end
@@ -123,13 +132,13 @@ if __name__ == '__main__':
         grt_jobs_data.append(job_data)
 
     if len(jobs) > 0:
-        grt_config['last_job_id_sent'] = jobs[-1].id
+        config_dict['last_job_id_sent'] = jobs[-1].id
 
     grt_report_data = {
         'meta': {
             'version': 1,
-            'instance_uuid': args.instance_id,
-            'instance_api_key': args.api_key,
+            'instance_uuid': config_dict['instance_id'],
+            'instance_api_key': config_dict['api_key'],
             # We do not record ANYTHING about your users other than count.
             'active_users': len(set(active_users)),
             'total_users': sa_session.query(model.User).count(),
@@ -149,7 +158,7 @@ if __name__ == '__main__':
         print json.dumps(grt_report_data, indent=2)
     else:
         try:
-            req = urllib2.urlopen(args.grt_url, data=json.dumps(grt_report_data))
+            req = urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
 
         except urllib2.HTTPError, htpe:
             #print htpe.reason
@@ -157,5 +166,5 @@ if __name__ == '__main__':
             exit(1)
 
         # Update grt.ini with last id of job (prevent duplicates from being sent)
-        with open(grt_ini, 'w') as f:
-            yaml.dump(grt_config, f, default_flow_style=False)
+        with open(args.config, 'w') as f:
+            yaml.dump(config_dict, f, default_flow_style=False)

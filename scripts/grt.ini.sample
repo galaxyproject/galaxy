@@ -1,3 +1,7 @@
+galaxy_config: config/galaxy.ini
+#instance_id: blah
+#api_key: blah
+#grt_url: blah
 tool_blacklist:
   -
     __SET_METADATA__
