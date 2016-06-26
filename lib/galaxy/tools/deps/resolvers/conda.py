@@ -106,8 +106,9 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         if type != "package":
             return INDETERMINATE_DEPENDENCY
 
+        manual_install = kwds.get('manual_install', False) #a manual installation has been triggered
         job_directory = kwds.get("job_directory", None)
-        if job_directory is None:
+        if job_directory is None and not manual_install:
             log.warning("Conda dependency resolver not sent job directory.")
             return INDETERMINATE_DEPENDENCY
 
@@ -137,27 +138,29 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         if not is_installed:
             return INDETERMINATE_DEPENDENCY
 
-        # Have installed conda_target and job_directory to send it too.
-        # If dependency is for metadata generation, store environment in conda-metadata-env
-        if kwds.get("metadata", False):
-            conda_env = "conda-metadata-env"
-        else:
-            conda_env = "conda-env"
-        conda_environment = os.path.join(job_directory, conda_env)
-        env_path, exit_code = build_isolated_environment(
-            conda_target,
-            path=conda_environment,
-            copy=self.copy_dependencies,
-            conda_context=self.conda_context,
-        )
-        if not exit_code:
-            return CondaDepenency(
-                self.conda_context.activate,
-                conda_environment,
-                exact,
+        if not manual_install:  #no need to set up a job environment when in manual_installation mode, (not trying to run a job)
+            # Have installed conda_target and job_directory to send it too.
+            # If dependency is for metadata generation, store environment in conda-metadata-env
+            if kwds.get("metadata", False):
+                conda_env = "conda-metadata-env"
+            else:
+                conda_env = "conda-env"
+            conda_environment = os.path.join(job_directory, conda_env)
+            env_path, exit_code = build_isolated_environment(
+                conda_target,
+                path=conda_environment,
+                copy=self.copy_dependencies,
+                conda_context=self.conda_context,
             )
-        else:
-            raise Exception("Conda dependency seemingly installed but failed to build job environment.")
+
+            if not exit_code:
+                return CondaDepenency(
+                    self.conda_context.activate,
+                    conda_environment,
+                    exact,
+                )
+            else:
+                raise Exception("Conda dependency seemingly installed but failed to build job environment.")
 
     def list_dependencies(self):
         for install_target in installed_conda_targets(self.conda_context):

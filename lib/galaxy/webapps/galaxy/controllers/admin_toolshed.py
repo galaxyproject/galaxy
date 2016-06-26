@@ -1118,9 +1118,16 @@ class AdminToolshed( AdminGalaxy ):
                 requirements = suc.get_unique_requirements(app=self.app,
                                                            tool_shed_url=tool_shed_url,
                                                            repository=created_or_updated_tool_shed_repositories)
-                if install_tool_dependencies:  # Give dependency resolution a shot.
+                if install_tool_dependencies:
                     view = views.DependencyResolversView(self.app)
-                    [ view.manager_dependency(**requirement) for requirement in requirements]
+                    # if the config entry conda_auto_install is true, this will install the dependencies
+                    # since the user is asking to install, maybe it should install even if auto_install is not true...
+                    # todo: make this async so we can check on progress on the next page
+   
+                    dependency_results = [self.app.toolbox.dependency_manager.find_dep(
+                        name=requirement['name'], version=requirement['version'], type='package',
+                        **dict(job_directory=None,index=None,manual_install=True)
+                    ) for requirement in requirements]
 
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                     install_repository_manager.initiate_repository_installation( installation_dict )
