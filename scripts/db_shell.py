@@ -11,14 +11,13 @@
 # TODO: This script overlaps a lot with manage_db.py and create_db.py,
 # these should maybe be refactored to remove duplication.
 from __future__ import print_function
+
 import datetime
 import decimal
 import os.path
 import sys
-from six import string_types, PY3
-if PY3:
-    long = int
 
+from six import PY3, string_types
 
 # Setup DB scripting environment
 from sqlalchemy import *  # noqa
@@ -30,6 +29,9 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.model import *  # noqa
 from galaxy.model.mapping import init
 from galaxy.model.orm.scripts import get_config
+
+if PY3:
+    long = int
 
 db_url = get_config( sys.argv )['db_url']
 sa_session = init( '/tmp/', db_url ).context

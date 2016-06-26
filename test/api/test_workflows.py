@@ -377,7 +377,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             assert step_dict['position']['left'] != 1
             step_dict['position'] = {'top': 1, 'left': 1}
 
-        list(map(tweak_step, iter(steps.items())))
+        map(tweak_step, steps.items())
 
         update(workflow_content)
 
@@ -388,7 +388,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             assert step_dict['position']['left'] == 1
 
         updated_workflow_content = self._download_workflow(workflow_id)
-        list(map(check_step, iter(updated_workflow_content['steps'].items())))
+        map(check_step, updated_workflow_content['steps'].items())
 
         # Re-update against original worklfow...
         update(original_workflow)
@@ -396,7 +396,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         updated_workflow_content = self._download_workflow(workflow_id)
 
         # Make sure the positions have been updated.
-        list(map(tweak_step, iter(updated_workflow_content['steps'].items())))
+        map(tweak_step, updated_workflow_content['steps'].items())
 
     def test_update_no_tool_id( self ):
         workflow_object = self.workflow_populator.load_workflow( name="test_import" )
@@ -448,7 +448,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             other_id = other_import_response.json()["id"]
             imported_workflow = self._show_workflow( other_id )
             assert imported_workflow["annotation"] == "simple workflow"
-            step_annotations = set([step["annotation"] for step in imported_workflow["steps"].values()])
+            step_annotations = set(step["annotation"] for step in imported_workflow["steps"].values())
             assert "input1 description" in step_annotations
 
     def test_import_subworkflows( self ):
@@ -1254,7 +1254,7 @@ steps:
 """)
         downloaded_workflow = self._download_workflow( workflow_id )
         print(downloaded_workflow)
-        uuid_dict = dict( [( int( index_step[0] ), index_step[1]["uuid"] ) for index_step in iter(downloaded_workflow["steps"].items())] )
+        uuid_dict = dict((int(index), step["uuid"]) for index, step in downloaded_workflow["steps"].items())
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
         self.dataset_populator.wait_for_history( history_id )
@@ -1523,15 +1523,15 @@ steps:
         workflow_summary_response = self._get( "workflows/%s" % workflow_request[ "workflow_id" ] )
         self._assert_status_code_is( workflow_summary_response, 200 )
         steps = workflow_summary_response.json()[ "steps" ]
-        return sorted( [step for step in list(steps.values()) if step["tool_id"] == "random_lines1"], key=lambda step: step["id"] )
+        return sorted( (step for step in steps.values() if step["tool_id"] == "random_lines1"), key=lambda step: step["id"] )
 
     def _setup_random_x2_workflow( self, name ):
         workflow = self.workflow_populator.load_random_x2_workflow( name )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
         workflow_inputs = self._workflow_inputs( uploaded_workflow_id )
-        key = list(workflow_inputs.keys())[ 0 ]
+        key = next(iter(workflow_inputs.keys()))
         history_id = self.dataset_populator.new_history()
-        ten_lines = "\n".join( map( str, list(range( 10)) ) )
+        ten_lines = "\n".join( str(_) for _ in range(10) )
         hda1 = self.dataset_populator.new_dataset( history_id, content=ten_lines )
         workflow_request = dict(
             history="hist_id=%s" % history_id,

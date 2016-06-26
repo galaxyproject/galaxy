@@ -9,9 +9,12 @@ Run from the ~/scripts/data_libraries directory:
 %sh build_whoosh_index.sh
 """
 from __future__ import print_function
-from six.moves import configparser
+
 import os
 import sys
+
+from six import text_type
+from six.moves import configparser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
@@ -34,8 +37,8 @@ def build_index( sa_session, whoosh_index_dir ):
     writer = index.writer()
 
     def to_unicode( a_basestr ):
-        if type( a_basestr ) is str:
-            return str( a_basestr, 'utf-8' )
+        if not isinstance(a_basestr, text_type):
+            return text_type( a_basestr, 'utf-8' )
         else:
             return a_basestr
     lddas_indexed = 0

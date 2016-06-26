@@ -6,11 +6,11 @@ import string
 import tarfile
 import tempfile
 import time
-from six.moves.urllib.parse import urlencode, quote_plus
 from json import loads
 
 import twill.commands as tc
 from mercurial import commands, hg, ui
+from six.moves.urllib.parse import quote_plus, urlencode
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -1215,7 +1215,7 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ field_name ] = str( field_value )
         else:
             if field_name in kwd:
-                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( controls ), str( form_id ) ) )
+                log.debug( 'No field %s in form %s, discarding from return value.', field_name, form_id )
                 del( kwd[ field_name ] )
         return kwd
 

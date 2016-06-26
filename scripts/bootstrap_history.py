@@ -2,25 +2,27 @@
 # Little script to make HISTORY.rst more easy to format properly, lots TODO
 # pull message down and embed, use arg parse, handle multiple, etc...
 from __future__ import print_function
+
 import ast
 import calendar
 import datetime
+import json
 import os
 import re
 import string
 import sys
+import textwrap
+
 try:
     import requests
 except ImportError:
     requests = None
-import textwrap
-import json
 try:
     from pygithub3 import Github
 except ImportError:
     Github = None
-from six.moves.urllib.parse import urljoin
 from six import string_types
+from six.moves.urllib.parse import urljoin
 
 PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), os.pardir)
 SOURCE_DIR = os.path.join(PROJECT_DIRECTORY, "lib")
@@ -598,7 +600,7 @@ def _releases():
     all_files = sorted(os.listdir(RELEASES_PATH))
     release_note_file_pattern = re.compile(r"\d+\.\d+.rst")
     release_note_files = [f for f in all_files if release_note_file_pattern.match(f)]
-    return sorted([f.rstrip('.rst') for f in release_note_files])
+    return sorted(f.rstrip('.rst') for f in release_note_files)
 
 
 def _get_major_version():

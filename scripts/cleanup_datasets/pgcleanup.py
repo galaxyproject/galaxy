@@ -5,14 +5,16 @@ pgcleanup.py - A script for cleaning up datasets in Galaxy efficiently, by
     PostgreSQL 9.1 or greater is required.
 """
 from __future__ import print_function
+
 import datetime
 import inspect
 import logging
 import os
 import shutil
 import sys
-from configparser import ConfigParser
 from optparse import OptionParser
+
+from six.moves.configparser import ConfigParser
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
