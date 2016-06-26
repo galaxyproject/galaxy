@@ -24,10 +24,10 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script adds the request_event table and"
-    print "removes the state field in the request table"
-    print "========================================"
+    print("========================================")
+    print("This migration script adds the request_event table and")
+    print("removes the state field in the request table")
+    print("========================================")
 
 
 RequestEvent_table = Table('request_event', metadata,

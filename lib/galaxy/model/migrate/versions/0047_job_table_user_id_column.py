@@ -22,7 +22,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Job_table = Table( "job", metadata, autoload=True )
@@ -51,17 +51,17 @@ def upgrade(migrate_engine):
                 + "FROM job " \
                 + "JOIN galaxy_session ON job.session_id = galaxy_session.id;"
             job_users = migrate_engine.execute( cmd ).fetchall()
-            print "Updating user_id column in job table for ", len( job_users ), " rows..."
-            print ""
+            print("Updating user_id column in job table for ", len( job_users ), " rows...")
+            print("")
             update_count = 0
             for row in job_users:
                 if row.galaxy_user_id:
                     cmd = "UPDATE job SET user_id = %d WHERE id = %d" % ( int( row.galaxy_user_id ), int( row.galaxy_job_id ) )
                     update_count += 1
                 migrate_engine.execute( cmd )
-            print "Updated the user_id column for ", update_count, " rows in the job table.  "
-            print len( job_users ) - update_count, " rows have no user_id since the value was NULL in the galaxy_session table."
-            print ""
+            print("Updated the user_id column for ", update_count, " rows in the job table.  ")
+            print(len( job_users ) - update_count, " rows have no user_id since the value was NULL in the galaxy_session table.")
+            print("")
         except Exception as e:
             log.debug( "Updating job.user_id column failed: %s" % str( e ) )
 

@@ -27,7 +27,7 @@ DataManagerJobAssociation_table = Table( "data_manager_job_association", metadat
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     try:

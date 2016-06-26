@@ -55,7 +55,7 @@ ToolVersionAssociation_table = Table( "tool_version_association", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
 
     ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata, autoload=True )
 
@@ -85,7 +85,7 @@ def upgrade(migrate_engine):
                     ( nextval( migrate_engine, 'tool_version' ), localtimestamp( migrate_engine ), localtimestamp( migrate_engine ), tool_dict[ 'guid' ], tool_shed_repository_id )
                 migrate_engine.execute( cmd )
                 count += 1
-    print "Added %d rows to the new tool_version table." % count
+    print("Added %d rows to the new tool_version table." % count)
     # Drop the tool_id_guid_map table since the 2 new tables render it unnecessary.
     try:
         ToolIdGuidMap_table.drop()

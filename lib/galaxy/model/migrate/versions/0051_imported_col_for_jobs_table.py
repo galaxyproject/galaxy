@@ -11,7 +11,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Create and initialize imported column in job table.
@@ -30,7 +30,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( "UPDATE job SET imported=%s" % default_false )
 
     except Exception as e:
-        print "Adding imported column to job table failed: %s" % str( e )
+        print("Adding imported column to job table failed: %s" % str( e ))
         log.debug( "Adding imported column to job table failed: %s" % str( e ) )
 
 
@@ -43,5 +43,5 @@ def downgrade(migrate_engine):
     try:
         Jobs_table.c.imported.drop()
     except Exception as e:
-        print "Dropping column imported from job table failed: %s" % str( e )
+        print("Dropping column imported from job table failed: %s" % str( e ))
         log.debug( "Dropping column imported from job table failed: %s" % str( e ) )

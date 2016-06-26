@@ -18,12 +18,12 @@ PasswordResetToken_table = Table("password_reset_token", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         PasswordResetToken_table.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.exception("Creating %s table failed: %s" % (PasswordResetToken_table.name, str( e ) ) )
 
 
@@ -33,5 +33,5 @@ def downgrade(migrate_engine):
     try:
         PasswordResetToken_table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.exception("Dropping %s table failed: %s" % (PasswordResetToken_table.name, str( e ) ) )

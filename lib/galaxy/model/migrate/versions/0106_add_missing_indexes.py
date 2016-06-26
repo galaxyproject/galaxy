@@ -49,7 +49,7 @@ indexes = (
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     insp = reflection.Inspector.from_engine(migrate_engine)

@@ -11,7 +11,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         task_table = Table( "task", metadata, autoload=True )
@@ -19,7 +19,7 @@ def upgrade(migrate_engine):
         c.create( task_table )
         assert c is task_table.c.prepare_input_files_cmd
     except Exception as e:
-        print "Adding prepare_input_files_cmd column to task table failed: %s" % str( e )
+        print("Adding prepare_input_files_cmd column to task table failed: %s" % str( e ))
         log.debug( "Adding prepare_input_files_cmd column to task table failed: %s" % str( e ) )
     try:
         task_table = Table( "task", metadata, autoload=True )
@@ -27,7 +27,7 @@ def upgrade(migrate_engine):
         c.create( task_table )
         assert c is task_table.c.working_directory
     except Exception as e:
-        print "Adding working_directory column to task table failed: %s" % str( e )
+        print("Adding working_directory column to task table failed: %s" % str( e ))
         log.debug( "Adding working_directory column to task table failed: %s" % str( e ) )
 
     # remove the 'part_file' column - nobody used tasks before this, so no data needs to be migrated
@@ -44,13 +44,13 @@ def downgrade(migrate_engine):
         task_table = Table( "task", metadata, autoload=True )
         task_table.c.prepare_input_files_cmd.drop()
     except Exception as e:
-        print "Dropping prepare_input_files_cmd column from task table failed: %s" % str( e )
+        print("Dropping prepare_input_files_cmd column from task table failed: %s" % str( e ))
         log.debug( "Dropping prepare_input_files_cmd column from task table failed: %s" % str( e ) )
     try:
         task_table = Table( "task", metadata, autoload=True )
         task_table.c.working_directory.drop()
     except Exception as e:
-        print "Dropping working_directory column from task table failed: %s" % str( e )
+        print("Dropping working_directory column from task table failed: %s" % str( e ))
         log.debug( "Dropping working_directory column from task table failed: %s" % str( e ) )
     try:
         task_table = Table( "task", metadata, autoload=True )
@@ -58,5 +58,5 @@ def downgrade(migrate_engine):
         c.create( task_table )
         assert c is task_table.c.part_file
     except Exception as e:
-        print "Adding part_file column to task table failed: %s" % str( e )
+        print("Adding part_file column to task table failed: %s" % str( e ))
         log.debug( "Adding part_file column to task table failed: %s" % str( e ) )

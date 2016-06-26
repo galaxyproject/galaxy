@@ -47,7 +47,7 @@ SampleDataset_table = Table('sample_dataset', metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         SampleDataset_table.create()

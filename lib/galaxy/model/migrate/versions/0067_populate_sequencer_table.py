@@ -189,7 +189,7 @@ def update_sequencer_id_in_request_type( migrate_engine, request_type_id, sequen
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )

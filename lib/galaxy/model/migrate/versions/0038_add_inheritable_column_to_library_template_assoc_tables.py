@@ -25,7 +25,7 @@ def get_false_value(migrate_engine):
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
 
     #
     # In case of sqlite, check if the previous migration script deleted the

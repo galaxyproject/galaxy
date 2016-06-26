@@ -34,7 +34,7 @@ GenomeIndexToolData_table = Table( "genome_index_tool_data", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
 
     metadata.reflect()
     try:

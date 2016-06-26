@@ -13,7 +13,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Sample_table = Table( "sample", metadata, autoload=True )
@@ -24,7 +24,7 @@ def upgrade(migrate_engine):
         assert c1 is Sample_table.c.workflow
         assert c2 is Sample_table.c.history_id
     except Exception as e:
-        print "Adding history and workflow columns to sample table failed: %s" % str( e )
+        print("Adding history and workflow columns to sample table failed: %s" % str( e ))
         log.debug( "Adding history and workflow columns to sample table failed: %s" % str( e ) )
 
 
@@ -35,11 +35,11 @@ def downgrade(migrate_engine):
         Sample_table = Table( "sample", metadata, autoload=True )
         Sample_table.c.workflow.drop()
     except Exception as e:
-        print "Dropping workflow column from sample table failed: %s" % str( e )
+        print("Dropping workflow column from sample table failed: %s" % str( e ))
         log.debug( "Dropping workflow column from sample table failed: %s" % str( e ) )
     try:
         Sample_table = Table( "sample", metadata, autoload=True )
         Sample_table.c.history_id.drop()
     except Exception as e:
-        print "Dropping history column from sample table failed: %s" % str( e )
+        print("Dropping history column from sample table failed: %s" % str( e ))
         log.debug( "Dropping history column from sample table failed: %s" % str( e ) )

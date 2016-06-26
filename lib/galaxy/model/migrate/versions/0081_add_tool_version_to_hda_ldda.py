@@ -8,7 +8,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         hda_table = Table( "history_dataset_association", metadata, autoload=True )
@@ -22,7 +22,7 @@ def upgrade(migrate_engine):
         assert c is ldda_table.c.tool_version
 
     except Exception as e:
-        print "Adding the tool_version column to the hda/ldda tables failed: ", str( e )
+        print("Adding the tool_version column to the hda/ldda tables failed: ", str( e ))
 
 
 def downgrade(migrate_engine):
@@ -35,4 +35,4 @@ def downgrade(migrate_engine):
         ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
         ldda_table.c.tool_version.drop()
     except Exception as e:
-        print "Dropping the tool_version column from hda/ldda table failed: ", str( e )
+        print("Dropping the tool_version column from hda/ldda table failed: ", str( e ))

@@ -17,12 +17,12 @@ user_activation_token_column = Column( "activation_token", TrimmedString( 64 ), 
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds active and activation_token columns to the user table"
+    print("")
+    print("This migration script adds active and activation_token columns to the user table")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata = MetaData()
     metadata.bind = migrate_engine
     metadata.reflect()
@@ -35,7 +35,7 @@ def upgrade(migrate_engine):
         assert user_active_column is user_table.c.active
         assert user_activation_token_column is user_table.c.activation_token
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.error( "Adding columns 'active' and 'activation_token' to galaxy_user table failed: %s" % str( e ) )
         return
 

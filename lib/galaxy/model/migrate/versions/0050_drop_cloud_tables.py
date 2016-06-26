@@ -10,9 +10,9 @@ metadata = MetaData()
 
 def display_migration_details():
     print
-    print "========================================"
-    print "This script drops tables that were associated with the old Galaxy Cloud functionality."
-    print "========================================"
+    print("========================================")
+    print("This script drops tables that were associated with the old Galaxy Cloud functionality.")
+    print("========================================")
 
 CloudImage_table = Table( "cloud_image", metadata,
                           Column( "id", Integer, primary_key=True ),

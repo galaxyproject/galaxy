@@ -16,7 +16,7 @@ log.addHandler( handler )
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     # Create the table.
     try:
         cmd = "UPDATE migrate_tools set repository_path='lib/galaxy/tool_shed/migrate';"

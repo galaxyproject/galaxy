@@ -19,7 +19,7 @@ def get_false_value(migrate_engine):
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     LibraryInfoAssociation_table = Table( "library_info_association", metadata, autoload=True )

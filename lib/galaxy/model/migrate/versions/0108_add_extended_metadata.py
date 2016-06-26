@@ -27,11 +27,11 @@ extended_metadata_ldda_col = Column( "extended_metadata_id", Integer, ForeignKey
 
 
 def display_migration_details():
-    print "This migration script adds a ExtendedMetadata tables"
+    print("This migration script adds a ExtendedMetadata tables")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
@@ -48,7 +48,7 @@ def upgrade(migrate_engine):
         extended_metadata_ldda_col.create( ldda_table )
         assert extended_metadata_ldda_col is ldda_table.c.extended_metadata_id
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.error( "Adding column 'extended_metadata_id' to library_dataset_dataset_association table failed: %s" % str( e ) )
 
 

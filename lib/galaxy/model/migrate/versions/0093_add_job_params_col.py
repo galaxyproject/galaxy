@@ -16,13 +16,13 @@ params_col = Column( "params", TrimmedString(255), index=True )
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds a 'params' column to the Job table."
+    print("")
+    print("This migration script adds a 'params' column to the Job table.")
 
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Add column to Job table.
@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
         assert params_col is Job_table.c.params
 
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Adding column 'params' to job table failed: %s" % str( e ) )
 
 

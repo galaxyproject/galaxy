@@ -35,7 +35,7 @@ ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         ToolIdGuidMap_table.create()

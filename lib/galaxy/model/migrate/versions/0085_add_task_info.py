@@ -13,7 +13,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         task_table = Table( "task", metadata, autoload=True )
@@ -21,7 +21,7 @@ def upgrade(migrate_engine):
         c.create( task_table )
         assert c is task_table.c.info
     except Exception as e:
-        print "Adding info column to table table failed: %s" % str( e )
+        print("Adding info column to table table failed: %s" % str( e ))
         log.debug( "Adding info column to task table failed: %s" % str( e ) )
 
 
@@ -32,5 +32,5 @@ def downgrade(migrate_engine):
         task_table = Table( "task", metadata, autoload=True )
         task_table.c.info.drop()
     except Exception as e:
-        print "Dropping info column from task table failed: %s" % str( e )
+        print("Dropping info column from task table failed: %s" % str( e ))
         log.debug( "Dropping info column from task table failed: %s" % str( e ) )

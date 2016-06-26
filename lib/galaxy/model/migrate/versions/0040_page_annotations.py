@@ -17,14 +17,14 @@ PageAnnotationAssociation_table = Table( "page_annotation_association", metadata
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Create history_annotation_association table.
     try:
         PageAnnotationAssociation_table.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Creating page_annotation_association table failed: %s" % str( e ) )
 
 
@@ -36,5 +36,5 @@ def downgrade(migrate_engine):
     try:
         PageAnnotationAssociation_table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Dropping page_annotation_association table failed: %s" % str( e ) )

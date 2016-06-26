@@ -10,7 +10,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Run_table = Table( "run", metadata, autoload=True )
@@ -18,7 +18,7 @@ def upgrade(migrate_engine):
         c.create( Run_table, index_name="ix_run_subindex")
         assert c is Run_table.c.subindex
     except Exception as e:
-        print "Adding the subindex column to the run table failed: ", str( e )
+        print("Adding the subindex column to the run table failed: ", str( e ))
 
 
 def downgrade(migrate_engine):
@@ -28,4 +28,4 @@ def downgrade(migrate_engine):
         Run_table = Table( "run", metadata, autoload=True )
         Run_table.c.subindex.drop()
     except Exception as e:
-        print "Dropping the subindex column from run table failed: ", str( e )
+        print("Dropping the subindex column from run table failed: ", str( e ))

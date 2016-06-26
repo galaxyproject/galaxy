@@ -20,11 +20,11 @@ workflow_uuid_column = Column( "uuid", UUIDType, nullable=True )
 
 
 def display_migration_details():
-    print "This migration script adds a UUID column to workflows"
+    print("This migration script adds a UUID column to workflows")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
@@ -34,7 +34,7 @@ def upgrade(migrate_engine):
         workflow_uuid_column.create( workflow_table )
         assert workflow_uuid_column is workflow_table.c.uuid
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.error( "Adding column 'uuid' to workflow table failed: %s" % str( e ) )
         return
 

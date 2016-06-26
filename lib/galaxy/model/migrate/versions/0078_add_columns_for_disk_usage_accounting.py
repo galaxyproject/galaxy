@@ -13,7 +13,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     try:
@@ -22,7 +22,7 @@ def upgrade(migrate_engine):
         c.create( Dataset_table )
         assert c is Dataset_table.c.total_size
     except Exception as e:
-        print "Adding total_size column to dataset table failed: %s" % str( e )
+        print("Adding total_size column to dataset table failed: %s" % str( e ))
         log.debug( "Adding total_size column to dataset table failed: %s" % str( e ) )
 
     try:
@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
         assert c is HistoryDatasetAssociation_table.c.purged
         migrate_engine.execute(HistoryDatasetAssociation_table.update().values(purged=False))
     except Exception as e:
-        print "Adding purged column to history_dataset_association table failed: %s" % str( e )
+        print("Adding purged column to history_dataset_association table failed: %s" % str( e ))
         log.debug( "Adding purged column to history_dataset_association table failed: %s" % str( e ) )
 
     try:
@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
         c.create( User_table, index_name="ix_galaxy_user_disk_usage")
         assert c is User_table.c.disk_usage
     except Exception as e:
-        print "Adding disk_usage column to galaxy_user table failed: %s" % str( e )
+        print("Adding disk_usage column to galaxy_user table failed: %s" % str( e ))
         log.debug( "Adding disk_usage column to galaxy_user table failed: %s" % str( e ) )
 
     try:
@@ -50,7 +50,7 @@ def upgrade(migrate_engine):
         c.create( GalaxySession_table, index_name="ix_galaxy_session_disk_usage")
         assert c is GalaxySession_table.c.disk_usage
     except Exception as e:
-        print "Adding disk_usage column to galaxy_session table failed: %s" % str( e )
+        print("Adding disk_usage column to galaxy_session table failed: %s" % str( e ))
         log.debug( "Adding disk_usage column to galaxy_session table failed: %s" % str( e ) )
 
 
@@ -61,26 +61,26 @@ def downgrade(migrate_engine):
         Dataset_table = Table( "dataset", metadata, autoload=True )
         Dataset_table.c.total_size.drop()
     except Exception as e:
-        print "Dropping total_size column from dataset table failed: %s" % str( e )
+        print("Dropping total_size column from dataset table failed: %s" % str( e ))
         log.debug( "Dropping total_size column from dataset table failed: %s" % str( e ) )
 
     try:
         HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
         HistoryDatasetAssociation_table.c.purged.drop()
     except Exception as e:
-        print "Dropping purged column from history_dataset_association table failed: %s" % str( e )
+        print("Dropping purged column from history_dataset_association table failed: %s" % str( e ))
         log.debug( "Dropping purged column from history_dataset_association table failed: %s" % str( e ) )
 
     try:
         User_table = Table( "galaxy_user", metadata, autoload=True )
         User_table.c.disk_usage.drop()
     except Exception as e:
-        print "Dropping disk_usage column from galaxy_user table failed: %s" % str( e )
+        print("Dropping disk_usage column from galaxy_user table failed: %s" % str( e ))
         log.debug( "Dropping disk_usage column from galaxy_user table failed: %s" % str( e ) )
 
     try:
         GalaxySession_table = Table( "galaxy_session", metadata, autoload=True )
         GalaxySession_table.c.disk_usage.drop()
     except Exception as e:
-        print "Dropping disk_usage column from galaxy_session table failed: %s" % str( e )
+        print("Dropping disk_usage column from galaxy_session table failed: %s" % str( e ))
         log.debug( "Dropping disk_usage column from galaxy_session table failed: %s" % str( e ) )
