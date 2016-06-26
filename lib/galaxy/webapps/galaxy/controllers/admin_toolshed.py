@@ -1132,7 +1132,8 @@ class AdminToolshed( AdminGalaxy ):
 
                 if install_tool_dependencies:
                     view = views.DependencyResolversView(self.app)
-                    [view.manager_dependency(req) for req in uniq_reqs.values()] #not working yet...
+                    for r in uniq_reqs.values():
+                        view.manager_dependency(**r)
 
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                     install_repository_manager.initiate_repository_installation( installation_dict )
