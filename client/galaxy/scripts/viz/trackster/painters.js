@@ -187,7 +187,6 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         view_start = this.view_start,
         mode = this.mode,
         data = this.data;
-
     ctx.save();
 
     // Pixel position of 0 on the y axis
@@ -234,7 +233,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         // Process Y (scaler) value.
         if (y === null) {
             if (in_path && mode === "Filled") {
-                ctx.lineTo(x_scaled, height_px);
+                ctx.lineTo(x_scaled, y_zero);
             }
             in_path = false;
             continue;
@@ -280,11 +279,12 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             else {
                 in_path = true;
                 if (mode === "Filled") {
-                    ctx.moveTo(x_scaled, height_px);
+                    ctx.lineTo(x_scaled, y_zero);
                     ctx.lineTo(x_scaled, y);
                 }
                 else {
-                    ctx.moveTo(x_scaled, y);
+                    ctx.moveTo(x_scaled, y_zero);
+                    ctx.lineTo(x_scaled, y);
                     // Use this approach (note: same as for filled) to draw line from 0 to
                     // first data point.
                     //ctx.moveTo(x_scaled, height_px);
@@ -292,10 +292,60 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
                 }
             }
         }
-
         // Draw lines at boundaries if overflowing min or max
+        if ( ctx.canvas.manager.svg == false ){
+            ctx.fillStyle = this.prefs.overflow_color;
+            if (top_overflow || bot_overflow) {
+                var overflow_x;
+                if (mode === "Histogram" || mode === "Intensity") {
+                    overflow_x = delta_x_px;
+                }
+                else { // Line and Filled, which are points
+                    x_scaled -= 2; // Move it over to the left so it's centered on the point
+                    overflow_x = 4;
+                }
+                if (top_overflow) {
+                    ctx.fillRect(x_scaled, 0, overflow_x, 3);
+                }
+                if (bot_overflow) {
+                    ctx.fillRect(x_scaled, height_px - 3, overflow_x, 3);
+                }
+            }
+            ctx.fillStyle = painter_color;
+        }
+    }
+    if (mode === "Filled") {
+        if (in_path) {
+            ctx.lineTo( x_scaled, y_zero );
+            ctx.lineTo( 0, y_zero );
+        }
+        ctx.fill();
+    }
+    else if (ctx.canvas.manager.svg == false || mode == "Line") {
+        ctx.stroke();
+    }
+    
+    if (ctx.canvas.manager.svg == true) {
         ctx.fillStyle = this.prefs.overflow_color;
-        if (top_overflow || bot_overflow) {
+        for (var i = 0, len = data.length; i < len; i++) {
+            top_overflow = false;
+            bot_overflow = false;
+            y = data[i][1];
+            if (y == null) {
+                continue;
+            }
+            if (y < min_value) {
+                y = min_value;
+                bot_overflow = true;
+            }
+            else if (y > max_value) {
+                y = max_value;
+                top_overflow = true;
+            }
+            else {
+                continue;
+            }
+            x_scaled = Math.ceil((data[i][0] - view_start) * w_scale);
             var overflow_x;
             if (mode === "Histogram" || mode === "Intensity") {
                 overflow_x = delta_x_px;
@@ -311,19 +361,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
                 ctx.fillRect(x_scaled, height_px - 3, overflow_x, 3);
             }
         }
-        ctx.fillStyle = painter_color;
     }
-    if (mode === "Filled") {
-        if (in_path) {
-            ctx.lineTo( x_scaled, y_zero );
-            ctx.lineTo( 0, y_zero );
-        }
-        ctx.fill();
-    }
-    else {
-        ctx.stroke();
-    }
-
     ctx.restore();
 };
 
