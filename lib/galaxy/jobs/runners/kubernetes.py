@@ -4,6 +4,8 @@ Offload jobs to a Kubernetes cluster.
 
 import logging
 
+from pykube.exceptions import HTTPError
+
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from os import environ as os_environ
@@ -269,10 +271,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         pod_r = Pod.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
         logs = ""
         for pod_obj in pod_r.response['items']:
-            pod = Pod(self._pykube_api, pod_obj)
-            logs += "\n\n==== Pod " + pod.name + " log start ====\n\n"
-            logs += pod.logs(timestamps=True)
-            logs += "\n\n==== Pod " + pod.name + " log end   ===="
+            try:
+                pod = Pod(self._pykube_api, pod_obj)
+                logs += "\n\n==== Pod " + pod.name + " log start ====\n\n"
+                logs += pod.logs(timestamps=True)
+                logs += "\n\n==== Pod " + pod.name + " log end   ===="
+            except Exception as detail:
+                log.info("Could not write pods "+job_state.job_id+" log file due to HTTPError "+str(detail))
+
         logs_file_path = job_state.output_file
         logs_file = open(logs_file_path, mode="w")
         if isinstance(logs, text_type):
