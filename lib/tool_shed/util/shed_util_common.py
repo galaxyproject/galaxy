@@ -185,7 +185,7 @@ def get_unique_requirements(app, tool_shed_url, repository):
     Contact tool_shed_url for a list of requirements for a repository or a list of repositories.
     Returns a list of requirements, where each requirement is a dictionary with name and version as keys.
     """
-    reqs = []
+    requirements = []
     if not isinstance(repository, list):
         repositories = [repository]
     else:
@@ -201,9 +201,11 @@ def get_unique_requirements(app, tool_shed_url, repository):
                                 params=params
                                 )
         json_response = json.loads(response)
-        reqs.extend([tool['requirements'] for tool in json_response[1]['valid_tools']][0])
+        valid_tools = json_response[1].get('valid_tools', [])
+        for tool in valid_tools:
+            requirements.append(tool['requirements'])
     uniq_reqs = dict()
-    for req in reqs:
+    for req in requirements:
         uniq_reqs[(req['name'] + '_' + req['version'])] = {'name': req['name'], 'version': req['version']}
     return uniq_reqs.values()
 
