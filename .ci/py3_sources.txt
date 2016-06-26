@@ -8,6 +8,7 @@ lib/galaxy/datatypes/binary.py
 lib/galaxy/datatypes/converters/interval_to_bed_converter.py
 lib/galaxy/datatypes/converters/interval_to_bedstrict_converter.py
 lib/galaxy/datatypes/converters/interval_to_coverage.py
+lib/galaxy/datatypes/sequence.py
 lib/galaxy/dependencies/
 lib/galaxy/eggs/
 lib/galaxy/exceptions/
