@@ -40,6 +40,16 @@ lib/galaxy/model/migrate/versions/0010_hda_display_at_authz_table.py
 lib/galaxy/model/migrate/versions/0011_v0010_mysql_index_fix.py
 lib/galaxy/model/migrate/versions/0012_user_address.py
 lib/galaxy/model/migrate/versions/0013_change_lib_item_templates_to_forms.py
+lib/galaxy/model/migrate/versions/0014_pages.py
+lib/galaxy/model/migrate/versions/0015_tagging.py
+lib/galaxy/model/migrate/versions/0016_v0015_mysql_index_fix.py
+lib/galaxy/model/migrate/versions/0017_library_item_indexes.py
+lib/galaxy/model/migrate/versions/0018_ordered_tags_and_page_tags.py
+lib/galaxy/model/migrate/versions/0019_request_library_folder.py
+lib/galaxy/model/migrate/versions/0020_library_upload_job.py
+lib/galaxy/model/migrate/versions/0021_user_prefs.py
+lib/galaxy/model/migrate/versions/0022_visualization_tables.py
+lib/galaxy/model/migrate/versions/0023_page_published_and_deleted_columns.py
 lib/galaxy/objectstore/
 lib/galaxy/openid/
 lib/galaxy/quota/

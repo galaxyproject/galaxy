@@ -33,7 +33,7 @@ PageRevision_table = Table( "page_revision", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         if migrate_engine.name == 'mysql':

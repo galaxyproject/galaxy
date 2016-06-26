@@ -12,9 +12,9 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds a user preferences table to Galaxy."
-    print ""
+    print("")
+    print("This migration script adds a user preferences table to Galaxy.")
+    print("")
 
 
 # New table to support user preferences.
@@ -33,7 +33,7 @@ def upgrade(migrate_engine):
     try:
         UserPreference_table.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Creating user_preference table failed: %s" % str( e ) )
 
 
@@ -43,5 +43,5 @@ def downgrade(migrate_engine):
     try:
         UserPreference_table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Dropping user_preference table failed: %s" % str( e ) )

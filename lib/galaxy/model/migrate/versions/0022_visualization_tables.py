@@ -32,7 +32,7 @@ VisualizationRevision_table = Table( "visualization_revision", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Visualization_table.create()
