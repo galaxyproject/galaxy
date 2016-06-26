@@ -245,7 +245,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
                 error_file.close()
                 job_state.running = False
-                job_state.fail_message = "More pods failed than allowed."
+                job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
                 self.mark_as_failed(job_state)
                 job.scale(replicas=0)
                 return None
@@ -272,6 +272,33 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             error_file.close()
             self.mark_as_failed(job_state)
             return job_state
+
+    def fail_job(self, job_state):
+        """
+        Kubernetes runner overrides fail_job (called by mark_as_failed) to rescue the pod's log files which are left as
+        stdout (pods logs are the natural stdout and stderr of the running processes inside the pods) and are
+        deleted in the parent implementation as part of the failing the job process.
+
+        :param job_state:
+        :return:
+        """
+
+        # First we rescue the pods logs
+        with open(job_state.output_file, 'r') as outfile:
+            stdout_content = outfile.read()
+
+        if getattr(job_state, 'stop_job', True):
+            self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+        self._handle_runner_state('failure', job_state)
+        # Not convinced this is the best way to indicate this state, but
+        # something necessary
+        if not job_state.runner_state_handled:
+            job_state.job_wrapper.fail(
+                message=getattr(job_state, 'fail_message', 'Job failed'),
+                stdout=stdout_content, stderr='See stdout for pod\'s stderr.'
+            )
+            if job_state.job_wrapper.cleanup_job == "always":
+                job_state.cleanup()
 
     def __produce_log_file(self, job_state):
         pod_r = Pod.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
