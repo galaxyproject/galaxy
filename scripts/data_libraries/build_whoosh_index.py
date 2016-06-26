@@ -8,7 +8,8 @@ data library search section for more details.
 Run from the ~/scripts/data_libraries directory:
 %sh build_whoosh_index.sh
 """
-import ConfigParser
+from __future__ import print_function
+from six.moves import configparser
 import os
 import sys
 
@@ -34,7 +35,7 @@ def build_index( sa_session, whoosh_index_dir ):
 
     def to_unicode( a_basestr ):
         if type( a_basestr ) is str:
-            return unicode( a_basestr, 'utf-8' )
+            return str( a_basestr, 'utf-8' )
         else:
             return a_basestr
     lddas_indexed = 0
@@ -46,7 +47,7 @@ def build_index( sa_session, whoosh_index_dir ):
                              message=to_unicode( message ) )
         lddas_indexed += 1
     writer.commit()
-    print "Number of active library datasets indexed: ", lddas_indexed
+    print("Number of active library datasets indexed: ", lddas_indexed)
 
 
 def get_lddas( sa_session ):
@@ -67,7 +68,7 @@ def get_lddas( sa_session ):
 
 
 def get_sa_session_and_needed_config_settings( ini_file ):
-    conf_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
+    conf_parser = configparser.ConfigParser( { 'here': os.getcwd() } )
     conf_parser.read( ini_file )
     kwds = dict()
     for key, value in conf_parser.items( "app:main" ):

@@ -10,10 +10,15 @@
 # You can also use this script as a library, for instance see https://gist.github.com/1979583
 # TODO: This script overlaps a lot with manage_db.py and create_db.py,
 # these should maybe be refactored to remove duplication.
+from __future__ import print_function
 import datetime
 import decimal
 import os.path
 import sys
+from six import string_types, PY3
+if PY3:
+    long = int
+
 
 # Setup DB scripting environment
 from sqlalchemy import *  # noqa
@@ -73,7 +78,7 @@ def printquery(statement, bind=None):
             of the DBAPI.
 
             """
-            if isinstance(value, basestring):
+            if isinstance(value, string_types):
                 value = value.replace("'", "''")
                 return "'%s'" % value
             elif value is None:
@@ -91,4 +96,4 @@ def printquery(statement, bind=None):
                 )
 
     compiler = LiteralCompiler(dialect, statement)
-    print compiler.process(statement)
+    print(compiler.process(statement))
