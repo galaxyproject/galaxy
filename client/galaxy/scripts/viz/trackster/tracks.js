@@ -3072,18 +3072,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Set min/max if they are not already set.
         // FIXME: checking for different null/undefined/0 is messy; it would be nice to
         // standardize this.
-        console.log(this.config.get_value("name"), this.config.get_value("min_value"), this.config.get_value("max_value") );
-        console.log(this.config.get_value("name"), "non-null results", _.filter( _.map(result.data, function(d) { return d[1]; }), function(d) { return d !== null; }));
         if ( [undefined, null].indexOf(this.config.get_value("min_value")) !== -1 ) {
             this.config.set_value("min_value", 0);
-            console.log("setting min_value", result.data, 0);
         }
         if ( [undefined, null, 0].indexOf(this.config.get_value("max_value")) !== -1 ) {
             this.config.set_value("max_value", _.max( _.map(result.data, function(d) { return d[1]; }) ) || 0);
-            console.log("setting max_value", result.data, _.max( _.map(result.data, function(d) { return d[1]; }) ));
         }
-        console.log("END", this.config.get_value("name"), this.config.get_value("min_value"), this.config.get_value("max_value") );
-
+        
         var canvas = ctx.canvas,
             painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.config.to_key_value_dict(), mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
