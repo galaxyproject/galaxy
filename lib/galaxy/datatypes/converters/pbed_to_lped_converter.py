@@ -68,7 +68,7 @@ def main():
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
         s = '## Rgenetics: http://bitbucket.org/rgalaxy Galaxy Tools %s %s' % (prog, timenow())  # becomes info
-        print s
+        print(s)
         f.write('<div>%s\n<ol>' % (s))
         for i, data in enumerate( flist ):
             f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))

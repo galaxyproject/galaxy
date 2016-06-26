@@ -15,6 +15,11 @@ lib/galaxy/datatypes/converters/lped_to_fped_converter.py
 lib/galaxy/datatypes/converters/lped_to_pbed_converter.py
 lib/galaxy/datatypes/converters/maf_to_fasta_converter.py
 lib/galaxy/datatypes/converters/maf_to_interval_converter.py
+lib/galaxy/datatypes/converters/pbed_ldreduced_converter.py
+lib/galaxy/datatypes/converters/pbed_to_lped_converter.py
+lib/galaxy/datatypes/converters/picard_interval_list_to_bed6_converter.py
+lib/galaxy/datatypes/converters/ref_to_seq_taxonomy_converter.py
+lib/galaxy/datatypes/converters/wiggle_to_simple_converter.py
 lib/galaxy/datatypes/dataproviders/
 lib/galaxy/datatypes/sequence.py
 lib/galaxy/datatypes/sniff.py
