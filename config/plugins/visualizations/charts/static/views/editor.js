@@ -149,7 +149,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.chart.groups.each( function( group ) {
                 if ( valid ) {
                     for ( var key in chart_def.columns ) {
-                        if ( group.attributes[ key ] === '__null__' ) {
+                        if ( group.attributes[ key ] === null ) {
                             self.message.update( { status: 'danger', message: 'This chart type requires column types not found in your tabular file.' } );
                             self.tabs.show( 'groups' );
                             valid = false;
