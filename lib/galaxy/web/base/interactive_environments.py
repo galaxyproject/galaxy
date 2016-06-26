@@ -86,8 +86,8 @@ class InteractiveEnvironmentRequest(object):
             # If we don't have an allowed images, then we fall back to image
             # name specified in the .ini file
             try:
-                self.allowed_images = [self.attr.viz_config.image]
-                self.default_image = self.attr.viz_config.image
+                self.allowed_images = [self.attr.viz_config.get('docker', 'image')]
+                self.default_image = self.attr.viz_config.get('docker', 'image')
                 return
             except AttributeError:
                 raise Exception("[{0}] Could not find allowed_images.yml, or image tag in {0}.ini file for ".format(self.attr.viz_id))
