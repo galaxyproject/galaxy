@@ -24,11 +24,11 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script fixes a problem introduced in the previous migration script ( 9->10 ).  MySQL"
-    print "has a name length limit and thus the index 'ix_hdadaa_history_dataset_association_id' has"
-    print "to be manually created."
-    print "========================================"
+    print("========================================")
+    print("This script fixes a problem introduced in the previous migration script ( 9->10 ).  MySQL")
+    print("has a name length limit and thus the index 'ix_hdadaa_history_dataset_association_id' has")
+    print("to be manually created.")
+    print("========================================")
 
 HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_association_display_at_authorization", metadata,
                                                                Column( "id", Integer, primary_key=True ),

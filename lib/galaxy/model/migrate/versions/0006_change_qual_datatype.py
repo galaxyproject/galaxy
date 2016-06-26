@@ -20,10 +20,10 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script changes certain values in the history_dataset_association.extension"
-    print "column, specifically 'qual' is chaged to be 'qual454'."
-    print "========================================"
+    print("========================================")
+    print("This migration script changes certain values in the history_dataset_association.extension")
+    print("column, specifically 'qual' is chaged to be 'qual454'.")
+    print("========================================")
 
 
 def upgrade(migrate_engine):

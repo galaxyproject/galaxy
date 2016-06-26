@@ -32,6 +32,14 @@ lib/galaxy/forms/
 lib/galaxy/jobs/
 lib/galaxy/managers/
 lib/galaxy/model/__init__.py
+lib/galaxy/model/migrate/versions/0006_change_qual_datatype.py
+lib/galaxy/model/migrate/versions/0007_sharing_histories.py
+lib/galaxy/model/migrate/versions/0008_galaxy_forms.py
+lib/galaxy/model/migrate/versions/0009_request_table.py
+lib/galaxy/model/migrate/versions/0010_hda_display_at_authz_table.py
+lib/galaxy/model/migrate/versions/0011_v0010_mysql_index_fix.py
+lib/galaxy/model/migrate/versions/0012_user_address.py
+lib/galaxy/model/migrate/versions/0013_change_lib_item_templates_to_forms.py
 lib/galaxy/objectstore/
 lib/galaxy/openid/
 lib/galaxy/quota/
