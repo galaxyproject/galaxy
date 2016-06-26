@@ -11,6 +11,10 @@ lib/galaxy/datatypes/converters/gff_to_bed_converter.py
 lib/galaxy/datatypes/converters/interval_to_bed_converter.py
 lib/galaxy/datatypes/converters/interval_to_bedstrict_converter.py
 lib/galaxy/datatypes/converters/interval_to_coverage.py
+lib/galaxy/datatypes/converters/lped_to_fped_converter.py
+lib/galaxy/datatypes/converters/lped_to_pbed_converter.py
+lib/galaxy/datatypes/converters/maf_to_fasta_converter.py
+lib/galaxy/datatypes/converters/maf_to_interval_converter.py
 lib/galaxy/datatypes/sequence.py
 lib/galaxy/datatypes/sniff.py
 lib/galaxy/datatypes/tabular.py

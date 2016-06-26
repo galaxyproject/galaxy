@@ -26,7 +26,7 @@ def __main__():
             out.write( "%s\n" % c.text )
         out.write( "\n" )
     out.close()
-    print "%i MAF blocks converted to FASTA." % ( count )
+    print("%i MAF blocks converted to FASTA." % ( count ))
 
 
 if __name__ == "__main__":
