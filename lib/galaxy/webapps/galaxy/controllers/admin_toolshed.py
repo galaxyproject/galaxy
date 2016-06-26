@@ -1114,6 +1114,26 @@ class AdminToolshed( AdminGalaxy ):
                                           tool_panel_section_keys=tool_panel_section_keys,
                                           tool_path=tool_path,
                                           tool_shed_url=tool_shed_url )
+
+
+                #api call to get the tool requirements (from the <requirements> section of each valid tool)
+                reqs = []
+                for repository in created_or_updated_tool_shed_repositories:
+                    response = util.url_get(tool_shed_url + "/api/repositories/get_repository_revision_install_info",None,None,
+                                     {"name": repository.name, "owner": repository.owner,
+                                       "changeset_revision": repository.changeset_revision})
+                    json_response = json.loads(response)
+                    reqs.extend([tool['requirements'] for tool in json_response[1]['valid_tools']][0])
+
+                #construct a list of unique requirements, name and version define uniqueness
+                uniq_reqs = dict()
+                for req in reqs:
+                    uniq_reqs[(req['name'] + '_' + req['version'])] = {'name': req['name'], 'version': req['version']}
+
+                if install_tool_dependencies:
+                    view = views.DependencyResolversView(self.app)
+                    [view.manager_dependency(req) for req in uniq_reqs.values()] #not working yet...
+
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                     install_repository_manager.initiate_repository_installation( installation_dict )
                 return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',
