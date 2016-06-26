@@ -596,16 +596,6 @@ All in `config/plugins/interactive_environments`:
 
 ---
 
-### Dataset Collections
-
-Hundreds or thousands of similar datasets are unwieldy, how do you get a handle on them?
-Group datasets into a single unit
-Perform complex operations on that unit
-Operations are performed on each group element
-Output of each operation is a new group
-
----
-
 ### Client Directories
 
 - Source stylesheets and JavaScript in `client/galaxy/{style|scripts}`
@@ -617,9 +607,9 @@ deployment.
 
 ---
 
-### Building the Client - Makefile Targets
-
 class: normal
+
+### Building the Client - Makefile Targets
 
 ```
 client: grunt style ## Rebuild all client-side artifacts
@@ -638,13 +628,12 @@ npm-deps: ## Install NodeJS dependencies.
 
 ### grunt
 
-Build tool for JavaScript, tasks are defined in `client/Gruntfile.js`. The default task is
+Build tool for node/JavaScript, tasks in `client/Gruntfile.js`. Default task is
 
 .smaller[```grunt.registerTask( 'default', [ 'check-modules', 'uglify', 'webpack' ] );```]
 
 - `check-modules` Verifies node dependencies are correct and exact.
-- `uglify` Compresses JavaScript modules in `client` and move to `static` and creates source maps.
-   - https://github.com/mishoo/UglifyJS
+- [`uglify`](https://github.com/mishoo/UglifyJS) Compresses JavaScript modules in `client` and move to `static` and creates source maps.
    - JavaScript loads much faster but difficult to debug by default
    - Source maps re-enable proper stack traces.
 - `webpack` Bundles modules together into a single JavaScript file - quickly loadable.
@@ -671,7 +660,7 @@ From http://requirejs.org/docs/why.html:
  - Ability to load nested dependencies
  - Ease of use for developer but then backed by an optimization tool that helps deployment
 
-Enter RequireJS an implementation of AMD.
+RequireJS an implementation of AMD.
 
 
 ---
@@ -825,13 +814,9 @@ This used to be an important detail - but uWSGI makes things a lot easier.
 
 ---
 
-### Cluster Support
-
 background-image: url(images/cluster_support.svg)
 
-???
-
-Pulsar discussion?
+### Cluster Support
 
 ---
 
