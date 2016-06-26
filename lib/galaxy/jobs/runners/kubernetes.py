@@ -211,9 +211,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
         if len(jobs.response['items']) == 1:
             job = Job(self._pykube_api, jobs.response['items'][0])
+            job_destination = job_state.job_wrapper.job_destination
             succeeded = 0
             active = 0
             failed = 0
+
+            max_pod_retrials = 1
+            if 'k8s_pod_retrials' in self.runner_params:
+                max_pod_retrials = int(self.runner_params['k8s_pod_retrials'])
+            if 'max_pod_retrials' in job_destination.params:
+                max_pod_retrials = int(job_destination.params['max_pod_retrials'])
+
             if 'succeeded' in job.obj['status']:
                 succeeded = job.obj['status']['succeeded']
             if 'active' in job.obj['status']:
@@ -230,16 +238,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
-
-            elif active > 0 or succeeded + active + failed == 0:
+            elif active > 0 and failed <= max_pod_retrials:
                 job_state.running = True
                 return job_state
-            elif failed > job_state.job_destination.params['max_pod_retrials']:
+            elif failed > max_pod_retrials:
                 self.__produce_log_file(job_state)
                 error_file = open(job_state.error_file, 'w')
                 error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
                 error_file.close()
                 job_state.running = False
+                job_state.fail_message = "More pods failed than allowed."
                 self.mark_as_failed(job_state)
                 job.scale(replicas=0)
                 return None
