@@ -7,7 +7,6 @@ from ConfigParser import ConfigParser
 import argparse
 import sqlalchemy as sa
 import yaml
-import copy
 import re
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
