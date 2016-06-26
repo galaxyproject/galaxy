@@ -25,6 +25,7 @@ lib/galaxy/exceptions/
 lib/galaxy/external_services/
 lib/galaxy/forms/
 lib/galaxy/jobs/
+lib/galaxy/managers/
 lib/galaxy/objectstore/
 lib/galaxy/openid/
 lib/galaxy/quota/
