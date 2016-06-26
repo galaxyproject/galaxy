@@ -64,7 +64,7 @@ class DependencyResolversView(object):
 
         name, version, type, extra_kwds = self._parse_dependency_info(kwds)
         resolve_kwds = dict(
-            job_directory="/path/to/example/job_directory",
+            job_directory=None,
             index=index,
             **extra_kwds
         )
