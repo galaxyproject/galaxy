@@ -595,21 +595,6 @@ class Fastq ( Sequence ):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def decompress_fastqgz(self,dataset):
-        print('X Compressing the fastq files')
-        compress = is_gzip(dataset.file_name)
-        if compress:
-            # Rename compressed file
-            os.rename(dataset.file_name  , dataset.file_name + ".gz")
-            # Decompress fastq file 
-            stderr_name = tempfile.NamedTemporaryFile( prefix="fastq_compress" ).name
-            command = ['gzip','-df',dataset.file_name+ ".gz"]
-            try:
-                exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
-            except Exception as e:
-                log.warning( '%s, Compression Exception: %s', self, e )
-        else:
-            return False
     def sniff( self, filename ):
         """
         Determines whether the file is in generic fastq format
@@ -687,8 +672,7 @@ class Fastq ( Sequence ):
         return True
     process_split_file = staticmethod(process_split_file)
 
-
-class FastqGz ( Sequence ):
+class FastqGz ( Fastq ):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
@@ -728,23 +712,6 @@ class FastqGz ( Sequence ):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def compress_fastq(self,dataset):
-        print('X Compressing the fastq files')
-        compress = is_gzip(dataset.file_name)
-        if not compress:
-            # Compress fastq file
-            stderr_name = tempfile.NamedTemporaryFile( prefix="fastq_compress" ).name
-            command = ['gzip',dataset.file_name]
-            try:
-                exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
-            except Exception as e:
-                log.warning( '%s, Compression Exception: %s', self, e )
-            
-            # Rename compressed file
-            os.rename(dataset.file_name + ".gz" , dataset.file_name)
-        else:
-            return False
-
     def sniff( self, filename ):
         """
         Determines whether the file is in generic fastq format
@@ -774,54 +741,6 @@ class FastqGz ( Sequence ):
         except:
             return False
 
-    def split( cls, input_datasets, subdir_generator_function, split_params):
-        """
-        FASTQ files are split on cluster boundaries, in increments of 4 lines
-        """
-        if split_params is None:
-            return None
-
-        # first, see if there are any associated FQTOC files that will give us the split locations
-        # if so, we don't need to read the files to do the splitting
-        toc_file_datasets = []
-        for ds in input_datasets:
-            tmp_ds = ds
-            fqtoc_file = None
-            while fqtoc_file is None and tmp_ds is not None:
-                fqtoc_file = tmp_ds.get_converted_files_by_type('fqtoc')
-                tmp_ds = tmp_ds.copied_from_library_dataset_dataset_association
-
-            if fqtoc_file is not None:
-                toc_file_datasets.append(fqtoc_file)
-
-        if len(toc_file_datasets) == len(input_datasets):
-            return cls.do_fast_split(input_datasets, toc_file_datasets, subdir_generator_function, split_params)
-        return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
-    split = classmethod(split)
-
-    def process_split_file(data):
-        """
-        This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
-        to create the input files for the Task. The parameters:
-        data - a dict containing the contents of the split file
-        """
-        args = data['args']
-        input_name = data['input_name']
-        output_name = data['output_name']
-        start_sequence = long(args['start_sequence'])
-        sequence_count = long(args['num_sequences'])
-
-        if 'toc_file' in args:
-            toc_file = json.load(open(args['toc_file'], 'r'))
-            commands = Sequence.get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count)
-        else:
-            commands = Sequence.get_split_commands_sequential(is_gzip(input_name), input_name, output_name, start_sequence, sequence_count)
-        for cmd in commands:
-            if 0 != os.system(cmd):
-                raise Exception("Executing '%s' failed" % cmd)
-        return True
-    process_split_file = staticmethod(process_split_file)
-
 
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
@@ -829,13 +748,13 @@ class FastqSanger( Fastq ):
     file_ext = "fastqsanger"
 
 
-class FastqSolexaGz( Fastq ):
+class FastqSolexa( Fastq ):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa"
 
 
-class FastqIlluminaGz( Fastq ):
+class FastqIllumina( Fastq ):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
     edam_format = "format_1931"
     file_ext = "fastqillumina"
@@ -852,13 +771,13 @@ class FastqSangerGz( FastqGz ):
     file_ext = "fastqsanger.gz"
 
 
-class FastqSolexa( FastqGz ):
+class FastqSolexaGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
 
 
-class FastqIllumina( FastqGz ):
+class FastqIlluminaGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
     edam_format = "format_1931"
     file_ext = "fastqillumina.gz"

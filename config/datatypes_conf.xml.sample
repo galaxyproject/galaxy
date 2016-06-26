@@ -72,17 +72,32 @@
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
+    <datatype extension="fastq.gz" type="galaxy.datatypes.sequence:FastqGz" display_in_upload="true" subclass="True">
+        <converter file="fastqgz_to_fastq.xml" target_datatype="fastq"/>
+    </datatype>
     <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
+    </datatype>
+    <datatype extension="fastqsanger.gz" type="galaxy.datatypes.sequence:FastqSangerGz" display_in_upload="true" subclass="True">
+        <converter file="fastqsangergz_to_fastqsanger.xml" target_datatype="fastqsanger"/>
     </datatype>
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" description="FastqSolexa is the Illumina (Solexa) variant of the Fastq format, which stores sequences and quality scores in a single file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#FastqSolexa">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
+    <datatype extension="fastqsolexa.gz" type="galaxy.datatypes.sequence:FastqSolexaGz" display_in_upload="true" subclass="True">
+        <converter file="fastqsolexagz_to_fastqsolexa.xml" target_datatype="fastqsolexa"/>
+    </datatype>
     <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
+    <datatype extension="fastqcssanger.gz" type="galaxy.datatypes.sequence:FastqCSSangerGz" display_in_upload="true" subclass="True">
+        <converter file="fastqcssangergz_to_fastqcssanger.xml" target_datatype="fastqcssanger"/>
+    </datatype>
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
+    </datatype>
+    <datatype extension="fastqillumina.gz" type="galaxy.datatypes.sequence:FastqIlluminaGz" display_in_upload="true" subclass="True">
+        <converter file="fastqilluminagz_to_fastqillumina.xml" target_datatype="fastqillumina"/>
     </datatype>
     <datatype extension="fqtoc" type="galaxy.datatypes.sequence:SequenceSplitLocations" display_in_upload="true"/>
     <datatype extension="eland" type="galaxy.datatypes.tabular:Eland" display_in_upload="true"/>
