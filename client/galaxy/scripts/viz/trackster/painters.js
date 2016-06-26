@@ -191,12 +191,15 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     ctx.save();
 
     // Pixel position of 0 on the y axis
-    var y_zero = Math.round( height + min_value / vertical_range * height );
-
-    // Horizontal line to denote x-axis
-    if ( mode !== "Intensity" ) {
-        ctx.fillStyle = "#aaa";
-        ctx.fillRect( 0, y_zero, width, 1 );
+    if ( vertical_range > 0.0 ){
+        var y_zero = Math.round( height + min_value / vertical_range * height );
+        // Horizontal line to denote x-axis
+        if ( mode !== "Intensity" ) {
+            ctx.fillStyle = "#aaa";
+            ctx.fillRect( 0, y_zero, width, 1 );
+        }
+    } else {
+        var y_zero = 0.0;
     }
 
     ctx.beginPath();
@@ -251,7 +254,11 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         if (mode === "Histogram") {
             // y becomes the bar height in pixels, which is the negated for canvas coords
             y = Math.round( y / vertical_range * height_px );
-            ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
+            if ( y < 0 ){
+                ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
+            } else {
+                ctx.fillRect(x_scaled, y_zero - y, delta_x_px, y );
+            }
         }
         else if (mode === "Intensity") {
             var
