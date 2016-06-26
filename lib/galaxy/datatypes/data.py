@@ -988,7 +988,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
         if not line_wrap:
             if '\n' in line:
                 i = line.index( '\n' )
-                last_line = line[i+1:]
+                last_line = line[i + 1:]
                 line = line[:i]
             else:
                 last_line = ''
