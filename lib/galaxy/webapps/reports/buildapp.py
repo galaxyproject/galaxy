@@ -60,12 +60,18 @@ def app_factory( global_conf, **kwargs ):
         from galaxy.webapps.reports.app import UniverseApplication
         app = UniverseApplication( global_conf=global_conf, **kwargs )
     atexit.register( app.shutdown )
+
     # Create the universe WSGI application
     webapp = ReportsWebApplication( app, session_cookie='galaxyreportssession', name="reports" )
     add_ui_controllers( webapp, app )
-    # These two routes handle our simple needs at the moment
     webapp.add_route( '/{controller}/{action}', controller="root", action='index' )
     webapp.add_route( '/{action}', controller='root', action='index' )
+
+    # These two routes handle our simple needs at the moment
+    # webapp.add_api_controllers( 'galaxy.webapps.reports.api', app )
+    # webapp.mapper.connect( '/api/users/registered', action='registered', controller="users" )
+    # webapp.mapper.resource( 'user', 'users', path_prefix='/api' )
+
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
