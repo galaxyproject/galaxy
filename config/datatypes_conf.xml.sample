@@ -45,6 +45,7 @@
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigwig.xml" />
       <display file="igb/bigwig.xml" />
+      <display file="igv/bigwig.xml" />
     </datatype>
     <datatype extension="cxb" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="true" description="Cuffquant output format" />
     <datatype extension="chrint" type="galaxy.datatypes.interval:ChromatinInteractions" display_in_upload="True">
