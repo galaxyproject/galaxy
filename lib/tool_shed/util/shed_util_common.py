@@ -180,6 +180,34 @@ def get_category_by_name( app, name ):
         return None
 
 
+def get_unique_requirements(app, tool_shed_url, repository):
+    """
+    Contact tool_shed_url for a list of requirements for a repository or a list of repositories.
+    Returns a list of requirements, where each requirement is a dictionary with name and version as keys.
+    """
+    reqs = []
+    if not isinstance(repository, list):
+        repositories = [repository]
+    else:
+        repositories = repository
+    pathspec = ["api", "repositories", "get_repository_revision_install_info"]
+    for repository in repositories:
+        params = {"name": repository.name,
+                  "owner": repository.owner,
+                  "changeset_revision": repository.changeset_revision}
+        response = util.url_get(tool_shed_url,
+                                password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ),
+                                pathspec=pathspec,
+                                params=params
+                                )
+        json_response = json.loads(response)
+        reqs.extend([tool['requirements'] for tool in json_response[1]['valid_tools']][0])
+    uniq_reqs = dict()
+    for req in reqs:
+        uniq_reqs[(req['name'] + '_' + req['version'])] = {'name': req['name'], 'version': req['version']}
+    return uniq_reqs.values()
+
+
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     """
     Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the
