@@ -68,9 +68,12 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/{action}', controller='root', action='index' )
 
     # These two routes handle our simple needs at the moment
-    # webapp.add_api_controllers( 'galaxy.webapps.reports.api', app )
-    # webapp.mapper.connect( '/api/users/registered', action='registered', controller="users" )
-    # webapp.mapper.resource( 'user', 'users', path_prefix='/api' )
+    webapp.add_api_controllers( 'galaxy.webapps.reports.api', app )
+
+    webapp.mapper.connect( '/api/users/registered/total', action='registered_users_total', controller="users" )
+    webapp.mapper.connect( '/api/users/registered', action='registered_users', controller="users" )
+    webapp.mapper.connect( '/api/users/registered/{month:.+?}', action='registered_users_in_month', controller="users" )
+    webapp.mapper.resource( 'user', 'users', path_prefix='/api' )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
