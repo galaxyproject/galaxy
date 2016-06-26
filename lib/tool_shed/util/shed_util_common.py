@@ -208,7 +208,7 @@ def get_unique_requirements(app, tool_shed_url, repository):
     uniq_reqs = dict()
     for tool_requirements in requirements:
         for req in tool_requirements:
-	    name = req.get("name", None)
+            name = req.get("name", None)
             if not name:
                 continue  # A requirement without a name can't be resolved, so let's skip those
             version = req.get("version", "versionless")
