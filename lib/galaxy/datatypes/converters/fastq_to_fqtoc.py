@@ -18,7 +18,7 @@ def main():
     """
     input_fname = sys.argv[1]
     if is_gzip(input_fname):
-        print 'Conversion is only possible for uncompressed files'
+        print('Conversion is only possible for uncompressed files')
         sys.exit(1)
 
     out_file = open(sys.argv[2], 'w')
