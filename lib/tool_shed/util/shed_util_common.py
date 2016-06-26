@@ -203,10 +203,12 @@ def get_unique_requirements(app, tool_shed_url, repository):
         json_response = json.loads(response)
         valid_tools = json_response[1].get('valid_tools', [])
         for tool in valid_tools:
-            requirements.append(tool['requirements'])
+            if tool['requirements']:
+                requirements.append(tool['requirements'])
     uniq_reqs = dict()
-    for req in requirements:
-        uniq_reqs[(req['name'] + '_' + req['version'])] = {'name': req['name'], 'version': req['version']}
+    for tool_requirements in requirements:
+        for req in tool_requirements:
+            uniq_reqs[(req['name'] + '_' + req['version'])] = {'name': req['name'], 'version': req['version']}
     return uniq_reqs.values()
 
 
