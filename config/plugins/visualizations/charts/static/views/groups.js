@@ -44,7 +44,7 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
                                     input_def.is_zero && columns.push( { 'label' : 'Column: None', 'value' : 'zero' } );
                                     var meta = dataset.metadata_column_types;
                                     for ( var key in meta ) {
-                                        var valid = [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 ? input_def.is_numeric : input_def.is_text || input_def.is_label;
+                                        var valid = ( [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 && input_def.is_numeric ) || input_def.is_text || input_def.is_label;
                                         valid && columns.push( { 'label' : 'Column: ' + ( parseInt( key ) + 1 ), 'value' : key } );
                                     }
                                     select.update( columns );
