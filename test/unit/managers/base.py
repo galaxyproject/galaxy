@@ -5,7 +5,6 @@ from __future__ import print_function
 import os
 import imp
 import json
-import collections
 
 from six import string_types
 
@@ -111,7 +110,7 @@ class BaseTestCase( test_utils.unittest.TestCase ):
         self.assertTrue( True, msg or ( 'is an orm filter: ' + str( item ) ) )
 
     def assertFnFilter( self, item, msg=None ):
-        if not item or not isinstance( item, collections.Callable):
+        if not item or not callable( item ):
             self.fail( 'Not a fn filter: ' + str( type( item ) ) )
         self.assertTrue( True, msg or ( 'is a fn filter: ' + str( item ) ) )
 
