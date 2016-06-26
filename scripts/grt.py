@@ -7,6 +7,8 @@ from ConfigParser import ConfigParser
 import argparse
 import sqlalchemy as sa
 import yaml
+import copy
+import re
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
@@ -46,6 +48,56 @@ def init(config):
         object_store,
         config.database_connection.split(':')[0]
     )
+
+
+def sanitize_dict(unsanitized_dict):
+    sanitized_dict = dict()
+
+    for key in unsanitized_dict:
+        if key == 'values' and type(unsanitized_dict[key]) is list:
+            sanitized_dict[key] = None
+        else:
+            sanitized_dict[key] = sanitize_value(unsanitized_dict[key])
+
+        if sanitized_dict[key] is None:
+            del sanitized_dict[key]
+
+    if len(sanitized_dict) == 0:
+        return None
+    else:
+        return sanitized_dict
+
+
+def sanitize_list(unsanitized_list):
+    sanitized_list = list()
+
+    for key in range(len(unsanitized_list)):
+        sanitized_value = sanitize_value(unsanitized_list[key])
+        if not None:
+            sanitized_list.append(sanitized_value)
+
+    if len(sanitized_list) == 0:
+        return None
+    else:
+        return sanitized_list
+
+
+def sanitize_value(unsanitized_value):
+    sanitized_value = None
+
+    fp_regex = re.compile('^(\/[^\/]+)+$')
+
+    if type(unsanitized_value) is dict:
+        sanitized_value = sanitize_dict(unsanitized_value)
+    elif type(unsanitized_value) is list:
+        sanitized_value = sanitize_list(unsanitized_value)
+    else:
+        if fp_regex.match(str(unsanitized_value)):
+            sanitized_value = None
+        else:
+            sanitized_value = unsanitized_value
+
+    return sanitized_value
 
 
 if __name__ == '__main__':
@@ -124,10 +176,15 @@ if __name__ == '__main__':
             for k in wanted_metrics
         }
 
+        params = job.raw_param_dict()
+        for key in params:
+            params[key] = json.loads(params[key])
+
         job_data = {
             'tool': grt_tool_idx,
             'date': job.update_time.strftime('%s'),
             'metrics': grt_metrics,
+            'params': sanitize_dict(params)
         }
         grt_jobs_data.append(job_data)
 
