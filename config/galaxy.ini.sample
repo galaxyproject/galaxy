@@ -21,30 +21,22 @@
 
 # Configuration of the internal HTTP server.
 
-[server:main]
+[uwsgi]
 
-# The internal HTTP server to use.  Currently only Paste is provided.  This
-# option is required.
-use = egg:Paste#http
-
-# The port on which to listen.
-#port = 8080
-
-# The address on which to listen.  By default, only listen to localhost (Galaxy
-# will not be accessible over the network).  Use '0.0.0.0' to listen on all
-# available network interfaces.
-#host = 127.0.0.1
-
-# Use a threadpool for the web server instead of creating a thread for each
-# request.
-use_threadpool = True
+# The address and port on which to listen.  By default, only listen to
+# localhost (Galaxy will not be accessible over the network).  Use '0.0.0.0' to
+# listen on all available network interfaces.
+http = 127.0.0.1:8080
 
 # Number of threads in the web server thread pool.
-#threadpool_workers = 10
+threads = 8
 
-# Set the number of seconds a thread can work before you should kill it
-# (assuming it will never finish) to 3 hours.  Default is 600 (10 minutes).
-threadpool_kill_thread_limit = 10800
+# Locations of static files, can be modified, e.g. to use custom styles. 
+static-map = /static=./static
+static-map = /static/style=./static/style/blue
+
+[server:main]
+
 
 # ---- Filters --------------------------------------------------------------
 

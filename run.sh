@@ -30,7 +30,10 @@ then
     . $GALAXY_LOCAL_ENV_FILE
 fi
 
-# Pop args meant for common_startup.sh
+uwsgi_args="--master --pythonpath=lib"
+
+# Pop args meant for common_startup.sh and translate any old paster style 
+# args for uwsgi
 while :
 do
     case "$1" in
