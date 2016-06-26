@@ -1,5 +1,21 @@
 #!/bin/sh
 
+### Run Galaxy using uwsgi.
+###
+### Compatibility options are implemented for the previous PasteScript based
+### run.sh:
+### --daemon: Daemonize, write pid to PID_FILE and log to LOG_FILE
+### --stop-daemon: Shutdown daemond using PID_FILE
+### --restart: Graceful reload using PID_FILE
+###
+### No special handling of --reload is done since it is already a uwsgi
+### option but does something different than for paster. If you want
+### this functionality you can provide the --py-auto-reload option. 
+### But you probably don't want to do that. 
+ 
+PID_FILE="${PID_FILE:-uwsgi.pid}"
+LOG_FILE="${LOG_FILE:-uwsgi.log}"
+
 cd `dirname $0`
 
 # If there is a file that defines a shell environment specific to this
@@ -29,18 +45,21 @@ do
             ;;
         --stop-daemon)
             common_startup_args="$common_startup_args $1"
-            paster_args="$paster_args $1"
+            uwsgi_args="$uwsgi_args --stop $PID_FILE"
             stop_daemon_arg_set=1
             shift
             ;;
-        --daemon|--restart|restart)
-            if [ "$1"=="--restart" ]
-            then
-                paster_args="$paster_args restart"
-            else
-                paster_args="$paster_args $1"
-            fi
-
+        --restart)
+            # --reload does a gracefull reload if multiple processes are
+            # configured
+            uwsgi_args="$uwsgi_args --reload $PID_FILE"
+            daemon_or_restart_arg_set=1
+            shift
+            ;;
+        --daemon)
+            # --daemonize2 waits until after the application has loaded
+            # to daemonize, thus it stops if any errors are found
+            uwsgi_args="$uwsgi_args --daemonize2 $LOG_FILE --safe-pidfile $PID_FILE"
             daemon_or_restart_arg_set=1
             shift
             ;;
@@ -52,7 +71,7 @@ do
             break
             ;;
         *)
-            paster_args="$paster_args $1"
+            uwsgi_args="$uwsgi_args $1"
             shift
             ;;
     esac
@@ -99,35 +118,19 @@ if [ -z "$GALAXY_CONFIG_FILE" ]; then
 fi
 
 if [ -n "$GALAXY_RUN_ALL" ]; then
-    servers=`sed -n 's/^\[server:\(.*\)\]/\1/  p' $GALAXY_CONFIG_FILE | xargs echo`
-    if [ -z "$stop_daemon_arg_set" -a -z "$daemon_or_restart_arg_set" ]; then
-        echo 'ERROR: $GALAXY_RUN_ALL cannot be used without the `--daemon`, `--stop-daemon` or `restart` arguments to run.sh'
-        exit 1
-    fi
-    for server in $servers; do
-        if [ -n "$wait_arg_set" -a -n "$daemon_or_restart_arg_set" ]; then
-            python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $paster_args
-            while true; do
-                sleep 1
-                printf "."
-                # Grab the current pid from the pid file
-                if ! current_pid_in_file=$(cat $server.pid); then
-                    echo "A Galaxy process died, interrupting" >&2
-                    exit 1
-                fi
-                # Search for all pids in the logs and tail for the last one
-                latest_pid=`egrep '^Starting server in PID [0-9]+\.$' $server.log -o | sed 's/Starting server in PID //g;s/\.$//g' | tail -n 1`
-                # If they're equivalent, then the current pid file agrees with our logs
-                # and we've succesfully started
-                [ -n "$latest_pid" ] && [ $latest_pid -eq $current_pid_in_file ] && break
-            done
-            echo
-        else
-            echo "Handling $server with log file $server.log..."
-            python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $paster_args
-        fi
-    done
-else
-    # Handle only 1 server, whose name can be specified with --server-name parameter (defaults to "main")
-    python ./scripts/paster.py serve $GALAXY_CONFIG_FILE $paster_args
+    echo 'ERROR: $GALAXY_RUN_ALL is no longer supported. Configure multiple processes with uwsgi'
+    echo 'https://wiki.galaxyproject.org/Admin/Config/Performance/Scaling'
+    exit 1
 fi
+
+# Look for uws
+if [ -z "$skip_venv" -a -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
+    UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
+elif command -v uwsgi >/dev/null 2>&1; then
+    UWSGI=uwsgi
+else
+    echo 'ERROR: Could not find uwsgi executable'
+    exit 1
+fi
+
+$UWSGI --ini-paste $GALAXY_CONFIG_FILE $uwsgi_args 
