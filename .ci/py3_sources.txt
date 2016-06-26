@@ -57,6 +57,7 @@ lib/galaxy/tools/parser/
 lib/galaxy/tools/toolbox/
 lib/galaxy/tours/
 lib/galaxy/util/
+lib/galaxy/visualization/
 lib/galaxy/work/
 lib/galaxy_ext/
 lib/galaxy_utils/
