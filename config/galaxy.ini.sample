@@ -26,7 +26,7 @@
 # The address and port on which to listen.  By default, only listen to
 # localhost (Galaxy will not be accessible over the network).  Use '0.0.0.0' to
 # listen on all available network interfaces.
-http-socket = 127.0.0.1:8080
+http = 127.0.0.1:8080
 
 # Number of threads in the web server thread pool.
 threads = 8
@@ -46,7 +46,8 @@ route-run = log:Proxy ${HTTP_HOST} to ${TARGET_HOST}
 ## route-run = addheader:Access-Control-Allow-Credentials true
 route-run = httpdumb:${TARGET_HOST}
 
-http-websockets = True
+# Required for websockets / proxy
+http-raw-body = True
 offload-threads = 8
 
 # ---- Filters --------------------------------------------------------------
