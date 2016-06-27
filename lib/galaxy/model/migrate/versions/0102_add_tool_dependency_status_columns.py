@@ -1,6 +1,8 @@
 """
 Migration script to add status and error_message columns to the tool_dependency table and drop the uninstalled column from the tool_dependency table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

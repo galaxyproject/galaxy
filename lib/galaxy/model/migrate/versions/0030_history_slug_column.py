@@ -1,6 +1,8 @@
 """
 Migration script to add column for a history slug.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, Index, MetaData, Table, TEXT

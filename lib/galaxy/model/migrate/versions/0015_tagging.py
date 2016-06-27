@@ -9,6 +9,8 @@ history_dataset_association_tag_association table failed:  (OperationalError)
 (1059, "Identifier name 'ix_history_dataset_association_tag_association_history_dataset_association_id'
 is too long)
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

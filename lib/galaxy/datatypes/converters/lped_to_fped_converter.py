@@ -2,11 +2,11 @@
 # recode to numeric fbat version
 # much slower so best to always
 # use numeric alleles internally
+from __future__ import print_function
 
-import sys
 import os
+import sys
 import time
-
 
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'

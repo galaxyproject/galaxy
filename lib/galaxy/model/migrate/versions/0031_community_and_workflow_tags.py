@@ -5,6 +5,8 @@ Migration script to (a) add and populate necessary columns for doing community t
 SQLite does not support 'ALTER TABLE ADD FOREIGN KEY', so this script will generate error messages when run against \
 SQLite; however, script does execute successfully against SQLite.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, Unicode

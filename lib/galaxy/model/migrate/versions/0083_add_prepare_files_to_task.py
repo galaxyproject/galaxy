@@ -1,6 +1,8 @@
 """
 Migration script to add 'prepare_input_files_cmd' column to the task table and to rename a column.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, MetaData, String, Table, TEXT

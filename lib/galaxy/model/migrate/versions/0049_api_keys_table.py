@@ -1,6 +1,8 @@
 """
 Migration script to add the api_keys table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

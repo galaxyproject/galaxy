@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )

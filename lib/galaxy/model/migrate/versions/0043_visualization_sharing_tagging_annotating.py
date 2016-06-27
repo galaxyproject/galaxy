@@ -1,6 +1,8 @@
 """
 Migration script to create tables and columns for sharing visualizations.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, MetaData, Table, TEXT, Unicode

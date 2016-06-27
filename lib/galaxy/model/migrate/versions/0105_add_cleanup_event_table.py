@@ -1,6 +1,8 @@
 """
 Migration script to add the cleanup_event* tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

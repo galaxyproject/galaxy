@@ -1,6 +1,8 @@
 """
 Migration script to create tables task management.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

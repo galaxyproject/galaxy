@@ -2,6 +2,8 @@
 Migration script to create column and table for importing histories from
 file archives.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, MetaData, Table, TEXT

@@ -1,6 +1,8 @@
 """
 Migration script to add the post_job_action_association table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

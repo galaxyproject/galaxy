@@ -1,6 +1,8 @@
 """
 Migration script to create tables for adding explicit workflow outputs.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table

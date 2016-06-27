@@ -4,6 +4,8 @@ a user can select from a list of his addresses to associate with the request.  T
 drops the request.submitted column which was boolean and replaces it with a request.state column
 which is a string, allowing for more flexibility with request states.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

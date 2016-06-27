@@ -1,6 +1,8 @@
 """
 Migration script to create a table for page-user share association.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table

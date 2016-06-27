@@ -1,6 +1,8 @@
 """
 Migration script to add the metadata, update_available and includes_datatypes columns to the tool_shed_repository table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

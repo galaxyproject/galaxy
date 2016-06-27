@@ -8,6 +8,8 @@ history_dataset_association_display_at_authorization table failed:  (Operational
 (1059, "Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'
 is too long
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

@@ -1,6 +1,8 @@
 """
 Migration script for tables related to dataset collections.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

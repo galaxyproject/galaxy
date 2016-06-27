@@ -15,6 +15,8 @@ If using mysql, this script will throw an (OperationalError) exception due to a 
 the library_dataset_dataset_info_association table, which is OK because the script creates an index
 with a shortened name.
 """
+from __future__ import print_function
+
 import logging
 import sys
 

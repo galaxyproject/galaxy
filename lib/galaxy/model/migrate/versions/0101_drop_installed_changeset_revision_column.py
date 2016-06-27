@@ -1,6 +1,8 @@
 """
 Migration script to drop the installed_changeset_revision column from the tool_dependency table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

@@ -1,6 +1,8 @@
 """
 Migration script to create "params" column in job table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, MetaData, Table

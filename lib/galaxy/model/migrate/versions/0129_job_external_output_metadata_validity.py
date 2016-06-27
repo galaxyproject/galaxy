@@ -1,6 +1,8 @@
 """
 Migration script to allow invalidation of job external output metadata temp files
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

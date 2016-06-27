@@ -1,6 +1,8 @@
 """
 Migration script to create table for storing tool tag associations.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

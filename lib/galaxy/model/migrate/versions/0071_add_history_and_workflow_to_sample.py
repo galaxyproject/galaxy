@@ -1,6 +1,8 @@
 """
 Migration script to add 'workflow' and 'history' columns for a sample.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table

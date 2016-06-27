@@ -2,6 +2,8 @@
 Migration script to create table for storing deferred job and managed transfer
 information.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

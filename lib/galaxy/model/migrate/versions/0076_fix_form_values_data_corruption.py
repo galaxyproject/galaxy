@@ -2,6 +2,8 @@
 This migration script fixes the data corruption caused in the form_values
 table (content json field) by migrate script 65.
 '''
+from __future__ import print_function
+
 import logging
 from json import dumps, loads
 

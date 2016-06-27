@@ -4,10 +4,12 @@
 # eg lped/eigen/fbat/snpmatrix all to pbed
 # and pbed to lped/eigen/fbat/snpmatrix ?
 # that's a lot of converters
-import sys
+from __future__ import print_function
+
 import os
-import time
 import subprocess
+import sys
+import time
 
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'

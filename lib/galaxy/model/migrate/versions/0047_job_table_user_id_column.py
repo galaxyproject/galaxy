@@ -1,6 +1,8 @@
 """
 Add a user_id column to the job table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

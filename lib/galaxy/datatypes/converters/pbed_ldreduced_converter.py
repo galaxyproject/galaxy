@@ -1,6 +1,6 @@
 # converter for ldreduced rgenetics datatype
 # used for grr and eigenstrat - shellfish if we get around to it
-#
+from __future__ import print_function
 
 import os
 import sys

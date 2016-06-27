@@ -2,6 +2,8 @@
 Migration script to add support for storing visualizations.
   1) Creates Visualization and VisualizationRevision tables
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

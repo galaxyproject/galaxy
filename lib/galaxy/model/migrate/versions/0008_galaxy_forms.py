@@ -9,6 +9,8 @@ This migration script adds the following new tables for supporting Galaxy forms:
 7) sample_state
 8) sample_event
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

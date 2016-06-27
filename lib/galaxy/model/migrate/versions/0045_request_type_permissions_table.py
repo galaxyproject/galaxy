@@ -1,6 +1,8 @@
 """
 Migration script to add the request_type_permissions table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

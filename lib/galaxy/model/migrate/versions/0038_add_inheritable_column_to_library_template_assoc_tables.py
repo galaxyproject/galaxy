@@ -4,6 +4,8 @@ library_info_association, library_folder_info_association.
 Also, in case of sqlite check if the previous migration script deleted the
 request table and if so, restore the table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

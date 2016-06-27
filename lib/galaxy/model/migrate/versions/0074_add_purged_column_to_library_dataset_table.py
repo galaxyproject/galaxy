@@ -1,6 +1,8 @@
 """
 Migration script to add 'purged' column to the library_dataset table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table

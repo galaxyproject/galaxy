@@ -1,6 +1,7 @@
 """
 Migration script to grow MySQL blobs.
 """
+from __future__ import print_function
 
 from sqlalchemy import MetaData
 

@@ -1,6 +1,8 @@
 """
 Migration script to create table for tracking history_dataset_association subsets.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table, Unicode

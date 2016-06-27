@@ -6,6 +6,8 @@ The 'sequencer_type_id' column is renamed to 'external_service_type_id' in the r
 table 'external_service'. Finally, adds a foreign key to the external_service table in the
 sample_dataset table and populates it.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

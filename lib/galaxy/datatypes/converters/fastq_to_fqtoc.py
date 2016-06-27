@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import sys
+
 from galaxy.util.checkers import is_gzip
 
 

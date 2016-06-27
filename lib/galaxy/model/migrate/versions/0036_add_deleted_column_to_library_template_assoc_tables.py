@@ -2,6 +2,8 @@
 Migration script to add a deleted column to the following tables:
 library_info_association, library_folder_info_association, library_dataset_dataset_info_association.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table

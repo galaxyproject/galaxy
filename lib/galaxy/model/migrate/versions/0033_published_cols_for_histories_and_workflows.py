@@ -2,6 +2,8 @@
 Migration script to add necessary columns for distinguishing between viewing/importing and publishing histories, \
 workflows, and pages. Script adds published column to histories and workflows and importable column to pages.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, Index, MetaData, Table

@@ -1,6 +1,8 @@
 """
 Migration script to rename the sequencer information form type to external service information form
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

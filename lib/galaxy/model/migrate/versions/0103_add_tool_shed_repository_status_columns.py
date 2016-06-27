@@ -1,4 +1,6 @@
 """Migration script to add status and error_message columns to the tool_shed_repository table."""
+from __future__ import print_function
+
 import datetime
 
 from sqlalchemy import Column, MetaData, Table, TEXT

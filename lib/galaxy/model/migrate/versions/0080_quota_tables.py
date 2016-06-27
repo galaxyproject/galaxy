@@ -1,6 +1,8 @@
 """
 Migration script to create tables for disk quotas.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

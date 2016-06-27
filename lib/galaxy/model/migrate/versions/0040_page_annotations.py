@@ -1,6 +1,8 @@
 """
 Migration script to (a) create tables for annotating pages.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT

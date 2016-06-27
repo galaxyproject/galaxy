@@ -1,6 +1,8 @@
 """
 Migration script to add a 'subindex' column to the run table.
 """
+from __future__ import print_function
+
 from sqlalchemy import Column, MetaData, Table
 
 from galaxy.model.custom_types import TrimmedString

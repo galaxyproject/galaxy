@@ -3,6 +3,8 @@ This script fixes a problem introduced in 0015_tagging.py. MySQL has a name leng
 limit and thus the index "ix_hda_ta_history_dataset_association_id" has to be
 manually created.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

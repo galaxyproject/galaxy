@@ -1,6 +1,8 @@
 """
 Migration script to alter the type of the tool_dependency.version column from TrimmedString(40) to Text.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

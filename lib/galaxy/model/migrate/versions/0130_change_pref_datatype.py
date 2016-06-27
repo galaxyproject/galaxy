@@ -1,15 +1,15 @@
 """
 Migration script to change the value column of user_preference from varchar to text.
 """
+from __future__ import print_function
+
+import datetime
+import logging
 
 from sqlalchemy import MetaData, Table, Text
 
-import datetime
 now = datetime.datetime.utcnow
-
-import logging
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
 
 

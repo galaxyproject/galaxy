@@ -3,6 +3,8 @@ This script adds the filename_override_metadata column to the JobExternalOutputM
 allowing existing metadata files to be written when using external metadata and a cluster
 set up with read-only access to database/files
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

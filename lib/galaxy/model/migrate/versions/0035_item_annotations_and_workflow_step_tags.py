@@ -1,6 +1,8 @@
 """
 Migration script to (a) create tables for annotating objects and (b) create tags for workflow steps.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table, TEXT, Unicode

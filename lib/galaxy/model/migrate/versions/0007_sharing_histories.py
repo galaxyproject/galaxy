@@ -3,6 +3,8 @@ This migration script creates the new history_user_share_association table, and 
 a new boolean type column to the history table.  This provides support for sharing
 histories in the same way that workflows are shared.
 """
+from __future__ import print_function
+
 import logging
 import sys
 

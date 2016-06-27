@@ -1,6 +1,8 @@
 """
 Migration script for the job state history table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

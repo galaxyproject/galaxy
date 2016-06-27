@@ -1,6 +1,8 @@
 """
 Migration script to update the migrate_tools.repository_path column to point to the new location lib/tool_shed/galaxy_install/migrate.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

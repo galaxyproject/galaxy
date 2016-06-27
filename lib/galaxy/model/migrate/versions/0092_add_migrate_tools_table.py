@@ -1,6 +1,8 @@
 """
 Migration script to create the migrate_tools table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys

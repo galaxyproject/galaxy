@@ -1,6 +1,8 @@
 """
 Migration script to create missing indexes.  Adding new columns to existing tables via SQLAlchemy does not create the index, even if the column definition includes index=True.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Index, MetaData, Table

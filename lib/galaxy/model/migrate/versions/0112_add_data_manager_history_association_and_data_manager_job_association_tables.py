@@ -1,6 +1,8 @@
 """
 Migration script to add the data_manager_history_association table and data_manager_job_association.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

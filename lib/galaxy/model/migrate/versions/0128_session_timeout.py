@@ -1,6 +1,8 @@
 """
 Migration script to add session update time (used for timeouts)
 """
+from __future__ import print_function
+
 import datetime
 import logging
 

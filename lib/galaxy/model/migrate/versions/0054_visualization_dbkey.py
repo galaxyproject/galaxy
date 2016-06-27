@@ -1,6 +1,8 @@
 """
 Migration script to add dbkey column for visualization.
 """
+from __future__ import print_function
+
 import logging
 from json import loads
 

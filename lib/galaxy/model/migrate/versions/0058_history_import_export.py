@@ -1,6 +1,8 @@
 """
 Migration script to create table for exporting histories to archives.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, MetaData, Table, TEXT
