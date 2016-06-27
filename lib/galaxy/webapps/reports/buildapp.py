@@ -81,15 +81,21 @@ def app_factory( global_conf, **kwargs ):
     # All jobs by date
     webapp.mapper.connect( '/api/jobs/date/{year:.+?}/{month:.+?}', action='jobs_per_date', controller='jobs' )
     webapp.mapper.connect( '/api/jobs/date/{year:.+?}', action='jobs_per_date', controller='jobs' )
-    webapp.mapper.connect( '/api/jobs/date/', action='jobs_per_date', controller='jobs' )
-    # A specific user / by date
-    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}/{month:.+?}', action='jobs_per_user', controller='jobs' )
-    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}', action='jobs_per_user', controller='jobs' )
-    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/', action='jobs_per_user', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/date', action='jobs_per_date', controller='jobs' )
     # All users by date
     webapp.mapper.connect( '/api/jobs/user/date/{year:.+?}/{month:.+?}', action='jobs_group_users', controller='jobs' )
     webapp.mapper.connect( '/api/jobs/user/date/{year:.+?}', action='jobs_group_users', controller='jobs' )
-    webapp.mapper.connect( '/api/jobs/user/date/', action='jobs_group_users', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/date', action='jobs_group_users', controller='jobs' )
+    # A specific user / by date
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}/{month:.+?}', action='jobs_per_user', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}', action='jobs_per_user', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}', action='jobs_per_user', controller='jobs' )
+
+    # A specific user / by date
+    webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}/{year:.+?}/{month:.+?}', action='jobs_per_tool', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}/{year:.+?}', action='jobs_per_tool', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}', action='jobs_per_tool', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/tool', action='jobs_per_tool', controller='jobs' )
 
     webapp.mapper.resource( 'job', 'jobs', path_prefix='/api' )
 
