@@ -71,9 +71,27 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_api_controllers( 'galaxy.webapps.reports.api', app )
 
     webapp.mapper.connect( '/api/users/registered/total', action='registered_users_total', controller="users" )
+
+    webapp.mapper.connect( '/api/users/registered/{year:.+?}/{month:.+?}', action='registered_users', controller="users" )
+    webapp.mapper.connect( '/api/users/registered/{year:.+?}', action='registered_users', controller="users" )
     webapp.mapper.connect( '/api/users/registered', action='registered_users', controller="users" )
-    webapp.mapper.connect( '/api/users/registered/{month:.+?}', action='registered_users_in_month', controller="users" )
+    webapp.mapper.connect( '/api/users/last_login', action='last_login', controller="users" )
     webapp.mapper.resource( 'user', 'users', path_prefix='/api' )
+
+    # All jobs by date
+    webapp.mapper.connect( '/api/jobs/date/{year:.+?}/{month:.+?}', action='jobs_per_date', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/date/{year:.+?}', action='jobs_per_date', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/date/', action='jobs_per_date', controller='jobs' )
+    # A specific user / by date
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}/{month:.+?}', action='jobs_per_user', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}', action='jobs_per_user', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/', action='jobs_per_user', controller='jobs' )
+    # All users by date
+    webapp.mapper.connect( '/api/jobs/user/date/{year:.+?}/{month:.+?}', action='jobs_group_users', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/date/{year:.+?}', action='jobs_group_users', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/date/', action='jobs_group_users', controller='jobs' )
+
+    webapp.mapper.resource( 'job', 'jobs', path_prefix='/api' )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware

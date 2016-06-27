@@ -1,12 +1,14 @@
 import calendar
 import logging
+import time
 from datetime import datetime, date, timedelta
 
 import sqlalchemy as sa
 
-import galaxy.model
+from galaxy import model
 from galaxy.web.base.controller import BaseAPIController, web
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+from galaxy.webapps.reports.api.util import to_epoch
 
 log = logging.getLogger( __name__ )
 
@@ -18,7 +20,7 @@ class UserAPIController( BaseAPIController, ReportQueryBuilder ):
     def registered_users_total( self, trans, **kwd ):
         """
         GET /api/users/registered/total """
-        num_users = trans.sa_session.query( galaxy.model.User ).count()
+        num_users = trans.sa_session.query( model.User ).count()
         return num_users
 
     @web.expose
@@ -26,16 +28,51 @@ class UserAPIController( BaseAPIController, ReportQueryBuilder ):
     def registered_users( self, trans, **kwd ):
         """
         GET /api/users/registered
+        GET /api/users/registered/:year
+        GET /api/users/registered/:year/:month
         """
-        q = sa.select( ( self.select_month( galaxy.model.User.table.c.create_time ).label( 'date' ),
-                         sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
-                       from_obj=[ galaxy.model.User.table ],
-                       group_by=self.group_by_month( galaxy.model.User.table.c.create_time ))
+        # Get all years
+        strftime = "%Y"
+        where = None
+        select = self.select_year(model.User.table.c.create_time)
+
+        # If a year, refine by year
+        if 'year' in kwd:
+            year = int(kwd['year'])
+
+            start_date = date(year, 1, 1)
+            end_date = start_date + timedelta(days=365)
+            select = self.select_month(model.User.table.c.create_time)
+            strftime = "%Y-%m"
+
+            # If we further refine by month, update the queries
+            if 'month' in kwd:
+                month = int(kwd['month'])
+                start_date = date(year, month, 1)
+                end_date = start_date + timedelta(days=calendar.monthrange(year, month)[1])
+                select = self.select_day(model.User.table.c.create_time)
+                strftime = "%Y-%m-%d"
+
+            where = sa.and_(
+                model.User.table.c.create_time >= start_date,
+                model.User.table.c.create_time < end_date
+            )
+
+        q = sa.select(
+            (
+                select.label('date'),
+                sa.func.count( model.User.table.c.id ).label( 'num_users' )
+            ),
+            whereclause=where,
+            from_obj=[model.User.table],
+            group_by=['date'],
+            order_by=['date'],
+        )
 
         users = []
         for row in q.execute():
             users.append((
-                row.date.strftime("%s"),
+                row.date.strftime(strftime),
                 row.num_users,
             ))
 
@@ -43,27 +80,26 @@ class UserAPIController( BaseAPIController, ReportQueryBuilder ):
 
     @web.expose
     @web.json
-    def registered_users_in_month( self, trans, **kwd ):
+    def last_login( self, trans, **kwd ):
         """
-        GET /api/users/registered/:month
+        GET /api/users/last_login
         """
-        specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
-        specified_month = specified_date[ :7 ]
-        year, month = map( int, specified_month.split( "-" ) )
-        start_date = date( year, month, 1 )
-        end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
-        q = sa.select( ( self.select_day( galaxy.model.User.table.c.create_time ).label( 'date' ),
-                         sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
-                       whereclause=sa.and_( galaxy.model.User.table.c.create_time >= start_date,
-                                            galaxy.model.User.table.c.create_time < end_date ),
-                       from_obj=[ galaxy.model.User.table ],
-                       group_by=self.group_by_day( galaxy.model.User.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+
         users = []
-        for row in q.execute():
+
+        for user in trans.sa_session.query(model.User) \
+                                    .order_by(model.User.table.c.email):
+
+            last_login = None
+
+            if user.galaxy_sessions:
+                last_galaxy_session = user.galaxy_sessions[ 0 ]
+                last_login = to_epoch(last_galaxy_session.update_time)
+
             users.append((
-                row.date.strftime("%s"),
-                row.num_users,
+                user.username,
+                user.email,
+                last_login
             ))
 
         return users
