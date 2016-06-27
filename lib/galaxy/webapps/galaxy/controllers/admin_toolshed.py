@@ -1119,7 +1119,6 @@ class AdminToolshed( AdminGalaxy ):
                                                            tool_shed_url=tool_shed_url,
                                                            repository=created_or_updated_tool_shed_repositories)
                 if install_tool_dependencies:
-                    view = views.DependencyResolversView(self.app)
                     # if the config entry conda_auto_install is true, this will install the dependencies
                     # since the user is asking to install, maybe it should install even if auto_install is not true...
                     # todo: make this async so we can check on progress on the next page
