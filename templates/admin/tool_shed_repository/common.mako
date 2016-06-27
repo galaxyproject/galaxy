@@ -150,38 +150,40 @@
             </div>
         %endif
     %endif
-    <div class="form-row">
-        <label>Handle tool dependencies?</label>
-        <% disabled = trans.app.config.tool_dependency_dir is None %>
-        ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
-        <div class="toolParamHelp" style="clear: both;">
-            %if disabled:
-                Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
-            %else:
-                Un-check to skip automatic handling of tool dependencies (if any).
-            %endif
-        </div>
-    </div>
-    <div style="clear: both"></div>
-    %if tool_dependencies_root_folder:
+    %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         <div class="form-row">
-            <p/>
-            <% row_counter = RowCounter() %>
-            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
-                ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-            </table>
-            <div style="clear: both"></div>
+            <label>Handle tool dependencies?</label>
+            <% disabled = trans.app.config.tool_dependency_dir is None %>
+            ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+            <div class="toolParamHelp" style="clear: both;">
+                %if disabled:
+                    Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
+                %else:
+                    Un-check to skip automatic handling of tool dependencies (if any).
+                %endif
+            </div>
         </div>
-    %endif
-    %if missing_tool_dependencies_root_folder:
-        <div class="form-row">
-            <p/>
-            <% row_counter = RowCounter() %>
-            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
-                ${render_folder( missing_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-            </table>
-            <div style="clear: both"></div>
-        </div>
+        <div style="clear: both"></div>
+        %if tool_dependencies_root_folder:
+            <div class="form-row">
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
+                    ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+                <div style="clear: both"></div>
+            </div>
+        %endif
+        %if missing_tool_dependencies_root_folder:
+            <div class="form-row">
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
+                    ${render_folder( missing_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+                <div style="clear: both"></div>
+            </div>
+        %endif
     %endif
 </%def>
 
