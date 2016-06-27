@@ -106,7 +106,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         if type != "package":
             return INDETERMINATE_DEPENDENCY
 
-        manual_install = kwds.get('manual_install', False) #a manual installation has been triggered
+        manual_install = kwds.get('manual_install', False)
         job_directory = kwds.get("job_directory", None)
         if job_directory is None and not manual_install:
             log.warning("Conda dependency resolver not sent job directory.")
@@ -138,7 +138,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         if not is_installed:
             return INDETERMINATE_DEPENDENCY
 
-        if not manual_install:  #no need to set up a job environment when in manual_installation mode, (not trying to run a job)
+        # no need to set up a job environment when in manual_installation mode, (not trying to run a job)
+        if not manual_install:
             # Have installed conda_target and job_directory to send it too.
             # If dependency is for metadata generation, store environment in conda-metadata-env
             if kwds.get("metadata", False):
