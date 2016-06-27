@@ -1,5 +1,5 @@
 import time
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 import calendar
 
 
@@ -43,4 +43,10 @@ def state_filter(kwd, state_col):
             return [state_col == 'error']
         elif kwd['state'] == 'ok':
             return [state_col == 'ok']
+    return None
+
+def user_filter(kwd, user_col):
+    if 'user' in kwd:
+        return [user_col == kwd['user']]
+
     return None

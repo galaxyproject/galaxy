@@ -96,8 +96,24 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}/{year:.+?}', action='jobs_per_tool', controller='jobs' )
     webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}', action='jobs_per_tool', controller='jobs' )
     webapp.mapper.connect( '/api/jobs/tool', action='jobs_per_tool', controller='jobs' )
-
     webapp.mapper.resource( 'job', 'jobs', path_prefix='/api' )
+
+
+    # All workflows by user
+    webapp.mapper.connect( '/api/workflows/user/{user:.+?}/{year:.+?}/{month:.+?}', action='by_user', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/user/{user:.+?}/{year:.+?}', action='by_user', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/user/{user:.+?}', action='by_user', controller='workflows' )
+    # All workflows by date
+    webapp.mapper.connect( '/api/workflows/{year:.+?}/{month:.+?}', action='by_date', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/{year:.+?}', action='by_date', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/', action='by_date', controller='workflows' )
+
+    # All workflows invocations by workflow. Encode IDs?
+    # webapp.mapper.connect( '/api/workflows/wf/{workflow:.+?}/{year:.+?}/{month:.+?}', action='by_workflow', controller='workflows' )
+    # webapp.mapper.connect( '/api/workflows/wf/{workflow:.+?}/{year:.+?}', action='by_workflow', controller='workflows' )
+    # webapp.mapper.connect( '/api/workflows/wf/{workflow:.+?}', action='by_workflow', controller='workflows' )
+
+    webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
