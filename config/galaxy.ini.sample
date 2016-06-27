@@ -26,7 +26,7 @@
 # The address and port on which to listen.  By default, only listen to
 # localhost (Galaxy will not be accessible over the network).  Use '0.0.0.0' to
 # listen on all available network interfaces.
-http = 127.0.0.1:8080
+http-socket = 127.0.0.1:8080
 
 # Number of threads in the web server thread pool.
 threads = 8
@@ -35,8 +35,19 @@ threads = 8
 static-map = /static=./static
 static-map = /static/style=./static/style/blue
 
-[server:main]
+# Routing for proxy (e.g. interactive environments)
+route-uri = ^/proxy/ goto:proxy
+route = .* last: 
 
+route-label = proxy 
+route-run = rpcvar:TARGET_HOST galaxy_dynamic_proxy_mapper ${HTTP_HOST} ${cookie[galaxysession]}
+route-run = log:Proxy ${HTTP_HOST} to ${TARGET_HOST}
+## route-run = addheader:Access-Control-Allow-Origin *
+## route-run = addheader:Access-Control-Allow-Credentials true
+route-run = httpdumb:${TARGET_HOST}
+
+http-websockets = True
+offload-threads = 8
 
 # ---- Filters --------------------------------------------------------------
 

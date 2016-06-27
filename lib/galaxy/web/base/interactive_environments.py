@@ -59,23 +59,9 @@ class InteractiveEnvironmentRequest(object):
                 log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
                 # continue anyway
 
-        # This duplicates the logic in the proxy manager
-        if self.attr.galaxy_config.dynamic_proxy_external_proxy:
-            self.attr.proxy_prefix = '/'.join(
-                (
-                    '',
-                    self.attr.galaxy_config.cookie_path.strip('/'),
-                    self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
-                    self.attr.viz_id,
-                )
-            )
-        else:
-            self.attr.proxy_prefix = ''
-        # If cookie_path is unset (thus '/'), the proxy prefix ends up with
-        # multiple leading '/' characters, which will cause the client to
-        # request resources from http://dynamic_proxy_prefix
-        if self.attr.proxy_prefix.startswith('/'):
-            self.attr.proxy_prefix = '/' + self.attr.proxy_prefix.lstrip('/')
+        # This is maybe a HACK, are there circumstances in which this should
+        # be configurable?
+        self.attr.proxy_prefix = "/proxy"
 
     def load_allowed_images(self):
         if os.path.exists(os.path.join(self.attr.our_config_dir, 'allowed_images.yml')):

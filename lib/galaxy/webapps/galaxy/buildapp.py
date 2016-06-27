@@ -120,7 +120,10 @@ def paste_app_factory( global_conf, **kwargs ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
     if asbool( kwargs.get( 'static_enabled', True) ):
         if process_is_uwsgi:
-            log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
+            ## log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware except for plugins")
+            ## We need the statics for plugins since they are configured dynamically. 
+            ## TODO: should be possible to configure this dynamically in uWSGI
+            webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
         else:
             webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
     # Close any pooled database connections before forking
