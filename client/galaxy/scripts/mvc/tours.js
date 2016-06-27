@@ -61,6 +61,7 @@ define(['libs/bootstrap-tour'],function(BootstrapTour) {
 
 
     var giveTour =  function(tour_id){
+        alert("Hello!");
         var url = gxy_root + 'api/tours/' + tour_id;
         $.getJSON( url, function( data ) {
             // Set hooks for additional click and data entry actions.
