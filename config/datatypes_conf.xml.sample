@@ -636,6 +636,7 @@
     <sniffer type="galaxy.datatypes.molecules:FPS"/>
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqGz"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>

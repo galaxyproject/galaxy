@@ -712,7 +712,34 @@ class FastqGz ( Fastq ):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
+    def compress_fastq(self,dataset):
+        print('X Compressing the fastq files')
+        if dataset.file_name and dataset.file_name.strip():
+            compress = is_gzip(dataset.file_name)
+            if not compress:
+                # TODO: consider how to created temp file in Galaxy database/tmp folder
+                compressed_file = tempfile.NamedTemporaryFile(delete=False) 
+                shutil.copyfileobj(open(dataset.file_name), gzip.open(compressed_file.name, 'wb'))
+                compressed_file.close()
+                os.unlink(dataset.file_name)
+                os.rename(compressed_file.name, dataset.file_name)
+                # # Compress fastq file
+                # stderr_name = tempfile.NamedTemporaryFile( prefix="fastq_compress" ).name
+                # command = ['gzip',dataset.file_name]
+                # try:
+                #     exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+                # except Exception as e:
+                #     log.warning( '%s, Compression Exception: %s', self, e )
+                #
+                # # Rename compressed file
+                # os.rename(dataset.file_name + ".gz" , dataset.file_name)
+            else:
+                return False
+        else:
+            return False
+
     def sniff( self, filename ):
+        
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -728,19 +755,12 @@ class FastqGz ( Fastq ):
         >>> Fastq().sniff( fname )
         True
         """
-        headers = get_headers( filename, None )
-        bases_regexp = re.compile( "^[NGTAC]*" )
-        # check that first block looks like a fastq block
-        try:
-            if len( headers ) >= 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
-                # Check the sequence line, make sure it contains only G/C/A/T/N
-                if not bases_regexp.match( headers[1][0] ):
-                    return False
-                return True
+        is_compressed = is_gzip(filename)
+        is_fastq = super(FastqGz,self).sniff(filename)
+        if is_fastq and is_compressed:
+            return True
+        else:
             return False
-        except:
-            return False
-
 
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
