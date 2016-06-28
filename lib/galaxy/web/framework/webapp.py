@@ -288,7 +288,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             # localhost uses no origin header (== null)
             if not origin:
                 return False
-            for allowed_origin in self.app.config.allowed_origin_hostnames:
+            for allowed_origin in self.app.config.get( 'allowed_origin_hostnames', [] ):
                 if allowed_origin == '*' or matches_allowed_origin( origin, allowed_origin ):
                     return True
             return False
