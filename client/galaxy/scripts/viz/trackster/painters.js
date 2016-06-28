@@ -168,12 +168,6 @@ Painter.prototype._chrom_pos_to_draw_pos = function(chrom_pos, w_scale, offset) 
 
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
-    if ( this.prefs.min_value === undefined ) {
-        this.prefs.min_value = _.min( _.map(this.data, function(d) { return d[1]; }) ) || 0;
-    }
-    if ( this.prefs.max_value === undefined ) {
-        this.prefs.max_value = _.max( _.map(this.data, function(d) { return d[1]; }) ) || 0;
-    }
 };
 
 LinePainter.prototype.default_prefs = { min_value: undefined, max_value: undefined, mode: "Histogram", color: "#000", overflow_color: "#F66" };
