@@ -252,11 +252,13 @@ def populate_api_routes( webapp, app ):
     # ====== TOOLS API ======
     # =======================
 
+    webapp.mapper.connect( '/api/tools/all_requirements', action='list_requirements', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/build', action='build', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/reload', action='reload', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/requirement', action='tool_requirements_status', controller="tools")
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
 

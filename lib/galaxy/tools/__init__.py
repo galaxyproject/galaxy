@@ -29,6 +29,7 @@ from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
+from galaxy.tools.deps import views
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -107,6 +108,35 @@ class ToolBox( BaseGalaxyToolBox ):
             tool_root_dir=tool_root_dir,
             app=app,
         )
+        self._view = views.DependencyResolversView(app)
+
+    def tools_requirements(self):
+        reqs = []
+        for desc, tool in self.app.toolbox.tools():
+            for requirement in tool.requirements:
+                if requirement.type == 'package':
+                    reqs.append(json.dumps(requirement.to_dict()))
+        reqs = [json.loads(req) for req in list(set(reqs))]
+        return reqs
+
+    def tool_requirements(self, tool):
+        reqs = []
+        for requirement in tool.requirements:
+            if requirement.type == 'package':
+                reqs.append(requirement.to_dict())
+        return reqs
+
+    def tool_requirements_status(self, id):
+        tool = self._tools_by_id[id]
+        requirements = self.tool_requirements(tool)
+        installed_requirements = self._view.manager_requirements()
+        result = []
+        for req in requirements:
+            for ireq in installed_requirements:
+                if req == ireq['requirement']:
+                    req['status'] = "installed through %i" % ireq['index']
+                    result.append(req)
+        return result
 
     @property
     def tools_by_id( self ):

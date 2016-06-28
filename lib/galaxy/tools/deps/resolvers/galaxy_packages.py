@@ -1,5 +1,5 @@
 from os import listdir
-from os.path import join, islink, realpath, basename, exists
+from os.path import join, isdir, islink, realpath, basename, exists
 
 from ..resolvers import (
     DependencyResolver,
@@ -67,13 +67,14 @@ class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Lista
         base_path = self.base_path
         for package_name in listdir(base_path):
             package_dir = join(base_path, package_name)
-            for version in listdir(package_dir):
-                version_dir = join(package_dir, version)
-                if version == "default":
-                    version = None
-                valid_dependency = _is_dependency_directory(version_dir)
-                if valid_dependency:
-                    yield self._to_requirement(package_name, version)
+            if isdir(package_dir):
+                for version in listdir(package_dir):
+                    version_dir = join(package_dir, version)
+                    if version == "default":
+                        version = None
+                    valid_dependency = _is_dependency_directory(version_dir)
+                    if valid_dependency:
+                        yield self._to_requirement(package_name, version)
 
 
 def _is_dependency_directory(directory):

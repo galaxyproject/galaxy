@@ -110,6 +110,26 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
     @expose_api
     @web.require_admin
+    def list_requirements(self, trans, **kwds):
+        """
+        GET /api/tools/list_requirements
+        Return list of unique requirements for all tools.
+        """
+
+        return trans.app.toolbox.tools_requirements()
+
+    @expose_api
+    @web.require_admin
+    def tool_requirements_status(self, trans, id, **kwds):
+        """
+        GET /api/tools/{tool_id}/requirement_status
+        Return list of unique requirements for all tools.
+        """
+
+        return trans.app.toolbox.tool_requirements_status(id)
+
+    @expose_api
+    @web.require_admin
     def diagnostics( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/diagnostics
