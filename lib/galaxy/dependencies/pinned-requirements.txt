@@ -6,7 +6,7 @@ SQLAlchemy==1.0.8
 mercurial==3.7.3
 numpy==1.9.2
 pycrypto==2.6.1
-## pyuwsgi==2.0.13.1
+pyuwsgi==2.1.dev0+gx1.c6ee1f6
 
 # Install python_lzo if you want to support indexed access to lzo-compressed
 # locally cached maf files via bx-python
