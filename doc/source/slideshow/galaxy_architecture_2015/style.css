@@ -68,6 +68,9 @@ a, a > code {
     text-decoration: none;
 }
 
+.code > pre, .code > code {
+    white-space: pre-wrap;
+}
 .remark-code, .remark-inline-code {
     font-family: 'Consolas';
     color: #ff9300;
