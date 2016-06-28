@@ -75,7 +75,8 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( '/api/users/registered/{year:.+?}/{month:.+?}', action='registered_users', controller="users" )
     webapp.mapper.connect( '/api/users/registered/{year:.+?}', action='registered_users', controller="users" )
     webapp.mapper.connect( '/api/users/registered', action='registered_users', controller="users" )
-    webapp.mapper.connect( '/api/users/last_login', action='last_login', controller="users" )
+    webapp.mapper.connect( '/api/users/:email', action='user_detail', controller="users" )
+    webapp.mapper.connect( '/api/users', action='last_login', controller="users" )
     webapp.mapper.resource( 'user', 'users', path_prefix='/api' )
 
     # All jobs by date
@@ -97,7 +98,6 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}', action='jobs_per_tool', controller='jobs' )
     webapp.mapper.connect( '/api/jobs/tool', action='jobs_per_tool', controller='jobs' )
     webapp.mapper.resource( 'job', 'jobs', path_prefix='/api' )
-
 
     # All workflows by user
     webapp.mapper.connect( '/api/workflows/user/{user:.+?}/{year:.+?}/{month:.+?}', action='by_user', controller='workflows' )

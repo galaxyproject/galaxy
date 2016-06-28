@@ -29,16 +29,20 @@ class JobsAPIController( BaseAPIController, ReportQueryBuilder ):
         Queries the DB for all jobs in given month
 
         /jobs/date/
-        /jobs/date/?state={error,ok}
+        /jobs/date/?state={error,ok,completed}
 
         /jobs/date/:year/
-        /jobs/date/:year/?state={error,ok}
+        /jobs/date/:year/?state={error,ok,completed}
 
         /jobs/date/:year/:month/
-        /jobs/date/:year/:month/?state={error,ok}
+        /jobs/date/:year/:month/?state={error,ok,completed}
         """
 
-        strftime, where_date, select, start_date, end_date = date_filter(self, kwd, model.Job.table.c.create_time)
+        job_time = model.Job.table.c.create_time
+        if 'state' in kwd and kwd['state'] == 'completed':
+            job_time = model.Job.table.c.update_time
+
+        strftime, where_date, select, start_date, end_date = date_filter(self, kwd, job_time)
         where_state = state_filter(kwd, model.Job.table.c.state)
 
         where_clauses = []
@@ -217,3 +221,49 @@ class JobsAPIController( BaseAPIController, ReportQueryBuilder ):
                 ))
 
         return results
+
+    @web.json
+    @web.expose
+    def runtime(self, trans, **kwd):
+        """
+        Queries the DB for all jobs in given month
+
+        /jobs/runtime/
+        /jobs/runtime/:year/
+        /jobs/runtime/:year/:month/
+        """
+
+        job_time = model.Job.table.c.create_time
+        if 'state' in kwd and kwd['state'] == 'completed':
+            job_time = model.Job.table.c.update_time
+
+        strftime, where_date, select, start_date, end_date = date_filter(self, kwd, job_time)
+        where_state = state_filter(kwd, model.Job.table.c.state)
+
+        where_clauses = []
+        if where_date:
+            where_clauses += where_date
+
+        if where_state:
+            where_clauses += where_state
+
+
+        month_jobs = sa.select(
+            (
+                select.label('date'),
+                sa.func.count(model.Job.table.c.id).label('total_jobs')
+            ),
+            whereclause=sa.and_(*where_clauses),
+            from_obj=[model.Job.table],
+            group_by=['date'],
+            order_by=['date'],
+        )
+
+        jobs = []
+        for row in month_jobs.execute():
+            jobs.append((
+                row.date.strftime(strftime),
+                row.total_jobs,
+            ))
+
+        return jobs

@@ -1,14 +1,11 @@
-import calendar
 import logging
-import time
-from datetime import datetime, date, timedelta
 
 import sqlalchemy as sa
 
 from galaxy import model
 from galaxy.web.base.controller import BaseAPIController, web
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.api.util import to_epoch, date_filter, state_filter
+from galaxy.webapps.reports.api.util import to_epoch, date_filter
 
 log = logging.getLogger( __name__ )
 
@@ -62,7 +59,7 @@ class UserAPIController( BaseAPIController, ReportQueryBuilder ):
     @web.json
     def last_login( self, trans, **kwd ):
         """
-        GET /api/users/last_login
+        GET /api/users
         """
 
         users = []
@@ -77,9 +74,38 @@ class UserAPIController( BaseAPIController, ReportQueryBuilder ):
                 last_login = to_epoch(last_galaxy_session.update_time)
 
             users.append((
+                to_epoch(user.create_time),
                 user.username,
                 user.email,
                 last_login
             ))
 
         return users
+
+    @web.expose
+    @web.json
+    def user_detail( self, trans, **kwd ):
+        """
+        GET /api/users/:email
+        """
+        user = kwd['email']
+
+
+        user = trans.sa_session.query(model.User)\
+            .filter(model.User.table.c.email == user).one()
+
+        last_login = None
+        if user.galaxy_sessions:
+            last_galaxy_session = user.galaxy_sessions[ 0 ]
+            last_login = to_epoch(last_galaxy_session.update_time)
+
+        user_data = user.to_dict()
+        user_data.update({
+            'last_login': last_login,
+            'external': user.external,
+            'deleted': user.deleted,
+            'purged': user.purged,
+            'active': user.active,
+            'disk_usage': user.get_disk_usage(nice_size=True),
+        })
+        return user_data
