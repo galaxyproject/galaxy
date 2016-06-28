@@ -1,13 +1,8 @@
 import logging
-from collections import namedtuple
 import sqlalchemy as sa
-
-from galaxy import model, util
-from math import floor
+from galaxy import model
 from galaxy.web.base.controller import BaseAPIController, web
-import re
-from math import ceil
-from galaxy.webapps.reports.api.util import date_filter, state_filter, user_filter
+from galaxy.webapps.reports.api.util import date_filter, user_filter
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 log = logging.getLogger( __name__ )

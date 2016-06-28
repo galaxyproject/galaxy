@@ -1,7 +1,5 @@
 import logging
-
 import sqlalchemy as sa
-
 from galaxy import model
 from galaxy.web.base.controller import BaseAPIController, web
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
