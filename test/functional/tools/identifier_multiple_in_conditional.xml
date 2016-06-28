@@ -1,0 +1,28 @@
+<tool id="identifier_multiple_in_conditional" name="identifier_multiple_in_conditional">
+  <command>
+    #if $options.choice == "one":
+        #for $input in $options.input1:
+          echo '$input.element_identifier' >> 'output1';
+        #end for
+    #end if
+  </command>
+  <inputs>
+    <conditional name="options">
+        <param name="choice" type="select" label="choice1">
+            <option value="one" selected="true">One</option>
+            <option value="two">Two</option>
+        </param>
+        <when value="one">
+            <param type="data_collection" collection_type="list" name="input1" label="Input 1" multiple="true" />
+        </when>
+        <when value="two">
+            <param type="data_collection" collection_type="list" name="input2" label="Input 2" multiple="true" />
+        </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="output1" type="tabular" from_work_dir="output1" />
+  </outputs>
+  <tests>
+  </tests>
+</tool>
