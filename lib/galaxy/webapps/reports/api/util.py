@@ -6,6 +6,7 @@ import calendar
 def to_epoch(datetime_obj):
     return int(time.mktime(datetime_obj.timetuple()))
 
+
 def date_filter(self, kwd, date_field):
     strftime = "%Y"
     where = None
@@ -37,6 +38,7 @@ def date_filter(self, kwd, date_field):
 
     return strftime, where, select, start_date, end_date
 
+
 def state_filter(kwd, state_col):
     if 'state' in kwd:
         if kwd['state'] == 'error':
@@ -44,6 +46,7 @@ def state_filter(kwd, state_col):
         elif kwd['state'] == 'ok':
             return [state_col == 'ok']
     return None
+
 
 def user_filter(kwd, user_col):
     if 'user' in kwd:

@@ -43,7 +43,6 @@ class JobsAPIController( BaseAPIController, ReportQueryBuilder ):
         if where_state:
             where_clauses += where_state
 
-
         month_jobs = sa.select(
             (
                 select.label('date'),
@@ -83,7 +82,6 @@ class JobsAPIController( BaseAPIController, ReportQueryBuilder ):
 
         if where_state:
             where_clauses += where_state
-
 
         all_jobs_per_user = sa.select(
             (
@@ -130,7 +128,6 @@ class JobsAPIController( BaseAPIController, ReportQueryBuilder ):
 
         if where_state:
             where_clauses += where_state
-
 
         all_jobs_per_user = sa.select(
             (
@@ -237,7 +234,6 @@ class JobsAPIController( BaseAPIController, ReportQueryBuilder ):
 
         if where_state:
             where_clauses += where_state
-
 
         month_jobs = sa.select(
             (

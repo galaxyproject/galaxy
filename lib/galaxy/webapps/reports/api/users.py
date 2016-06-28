@@ -32,7 +32,6 @@ class UserAPIController( BaseAPIController, ReportQueryBuilder ):
         if where_date:
             where_clauses += where_date
 
-
         q = sa.select(
             (
                 select.label('date'),
@@ -87,7 +86,6 @@ class UserAPIController( BaseAPIController, ReportQueryBuilder ):
         GET /api/users/:email
         """
         user = kwd['email']
-
 
         user = trans.sa_session.query(model.User)\
             .filter(model.User.table.c.email == user).one()
