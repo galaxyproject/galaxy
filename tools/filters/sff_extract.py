@@ -231,7 +231,7 @@ def sequences(fileh, header):
     while True:
         if fposition == header['index_offset']:
             # we have to skip the index section
-            fposition += index_length
+            fposition += header['index_length']
             continue
         else:
             bytes_read, seq_data = read_sequence(header=header, fileh=fileh,
@@ -276,7 +276,7 @@ def remove_last_xmltag_in_file(fname, tag=None):
 
     # we check that we're removing the asked tag
     if tag is not None and tag != last_tag:
-        etxt = join('The given xml tag (', tag, ') was not the last one in the file')
+        etxt = 'The given xml tag (%s) was not the last one in the file' % tag
         raise RuntimeError(etxt)
 
     # while we are at it: also remove all white spaces in that line :-)

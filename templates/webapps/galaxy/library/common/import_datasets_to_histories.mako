@@ -92,14 +92,13 @@
                 <div style="text-align: center; color: #888;">&mdash; OR &mdash;</div>
                 <div class="form-row">
                     <label for="new_history_name" style="display: inline; font-weight:normal;">New history named:</label>
-                    <input type="textbox" name="new_history_name" />
+                    <input id="new_history_name" type="text" name="new_history_name" />
                 </div>
             %endif
         </div>
     </div>
-        <div style="clear: both"></div>
-        <div class="form-row" align="center">
-            <input type="submit" class="primary-button" name="import_datasets_to_histories_button" value="Import library datasets"/>
-        </div>
-    </form>
-</div>
+    <div style="clear: both"></div>
+    <div class="form-row" style="text-align: center;">
+        <input type="submit" class="primary-button" name="import_datasets_to_histories_button" value="Import library datasets"/>
+    </div>
+</form>

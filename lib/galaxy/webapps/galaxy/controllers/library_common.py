@@ -2751,7 +2751,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     status = kwd.get( 'status', 'done' )
     full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
     response = urllib2.urlopen( full_url )
-    ldda_ids = util.json.loads( response.read() )[ "ids" ]
+    ldda_ids = loads( response.read() )[ "ids" ]
     response.close()
     lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )

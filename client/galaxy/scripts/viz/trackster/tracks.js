@@ -2828,7 +2828,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             css_class = (type === 'max' ? 'top' : 'bottom'),
             text = (type === 'max' ? 'max' : 'min'),
             pref_name = (type === 'max' ? 'max_value' : 'min_value'),
-            label = this.container_div.find(".yaxislabel." + css_class);
+            label = this.container_div.find(".yaxislabel." + css_class),
+            value = round( track.config.get_value(pref_name), 1 );
 
         // Default action for on_change is to redraw track.
         on_change = on_change || function() {
@@ -2837,15 +2838,15 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         if (label.length !== 0) {
             // Label already exists, so update value.
-            label.text(track.config.get_value(pref_name));
+            label.text(value);
         }
         else {
             // Add label.
-            label = $("<div/>").text(track.config.get_value(pref_name)).make_text_editable({
+            label = $("<div/>").text(value).make_text_editable({
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".tooltip").remove();
-                    track.config.set_value(pref_name, new_val);
+                    track.config.set_value(pref_name, round( new_val, 1 ) );
                     on_change();
                 },
                 help_text: "Set " + text + " value"
@@ -3068,6 +3069,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Draw line (bigwig) data onto tile.
      */
     _draw_line_track_tile: function(result, ctx, mode, region, w_scale) {
+        // Set min/max if they are not already set.
+        // FIXME: checking for different null/undefined/0 is messy; it would be nice to
+        // standardize this.
+        if ( [undefined, null].indexOf(this.config.get_value("min_value")) !== -1 ) {
+            this.config.set_value("min_value", 0);
+        }
+        if ( [undefined, null, 0].indexOf(this.config.get_value("max_value")) !== -1 ) {
+            this.config.set_value("max_value", _.max( _.map(result.data, function(d) { return d[1]; }) ) || 0);
+        }
+        
         var canvas = ctx.canvas,
             painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.config.to_key_value_dict(), mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
@@ -3710,8 +3721,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true,
           help: 'Show the number of items in each bin when drawing summary histogram' },
-        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
-        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
+        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
             options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -4204,8 +4215,8 @@ extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTra
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
-        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
+        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'height', type: 'int', default_value: 0, hidden: true}
     ] ),
 
