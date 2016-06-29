@@ -183,17 +183,27 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
 
 class CondaDepenency(Dependency):
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path']
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path', 'name', 'version']
     dependency_type = 'conda'
 
-    def __init__(self, activate, environment_path, exact):
+    def __init__(self, activate, environment_path, exact, name=None, version=None):
         self.activate = activate
         self.environment_path = environment_path
         self._exact = exact
+        self._name = name
+        self._version = version
 
     @property
     def exact(self):
         return self._exact
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def version(self):
+        return self._version
 
     def shell_commands(self, requirement):
         return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' 2>&1 """ % (
