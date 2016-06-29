@@ -39,6 +39,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         assert operator is not None, K8S_IMPORT_MESSAGE
         runner_param_specs = dict(
             k8s_config_path=dict(map=str, default=os_environ.get('KUBECONFIG', None)),
+            k8s_use_service_account=dict(map=bool, default=False),
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
