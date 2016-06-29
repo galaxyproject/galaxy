@@ -1030,30 +1030,32 @@
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
-               %if resolver_dependencies['model_class'] == 'NullDependency':
-                   <tr>
-                        <td><b> Dependency was not resolved by any resolver module.</b></td>
-                   </tr>
-               %else:
-                   <tr>
-                       <td><b>Dependency Resolver </b></td>
-                       <td> ${resolver_dependencies['model_class'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Exact </b></td>
-                       <td> ${resolver_dependencies['exact'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Dependency Type</b></td>
-                      <td> ${resolver_dependencies['dependency_type'] | h}</td>
-                   </tr>
-               %endif
+                %for dependency in resolver_dependencies:
+                    %if dependency['model_class'] == 'NullDependency':
+                        <tr>
+                            <td><b> Dependency was not resolved by any resolver module.</b></td>
+                        </tr>
+                    %else:
+                        <tr>
+                            <td><b>Dependency Resolver </b></td>
+                            <td> ${dependency['model_class'] | h}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Exact </b></td>
+                            <td> ${dependency['exact'] | h}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Dependency Type</b></td>
+                            <td> ${dependency['dependency_type'] | h}</td>
+                        </tr>
+                    %endif
+                %endfor
             </table>
         </td>
     </tr>
 </%def>
 
-<%def name="render_resolver_dependency_items( resolver_dependencies )">
+<%def name="render_resolver_dependencies    ( resolver_dependencies )">
     %if resolver_dependencies:
         <div class="toolForm">
             <div class="toolFormTitle">Dependency Resolver Details</div>

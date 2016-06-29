@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import string
@@ -1074,4 +1073,3 @@ class BaseGalaxyToolBox(AbstractToolBox):
 
     def reload_dependency_manager(self):
         self._init_dependency_manager()
-

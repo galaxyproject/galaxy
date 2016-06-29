@@ -37,7 +37,7 @@
         else:
             can_display_tool_dependencies = False
     else:
-        can_display_tool_dependencies = True
+        can_display_tool_dependencies = False
 %>
 
 %if message:

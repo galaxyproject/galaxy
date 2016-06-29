@@ -180,17 +180,17 @@ def get_category_by_name( app, name ):
         return None
 
 
-def get_unique_requirements(app, tool_shed_url, repository):
+def get_tool_shed_repo_requirements(app, tool_shed_url, repository):
     """
     Contact tool_shed_url for a list of requirements for a repository or a list of repositories.
     Returns a list of requirements, where each requirement is a dictionary with name and version as keys.
     """
-    requirements = []
     if not isinstance(repository, list):
         repositories = [repository]
     else:
         repositories = repository
     pathspec = ["api", "repositories", "get_repository_revision_install_info"]
+    tools = []
     for repository in repositories:
         params = {"name": repository.name,
                   "owner": repository.owner,
@@ -202,9 +202,20 @@ def get_unique_requirements(app, tool_shed_url, repository):
                                 )
         json_response = json.loads(response)
         valid_tools = json_response[1].get('valid_tools', [])
-        for tool in valid_tools:
-            if tool['requirements']:
-                requirements.append(tool['requirements'])
+        if valid_tools:
+            tools.extend(valid_tools)
+    return get_unique_requirements_from_tools(tools)
+
+
+def get_unique_requirements_from_tools(tools):
+    requirements = []
+    for tool in tools:
+        if tool['requirements']:
+            requirements.append(tool['requirements'])
+    return get_unique_requirements(requirements)
+
+
+def get_unique_requirements(requirements):
     uniq_reqs = dict()
     for tool_requirements in requirements:
         for req in tool_requirements:
@@ -214,6 +225,13 @@ def get_unique_requirements(app, tool_shed_url, repository):
             version = req.get("version", "versionless")
             uniq_reqs["%s_%s" % (name, version)] = {'name': name, 'version': version}
     return uniq_reqs.values()
+
+
+def get_unique_requirements_from_repository(repository):
+    if not repository.includes_tools:
+        return []
+    else:
+        return get_unique_requirements_from_tools(repository.metadata.get('tools', []))
 
 
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):

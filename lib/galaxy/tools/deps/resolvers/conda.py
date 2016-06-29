@@ -108,9 +108,6 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         manual_install = kwds.get('manual_install', False)
         job_directory = kwds.get("job_directory", None)
-        if job_directory is None and not manual_install:
-            log.warning("Conda dependency resolver not sent job directory.")
-            return INDETERMINATE_DEPENDENCY
 
         exact = not self.versionless or version is None
         if self.versionless:
