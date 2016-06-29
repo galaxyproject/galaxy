@@ -1035,6 +1035,7 @@
                         <th>Dependency</th>
                         <th>Version</th>
                         <th>Resolver</th>
+                        <th>Status<th>
                     </tr>
                 </head>
                 <body>
@@ -1043,9 +1044,13 @@
                             <td>${dependency['name'] | h}</td>
                             <td>${dependency['version'] | h}</td>
                         %if dependency['model_class'] == 'NullDependency':
-                            <td class='errormessage'>None</td>
+                            <td>None</td>
+                            <td>
+                               <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency not resolved'/>
+                            </td>
                         %else:
                             <td>${dependency['model_class'] | h}</td>
+                            <td><img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/></td>
                         %endif
                         </tr>
                     %endfor
