@@ -832,7 +832,6 @@ class ToolsTestCase( api.ApiTestCase ):
         create = create_response.json()
         outputs = create[ 'outputs' ]
         jobs = create[ 'jobs' ]
-        implicit_collections = create[ 'implicit_collections' ]
         self.assertEquals( len( jobs ), 1 )
         self.assertEquals( len( outputs ), 1 )
         output1 = outputs[ 0 ]
