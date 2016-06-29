@@ -1750,7 +1750,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             _.each(cum_track_heights, function(h, k){
                 var track = $("#" + k + " .track-header .track-name"),
                     style = window.getComputedStyle(track[0]),
-                    text = track[0].innerText;
+                    text = track[0].innerHTML;
                 text_svg = labeling_g.append("text")
                     .attr('stroke', '#FFF')
                     .attr("x", 2)
@@ -3453,18 +3453,27 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // If generating SVG, pull offset values and transform SVG elements
             var svg = ctx.getSvg(),
                 g = svg.lastChild.lastChild,
+                node = d3.select(g),
                 id = this.tiles_div[0].parentNode.parentNode.getAttribute('id'),
                 svg_container = $("#svg-container"),
                 index = svg_container[0].children.length,
                 text_svg,
-                node;
-            g.setAttribute("id", "svg-" + id + 'X' + index);
+                name = "svg-" + id + 'X' + index,
+                text_svg;
+            g.setAttribute("id", name);
             g.setAttribute("transform", "translate(" + left + ", 0)");
-            node = $("#svg-" + id + 'X' + index);
             if (ctx.canvas.manager.labels) {
                 _.each(ctx.canvas.manager.labels, function(l){
-                    text_svg = '<text stroke="#000" x="' + l.x + '" y="' + l.y + '" font-family="verdana" font-size="8px" font-weight="normal" stroke-width="0.3" text-anchor="' + l.align + '" width="' + l.max_length + '">' + l.text + '</text>';
-                    g.insertAdjacentHTML('beforeend', text_svg);
+                    text_svg = node.append("text")
+                        .attr('stroke', '#000')
+                        .attr("x", l.x)
+                        .attr("y", l.y)
+                        .attr('font-family', "&quot;Lucida Grande&quot;,verdana,arial,helvetica,sans-serif")
+                        .attr('font-size', "8px")
+                        .attr('stroke-width', 0.3)
+                        .attr('text-anchor', l.align)
+                        .attr('width', l.max_length);
+                    text_svg.text(l.text);
                 });
                 ctx.canvas.manager.labels = [];
             }
