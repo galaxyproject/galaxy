@@ -10,3 +10,4 @@ pbs_python
 drmaa
 statsd
 # PyRods not in PyPI
+python-ldap==2.4.25
