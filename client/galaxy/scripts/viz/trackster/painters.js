@@ -293,7 +293,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             }
         }
         // Draw lines at boundaries if overflowing min or max
-        if ( ctx.canvas.manager.svg == false ){
+        if ( ctx.svg == null ){
             ctx.fillStyle = this.prefs.overflow_color;
             if (top_overflow || bot_overflow) {
                 var overflow_x;
@@ -321,11 +321,11 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         }
         ctx.fill();
     }
-    else if (ctx.canvas.manager.svg == false || mode == "Line") {
+    else if (ctx.svg == null || mode == "Line") {
         ctx.stroke();
     }
     
-    if (ctx.canvas.manager.svg == true) {
+    if (ctx.svg == true) {
         ctx.fillStyle = this.prefs.overflow_color;
         for (var i = 0, len = data.length; i < len; i++) {
             top_overflow = false;
@@ -613,12 +613,37 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 ctx.fillRect(f_start, y_start + 1, f_end - f_start, thick_height);
                 // If strand is specified, draw arrows over feature
                 if ( feature_strand && full_height ) {
-                    if (feature_strand === "+") {
-                        ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
-                    } else if (feature_strand === "-") {
-                        ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
+                    if (!ctx.svg) {
+                        if (feature_strand === "+") {
+                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
+                        } else if (feature_strand === "-") {
+                            ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
+                        }
+                        ctx.fillRect(f_start, y_start + 1, f_end - f_start, thick_height);
+                    } else {
+                        ctx.strokeStyle = "#FFF";
+                        var y = y_start + 1 + thick_height / 2,
+                            pos = Math.ceil((f_start) / 5) * 5 + 0.5;
+                            pos = f_start + 1;
+                        while (pos < f_end - 2) {
+                            if (feature_strand == "+") {
+                                ctx.moveTo(pos, y + 2);
+                                ctx.lineTo(pos + 2, y);
+                                ctx.lineTo(pos, y - 2);
+                                ctx.stroke();
+                            } else {
+                                ctx.moveTo(pos + 2, y + 2);
+                                ctx.lineTo(pos, y);
+                                ctx.lineTo(pos + 2, y - 2);
+                                ctx.stroke();
+                            }
+                            pos = pos + 5;
+                        }
+                        ctx.moveTo(f_start, y);
+                        ctx.lineTo(f_end, y);
+                        ctx.stroke();
+                        ctx.strokeStyle = block_color;
                     }
-                    ctx.fillRect(f_start, y_start + 1, f_end - f_start, thick_height);
                 }
             } else {
                 //
@@ -653,17 +678,42 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     }
                     else { // mode === "Pack"
                         if (feature_strand) {
-                            if (feature_strand === "+") {
-                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand' );
-                            } else if (feature_strand === "-") {
-                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand' );
+                            if (!ctx.svg) {
+                                if (feature_strand === "+") {
+                                    ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand' );
+                                } else if (feature_strand === "-") {
+                                    ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand' );
+                                }
+                                ctx.fillRect(f_start, cur_y_start, f_end - f_start, cur_height);
+                            } else {
+                                ctx.strokeStyle = CONNECTOR_COLOR;
+                                var y = cur_y_start + 1 + cur_height / 2,
+                                    pos = Math.ceil((f_start) / 5) * 5 + 0.5;
+                                while (pos < f_end - 2) {
+                                    if (feature_strand == "+") {
+                                        ctx.moveTo(pos, y + 2);
+                                        ctx.lineTo(pos + 2, y);
+                                        ctx.lineTo(pos, y - 2);
+                                        ctx.stroke();
+                                    } else {
+                                        ctx.moveTo(pos + 2, y + 2);
+                                        ctx.lineTo(pos, y);
+                                        ctx.lineTo(pos + 2, y - 2);
+                                        ctx.stroke();
+                                    }
+                                    pos = pos + 5;
+                                }
+                                ctx.moveTo(f_start, y);
+                                ctx.lineTo(f_end, y);
+                                ctx.stroke();
+                                ctx.strokeStyle = block_color;
                             }
                         }
                         else {
                             ctx.fillStyle = CONNECTOR_COLOR;
+                            ctx.fillRect(f_start, cur_y_start, f_end - f_start, cur_height);
                         }
                     }
-                    ctx.fillRect(f_start, cur_y_start, f_end - f_start, cur_height);
                 }
 
                 // Draw blocks.
@@ -689,19 +739,43 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                             block_thick_end = Math.min(block_end, thick_end);
                         ctx.fillRect(block_thick_start, y_start + 1, block_thick_end - block_thick_start, thick_height);
                         if ( feature_blocks.length === 1 && mode === "Pack") {
-                            // Exactly one block means we have no introns, but do have a distinct "thick" region,
-                            // draw arrows over it if in pack mode.
-                            if (feature_strand === "+") {
-                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
-                            } else if (feature_strand === "-") {
-                                ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
-                            }
                             // If region is wide enough in pixels, pad a bit
                             if ( block_thick_start + 14 < block_thick_end ) {
                                 block_thick_start += 2;
                                 block_thick_end -= 2;
                             }
-                            ctx.fillRect(block_thick_start, y_start + 1, block_thick_end - block_thick_start, thick_height);
+                            // Exactly one block means we have no introns, but do have a distinct "thick" region,
+                            // draw arrows over it if in pack mode.
+                            if (!ctx.svg) {
+                                if (feature_strand === "+") {
+                                    ctx.fillStyle = ctx.canvas.manager.get_pattern( 'right_strand_inv' );
+                                } else if (feature_strand === "-") {
+                                    ctx.fillStyle = ctx.canvas.manager.get_pattern( 'left_strand_inv' );
+                                }
+                                ctx.fillRect(block_thick_start, y_start + 1, block_thick_end - block_thick_start, thick_height);
+                            } else {
+                                ctx.stokeStyle = "#FFF";
+                                var y = y_start + 1 + thick_height / 2,
+                                    pos = Math.ceil((block_thick_start) / 5) * 5 + 0.5;
+                                while (pos < block_thick_end - 2) {
+                                    if (feature_strand == "+") {
+                                        ctx.moveTo(pos, y + 2);
+                                        ctx.lineTo(pos + 2, y);
+                                        ctx.lineTo(pos, y - 2);
+                                        ctx.stroke();
+                                    } else {
+                                        ctx.moveTo(pos + 2, y + 2);
+                                        ctx.lineTo(pos, y);
+                                        ctx.lineTo(pos + 2, y - 2);
+                                        ctx.stroke();
+                                    }
+                                    pos = pos + 5;
+                                }
+                                ctx.moveTo(block_thick_start, y);
+                                ctx.lineTo(block_thick_end, y);
+                                ctx.stroke();
+                                ctx.strokeStyle = block_color;
+                            }
                         }
                     }
                     // Draw individual connectors if required
@@ -740,12 +814,44 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 // FIXME: assumption here that the entire view starts at 0
                 if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                     ctx.textAlign = "left";
-                    ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8, this.max_label_length);
-                    draw_end += ctx.measureText(feature_name).width + LABEL_SPACING;
+                    /*****
+                     * Fix!
+                     */
+                    if (!ctx.svg) {
+                        ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8, this.max_label_length);
+                        draw_end += ctx.measureText(feature_name).width + LABEL_SPACING;
+                    } else {
+                        if (!ctx.canvas.manager.labels) {
+                            ctx.canvas.manager.labels = [];
+                        }
+                        ctx.canvas.manager.labels.push({
+                            'text':feature_name,
+                            'x':f_end + LABEL_SPACING,
+                            'y':y_start + 8,
+                            'align':'start',
+                            'max_length':this.max_label_length
+                        });
+                    }
                 } else {
                     ctx.textAlign = "right";
-                    ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8, this.max_label_length);
-                    draw_start -= ctx.measureText(feature_name).width + LABEL_SPACING;
+                    /*****
+                     * Fix!
+                     */
+                     if (!ctx.svg) {
+                        ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8, this.max_label_length);
+                        draw_start -= ctx.measureText(feature_name).width + LABEL_SPACING;
+                    } else {
+                        if (!ctx.canvas.manager.labels) {
+                            ctx.canvas.manager.labels = [];
+                        }
+                        ctx.canvas.manager.labels.push({
+                            'text':feature_name,
+                            'x':f_start - LABEL_SPACING,
+                            'y':y_start + 8,
+                            'align':'end',
+                            'max_length':this.max_label_length
+                        });
+                    }
                 }
                 //ctx.fillStyle = block_color;
             }

@@ -97,8 +97,6 @@ var CanvasManager = function(default_font) {
     this.dummy_canvas = this.new_canvas();
     this.dummy_context = this.dummy_canvas.getContext('2d');
     this.dummy_context.font = this.default_font;
-    this.svg = true;
-
     this.char_width_px = this.dummy_context.measureText("A").width;
 
     this.patterns = {};

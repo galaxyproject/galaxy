@@ -11,6 +11,18 @@
     background: white;
 }
 
+#svg-panel {
+    display: inline-block;
+    z-index: 3;
+    top: 0px;
+    visibility: hidden;
+}
+
+#svg-container {
+    width: inherit;
+    background: white;
+}
+
 .trackster-nav-container {
     width: 100%;
 
@@ -283,7 +295,7 @@
     text-align: center;
     position: relative;
     min-height: @min-track-height;
-    padding: 0px 0px 1px 0px;
+    padding: 0px 0px 0px 0px;
 
     .message {
         position: relative;

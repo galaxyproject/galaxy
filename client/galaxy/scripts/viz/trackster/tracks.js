@@ -1,6 +1,7 @@
 define([
     "libs/underscore",
     "libs/canvas2svg",
+    "libs/d3",
     "viz/visualization",
     "viz/viz_views",
     "viz/trackster/util",
@@ -10,8 +11,9 @@ define([
     "mvc/dataset/data",
     "mvc/tool/tools",
     "utils/config",
+    "utils/export",
     "ui/editable-text",
-], function(_, C2S_mod, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+], function(_, C2S_mod, d3, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod, export_mod) {
 
 
 var extend = _.extend;
@@ -1126,7 +1128,6 @@ var TracksterView = Backbone.View.extend({
         return this.config.get_value(base.toLowerCase() + '_color') ||
                this.config.get_value('n_color');
     }
-
 });
 
 // FIXME: need to use this approach to enable inheritance of DrawableCollection functions.
@@ -1452,10 +1453,21 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         });
 
         // Set up redraw if it has not been requested since last redraw.
+        if (options && options.svg) {
+            var svg = true;
+        } else {
+            var svg = null;
+        }
         if (!this.requested_redraw) {
-            requestAnimationFrame(function() { view._redraw(); });
+            var promise = $.Deferred();
+            requestAnimationFrame(function() {
+                $.when(view._redraw(svg)).then(function() {
+                    promise.resolve();
+                });
+            });
             this.requested_redraw = true;
         }
+        return promise;
     },
 
     /**
@@ -1463,7 +1475,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
      * NOTE: this method should never be called directly; request_redraw() should be used so
      * that requestAnimationFrame can manage redrawing.
      */
-    _redraw: function() {
+    _redraw: function(svg) {
         // TODO: move this code to function that does location setting.
 
         // Clear because requested redraw is being handled now.
@@ -1506,19 +1518,36 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         }
 
         // Draw data tracks.
+        var global_promise,
+            track_promises = [];
         _.each(this.tracks_to_be_redrawn, function(track_options) {
             var track = track_options[0],
-                options = track_options[1];
+                options = track_options[1],
+                promise;
+            if (options) {
+                options = _.extend(options, {'svg':svg});
+            } else {
+                options = {'svg':svg};
+            }
             if (track) {
-                track._draw(options);
+                track_promises.push(track._draw(_.extend(options, {'svg':svg})));
             }
         });
         this.tracks_to_be_redrawn = [];
 
         // Draw label tracks.
         _.each(this.label_tracks, function(label_track) {
-            label_track._draw();
+            track_promises.push(label_track._draw());
         });
+
+        var valid_promises = [];
+        _.each(track_promises, function(p){
+            if (p != undefined){
+                valid_promises.push(p);
+            }
+        });
+        global_promise = $.when(valid_promises);
+        return global_promise;
     },
 
     zoom_in: function (point, container) {
@@ -1601,6 +1630,269 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         this.overview_highlight.hide();
         view.resize_window();
         view.overview_drawable = null;
+    },
+
+    /**
+     * Export view as PDF
+     */
+     export_menu: function() {
+        var view = new export_mod.ExportSettingCollectionView();
+        view.render_in_modal('Export Options', this);
+    },
+
+    export_pdf: function(options) {
+        var self = this,
+            promise,
+            x,
+            container = $("#center .unified-panel-body"),
+            svg_container = $("<svg id='svg-container'/>");
+        if (this.svg_panel){
+            this.svg_panel[0].innerHTML = "";
+        } else {        
+            this.svg_panel = $("<div id='svg-panel'/>").addClass("unified-panel-body").appendTo(container);
+        }
+        this.svg_panel.append(svg_container);
+        promise = this.request_redraw({'data_fetch': true, 'svg': true});
+        promise.done(function(){
+            self.plot_pdf(options);
+        });
+    },
+
+    /**
+     * Plot svg tracks once all tiles have been drawn
+     */
+    plot_pdf: function(options) {
+        if (!options) {
+            var options = {};
+        }
+        var svg_container = $("#svg-container"),
+            svg_panel = $("#svg-panel"),
+            label_track_height = $(".top-container")[0].clientHeight,
+            track_heights = {},
+            cum_track_heights = {},
+            track_height,
+            total_height = 0,
+            id,
+            panel_width = $(".top-container")[0].clientWidth,
+            labeling_g = d3.select("#svg-container"),
+            label_container = $(".label-container");
+        // If no using the label track, set height to 0
+        if (!options.coordinates) {
+            label_track_height = 0;
+        }
+        // Pull the track heights from the fully-rendered tiles containers
+        _.each($("#viewport-container").children(), function(d){
+            if (d.id != '') {
+                // Find the y offset across all tracks above current track
+                track_height = label_track_height;
+                _.each(track_heights, function(h){
+                    track_height = track_height + h;
+                });
+                cum_track_heights[d.id] = track_height;
+                if (d.id) {
+                    _.each(d.children, function(e){
+                        if(e.getAttribute('class') == 'track-content') {
+                            track_heights[d.id] = Math.max(20, parseInt(window.getComputedStyle(e).height.replace('px','')));
+                        }
+                    });
+                }
+                total_height = Math.max(total_height, track_height + track_heights[d.id]);
+            }
+        });
+        // For each g element, transform based on track id
+        _.each(svg_container[0].children, function(g){
+            x = g.getAttribute('transform').replace('translate(','').replace(', 0)','');
+            id = g.id.replace('svg-','').split('X')[0];
+            g.setAttribute('transform', 'translate(' + x + ',' + cum_track_heights[id] + ')');
+        });
+        // Create label track
+        if (options.coordinates){
+            labeling_g.append("rect")
+                .attr('stroke', '#000')
+                .attr('fill', 'none')
+                .attr('width', panel_width)
+                .attr('height', label_track_height);
+            _.each(label_container[0].children, function(c){
+                var style = window.getComputedStyle(c),
+                    x = parseInt(c.style.left.replace('px','')),
+                    text = c.innerHTML;
+                labeling_g.append("line")
+                    .attr('stroke', '#000')
+                    .attr("x1", x)
+                    .attr("x2", x)
+                    .attr("y1", 0)
+                    .attr("y2", label_track_height);
+                text_svg = labeling_g.append("text")
+                    .attr('stroke', '#000')
+                    .attr("x", x + 2)
+                    .attr("y", (label_track_height) / 2 + 4)
+                    .attr('font-family', style.fontFamily)
+                    .attr('font-size', style.fontSize)
+                    .attr('font-weight', style['font-weight'])
+                    .attr('stroke-width', 0.3);
+                text_svg.text(text);
+            });
+        }
+        // Add track borders
+        _.each(track_heights, function(h, k){
+            labeling_g.append("rect")
+                .attr('stroke', '#000')
+                .attr('fill', 'none')
+                .attr('width', panel_width)
+                .attr('height', h)
+                .attr('y', cum_track_heights[k]);
+        });
+        // Set svg object size
+        svg_container.attr('width', svg_panel[0].clientWidth);
+        svg_container.attr('height', total_height);
+        // Add track name labels
+        if (options.names) {
+            _.each(cum_track_heights, function(h, k){
+                var track = $("#" + k + " .track-header .track-name"),
+                    style = window.getComputedStyle(track[0]),
+                    text = track[0].innerText;
+                text_svg = labeling_g.append("text")
+                    .attr('stroke', '#FFF')
+                    .attr("x", 2)
+                    .attr("y", 14 + h)
+                    .attr('font-family', style.fontFamily)
+                    .attr('font-size', style.fontSize)
+                    .attr('font-weight', style['font-weight'])
+                    .attr('stroke-width', 1.0);
+                text_svg.text(text);
+                text_svg = labeling_g.append("text")
+                    .attr('stroke', '#000')
+                    .attr("x", 2)
+                    .attr("y", 14 + h)
+                    .attr('font-family', style.fontFamily)
+                    .attr('font-size', style.fontSize)
+                    .attr('font-weight', style['font-weight'])
+                    .attr('stroke-width', 0.3);
+                text_svg.text(text);
+            });
+        }
+        // Add Y-axis labels
+        if (options.yaxis) {
+            _.each(cum_track_heights, function(h, k){
+                var track = $("#" + k + " .yaxislabel.bottom"),
+                    style,
+                    text;
+                if (track.length){
+                    style = window.getComputedStyle(track[0]),
+                    text = track[0].innerText;
+                    text_svg = labeling_g.append("text")
+                        .attr('stroke', '#FFF')
+                        .attr("x", svg_container.attr('width') - parseInt(style.right.replace('px','')))
+                        .attr("y", h + track_heights[k] - 4)
+                        .attr('font-family', style.fontFamily)
+                        .attr('font-size', style.fontSize)
+                        .attr('font-weight', style['font-weight'])
+                        .attr('stroke-width', 1.0)
+                        .attr('text-anchor', 'end');
+                    text_svg.text(text);
+                    text_svg = labeling_g.append("text")
+                        .attr('stroke', '#000')
+                        .attr("x", svg_container.attr('width') - parseInt(style.right.replace('px','')))
+                        .attr("y", h + track_heights[k] - 4)
+                        .attr('font-family', style.fontFamily)
+                        .attr('font-size', style.fontSize)
+                        .attr('font-weight', style['font-weight'])
+                        .attr('stroke-width', 0.3)
+                        .attr('text-anchor', 'end');
+                    text_svg.text(text);
+                }
+                track = $("#" + k + " .yaxislabel.top");
+                if (track.length){
+                    style = window.getComputedStyle(track[0]),
+                    text = track[0].innerText;
+                    text_svg = labeling_g.append("text")
+                        .attr('stroke', '#FFF')
+                        .attr("x", svg_container.attr('width') - parseInt(style.right.replace('px','')))
+                        .attr("y", h + 11)
+                        .attr('font-family', style.fontFamily)
+                        .attr('font-size', style.fontSize)
+                        .attr('font-weight', style['font-weight'])
+                        .attr('stroke-width', 0.6)
+                        .attr('text-anchor', 'end');
+                    text_svg.text(text);
+                    text_svg = labeling_g.append("text")
+                        .attr('stroke', '#000')
+                        .attr("x", svg_container.attr('width') - parseInt(style.right.replace('px','')))
+                        .attr("y", h + 11)
+                        .attr('font-family', style.fontFamily)
+                        .attr('font-size', style.fontSize)
+                        .attr('font-weight', style['font-weight'])
+                        .attr('stroke-width', 0.3)
+                        .attr('text-anchor', 'end');
+                    text_svg.text(text);
+                }
+            });
+        }
+        // If using PNG, quadruple size for better resolution
+        if (options.format == 'png') {
+            var height = svg_container.attr('height') * 4,
+                width = svg_container.attr('width') * 4,
+                scale = 4;
+        } else {
+            var height = svg_container.attr('height'),
+                width = svg_container.attr('width'),
+                scale = 1;
+        }
+        // If downloading SVG, use this method
+        if (options.format == 'svg') {
+            var serializer = new XMLSerializer();
+            function downloadFile(fileName, urlData) {
+                var aLink = document.createElement('a');
+                var evt = document.createEvent("HTMLEvents");
+                evt.initEvent("click");
+                aLink.download = fileName;
+                aLink.href = urlData;
+                aLink.dispatchEvent(evt);
+            }
+            var data = '"Column One","Column Two","Column Three"';
+            downloadFile('trackster.svg', 'data:none/none;base64,' + btoa(serializer.serializeToString(svg_container[0])));
+        } else {
+            // Export to www.highcharts.com for conversion
+            var type = 'application/' + options.format,
+                data = {
+                filename    : "trackster",
+                type        : type,
+                height      : height,
+                width       : width,
+                scale       : scale,
+                svg         : svg_panel[0].innerHTML
+            };
+
+            // create the form
+            var iframe = $("<iframe name='download-frame', id='download-frame'/>"),
+                form = $('<form>', {
+                    id      : 'download_form',
+                    method  : 'post',
+                    action  : 'http://export.highcharts.com/',
+                    display : 'none',
+                    target  : 'download-frame',
+                });
+
+            // reset form
+            form.empty();
+
+            // add the data
+            for (name in data) {
+                var input = $('<input/>', {
+                    type    : 'hidden',
+                    name    : name,
+                    value   : data[name]
+                });
+                form.append(input);
+            }
+
+            // submit
+            try {
+                form.submit();
+            } catch(err) {
+                console.log(err);
+            }
+        }
     }
 });
 
@@ -2770,7 +3062,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
 
         // Step (a) for (re)moving tiles.
-        this.tiles_div.children().addClass("remove");
+        if (!options || options.svg == null){
+            this.tiles_div.children().addClass("remove");
+        }
 
         var
             // Tile width in bases.
@@ -2778,9 +3072,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Index of first tile that overlaps visible region.
             tile_index = Math.floor(low / tile_width),
             tile_region,
-            tile_promise,
             tile_promises = [],
+            track_promise,
             tiles = [];
+
         // Draw tiles.
         while ( (tile_index * tile_width) < high ) {
             // Get tile region.
@@ -2790,6 +3085,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 // Tile high cannot be larger than view.max_high, which the chromosome length.
                 end: Math.min( (tile_index + 1) * tile_width, this.view.max_high)
             });
+                    
             tile_promise = this.draw_helper(tile_region, w_scale, options);
             tile_promises.push(tile_promise);
             $.when(tile_promise).then(function(tile) {
@@ -2799,6 +3095,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Go to next tile.
             tile_index += 1;
         }
+
+        // Create master promise for track finishing plotting all tiles
+        track_promise = $.when(tile_promises);
 
         // Step (c) for (re)moving tiles when clear_after is false.
         if (!clear_after) { this.tiles_div.children(".remove").removeClass("remove").remove(); }
@@ -2819,6 +3118,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 track.postdraw_actions(tiles, width, w_scale, clear_after);
             }
         });
+        return track_promise;
     },
 
     /**
@@ -2950,7 +3250,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         // Check tile cache, if found show existing tile in correct position
         var tile = (force ? undefined : track.tile_cache.get_elt(key));
-        if (tile) {
+        if (tile && !options.svg) {
             if (is_tile(tile)) {
                 track.show_tile(tile, w_scale);
             }
@@ -2983,7 +3283,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // When data is available, draw tile.
         //
         var tile_drawn = $.Deferred();
-        track.tile_cache.set_elt(key, tile_drawn);
+        if (!options.svg) {
+            track.tile_cache.set_elt(key, tile_drawn);
+        }
         $.when.apply($, get_tile_data()).then( function() {
             var tile_data = get_tile_data(),
                 tracks_data = tile_data,
@@ -2994,7 +3296,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Deferred, try again from the top. NOTE: this condition could (should?) be handled by the
             // GenomeDataManager in visualization module.
             if (_.find(tile_data, function(d) { return util.is_deferred(d); })) {
-                track.tile_cache.set_elt(key, undefined);
+                if (!options.svg){
+                    track.tile_cache.set_elt(key, undefined);
+                }
                 $.when(track.draw_helper(region, w_scale, options)).then(function(tile) {
                     tile_drawn.resolve(tile);
                 });
@@ -3041,26 +3345,25 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 ctx.globalCompositeOperation = "source-over";
             }
             ctx.translate(track.left_offset, 0);
-            if (canvas.manager.svg == true) {
+            if (options.svg == true) {
                 var ctx2 = C2S(canvas.width, canvas.height);
                 ctx2.canvas.width = canvas.width;
                 ctx2.canvas.height = canvas.height;
                 ctx2.canvas.manager = ctx.canvas.manager;
-                ctx2.translate(track.left_offset, 0);
+                //ctx2.translate(track.left_offset, 0);
             } else {
                 var ctx2 = ctx;
             };
+            ctx2.svg = options.svg;
             _.each(drawables, function(d, i) {
                 tile = d.draw_tile(tracks_data[i], ctx2, drawing_modes[i], region, w_scale, seq_data);
             });
-            if (canvas.manager.svg == true) {
-                var svg = ctx2.getSvg();
-                tile.html_elt.append(svg);
-            };
             // Don't cache, show if no tile.
             if (tile !== undefined) {
-                track.tile_cache.set_elt(key, tile);
-                track.show_tile(tile, w_scale);
+                if (!options.svg){
+                    track.tile_cache.set_elt(key, tile);
+                }
+                track.show_tile(tile, w_scale, ctx2);
             }
 
             tile_drawn.resolve(tile);
@@ -3103,7 +3406,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Show track tile and perform associated actions. Showing tile may actually move
      * an existing tile rather than reshowing it.
      */
-    show_tile: function(tile, w_scale) {
+    show_tile: function(tile, w_scale, ctx) {
         var track = this,
             tile_element = tile.html_elt;
 
@@ -3113,7 +3416,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         // Position tile element based on current viewport.
         var left = Math.round( ( tile.low - (this.is_overview? this.view.max_low : this.view.low) ) * w_scale );
-        if (this.left_offset) {
+        if (this.left_offset && (!ctx || !ctx.svg)) {
             left -= this.left_offset;
         }
         tile_element.css('left', left);
@@ -3123,29 +3426,50 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // for removing tiles.
             tile_element.removeClass("remove");
         }
-        else {
+        else if (!ctx || !ctx.svg){
             // Showing new tile.
             this.tiles_div.append(tile_element);
+
+            // -- Update track, tile heights based on new tile. --
+
+            tile_element.css('height', 'auto');
+
+            // Update max height based on current tile's height.
+            // BUG/HACK: tile_element.height() returns a height that is always 2 pixels too big, so
+            // -2 to get the correct height.
+            this.max_height_px = Math.max(this.max_height_px, tile_element.height() - 2);
+
+            // Update height for all tiles based on max height.
+            tile_element.parent().children().css("height", this.max_height_px + "px");
+
+            // Update track height based on max height and visible height.
+            var track_height = this.max_height_px;
+            if (this.visible_height_px !== 0) {
+                track_height = Math.min(this.max_height_px, this.visible_height_px);
+            }
+            this.tiles_div.css("height", track_height + "px");
         }
-
-        // -- Update track, tile heights based on new tile. --
-
-        tile_element.css('height', 'auto');
-
-        // Update max height based on current tile's height.
-        // BUG/HACK: tile_element.height() returns a height that is always 2 pixels too big, so
-        // -2 to get the correct height.
-        this.max_height_px = Math.max(this.max_height_px, tile_element.height() - 2);
-
-        // Update height for all tiles based on max height.
-        tile_element.parent().children().css("height", this.max_height_px + "px");
-
-        // Update track height based on max height and visible height.
-        var track_height = this.max_height_px;
-        if (this.visible_height_px !== 0) {
-            track_height = Math.min(this.max_height_px, this.visible_height_px);
+        else {
+            // If generating SVG, pull offset values and transform SVG elements
+            var svg = ctx.getSvg(),
+                g = svg.lastChild.lastChild,
+                id = this.tiles_div[0].parentNode.parentNode.getAttribute('id'),
+                svg_container = $("#svg-container"),
+                index = svg_container[0].children.length,
+                text_svg,
+                node;
+            g.setAttribute("id", "svg-" + id + 'X' + index);
+            g.setAttribute("transform", "translate(" + left + ", 0)");
+            node = $("#svg-" + id + 'X' + index);
+            if (ctx.canvas.manager.labels) {
+                _.each(ctx.canvas.manager.labels, function(l){
+                    text_svg = '<text stroke="#000" x="' + l.x + '" y="' + l.y + '" font-family="verdana" font-size="8px" font-weight="normal" stroke-width="0.3" text-anchor="' + l.align + '" width="' + l.max_length + '">' + l.text + '</text>';
+                    g.insertAdjacentHTML('beforeend', text_svg);
+                });
+                ctx.canvas.manager.labels = [];
+            }
+            svg_container.append(g);
         }
-        this.tiles_div.css("height", track_height + "px");
     },
 
     /**
@@ -3279,6 +3603,7 @@ extend(LabelTrack.prototype, Track.prototype, {
         }
         this.content_div.children( ":first" ).remove();
         this.content_div.append( new_div );
+        return $.when();
     }
 });
 
@@ -3782,6 +4107,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 tile_incomplete_features = _.omit(tile_incomplete_features, _.keys(tile.other_tiles_features_drawn));
 
                 // Draw tile's incomplete features.
+                /*
                 if (_.size(tile_incomplete_features) !== 0) {
                     // To draw incomplete features, create new canvas, copy original canvas/tile onto new
                     // canvas, and then draw incomplete features on the new canvas.
@@ -3799,6 +4125,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     tile.canvas = new_canvas;
                     _.extend(tile.other_tiles_features_drawn, all_incomplete_features);
                 }
+                */
             });
         }
 

@@ -37,7 +37,7 @@ define([
     "viz/trackster/tracks",
     "viz/visualization",
     "mvc/ui/icon-button",
-    "utils/query-string-parsing"
+    "utils/query-string-parsing",
 ], function(_, tracks, visualization, mod_icon_btn, query_string) {
 
 /**
@@ -137,18 +137,22 @@ var TracksterUI = Base.extend({
                 title: 'Circster',
                 on_click: function() {
                     window.location = self.baseURL + 'visualization/circster?id=' + view.vis_id;
-                }
-            },
+            } },
             { icon_class: 'disk--arrow', title: 'Save', on_click: function() {
                 self.save_viz();
+            } },
+            {
+                icon_class: 'download-arrow',
+                title: 'Export',
+                on_click: function() {
+                    view.export_menu();
             } },
             {
                 icon_class: 'cross-circle',
                 title: 'Close',
                 on_click: function() {
                     self.handle_unsaved_changes(view);
-                }
-            }
+            } }
         ],
         {
             tooltip_config: { placement: 'bottom' }
