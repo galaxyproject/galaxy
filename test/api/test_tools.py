@@ -806,8 +806,8 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEquals( output1_content.strip(), "Pasted Entry\nPasted Entry" )
 
-    @skip_without_tool( "identifier_multiple_in_conditional" )
-    def test_identifier_with_multiple_normal_datasets_in_conditional( self ):
+    @skip_without_tool( "identifier_collection" )
+    def test_identifier_with_data_collection( self ):
         history_id = self.dataset_populator.new_history()
 
         element_identifiers = self.dataset_collection_populator.list_identifiers( history_id )
@@ -823,12 +823,11 @@ class ToolsTestCase( api.ApiTestCase ):
         dataset_collection = create_response.json()
 
         inputs = {
-            "options|choice": "one",
-            "options|input1": {'src': 'hdca', 'id': dataset_collection['id']},
+            "input1": {'src': 'hdca', 'id': dataset_collection['id']},
         }
 
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        create_response = self._run( "identifier_multiple_in_conditional", history_id, inputs )
+        create_response = self._run( "identifier_conditional", history_id, inputs )
         self._assert_status_code_is( create_response, 200 )
         create = create_response.json()
         outputs = create[ 'outputs' ]

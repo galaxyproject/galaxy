@@ -307,7 +307,7 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
                 element = dataset
                 dataset = element.dataset_instance
                 kwargs["identifier"] = element.element_identifier
-            return self._dataset_wrapper( dataset, dataset_paths, **kwargs )
+            return self._dataset_wrapper( dataset, dataset_paths, identifier = element_identifier, **kwargs )
 
         list.__init__( self, map( to_wrapper, datasets ) )
         self.job_working_directory = job_working_directory
@@ -365,7 +365,7 @@ class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
             if dataset_collection_element.is_collection:
                 element_wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection_element, dataset_paths, **kwargs )
             else:
-                element_wrapper = self._dataset_wrapper( element_object, dataset_paths, **kwargs)
+                element_wrapper = self._dataset_wrapper( element_object, dataset_paths, identifier=element_identifier, **kwargs)
 
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append( element_wrapper )
