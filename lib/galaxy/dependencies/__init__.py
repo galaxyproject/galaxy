@@ -90,7 +90,8 @@ class ConditionalDependencies( object ):
         return self.check_weberror()
 
     def check_python_ldap( self ):
-        return 'ldap' in self.authenticators
+        return ('ldap' in self.authenticators or
+                'activedirectory' in self.authenticators)
 
 
 def optional( config_file ):
