@@ -1030,26 +1030,26 @@
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
-                %for dependency in resolver_dependencies:
-                    %if dependency['model_class'] == 'NullDependency':
+                <head>
+                    <tr>
+                        <th>Dependency</th>
+                        <th>Version</th>
+                        <th>Resolver</th>
+                    </tr>
+                </head>
+                <body>
+                    %for dependency in resolver_dependencies:
                         <tr>
-                            <td><b> Dependency was not resolved by any resolver module.</b></td>
+                            <td>${dependency['name'] | h}</td>
+                            <td>${dependency['version'] | h}</td>
+                        %if dependency['model_class'] == 'NullDependency':
+                            <td class='errormessage'>None</td>
+                        %else:
+                            <td>${dependency['model_class'] | h}</td>
+                        %endif
                         </tr>
-                    %else:
-                        <tr>
-                            <td><b>Dependency Resolver </b></td>
-                            <td> ${dependency['model_class'] | h}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Exact </b></td>
-                            <td> ${dependency['exact'] | h}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Dependency Type</b></td>
-                            <td> ${dependency['dependency_type'] | h}</td>
-                        </tr>
-                    %endif
-                %endfor
+                    %endfor
+                </body>
             </table>
         </td>
     </tr>
