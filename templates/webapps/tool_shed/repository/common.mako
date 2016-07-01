@@ -1060,7 +1060,7 @@
     </tr>
 </%def>
 
-<%def name="render_resolver_dependencies    ( resolver_dependencies )">
+<%def name="render_resolver_dependencies( resolver_dependencies )">
     %if resolver_dependencies:
         <div class="toolForm">
             <div class="toolFormTitle">Dependency Resolver Details</div>
