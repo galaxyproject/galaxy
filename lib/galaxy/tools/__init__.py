@@ -110,20 +110,17 @@ class ToolBox( BaseGalaxyToolBox ):
         )
         self._view = views.DependencyResolversView(app)
 
-    def tools_requirements(self):
+    def all_tools_requirements(self):
         reqs = []
-        for desc, tool in self.app.toolbox.tools():
+        for desc, tool in self.tools():
             for requirement in tool.requirements:
                 if requirement.type == 'package':
-                    reqs.append(json.dumps(requirement.to_dict()))
-        reqs = [json.loads(req) for req in list(set(reqs))]
+                    reqs.append(json.dumps(requirement.to_dict(), sort_keys=True))
+        reqs = [json.loads(req) for req in set(reqs)]
         return reqs
 
     def tool_requirements(self, tool):
-        reqs = []
-        for requirement in tool.requirements:
-            if requirement.type == 'package':
-                reqs.append(requirement.to_dict())
+        reqs = [req.to_dict() for req in tool.requirements if req.type == 'package']
         return reqs
 
     def tool_requirements_status(self, id):
