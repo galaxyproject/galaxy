@@ -1093,7 +1093,7 @@ def importer(test):
     if test:
         class JobDestionation(object):
             def __init__(self, *kwd):
-                self.id = kwb.get('id')
+                self.id = kwd.get('id')
                 self.nativeSpec = kwd.get('params')['nativeSpecification']
                 self.runner = kwd.get('runner')
         from galaxy.jobs.mapper import JobMappingException

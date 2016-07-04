@@ -1,4 +1,4 @@
-#=============================================Valid XML===================================================
+# =============================================Valid XML===================================================
 # One job, one rule
 vYMLTest1 = """
     tools:
@@ -31,7 +31,7 @@ vdictTest1_yml = {
 }
 
 # Multiple jobs, multiple rules
-vYMLTest2 ='''
+vYMLTest2 = '''
     tools:
       spades:
         default_destination: waffles_default
@@ -61,19 +61,19 @@ vdictTest2_yml = {
         "smalt": {
             "rules": [
                 {
-                  "rule_type": "file_size",
-                  'nice_value': 0,
-                  "lower_bound": 0,
-                  "upper_bound": 100000000,
-                  "fail_message": "Too few reads for smalt to work",
-                  "destination": "fail"
-                },{
-                  "rule_type": "file_size",
-                  'nice_value': 0,
-                  "lower_bound": 100000000,
-                  "upper_bound": "Infinity",
-                  "fail_message": "Too few reads for smalt to work",
-                  "destination": "fail"
+                    "rule_type": "file_size",
+                    'nice_value': 0,
+                    "lower_bound": 0,
+                    "upper_bound": 100000000,
+                    "fail_message": "Too few reads for smalt to work",
+                    "destination": "fail"
+                }, {
+                    "rule_type": "file_size",
+                    'nice_value': 0,
+                    "lower_bound": 100000000,
+                    "upper_bound": "Infinity",
+                    "fail_message": "Too few reads for smalt to work",
+                    "destination": "fail"
                 }
             ]
         }
@@ -182,7 +182,7 @@ vdictTest5_yml = {
 }
 
 # Num_input_datasets type
-vYMLTest6 ='''
+vYMLTest6 = '''
     tools:
       spades:
         default_destination: waffles_default
@@ -210,17 +210,17 @@ vdictTest6_yml = {
         "smalt": {
             "rules": [
                 {
-                  "rule_type": "num_input_datasets",
-                  'nice_value': 0,
-                  "lower_bound": 0,
-                  "upper_bound": 200,
-                  "destination": "cluster_low_4"
-                },{
-                  "rule_type": "num_input_datasets",
-                  'nice_value': 0,
-                  "lower_bound": 200,
-                  "upper_bound": "Infinity",
-                  "destination": "cluster_high_32"
+                    "rule_type": "num_input_datasets",
+                    'nice_value': 0,
+                    "lower_bound": 0,
+                    "upper_bound": 200,
+                    "destination": "cluster_low_4"
+                }, {
+                    "rule_type": "num_input_datasets",
+                    'nice_value': 0,
+                    "lower_bound": 200,
+                    "upper_bound": "Infinity",
+                    "destination": "cluster_high_32"
                 }
             ]
         }
@@ -259,26 +259,26 @@ vdictTest7_yml = {
                     "lower_bound": 0,
                     "upper_bound": 100000000,
                     "destination": {
-                      'priority': {
-                        'med': 'things'
-                      }
+                        'priority': {
+                            'med': 'things'
+                        }
                     }
                 },
             ]
         }
     },
     'default_destination': {
-      'priority': {
-        'med': 'waffles_default'
-      }
+        'priority': {
+            'med': 'waffles_default'
+        }
     },
     'users': {
-      'user@example.com': {
-         'priority': 'med'
-      }
+        'user@example.com': {
+            'priority': 'med'
+        }
     }
 }
-#=====================================================Invalid XML tests==========================================================
+# =====================================================Invalid XML tests==========================================================
 
 # Empty file
 ivYMLTest2 = ""
@@ -402,7 +402,7 @@ ivDict = {
 }
 
 # Invalid category
-ivYMLTest8= '''
+ivYMLTest8 = '''
     ice_cream:
     verbose: True
 '''
@@ -537,7 +537,7 @@ iv132dict = {
 }
 
 # Multiple rules in 1 job, first one failing
-ivYMLTest133 ='''
+ivYMLTest133 = '''
     tools:
       smalt:
         rules:
@@ -560,18 +560,18 @@ iv133dict = {
         "smalt": {
             "rules": [
                 {
-                  "rule_type": "file_size",
-                  'nice_value': 0,
-                  "lower_bound": 0,
-                  "upper_bound": 100000000,
-                  "fail_message": "Invalid parameters for rule 1 in 'smalt'.",
-                  "destination": "fail"
-                },{
-                  "rule_type": "file_size",
-                  'nice_value': 0,
-                  "lower_bound": 100000000,
-                  "upper_bound": "Infinity",
-                  "destination": "waffles_low_4"
+                    "rule_type": "file_size",
+                    'nice_value': 0,
+                    "lower_bound": 0,
+                    "upper_bound": 100000000,
+                    "fail_message": "Invalid parameters for rule 1 in 'smalt'.",
+                    "destination": "fail"
+                }, {
+                    "rule_type": "file_size",
+                    'nice_value': 0,
+                    "lower_bound": 100000000,
+                    "upper_bound": "Infinity",
+                    "destination": "waffles_low_4"
                 }
             ]
         }
@@ -820,7 +820,7 @@ iv141dict = {
 }
 
 # Bad bounds setup for num_input_datasets
-ivYMLTest142 ='''
+ivYMLTest142 = '''
     tools:
       smalt:
         rules:
@@ -851,7 +851,7 @@ iv142dict = {
 }
 
 # Even worse bounds setup for num_input_datasets
-ivYMLTest143 ='''
+ivYMLTest143 = '''
     tools:
       smalt:
         rules:
@@ -882,7 +882,7 @@ iv143dict = {
 }
 
 # No med priority destination in default destination
-ivYMLTest144 ='''
+ivYMLTest144 = '''
     default_destination:
       priority:
         low: waffles_low
@@ -890,7 +890,7 @@ ivYMLTest144 ='''
 '''
 
 # invalid priority destination in default destination
-ivYMLTest145 ='''
+ivYMLTest145 = '''
     default_destination:
       priority:
         med: waffles_low
@@ -899,7 +899,7 @@ ivYMLTest145 ='''
 '''
 
 # No med priority destination in tool config
-ivYMLTest146 ='''
+ivYMLTest146 = '''
     tools:
       smalt:
         rules:
@@ -917,7 +917,7 @@ ivYMLTest146 ='''
 '''
 
 # Invalid priority destination in tool config
-ivYMLTest147 ='''
+ivYMLTest147 = '''
     tools:
       smalt:
         rules:
@@ -936,7 +936,7 @@ ivYMLTest147 ='''
 '''
 
 # invalid priority in users section
-ivYMLTest148 ='''
+ivYMLTest148 = '''
     default_destination:
       priority:
         med: waffles_low

@@ -1,11 +1,9 @@
 import logging
 import os
-import re
 import sys
 sys.path.append("")
 import unittest
 import mockGalaxy as mg
-from mockGalaxy import JobMappingException
 import ymltests as yt
 import galaxy.jobs.rules.dynamic_tool_destination as dt
 
@@ -17,7 +15,7 @@ from galaxy.jobs.mapper import JobMappingException
 theApp = mg.App( "waffles_default", "test_spec")
 script_dir = os.path.dirname(__file__)
 
-#======================Jobs====================================
+# ======================Jobs====================================
 zeroJob = mg.Job()
 
 emptyJob = mg.Job()
@@ -49,7 +47,7 @@ dbJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/d
 dbcountJob = mg.Job()
 dbcountJob.add_input_dataset( mg.InputDataset("input1", mg.Dataset( (script_dir + "/data/test.fasta"), "fasta", None)) )
 
-#======================Tools===================================
+# ======================Tools===================================
 vanillaTool = mg.Tool( 'test' )
 
 unTool = mg.Tool( 'unregistered' )
@@ -69,7 +67,7 @@ usersTool = mg.Tool( 'test_users' )
 
 numinputsTool = mg.Tool( 'test_num_input_datasets' )
 
-#=======================YML file================================
+# =======================YML file================================
 path = script_dir + "/data/tool_destination.yml"
 priority_path = script_dir + "/data/priority_tool_destination.yml"
 broken_default_dest_path = script_dir + "/data/dest_fail.yml"
@@ -77,7 +75,7 @@ no_verbose_path = script_dir + "/data/test_no_verbose.yml"
 users_test_path = script_dir + "/data/test_users.yml"
 num_input_datasets_test_path = script_dir + "/data/test_num_input_datasets.yml"
 
-#======================Test Variables=========================
+# ======================Test Variables=========================
 value = 1
 valueK = value * 1024
 valueM = valueK * 1024
@@ -92,9 +90,9 @@ valueY = valueZ * 1024
 class TestDynamicToolDestination(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        logger = logging.getLogger()
+        self.logger = logging.getLogger()
 
-    #=======================map_tool_to_destination()================================
+    # =======================map_tool_to_destination()================================
 
     @log_capture()
     def test_brokenDestYML(self, l):
@@ -318,7 +316,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         )
 
 
-#================================Invalid yaml files==============================
+# ================================Invalid yaml files==============================
     @log_capture()
     def test_no_file(self, l):
         self.assertRaises(IOError, dt.parse_yaml, path="")
@@ -473,7 +471,6 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.rules.dynamic_tool_destination', 'DEBUG', "No destination specified for rule 1 in 'spades'.")
         )
-
 
     @log_capture()
     def test_return_rule_for_no_destination(self, l):
@@ -677,7 +674,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.rules.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
-#================================Valid yaml files==============================
+# ================================Valid yaml files==============================
     @log_capture()
     def test_parse_valid_yml(self, l):
         self.assertEqual(dt.parse_yaml(yt.vYMLTest1, test=True), yt.vdictTest1_yml)
@@ -708,7 +705,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.rules.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
         )
 
-#================================Testing str_to_bytes==========================
+# ================================Testing str_to_bytes==========================
     def test_str_to_bytes_invalid(self):
         self.assertRaises(dt.MalformedYMLException, dt.str_to_bytes, "1d")
         self.assertRaises(dt.MalformedYMLException, dt.str_to_bytes, "1 d")
@@ -727,7 +724,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         self.assertEqual(dt.str_to_bytes( "1 ZB" ), valueZ)
         self.assertEqual(dt.str_to_bytes( "1 YB" ), valueY)
 
-#==============================Testing bytes_to_str=============================
+# ==============================Testing bytes_to_str=============================
     @log_capture()
     def test_bytes_to_str_invalid(self, l):
         testValue = ""
@@ -775,7 +772,3 @@ class TestDynamicToolDestination(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    #suite = unittest.TestLoader().loadTestsFromTestCase(TestDynamicToolDestination)
-    #ret = not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful()
-    #print(ret)
-    #sys.exit(ret)
