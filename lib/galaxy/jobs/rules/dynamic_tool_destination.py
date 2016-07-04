@@ -1091,8 +1091,12 @@ def importer(test):
     global JobDestination
     global JobMappingException
     if test:
-        from tests.mockGalaxy import JobDestination
-        from tests.mockGalaxy import JobMappingException
+        class JobDestionation(object):
+            def __init__(self, *kwd):
+                self.id = kwb.get('id')
+                self.nativeSpec = kwd.get('params')['nativeSpecification']
+                self.runner = kwd.get('runner')
+        from galaxy.jobs.mapper import JobMappingException
     else:
         from galaxy.jobs import JobDestination
         from galaxy.jobs.mapper import JobMappingException
