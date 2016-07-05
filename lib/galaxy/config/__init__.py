@@ -49,31 +49,28 @@ def resolve_path( path, root ):
     return path
 
 
-class Configuration( object ):
-    deprecated_options = (None,)
-
-    def __init__( self, **kwargs ):
-        self.config_dict = kwargs
-        self.root = kwargs.get( 'root_dir', '.' )
-
-        self.config_file = None
-        global_conf = kwargs.get( 'global_conf', None )
+class BaseAppConfiguration(object):
+    def _set_config_base(self, config_kwargs):
+        self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
         # TODO: under what conditions is global_conf None, or does it not
         # contain __file__?
+        global_conf = config_kwargs.get( 'global_conf', None )
+        self.config_file = None
         if global_conf and "__file__" in global_conf:
             self.config_file = global_conf['__file__']
         elif running_from_source:
-            for f in ( 'config/galaxy.ini', 'config/galaxy.ini.sample' ):
-                if os.path.exists( f ):
+            for f in ('config/%s.ini' % self.__class__.default_config_file_name,
+                      os.path.join(self.sample_config_dir, '%s.sample' % self.__class__.default_config_file_name)):
+                if os.path.exists(f):
                     self.config_file = f
                     break
         else:
-            log.warning( "global_conf unset or __file__ not in global_conf and "
-                         "not running from source, unable to determine config file, "
-                         "global_conf is: %s", global_conf )
-        assert self.config_file is not None, "Unable to determine galaxy config file"
-        self.config_dir = kwargs.get( 'config_dir', os.path.dirname( self.config_file ) )
-        self.data_dir = kwargs.get( 'data_dir', None )
+            log.warning("global_conf unset or __file__ not in global_conf and "
+                        "not running from source, unable to determine config file, "
+                        "global_conf is: %s", global_conf)
+        assert self.config_file is not None, "Unable to determine app config file"
+        self.config_dir = config_kwargs.get('config_dir', os.path.dirname(self.config_file))
+        self.data_dir = config_kwargs.get('data_dir', None)
         # mutable_config_dir is intentionally not configurable. You can
         # override individual mutable configs with config options, but they
         # should be considered Galaxy-controlled data files and will by default
@@ -91,7 +88,56 @@ class Configuration( object ):
         log.debug( "Configuration directory is %s", self.config_dir )
         log.debug( "Data directory is %s", self.data_dir )
 
-        self.sample_config_dir = os.path.join( os.path.dirname( __file__ ), 'sample' )
+    def _in_mutable_config_dir(self, path):
+        return os.path.join(self.mutable_config_dir, path)
+
+    def _in_config_dir(self, path):
+        return os.path.join(self.config_dir, path)
+
+    def _in_sample_dir(self, path):
+        return os.path.join(self.sample_config_dir, path)
+
+    def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
+        for var, defaults in defaults.items():
+            if config_kwargs.get( var, None ) is not None:
+                path = config_kwargs.get( var )
+                setattr( self, var + '_set', True )
+            else:
+                for default in defaults:
+                    if os.path.exists( resolve_path( default, self.root ) ):
+                        path = default
+                        break
+                else:
+                    path = defaults[-1]
+                setattr( self, var + '_set', False )
+            setattr( self, var, resolve_path( path, self.root ) )
+
+        for var, defaults in listify_defaults.items():
+            paths = []
+            if config_kwargs.get( var, None ) is not None:
+                paths = listify( config_kwargs.get( var ) )
+            else:
+                for default in defaults:
+                    for path in listify( default ):
+                        if not os.path.exists( resolve_path( path, self.root ) ):
+                            break
+                    else:
+                        paths = listify( default )
+                        break
+                else:
+                    paths = listify( defaults[-1] )
+            setattr( self, var, [ resolve_path( x, self.root ) for x in paths ] )
+
+
+class GalaxyAppConfiguration( BaseAppConfiguration ):
+    deprecated_options = (None,)
+    default_config_file_name = 'galaxy.ini'
+
+    def __init__( self, **kwargs ):
+        self.config_dict = kwargs
+        self.root = kwargs.get( 'root_dir', '.' )
+
+        self._set_config_base( kwargs )
 
         # Configs no longer read from samples
         self.migrated_tools_config = resolve_path( kwargs.get( 'migrated_tools_conf', 'migrated_tools_conf.xml' ), self.mutable_config_dir )
@@ -100,7 +146,7 @@ class Configuration( object ):
             setattr( self, name + '_set', kwargs.get( name, None ) is not None )
 
         # Resolve paths of other config files
-        self.__parse_config_file_options( kwargs )
+        self.parse_config_file_options( kwargs )
 
         # Collect the umask and primary gid from the environment
         self.umask = os.umask( 0o77 )  # get the current umask
@@ -409,6 +455,7 @@ class Configuration( object ):
         self.irods_root_collection_path = kwargs.get( 'irods_root_collection_path', None )
         self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
+        global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = configparser.ConfigParser()
         self.global_conf_parser = global_conf_parser
         if self.config_file is not None:
@@ -549,44 +596,24 @@ class Configuration( object ):
         else:
             return None
 
-    def reload_sanitize_whitelist( self, explicit=True ):
-        self.sanitize_whitelist = []
-        try:
-            with open(self.sanitize_whitelist_file, 'rt') as f:
-                for line in f.readlines():
-                    if not line.startswith("#"):
-                        self.sanitize_whitelist.append(line.strip())
-        except IOError:
-            if explicit:
-                log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
-
-    def __in_mutable_config_dir( self, path ):
-        return os.path.join( self.mutable_config_dir, path )
-
-    def __in_config_dir( self, path ):
-        return os.path.join( self.config_dir, path )
-
-    def __in_sample_dir( self, path ):
-        return os.path.join( self.sample_config_dir, path )
-
-    def __parse_config_file_options( self, kwargs ):
+    def parse_config_file_options( self, kwargs ):
         """
         Backwards compatibility for config files moved to the config/ dir.
         """
         defaults = dict(
-            auth_config_file=[ self.__in_config_dir( 'auth_conf.xml' ) ],
-            data_manager_config_file=[ self.__in_config_dir( 'data_manager_conf.xml' ) ],
-            datatypes_config_file=[ self.__in_config_dir( 'datatypes_conf.xml' ), self.__in_sample_dir( 'datatypes_conf.xml.sample' ) ],
-            external_service_type_config_file=[ self.__in_config_dir( 'external_service_types_conf.xml' ) ],
-            job_config_file=[ self.__in_config_dir( 'job_conf.xml' ) ],
-            job_metrics_config_file=[ self.__in_config_dir( 'job_metrics_conf.xml' ) ],
-            dependency_resolvers_config_file=[ self.__in_config_dir( 'dependency_resolvers_conf.xml' ) ],
-            job_resource_params_file=[ self.__in_config_dir( 'job_resource_params_conf.xml' ) ],
-            object_store_config_file=[ self.__in_config_dir( 'object_store_conf.xml' ) ],
-            openid_config_file=[ self.__in_config_dir( 'openid_conf.xml' ) ],
-            shed_data_manager_config_file=[ self.__in_mutable_config_dir( 'shed_data_manager_conf.xml' ) ],
-            shed_tool_data_table_config=[ self.__in_mutable_config_dir( 'shed_tool_data_table_conf.xml' ) ],
-            workflow_schedulers_config_file=[ self.__in_config_dir( 'config/workflow_schedulers_conf.xml' ) ],
+            auth_config_file=[ self._in_config_dir( 'auth_conf.xml' ) ],
+            data_manager_config_file=[ self._in_config_dir( 'data_manager_conf.xml' ) ],
+            datatypes_config_file=[ self._in_config_dir( 'datatypes_conf.xml' ), self._in_sample_dir( 'datatypes_conf.xml.sample' ) ],
+            external_service_type_config_file=[ self._in_config_dir( 'external_service_types_conf.xml' ) ],
+            job_config_file=[ self._in_config_dir( 'job_conf.xml' ) ],
+            job_metrics_config_file=[ self._in_config_dir( 'job_metrics_conf.xml' ) ],
+            dependency_resolvers_config_file=[ self._in_config_dir( 'dependency_resolvers_conf.xml' ) ],
+            job_resource_params_file=[ self._in_config_dir( 'job_resource_params_conf.xml' ) ],
+            object_store_config_file=[ self._in_config_dir( 'object_store_conf.xml' ) ],
+            openid_config_file=[ self._in_config_dir( 'openid_conf.xml' ) ],
+            shed_data_manager_config_file=[ self._in_mutable_config_dir( 'shed_data_manager_conf.xml' ) ],
+            shed_tool_data_table_config=[ self._in_mutable_config_dir( 'shed_tool_data_table_conf.xml' ) ],
+            workflow_schedulers_config_file=[ self._in_config_dir( 'config/workflow_schedulers_conf.xml' ) ],
         )
 
         if running_from_source:
@@ -612,42 +639,14 @@ class Configuration( object ):
         else:
             listify_defaults = {
                 'tool_data_table_config_path': [
-                    self.__in_config_dir( 'tool_data_table_conf.xml' ),
-                    self.__in_sample_dir( 'tool_data_table_conf.xml.sample' ) ],
+                    self._in_config_dir( 'tool_data_table_conf.xml' ),
+                    self._in_sample_dir( 'tool_data_table_conf.xml.sample' ) ],
                 'tool_config_file': [
-                    self.__in_config_dir( 'tool_conf.xml' ),
-                    self.__in_sample_dir( 'tool_conf.xml.sample' ) ]
+                    self._in_config_dir( 'tool_conf.xml' ),
+                    self._in_sample_dir( 'tool_conf.xml.sample' ) ]
             }
 
-        for var, defaults in defaults.items():
-            if kwargs.get( var, None ) is not None:
-                path = kwargs.get( var )
-                setattr( self, var + '_set', True )
-            else:
-                for default in defaults:
-                    if os.path.exists( resolve_path( default, self.root ) ):
-                        path = default
-                        break
-                else:
-                    path = defaults[-1]
-                setattr( self, var + '_set', False )
-            setattr( self, var, resolve_path( path, self.root ) )
-
-        for var, defaults in listify_defaults.items():
-            paths = []
-            if kwargs.get( var, None ) is not None:
-                paths = listify( kwargs.get( var ) )
-            else:
-                for default in defaults:
-                    for path in listify( default ):
-                        if not os.path.exists( resolve_path( path, self.root ) ):
-                            break
-                    else:
-                        paths = listify( default )
-                        break
-                else:
-                    paths = listify( defaults[-1] )
-            setattr( self, var, [ resolve_path( x, self.root ) for x in paths ] )
+        self._parse_config_file_options( defaults, listify_defaults, kwargs )
 
         # If the user has configured a shed tool config in tool_config_file
         # this would add a second, but since we're not parsing them yet we
@@ -658,6 +657,17 @@ class Configuration( object ):
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
+
+    def reload_sanitize_whitelist( self, explicit=True ):
+        self.sanitize_whitelist = []
+        try:
+            with open(self.sanitize_whitelist_file, 'rt') as f:
+                for line in f.readlines():
+                    if not line.startswith("#"):
+                        self.sanitize_whitelist.append(line.strip())
+        except IOError:
+            if explicit:
+                log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools whitelisted.", self.sanitize_whitelist_file)
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:
@@ -791,6 +801,10 @@ class Configuration( object ):
             return string
 
         return [ parse( v ) for v in allowed_origin_hostnames if v ]
+
+
+# legacy naming
+Configuration = GalaxyAppConfiguration
 
 
 def get_database_engine_options( kwargs, model_prefix='' ):
