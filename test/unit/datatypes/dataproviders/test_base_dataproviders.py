@@ -6,7 +6,7 @@ Unit tests for base DataProviders.
 import os.path
 import imp
 import unittest
-import StringIO
+from six import StringIO
 
 import logging
 log = logging.getLogger( __name__ )
@@ -80,23 +80,23 @@ class Test_BaseDataProvider( BaseTestCase ):
         return ( contents, provider, data )
 
     def test_iterators( self ):
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
     def test_validate_source( self ):
         """validate_source should throw an error if the source doesn't have attr '__iter__'
@@ -111,7 +111,7 @@ class Test_BaseDataProvider( BaseTestCase ):
     def test_writemethods( self ):
         """should throw an error if any write methods are called
         """
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
 
         # should throw error
@@ -126,11 +126,11 @@ class Test_BaseDataProvider( BaseTestCase ):
     def test_readlines( self ):
         """readlines should return all the data in list form
         """
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = provider.readlines()
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
     def test_stringio( self ):
         """should work with StringIO
@@ -140,7 +140,7 @@ class Test_BaseDataProvider( BaseTestCase ):
             Two
             Three
         """ )
-        source = StringIO.StringIO( contents )
+        source = StringIO( contents )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
@@ -154,7 +154,7 @@ class Test_BaseDataProvider( BaseTestCase ):
         ( contents, provider, data ) = self.contents_provider_and_data()
         self.assertEqual( data, self.parses_default_content_as() )
         # provider should call close on file
-        self.assertTrue( isinstance( provider.source, file ) )
+        self.assertTrue( hasattr(provider.source, 'read'))
         self.assertTrue( provider.source.closed )
 
 

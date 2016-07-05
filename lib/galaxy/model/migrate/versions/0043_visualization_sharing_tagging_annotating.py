@@ -1,6 +1,8 @@
 """
 Migration script to create tables and columns for sharing visualizations.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, MetaData, Table, TEXT, Unicode
@@ -37,7 +39,7 @@ VisualizationAnnotationAssociation_table = Table( "visualization_annotation_asso
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     Visualiation_table = Table( "visualization", metadata, autoload=True )
@@ -45,7 +47,7 @@ def upgrade(migrate_engine):
     try:
         VisualizationUserShareAssociation_table.create()
     except Exception as e:
-        print "Creating visualization_user_share_association table failed: %s" % str( e )
+        print("Creating visualization_user_share_association table failed: %s" % str( e ))
         log.debug( "Creating visualization_user_share_association table failed: %s" % str( e ) )
 
     # Get default boolean value 'false' so that columns can be initialized.
@@ -69,7 +71,7 @@ def upgrade(migrate_engine):
         cmd = "UPDATE visualization SET deleted = %s" % default_false
         migrate_engine.execute( cmd )
     except Exception as e:
-        print "Adding deleted column to visualization table failed: %s" % str( e )
+        print("Adding deleted column to visualization table failed: %s" % str( e ))
         log.debug( "Adding deleted column to visualization table failed: %s" % str( e ) )
 
     try:
@@ -81,14 +83,14 @@ def upgrade(migrate_engine):
         cmd = "UPDATE visualization SET importable = %s" % default_false
         migrate_engine.execute( cmd )
     except Exception as e:
-        print "Adding importable column to visualization table failed: %s" % str( e )
+        print("Adding importable column to visualization table failed: %s" % str( e ))
         log.debug( "Adding importable column to visualization table failed: %s" % str( e ) )
 
     try:
         slug_column.create( Visualiation_table )
         assert slug_column is Visualiation_table.c.slug
     except Exception as e:
-        print "Adding slug column to visualization table failed: %s" % str( e )
+        print("Adding slug column to visualization table failed: %s" % str( e ))
         log.debug( "Adding slug column to visualization table failed: %s" % str( e ) )
 
     try:
@@ -100,7 +102,7 @@ def upgrade(migrate_engine):
             i = Index( "ix_visualization_slug", Visualiation_table.c.slug )
             i.create()
     except Exception as e:
-        print "Adding index 'ix_visualization_slug' failed: %s" % str( e )
+        print("Adding index 'ix_visualization_slug' failed: %s" % str( e ))
         log.debug( "Adding index 'ix_visualization_slug' failed: %s" % str( e ) )
 
     try:
@@ -112,21 +114,21 @@ def upgrade(migrate_engine):
         cmd = "UPDATE visualization SET published = %s" % default_false
         migrate_engine.execute( cmd )
     except Exception as e:
-        print "Adding published column to visualization table failed: %s" % str( e )
+        print("Adding published column to visualization table failed: %s" % str( e ))
         log.debug( "Adding published column to visualization table failed: %s" % str( e ) )
 
     # Create visualization_tag_association table.
     try:
         VisualizationTagAssociation_table.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Creating visualization_tag_association table failed: %s" % str( e ) )
 
     # Create visualization_annotation_association table.
     try:
         VisualizationAnnotationAssociation_table.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Creating visualization_annotation_association table failed: %s" % str( e ) )
 
     # Need to create index for visualization annotation manually to deal with errors.
@@ -139,7 +141,7 @@ def upgrade(migrate_engine):
             i = Index( "ix_visualization_annotation_association_annotation", VisualizationAnnotationAssociation_table.c.annotation )
             i.create()
     except Exception as e:
-        print "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e )
+        print("Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e ))
         log.debug( "Adding index 'ix_visualization_annotation_association_annotation' failed: %s" % str( e ) )
 
 
@@ -152,44 +154,44 @@ def downgrade(migrate_engine):
     try:
         VisualizationUserShareAssociation_table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Dropping visualization_user_share_association table failed: %s" % str( e ) )
 
     # Drop columns for supporting sharing from visualization table.
     try:
         Visualiation_table.c.deleted.drop()
     except Exception as e:
-        print "Dropping deleted column from visualization table failed: %s" % str( e )
+        print("Dropping deleted column from visualization table failed: %s" % str( e ))
         log.debug( "Dropping deleted column from visualization table failed: %s" % str( e ) )
 
     try:
         Visualiation_table.c.importable.drop()
     except Exception as e:
-        print "Dropping importable column from visualization table failed: %s" % str( e )
+        print("Dropping importable column from visualization table failed: %s" % str( e ))
         log.debug( "Dropping importable column from visualization table failed: %s" % str( e ) )
 
     try:
         Visualiation_table.c.slug.drop()
     except Exception as e:
-        print "Dropping slug column from visualization table failed: %s" % str( e )
+        print("Dropping slug column from visualization table failed: %s" % str( e ))
         log.debug( "Dropping slug column from visualization table failed: %s" % str( e ) )
 
     try:
         Visualiation_table.c.published.drop()
     except Exception as e:
-        print "Dropping published column from visualization table failed: %s" % str( e )
+        print("Dropping published column from visualization table failed: %s" % str( e ))
         log.debug( "Dropping published column from visualization table failed: %s" % str( e ) )
 
     # Drop visualization_tag_association table.
     try:
         VisualizationTagAssociation_table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Dropping visualization_tag_association table failed: %s" % str( e ) )
 
     # Drop visualization_annotation_association table.
     try:
         VisualizationAnnotationAssociation_table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Dropping visualization_annotation_association table failed: %s" % str( e ) )

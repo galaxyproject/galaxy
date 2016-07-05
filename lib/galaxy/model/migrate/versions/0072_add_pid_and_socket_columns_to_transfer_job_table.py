@@ -1,6 +1,8 @@
 """
 Migration script to add 'pid' and 'socket' columns to the transfer_job table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, Integer, MetaData, Table
@@ -11,7 +13,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         TransferJob_table = Table( "transfer_job", metadata, autoload=True )
@@ -22,7 +24,7 @@ def upgrade(migrate_engine):
         c.create( TransferJob_table )
         assert c is TransferJob_table.c.socket
     except Exception as e:
-        print "Adding columns to transfer_job table failed: %s" % str( e )
+        print("Adding columns to transfer_job table failed: %s" % str( e ))
         log.debug( "Adding columns to transfer_job table failed: %s" % str( e ) )
 
 
@@ -34,5 +36,5 @@ def downgrade(migrate_engine):
         TransferJob_table.c.pid.drop()
         TransferJob_table.c.socket.drop()
     except Exception as e:
-        print "Dropping columns from transfer_job table failed: %s" % str( e )
+        print("Dropping columns from transfer_job table failed: %s" % str( e ))
         log.debug( "Dropping columns from transfer_job table failed: %s" % str( e ) )

@@ -1,6 +1,8 @@
 """
 Migration script to add 'ldda_id' column to the implicitly_converted_dataset_association table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
@@ -11,7 +13,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Implicitly_converted_table = Table( "implicitly_converted_dataset_association", metadata, autoload=True )
@@ -22,7 +24,7 @@ def upgrade(migrate_engine):
         c.create( Implicitly_converted_table, index_name="ix_implicitly_converted_ds_assoc_ldda_id")
         assert c is Implicitly_converted_table.c.ldda_id
     except Exception as e:
-        print "Adding ldda_id column to implicitly_converted_dataset_association table failed: %s" % str( e )
+        print("Adding ldda_id column to implicitly_converted_dataset_association table failed: %s" % str( e ))
         log.debug( "Adding ldda_id column to implicitly_converted_dataset_association table failed: %s" % str( e ) )
 
 
@@ -33,5 +35,5 @@ def downgrade(migrate_engine):
         Implicitly_converted_table = Table( "implicitly_converted_dataset_association", metadata, autoload=True )
         Implicitly_converted_table.c.ldda_id.drop()
     except Exception as e:
-        print "Dropping ldda_id column from implicitly_converted_dataset_association table failed: %s" % str( e )
+        print("Dropping ldda_id column from implicitly_converted_dataset_association table failed: %s" % str( e ))
         log.debug( "Dropping ldda_id column from implicitly_converted_dataset_association table failed: %s" % str( e ) )

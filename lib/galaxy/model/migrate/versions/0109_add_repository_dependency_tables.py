@@ -1,6 +1,8 @@
 """
 Migration script to add the repository_dependency and repository_repository_dependency_association tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -33,7 +35,7 @@ RepositoryRepositoryDependencyAssociation_table = Table( "repository_repository_
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     try:

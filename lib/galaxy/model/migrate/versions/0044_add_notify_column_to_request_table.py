@@ -1,6 +1,8 @@
 """
 Migration script to add a notify column to the request table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table
@@ -11,7 +13,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     Request_table = Table( "request", metadata, autoload=True )

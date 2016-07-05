@@ -9,11 +9,12 @@ test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 import sqlalchemy
+from six import string_types
 
 from galaxy import model
 from galaxy import exceptions
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 from galaxy.managers.base import SkipAttribute
 from galaxy.managers.roles import RoleManager
@@ -271,7 +272,7 @@ class DatasetSerializerTestCase( BaseTestCase ):
         self.assertDate( serialized[ 'update_time' ] )
 
         self.assertUUID( serialized[ 'uuid' ] )
-        self.assertIsInstance( serialized[ 'state' ], basestring )
+        self.assertIsInstance( serialized[ 'state' ], string_types )
         self.assertIsInstance( serialized[ 'deleted' ], bool )
         self.assertIsInstance( serialized[ 'purged' ], bool )
         self.assertIsInstance( serialized[ 'purgable' ], bool )

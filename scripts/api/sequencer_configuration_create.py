@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import sys
 
@@ -40,7 +41,7 @@ def main():
         request_type_filename = sys.argv[5]
         email_addresses = sys.argv[6].split( ',' )
     except IndexError:
-        print 'usage: %s key base_url request_form_xml_description_file sample_form_xml_description_file request_type_xml_description_file email_address1[,email_address2]' % os.path.basename( sys.argv[0] )
+        print('usage: %s key base_url request_form_xml_description_file sample_form_xml_description_file request_type_xml_description_file email_address1[,email_address2]' % os.path.basename( sys.argv[0] ))
         sys.exit( 1 )
     return create_sequencer_configuration( key, base_url, request_form_filename, sample_form_filename, request_type_filename, email_addresses, return_formatted=True )
 

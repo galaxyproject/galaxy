@@ -1,6 +1,8 @@
 """
 Migration script to drop the update_available Boolean column and replace it with the tool_shed_status JSONType column in the tool_shed_repository table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -31,7 +33,7 @@ def default_false( migrate_engine ):
 
 def upgrade( migrate_engine ):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
@@ -45,13 +47,13 @@ def upgrade( migrate_engine ):
                 col = ToolShedRepository_table.c.update_available
                 col.drop()
             except Exception as e:
-                print "Dropping column update_available from the tool_shed_repository table failed: %s" % str( e )
+                print("Dropping column update_available from the tool_shed_repository table failed: %s" % str( e ))
         c = Column( "tool_shed_status", JSONType, nullable=True )
         try:
             c.create( ToolShedRepository_table )
             assert c is ToolShedRepository_table.c.tool_shed_status
         except Exception as e:
-            print "Adding tool_shed_status column to the tool_shed_repository table failed: %s" % str( e )
+            print("Adding tool_shed_status column to the tool_shed_repository table failed: %s" % str( e ))
 
 
 def downgrade( migrate_engine ):
@@ -69,11 +71,11 @@ def downgrade( migrate_engine ):
                 col = ToolShedRepository_table.c.tool_shed_status
                 col.drop()
             except Exception as e:
-                print "Dropping column tool_shed_status from the tool_shed_repository table failed: %s" % str( e )
+                print("Dropping column tool_shed_status from the tool_shed_repository table failed: %s" % str( e ))
             c = Column( "update_available", Boolean, default=False )
             try:
                 c.create( ToolShedRepository_table )
                 assert c is ToolShedRepository_table.c.update_available
                 migrate_engine.execute( "UPDATE tool_shed_repository SET update_available=%s" % default_false( migrate_engine ) )
             except Exception as e:
-                print "Adding column update_available to the tool_shed_repository table failed: %s" % str( e )
+                print("Adding column update_available to the tool_shed_repository table failed: %s" % str( e ))

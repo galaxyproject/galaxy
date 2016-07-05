@@ -10,10 +10,14 @@
 # You can also use this script as a library, for instance see https://gist.github.com/1979583
 # TODO: This script overlaps a lot with manage_db.py and create_db.py,
 # these should maybe be refactored to remove duplication.
+from __future__ import print_function
+
 import datetime
 import decimal
 import os.path
 import sys
+
+from six import PY3, string_types
 
 # Setup DB scripting environment
 from sqlalchemy import *  # noqa
@@ -25,6 +29,9 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 from galaxy.model import *  # noqa
 from galaxy.model.mapping import init
 from galaxy.model.orm.scripts import get_config
+
+if PY3:
+    long = int
 
 db_url = get_config( sys.argv )['db_url']
 sa_session = init( '/tmp/', db_url ).context
@@ -73,7 +80,7 @@ def printquery(statement, bind=None):
             of the DBAPI.
 
             """
-            if isinstance(value, basestring):
+            if isinstance(value, string_types):
                 value = value.replace("'", "''")
                 return "'%s'" % value
             elif value is None:
@@ -91,4 +98,4 @@ def printquery(statement, bind=None):
                 )
 
     compiler = LiteralCompiler(dialect, statement)
-    print compiler.process(statement)
+    print(compiler.process(statement))
