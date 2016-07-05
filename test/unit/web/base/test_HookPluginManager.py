@@ -87,8 +87,8 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
 
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
@@ -114,7 +114,7 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertEqual( plugin_mgr.plugins.keys(), [] )
 
         mock_app_dir.remove()
@@ -134,7 +134,7 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertEqual( plugin_mgr.plugins.keys(), [] )
 
         mock_app_dir.remove()
@@ -155,8 +155,8 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
 
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
@@ -181,8 +181,8 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
 
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
@@ -207,7 +207,7 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = HookPluginManager( mock_app, directories_setting='plugins', skip_bad_plugins=False )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2' ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2' ] )
 
         return_val_dict = plugin_mgr.run_hook( 'blah', 'one two check' )
         self.assertEqual( return_val_dict, { 'plugin1': 'One Two Check', 'plugin2': 'ONE TWO CHECK' } )
@@ -234,7 +234,7 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = HookPluginManager( mock_app, directories_setting='plugins', skip_bad_plugins=False )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2', 'plugin3' ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2', 'plugin3' ] )
 
         return_val_dict = plugin_mgr.run_hook( 'blah', 'one two check' )
         self.assertEqual( return_val_dict, { 'plugin1': 'One Two Check', 'plugin2': 'ONE TWO CHECK' } )

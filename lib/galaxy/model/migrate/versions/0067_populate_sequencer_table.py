@@ -4,6 +4,8 @@ entries in the 'datatx_info' column in the 'request_type' table. It also deletes
 column in the 'request_type' table and adds a foreign key to the 'sequencer' table. The
 actual contents of the datatx_info column are stored as form_values.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 from json import dumps, loads
@@ -189,7 +191,7 @@ def update_sequencer_id_in_request_type( migrate_engine, request_type_id, sequen
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )

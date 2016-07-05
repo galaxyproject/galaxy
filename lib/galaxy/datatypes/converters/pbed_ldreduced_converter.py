@@ -1,6 +1,6 @@
 # converter for ldreduced rgenetics datatype
 # used for grr and eigenstrat - shellfish if we get around to it
-#
+from __future__ import print_function
 
 import os
 import sys
@@ -104,7 +104,7 @@ def main():
         f.write(galhtmlprefix % prog)
         s1 = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
         s2 = 'Input %s, winsize=%s, winmove=%s, r2thresh=%s' % (base_name, winsize, winmove, r2thresh)
-        print '%s %s' % (s1, s2)
+        print('%s %s' % (s1, s2))
         f.write('<div>%s\n%s\n<ol>' % (s1, s2))
         for i, data in enumerate( flist ):
             f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))

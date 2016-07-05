@@ -7,6 +7,7 @@ import logging
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from os import environ as os_environ
+from six import text_type
 
 # pykube imports:
 try:
@@ -38,6 +39,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         assert operator is not None, K8S_IMPORT_MESSAGE
         runner_param_specs = dict(
             k8s_config_path=dict(map=str, default=os_environ.get('KUBECONFIG', None)),
+            k8s_use_service_account=dict(map=bool, default=False),
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
@@ -52,8 +54,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # self.cli_interface = CliInterface()
 
-        # here we need to fetch the default kubeconfig path from the plugin defined in job_conf...
-        self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
+        if "k8s_use_service_account" in self.runner_params and self.runner_params["k8s_use_service_account"]:
+            self._pykube_api = HTTPClient(KubeConfig.from_service_account())
+        else:
+            self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
         self._galaxy_vol_name = "pvc-galaxy"  # TODO this needs to be read from params!!
 
         self._init_monitor_thread()
@@ -266,6 +270,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             logs += "\n\n==== Pod " + pod.name + " log end   ===="
         logs_file_path = job_state.output_file
         logs_file = open(logs_file_path, mode="w")
+        if isinstance(logs, text_type):
+            logs = logs.encode('utf8')
         logs_file.write(logs)
         logs_file.close()
         return logs_file_path
