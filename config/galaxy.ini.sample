@@ -418,7 +418,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # In use only if activation_grace_period is set.
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
-
+# Password expiration period (in days). Users are required to change their
+# password every x days. Users will be redirected to the change password
+# screen when they log in after their password expires. Enter 0 to disable
+# password expiration.
+#password_expiration_period = 0
 
 # Galaxy Session Timeout
 # This provides a timeout (in minutes) after which a user will have to log back in.

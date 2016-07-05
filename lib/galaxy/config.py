@@ -113,6 +113,7 @@ class Configuration( object ):
 
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
+        self.password_expiration_period = timedelta( days=int( kwargs.get( "password_expiration_period", 0 ) ) )
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
