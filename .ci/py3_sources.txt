@@ -28,6 +28,7 @@ lib/galaxy/tags/
 lib/galaxy/tools/bundled/data_source/
 lib/galaxy/tools/bundled/evolution/
 lib/galaxy/tools/bundled/sr_mapping/
+lib/galaxy/tools/bundled/stats/aggregate_scores_in_intervals.py
 lib/galaxy/tools/bundled/visualization/
 lib/galaxy/tools/cwl/
 lib/galaxy/tools/deps/
@@ -75,11 +76,3 @@ scripts/db_shell.py
 scripts/drmaa_external_runner.py
 test/
 tool_list.py
-<<<<<<< HEAD
-tools/data_source/
-tools/evolution/
-tools/sr_mapping/
-tools/stats/aggregate_scores_in_intervals.py
-tools/visualization/
-=======
->>>>>>> Fix linting errors
