@@ -119,11 +119,9 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
             },
             // show hide the loading indicator
             loading: function(){
-                console.log( 'loading event' );
                 this._showLoadingIndicator( 'loading...', 40 );
             },
             'loading-done': function(){
-                console.log( 'loading-done event' );
                 this._hideLoadingIndicator( 40 );
             },
         });
@@ -155,7 +153,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
                 this.trigger( 'error', model, xhr, options, msg, details );
             },
             update  : function( collection, options ){
-                // console.info( 'update:', collection, options, '\n', options.changes );
+                this.info( 'update:', collection, options, '\n', options.changes );
                 var changes = options.changes;
                 if( changes.added.length === 1 ){
                     return this.addItemView( _.first( changes.added ), collection, options );
@@ -164,7 +162,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
                     return this.removeItemView( _.first( changes.removed ), collection, options );
                 }
                 if( changes.added.length + changes.removed.length > 1 ){
-//TODO: here or in individual fetch promisses?
                     return this.renderItems();
                 }
             }
@@ -704,11 +701,16 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     },
 
     /** filter view list to those that contain the searchFor terms */
-    searchItems : function( searchFor ){
+    searchItems : function( searchFor, force ){
+        this.log( 'searchItems', searchFor );
+        if( !force && this.searchFor === searchFor ){ return this; }
         this.searchFor = searchFor;
-        this.trigger( 'search:searching', searchFor, this );
         this.renderItems();
-        this.$( '> .controls .search-query' ).val( searchFor );
+        this.trigger( 'search:searching', searchFor, this );
+        var $search = this.$( '> .controls .search-query' );
+        if( $search.val() !== searchFor ){
+            $search.val( searchFor );
+        }
         return this;
     },
 
@@ -960,7 +962,6 @@ var ModelListPanel = ListPanel.extend({
             //TODO: relation btwn model, collection becoming tangled here
             // free the collection, and assign the new collection to either
             //  the model[ modelCollectionKey ], attributes.collection, or an empty vanilla collection
-            // console.log( this + '(ModelListPanel) creating collection:', this.modelCollectionKey, this.model[ this.modelCollectionKey ] );
             this.stopListening( this.collection );
             this.collection = this.model[ this.modelCollectionKey ]
                 || attributes.collection

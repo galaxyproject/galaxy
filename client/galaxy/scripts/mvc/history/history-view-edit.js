@@ -95,20 +95,8 @@ var HistoryViewEdit = _super.extend(
             'view:attached view:removed': function(){
                 this._renderCounts();
             },
-            'search:loading-progress': function( limit, offset ){
-                console.log( 'search:loading-progress handler', limit, offset );
-                var stop = limit + offset;
-                this.$( '> .controls .subtitle' ).html([
-                    '<i>',
-                        _l( 'Searching ' ), stop, '/', this.model.contentsShown(),
-                    '</i>'
-                ].join(''));
-            },
-            'search:searching': function(){
-                this.$( '> .controls .subtitle' ).html([
-                    _l( 'Found' ), this.views.length
-                ].join(' '));
-            },
+            'search:loading-progress': this._renderSearchProgress,
+            'search:searching': this._renderSearchFindings,
         });
     },
 
@@ -156,6 +144,11 @@ var HistoryViewEdit = _super.extend(
             this._renderAnnotation( $newRender );
         }
         return $newRender;
+    },
+
+    /** Update the history size display (curr. upper right of panel). */
+    updateHistoryDiskSize : function(){
+        this.$( '.history-size' ).text( this.model.get( 'nice_size' ) );
     },
 
     /** override to render counts when the items are rendered */
@@ -414,10 +407,22 @@ var HistoryViewEdit = _super.extend(
         'click .toggle-hidden-link'                 : function( ev ){ this.toggleShowHidden(); }
     }),
 
-    /** Update the history size display (curr. upper right of panel).
-     */
-    updateHistoryDiskSize : function(){
-        this.$( '.history-size' ).text( this.model.get( 'nice_size' ) );
+    // ------------------------------------------------------------------------ search
+    _renderSearchProgress : function( limit, offset ){
+        var stop = limit + offset;
+        return this.$( '> .controls .subtitle' ).html([
+            '<i>',
+                _l( 'Searching ' ), stop, '/', this.model.contentsShown(),
+            '</i>'
+        ].join(''));
+    },
+
+    /** override to display number found in subtitle */
+    _renderSearchFindings : function(){
+        this.$( '> .controls .subtitle' ).html([
+            _l( 'Found' ), this.views.length
+        ].join(' '));
+        return this;
     },
 
     // ------------------------------------------------------------------------ as drop target

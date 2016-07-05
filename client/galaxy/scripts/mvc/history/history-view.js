@@ -113,9 +113,6 @@ var HistoryView = _super.extend(
             'views:ready view:attached view:removed' : function( view ){
                 this._renderSelectButton();
             },
-            'search:searching' : function(){
-                this.$( '> .controls .list-pagination' ).empty();
-            }
         });
         // this.on( 'all', function(){ console.debug( arguments ); });
     },
@@ -242,7 +239,7 @@ var HistoryView = _super.extend(
     },
 
     /**  */
-    renderItems : function( $whereTo ){
+    renderItems: function( $whereTo ){
         console.log( this + '.renderItems-----------------', new Date() );
         $whereTo = $whereTo || this.$el;
         var self = this;
@@ -257,6 +254,9 @@ var HistoryView = _super.extend(
         if( models.length ){
             self._renderPagination( $whereTo );
             self.views = self._renderSomeItems( models, $list );
+        } else {
+            // TODO: consolidate with _renderPagination above by (???) passing in models/length?
+            $whereTo.find( '> .controls .list-pagination' ).empty();
         }
         self._renderEmptyMessage( $whereTo ).toggle( !models.length );
 
@@ -409,7 +409,6 @@ var HistoryView = _super.extend(
     _firstSearch : function( searchFor ){
         var self = this;
         var inputSelector = '> .controls .search-input';
-        var initialContentsLength = self.model.contents.length;
         this.log( 'onFirstSearch', searchFor );
 
         // if the contents already have enough details to search, search and return now
@@ -420,30 +419,35 @@ var HistoryView = _super.extend(
 
         // otherwise, load the details progressively here
         self.$( inputSelector ).searchInput( 'toggle-loading' );
-        // remove any existing pagination
-        // TODO?: self.$( inputSelector + ' input' ).prop( 'disabled', true ) ?? not disabling could cause trouble here
+        // set this now so that only results will show during progress
+        self.searchFor = searchFor;
         var xhr = self.model.contents.progressivelyFetchDetails({ silent: true })
             .progress( function( response, limit, offset ){
-                console.log( 'progress:', limit, offset );
-                self.trigger( 'search:loading-progress', limit, offset );
                 self.renderItems();
+                self.trigger( 'search:loading-progress', limit, offset );
             })
             .always( function(){
                 self.$el.find( inputSelector ).searchInput( 'toggle-loading' );
             })
             .done( function(){
-                self.searchItems( self.searchFor );
-            });
+                self.searchItems( searchFor, 'force' );
+           });
     },
 
     /** clear the search filters and show all views that are normally shown */
     clearSearch : function( searchFor ){
         var self = this;
+        if( !self.searchFor ) return self;
         //self.log( 'onSearchClear', self );
         self.searchFor = '';
         self.trigger( 'search:clear', self );
         self.$( '> .controls .search-query' ).val( '' );
-        self.model.contents.fetchCurrentPage();
+        // NOTE: silent + render prevents collection update event with merge only
+        // - which causes an empty page due to event handler above
+        self.model.contents.fetchCurrentPage({ silent: true })
+            .done( function(){
+                self.renderItems();
+            });
         return self;
     },
 
