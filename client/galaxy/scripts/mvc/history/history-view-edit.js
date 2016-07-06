@@ -52,9 +52,6 @@ var _super = HISTORY_VIEW.HistoryView;
 var HistoryViewEdit = _super.extend(
 /** @lends HistoryViewEdit.prototype */{
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** class to use for constructing the HistoryDatasetAssociation views */
     HDAViewClass    : HDA_LI_EDIT.HDAListItemEdit,
     /** class to use for constructing the HistoryDatasetCollectionAssociation views */

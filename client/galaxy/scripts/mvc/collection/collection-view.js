@@ -62,14 +62,14 @@ var CollectionView = _super.extend(
     // ------------------------------------------------------------------------ sub-views
     /** In this override, use model.getVisibleContents */
     _filterCollection : function(){
-//TODO: should *not* be model.getVisibleContents - visibility is not model related
+        //TODO: should *not* be model.getVisibleContents - visibility is not model related
         return this.model.getVisibleContents();
     },
 
     /** override to return proper view class based on element_type */
     _getItemViewClass : function( model ){
         //this.debug( this + '._getItemViewClass:', model );
-//TODO: subclasses use DCEViewClass - but are currently unused - decide
+        //TODO: subclasses use DCEViewClass - but are currently unused - decide
         switch( model.get( 'element_type' ) ){
             case 'hda':
                 return this.DatasetDCEViewClass;
@@ -85,7 +85,7 @@ var CollectionView = _super.extend(
         return _.extend( options, {
             linkTarget      : this.linkTarget,
             hasUser         : this.hasUser,
-//TODO: could move to only nested: list:paired
+            //TODO: could move to only nested: list:paired
             foldoutStyle    : this.foldoutStyle
         });
     },
@@ -158,7 +158,6 @@ CollectionView.prototype.templates = (function(){
             '<div class="title">',
                 '<div class="name"><%- collection.name || collection.element_identifier %></div>',
                 '<div class="subtitle">',
-//TODO: remove logic from template
                     '<% if( collection.collection_type === "list" ){ %>',
                         _l( 'a list of datasets' ),
                     '<% } else if( collection.collection_type === "paired" ){ %>',

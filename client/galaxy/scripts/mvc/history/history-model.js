@@ -39,6 +39,17 @@ var History = Backbone.Model
 
     contentsClass : HISTORY_CONTENTS.HistoryContents,
 
+    /** What model fields to search with */
+    searchAttributes : [
+        'name', 'annotation', 'tags'
+    ],
+
+    /** Adding title and singular tag */
+    searchAliases : {
+        title       : 'name',
+        tag         : 'tags'
+    },
+
     // ........................................................................ set up/tear down
     /** Set up the model
      *  @param {Object} historyJSON model data for this History
@@ -147,18 +158,6 @@ var History = Backbone.Model
     /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
     numOfUnfinishedShownContents : function(){
         return this.contents.runningAndActive().length || 0;
-    },
-
-    // ........................................................................ search
-    /** What model fields to search with */
-    searchAttributes : [
-        'name', 'annotation', 'tags'
-    ],
-
-    /** Adding title and singular tag */
-    searchAliases : {
-        title       : 'name',
-        tag         : 'tags'
     },
 
     // ........................................................................ updates

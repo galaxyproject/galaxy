@@ -664,7 +664,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** filter view list to those that contain the searchFor terms */
     searchItems : function( searchFor, force ){
-        console.log( 'searchItems', searchFor, this.searchFor, 'force' );
+        this.log( 'searchItems', searchFor, this.searchFor, force );
         if( !force && this.searchFor === searchFor ){ return this; }
         this.searchFor = searchFor;
         this.renderItems();

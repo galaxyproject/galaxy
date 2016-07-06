@@ -309,7 +309,6 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         options = options || {};
         var self = this;
         options = _.pick( options, 'silent' );
-        //TODO?: this doesn't work?
         options.filters = {};
         return self.fetch( options ).done( function( fetchData ){
             self.allFetched = true;

@@ -56,6 +56,18 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         foldoutStyle : 'drilldown'
     }),
 
+    emptyMsg : [
+        _l( 'This history is empty' ), '. ',
+        _l( 'You can ' ),
+        '<a class="uploader-link" href="javascript:void(0)">',
+            _l( 'load your own data' ),
+        '</a>',
+        _l( ' or ' ),
+        '<a class="get-data-link" href="javascript:void(0)">',
+            _l( 'get data from an external source' ),
+        '</a>'
+    ].join(''),
+
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events */
     initialize : function( attributes ){
@@ -141,7 +153,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
     /** listening for collection events */
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
-//TODO:?? may not be needed? see history-view-edit, _handleItemVisibleChange
         // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
         this.listenTo( this.collection, 'state:ready', function( model, newState, oldState ){
@@ -192,18 +203,6 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
         $whereTo = $whereTo || this.$el;
         return $( this.templates.quotaMsg( {}, this ) ).prependTo( $whereTo.find( '.messages' ) );
     },
-
-    emptyMsg : [
-        _l( 'This history is empty' ), '. ',
-        _l( 'You can ' ),
-        '<a class="uploader-link" href="javascript:void(0)">',
-            _l( 'load your own data' ),
-        '</a>',
-        _l( ' or ' ),
-        '<a class="get-data-link" href="javascript:void(0)">',
-            _l( 'get data from an external source' ),
-        '</a>'
-    ].join(''),
 
     /** In this override, get and set current panel preferences when editor is used */
     _renderTags : function( $where ){

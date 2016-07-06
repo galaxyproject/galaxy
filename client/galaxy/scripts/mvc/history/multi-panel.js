@@ -15,14 +15,7 @@ var logNamespace = 'history';
 TODO:
 
 ============================================================================== */
-/** A history view that  */
-var HistoryInnerView = HISTORY_VIEW_EDIT.HistoryViewEdit.extend({
-});
-
-
-// ==============================================================================
-/** @class A container for a history panel that renders controls for that history (delete, copy, etc.)
- */
+/** @class A container for a history panel that renders controls for that history (delete, copy, etc.) */
 var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     _logNamespace : logNamespace,
@@ -46,7 +39,7 @@ var HistoryViewColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** create a history panel for this column */
     createPanel : function createPanel( panelOptions ){
-        return new HistoryInnerView( _.defaults( panelOptions, {
+        return new HISTORY_VIEW_EDIT.HistoryViewEdit( _.defaults( panelOptions, {
             model           : this.model,
             // non-current panels should set their hdas to draggable
             purgeAllowed    : this.purgeAllowed,

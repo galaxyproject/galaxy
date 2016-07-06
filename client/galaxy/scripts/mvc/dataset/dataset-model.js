@@ -22,18 +22,11 @@ var DatasetAssociation = Backbone.Model
         state               : STATES.NEW,
         deleted             : false,
         purged              : false,
-
-        // unreliable attribute
         name                : '(unnamed dataset)',
-
-//TODO: update to false when this is correctly passed from the API (when we have a security model for this)
         accessible          : true,
-
         // sniffed datatype (sam, tabular, bed, etc.)
         data_type           : '',
         file_ext            : '',
-
-        // size in bytes
         file_size           : 0,
 
         // array of associated file types (eg. [ 'bam_index', ... ])
@@ -65,7 +58,6 @@ var DatasetAssociation = Backbone.Model
 
     /** returns misc. web urls for rendering things like re-run, display, etc. */
     _generateUrls : function(){
-//TODO: would be nice if the API did this
         var id = this.get( 'id' );
         if( !id ){ return {}; }
         var urls = {
@@ -79,7 +71,6 @@ var DatasetAssociation = Backbone.Model
             'visualization' : 'visualization',
             'meta_download' : 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
         };
-//TODO: global
         _.each( urls, function( value, key ){
             urls[ key ] = Galaxy.root + value;
         });
@@ -182,25 +173,9 @@ var DatasetAssociation = Backbone.Model
 
     /** remove the file behind this dataset from the filesystem (if permitted) */
     purge : function _purge( options ){
-//TODO: use, override model.destroy, HDA.delete({ purge: true })
+        //TODO: use, override model.destroy, HDA.delete({ purge: true })
         if( this.get( 'purged' ) ){ return jQuery.when(); }
         options = options || {};
-        //var hda = this,
-        //    //xhr = jQuery.ajax( this.url() + '?' + jQuery.param({ purge: true }), _.extend({
-        //    xhr = jQuery.ajax( this.url(), _.extend({
-        //        type : 'DELETE',
-        //        data : {
-        //            purge : true
-        //        }
-        //    }, options ));
-        //
-        //xhr.done( function( response ){
-        //    hda.debug( 'response', response );
-        //    //hda.set({ deleted: true, purged: true });
-        //    hda.set( response );
-        //});
-        //return xhr;
-
         options.url = this.urls.purge;
 
         //TODO: ideally this would be a DELETE call to the api
@@ -228,8 +203,6 @@ var DatasetAssociation = Backbone.Model
     },
 
     // ........................................................................ searching
-    // see base-mvc, SearchableModelMixin
-
     /** what attributes of an HDA will be used in a text search */
     searchAttributes : [
         'name', 'file_ext', 'genome_build', 'misc_blurb', 'misc_info', 'annotation', 'tags'
@@ -345,13 +318,6 @@ var DatasetAssociationCollection = Backbone.Collection.extend( BASE_MVC.Loggable
             return dataset.matches( matchesWhat );
         });
     },
-
-    // ........................................................................ misc
-    ///** Convert this ad-hoc collection of hdas to a formal collection tracked
-    //    by the server.
-    //**/
-    //promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
-    //},
 
     /** String representation. */
     toString : function(){

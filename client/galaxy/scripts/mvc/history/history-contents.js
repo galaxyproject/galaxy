@@ -48,6 +48,9 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
     // ........................................................................ set up
     limitPerPage : 500,
 
+    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
+    limitPerProgressiveFetch : 500,
+
     /** @type {String} order used here and when fetching from server */
     order : 'hid',
 
@@ -84,7 +87,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
 
     /** Set up client side storage. Currently PersistanStorage keyed under 'history:<id>' */
     _setUpWebStorage : function( initialSettings ){
-// TODO: use initialSettings
+        // TODO: use initialSettings
         if( !this.historyId ){ return; }
         this.storage = new HISTORY_PREFS.HistoryPrefs({
             id: HISTORY_PREFS.HistoryPrefs.historyStorageKey( this.historyId )
@@ -119,7 +122,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return this.filter( function( c ){ return !c.inReadyState(); });
     },
 
-    /**  */
+    /** return contents that are not ready and not deleted/hidden */
     runningAndActive : function(){
         return this.filter( function( c ){
             return ( !c.inReadyState() )
@@ -325,9 +328,6 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             return function(){ return fn.apply( content, args ); };
         })).start();
     },
-
-    /** @type {Integer} how many contents per call to fetch when using progressivelyFetchDetails */
-    limitPerProgressiveFetch : 500,
 
     /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
     progressivelyFetchDetails : function( options ){

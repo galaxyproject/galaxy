@@ -118,7 +118,6 @@ var DatasetListItemView = _super.extend(
 
     /** Render icon-button to display dataset data */
     _renderDisplayButton : function(){
-//TODO:?? too complex - possibly move into template
         // don't show display if not viewable or not accessible
         var state = this.model.get( 'state' );
         if( ( state === STATES.NOT_VIEWABLE )
@@ -185,7 +184,6 @@ var DatasetListItemView = _super.extend(
             .prepend( this._renderDetailMessages() );
         $details.find( '.display-applications' ).html( this._renderDisplayApplications() );
 
-//TODO: double tap
         this._setUpBehaviors( $details );
         return $details;
     },
@@ -203,7 +201,7 @@ var DatasetListItemView = _super.extend(
         var view = this,
             $warnings = $( '<div class="detail-messages"></div>' ),
             json = view.model.toJSON();
-//TODO:! unordered (map)
+        //TODO:! unordered (map)
         _.each( view.templates.detailMessages, function( templateFn ){
             $warnings.append( $( templateFn( json, view ) ) );
         });
@@ -253,7 +251,6 @@ var DatasetListItemView = _super.extend(
      *  @returns {jQuery} rendered DOM
      */
     _renderDownloadButton : function(){
-//TODO: to (its own) template fn
         // don't show anything if the data's been purged
         if( this.model.get( 'purged' ) || !this.model.hasData() ){ return null; }
 
@@ -264,7 +261,8 @@ var DatasetListItemView = _super.extend(
         }
 
         return $([
-            '<a class="download-btn icon-btn" href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '" download>',
+            '<a class="download-btn icon-btn" ',
+                'href="', this.model.urls.download, '" title="' + _l( 'Download' ) + '" download>',
                 '<span class="fa fa-floppy-o"></span>',
             '</a>'
         ].join( '' ));
