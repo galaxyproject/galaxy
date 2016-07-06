@@ -53,7 +53,7 @@ class TabularData( data.Text ):
         except:
             return False
 
-    def get_chunk(self, trans, dataset, offset=0, ck_size=0):
+    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
         with open(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
