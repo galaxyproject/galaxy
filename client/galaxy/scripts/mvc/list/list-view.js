@@ -345,10 +345,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
     },
 
     // ------------------------------------------------------------------------ hda sub-views
-    /**
-     *  @param {jQuery} $whereTo what dom element to prepend the sub-views to
-     *  @returns the visible item views
-     */
+    /** render the subviews for the list's collection */
     renderItems : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
         var panel = this;
@@ -576,41 +573,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
         return $what;
     },
 
-    // TODO: consolidate with addItemView by building an array of one and having that call this
-    /** add item views in bulk */
-    bulkAppendItemViews : function( collection, response, options ){
-        //PRECONDITION: response is an array of contguous content models
-        // console.log( "bulkAppendItemViews:", collection, response, options );
-        if( !response || !response.length ){ return; }
-        var self = this;
-
-        // find where to insert the block
-        // note: don't use filteredCollection since we may be searching and the first model may not match search
-        // TODO: when Backbone > 1.1: self.collection.findIndex
-        var firstModelIndex = _.findIndex( self.collection.models, function( m ){
-            return m.id === response[0].type_id;
-        });
-        // console.log( 'firstModelIndex:', firstModelIndex );
-
-        var $viewEls = [];
-        response.forEach( function( modelJSON ){
-            var model = self.collection.get( modelJSON.type_id );
-            if( !self._filterItem( model ) ){ return; }
-
-            var view = self._createItemView( model );
-            self.views.push( view );
-            $viewEls.push( self._renderItemView$el( view ) );
-            // TODO: not attached *yet* actually
-            self.trigger( 'view:attached', view );
-            self.trigger( 'view:attached:rendered' );
-        });
-        if( $viewEls.length ){
-            self.$emptyMessage().hide();
-            self.$list().append( $viewEls );
-            self._insertIntoListAt( firstModelIndex, $viewEls );
-        }
-    },
-
     /** Remove a view from the panel (if found) */
     removeItemView : function( model, collection, options ){
         var panel = this;
@@ -702,7 +664,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
 
     /** filter view list to those that contain the searchFor terms */
     searchItems : function( searchFor, force ){
-        this.log( 'searchItems', searchFor );
+        console.log( 'searchItems', searchFor, this.searchFor, 'force' );
         if( !force && this.searchFor === searchFor ){ return this; }
         this.searchFor = searchFor;
         this.renderItems();
@@ -1027,12 +989,8 @@ var ModelListPanel = ListPanel.extend({
 });
 
 // ............................................................................ TEMPLATES
-
-
-
 /** underscore templates */
 ModelListPanel.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',

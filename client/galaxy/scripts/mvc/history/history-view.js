@@ -113,6 +113,9 @@ var HistoryView = _super.extend(
             'views:ready view:attached view:removed' : function( view ){
                 this._renderSelectButton();
             },
+            'view:attached' : function( view ){
+                this.scrollTo(0);
+            },
         });
         // this.on( 'all', function(){ console.debug( arguments ); });
     },
@@ -238,15 +241,16 @@ var HistoryView = _super.extend(
         }
     },
 
-    /**  */
+    /** override to render pagination also */
     renderItems: function( $whereTo ){
-        console.log( this + '.renderItems-----------------', new Date() );
+        // console.log( this + '.renderItems-----------------', new Date() );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var $list = self.$list( $whereTo );
 
         // TODO: bootstrap hack to remove orphaned tooltips
         $( '.tooltip' ).remove();
+
         $list.empty();
         self.views = [];
 
@@ -264,7 +268,7 @@ var HistoryView = _super.extend(
         return self.views;
     },
 
-    /**  */
+    /** render pagination controls if not searching and contents says we're paginating */
     _renderPagination: function( $whereTo ){
         var $paginationControls = $whereTo.find( '> .controls .list-pagination' );
         if( this.searchFor || !this.model.contents.shouldPaginate() ) return $paginationControls.empty();
@@ -276,7 +280,7 @@ var HistoryView = _super.extend(
         }, this ));
     },
 
-    /**  */
+    /** render a subset of the entire collection (client-side pagination) */
     _renderSomeItems: function( models, $list ){
         var self = this;
         var views = [];
