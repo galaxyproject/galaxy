@@ -18,7 +18,22 @@ class UsersApiTestCase( api.ApiTestCase ):
 
     def test_index_only_self_for_nonadmins( self ):
         self._setup_user( TEST_USER_EMAIL )
-        with self._different_user( ):
+        with self._different_user():
             all_users_response = self._get( "users" )
             # Non admin users can only see themselves
             assert len( all_users_response.json() ) == 1
+
+    def test_show( self ):
+        user = self._setup_user( TEST_USER_EMAIL )
+        with self._different_user( email=TEST_USER_EMAIL ):
+            show_response = self.__show( user )
+            self._assert_status_code_is( show_response, 200 )
+            self.__assert_matches_user( user, show_response.json() )
+
+    def __show( self, user ):
+        return self._get( "users/%s" % ( user[ 'id' ] ) )
+
+    def __assert_matches_user( self, userA, userB ):
+        self._assert_has_keys( userB, "id", "username" )
+        assert userA[ "id" ] == userB[ "id" ]
+        assert userA[ "username" ] == userB[ "username" ]
