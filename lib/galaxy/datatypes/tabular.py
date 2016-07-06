@@ -65,10 +65,10 @@ class TabularData( data.Text ):
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, size=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool( preview )
-        if offset:
-            return self.get_chunk(trans, dataset, offset, size)
+        if offset is not None:
+            return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
