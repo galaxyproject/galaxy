@@ -57,10 +57,11 @@ class TabularData( data.Text ):
         with open(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-            cursor = f.read(1)
-            while cursor and cursor != '\n' and ck_data[-1] != '\n':
-                ck_data += cursor
+            if ck_data and ck_data[-1] != '\n':
                 cursor = f.read(1)
+                while cursor and cursor != '\n':
+                    ck_data += cursor
+                    cursor = f.read(1)
             last_read = f.tell()
         return dumps( { 'ck_data': util.unicodify( ck_data ),
                         'offset': last_read } )
