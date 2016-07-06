@@ -232,11 +232,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.app.object_store.file_ready(data.dataset)
 
     @web.expose
-    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, offset=None, **kwd):
         data = self._check_dataset(trans, dataset_id)
         if not isinstance( data, trans.app.model.DatasetInstance ):
             return data
-        return data.datatype.display_data(trans, data, preview, filename, to_ext, chunk, **kwd)
+        # Ensure offset is an integer before passing through to datatypes.
+        if offset:
+            offset = int(offset)
+        return data.datatype.display_data(trans, data, preview, filename, to_ext, offset, **kwd)
 
     @web.expose
     def edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):

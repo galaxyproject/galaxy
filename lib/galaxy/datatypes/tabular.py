@@ -53,31 +53,22 @@ class TabularData( data.Text ):
         except:
             return False
 
-    def get_chunk(self, trans, dataset, chunk):
-        ck_index = int(chunk)
-        f = open(dataset.file_name)
-        initial_offset = (ck_index * trans.app.config.display_chunk_size)
-        f.seek(initial_offset)
-        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
-        if f.tell() != 0:
+    def get_chunk(self, trans, dataset, offset=0, ck_size=0):
+        with open(dataset.file_name) as f:
+            f.seek(offset)
+            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
             cursor = f.read(1)
-            while cursor and cursor != '\n':
+            while cursor and cursor != '\n' and ck_data[-1] != '\n':
+                ck_data += cursor
                 cursor = f.read(1)
-        read_start_offset = f.tell()
-        prechunk_skip = read_start_offset - initial_offset
-        # We subtract the prechunk skip out of the primary chunk read to avoid
-        # shifting the chunk tail onto a line it shouldn't have.
-        ck_data = f.read(trans.app.config.display_chunk_size - prechunk_skip)
-        cursor = f.read(1)
-        while cursor and ck_data[-1] != '\n':
-            ck_data += cursor
-            cursor = f.read(1)
-        return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
+            last_read = f.tell()
+        return dumps( { 'ck_data': util.unicodify( ck_data ),
+                        'offset': last_read } )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, size=None, **kwd):
         preview = util.string_as_bool( preview )
-        if chunk:
-            return self.get_chunk(trans, dataset, chunk)
+        if offset:
+            return self.get_chunk(trans, dataset, offset, size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
