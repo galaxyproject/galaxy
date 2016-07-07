@@ -307,7 +307,7 @@ class UserDeserializer( base.ModelDeserializer ):
         validation_error = validate_user_input.validate_publicname( trans, username, user=user )
         if validation_error:
             raise base.ModelDeserializingError( validation_error )
-        return username
+        return self.default_deserializer( user, key, username, trans=trans, **context )
 
 
 class CurrentUserSerializer( UserSerializer ):

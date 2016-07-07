@@ -36,13 +36,14 @@ class UsersApiTestCase( api.ApiTestCase ):
             self.__assert_matches_user( user, show_response.json() )
 
     def test_update( self ):
+        new_name = 'mu'
         user = self._setup_user( TEST_USER_EMAIL )
         with self._different_user( email=TEST_USER_EMAIL ):
-            update_response = self.__update( user, username='noob' )
+            update_response = self.__update( user, username=new_name )
             self._assert_status_code_is( update_response, 200 )
             update_json = update_response.json()
             log.info( update_json )
-            assert update_json[ 'username' ] == 'noob'
+            assert update_json[ 'username' ] == new_name
 
     def __show( self, user ):
         return self._get( "users/%s" % ( user[ 'id' ] ) )

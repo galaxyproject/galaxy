@@ -249,6 +249,11 @@ class UserDeserializerTestCase( BaseTestCase ):
         self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
             user, { 'username': 'user3' }, trans=self.trans )
 
+        self.log( "username should be updatable" )
+        new_name = 'double-plus-good'
+        self.deserializer.deserialize( user, { 'username': new_name }, trans=self.trans )
+        self.assertEqual( self.user_manager.by_id( user.id ).username, new_name )
+
 
 # =============================================================================
 class AdminUserFilterParserTestCase( BaseTestCase ):
