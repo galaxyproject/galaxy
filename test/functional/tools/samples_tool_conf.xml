@@ -64,7 +64,7 @@
   <tool file="validation_empty_dataset.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
-  <tool file="identifier_conditional.xml" />
+  <tool file="identifier_collection.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="collection_paired_test.xml" />

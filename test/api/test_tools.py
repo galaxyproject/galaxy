@@ -827,7 +827,7 @@ class ToolsTestCase( api.ApiTestCase ):
         }
 
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        create_response = self._run( "identifier_conditional", history_id, inputs )
+        create_response = self._run( "identifier_collection", history_id, inputs )
         self._assert_status_code_is( create_response, 200 )
         create = create_response.json()
         outputs = create[ 'outputs' ]
