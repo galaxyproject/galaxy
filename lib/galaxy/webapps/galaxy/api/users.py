@@ -27,6 +27,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         super(UserAPIController, self).__init__(app)
         self.user_manager = users.UserManager(app)
         self.user_serializer = users.UserSerializer( app )
+        self.user_deserializer = users.UserDeserializer( app )
 
     @expose_api
     def index( self, trans, deleted='False', f_email=None, f_name=None, f_any=None, **kwd ):
@@ -175,8 +176,33 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         return key
 
     @expose_api
-    def update( self, trans, **kwd ):
-        raise exceptions.NotImplemented()
+    def update( self, trans, id, payload, **kwd ):
+        """
+        update( self, trans, id, payload, **kwd )
+        * PUT /api/users/{id}
+            updates the values for the item with the given ``id``
+
+        :type id: str
+        :param id: the encoded id of the item to update
+        :type payload: dict
+        :param payload: a dictionary of new attribute values
+
+        :rtype: dict
+        :returns: an error object if an error occurred or a dictionary containing
+            the serialized item after any changes
+        """
+        current_user = trans.user
+        user_to_update = self.user_manager.by_id( self.decode_id( id ) )
+
+        # if they're not admin, only allow updating themselves
+        log.info( 'is admin? %s', self.user_manager.is_admin( current_user ) )
+        log.info( 'is admin? %s', trans.user_is_admin() )
+        editing_themselves = current_user == user_to_update
+        if not self.user_manager.is_admin( current_user ) and not editing_themselves:
+            raise exceptions.InsufficientPermissionsException( 'you are not allowed to update that user', id=id )
+
+        self.user_deserializer.deserialize( user_to_update, payload, user=current_user, trans=trans )
+        return self.user_serializer.serialize_to_view( user_to_update, view='detailed' )
 
     @expose_api
     @web.require_admin

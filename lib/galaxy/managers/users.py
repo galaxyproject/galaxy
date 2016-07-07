@@ -301,13 +301,13 @@ class UserDeserializer( base.ModelDeserializer ):
             'username'  : self.deserialize_username,
         })
 
-    def deserialize_username( self, user, key, username, trans=None, **context ):
+    def deserialize_username( self, item, key, username, trans=None, **context ):
         # TODO: validate_user_input requires trans and should(?) raise exceptions
-        # move validation to UserValidator and use self.app/exceptions instead
-        validation_error = validate_user_input.validate_publicname( trans, username, user=user )
+        # move validation to UserValidator and use self.app, exceptions instead
+        validation_error = validate_user_input.validate_publicname( trans, username, user=item )
         if validation_error:
             raise base.ModelDeserializingError( validation_error )
-        return self.default_deserializer( user, key, username, trans=trans, **context )
+        return self.default_deserializer( item, key, username, trans=trans, **context )
 
 
 class CurrentUserSerializer( UserSerializer ):

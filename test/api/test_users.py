@@ -36,14 +36,41 @@ class UsersApiTestCase( api.ApiTestCase ):
             self.__assert_matches_user( user, show_response.json() )
 
     def test_update( self ):
-        new_name = 'mu'
+        new_name = 'linnaeus'
         user = self._setup_user( TEST_USER_EMAIL )
+        not_the_user = self._setup_user( 'email@example.com' )
         with self._different_user( email=TEST_USER_EMAIL ):
+
+            # working
             update_response = self.__update( user, username=new_name )
             self._assert_status_code_is( update_response, 200 )
             update_json = update_response.json()
-            log.info( update_json )
             assert update_json[ 'username' ] == new_name
+
+            # too short
+            update_response = self.__update( user, username='mu' )
+            self._assert_status_code_is( update_response, 400 )
+
+            # not them
+            update_response = self.__update( not_the_user, username=new_name )
+            self._assert_status_code_is( update_response, 403 )
+
+            # non-existent
+            no_user_id = self.security.encode_id( 100 )
+            update_url = self._api_url( "users/%s" % ( no_user_id ), use_key=True )
+            update_response = put( update_url, data=json.dumps( dict( username=new_name ) ) )
+            self._assert_status_code_is( update_response, 404 )
+
+    def test_admin_update( self ):
+        new_name = 'flexo'
+        user = self._setup_user( TEST_USER_EMAIL )
+
+        update_url = self._api_url( "users/%s" % ( user[ "id" ] ), params=dict( key=self.master_api_key ) )
+        update_response = put( update_url, data=json.dumps( dict( username=new_name ) ) )
+        self._assert_status_code_is( update_response, 200 )
+        update_json = update_response.json()
+        log.info( update_json )
+        assert update_json[ 'username' ] == new_name
 
     def __show( self, user ):
         return self._get( "users/%s" % ( user[ 'id' ] ) )
