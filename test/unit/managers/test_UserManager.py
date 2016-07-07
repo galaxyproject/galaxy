@@ -12,9 +12,10 @@ import sqlalchemy
 from six import string_types
 
 from galaxy import exceptions, model
+from galaxy.managers import base as base_manager
 from galaxy.managers import histories, users
 
-from .base import BaseTestCase
+from base import BaseTestCase
 
 
 # =============================================================================
@@ -213,6 +214,40 @@ class CurrentUserSerializerTestCase( BaseTestCase ):
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
+
+
+# =============================================================================
+class UserDeserializerTestCase( BaseTestCase ):
+
+    def set_up_managers( self ):
+        super( UserDeserializerTestCase, self ).set_up_managers()
+        self.deserializer = users.UserDeserializer( self.app )
+
+    def _assertRaises_and_return_raised( self, exception_class, fn, *args, **kwargs ):
+        try:
+            fn( *args, **kwargs )
+        except exception_class, exception:
+            self.assertTrue( True )
+            return exception
+        assert False, '%s not raised' % ( exception_class.__name__ )
+
+    def test_username_validation( self ):
+        user = self.user_manager.create( **user2_data )
+
+        # self.log( "usernames can be unicode" ) #TODO: nope they can't
+        # self.deserializer.deserialize( user, { 'username': 'Σίσυφος' }, trans=self.trans )
+
+        self.log( "usernames must be long enough and with no non-hyphen punctuation" )
+        exception = self._assertRaises_and_return_raised( base_manager.ModelDeserializingError,
+            self.deserializer.deserialize, user, { 'username': 'ed' }, trans=self.trans )
+        self.assertTrue( 'Public name must be at least' in str( exception ) )
+        self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
+            user, { 'username': 'f.d.r.' }, trans=self.trans )
+
+        self.log( "usernames must be unique" )
+        self.user_manager.create( **user3_data )
+        self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
+            user, { 'username': 'user3' }, trans=self.trans )
 
 
 # =============================================================================

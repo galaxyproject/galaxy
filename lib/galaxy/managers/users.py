@@ -11,6 +11,7 @@ from galaxy import util
 from galaxy.managers import base
 from galaxy.managers import deletable
 from galaxy.managers import api_keys
+from galaxy.security import validate_user_input
 
 import logging
 log = logging.getLogger( __name__ )
@@ -26,7 +27,6 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorp CreatesUsersMixin
     # TODO: incorp CreatesApiKeysMixin
-    # TODO: incorporate security/validate_user_input.py
     # TODO: incorporate UsesFormDefinitionsMixin?
 
     def create( self, webapp_name=None, **kwargs ):
@@ -286,6 +286,28 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used( i ),
             'has_requests'  : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )
         })
+
+
+class UserDeserializer( base.ModelDeserializer ):
+    """
+    Service object for validating and deserializing dictionaries that
+    update/alter users.
+    """
+    model_manager_class = UserManager
+
+    def add_deserializers( self ):
+        super( UserDeserializer, self ).add_deserializers()
+        self.deserializers.update({
+            'username'  : self.deserialize_username,
+        })
+
+    def deserialize_username( self, user, key, username, trans=None, **context ):
+        # TODO: validate_user_input requires trans and should(?) raise exceptions
+        # move validation to UserValidator and use self.app/exceptions instead
+        validation_error = validate_user_input.validate_publicname( trans, username, user=user )
+        if validation_error:
+            raise base.ModelDeserializingError( validation_error )
+        return username
 
 
 class CurrentUserSerializer( UserSerializer ):
