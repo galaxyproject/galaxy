@@ -1,9 +1,6 @@
-import logging
 import json
 from requests import put
 from base import api
-
-log = logging.getLogger(__name__)
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 
@@ -45,7 +42,7 @@ class UsersApiTestCase( api.ApiTestCase ):
             update_response = self.__update( user, username=new_name )
             self._assert_status_code_is( update_response, 200 )
             update_json = update_response.json()
-            assert update_json[ 'username' ] == new_name
+            self.assertEqual( update_json[ 'username' ], new_name )
 
             # too short
             update_response = self.__update( user, username='mu' )
@@ -69,8 +66,7 @@ class UsersApiTestCase( api.ApiTestCase ):
         update_response = put( update_url, data=json.dumps( dict( username=new_name ) ) )
         self._assert_status_code_is( update_response, 200 )
         update_json = update_response.json()
-        log.info( update_json )
-        assert update_json[ 'username' ] == new_name
+        self.assertEqual( update_json[ 'username' ], new_name )
 
     def __show( self, user ):
         return self._get( "users/%s" % ( user[ 'id' ] ) )
