@@ -278,7 +278,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
     @web.expose_api_raw_anonymous
     def display( self, trans, history_content_id, history_id,
-                 preview=False, filename=None, to_ext=None, chunk=None, raw=False, **kwd ):
+                 preview=False, filename=None, to_ext=None, raw=False, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
         Displays history content (dataset).
@@ -297,7 +297,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if raw:
                 if filename and filename != 'index':
                     file_path = trans.app.object_store.get_filename( hda.dataset,
-                                                                     extra_dir=( 'dataset_%s_files' % hda.dataset.id ), alt_name=filename)
+                                                                     extra_dir=( 'dataset_%s_files' % hda.dataset.id ),
+                                                                     alt_name=filename)
                 else:
                     file_path = hda.file_name
                 rval = open( file_path )
@@ -306,7 +307,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 display_kwd = kwd.copy()
                 if 'key' in display_kwd:
                     del display_kwd["key"]
-                rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
+                rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, **display_kwd )
 
         except Exception as exception:
             log.error( "Error getting display data for dataset (%s) from history (%s): %s",
