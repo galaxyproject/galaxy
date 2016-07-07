@@ -1404,6 +1404,32 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
             raise
 
 
+def parse_non_hex_float( s ):
+    """
+    Parse string `s` into a float but throw a `ValueError` if the string is in
+    the otherwise acceptable format `\d+e\d+` (e.g. 40000000000000e5.)
+
+    This can be passed into `json.loads` to prevent a hex string in the above
+    format from being incorrectly parsed as a float in scientific notation.
+
+    >>> parse_non_hex_float( '123.4' )
+    123.4
+    >>> parse_non_hex_float( '2.45e+3' )
+    2450.0
+    >>> parse_non_hex_float( '2.45e-3' )
+    0.00245
+    >>> parse_non_hex_float( '40000000000000e5' )
+    Traceback (most recent call last):
+        ...
+    ValueError: could not convert string to float: 40000000000000e5
+    """
+    f = float( s )
+    # successfully parsed as float if here - check for format in original string
+    if 'e' in s and not ( '+' in s or '-' in s ):
+        raise ValueError( 'could not convert string to float: ' + s )
+    return f
+
+
 def build_url( base_url, port=80, scheme='http', pathspec=None, params=None, doseq=False ):
     if params is None:
         params = dict()
