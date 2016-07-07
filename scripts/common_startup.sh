@@ -129,7 +129,7 @@ if [ $SET_VENV -eq 1 ]; then
         exit 1
     fi
 elif [ $SET_VENV -eq -0 -a $CONDA_ALREADY_INSTALLED -eq 1 ]; then
-    echo -e "\e[33mWarning: You have Conda installed. Skipping virtualenv creation. This could cause missing dependencies.\e[0m"
+    echo -e "\e[33mWarning: You have Conda installed. Skipping virtualenv activation. This could cause missing dependencies.\e[0m"
 fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
