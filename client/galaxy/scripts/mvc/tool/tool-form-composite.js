@@ -1,8 +1,9 @@
 /** This is the run workflow tool form view. */
-define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base' ],
-    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase ) {
+define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal' ],
+    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
+            this.modal = parent.Galaxy.modal || new Modal.View();
             this.model = options && options.model || new Backbone.Model( options );
             this.deferred = new Deferred();
             this.setElement( $( '<div/>' ).addClass( 'ui-form-composite' )
@@ -330,7 +331,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var self = this;
             var job_def = {
                 new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
-                wf_parm             : this.wp_form ? this.wp_form.data.create() : {},
+                replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
                 inputs              : {}
             };
             var validated = true;
@@ -371,7 +372,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation complete.', job_def );
                 Utils.request({
                     type    : 'POST',
-                    url     : Galaxy.root + 'api/workflows/' + this.workflow_id + '/invocations',
+                    url     : Galaxy.root + 'api/workflows/' + this.model.id + '/run',
                     data    : job_def,
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
@@ -393,13 +394,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 }
                             }
                         } else {
-                            var modal = parent.Galaxy.modal;
-                            modal && modal.show({
+                            self.modal.show({
                                 title   : 'Job submission failed',
                                 body    : self._templateError( response && response.err_msg || job_def ),
                                 buttons : {
                                     'Close' : function() {
-                                        modal.hide();
+                                        self.modal.hide();
                                     }
                                 }
                             });
