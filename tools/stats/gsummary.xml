@@ -11,7 +11,7 @@
   <stdio>
     <exit_code range="1" level="fatal" />
   </stdio>
-  <command>ptyhon $__tool_directory__/gsummary.py $input $out_file1 "$cond"</command>
+  <command>ptyhon $__tool_directory__/gsummary.py "$input" "$out_file1" "$cond"</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Summary statistics on" help="Dataset missing? See TIP below"/>
     <param name="cond" size="30" type="text" value="c5" label="Column or expression" help="See syntax below">
