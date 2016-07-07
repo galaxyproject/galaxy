@@ -766,7 +766,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
 
     def check_for_tool_dependencies( self, trans, migration_stage ):
         # Get the 000x_tools.xml file associated with migration_stage.
-        tools_xml_file_path = os.path.abspath( os.path.join( trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage ) )
+        tools_xml_file_path = os.path.abspath( os.path.join( common_util.TOOL_MIGRATION_SCRIPTS_DIR, '%04d_tools.xml' % migration_stage ) )
         tree = galaxy.util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         tool_shed = root.get( 'name' )
@@ -800,10 +800,12 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         migration_stages_dict = odict()
         migration_modules = []
-        migration_scripts_dir = os.path.abspath( os.path.join( trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions' ) )
+        migration_scripts_dir = common_util.TOOL_MIGRATION_VERSIONS_DIR
         migration_scripts_dir_contents = os.listdir( migration_scripts_dir )
         for item in migration_scripts_dir_contents:
-            if os.path.isfile( os.path.join( migration_scripts_dir, item ) ) and item.endswith( '.py' ):
+            if ( os.path.isfile( os.path.join( migration_scripts_dir, item ) )
+                    and item.endswith( '.py' )
+                    and not item.startswith( '_' ) ):
                 module = item.replace( '.py', '' )
                 migration_modules.append( module )
         if migration_modules:
