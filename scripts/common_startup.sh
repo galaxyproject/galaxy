@@ -9,6 +9,7 @@ done
 # Conda Python is in use, do not use virtualenv
 if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' ; then
     SET_VENV=0
+    CONDA_ALREADY_INSTALLED=1
 fi
 
 DEV_WHEELS=0
@@ -127,6 +128,8 @@ if [ $SET_VENV -eq 1 ]; then
         echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in $GALAXY_VIRTUAL_ENV, or activate one."
         exit 1
     fi
+elif [ $SET_VENV -eq -0 -a $CONDA_ALREADY_INSTALLED -eq 1 ]; then
+    echo -e "\e[33mWarning: You have Conda installed. Skipping virtualenv creation. This could cause missing dependencies.\e[0m"
 fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
