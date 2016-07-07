@@ -194,11 +194,10 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         current_user = trans.user
         user_to_update = self.user_manager.by_id( self.decode_id( id ) )
 
-        # if they're not admin, only allow updating themselves
-        log.info( 'is admin? %s', self.user_manager.is_admin( current_user ) )
-        log.info( 'is admin? %s', trans.user_is_admin() )
-        editing_themselves = current_user == user_to_update
-        if not self.user_manager.is_admin( current_user ) and not editing_themselves:
+        # only allow updating other users if they're admin
+        editing_someone_else = current_user != user_to_update
+        is_admin = trans.api_inherit_admin or self.user_manager.is_admin( current_user )
+        if editing_someone_else and not is_admin:
             raise exceptions.InsufficientPermissionsException( 'you are not allowed to update that user', id=id )
 
         self.user_deserializer.deserialize( user_to_update, payload, user=current_user, trans=trans )
