@@ -128,9 +128,9 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         # Create and return autocomplete data.
         ac_data = "#Header|Your Tags\n"
         for row in result_set:
-            tag = self.get_tag_handler( trans ).get_tag_by_id( trans, row[0] )
+            tag = self.get_tag_handler( trans ).get_tag_by_id( row[0] )
             # Exclude tags that are already applied to the item.
-            if ( item is not None ) and ( self.get_tag_handler( trans ).item_has_tag( trans, trans.user, item, tag ) ):
+            if ( item is not None ) and ( self.get_tag_handler( trans ).item_has_tag( trans.user, item, tag ) ):
                 continue
             # Add tag to autocomplete data. Use the most frequent name that user
             # has employed for the tag.
@@ -146,7 +146,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         tag_name_and_value = q.split( ":" )
         tag_name = tag_name_and_value[0]
         tag_value = tag_name_and_value[1]
-        tag = self.get_tag_handler( trans ).get_tag_by_name( trans, tag_name )
+        tag = self.get_tag_handler( trans ).get_tag_by_name( tag_name )
         # Don't autocomplete if tag doesn't exist.
         if tag is None:
             return ""
