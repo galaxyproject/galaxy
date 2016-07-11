@@ -1,6 +1,8 @@
 """
 Migration script to create tables for adding explicit workflow outputs.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
@@ -20,7 +22,7 @@ tables = [WorkflowOutput_table]
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     for table in tables:
         try:

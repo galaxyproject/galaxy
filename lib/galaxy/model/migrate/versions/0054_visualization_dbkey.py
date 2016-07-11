@@ -1,6 +1,8 @@
 """
 Migration script to add dbkey column for visualization.
 """
+from __future__ import print_function
+
 import logging
 from json import loads
 
@@ -13,7 +15,7 @@ metadata = MetaData()
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
 
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     Visualization_table = Table( "visualization", metadata, autoload=True )

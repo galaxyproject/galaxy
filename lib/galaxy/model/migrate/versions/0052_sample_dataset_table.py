@@ -2,6 +2,8 @@
 Migration script to add the sample_dataset table and remove the 'dataset_files' column
 from the 'sample' table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 from json import loads
@@ -47,7 +49,7 @@ SampleDataset_table = Table('sample_dataset', metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         SampleDataset_table.create()

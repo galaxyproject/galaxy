@@ -1336,11 +1336,9 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
         step_errors = module_injector.inject( step, step_args=step_args )
         if step.type == 'tool' or step.type is None:
             if step_errors:
-                message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
-                raise exceptions.MessageException( message )
+                raise exceptions.MessageException( step_errors )
             if step.upgrade_messages:
                 if allow_tool_state_corrections:
                     log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
                 else:
-                    message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
-                    raise exceptions.MessageException( message )
+                    raise exceptions.MessageException( step.upgrade_messages )

@@ -1,6 +1,8 @@
 """
 Add a state column to the history_dataset_association and library_dataset_dataset_association table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -26,7 +28,7 @@ DATASET_INSTANCE_TABLE_NAMES = [ 'history_dataset_association', 'library_dataset
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     dataset_instance_tables = []
     for table_name in DATASET_INSTANCE_TABLE_NAMES:

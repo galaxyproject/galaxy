@@ -1,6 +1,8 @@
 """
 Drop and readd workflow invocation tables, allowing null jobs
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -13,7 +15,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
