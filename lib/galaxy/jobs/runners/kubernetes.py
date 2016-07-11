@@ -66,6 +66,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # were galaxy will expect results.
         log.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
+        # For backward compatibility, we set the tool interpreter field to none, so that it doesn't make it to the
+        # command line. We need to avoid the interpreter as Galaxy changes the working directory, and as such we cannot
+        # guarantee the location of a script in the <interpreter> <script> <arguments> scenario. As such, we ask
+        # container developers to add the correct shebang to the <script> file, make it executable and place it on the
+        # $PATH of the container. It is then executable like <script> <arguments> instead.
+        job_wrapper.tool.interpreter = None
         if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
             return
 
