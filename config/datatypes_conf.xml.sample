@@ -45,6 +45,7 @@
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigwig.xml" />
       <display file="igb/bigwig.xml" />
+      <display file="igv/bigwig.xml" />
     </datatype>
     <datatype extension="cxb" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="true" description="Cuffquant output format" />
     <datatype extension="chrint" type="galaxy.datatypes.interval:ChromatinInteractions" display_in_upload="True">
@@ -531,6 +532,7 @@
     <datatype extension="mothur.axes" type="galaxy.datatypes.mothur:Axes" display_in_upload="true"/>
     <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
     <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
+    <datatype extension="neostore" type="galaxy.datatypes.neo4j:Neo4jDB" mimetype="text/html"  display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
