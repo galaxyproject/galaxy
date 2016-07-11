@@ -73,7 +73,7 @@ class Binary( data.Data ):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         trans.response.set_content_type(dataset.get_mime())
         trans.log_event( "Display dataset id: %s" % str( dataset.id ) )
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
