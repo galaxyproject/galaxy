@@ -84,7 +84,7 @@ var HistoryViewEdit = _super.extend(
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
         return this.on({
-            drop: function( ev, data ){
+            'droptarget:drop': function( ev, data ){
                 // process whatever was dropped and re-hide the drop target
                 this.dataDropped( data );
                 this.dropTargetOff();
@@ -506,27 +506,33 @@ var HistoryViewEdit = _super.extend(
         ev.preventDefault();
         //ev.stopPropagation();
 
+        var self = this;
         var dataTransfer = ev.originalEvent.dataTransfer;
-        dataTransfer.dropEffect = 'move';
+        var data = dataTransfer.getData( "text" );
 
-        var panel = this,
-            data = dataTransfer.getData( "text" );
+        dataTransfer.dropEffect = 'move';
         try {
             data = JSON.parse( data );
-
         } catch( err ){
-            this.warn( 'error parsing JSON from drop:', data );
+            self.warn( 'error parsing JSON from drop:', data );
         }
-        this.trigger( 'droptarget:drop', ev, data, panel );
+
+        self.trigger( 'droptarget:drop', ev, data, self );
         return false;
     },
 
     /** handler that copies data into the contents */
     dataDropped : function( data ){
-        var panel = this;
+        var self = this;
         // HDA: dropping will copy it to the history
         if( _.isObject( data ) && data.model_class === 'HistoryDatasetAssociation' && data.id ){
-            return panel.model.contents.copy( data.id );
+            if( self.contents.currentPage !== 0 ){
+                return self.contents.fetchPage( 0 )
+                    .then( function(){
+                        return self.model.contents.copy( data.id );
+                    });
+            }
+            return self.model.contents.copy( data.id );
         }
         return jQuery.when();
     },

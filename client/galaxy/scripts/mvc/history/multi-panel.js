@@ -546,6 +546,14 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 multipanel._dropData = null;
 
                 var queue = new ajaxQueue.NamedAjaxQueue();
+                if( panel.model.contents.currentPage !== 0 ){
+                    queue.add({
+                        name : 'fetch-front-page',
+                        fn : function(){
+                            return panel.model.contents.fetchPage( 0 );
+                        }
+                    });
+                }
                 // need to reverse to better match expected order
                 // TODO: reconsider order in list-view._setUpItemViewListeners, dragstart (instead of here)
                 toCopy.reverse().forEach( function( content ){
