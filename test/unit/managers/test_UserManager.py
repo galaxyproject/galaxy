@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+User Manager testing.
+
+Executable directly using: python -m test.unit.managers.test_UserManager
 """
 import imp
 import os
@@ -15,7 +18,7 @@ from galaxy import exceptions, model
 from galaxy.managers import base as base_manager
 from galaxy.managers import histories, users
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 # =============================================================================
@@ -226,7 +229,7 @@ class UserDeserializerTestCase( BaseTestCase ):
     def _assertRaises_and_return_raised( self, exception_class, fn, *args, **kwargs ):
         try:
             fn( *args, **kwargs )
-        except exception_class, exception:
+        except exception_class as exception:
             self.assertTrue( True )
             return exception
         assert False, '%s not raised' % ( exception_class.__name__ )
@@ -277,5 +280,4 @@ class AdminUserFilterParserTestCase( BaseTestCase ):
 
 # =============================================================================
 if __name__ == '__main__':
-    # or more generally, nosetests test_resourcemanagers.py -s -v
     unittest.main()
