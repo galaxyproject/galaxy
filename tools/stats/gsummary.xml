@@ -4,8 +4,6 @@
     <edam_topic>topic_2269</edam_topic>
   </edam_topics>
   <requirements>
-    <requirement type="package" version="2.15.1">R</requirement>
-    <requirement type="package">rpy</requirement>
     <requirement type="package" version="2.7.8">rpy2</requirement>
   </requirements>
   <stdio>
