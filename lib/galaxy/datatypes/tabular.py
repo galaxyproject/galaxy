@@ -58,26 +58,23 @@ class TabularData( data.Text ):
         except:
             return False
 
-    def get_chunk(self, trans, dataset, chunk):
-        ck_index = int(chunk)
-        f = open(dataset.file_name)
-        f.seek(ck_index * trans.app.config.display_chunk_size)
-        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
-        if f.tell() != 0:
-            cursor = f.read(1)
-            while cursor and cursor != '\n':
+    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+        with open(dataset.file_name) as f:
+            f.seek(offset)
+            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+            if ck_data and ck_data[-1] != '\n':
                 cursor = f.read(1)
-        ck_data = f.read(trans.app.config.display_chunk_size)
-        cursor = f.read(1)
-        while cursor and ck_data[-1] != '\n':
-            ck_data += cursor
-            cursor = f.read(1)
-        return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
+                while cursor and cursor != '\n':
+                    ck_data += cursor
+                    cursor = f.read(1)
+            last_read = f.tell()
+        return dumps( { 'ck_data': util.unicodify( ck_data ),
+                        'offset': last_read } )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool( preview )
-        if chunk:
-            return self.get_chunk(trans, dataset, chunk)
+        if offset is not None:
+            return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
