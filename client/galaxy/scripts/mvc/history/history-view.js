@@ -593,7 +593,8 @@ HistoryView.prototype.templates = (function(){
 
     var paginationTemplate = BASE_MVC.wrapTemplate([
         '<button class="prev" <%- pages.current === 1 ? "disabled" : "" %>>previous</button>',
-        '<select class="pages form-control">',
+        '<select class="pages form-control" ',
+                'title="', _l( 'Click to open and select a page. Begin typing a page number to jump to it' ), '">',
             '<% _.range( 1, pages.last + 1 ).forEach( function( i ){ %>',
                 '<option value="<%- i - 1 %>" <%- i === pages.current ? "selected" : "" %>>',
                     '<%- view.ordinalIndicator( i ) %> of <%- pages.last %> pages',

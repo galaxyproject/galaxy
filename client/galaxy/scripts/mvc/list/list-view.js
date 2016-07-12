@@ -277,7 +277,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
      */
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
-        this.$controls( $where ).find('[title]').tooltip({ placement: 'bottom' });
+        this.$controls( $where ).find('[title]').tooltip();
         // set up the pupup for actions available when multi selecting
         this._renderMultiselectActionMenu( $where );
         return this;
