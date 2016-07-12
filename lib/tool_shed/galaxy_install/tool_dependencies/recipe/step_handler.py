@@ -847,7 +847,7 @@ class MoveDirectoryFiles( RecipeStep ):
 
     def move_directory_files(self, current_dir, source_dir, destination_dir):
         source_directory = os.path.abspath(os.path.join(current_dir, source_dir))
-        destination_directory = os.path.join(destination_dir)
+        destination_directory = os.path.abspath(os.path.join(destination_dir))
         if not os.path.isdir(destination_directory):
             os.makedirs(destination_directory)
         symlinks = []
