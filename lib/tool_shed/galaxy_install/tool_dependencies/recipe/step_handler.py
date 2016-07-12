@@ -852,7 +852,11 @@ class MoveDirectoryFiles( RecipeStep ):
             os.makedirs(destination_directory)
         for dir_entry in os.listdir(source_directory):
             source_entry = os.path.join(source_directory, dir_entry)
-            if os.path.islink(source_entry):
+            if os.path.isdir(source_entry):
+                destination_subdir = os.path.join(destination_directory, dir_entry)
+                if not os.path.exists(destination_subdir):
+                    os.makedirs(destination_subdir)
+            elif os.path.islink(source_entry):
                 destination_entry = os.path.join(destination_directory, dir_entry)
                 os.symlink(os.readlink(source_entry), destination_entry)
                 os.remove(source_entry)
