@@ -375,12 +375,12 @@ class HistoryContentsSerializer( base.ModelSerializer, deletable.PurgableSeriali
         self.serializers.update({
             'type_id'       : self.serialize_type_id,
             'history_id'    : self.serialize_id,
-            'dataset_id'    : self.serialize_id_or_none,
-            'collection_id' : self.serialize_id_or_none,
+            'dataset_id'    : self.serialize_id_or_skip,
+            'collection_id' : self.serialize_id_or_skip,
         })
 
-    def serialize_id_or_none( self, content, key, **context ):
-        """Allow None while serializing an id."""
+    def serialize_id_or_skip( self, content, key, **context ):
+        """Serialize id or skip if attribute with `key` is not present."""
         if not hasattr( content, key ):
             raise base.SkipAttribute( 'no such attribute' )
         return self.serialize_id( content, key, **context )
