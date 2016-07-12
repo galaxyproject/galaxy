@@ -17,7 +17,8 @@ var View = Backbone.View.extend({
             searchable  : true,
             optional    : false,
             disabled    : false,
-            onchange    : function(){}
+            onchange    : function(){},
+            value       : null
         }).set( options );
         this.on( 'change', function() { self.model.get( 'onchange' )( self.value() ) } );
         this.listenTo( this.model, 'change:data', this._changeData, this );
@@ -111,8 +112,8 @@ var View = Backbone.View.extend({
         }
         if ( this.model.get( 'searchable' ) ) {
             var data2 = [];
-            _.each( this.data, function( option ) {
-                data2.push( { id: option.value, text: option.label } );
+            _.each( this.data, function( option, index ) {
+                data2.push( { order: index, id: option.value, text: option.label } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
             this.$select.select2( { data: data2, closeOnSelect: !this.model.get( 'multiple' ), multiple: this.model.get( 'multiple' ) } );
@@ -153,7 +154,7 @@ var View = Backbone.View.extend({
 
     /** Synchronizes the model value with the actually selected field value */
     _changeValue: function() {
-        this._setValue( this.model.get( 'value' ) || null );
+        this._setValue( this.model.get( 'value' ) );
         if ( this.model.get( 'searchable' ) ) {
             if ( this._getValue() === null && !this.model.get( 'multiple' ) && !this.model.get( 'optional' ) ) {
                 this._setValue( this.first() );
@@ -247,20 +248,36 @@ var View = Backbone.View.extend({
 
     /** Set value to dom */
     _setValue: function( new_value ) {
-        if ( new_value !== undefined ) {
-            new_value = new_value !== null ? new_value : '__null__';
-            if ( this.model.get( 'searchable' ) ) {
-                this.$select.select2( 'val', this.model.get( 'multiple' ) && !$.isArray( new_value ) ? [ new_value ] : new_value );
-            } else {
-                this.$select.val( new_value );
-            }
+        if( new_value !== null && new_value !== undefined ) {
+            new_value = this.model.get( 'multiple' ) && $.isArray( new_value ) ? new_value : [ new_value ];
+        } else {
+            new_value = '__null__';
+        }
+        if ( this.model.get( 'searchable' ) ) {
+            this.$select.select2( 'val', new_value );
+        } else {
+            this.$select.val( new_value );
         }
     },
 
     /** Get value from dom */
     _getValue: function() {
-        var val = this.model.get( 'searchable' ) ? this.$select.select2( 'val' ) : this.$select.val();
-        return Utils.isEmpty( val ) || val == '' ? null : val;
+        var val = null;
+        if ( this.model.get( 'searchable' ) ) {
+            var selected = this.$select.select2( 'data' );
+            if ( selected ) {
+                if ( $.isArray( selected ) ) {
+                    val = [];
+                    selected.sort( function( a, b ) { return a.order - b.order } );
+                    _.each( selected, function( v ) { val.push( v.id ) } );
+                } else {
+                    val = selected.id;
+                }
+            }
+        } else {
+            val = this.$select.val();
+        }
+        return Utils.isEmpty( val ) ? null : val;
     }
 });
 
