@@ -5,11 +5,13 @@ define([ 'utils/utils', 'mvc/ui/ui-buttons' ], function( Utils, Buttons ) {
 var View = Backbone.View.extend({
     initialize: function( options ) {
         var self = this;
+        this.data = [];
         this.model = options && options.model || new Backbone.Model({
             id          : Utils.uid(),
             cls         : 'ui-select',
             error_text  : 'No options available',
             empty_text  : 'Nothing selected',
+            data_limit  : -1,
             visible     : true,
             wait        : false,
             multiple    : false,
@@ -30,13 +32,10 @@ var View = Backbone.View.extend({
 
     render: function() {
         var self = this;
-        this.$el.empty().append( this.$select      = $( '<select/>' ) )
-                        .append( this.$dropdown    = $( '<div/>' ) )
-                        .append( this.$resize      = $( '<div/>' )
-                        .append( this.$resize_icon = $( '<i/>' ) ) );
-
-        // set element properties
-        this.$el.addClass( this.model.get( 'cls' ) )
+        this.$el.empty()
+                .append( this.$select   = $( '<div/>' ) )
+                .append( this.$dropdown = $( '<div/>' ) )
+                .addClass( this.model.get( 'cls' ) )
                 .attr( 'id', this.model.get( 'id' ) );
 
         // set select properties
@@ -56,76 +55,54 @@ var View = Backbone.View.extend({
             });
         }
 
-        // render resize options for classic multi-select field
-        this.$resize.hide();
-        if ( this.model.get( 'multiple' ) && !this.model.get( 'searchable' ) ) {
-            this.$resize_icon.addClass( 'fa fa-angle-double-right fa-rotate-45' );
-            this.$resize.show()
-                        .removeClass()
-                        .addClass( 'icon-resize' )
-                        .off( 'mousedown' ).on( 'mousedown', function( event ) {
-                            var currentY = event.pageY;
-                            var currentHeight = self.$select.height();
-                            self.minHeight = self.minHeight || currentHeight;
-                            $( '#dd-helper' ).show().on( 'mousemove', function( event ) {
-                                self.$select.height( Math.max( currentHeight + ( event.pageY - currentY ), self.minHeight ) );
-                            }).on( 'mouseup mouseleave', function() {
-                                $( '#dd-helper' ).hide().off();
-                            });
-                        });
-        }
-
         // build select all button
         this.all_button = null;
-        if ( this.model.get( 'multiple' ) ) {
-            if ( this.model.get( 'searchable' ) ) {
-                this.all_button = new Buttons.ButtonCheck({
-                    onclick: function() {
-                        var new_value = [];
-                        self.all_button.value() !== 0 && _.each( self.model.get( 'data' ), function( option ) {
-                            new_value.push( option.value );
-                        });
-                        self.value( new_value );
-                        self.trigger( 'change' );
-                    }
-                });
-                this.$el.prepend( this.all_button.$el );
-            } else {
-                this.$el.addClass( 'ui-select-multiple' );
-            }
+        if ( this.model.get( 'multiple' ) && this.model.get( 'searchable' ) ) {
+            this.all_button = new Buttons.ButtonCheck({
+                onclick: function() {
+                    var new_value = [];
+                    self.all_button.value() !== 0 && _.each( self.model.get( 'data' ), function( option ) {
+                        new_value.push( option.value );
+                    });
+                    self.value( new_value );
+                    self.trigger( 'change' );
+                }
+            });
+            this.$el.prepend( this.all_button.$el );
         }
 
         // finalize dom
         this._changeData();
         this._changeWait();
         this._changeVisible();
+        this._changeDisabled();
     },
 
     _changeData: function() {
         var self = this;
-        this.$select.find( 'option' ).remove();
+        this.data = [];
         if ( !this.model.get( 'multiple' ) && this.model.get( 'optional' ) ) {
-            this.$select.append( this._templateOption( { value: '__null__', label: self.model.get( 'empty_text' ) } ) );
+            this.data.push( { value: '__null__', label: self.model.get( 'empty_text' ) } );
         }
         _.each( this.model.get( 'data' ), function( option ) {
-            self.$select.append( self._templateOption( option ) );
+            self.data.push( option );
         });
         if ( this.length() == 0 ) {
-            this.$select.prop( 'disabled', true )
-                        .append( this._templateOption( { value: '__null__', label: this.model.get( 'error_text' ) } ) );
-        } else {
-            this.$select.prop( 'disabled', false );
+            this.data.push( { value: '__null__', label: this.model.get( 'error_text' ) } );
         }
-        this.$select.select2( 'destroy' );
-        if ( this.model.get( 'searchable' ) ) {
-            this.$select.select2( { closeOnSelect: !this.model.get( 'multiple' ) } );
-            this.$( '.select2-container .select2-search input' ).off( 'blur' );
-        }
+        var data2 = [];
+        _.each( this.data, function( option ) {
+            data2.push( { id: option.value, text: option.label } );
+        });
+        this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
+        this.$select.select2( { data: data2, closeOnSelect: !this.model.get( 'multiple' ), multiple: this.model.get( 'multiple' ) } );
+        this.$( '.select2-container .select2-search input' ).off( 'blur' );
+        this.model.set( 'disabled', this.length() == 0 );
         this._changeValue();
     },
 
     _changeDisabled: function() {
-        this.$select.prop( 'disabled', this.model.get( 'disabled' ) );
+        this.$select.select2( this.model.get( 'disabled' ) ? 'disable' : 'enable' );
     },
 
     _changeWait: function() {
@@ -140,7 +117,7 @@ var View = Backbone.View.extend({
     },
 
     _changeValue: function() {
-        this._setValue( this.model.get( 'value' ) );
+        this._setValue( this.model.get( 'value' ) || null );
         if ( this._getValue() === null && !this.model.get( 'multiple' ) && !this.model.get( 'optional' ) ) {
             this._setValue( this.first() );
         }
@@ -156,18 +133,19 @@ var View = Backbone.View.extend({
 
     /** Return the first select option */
     first: function() {
-        var options = this.$select.find( 'option' ).first();
-        return options.length > 0 ? options.val() : null;
+        return this.data.length > 0 ? this.data[ 0 ].value : null;
     },
 
     /** Check if a value is an existing option */
     exists: function( value ) {
-        return this.$select.find( 'option[value="' + value + '"]' ).length > 0;
+        return _.findWhere( this.data, { value: value } );
     },
 
     /** Return the label/text of the current selection */
     text: function () {
-        return this.$select.find( 'option:selected' ).first().text();
+        var v = this._getValue();
+        var d = this.exists( $.isArray( v ) ? v[ 0 ] : v );
+        return d ? d.label : '';
     },
 
     /** Show the select field */
@@ -233,20 +211,14 @@ var View = Backbone.View.extend({
     _setValue: function( new_value ) {
         if ( new_value !== undefined ) {
             new_value = new_value !== null ? new_value : '__null__';
-            this.$select.val( new_value );
-            this.$select.select2 && this.$select.select2( 'val', new_value );
+            this.$select.select2( 'val', this.model.get( 'multiple' ) && !$.isArray( new_value ) ? [ new_value ] : new_value );
         }
     },
 
     /** Get value from dom */
     _getValue: function() {
-        var val = this.$select.val();
-        return Utils.isEmpty( val ) ? null : val;
-    },
-
-    /** Template for select options */
-    _templateOption: function( options ) {
-        return $( '<option/>' ).attr( 'value', options.value ).html( _.escape( options.label ) );
+        var val = this.$select.select2( 'val' );
+        return Utils.isEmpty( val ) || val == '' ? null : val;
     }
 });
 

@@ -288,11 +288,12 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
 
     test( 'select-default', function() {
         function _test( options ) {
+            //window.console.log( select.value() );
             ok( JSON.stringify( select.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
             ok( select.text() == options.label, 'Selected label is ' + options.label );
             ok( select.$el.display === options.visible ? 'block' : 'none', options.visible ? 'Visible' : 'Hidden' );
-            ok( select.$select.find( 'option' ).length === options.count && select.length(), 'Found ' + options.count + ' option' );
-            options.exists && ok( select.$select.find( 'option[value="' + options.exists + '"]' ).length === 1, 'Found value: ' + options.exists );
+            ok( select.data.length === options.count && select.length(), 'Found ' + options.count + ' option' );
+            options.exists && ok( select.exists( options.exists ), 'Found value: ' + options.exists );
             ok( select.$select.prop( 'multiple' ) === Boolean( options.multiple ), 'Multiple state set to: ' + options.multiple );
             ok( Boolean( select.all_button ) === Boolean( options.multiple ), 'Visiblity of select all button correct.' );
             options.multiple && ok( select.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
