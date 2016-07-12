@@ -110,9 +110,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
     @expose_api
     @web.require_admin
-    def list_requirements(self, trans, **kwds):
+    def all_requirements(self, trans, **kwds):
         """
-        GET /api/tools/list_requirements
+        GET /api/tools/all_requirements
         Return list of unique requirements for all tools.
         """
 
@@ -122,8 +122,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     @web.require_admin
     def tool_requirements_status(self, trans, id, **kwds):
         """
-        GET /api/tools/{tool_id}/requirement_status
-        Return list of unique requirements for all tools.
+        GET /api/tools/{tool_id}/requirements_status
+        Return the resolver status (Are dependencies resolved).
+
+	[{'name'='r-deseq2', 'resolver': 'CondaDependencyResolver', 'exact': True},
+	 {'name'='r-edger', 'resolver': 'CondaDependencyResolver', 'exact': False}]
         """
 
         return trans.app.toolbox.tool_requirements_status(id)
