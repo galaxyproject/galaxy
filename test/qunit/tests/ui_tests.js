@@ -288,7 +288,7 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
 
     test( 'select-default', function() {
         function _test( options ) {
-            //window.console.log( select.value() );
+            window.console.log( select.value() + ' ' + options.value );
             ok( JSON.stringify( select.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
             ok( select.text() == options.label, 'Selected label is ' + options.label );
             ok( select.$el.display === options.visible ? 'block' : 'none', options.visible ? 'Visible' : 'Hidden' );
