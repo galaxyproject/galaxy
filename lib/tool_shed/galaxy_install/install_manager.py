@@ -352,7 +352,7 @@ class InstallToolDependencyManager( object ):
                                             # Process the next matching <actions> tag, or any defined <actions> tags that do not
                                             # contain platform dependent recipes.
                                             log.debug( 'Error downloading binary for tool dependency %s version %s: %s' %
-                                                       ( str( package_name ), str( package_version ), util.smart_str( tool_dependency.error_message ) ) )
+                                                       ( str( package_name ), str( package_version ), util.unicodify( tool_dependency.error_message ) ) )
                                     else:
                                         if actions_elem.tag == 'actions':
                                             # We've reached an <actions> tag that defines the recipe for installing and compiling from
