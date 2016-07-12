@@ -241,7 +241,7 @@ var HistoryView = _super.extend(
 
     /** override to render pagination also */
     renderItems: function( $whereTo ){
-        // console.log( this + '.renderItems-----------------', new Date() );
+        console.log( this + '.renderItems-----------------', new Date() );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var $list = self.$list( $whereTo );
@@ -271,11 +271,13 @@ var HistoryView = _super.extend(
         var $paginationControls = $whereTo.find( '> .controls .list-pagination' );
         if( this.searchFor || !this.model.contents.shouldPaginate() ) return $paginationControls.empty();
 
-        return $paginationControls.html( this.templates.pagination({
+        $paginationControls.html( this.templates.pagination({
             // pagination is 1-based for the user
             current : this.model.contents.currentPage + 1,
             last    : this.model.contents.getLastPage() + 1,
         }, this ));
+        $paginationControls.find( 'select.pages' ).tooltip();
+        return $paginationControls;
     },
 
     /** render a subset of the entire collection (client-side pagination) */
