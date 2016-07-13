@@ -1,7 +1,8 @@
 # TODO: Set dbkey to proper UCSC build, if known
 import shutil
 import tempfile
-import urllib
+
+from six.moves.urllib.request import urlopen
 
 from galaxy import datatypes
 
@@ -12,7 +13,7 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
     data_type = param_dict.get( 'type', 'txt' )
     if data_type == 'txt':
         data_type = 'interval'  # All data is TSV, assume interval
-    name, data = out_data.items()[0]
+    name, data = list(out_data.items())[0]
     data = app.datatypes_registry.change_datatype(data, data_type)
     data.name = data_name
     out_data[name] = data
@@ -30,11 +31,11 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     MAX_SIZE = CHUNK_SIZE * 100
 
     try:
-        page = urllib.urlopen(URL)
-    except Exception, exc:
+        page = urlopen(URL)
+    except Exception as exc:
         raise Exception('Problems connecting to %s (%s)' % (URL, exc) )
 
-    name, data = out_data.items()[0]
+    name, data = list(out_data.items())[0]
 
     fp = open(data.file_name, 'wb')
     size = 0

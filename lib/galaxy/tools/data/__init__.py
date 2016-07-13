@@ -117,7 +117,7 @@ class ToolDataTableManager( object ):
             table_elems = self.load_from_config_file( config_filename=config_filename,
                                                       tool_data_path=tool_data_path,
                                                       from_shed_config=True )
-        except Exception, e:
+        except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % ( str( os.path.split( config_filename )[ 1 ] ), str( e ) )
             log.debug( error_message )
             table_elems = []
@@ -144,7 +144,7 @@ class ToolDataTableManager( object ):
             tree = util.parse_xml( full_path )
             root = tree.getroot()
             out_elems = [ elem for elem in root ]
-        except Exception, e:
+        except Exception as e:
             out_elems = []
             log.debug( 'Could not parse existing tool data table config, assume no existing elements: %s', e )
         for elem in remove_elems:
@@ -291,7 +291,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     tmp_file = NamedTemporaryFile( prefix='TTDT_URL_%s-' % self.name )
                     try:
                         tmp_file.write( urlopen( filename, timeout=url_timeout ).read() )
-                    except Exception, e:
+                    except Exception as e:
                         log.error( 'Error loading Data Table URL "%s": %s', filename, e )
                         continue
                     log.debug( 'Loading Data Table URL "%s" as filename "%s".', filename, tmp_file.name )
@@ -340,7 +340,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self._update_version()
             else:
                 self.missing_index_file = filename
-                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
+                log.warning( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
 
             if filename not in self.filenames or not self.filenames[ filename ][ 'found' ]:
                 self.filenames[ filename ] = dict( found=found, filename=filename, from_shed_config=from_shed_config, tool_data_path=tool_data_path,
@@ -461,7 +461,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     line_error = "Line %i in tool data table '%s' is invalid (HINT: '%s' characters must be used to separate fields):\n%s" % ( ( i + 1 ), self.name, separator_char, line )
                     if errors is not None:
                         errors.append( line_error )
-                    log.warn( line_error )
+                    log.warning( line_error )
         return rval
 
     def get_column_name_list( self ):
@@ -569,7 +569,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 log.debug( "Persisting changes to file: %s", filename )
                 try:
                     data_table_fh = open( filename, 'r+b' )
-                except IOError, e:
+                except IOError as e:
                     log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e )
                     data_table_fh = open( filename, 'wb' )
                 if os.stat( filename )[6] != 0:
@@ -590,7 +590,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 values = self._replace_field_separators( values )
                 self.filter_file_fields( filename, values )
             else:
-                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
+                log.warning( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
 
         self.reload_from_files()
 

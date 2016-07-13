@@ -1,6 +1,8 @@
 """
 Migration script to create a new 'sequencer' table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -29,12 +31,12 @@ Sequencer_table = Table( 'sequencer', metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     # create the sequencer table
     try:
         Sequencer_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating 'sequencer' table failed: %s" % str( e ) )
 
 
@@ -50,5 +52,5 @@ def downgrade(migrate_engine):
     if Sequencer_table:
         try:
             Sequencer_table.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Deleting 'sequencer' table failed: %s" % str( e ) )

@@ -8,7 +8,7 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
 from tool_shed.util import common_util
-import tool_shed.util.shed_util_common as suc
+from tool_shed.util import repository_util
 import galaxy.queue_worker
 
 # set up logger
@@ -37,7 +37,7 @@ class DataManagers( object ):
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
         try:
             tree = util.parse_xml( xml_filename )
-        except Exception, e:
+        except Exception as e:
             log.error( 'There was an error parsing your Data Manager config file "%s": %s' % ( xml_filename, e ) )
             return  # we are not able to load any data managers
         root = tree.getroot()
@@ -57,7 +57,7 @@ class DataManagers( object ):
     def load_manager_from_elem( self, data_manager_elem, tool_path=None, add_manager=True, replace_existing=False ):
         try:
             data_manager = DataManager( self, data_manager_elem, tool_path=tool_path )
-        except Exception, e:
+        except Exception as e:
             log.error( "Error loading data_manager '%s':\n%s" % ( e, util.xml_to_string( data_manager_elem ) ) )
             return None
         if add_manager:
@@ -150,18 +150,18 @@ class DataManager( object ):
                                                         owner=repository_owner,
                                                         installed_changeset_revision=installed_changeset_revision )
             tool_shed_repository = \
-                suc.get_installed_repository( self.data_managers.app,
-                                              tool_shed=tool_shed,
-                                              name=repository_name,
-                                              owner=repository_owner,
-                                              installed_changeset_revision=installed_changeset_revision )
+                repository_util.get_installed_repository( self.data_managers.app,
+                                                          tool_shed=tool_shed,
+                                                          name=repository_name,
+                                                          owner=repository_owner,
+                                                          installed_changeset_revision=installed_changeset_revision )
             if tool_shed_repository is None:
                 log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
                 # we'll set tool_path manually here from shed_conf_file
                 tool_shed_repository_id = None
                 try:
                     tool_path = util.parse_xml( elem.get( 'shed_conf_file' ) ).getroot().get( 'tool_path', tool_path )
-                except Exception, e:
+                except Exception as e:
                     log.error( 'Error determining tool_path for Data Manager during testing: %s', e )
             else:
                 tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
@@ -264,7 +264,7 @@ class DataManager( object ):
         for output_name, output_dataset in out_data.iteritems():
             try:
                 output_dict = json.loads( open( output_dataset.file_name ).read() )
-            except Exception, e:
+            except Exception as e:
                 log.warning( 'Error reading DataManagerTool json for "%s": %s' % ( output_name, e ) )
                 continue
             data_manager_dicts[ output_name ] = output_dict
@@ -354,7 +354,7 @@ class DataManager( object ):
                 dirs = os.path.split( target )[0]
                 try:
                     os.makedirs( dirs )
-                except OSError, e:
+                except OSError as e:
                     if e.errno != errno.EEXIST:
                         raise e
             # moving a directory and the target already exists, we move the contents instead

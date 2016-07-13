@@ -224,7 +224,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Get tool.
         tool_version = payload.get( 'tool_version', None )
-        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] , tool_version ) if 'tool_id' in payload else None
+        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ], tool_version ) if 'tool_id' in payload else None
         if not tool or not tool.allow_user_access( trans.user ):
             raise exceptions.MessageException( 'Tool not found or not accessible.' )
         if trans.app.config.user_activation_on:
@@ -284,7 +284,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             # so it's possible to figure out which newly created elements
             # correspond with which tool file outputs
             output_dict[ 'output_name' ] = output_name
-            outputs.append( trans.security.encode_dict_ids( output_dict ) )
+            outputs.append( trans.security.encode_dict_ids( output_dict, skip_startswith="metadata_" ) )
 
         for job in vars.get('jobs', []):
             rval[ 'jobs' ].append( self.encode_all_ids( trans, job.to_dict( view='collection' ), recursive=True ) )
@@ -531,7 +531,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                     # TODO: set meta internally if dataset is small enough?
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool,
                                                                                                  trans, incoming={ 'input1': new_dataset },
-                                                                                                 overwrite=False, job_params={ "source" : "trackster" } )
+                                                                                                 overwrite=False, job_params={ "source": "trackster" } )
                     # Add HDA subset association.
                     subset_association = trans.app.model.HistoryDatasetAssociationSubset( hda=input_dataset, subset=new_dataset, location=regions_str )
                     trans.sa_session.add( subset_association )
@@ -542,7 +542,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
                 # Add dataset to tool's parameters.
                 if not set_param_value( tool_params, jida.name, subset_dataset ):
-                    return { "error" : True, "message" : "error setting parameter %s" % jida.name }
+                    return { "error": True, "message": "error setting parameter %s" % jida.name }
 
         #
         # Execute tool and handle outputs.
@@ -550,10 +550,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         try:
             subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params,
                                                            history=target_history,
-                                                           job_params={ "source" : "trackster" } )
-        except Exception, e:
+                                                           job_params={ "source": "trackster" } )
+        except Exception as e:
             # Lots of things can go wrong when trying to execute tool.
-            return { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) }
+            return { "error": True, "message": e.__class__.__name__ + ": " + str(e) }
         if run_on_regions:
             for output in subset_job_outputs.values():
                 output.visible = False

@@ -101,7 +101,7 @@ class Genome( object ):
         if num:
             num = int( num )
         else:
-            num = sys.maxint
+            num = sys.maxsize  # just a big number
 
         if low:
             low = int( low )
@@ -163,14 +163,14 @@ class Genome( object ):
         # Set flag to indicate whether there are more chroms after list.
         next_chroms = False
         try:
-            len_file_enumerate.next()
+            next(len_file_enumerate)
             next_chroms = True
         except:
             # No more chroms to read.
             pass
 
-        to_sort = [{ 'chrom': chrm, 'len': length } for chrm, length in chroms.iteritems()]
-        to_sort.sort(lambda a, b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
+        to_sort = [{ 'chrom': chrm, 'len': length } for chrm, length in chroms.items()]
+        to_sort.sort(key=lambda _: split_by_number(_['chrom']))
         return {
             'id': self.key,
             'reference': self.twobit_file is not None,
@@ -214,7 +214,7 @@ class Genomes( object ):
                     if len( val ) == 2:
                         key, path = val
                         twobit_fields[ key ] = path
-            except IOError, e:
+            except IOError as e:
                 # Thrown if twobit.loc does not exist.
                 log.exception( "Error reading twobit.loc: %s", e )
         for key, description in self.app.genome_builds.get_genome_build_names():
@@ -232,7 +232,7 @@ class Genomes( object ):
 
     def check_and_reload( self ):
         # Check if tables have been modified, if so reload
-        for table_name, table_version in self._table_versions.iteritems():
+        for table_name, table_version in self._table_versions.items():
             table = self.app.tool_data_tables.get( table_name, None )
             if table is not None and not table.is_current_version( table_version ):
                 return self.reload_genomes()

@@ -2,12 +2,12 @@ import logging
 
 from sqlalchemy import false, or_
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy.model import tool_shed_install
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import iff, grids
 from tool_shed.util import tool_dependency_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -104,7 +104,7 @@ class InstalledRepositoryGrid( grids.Grid ):
     class StatusColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            return suc.get_tool_shed_repository_status_label( trans.app, tool_shed_repository )
+            return repository_util.get_tool_shed_repository_status_label( trans.app, tool_shed_repository )
 
     class ToolShedColumn( grids.TextColumn ):
 
@@ -115,7 +115,7 @@ class InstalledRepositoryGrid( grids.Grid ):
 
             def get_accepted_filters( self ):
                 """ Returns a list of accepted filters for this column. """
-                accepted_filter_labels_and_vals = { "Active" : "False", "Deactivated or uninstalled" : "True", "All": "All" }
+                accepted_filter_labels_and_vals = { "Active": "False", "Deactivated or uninstalled": "True", "All": "All" }
                 accepted_filters = []
                 for label, val in accepted_filter_labels_and_vals.items():
                     args = { self.key: val }

@@ -7,7 +7,7 @@
 
     ${parent.javascripts()}
 
-    ${handle_refresh_frames}
+    ${handle_refresh_frames()}
     
     <script type="text/javascript">
         $(function() {
@@ -22,22 +22,22 @@
 </%def>
 
 %if error_msg:
-    <p>
+    <div>
         <div class="errormessage">${error_msg}</div>
         <div style="clear: both"></div>
-    </p>
+    </div>
 %endif
 %if done_msg:
-    <p>
+    <div>
         <div class="donemessage">${done_msg}</div>
         <div style="clear: both"></div>
-    </p>
+    </div>
 %endif
-<p>
+<div>
     <div class="infomessage">Copy any number of history items from one history to another.</div>
     <div style="clear: both"></div>
-</p>
-<p>
+</div>
+<div>
     <form method="post">
         <div class="toolForm" style="float: left; width: 45%; padding: 0px;">
             <div class="toolFormTitle">Source History:<br />
@@ -84,7 +84,6 @@
             <div class="toolFormBody">
                 <div class="form-row" id="single-destination">
                     <select id="single-dest-select" name="target_history_id">
-                        <option value=""></option>
                         %for i, hist in enumerate(target_histories):
                             <%
                                 encoded_id = trans.security.encode_id(hist.id)
@@ -124,15 +123,14 @@
                     <div style="text-align: center; color: #888;">&mdash; OR &mdash;</div>
                     <div class="form-row">
                         <label for="new_history_name" style="display: inline; font-weight:normal;">New history named:</label>
-                        <input type="textbox" name="new_history_name" />
+                        <input id="new_history_name" type="text" name="new_history_name" />
                     </div>
                 %endif
             </div>
         </div>
-            <div style="clear: both"></div>
-            <div class="form-row" align="center">
-                <input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/>
-            </div>
-        </form>
-    </div>
-</p>
+        <div style="clear: both"></div>
+        <div class="form-row" style="text-align: center;">
+            <input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/>
+        </div>
+    </form>
+</div>

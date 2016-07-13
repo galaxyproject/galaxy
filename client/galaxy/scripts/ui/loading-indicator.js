@@ -80,7 +80,7 @@
 
         self.hide = function( speed, callback ){
             speed = speed || 'fast';
-            if( self.$indicator && self.$indicator.size() ){
+            if( self.$indicator && self.$indicator.length ){
                 self.$indicator.fadeOut( speed, function(){
                     self.$indicator.remove();
                     if( callback ){ callback(); }

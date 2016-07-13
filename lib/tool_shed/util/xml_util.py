@@ -122,7 +122,7 @@ def parse_xml( file_name ):
     if using_python_27:
         try:
             tree = XmlET.parse( fobj, parser=XmlET.XMLParser( target=Py27CommentedTreeBuilder() ) )
-        except Exception, e:
+        except Exception as e:
             fobj.close()
             error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
             log.exception( error_message )
@@ -130,7 +130,7 @@ def parse_xml( file_name ):
     else:
         try:
             tree = XmlET.parse( fobj, parser=Py26CommentedTreeBuilder() )
-        except Exception, e:
+        except Exception as e:
             fobj.close()
             error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
             log.exception( error_message )

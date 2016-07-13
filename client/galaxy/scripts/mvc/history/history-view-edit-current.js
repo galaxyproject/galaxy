@@ -227,7 +227,7 @@ var CurrentHistoryView = _super.extend(
             $toolMenu = $( '.toolMenuContainer' );
 
         if( ( _.isEmpty( panel.views ) && !panel.searchFor )
-        &&  ( Galaxy && Galaxy.upload && $toolMenu.size() ) ){
+        &&  ( Galaxy && Galaxy.upload && $toolMenu.length ) ){
             $emptyMsg.empty();
 
             $emptyMsg.html([

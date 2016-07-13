@@ -119,12 +119,12 @@ class Tree( object ):
         return Tree( new_children, new_collection_type )
 
     def clone( self ):
-        cloned_children = map( lambda (identifier, element): (identifier, element.clone()), self.children )
+        cloned_children = [(_[0], _[1].clone()) for _ in self.children]
         return Tree( cloned_children, self.collection_type_description )
 
 
 def dict_map( func, input_dict ):
-    return dict( [ ( k, func(v) ) for k, v in input_dict.iteritems() ] )
+    return dict( [ ( k, func(v) ) for k, v in input_dict.items() ] )
 
 
 def get_structure( dataset_collection_instance, collection_type_description, leaf_subcollection_type=None ):

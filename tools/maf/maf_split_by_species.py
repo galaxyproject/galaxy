@@ -13,15 +13,15 @@ from galaxy.util import string_as_bool
 def __main__():
     try:
         maf_reader = maf.Reader( open( sys.argv[1] ) )
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error opening MAF: %s" % e )
     try:
         out = maf.Writer( open( sys.argv[2], "w") )
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error opening file for output: %s" % e )
     try:
         collapse_columns = string_as_bool( sys.argv[3] )
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error determining collapse columns value: %s" % e )
 
     start_count = 0

@@ -161,7 +161,7 @@
 
     // as jq plugin
     $.fn.modeButton = function $modeButton( options ){
-        if( !this.size() ){ return this; }
+        if( !this.length ){ return this; }
 
         //TODO: does map still work with jq multi selection (i.e. $( '.class-for-many-btns' ).modeButton)?
         if( $.type( options ) === 'object' ){

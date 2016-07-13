@@ -2,6 +2,8 @@
 This migration script adds the request_event table and
 removes the state field in the request table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -24,10 +26,10 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script adds the request_event table and"
-    print "removes the state field in the request table"
-    print "========================================"
+    print("========================================")
+    print("This migration script adds the request_event table and")
+    print("removes the state field in the request table")
+    print("========================================")
 
 
 RequestEvent_table = Table('request_event', metadata,
@@ -63,7 +65,7 @@ def upgrade(migrate_engine):
     # Add new request_event table
     try:
         RequestEvent_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating request_event table failed: %s" % str( e ) )
     # move the current state of all existing requests to the request_event table
 
@@ -89,7 +91,7 @@ def upgrade(migrate_engine):
         if Request_table is not None:
             try:
                 Request_table.c.state.drop()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )
 
 

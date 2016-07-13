@@ -1,6 +1,8 @@
 """
 Migration script to add the repository_dependency and repository_repository_dependency_association tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -33,16 +35,16 @@ RepositoryRepositoryDependencyAssociation_table = Table( "repository_repository_
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
         RepositoryDependency_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating repository_dependency table failed: %s" % str( e ) )
     try:
         RepositoryRepositoryDependencyAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating repository_repository_dependency_association table failed: %s" % str( e ) )
 
 
@@ -51,9 +53,9 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         RepositoryRepositoryDependencyAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping repository_repository_dependency_association table failed: %s" % str( e ) )
     try:
         RepositoryDependency_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping repository_dependency table failed: %s" % str( e ) )

@@ -68,9 +68,9 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         stored_workflow_menu_entries = config[ 'stored_workflow_menu_entries' ] = []
         for menu_item in getattr( trans.user, 'stored_workflow_menu_entries', [] ):
             stored_workflow_menu_entries.append({
-                'encoded_stored_workflow_id' : trans.security.encode_id( menu_item.stored_workflow_id ),
-                'stored_workflow' : {
-                    'name' : util.unicodify( menu_item.stored_workflow.name )
+                'encoded_stored_workflow_id': trans.security.encode_id( menu_item.stored_workflow_id ),
+                'stored_workflow': {
+                    'name': util.unicodify( menu_item.stored_workflow.name )
                 }
             })
 
@@ -121,12 +121,12 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         User login path for client-side.
         """
         return self.template( trans, 'login',
-            redirect=redirect,
-            # TODO: move into config
-            openid_providers=[ p.name for p in trans.app.openid_providers ],
-            # an installation may have it's own welcome_url - show it here if they've set that
-            welcome_url=web.url_for( controller='root', action='welcome' ),
-            show_welcome_with_login=trans.app.config.show_welcome_with_login )
+                              redirect=redirect,
+                              # TODO: move into config
+                              openid_providers=[ p.name for p in trans.app.openid_providers ],
+                              # an installation may have it's own welcome_url - show it here if they've set that
+                              welcome_url=web.url_for( controller='root', action='welcome' ),
+                              show_welcome_with_login=trans.app.config.show_welcome_with_login )
 
     # ---- Tool related -----------------------------------------------------
 
@@ -139,7 +139,7 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         """
         query = kwd.get( 'query', '' )
         tags = listify( kwd.get( 'tags[]', [] ) )
-        trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
+        trans.log_action( trans.get_user(), "tool_search.search", "", { "query": query, "tags": tags } )
         results = []
         if tags:
             tags = trans.sa_session.query( trans.app.model.Tag ).filter( trans.app.model.Tag.name.in_( tags ) ).all()
@@ -340,7 +340,7 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
             trans.sa_session.flush()
             if not user_history.datasets:
                 trans.set_history( new_history )
-            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id), new_history.name ) )
             return trans.show_ok_message( """
                 History "%s" has been imported. Click <a href="%s">here</a>
                 to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
@@ -359,7 +359,7 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
             trans.sa_session.add( new_history )
             trans.sa_session.flush()
             trans.set_history( new_history )
-            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id) , new_history.name ) )
+            trans.log_event( "History imported, id: %s, name: '%s': " % (str(new_history.id), new_history.name ) )
             return trans.show_ok_message( """
                 History "%s" has been imported. Click <a href="%s">here</a>
                 to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
@@ -414,7 +414,7 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
             trans.sa_session.flush()
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id))
             return trans.show_ok_message( "Dataset " + str(data.hid) + " added to history " + str(history_id) + "." )
-        except Exception, e:
+        except Exception as e:
             msg = "Failed to add dataset to history: %s" % ( e )
             log.error( msg )
             trans.log_event( msg )

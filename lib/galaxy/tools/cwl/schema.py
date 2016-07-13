@@ -1,78 +1,71 @@
+"""Abstraction around cwltool and related libraries for loading a CWL artifact."""
 from collections import namedtuple
 import os
 
 from six.moves.urllib.parse import urldefrag
 
 from .cwltool_deps import (
-    process,
+    ensure_cwltool_available,
     schema_salad,
     workflow,
+    load_tool,
 )
 
-ProcessDefinition = namedtuple("ProcessObject", ["process_object", "metadata"])
+RawProcessReference = namedtuple("RawProcessReference", ["process_object", "uri"])
+ProcessDefinition = namedtuple("ProcessDefinition", ["process_object", "metadata", "document_loader", "avsc_names", "raw_process_reference"])
 
 
 class SchemaLoader(object):
 
     def __init__(self, strict=True):
         self._strict = strict
-        self._document_loader = None
-        self._avsc_names = None
+        self._raw_document_loader = None
 
-    def _lazy_init(self):
-        if self._document_loader is not None:
-            return
+    @property
+    def raw_document_loader(self):
+        if self._raw_document_loader is None:
+            ensure_cwltool_available()
+            self._raw_document_loader = schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
 
-        document_loader, avsc_names, _ = process.get_schema()
-        self._document_loader = document_loader
-        self._avsc_names = avsc_names
+        return self._raw_document_loader
 
-        if isinstance(avsc_names, Exception):
-            raise avsc_names
-
-    def raw_object(self, path):
-        self._lazy_init()
-        self._document_loader.idx.clear()
+    def raw_process_reference(self, path):
         uri = "file://" + os.path.abspath(path)
         fileuri, _ = urldefrag(uri)
-        return self._document_loader.fetch(fileuri)
+        return RawProcessReference(self.raw_document_loader.fetch(fileuri), uri)
 
-    def process_definition(self, raw_object):
-        self._lazy_init()
-        process_object, metadata = schema_salad.schema.load_and_validate(
-            self._document_loader,
-            self._avsc_names,
-            raw_object,
-            self._strict,
+    def process_definition(self, raw_reference):
+        document_loader, avsc_names, process_object, metadata, uri = load_tool.validate_document(
+            self.raw_document_loader,
+            raw_reference.process_object,
+            raw_reference.uri,
         )
-        return ProcessDefinition(process_object, metadata)
+        process_def = ProcessDefinition(
+            process_object,
+            metadata,
+            document_loader,
+            avsc_names,
+            raw_reference,
+        )
+        return process_def
 
     def tool(self, **kwds):
-        self._lazy_init()
         process_definition = kwds.get("process_definition", None)
         if process_definition is None:
-            raw_object = kwds.get("raw_object", None)
-            if raw_object is None:
-                raw_object = self.raw_object(kwds["path"])
-            process_definition = self.process_definition(raw_object)
+            raw_process_reference = kwds.get("raw_process_reference", None)
+            if raw_process_reference is None:
+                raw_process_reference = self.raw_process_reference(kwds["path"])
+            process_definition = self.process_definition(raw_process_reference)
 
         make_tool = kwds.get("make_tool", workflow.defaultMakeTool)
-        tool = make_tool(
-            process_definition.process_object,
-            strict=self._strict,
-            makeTool=make_tool,
-            loader=self._document_loader,
-            avsc_names=self._avsc_names,
+        tool = load_tool.make_tool(
+            process_definition.document_loader,
+            process_definition.avsc_names,
+            process_definition.metadata,
+            process_definition.raw_process_reference.uri,
+            make_tool,
+            {"strict": self._strict},
         )
-        if process_definition.metadata:
-            metadata = process_definition.metadata
-        else:
-            metadata = {
-                "$namespaces": tool.tool.get("$namespaces", {}),
-                "$schemas": tool.tool.get("$schemas", [])
-            }
-
-        tool.metadata = metadata
         return tool
 
 schema_loader = SchemaLoader()

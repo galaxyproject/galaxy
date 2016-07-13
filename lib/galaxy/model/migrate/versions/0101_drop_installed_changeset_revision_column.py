@@ -1,6 +1,8 @@
 """
 Migration script to drop the installed_changeset_revision column from the tool_dependency table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -22,7 +24,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
@@ -33,7 +35,7 @@ def upgrade(migrate_engine):
         try:
             col = ToolDependency_table.c.installed_changeset_revision
             col.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Dropping column 'installed_changeset_revision' from tool_dependency table failed: %s" % ( str( e ) ) )
 
 

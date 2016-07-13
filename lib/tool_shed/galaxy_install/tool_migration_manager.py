@@ -25,6 +25,7 @@ from tool_shed.tools import tool_version_manager
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
@@ -173,17 +174,17 @@ class ToolMigrationManager( object ):
         if not self.__iscloned( clone_dir ):
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', owner, name )
             ctx_rev = suc.get_ctx_rev( self.app, self.tool_shed_url, name, owner, changeset_revision )
-            tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
-                                                                              name=name,
-                                                                              description=description,
-                                                                              installed_changeset_revision=changeset_revision,
-                                                                              ctx_rev=ctx_rev,
-                                                                              repository_clone_url=repository_clone_url,
-                                                                              metadata_dict={},
-                                                                              status=self.app.install_model.ToolShedRepository.installation_status.NEW,
-                                                                              current_changeset_revision=None,
-                                                                              owner=self.repository_owner,
-                                                                              dist_to_shed=True )
+            tool_shed_repository = repository_util.create_or_update_tool_shed_repository( app=self.app,
+                                                                                          name=name,
+                                                                                          description=description,
+                                                                                          installed_changeset_revision=changeset_revision,
+                                                                                          ctx_rev=ctx_rev,
+                                                                                          repository_clone_url=repository_clone_url,
+                                                                                          metadata_dict={},
+                                                                                          status=self.app.install_model.ToolShedRepository.installation_status.NEW,
+                                                                                          current_changeset_revision=None,
+                                                                                          owner=self.repository_owner,
+                                                                                          dist_to_shed=True )
             return tool_shed_repository
         return None
 
@@ -411,7 +412,7 @@ class ToolMigrationManager( object ):
                 lock.acquire( True )
                 try:
                     self.filter_and_persist_proprietary_tool_panel_configs( tool_configs_to_filter )
-                except Exception, e:
+                except Exception as e:
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()

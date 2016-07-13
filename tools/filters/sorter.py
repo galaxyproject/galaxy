@@ -47,7 +47,7 @@ def main():
         os.system(grep_comments)
         os.system(sort_columns)
 
-    except Exception, ex:
+    except Exception as ex:
         stop_err('Error running sorter.py\n' + str(ex))
 
     # exit

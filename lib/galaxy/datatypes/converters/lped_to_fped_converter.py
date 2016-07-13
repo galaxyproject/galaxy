@@ -2,11 +2,11 @@
 # recode to numeric fbat version
 # much slower so best to always
 # use numeric alleles internally
+from __future__ import print_function
 
-import sys
 import os
+import sys
 import time
-
 
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'
@@ -40,7 +40,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     outf = '%s.ped' % basename  # note the fbat exe insists that this is the extension for the ped data
     outfpath = os.path.join(outfilepath, outf)  # where to write the fbat format file to
     try:
-        mf = file(inmap, 'r')
+        mf = open(inmap, 'r')
     except:
         sys.stderr.write('%s cannot open inmap file %s - do you have permission?\n' % (prog, inmap))
         sys.exit(1)
@@ -55,15 +55,15 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
         pass  # already exists
     head = ' '.join(rsl)  # list of rs numbers
     # TODO add anno to rs but fbat will prolly barf?
-    pedf = file(inped, 'r')
-    o = file(outfpath, 'w', 2 ** 20)
+    pedf = open(inped, 'r')
+    o = open(outfpath, 'w', 2 ** 20)
     o.write(head)
     o.write('\n')
     for i, row in enumerate(pedf):
         if i == 0:
             lrow = row.split()
             try:
-                x = [int(x) for x in lrow[10:50]]  # look for non numeric codes
+                [int(x) for x in lrow[10:50]]  # look for non numeric codes
             except:
                 dorecode = 1
         if dorecode:
@@ -97,15 +97,14 @@ def main():
     except:
         pass
     rgConv(inpedfilepath, outhtmlname, outfilepath)
-    f = file(outhtmlname, 'w')
-    f.write(galhtmlprefix % prog)
     flist = os.listdir(outfilepath)
-    print '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
-    f.write('<div>## Rgenetics: http://rgenetics.org Galaxy Tools %s %s\n<ol>' % (prog, timenow()))
-    for i, data in enumerate( flist ):
-        f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
-    f.write("</div></body></html>")
-    f.close()
+    with open(outhtmlname, 'w') as f:
+        f.write(galhtmlprefix % prog)
+        print('## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow()))  # becomes info
+        f.write('<div>## Rgenetics: http://rgenetics.org Galaxy Tools %s %s\n<ol>' % (prog, timenow()))
+        for i, data in enumerate( flist ):
+            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+        f.write("</div></body></html>")
 
 
 if __name__ == "__main__":

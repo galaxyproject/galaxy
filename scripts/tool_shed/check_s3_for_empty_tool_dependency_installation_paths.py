@@ -90,7 +90,7 @@ def main( args ):
         if args.s3passwd is None:
             args.s3passwd = os.environ.get( 's3passwd', None )
         if args.s3passwd is not None and os.path.exists( args.s3passwd ):
-            awsid, secret = file( args.s3passwd, 'r' ).read().rstrip( '\n' ).split( ':' )
+            awsid, secret = open( args.s3passwd, 'r' ).read().rstrip( '\n' ).split( ':' )
         else:
             print 'Amazon ID and secret not provided, and no s3passwd file found.'
             return 1

@@ -3,6 +3,8 @@ Migration script to add 'name' attribute to the JSON dict which describes
 a form definition field and the form values in the database. In the 'form_values'
 table, the 'content' column is now a JSON dict instead of a list.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -25,15 +27,15 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Table( "form_definition", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_definition' table failed: %s" % str( e ) )
     try:
         Table( "form_values", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_values' table failed: %s" % str( e ) )
 
     def get_value(lst, index):
@@ -91,11 +93,11 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         Table( "form_definition", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_definition' table failed: %s" % str( e ) )
     try:
         Table( "form_values", metadata, autoload=True )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Loading 'form_values' table failed: %s" % str( e ) )
     # remove the name attribute in the content column JSON dict in the form_values table
     # and restore it to a list of values

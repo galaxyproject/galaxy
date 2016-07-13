@@ -1,6 +1,8 @@
 """
 This migration script adds a user actions table to Galaxy.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -12,9 +14,9 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds a user actions table to Galaxy."
-    print ""
+    print("")
+    print("This migration script adds a user actions table to Galaxy.")
+    print("")
 
 
 # New table to store user actions.
@@ -34,8 +36,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         UserAction_table.create()
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Creating user_action table failed: %s" % str( e ) )
 
 
@@ -44,6 +46,6 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         UserAction_table.drop()
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Dropping user_action table failed: %s" % str( e ) )

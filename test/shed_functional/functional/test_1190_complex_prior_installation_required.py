@@ -113,10 +113,10 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         if running_standalone:
             changeset_revision = self.get_repository_tip( numpy_repository )
             processed_xml = new_xml % ( url, name, owner, changeset_revision )
-            original_xml = file( self.get_filename( 'package_matplotlib/tool_dependencies.xml' ), 'r' ).read()
+            original_xml = open( self.get_filename( 'package_matplotlib/tool_dependencies.xml' ), 'r' ).read()
             dependency_xml_path = self.generate_temp_path( 'test_0170', additional_paths=[ 'matplotlib' ] )
             new_xml_file = os.path.join( dependency_xml_path, 'tool_dependencies.xml' )
-            file( new_xml_file, 'w' ).write( original_xml.replace( '<!--NUMPY-->', processed_xml ) )
+            open( new_xml_file, 'w' ).write( original_xml.replace( '<!--NUMPY-->', processed_xml ) )
             # Upload the generated complex repository dependency XML to the matplotlib repository.
             self.upload_file( matplotlib_repository,
                               filename='tool_dependencies.xml',

@@ -102,7 +102,7 @@ class TransferManager( object ):
                         # Request was valid
                         response['result']['transfer_job_id'] = tj.id
                         rval.append( response['result'] )
-                except Exception, e:
+                except Exception as e:
                     # State checking via the transfer daemon failed, just
                     # return the state from the database instead.  Callers can
                     # look for the 'error' member of the response to see why

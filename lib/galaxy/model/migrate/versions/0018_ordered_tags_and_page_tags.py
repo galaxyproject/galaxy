@@ -2,6 +2,8 @@
 This migration script provides support for (a) ordering tags by recency and
 (b) tagging pages. This script deletes all existing tags.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -17,9 +19,9 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print ""
-    print "This migration script provides support for (a) ordering tags by recency and"
-    print "(b) tagging pages. This script deletes all existing tags."
+    print("")
+    print("This migration script provides support for (a) ordering tags by recency and")
+    print("(b) tagging pages. This script deletes all existing tags.")
 
 HistoryTagAssociation_table = Table( "history_tag_association", metadata,
                                      Column( "id", Integer, primary_key=True ),
@@ -65,21 +67,21 @@ def upgrade(migrate_engine):
     try:
         HistoryTagAssociation_table.drop()
         HistoryTagAssociation_table.create()
-    except Exception, e:
-        print "Recreating history_tag_association table failed: %s" % str( e )
+    except Exception as e:
+        print("Recreating history_tag_association table failed: %s" % str( e ))
         log.debug( "Recreating history_tag_association table failed: %s" % str( e ) )
 
     try:
         DatasetTagAssociation_table.drop()
         DatasetTagAssociation_table.create()
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Recreating dataset_tag_association table failed: %s" % str( e ) )
 
     try:
         HistoryDatasetAssociationTagAssociation_table.drop()
         HistoryDatasetAssociationTagAssociation_table.create()
-    except OperationalError, e:
+    except OperationalError as e:
         # Handle error that results from and index name that is too long; this occurs
         # in MySQL.
         if str(e).find("CREATE INDEX") != -1:
@@ -87,18 +89,18 @@ def upgrade(migrate_engine):
             i = Index( "ix_hda_ta_history_dataset_association_id", HistoryDatasetAssociationTagAssociation_table.c.history_dataset_association_id )
             try:
                 i.create()
-            except Exception, e:
-                print str(e)
+            except Exception as e:
+                print(str(e))
                 log.debug( "Adding index 'ix_hda_ta_history_dataset_association_id' to table 'history_dataset_association_tag_association' table failed: %s" % str( e ) )
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Recreating history_dataset_association_tag_association table failed: %s" % str( e ) )
 
     # Create page_tag_association table.
     try:
         PageTagAssociation_table.create()
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Creating page_tag_association table failed: %s" % str( e ) )
 
 
@@ -111,6 +113,6 @@ def downgrade(migrate_engine):
     # Drop page_tag_association table.
     try:
         PageTagAssociation_table.drop()
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Dropping page_tag_association table failed: %s" % str( e ) )

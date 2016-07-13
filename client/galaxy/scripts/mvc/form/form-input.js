@@ -46,10 +46,10 @@ define([], function() {
             });
         },
 
-        /** Disable input element
+        /** Set backdrop for input element
         */
-        disable: function( silent ) {
-            this.model.set( 'backdrop', silent ? 'silent' : 'default' );
+        backdrop: function() {
+            this.model.set( 'backdrop', true );
         },
 
         /** Set error text
@@ -73,21 +73,21 @@ define([], function() {
                 help_text += ' (' + help_argument + ')';
             }
             this.$info.html( help_text );
-            // render input field
-            this.field.collapsed ? this.$field.hide() : this.$field.fadeIn( 'fast' );
             // render preview view for collapsed fields
-            this.$preview[ this.field.collapsed && this.model.get( 'collapsible_preview' ) ? 'show' : 'hide' ]()
+            this.$preview[ ( this.field.collapsed && this.model.get( 'collapsible_preview' ) || this.model.get( 'disabled' ) ) ? 'show' : 'hide' ]()
                          .html( _.escape( this.model.get( 'text_value' ) ) );
             // render error messages
             var error_text = this.model.get( 'error_text' );
             this.$error[ error_text ? 'show' : 'hide' ]();
             this.$el[ error_text ? 'addClass' : 'removeClass' ]( 'ui-error' );
             this.$error_text.html( error_text );
-            // render backdrop to disable field
-            this.$backdrop.removeClass()
-                          .addClass( 'ui-form-backdrop' )
-                          .addClass( 'ui-form-backdrop-' + this.model.get( 'backdrop' ) );
-            // render collapsible state and title
+            // render backdrop
+            this.$backdrop[ this.model.get( 'backdrop' ) ? 'show' : 'hide' ]();
+            // render input field
+            this.field.collapsed || this.model.get( 'disabled' ) ? this.$field.hide() : this.$field.fadeIn( 'fast' );
+            // render input field color and style
+            this.field.model && this.field.model.set( { 'color': this.model.get( 'color' ), 'style': this.model.get( 'style' ) } );
+            // render collapsible options
             if ( !this.model.get( 'disabled' ) && this.model.get( 'collapsible_value' ) !== undefined ) {
                 var collapsible_state = this.field.collapsed ? 'enable' : 'disable';
                 this.$title_text.hide();
@@ -118,7 +118,7 @@ define([], function() {
                                  )
                                  .append( $( '<div/>' ).addClass( 'ui-form-field' )
                                     .append( $( '<span/>' ).addClass( 'ui-form-info' ) )
-                                    .append( $( '<span/>' ).addClass( 'ui-form-backdrop' ) )
+                                    .append( $( '<div/>' ).addClass( 'ui-form-backdrop' ) )
                                  )
                                  .append( $( '<div/>' ).addClass( 'ui-form-preview' ) );
         }

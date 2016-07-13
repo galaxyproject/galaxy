@@ -25,16 +25,17 @@ attribute change to a model object.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
 import datetime
+import logging
 import re
 
-import sqlalchemy
 import routes
+import sqlalchemy
+from six import string_types
 
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -375,7 +376,7 @@ class ModelManager( object ):
         """
         # cpu-expensive
         for item in items:
-            filter_results = map( lambda f: f( item ), filters )
+            filter_results = [f( item ) for f in filters]
             if all( filter_results ):
                 yield item
 
@@ -837,7 +838,7 @@ class ModelValidator( HasAModelManager ):
 
     # validators for primitives and compounds of primitives
     def basestring( self, key, val ):
-        return self.type( key, val, basestring )
+        return self.type( key, val, string_types )
 
     def bool( self, key, val ):
         return self.type( key, val, bool )
@@ -849,7 +850,7 @@ class ModelValidator( HasAModelManager ):
         """
         Must be a basestring or None.
         """
-        return self.type( key, val, ( basestring, type( None ) ) )
+        return self.type( key, val, ( string_types, type( None ) ) )
 
     def int_range( self, key, val, min=None, max=None ):
         """
@@ -990,7 +991,7 @@ class ModelFilterParser( HasAModelManager ):
                 return orm_filter
 
         # by convention, assume most val parsers raise ValueError
-        except ValueError, val_err:
+        except ValueError as val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
                 column=attr, operation=op, value=val, ValueError=str( val_err ) )
 

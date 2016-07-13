@@ -23,19 +23,19 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_load( self ):
         """should attempt load if criteria met"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    'templates' : {},
-                    'static'    : {}
+            'plugins': {
+                'plugin1': {
+                    'templates': {},
+                    'static': {}
                 },
-                'plugin2'   : {
-                    'static'    : {}
+                'plugin2': {
+                    'static': {}
                 },
-                'plugin3'   : {
-                    'templates' : {}
+                'plugin3': {
+                    'templates': {}
                 },
-                'not_a_plugin1'     : 'blerbler',
-                'not_a_plugin2'     : {},
+                'not_a_plugin1': 'blerbler',
+                'not_a_plugin2': {},
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
@@ -45,8 +45,8 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
         self.assertEqual( plugin_mgr.base_url, 'test' )
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2', 'plugin3' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2', 'plugin3' ] )
 
         plugin1 = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin1.name, 'plugin1' )
@@ -82,17 +82,17 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_static_map( self ):
         """"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    'templates' : {},
-                    'static'    : {}
+            'plugins': {
+                'plugin1': {
+                    'templates': {},
+                    'static': {}
                 }
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PageServingPluginManager( mock_app, 'test', directories_setting='plugins' )
 
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin_mgr.get_static_urls_and_paths(), [( plugin.static_url, plugin.static_path )] )
 
@@ -101,10 +101,10 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_templates( self ):
         """"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    'templates' : {
-                        'test.mako' : contents1
+            'plugins': {
+                'plugin1': {
+                    'templates': {
+                        'test.mako': contents1
                     },
                 }
             }
@@ -112,7 +112,7 @@ class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PageServingPluginManager( mock_app, 'test', directories_setting='plugins' )
 
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         rendered = plugin_mgr.fill_template( galaxy_mock.MockTrans(), plugin, 'test.mako',
             what='Hey', you='Ho', say='HeyHey HoHo' )

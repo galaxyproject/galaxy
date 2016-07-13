@@ -26,7 +26,7 @@ CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
 
 def load_exception_handler(path, exc_info):
     """Default exception handler for use by load_tool_elements_from_path."""
-    log.warn(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
+    log.warning(LOAD_FAILURE_ERROR % path, exc_info=exc_info)
 
 
 def find_possible_tools_from_path(
@@ -219,7 +219,7 @@ def looks_like_a_cwl_artifact(path, classes=None):
 
 def looks_like_a_tool_cwl(path):
     """Quick check to see if a file looks like it may be a CWL tool."""
-    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool"])
+    return looks_like_a_cwl_artifact(path, classes=["CommandLineTool", "ExpressionTool"])
 
 
 def _find_tool_files(path, recursive, enable_beta_formats):

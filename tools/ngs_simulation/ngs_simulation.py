@@ -42,7 +42,7 @@ def __main__():
         read_len = int( options.read_len )
         if read_len <= 0:
             raise Exception(' greater than 0')
-    except TypeError, e:
+    except TypeError as e:
         error = ': %s' % str( e )
     if error:
         stop_err( 'Make sure your number of reads is an integer value%s' % error )
@@ -51,7 +51,7 @@ def __main__():
         avg_coverage = int( options.avg_coverage )
         if avg_coverage <= 0:
             raise Exception(' greater than 0')
-    except Exception, e:
+    except Exception as e:
         error = ': %s' % str( e )
     if error:
         stop_err( 'Make sure your average coverage is an integer value%s' % error )
@@ -62,13 +62,13 @@ def __main__():
             error_rate = 10 ** ( -error_rate / 10.0 )
         elif error_rate < 0:
             raise Exception(' between 0 and 1')
-    except Exception, e:
+    except Exception as e:
         error = ': %s' % str( e )
     if error:
         stop_err( 'Make sure the error rate is a decimal value%s or the quality score is at least 1' % error )
     try:
         num_sims = int( options.num_sims )
-    except TypeError, e:
+    except TypeError as e:
         stop_err( 'Make sure the number of simulations is an integer value: %s' % str( e ) )
     if options.polymorphism != 'None':
         polymorphisms = [ float( p ) for p in options.polymorphism.split( ',' ) ]
@@ -272,5 +272,5 @@ def __main__():
     dev.off()
     ''' )
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     __main__()

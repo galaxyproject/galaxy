@@ -178,7 +178,7 @@ def do_merge( job_wrapper, task_wrappers):
                 log_error = "The output '%s' does not define a method for implementing parallelism" % output
                 log.exception(log_error)
                 raise Exception(log_error)
-    except Exception, e:
+    except Exception as e:
         stdout = 'Error merging files'
         log.exception( stdout )
         stderr = str(e)

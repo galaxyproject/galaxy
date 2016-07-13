@@ -1,6 +1,8 @@
 """
 Migration script to add 'purged' column to the library_dataset table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table
@@ -29,20 +31,20 @@ def boolean_true(migrate_engine):
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         LibraryDataset_table = Table( "library_dataset", metadata, autoload=True )
         c = Column( "purged", Boolean, index=True, default=False )
         c.create( LibraryDataset_table, index_name='ix_library_dataset_purged')
         assert c is LibraryDataset_table.c.purged
-    except Exception, e:
-        print "Adding purged column to library_dataset table failed: ", str( e )
+    except Exception as e:
+        print("Adding purged column to library_dataset table failed: ", str( e ))
     # Update the purged flag to the default False
     cmd = "UPDATE library_dataset SET purged = %s;" % boolean_false(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Setting default data for library_dataset.purged column failed: %s" % ( str( e ) ) )
 
     # Update the purged flag for those LibaryDatasets whose purged flag should be True.  This happens
@@ -53,7 +55,7 @@ def upgrade(migrate_engine):
         cmd = "SELECT * FROM library_dataset_dataset_association WHERE library_dataset_id = %d AND library_dataset_dataset_association.deleted = %s;" % ( int( row.id ), boolean_false(migrate_engine) )
         active_lddas = migrate_engine.execute( cmd ).fetchall()
         if not active_lddas:
-            print "Updating purged column to True for LibraryDataset id : ", int( row.id )
+            print("Updating purged column to True for LibraryDataset id : ", int( row.id ))
             cmd = "UPDATE library_dataset SET purged = %s WHERE id = %d;" % ( boolean_true(migrate_engine), int( row.id ) )
             migrate_engine.execute( cmd )
 
@@ -64,5 +66,5 @@ def downgrade(migrate_engine):
     try:
         LibraryDataset_table = Table( "library_dataset", metadata, autoload=True )
         LibraryDataset_table.c.purged.drop()
-    except Exception, e:
-        print "Dropping purged column from library_dataset table failed: ", str( e )
+    except Exception as e:
+        print("Dropping purged column from library_dataset table failed: ", str( e ))

@@ -1,6 +1,8 @@
 """
 Migration script to create "params" column in job table.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, MetaData, Table
@@ -16,13 +18,13 @@ params_col = Column( "params", TrimmedString(255), index=True )
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds a 'params' column to the Job table."
+    print("")
+    print("This migration script adds a 'params' column to the Job table.")
 
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Add column to Job table.
@@ -31,8 +33,8 @@ def upgrade(migrate_engine):
         params_col.create( Job_table, index_name="ix_job_params")
         assert params_col is Job_table.c.params
 
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Adding column 'params' to job table failed: %s" % str( e ) )
 
 
@@ -45,5 +47,5 @@ def downgrade(migrate_engine):
         Job_table = Table( "job", metadata, autoload=True )
         params_col = Job_table.c.params
         params_col.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping column 'params' from job table failed: %s" % ( str( e ) ) )

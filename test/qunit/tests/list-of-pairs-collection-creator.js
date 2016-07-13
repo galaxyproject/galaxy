@@ -16,6 +16,31 @@ define([
 
     module( "Galaxy client app tests" );
 
+    test( "Collection creation", function() {
+        var pcc = new PCC({
+                datasets    : DATA._1,
+                historyId   : 'fakeHistoryId'
+            }),
+            server = sinon.fakeServer.create();
+
+        var requestJSON;
+        server.respondWith( 'POST', '/api/histories/fakeHistoryId/contents/dataset_collections', function( request ){
+            requestJSON = JSON.parse( request.requestBody );
+            request.respond(
+                200,
+                { "Content-Type": "application/json" },
+                JSON.stringify({
+                    fakeResponse: 'yes'
+                })
+            );
+        });
+
+        //console.debug( 'requestBody:', JSON.stringify( requestJSON, null, '  ' ) );
+        pcc.createList( 'Heres a collection' );
+        server.respond();
+        deepEqual( requestJSON, DATA._1requestJSON );
+    });
+
     test( "Creator base/empty construction/initializiation defaults", function() {
         var pcc = new PCC([]);
         ok( pcc instanceof PCC );
@@ -78,29 +103,4 @@ define([
     //  partition: maximize paired, maximize unpaired, split evenly
     //  pairing: manually pairing and unpairing
     //  misc: renaming pairs, removing file extensions
-
-    test( "Collection creation", function() {
-        var pcc = new PCC({
-                datasets    : DATA._1,
-                historyId   : 'fakeHistoryId'
-            }),
-            server = sinon.fakeServer.create();
-
-        var requestJSON;
-        server.respondWith( 'POST', '/api/histories/fakeHistoryId/contents/dataset_collections', function( request ){
-            requestJSON = JSON.parse( request.requestBody );
-            request.respond(
-                200,
-                { "Content-Type": "application/json" },
-                JSON.stringify({
-                    fakeResponse: 'yes'
-                })
-            );
-        });
-
-        //console.debug( 'requestBody:', JSON.stringify( requestJSON, null, '  ' ) );
-        pcc.createList( 'Heres a collection' );
-        server.respond();
-        deepEqual( requestJSON, DATA._1requestJSON );
-    });
 });

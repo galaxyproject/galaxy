@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -21,11 +23,11 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print """This script creates a request.folder_id column which is a foreign
+    print("========================================")
+    print("""This script creates a request.folder_id column which is a foreign
 key to the library_folder table. This also adds a 'type' and 'layout' column
-to the form_definition table."""
-    print "========================================"
+to the form_definition table.""")
+    print("========================================")
 
 
 def upgrade(migrate_engine):
@@ -44,7 +46,7 @@ def upgrade(migrate_engine):
             col = Column( "folder_id", Integer, index=True )
             col.create( Request_table, index_name='ix_request_folder_id')
             assert col is Request_table.c.folder_id
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'folder_id' to request table failed: %s" % ( str( e ) ) )
         try:
             LibraryFolder_table = Table( "library_folder", metadata, autoload=True )
@@ -59,7 +61,7 @@ def upgrade(migrate_engine):
                                              name='request_folder_id_fk' )
                 # Create the constraint
                 cons.create()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Adding foreign key constraint 'request_folder_id_fk' to table 'library_folder' failed: %s" % ( str( e ) ) )
     # Create the type column in form_definition
     try:
@@ -72,13 +74,13 @@ def upgrade(migrate_engine):
             col = Column( "type", TrimmedString( 255 ), index=True )
             col.create( FormDefinition_table, index_name='ix_form_definition_type')
             assert col is FormDefinition_table.c.type
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'type' to form_definition table failed: %s" % ( str( e ) ) )
         try:
             col = Column( "layout", JSONType())
             col.create( FormDefinition_table )
             assert col is FormDefinition_table.c.layout
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'layout' to form_definition table failed: %s" % ( str( e ) ) )
 
 

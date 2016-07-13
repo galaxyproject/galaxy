@@ -14,36 +14,32 @@ import os
 import socket
 import time
 from datetime import datetime, timedelta
-from itertools import ifilter, imap
 from string import Template
 from uuid import UUID, uuid4
+
 from six import string_types
-
-from sqlalchemy import and_, func, not_, or_, true, join, select
-from sqlalchemy.orm import joinedload, object_session, aliased
+from sqlalchemy import (and_, func, join, not_, or_, select, true, type_coerce,
+                        types)
 from sqlalchemy.ext import hybrid
-from sqlalchemy import types
-from sqlalchemy import type_coerce
+from sqlalchemy.orm import aliased, joinedload, object_session
 
-import galaxy.model.orm.now
 import galaxy.model.metadata
+import galaxy.model.orm.now
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.dictifiable import Dictifiable
 from galaxy.security import get_permitted_actions
-from galaxy.util import Params, restore_text, send_mail
-from galaxy.util import ready_name_for_url, unique_id
-from galaxy.util import unicodify
-from galaxy.util.multi_byte import is_multi_byte
-from galaxy.util.hash_util import new_secure_hash
+from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
+                         restore_text, send_mail, unicodify, unique_id)
 from galaxy.util.bunch import Bunch
-from galaxy.util.directory_hash import directory_hash_id
+from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
+from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
 
@@ -167,6 +163,7 @@ class User( object, Dictifiable ):
         self.active = False
         self.activation_token = None
         self.username = None
+        self.last_password_change = None
         # Relationships
         self.histories = []
         self.credentials = []
@@ -180,6 +177,7 @@ class User( object, Dictifiable ):
             self.password = galaxy.security.passwords.hash_password( cleartext )
         else:
             self.password = new_secure_hash( text_type=cleartext )
+        self.last_password_change = datetime.now()
 
     def check_password( self, cleartext ):
         """
@@ -1185,7 +1183,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         """ Optimized version of add_dataset above that minimizes database
         interactions when adding many datasets to history at once.
         """
-        all_hdas = all( imap( is_hda, datasets ) )
+        all_hdas = all( is_hda(_) for _ in datasets )
         optimize = len( datasets) > 1 and parent_id is None and all_hdas and set_hid
         if optimize:
             self.__add_datasets_optimized( datasets, genome_build=genome_build )
@@ -1443,7 +1441,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if len(ids) < max_in_filter_length:
                 query = query.filter( content_class.id.in_(ids) )
             else:
-                query = ifilter(lambda content: content.id in ids, query)
+                query = (content for content in query if content.id in ids)
         return query
 
     def __collection_contents_iter( self, **kwds ):
@@ -1572,7 +1570,7 @@ class LibraryPermissions( object ):
         if isinstance( library_item, Library ):
             self.library = library_item
         else:
-            raise "Invalid Library specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid Library specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1582,7 +1580,7 @@ class LibraryFolderPermissions( object ):
         if isinstance( library_item, LibraryFolder ):
             self.folder = library_item
         else:
-            raise "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryFolder specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1592,7 +1590,7 @@ class LibraryDatasetPermissions( object ):
         if isinstance( library_item, LibraryDataset ):
             self.library_dataset = library_item
         else:
-            raise "Invalid LibraryDataset specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryDataset specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1602,7 +1600,7 @@ class LibraryDatasetDatasetAssociationPermissions( object ):
         if isinstance( library_item, LibraryDatasetDatasetAssociation ):
             self.library_dataset_dataset_association = library_item
         else:
-            raise "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__
+            raise Exception( "Invalid LibraryDatasetDatasetAssociation specified: %s" % library_item.__class__.__name__ )
         self.role = role
 
 
@@ -1648,6 +1646,16 @@ class Dataset( StorableObject ):
         states.SETTING_METADATA
     )
     ready_states = tuple( set( states.__dict__.values() ) - set( non_ready_states ) )
+    valid_input_states = tuple(
+        set( states.__dict__.values() ) - set( [states.ERROR, states.DISCARDED] )
+    )
+    terminal_states = (
+        states.OK,
+        states.EMPTY,
+        states.ERROR,
+        states.DISCARDED,
+        states.FAILED_METADATA,
+    )
 
     conversion_messages = Bunch( PENDING="pending",
                                  NO_DATA="no data",
@@ -2055,7 +2063,7 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass  # No deps
-        new_dataset = self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True ).values()[0]
+        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True ).values()))
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
         session = trans.sa_session
         session.add( new_dataset )
@@ -2079,7 +2087,7 @@ class DatasetInstance( object ):
                 return fake_hda
 
     def clear_associated_files( self, metadata_safe=False, purge=False ):
-        raise 'Unimplemented'
+        raise Exception( "Unimplemented" )
 
     def get_child_by_designation(self, designation):
         for child in self.children:
@@ -2127,6 +2135,10 @@ class DatasetInstance( object ):
         return True
 
     @property
+    def is_ok(self):
+        return self.state == self.states.OK
+
+    @property
     def is_pending( self ):
         """
         Return true if the dataset is neither ready nor in error
@@ -2160,14 +2172,14 @@ class DatasetInstance( object ):
                 if cp_from_ldda:
                     lst.append( (cp_from_ldda, "(Data Library)") )
                     return _source_dataset_chain( cp_from_ldda, lst )
-            except Exception, e:
+            except Exception as e:
                 log.warning( e )
             try:
                 cp_from_hda = dataset.copied_from_history_dataset_association
                 if cp_from_hda:
                     lst.append( (cp_from_hda, cp_from_hda.history.name) )
                     return _source_dataset_chain( cp_from_hda, lst )
-            except Exception, e:
+            except Exception as e:
                 log.warning( e )
             return lst
         return _source_dataset_chain( self, [] )
@@ -2200,7 +2212,7 @@ class DatasetInstance( object ):
         """
         data_sources_dict = {}
         msg = None
-        for source_type, source_list in self.datatype.data_sources.iteritems():
+        for source_type, source_list in self.datatype.data_sources.items():
             data_source = None
             if source_type == "data_standalone":
                 # Nothing to do.
@@ -2237,7 +2249,7 @@ class DatasetInstance( object ):
             converted_dataset = self.get_converted_dataset( trans, target_type )
         except NoConverterException:
             return self.conversion_messages.NO_CONVERTER
-        except ConverterDependencyException, dep_error:
+        except ConverterDependencyException as dep_error:
             return { 'kind': self.conversion_messages.ERROR, 'message': dep_error.value }
 
         # Check dataset state and return any messages.
@@ -2553,9 +2565,9 @@ class Library( object, Dictifiable, HasName ):
             # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
             # only to provide stable sorting, but mainly to eliminate comparison of objects
             # (which can be expensive or prohibited) in case of equal attribute values.
-            intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+            intermed = map( None, (getattr(_, attr) for _ in seq), range( len( seq ) ), seq )
             intermed.sort()
-            return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+            return [_[-1] for _ in intermed]
         if folders is None:
             active_folders = [ folder ]
         for active_folder in folder.active_folders:
@@ -3066,7 +3078,7 @@ class ImplicitlyConvertedDatasetAssociation( object ):
             self.purged = True
             try:
                 os.unlink( self.file_name )
-            except Exception, e:
+            except Exception as e:
                 log.error( "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e ) )
 
 
@@ -3186,6 +3198,14 @@ class DatasetCollectionInstance( object, HasName ):
     def state( self ):
         return self.collection.state
 
+    @property
+    def populated( self ):
+        return self.collection.populated
+
+    @property
+    def dataset_instances( self ):
+        return self.collection.dataset_instances
+
     def display_name( self ):
         return self.get_display_name()
 
@@ -3194,7 +3214,7 @@ class DatasetCollectionInstance( object, HasName ):
             id=self.id,
             name=self.name,
             collection_type=self.collection.collection_type,
-            populated=self.collection.populated,
+            populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
@@ -3211,7 +3231,7 @@ class DatasetCollectionInstance( object, HasName ):
         changed = self.collection.set_from_dict( new_data )
 
         # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in self.editable_keys ]:
+        for key in ( k for k in new_data.keys() if k in self.editable_keys ):
             new_val = new_data[ key ]
             old_val = self.__getattribute__( key )
             if new_val == old_val:
@@ -3675,7 +3695,7 @@ class WorkflowStep( object ):
                     outputs[output_name] = workflow_output
             else:
                 outputs[output_name] = workflow_output
-        return outputs.values()
+        return list(outputs.values())
 
     @property
     def content_id( self ):
@@ -3749,7 +3769,11 @@ class WorkflowStep( object ):
             new_conn.output_step = step_mapping[old_conn.output_step_id]
             if old_conn.input_subworkflow_step_id:
                 new_conn.input_subworkflow_step = subworkflow_step_mapping[old_conn.input_subworkflow_step_id]
-
+        for orig_pja in self.post_job_actions:
+            PostJobAction( orig_pja.action_type,
+                           copied_step,
+                           output_name=orig_pja.output_name,
+                           action_arguments=orig_pja.action_arguments )
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
@@ -3929,7 +3953,7 @@ class WorkflowInvocation( object, Dictifiable ):
         ).filter( and_( *and_conditions ) )
         # Immediately just load all ids into memory so time slicing logic
         # is relatively intutitive.
-        return map( lambda wi: wi.id, query.all() )
+        return [wi.id for wi in query.all()]
 
     def to_dict( self, view='collection', value_mapper=None, step_details=False ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
@@ -4109,7 +4133,7 @@ class MetadataFile( StorableObject ):
             # Create directory if it does not exist
             try:
                 os.makedirs( path )
-            except OSError, e:
+            except OSError as e:
                 # File Exists is okay, otherwise reraise
                 if e.errno != errno.EEXIST:
                     raise
@@ -4408,7 +4432,7 @@ All samples in state:     %(sample_state)s
             try:
                 send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
-            except Exception, e:
+            except Exception as e:
                 comments = "Email notification failed. (%s)" % str(e)
             # update the request history with the email notification event
         elif not trans.app.config.smtp_server:
@@ -5138,4 +5162,4 @@ def copy_list(lst, *args, **kwds):
     if lst is None:
         return lst
     else:
-        return list(map(lambda el: el.copy(*args, **kwds), lst))
+        return [el.copy(*args, **kwds) for el in lst]

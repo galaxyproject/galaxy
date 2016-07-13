@@ -27,9 +27,9 @@ log = logging.getLogger(__name__)
 # Contains the meta columns and the words that map to it; list aliases on the
 # right side of the : in decreasing order of priority
 alias_spec = {
-    'chromCol'  : [ 'chrom' , 'CHROMOSOME' , 'CHROM', 'Chromosome Name' ],
-    'startCol'  : [ 'start' , 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
-    'endCol'    : [ 'end'   , 'END'  , 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)'  ],
+    'chromCol'  : [ 'chrom', 'CHROMOSOME', 'CHROM', 'Chromosome Name' ],
+    'startCol'  : [ 'start', 'START', 'chromStart', 'txStart', 'Start Position (bp)' ],
+    'endCol'    : [ 'end', 'END', 'STOP', 'chromEnd', 'txEnd', 'End Position (bp)' ],
     'strandCol' : [ 'strand', 'STRAND', 'Strand' ],
     'nameCol'   : [ 'name', 'NAME', 'Name', 'name2', 'NAME2', 'Name2', 'Ensembl Gene ID', 'Ensembl Transcript ID', 'Ensembl Peptide ID' ]
 }
@@ -50,6 +50,7 @@ VIEWPORT_MAX_READS_PER_LINE = 10
 @dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
+    edam_data = "data_3002"
     edam_format = "format_3475"
     file_ext = "interval"
     line_class = "region"
@@ -78,7 +79,7 @@ class Interval( Tabular ):
         if dataset.has_data():
             empty_line_count = 0
             num_check_lines = 100  # only check up to this many non empty lines
-            for i, line in enumerate( file( dataset.file_name ) ):
+            for i, line in enumerate( open( dataset.file_name ) ):
                 line = line.rstrip( '\r\n' )
                 if line:
                     if ( first_line_is_header or line[0] == '#' ):
@@ -375,7 +376,7 @@ class Interval( Tabular ):
 
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
-
+    edam_format = "format_3583"
     file_ext = "bedgraph"
     track_type = "LineTrack"
     data_sources = { "data": "bigwig", "index": "bigwig" }
@@ -414,7 +415,7 @@ class Bed( Interval ):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         i = 0
         if dataset.has_data():
-            for i, line in enumerate( file(dataset.file_name) ):
+            for i, line in enumerate( open(dataset.file_name) ):
                 metadata_set = False
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
@@ -582,7 +583,7 @@ class Bed( Interval ):
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
-
+    edam_format = "format_3584"
     file_ext = "bedstrict"
 
     # no user change of datatype allowed
@@ -613,13 +614,13 @@ class BedStrict( Bed ):
 
 class Bed6( BedStrict ):
     """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 6"""
-
+    edam_format = "format_3585"
     file_ext = "bed6"
 
 
 class Bed12( BedStrict ):
     """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 12"""
-
+    edam_format = "format_3586"
     file_ext = "bed12"
 
 
@@ -641,6 +642,7 @@ class _RemoteCallMixin:
 @dataproviders.decorators.has_dataproviders
 class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
+    edam_data = "data_1255"
     edam_format = "format_2305"
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
@@ -670,7 +672,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         # not found in the first N lines will not have metadata.
         num_lines = 200
         attribute_types = {}
-        for i, line in enumerate( file( dataset.file_name ) ):
+        for i, line in enumerate( open( dataset.file_name ) ):
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
                 if len( elems ) == 9:
@@ -704,7 +706,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         self.set_attribute_metadata( dataset )
 
         i = 0
-        for i, line in enumerate( file( dataset.file_name ) ):
+        for i, line in enumerate( open( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
@@ -912,7 +914,7 @@ class Gff3( Gff ):
         self.set_attribute_metadata( dataset )
 
         i = 0
-        for i, line in enumerate( file( dataset.file_name ) ):
+        for i, line in enumerate( open( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
@@ -1189,7 +1191,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
     def set_meta( self, dataset, overwrite=True, **kwd ):
         max_data_lines = None
         i = 0
-        for i, line in enumerate( file( dataset.file_name ) ):
+        for i, line in enumerate( open( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
@@ -1288,6 +1290,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
+    edam_format = "format_3588"
     file_ext = "customtrack"
 
     def __init__(self, **kwd):
@@ -1440,7 +1443,7 @@ class ENCODEPeak( Interval ):
     This format is used to provide called peaks of signal enrichment based on
     pooled, normalized (interpreted) data. It is a BED6+4 format.
     '''
-
+    edam_format = "format_3612"
     file_ext = "encodepeak"
     column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak' ]
     data_sources = { "data": "tabix", "index": "bigwig" }
@@ -1460,11 +1463,9 @@ class ChromatinInteractions( Interval ):
     '''
     Chromatin interactions obtained from 3C/5C/Hi-C experiments.
     '''
-
     file_ext = "chrint"
     track_type = "DiagonalHeatmapTrack"
     data_sources = { "data": "tabix", "index": "bigwig" }
-
     column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
 
     """Add metadata elements"""

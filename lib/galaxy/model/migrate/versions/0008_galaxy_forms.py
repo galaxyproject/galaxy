@@ -9,6 +9,8 @@ This migration script adds the following new tables for supporting Galaxy forms:
 7) sample_state
 8) sample_event
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -31,17 +33,17 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script adds the following new tables for supporting Galaxy forms:"
-    print "1) form_definition_current"
-    print "2) form_definition"
-    print "3) form_values"
-    print "4) request_type"
-    print "5) request"
-    print "6) sample"
-    print "7) sample_state"
-    print "8) sample_event"
-    print "========================================"
+    print("========================================")
+    print("This migration script adds the following new tables for supporting Galaxy forms:")
+    print("1) form_definition_current")
+    print("2) form_definition")
+    print("3) form_values")
+    print("4) request_type")
+    print("5) request")
+    print("6) sample")
+    print("7) sample_state")
+    print("8) sample_event")
+    print("========================================")
 
 FormDefinitionCurrent_table = Table('form_definition_current', metadata,
                                     Column( "id", Integer, primary_key=True),
@@ -123,11 +125,11 @@ def upgrade(migrate_engine):
 #    metadata.create_all()
     try:
         FormDefinitionCurrent_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating form_definition_current table failed: %s" % str( e ) )
     try:
         FormDefinition_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating form_definition table failed: %s" % str( e ) )
     # Add 1 foreign key constraint to the form_definition_current table
     if FormDefinitionCurrent_table is not None and FormDefinition_table is not None:
@@ -137,31 +139,31 @@ def upgrade(migrate_engine):
                                          name='form_definition_current_latest_form_id_fk' )
             # Create the constraint
             cons.create()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding foreign key constraint 'form_definition_current_latest_form_id_fk' to table 'form_definition_current' failed: %s" % ( str( e ) ) )
     try:
         FormValues_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating form_values table failed: %s" % str( e ) )
     try:
         RequestType_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating request_type table failed: %s" % str( e ) )
     try:
         Request_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating request table failed: %s" % str( e ) )
     try:
         Sample_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating sample table failed: %s" % str( e ) )
     try:
         SampleState_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating sample_state table failed: %s" % str( e ) )
     try:
         SampleEvent_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating sample_event table failed: %s" % str( e ) )
 
 
@@ -171,33 +173,33 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         FormDefinition_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping form_definition table failed: %s" % str( e ) )
     try:
         FormDefinitionCurrent_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping form_definition_current table failed: %s" % str( e ) )
     try:
         FormValues_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping form_values table failed: %s" % str( e ) )
     try:
         Request_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping request table failed: %s" % str( e ) )
     try:
         RequestType_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping request_type table failed: %s" % str( e ) )
     try:
         Sample_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping sample table failed: %s" % str( e ) )
     try:
         SampleState_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping sample_state table failed: %s" % str( e ) )
     try:
         SampleEvent_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping sample_event table failed: %s" % str( e ) )

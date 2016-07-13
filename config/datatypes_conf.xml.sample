@@ -45,6 +45,7 @@
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigwig.xml" />
       <display file="igb/bigwig.xml" />
+      <display file="igv/bigwig.xml" />
     </datatype>
     <datatype extension="cxb" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="true" description="Cuffquant output format" />
     <datatype extension="chrint" type="galaxy.datatypes.interval:ChromatinInteractions" display_in_upload="True">
@@ -132,7 +133,7 @@
     <datatype extension="gatk_tranche" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
     <datatype extension="gatk_recal" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
     <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
-    <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff"/>
+    <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff" display_in_upload="true"/>
     <datatype extension="bmp" type="galaxy.datatypes.images:Bmp" mimetype="image/bmp"/>
     <datatype extension="im" type="galaxy.datatypes.images:Im" mimetype="image/im"/>
     <datatype extension="pcd" type="galaxy.datatypes.images:Pcd" mimetype="image/pcd"/>
@@ -317,9 +318,9 @@
     <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="true"/>
     <!-- datatypes storing triples -->
     <datatype extension="triples" type="galaxy.datatypes.triples:Triples" display_in_upload="false"/>
-    <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="true"/> 
-    <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="true"/>  
-    <datatype extension="ttl" type="galaxy.datatypes.triples:Turtle" display_in_upload="true"/> 
+    <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="true"/>
+    <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="true"/>
+    <datatype extension="ttl" type="galaxy.datatypes.triples:Turtle" display_in_upload="true"/>
     <datatype extension="rdf" type="galaxy.datatypes.triples:Rdf" display_in_upload="true"/>
     <datatype extension="jsonld" type="galaxy.datatypes.triples:Jsonld" display_in_upload="true"/>
     <!-- Excel datatypes -->
@@ -512,6 +513,7 @@
     <datatype extension="mothur.align.report" type="galaxy.datatypes.mothur:AlignReport" display_in_upload="true"/>
     <datatype extension="mothur.filter" type="galaxy.datatypes.mothur:LaneMask" display_in_upload="true"/>
     <datatype extension="mothur.dist" type="galaxy.datatypes.mothur:DistanceMatrix" display_in_upload="true"/>
+    <datatype extension="mothur.tre" type="galaxy.datatypes.data:Text" subclass="True" display_in_upload="true"/>
     <datatype extension="mothur.pair.dist" type="galaxy.datatypes.mothur:PairwiseDistanceMatrix" display_in_upload="true"/>
     <datatype extension="mothur.square.dist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" display_in_upload="true"/>
     <datatype extension="mothur.lower.dist" type="galaxy.datatypes.mothur:LowerTriangleDistanceMatrix" display_in_upload="true"/>

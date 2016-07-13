@@ -5,6 +5,7 @@ from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
 
@@ -83,7 +84,7 @@ class ToolPanelManager( object ):
                 fh.write( xml_util.xml_to_string( elem, use_indent=True ) )
             fh.write( '</toolbox>\n' )
             fh.close()
-        except Exception, e:
+        except Exception as e:
             log.exception( "Exception in ToolPanelManager.config_elems_to_xml_file: %s" % str( e ) )
         finally:
             lock.release()
@@ -220,7 +221,7 @@ class ToolPanelManager( object ):
         tool_elem = None
         cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
         if not owner:
-            owner = suc.get_repository_owner( cleaned_repository_clone_url )
+            owner = repository_util.get_repository_owner( cleaned_repository_clone_url )
         tool_shed = cleaned_repository_clone_url.split( '/repos/' )[ 0 ].rstrip( '/' )
         for guid, tool_section_dicts in tool_panel_dict.items():
             for tool_section_dict in tool_section_dicts:

@@ -90,13 +90,11 @@ def get_file_type_str( changeset_revision, file_type ):
 
 def move_file( current_dir, source, destination, rename_to=None ):
     source_path = os.path.abspath( os.path.join( current_dir, source ) )
-    source_file = os.path.basename( source_path )
+    destination_directory = os.path.join( destination )
     if rename_to is not None:
-        destination_file = rename_to
-        destination_directory = os.path.join( destination )
-        destination_path = os.path.join( destination_directory, destination_file )
+        destination_path = os.path.join( destination_directory, rename_to )
     else:
-        destination_directory = os.path.join( destination )
+        source_file = os.path.basename( source_path )
         destination_path = os.path.join( destination_directory, source_file )
     if not os.path.exists( destination_directory ):
         os.makedirs( destination_directory )
@@ -143,7 +141,7 @@ def to_html_string( text ):
     if text:
         try:
             text = unicodify( text )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError as e:
             return "Error decoding string: %s" % str( e )
         text = text_type( markupsafe.escape( text ) )
         text = text.replace( '\n', '<br/>' )

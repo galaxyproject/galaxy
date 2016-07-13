@@ -4,10 +4,12 @@ import sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
+
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
+import galaxy.config
 from galaxy.model import mapping
-
+from galaxy.objectstore import build_object_store_from_config
 default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'config/galaxy.ini') )
 
 parser = OptionParser()
@@ -18,15 +20,23 @@ parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config 
 def init():
     options.config = os.path.abspath( options.config )
 
-    config = ConfigParser( dict( file_path='database/files',
-                                 database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
-    config.read( options.config )
+    config_parser = ConfigParser( dict( here=os.getcwd(),
+                                        database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
+    config_parser.read( options.config )
 
-    return mapping.init( config.get( 'app:main', 'file_path' ), config.get( 'app:main', 'database_connection' ), create_tables=False )
+    config_dict = {}
+    for key, value in config_parser.items( "app:main" ):
+        config_dict[key] = value
+
+    config = galaxy.config.Configuration( **config_dict )
+
+    object_store = build_object_store_from_config( config )
+    return (mapping.init( config.file_path, config.database_connection, create_tables=False, object_store=object_store ),
+            object_store)
 
 if __name__ == '__main__':
     print 'Loading Galaxy model...'
-    model = init()
+    model, object_store = init()
     sa_session = model.context.current
 
     set = 0
@@ -48,3 +58,4 @@ if __name__ == '__main__':
             sys.stdout.flush()
     sa_session.flush()
     print 'Completed 100%%'
+    object_store.shutdown()

@@ -65,20 +65,21 @@
                         ${inputs_recursive_indent( text=input.label, depth=depth )}
                         <td>
                         %for i, element in enumerate(listify(param_values[input.name])):
-                        %if i > 0:
-                        ,
-                        %endif
-                        %if element.history_content_type == "dataset":
-                        <%
-                            hda = element
-                            encoded_id = trans.security.encode_id( hda.id )
-                            show_params_url = h.url_for( controller='dataset', action='show_params', dataset_id=encoded_id )
-                        %>
-                        <a class="input-dataset-show-params" data-hda-id="${encoded_id}"
-                               href="${show_params_url}">${hda.name | h}</a>
-                        %else:
-                        ${element.hid}: ${element.name | h}
-                        %endif
+                            %if i > 0:
+                            ,
+                            %endif
+                            %if element.history_content_type == "dataset":
+                                <%
+                                    hda = element
+                                    encoded_id = trans.security.encode_id( hda.id )
+                                    show_params_url = h.url_for( controller='dataset', action='show_params', dataset_id=encoded_id )
+                                %>
+                                <a class="input-dataset-show-params" data-hda-id="${encoded_id}"
+                                       href="${show_params_url}">${hda.hid}: ${hda.name | h}</a>
+
+                            %else:
+                                ${element.hid}: ${element.name | h}
+                            %endif
                         %endfor
                         </td>
                         <td></td>
@@ -140,6 +141,7 @@
         encoded_hda_id = trans.security.encode_id( hda.id )
         encoded_history_id = trans.security.encode_id( hda.history_id )
         %>
+        <tr><td>Number:</td><td>${hda.hid | h}</td></tr>
         <tr><td>Name:</td><td>${hda.name | h}</td></tr>
         <tr><td>Created:</td><td>${unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format))}</td></tr>
         ##      <tr><td>Copied from another history?</td><td>${hda.source_library_dataset}</td></tr>
