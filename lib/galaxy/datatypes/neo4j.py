@@ -19,10 +19,7 @@ class Neo4j(Html):
     base class to use for neostore datatypes
     derived from html - composite datatype elements
     stored in extra files path
-    """
-    #def __init__(self):
-    #     Html.__init__( self, **kwd )
-   
+    """ 
     def generate_primary_file( self, dataset=None ):
         """ 
         This is called only at upload to write the html file
