@@ -11,6 +11,7 @@ from galaxy.datatypes.data import Data
 gal_Log = logging.getLogger(__name__)
 verbose = True
 
+
 class Neo4j(Html):
     """
     base class to use for neostore datatypes
@@ -64,8 +65,8 @@ class Neo4j(Html):
             trans.log_event("Display dataset id: %s" % str(data.id))
 
             # the target directory name
-            dir_name = str(os.path.dirname(trans.app.object_store.get_filename(data.dataset))) +\
-                       '/dataset_{}_files/neo4jdb'.format(data.dataset.id)
+            neo4j_dir_name = '/dataset_{}_files/neo4jdb'.format(data.dataset.id)
+            dir_name = str(os.path.dirname(trans.app.object_store.get_filename(data.dataset))) + neo4j_dir_name
 
             # generate unique filename for this dataset
             valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -82,6 +83,7 @@ class Neo4j(Html):
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % \
                                                             (data.hid, download_zip, "zip")
             return open(download_zip)
+
 
 class Neo4jDB(Neo4j, Data):
     """Class for neo4jDB database files."""
