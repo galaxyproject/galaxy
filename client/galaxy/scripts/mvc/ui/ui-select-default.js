@@ -5,7 +5,8 @@ define([ 'utils/utils', 'mvc/ui/ui-buttons' ], function( Utils, Buttons ) {
 var View = Backbone.View.extend({
     initialize: function( options ) {
         var self = this;
-        this.data = [];
+        this.data  = [];
+        this.data2 = [];
         this.model = options && options.model || new Backbone.Model({
             id          : Utils.uid(),
             cls         : 'ui-select',
@@ -111,12 +112,23 @@ var View = Backbone.View.extend({
             this.data.push( { value: '__null__', label: this.model.get( 'error_text' ) } );
         }
         if ( this.model.get( 'searchable' ) ) {
-            var data2 = [];
+            this.data2 = [];
             _.each( this.data, function( option, index ) {
-                data2.push( { order: index, id: option.value, text: option.label } );
+                self.data2.push( { order: index, id: option.value, text: option.label } );
             });
             this.$select.data( 'select2' ) && this.$select.select2( 'destroy' );
-            this.$select.select2( { data: data2, closeOnSelect: !this.model.get( 'multiple' ), multiple: this.model.get( 'multiple' ) } );
+            this.$select.select2({
+                data            : self.data2,
+                closeOnSelect   : !this.model.get( 'multiple' ),
+                multiple        : this.model.get( 'multiple' ),
+                query           : function( query ) {
+                    var data = { results: [] };
+                    for ( var i = 0; i < self.data2.length; i++ ) {
+                        data.results.push( self.data2[ i ] );
+                    }
+                    query.callback( data );
+                }
+            });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
         } else {
             this.$select.find( 'option' ).remove();
@@ -248,13 +260,25 @@ var View = Backbone.View.extend({
 
     /** Set value to dom */
     _setValue: function( new_value ) {
+        var self = this;
         if( new_value !== null && new_value !== undefined ) {
-            new_value = this.model.get( 'multiple' ) && $.isArray( new_value ) ? new_value : [ new_value ];
+            new_value = this.model.get( 'multiple' ) && !$.isArray( new_value ) ? [ new_value ] : new_value;
         } else {
             new_value = '__null__';
         }
         if ( this.model.get( 'searchable' ) ) {
-            this.$select.select2( 'val', new_value );
+            if ( $.isArray( new_value ) ) {
+                val = [];
+                _.each( new_value, function( v ) {
+                    var d = _.findWhere( self.data2, { id: v } );
+                    d && val.push( d );
+                });
+                new_value = val;
+            } else {
+                var d = _.findWhere( this.data2, { id: new_value } );
+                new_value = d;
+            }
+            this.$select.select2( 'data', new_value );
         } else {
             this.$select.val( new_value );
         }
