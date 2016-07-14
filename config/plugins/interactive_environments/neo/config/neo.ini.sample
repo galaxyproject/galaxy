@@ -18,8 +18,7 @@
 # The image argument was moved to "allowed_images.yml.sample"
 
 # Additional arguments that are passed to the `docker run` command.
-# NEO4J_UID=1371, NEO4j_GIG=999
-command_inject = --sig-proxy=true -e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120 -e NEO4J_UID=none -e NEO4J_GID=none
+command_inject = --sig-proxy=true -e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120 -e NEO4J_UID=$(id -u) -e NEO4J_GID=$(id -g)
 
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
