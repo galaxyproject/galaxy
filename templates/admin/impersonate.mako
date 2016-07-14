@@ -29,6 +29,7 @@
      *  queries (term, below) */
     $("#email_select").select2({
         placeholder: "Select a user",
+	width: "33%",
         ajax: {
             url: "${h.url_for(controller="/api/users", action="index")}",
             dataType: 'json',
@@ -44,7 +45,7 @@
               $.each(data, function(index, item){
                     results.push({
                       id: item.email,
-                      text: item.email
+                      text: item.username + " : " + item.email
                     });
               });
               return {

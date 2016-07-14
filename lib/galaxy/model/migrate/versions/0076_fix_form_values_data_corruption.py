@@ -2,6 +2,8 @@
 This migration script fixes the data corruption caused in the form_values
 table (content json field) by migrate script 65.
 '''
+from __future__ import print_function
+
 import logging
 from json import dumps, loads
 
@@ -15,7 +17,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     cmd = "SELECT form_values.id as id, form_values.content as field_values, form_definition.fields as fdfields " \
           + " FROM form_definition, form_values " \
@@ -35,8 +37,8 @@ def upgrade(migrate_engine):
             field_values_str = _sniffnfix_pg9_hex( str( row['field_values'] ) )
             try:
                 # Encoding errors?  Just to be safe.
-                print "Attempting to fix row %s" % row['id']
-                print "Prior to replacement: %s" % field_values_str
+                print("Attempting to fix row %s" % row['id'])
+                print("Prior to replacement: %s" % field_values_str)
             except:
                 pass
             field_values_dict = {}
@@ -48,7 +50,7 @@ def upgrade(migrate_engine):
                 if field_index == -1:
                     # if the field name is not present the field values dict then
                     # inform the admin that this form values cannot be fixed
-                    print "The 'content' field of row 'id' %i does not have the field '%s' in the 'form_values' table and could not be fixed by this migration script." % ( int( field['id'] ), field['name'] )
+                    print("The 'content' field of row 'id' %i does not have the field '%s' in the 'form_values' table and could not be fixed by this migration script." % ( int( field['id'] ), field['name'] ))
                 else:
                     # check if this is the last field
                     if index == len( fields_list ) - 1:
@@ -74,13 +76,13 @@ def upgrade(migrate_engine):
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" % ( json_values, int( row['id'] ) )
             migrate_engine.execute( cmd )
             try:
-                print "Post replacement: %s" % json_values
+                print("Post replacement: %s" % json_values)
             except:
                 pass
     if corrupted_rows:
-        print 'Fixed %i corrupted rows.' % corrupted_rows
+        print('Fixed %i corrupted rows.' % corrupted_rows)
     else:
-        print 'No corrupted rows found.'
+        print('No corrupted rows found.')
 
 
 def downgrade(migrate_engine):

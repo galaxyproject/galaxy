@@ -1,6 +1,8 @@
 """
 Migration script for job metric plugins.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -66,7 +68,7 @@ TABLES = [
 
 def upgrade( migrate_engine ):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     for table in TABLES:
@@ -85,7 +87,7 @@ def __create(table):
     try:
         table.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug("Creating %s table failed: %s" % (table.name, str( e ) ) )
 
 
@@ -93,5 +95,5 @@ def __drop(table):
     try:
         table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug("Dropping %s table failed: %s" % (table.name, str( e ) ) )

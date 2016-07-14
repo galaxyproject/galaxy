@@ -2,6 +2,8 @@
 This migration script adds the request_event table and
 removes the state field in the request table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -24,10 +26,10 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script adds the request_event table and"
-    print "removes the state field in the request table"
-    print "========================================"
+    print("========================================")
+    print("This migration script adds the request_event table and")
+    print("removes the state field in the request table")
+    print("========================================")
 
 
 RequestEvent_table = Table('request_event', metadata,

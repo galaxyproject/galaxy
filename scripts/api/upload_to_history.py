@@ -2,6 +2,7 @@
 """
 Upload a file to the desired history.
 """
+from __future__ import print_function
 import json
 import os
 import sys
@@ -9,8 +10,8 @@ import sys
 try:
     import requests
 except ImportError:
-    print "Could not import the requests module. See http://docs.python-requests.org/en/latest/" + \
-          " or install with 'pip install requests'"
+    print("Could not import the requests module. See http://docs.python-requests.org/en/latest/" +
+          " or install with 'pip install requests'")
     raise
 
 
@@ -28,7 +29,7 @@ def upload_file( base_url, api_key, history_id, filepath, **kwargs ):
         # TODO: the following doesn't work with tools.py
         'dbkey'         : '?',
         'file_type'     : kwargs.get( 'file_type', 'auto' ),
-        'ajax_upload'   : u'true',
+        'ajax_upload'   : 'true',
     }
     payload[ 'inputs' ] = json.dumps( inputs )
 
@@ -41,13 +42,13 @@ def upload_file( base_url, api_key, history_id, filepath, **kwargs ):
 
 if __name__ == '__main__':
     if len( sys.argv ) < 5:
-        print "history_upload.py <api key> <galaxy base url> <history id> <filepath to upload>\n" + \
-              "  (where galaxy base url is just the root url where your Galaxy is served; e.g. 'localhost:8080')"
+        print("history_upload.py <api key> <galaxy base url> <history id> <filepath to upload>\n" +
+              "  (where galaxy base url is just the root url where your Galaxy is served; e.g. 'localhost:8080')")
         sys.exit( 1 )
 
     api_key, base_url, history_id, filepath = sys.argv[1:5]
     kwargs = dict([ kwarg.split('=', 1) for kwarg in sys.argv[5:]])
 
     response = upload_file( base_url, api_key, history_id, filepath, **kwargs )
-    print >> sys.stderr, response
-    print response.content
+    print(response, file=sys.stderr)
+    print(response.content)
