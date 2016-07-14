@@ -87,7 +87,12 @@ ul, li,
 
 .tab-pane {
     height: 100%;
-    padding: 20px;
+    padding: 5px 20px 5px 5px;
+    
+}
+
+#chat_room_tab {
+    margin-left: 2%;
 }
 
 .row {
@@ -166,7 +171,8 @@ a:hover, a:visited {
     float: left;
 }
 
-.message-height {
+.message-height, 
+.notification-padding {
     padding-right: 0px;
 }
 

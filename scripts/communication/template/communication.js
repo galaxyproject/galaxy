@@ -18,7 +18,7 @@ var events_module = {
             // append only for non empty messages
             if (msg.data.length > 0) {
                 utils.append_message( $el_all_messages, message );
-                utils.vertical_center_align_gravatar( '#all_messages' );
+                utils.vertical_center_align_gravatar( $( '#all_messages .message' ) );
                 // adding message to build full chat history
                 utils.store_append_message( uid, $el_all_messages.html() );
             }
@@ -72,7 +72,7 @@ var events_module = {
                 var room = utils.check_room_by_roomname( click_events.connected_room, msg.chatroom );
                 $el_room_msg = $( '#all_messages_' + room.id );
                 utils.append_message( $el_room_msg, utils.build_message( msg ) );
-                utils.vertical_center_align_gravatar( '#all_messages_' + room.id );
+                utils.vertical_center_align_gravatar( $( '#all_messages_' + room.id + ' .message' ) );
                 utils.fancyscroll_to_last( $( "#galaxy_tabroom_" + room.id ) );
                 // if the pushed message is for some other user, show notification
                 if (uid !== msg.data) {
@@ -305,6 +305,23 @@ var click_events = {
                 }
             }
         });
+    },
+    // event for body resize
+    event_window_resize: function() {
+        $( window ).resize(function() {
+            var body_width = $('.body-container').width();
+            if ( body_width > 600 ) {
+                $('.right_icons').css('margin-left', '97%');
+                $('.tab-content').height( '79%' );
+            }
+            else {
+                $('.right_icons').css('margin-left', '95%');
+                $('.tab-content').height( '65%' );
+            }
+            // adjusts the vertical alignment of the gravatars
+            utils.gravatar_align();
+            
+        });
     }
 }
 // utility methods
@@ -324,6 +341,7 @@ var utils = {
         }
         // show the last item by scrolling to the end
         utils.fancyscroll_to_last( $("#all_chat_tab") );
+        utils.gravatar_align();
     },
     // get the current username of logged in user
     get_userid: function () {
@@ -334,7 +352,6 @@ var utils = {
     // append message
     append_message: function ( $el, message ) {
         $el.append( message );
-        //$el.append( '<br>' );
     },
     // builds message for self
     build_message: function ( original_message ) {
@@ -358,10 +375,6 @@ var utils = {
     },
     // builds template for message display
     build_message_from_template: function ( user, original_message ) {
-        //return "<div class='date_time'><span title=" + this.get_date() + ">" + this.get_time() + "</span></div>" +
-               //"<span class='user_name'>" + username + "<br></span>" +
-               //"<div class='user_message'>" + unescape( original_message ) +
-               //"</div>";
         var gravatar_col_content = '' +
                '<img src="https://s.gravatar.com/avatar/' + user.gravatar + '?s=32&d=identicon" />' +
                '';
@@ -388,7 +401,7 @@ var utils = {
             '</div>';
         } else if ( user.username === "Notification" ){
             return '<div class="row message">' +
-            '<div class="col-xs-11 col-md-12">' +
+            '<div class="col-xs-11 col-md-12 notification-padding">' +
                 message_col_content +
             '</div>' +
             '</div>';
@@ -658,14 +671,44 @@ var utils = {
     fancyscroll_to_last: function( $el ) {
         $el.mCustomScrollbar( "scrollTo", "bottom" );
     },
-    vertical_center_align_gravatar: function( parent ) {
-        var usermsg_length = $( parent + ' .message-height' ).length,
-            usermsg_height = ( $( $( parent + ' .message-height' )[ usermsg_length-1 ] ).height() / 2 ),
-            gravatar_length = $( parent + ' .vertical-align' ).length,
-            gravatar_height = ( $( $( parent + ' .vertical-align' )[ gravatar_length-1 ] ).height() / 2 );
-        // sets the vertical height of gravatar icon
-        $( $( parent + ' .vertical-align img' )[ gravatar_length-1 ] ).css( 'padding-top', usermsg_height - gravatar_height);
+    // vertically aligns the gravatar icon in the center
+    vertical_center_align_gravatar: function( $el ) {
+        var usermsg_length = $el.find('.message-height').length,
+            usermsg_height = ( $( $el.find('.message-height')[ usermsg_length - 1 ] ).height() / 2 ),
+            gravatar_height = ( $( $el.find( '.vertical-align img' )[0] ).height() / 2 );
+
+        if( gravatar_height === 0 ) {
+            gravatar_height = 16;
+        }	
+        $( $el.find( '.vertical-align img' )[ usermsg_length - 1 ] ).css( 'padding-top', usermsg_height - gravatar_height );
+    },
+    
+    gravatar_align: function() {
+        var active_tab_target = $('li.active a').attr('data-target').split('_'),
+            tab_number = "",
+            selector = "", 
+            scroll_selector = "",
+            usermsg_height = 0,
+            gravatar_height = 0;
+        // finds the active tab's suffix number
+        tab_number = active_tab_target[active_tab_target.length - 1];
+        if( isNaN( tab_number ) ) {
+            selector = "#all_messages";
+            scroll_selector = "#all_chat_tab";
+        }
+        else {
+            selector = "#all_messages_" + tab_number;
+            scroll_selector = "#galaxy_tabroom_" + tab_number;
+        }
+        $( selector + ' .message' ).each(function( index ) {
+            usermsg_height = ( $( this ).find( '.message-height' ).height() / 2 ),
+            gravatar_height = ( $( this ).find( '.vertical-align img' ).height() / 2 );
+            $( this ).find( '.vertical-align img' ).css( 'padding-top', (usermsg_height - gravatar_height) );
+        });
+        // scrolls to the last element
+        utils.fancyscroll_to_last( $( scroll_selector ) );
     }
+    
 }
 // this event fires when all the resources of the page
 // have been loaded
@@ -712,4 +755,5 @@ $(window).load(function() {
     // scrolls to the last of the element
     utils.fancyscroll_to_last( $( main_tab_id ) );
     $el_persistent_rooms_visible.css('display', 'none');
+    click_events.event_window_resize();
 });

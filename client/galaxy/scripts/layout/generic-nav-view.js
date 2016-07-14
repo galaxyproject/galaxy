@@ -20,11 +20,12 @@ var GenericNavView = Backbone.View.extend({
 	    $el_chat_modal_body = null,
             iframe_template = '<iframe class="f-iframe fade in communication-iframe" src="' + src + '"> </iframe>',
             header_template = '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' +
+                              '<i class="fa fa-expand expand-compress-modal" aria-hidden="true" title="Maximize"></i>' + 
 	                      '<i class="fa fa-times close-modal" aria-hidden="true" title="Close"></i>',
             frame_height = 350,
             frame_width = 600,
             class_names = 'ui-modal chat-modal';
-
+        
 	// deletes the chat modal if already present and create one
         if( $( '.chat-modal' ).length > 0 ) {
             $( '.chat-modal' ).remove();
@@ -52,6 +53,24 @@ var GenericNavView = Backbone.View.extend({
 	// click event of the close button for chat
 	$( '.close-modal' ).click(function( e ) {
 	    $( '.chat-modal' ).css( 'display', 'none' );
+	});
+        // click event of expand and compress icon
+        $( '.expand-compress-modal' ).click(function( e ) {
+            if( $( '.expand-compress-modal' ).hasClass( 'fa-expand' ) ) {
+                $( '.chat-modal .modal-dialog' ).width( '1000px' );
+                $( '.chat-modal .modal-body' ).height( '575px' );
+                $( '.expand-compress-modal' ).removeClass( 'fa-expand' ).addClass( 'fa-compress' );
+                $( '.expand-compress-modal' ).attr('title', 'Minimize');
+                $( '.expand-compress-modal' ).css('margin-left', '96.2%');
+            }
+            else {
+                $( '.chat-modal .modal-dialog' ).width( frame_width + 'px' );
+                $( '.chat-modal .modal-body' ).height( frame_height + 'px' );
+                $( '.expand-compress-modal' ).removeClass( 'fa-compress' ).addClass( 'fa-expand' );
+                $( '.expand-compress-modal' ).attr('title', 'Maximize');
+                $( '.expand-compress-modal' ).css('margin-left', '93.2%');
+            }
+	    
 	});
         return this;
     },
