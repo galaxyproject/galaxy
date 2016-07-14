@@ -19,7 +19,8 @@ var View = Backbone.View.extend({
             optional    : false,
             disabled    : false,
             onchange    : function(){},
-            value       : null
+            value       : null,
+            pagesize    : 20
         }).set( options );
         this.on( 'change', function() { self.model.get( 'onchange' )( self.value() ) } );
         this.listenTo( this.model, 'change:data', this._changeData, this );
@@ -121,12 +122,15 @@ var View = Backbone.View.extend({
                 data            : self.data2,
                 closeOnSelect   : !this.model.get( 'multiple' ),
                 multiple        : this.model.get( 'multiple' ),
-                query           : function( query ) {
-                    var data = { results: [] };
-                    for ( var i = 0; i < self.data2.length; i++ ) {
-                        data.results.push( self.data2[ i ] );
-                    }
-                    query.callback( data );
+                query           : function( q ) {
+                    var pagesize = self.model.get( 'pagesize' );
+                    var results = _.filter( self.data2, function ( e ) {
+                        return true;
+                    });
+                    q.callback({
+                        results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
+                        more   : results.length >= q.page * pagesize
+                    });
                 }
             });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
@@ -261,10 +265,17 @@ var View = Backbone.View.extend({
     /** Set value to dom */
     _setValue: function( new_value ) {
         var self = this;
-        if( new_value !== null && new_value !== undefined ) {
-            new_value = this.model.get( 'multiple' ) && !$.isArray( new_value ) ? [ new_value ] : new_value;
-        } else {
+        if( new_value === null || new_value === undefined ) {
             new_value = '__null__';
+        }
+        if ( this.model.get( 'multiple' ) ) {
+            new_value = $.isArray( new_value ) ? new_value : [ new_value ];
+        } else if ( $.isArray( new_value ) ) {
+            if ( new_value.length > 0 ) {
+                new_value = new_value[ 0 ];
+            } else {
+                new_value = '__null__';
+            }
         }
         if ( this.model.get( 'searchable' ) ) {
             if ( $.isArray( new_value ) ) {
