@@ -20,6 +20,7 @@ var View = Backbone.View.extend({
             disabled    : false,
             onchange    : function(){},
             value       : null,
+            selectall   : true,
             pagesize    : 20
         }).set( options );
         this.on( 'change', function() { self.model.get( 'onchange' )( self.value() ) } );
@@ -84,7 +85,7 @@ var View = Backbone.View.extend({
             });
         }
         this.all_button = null;
-        if ( this.model.get( 'multiple' ) && this.model.get( 'searchable' ) ) {
+        if ( this.model.get( 'multiple' ) && this.model.get( 'selectall' ) ) {
             this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
                     var new_value = [];

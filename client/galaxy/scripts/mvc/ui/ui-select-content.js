@@ -168,6 +168,7 @@ var View = Backbone.View.extend({
                     optional    : self.model.get( 'optional' ),
                     multiple    : c.multiple,
                     searchable  : !c.multiple || ( data && data[ c.src ] && data[ c.src ].length > self.model.get( 'pagelimit' ) ),
+                    selectall   : false,
                     error_text  : 'No ' + ( extensions ? extensions + ' ' : '' ) + ( src_labels[ c.src ] || 'content' ) + ' available.',
                     onchange    : function() {
                         self.trigger( 'change' );
