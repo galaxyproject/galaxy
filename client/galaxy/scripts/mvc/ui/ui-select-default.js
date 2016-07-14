@@ -126,7 +126,7 @@ var View = Backbone.View.extend({
                 query           : function( q ) {
                     var pagesize = self.model.get( 'pagesize' );
                     var results = _.filter( self.data2, function ( e ) {
-                        return true;
+                        return !q.term || q.term == '' || e.text.toUpperCase().indexOf( q.term.toUpperCase() ) >= 0;
                     });
                     q.callback({
                         results: results.slice( ( q.page - 1 ) * pagesize, q.page * pagesize ),
