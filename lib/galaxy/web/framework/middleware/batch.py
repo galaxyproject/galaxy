@@ -3,7 +3,10 @@
 import io
 from urlparse import urlparse
 import json
+import re
+
 from paste import httpexceptions
+import routes
 
 import logging
 log = logging.getLogger( __name__ )
@@ -13,7 +16,11 @@ class BatchMiddleware( object ):
     """
     """
     DEFAULT_CONFIG = {
-        'route' : '/api/batch'
+        'route' : '/api/batch',
+        'allowed_routes' : [
+            '^api\/users.*',
+            '^api\/histories.*',
+        ]
     }
 
     def __init__( self, galaxy, application, config=None ):
@@ -21,7 +28,9 @@ class BatchMiddleware( object ):
         self.galaxy = galaxy
         #: the wrapped webapp
         self.application = application
-        self.config = config or self.DEFAULT_CONFIG
+        self.config = self.DEFAULT_CONFIG.copy()
+        self.config.update( config )
+        self.base_url = routes.url_for( '/' )
         self.handle_request = self.galaxy.handle_request
 
     def __call__( self, environ, start_response ):
@@ -35,7 +44,10 @@ class BatchMiddleware( object ):
 
         responses = []
         for request in requests:
-            if not self._valid( request ):
+            print '------------------------'
+            print request
+            if not self._is_allowed_route( request[ 'url' ] ):
+                responses.append( self._disallowed_route_response( request[ 'url' ] ) )
                 continue
 
             request_environ = self._build_request_environ( batch_environ, request )
@@ -57,8 +69,27 @@ class BatchMiddleware( object ):
         payload = json.loads( request_body )
         return payload
 
-    def _valid( self, request ):
+    def _is_allowed_route( self, route ):
+        if self.config.get( 'allowed_routes', None ):
+            print self.base_url
+            shortened_route = route.replace( self.base_url, '', 1 )
+            matches = [ re.match( allowed, shortened_route ) for allowed in self.config[ 'allowed_routes' ] ]
+            print matches
+            return any( matches )
         return True
+
+    def _disallowed_route_response( self, route ):
+        return dict( status=403, headers=self._default_headers(), body={
+            'err_msg'   : 'Disallowed route used for batch operation',
+            'route'     : route,
+            'allowed'   : self.config[ 'allowed_routes' ]
+        })
+
+    def _create_invalid_batch_response( self ):
+        return dict( status=403, headers=self._default_headers(), body={
+            "err_msg"   : "Disallowed route used for batch operation",
+            "allowed"   : self.allowed_routes,
+        })
 
     def _build_request_environ( self, original_environ, request ):
         """
