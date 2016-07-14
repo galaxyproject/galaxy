@@ -172,12 +172,13 @@ var View = Backbone.View.extend({
     /** Synchronizes the model value with the actually selected field value */
     _changeValue: function() {
         this._setValue( this.model.get( 'value' ) );
-        if ( this.model.get( 'searchable' ) ) {
-            if ( this._getValue() === null && !this.model.get( 'multiple' ) && !this.model.get( 'optional' ) ) {
-                this._setValue( this.first() );
+        if ( this.model.get( 'multiple' ) ) {
+            if ( this.all_button ) {
+                var value = this._getValue();
+                this.all_button.value( $.isArray( value ) ? value.length : 0, this.length() );
             }
-            var value = this._getValue();
-            this.all_button && this.all_button.value( $.isArray( value ) ? value.length : 0, this.length() );
+        } else if ( this._getValue() === null && !this.model.get( 'optional' ) ) {
+            this._setValue( this.first() );
         }
     },
 
