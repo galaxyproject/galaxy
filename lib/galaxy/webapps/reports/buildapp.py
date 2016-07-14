@@ -60,12 +60,61 @@ def app_factory( global_conf, **kwargs ):
         from galaxy.webapps.reports.app import UniverseApplication
         app = UniverseApplication( global_conf=global_conf, **kwargs )
     atexit.register( app.shutdown )
+
     # Create the universe WSGI application
     webapp = ReportsWebApplication( app, session_cookie='galaxyreportssession', name="reports" )
     add_ui_controllers( webapp, app )
-    # These two routes handle our simple needs at the moment
     webapp.add_route( '/{controller}/{action}', controller="root", action='index' )
     webapp.add_route( '/{action}', controller='root', action='index' )
+
+    # These two routes handle our simple needs at the moment
+    webapp.add_api_controllers( 'galaxy.webapps.reports.api', app )
+
+    webapp.mapper.connect( '/api/users/registered/total', action='registered_users_total', controller="users" )
+
+    webapp.mapper.connect( '/api/users/registered/{year:.+?}/{month:.+?}', action='registered_users', controller="users" )
+    webapp.mapper.connect( '/api/users/registered/{year:.+?}', action='registered_users', controller="users" )
+    webapp.mapper.connect( '/api/users/registered', action='registered_users', controller="users" )
+    webapp.mapper.connect( '/api/users/:email', action='user_detail', controller="users" )
+    webapp.mapper.connect( '/api/users', action='last_login', controller="users" )
+    webapp.mapper.resource( 'user', 'users', path_prefix='/api' )
+
+    # All jobs by date
+    webapp.mapper.connect( '/api/jobs/date/{year:.+?}/{month:.+?}', action='jobs_per_date', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/date/{year:.+?}', action='jobs_per_date', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/date', action='jobs_per_date', controller='jobs' )
+    # All users by date
+    webapp.mapper.connect( '/api/jobs/user/date/{year:.+?}/{month:.+?}', action='jobs_group_users', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/date/{year:.+?}', action='jobs_group_users', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/date', action='jobs_group_users', controller='jobs' )
+    # A specific user / by date
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}/{month:.+?}', action='jobs_per_user', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}/{year:.+?}', action='jobs_per_user', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/user/{user:.+?}', action='jobs_per_user', controller='jobs' )
+
+    # A specific user / by date
+    webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}/{year:.+?}/{month:.+?}', action='jobs_per_tool', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}/{year:.+?}', action='jobs_per_tool', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/tool/{tool_id:.+?}', action='jobs_per_tool', controller='jobs' )
+    webapp.mapper.connect( '/api/jobs/tool', action='jobs_per_tool', controller='jobs' )
+    webapp.mapper.resource( 'job', 'jobs', path_prefix='/api' )
+
+    # All workflows by user
+    webapp.mapper.connect( '/api/workflows/user/{user:.+?}/{year:.+?}/{month:.+?}', action='by_user', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/user/{user:.+?}/{year:.+?}', action='by_user', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/user/{user:.+?}', action='by_user', controller='workflows' )
+    # All workflows by date
+    webapp.mapper.connect( '/api/workflows/{year:.+?}/{month:.+?}', action='by_date', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/{year:.+?}', action='by_date', controller='workflows' )
+    webapp.mapper.connect( '/api/workflows/', action='by_date', controller='workflows' )
+
+    # All workflows invocations by workflow. Encode IDs?
+    # webapp.mapper.connect( '/api/workflows/wf/{workflow:.+?}/{year:.+?}/{month:.+?}', action='by_workflow', controller='workflows' )
+    # webapp.mapper.connect( '/api/workflows/wf/{workflow:.+?}/{year:.+?}', action='by_workflow', controller='workflows' )
+    # webapp.mapper.connect( '/api/workflows/wf/{workflow:.+?}', action='by_workflow', controller='workflows' )
+
+    webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
+
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

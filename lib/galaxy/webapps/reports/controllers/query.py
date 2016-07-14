@@ -28,3 +28,15 @@ class ReportQueryBuilder:
             return sa.func.date( column )
         else:
             return sa.func.date_trunc( 'day', sa.func.date( column ) )
+
+    def group_by_year(self, column):
+        if self.app.targets_mysql:
+            raise Exception("Not implemented")
+        else:
+            return [ sa.func.date_trunc( 'year', sa.func.date( column ) ) ]
+
+    def select_year(self, column):
+        if self.app.targets_mysql:
+            raise Exception("Not implemented")
+        else:
+            return sa.func.date_trunc( 'year', sa.func.date( column ) )
