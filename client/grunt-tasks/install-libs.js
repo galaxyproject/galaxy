@@ -23,6 +23,9 @@ module.exports = function( grunt ){
             'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
             'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],
 
+            'react':          [ 'react.js', 'react.js' ],
+            // 'react-dom':      [ 'react-dom.js', 'react-dom.js' ],
+
             // these need to be updated and tested
             //'jquery-form': [ 'jquery.form.js', 'jquery/jquery.form.js' ],
             //'jquery-autocomplete': [ 'src/jquery.autocomplete.js', 'jquery/jquery.autocomplete.js' ],

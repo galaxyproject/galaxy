@@ -1,5 +1,4 @@
 var webpack = require( 'webpack' ),
-    // paths
     path = require( 'path' ),
     scriptsBase = path.join( __dirname, 'galaxy/scripts' ),
     libsBase = path.join( scriptsBase, 'libs' ),
@@ -37,6 +36,7 @@ module.exports = {
         libs    : commonLibs,
         login   : './galaxy/scripts/apps/login.js',
         analysis: './galaxy/scripts/apps/analysis.js',
+        history : './galaxy/scripts/apps/history/app.js',
     },
     output  : {
         path        : '../static/scripts/bundled',
@@ -49,9 +49,12 @@ module.exports = {
             // Backbone looks for these in the same root directory
             jquery      : path.join( libsBase, 'jquery/jquery' ),
             underscore  : path.join( libsBase, 'underscore.js' ),
+            react       : path.join( libsBase, 'react.js' ),
+            'react-dom' : path.join( libsBase, 'react-dom.js' ),
         }
     },
     module : {
+        noParse: /galaxy\/scripts\/libs\/react.js/,
         loaders : [
             { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader", query: { compact: false } },
         ],
