@@ -44,6 +44,8 @@ var HistoryContents = Backbone.Collection
                     return new HDCA_MODEL.HistoryPairDatasetCollection( attrs, options );
                 case 'list:paired':
                     return new HDCA_MODEL.HistoryListPairedDatasetCollection( attrs, options );
+                case 'list:list':
+                    return new HDCA_MODEL.HistoryListOfListsDatasetCollection( attrs, options );
             }
             // This is a hack inside a hack:
             // Raise a plain object with validationError to fake a model.validationError
