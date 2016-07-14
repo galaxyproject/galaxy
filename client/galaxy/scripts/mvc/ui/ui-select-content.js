@@ -33,7 +33,8 @@ var View = Backbone.View.extend({
     initialize : function( options ) {
         var self = this;
         this.model = options && options.model || new Backbone.Model({
-            src_labels: { 'hda' : 'dataset', 'hdca': 'dataset collection' }
+            src_labels  : { 'hda' : 'dataset', 'hdca': 'dataset collection' },
+            pagelimit   : 50
         }).set( options );
         this.setElement( $( '<div/>' ).addClass( 'ui-select-content' ) );
         this.button_product = new Ui.RadioButton.View( {
@@ -149,6 +150,7 @@ var View = Backbone.View.extend({
         }
 
         // prepare extension component of error message
+        var data = self.model.get( 'data' );
         var extensions = Utils.textify( this.model.get( 'extensions' ) );
         var src_labels = this.model.get( 'src_labels' );
 
@@ -165,7 +167,7 @@ var View = Backbone.View.extend({
                 new Select.View({
                     optional    : self.model.get( 'optional' ),
                     multiple    : c.multiple,
-                    searchable  : !c.multiple,
+                    searchable  : !c.multiple || ( data && data[ c.src ] && data[ c.src ].length > self.model.get( 'pagelimit' ) ),
                     error_text  : 'No ' + ( extensions ? extensions + ' ' : '' ) + ( src_labels[ c.src ] || 'content' ) + ' available.',
                     onchange    : function() {
                         self.trigger( 'change' );
