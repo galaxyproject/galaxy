@@ -2152,6 +2152,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return field
 
     def from_json( self, value, trans, other_values={} ):
+        rval = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:

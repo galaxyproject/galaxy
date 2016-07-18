@@ -125,6 +125,8 @@ DCListItemView.prototype.templates = (function(){
                 _l( 'a pair of datasets' ),
             '<% } else if( collection.collection_type === "list:paired" ){ %>',
                 _l( 'a list of <%- countText %>dataset pairs' ),
+            '<% } else if( collection.collection_type === "list:list" ){ %>',
+                _l( 'a list of <%- countText %>dataset lists' ),
             '<% } %>',
         '</div>'
     ], 'collection' );

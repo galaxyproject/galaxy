@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 import bx.align.maf
@@ -24,9 +26,9 @@ def __main__():
                     out.write( "%s\t%i\t%i\t%s\n" % ( maf_utilities.src_split( c.src )[-1], c.get_forward_strand_start(), c.get_forward_strand_end(), c.strand ) )
                     count += 1
     except Exception as e:
-        print >> sys.stderr, "There was a problem processing your input: %s" % e
+        print("There was a problem processing your input: %s" % e, file=sys.stderr)
     out.close()
-    print "%i MAF blocks converted to Genomic Intervals for species %s." % ( count, species )
+    print("%i MAF blocks converted to Genomic Intervals for species %s." % ( count, species ))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 """
 This script adds a foreign key to the form_values table in the galaxy_user table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -22,9 +24,9 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script adds a foreign key to the form_values table in the galaxy_user table"
-    print "========================================"
+    print("========================================")
+    print("This script adds a foreign key to the form_values table in the galaxy_user table")
+    print("========================================")
 
 
 def upgrade(migrate_engine):

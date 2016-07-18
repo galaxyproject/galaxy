@@ -2,6 +2,8 @@
 Migration script to add column to openid table for provider.
 Remove any OpenID entries with nonunique GenomeSpace Identifier
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, MetaData, Table
@@ -15,7 +17,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     try:
@@ -24,7 +26,7 @@ def upgrade(migrate_engine):
         c.create( OpenID_table )
         assert c is OpenID_table.c.provider
     except Exception as e:
-        print "Adding provider column to galaxy_user_openid table failed: %s" % str( e )
+        print("Adding provider column to galaxy_user_openid table failed: %s" % str( e ))
         log.debug( "Adding provider column to galaxy_user_openid table failed: %s" % str( e ) )
 
     try:
@@ -41,5 +43,5 @@ def downgrade(migrate_engine):
         OpenID_table = Table( "galaxy_user_openid", metadata, autoload=True )
         OpenID_table.c.provider.drop()
     except Exception as e:
-        print "Dropping provider column from galaxy_user_openid table failed: %s" % str( e )
+        print("Dropping provider column from galaxy_user_openid table failed: %s" % str( e ))
         log.debug( "Dropping provider column from galaxy_user_openid table failed: %s" % str( e ) )

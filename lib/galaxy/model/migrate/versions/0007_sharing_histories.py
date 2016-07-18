@@ -3,6 +3,8 @@ This migration script creates the new history_user_share_association table, and 
 a new boolean type column to the history table.  This provides support for sharing
 histories in the same way that workflows are shared.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -21,11 +23,11 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script creates the new history_user_share_association table, and adds"
-    print "a new boolean type column to the history table.  This provides support for sharing"
-    print "histories in the same way that workflows are shared."
-    print "========================================"
+    print("========================================")
+    print("This migration script creates the new history_user_share_association table, and adds")
+    print("a new boolean type column to the history table.  This provides support for sharing")
+    print("histories in the same way that workflows are shared.")
+    print("========================================")
 
 HistoryUserShareAssociation_table = Table( "history_user_share_association", metadata,
                                            Column( "id", Integer, primary_key=True ),

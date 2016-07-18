@@ -12,6 +12,7 @@ VENV?=.venv
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
+GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
@@ -59,10 +60,13 @@ npm-deps: ## Install NodeJS dependencies.
 	cd client && npm install
 
 grunt: npm-deps ## Calls out to Grunt to build client
-	cd client && node_modules/grunt-cli/bin/grunt
+	cd client && $(GRUNT_EXEC)
 
 style: npm-deps ## Calls the style task of Grunt
-	cd client && node_modules/grunt-cli/bin/grunt style
+	cd client && $(GRUNT_EXEC) style
+
+client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
+	cd client && $(GRUNT_EXEC) install-libs
 
 client: grunt style ## Rebuild all client-side artifacts
 
