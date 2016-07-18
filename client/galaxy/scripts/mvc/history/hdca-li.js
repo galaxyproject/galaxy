@@ -38,6 +38,8 @@ var HDCAListItemView = _super.extend(
                 return DC_VIEW.PairCollectionView;
             case 'list:paired':
                 return DC_VIEW.ListOfPairsCollectionView;
+            case 'list:list':
+                return DC_VIEW.ListOfListsCollectionView;
         }
         throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
     },

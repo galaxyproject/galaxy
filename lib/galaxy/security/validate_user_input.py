@@ -11,6 +11,9 @@ log = logging.getLogger( __name__ )
 
 VALID_PUBLICNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 VALID_PUBLICNAME_SUB = re.compile( "[^a-z0-9\-]" )
+PUBLICNAME_MIN_LEN = 3
+PUBLICNAME_MAX_LEN = 255
+
 #  Basic regular expression to check email validity.
 VALID_EMAIL_RE = re.compile( "[^@]+@[^@]+\.[^@]+" )
 FILL_CHAR = '-'
@@ -41,16 +44,10 @@ def validate_publicname( trans, publicname, user=None ):
     # letters, numbers, and the '-' character.
     if user and user.username == publicname:
         return ''
-    if trans.webapp.name == 'tool_shed':
-        if len( publicname ) < 3:
-            return "Public name must be at least 3 characters in length"
-    else:
-        # DCT - TODO - Simplify logic if 3 chars is okay for publicname for
-        # galaxy as well as toolshed
-        if len( publicname ) < 3:
-            return "Public name must be at least 3 characters in length"
-    if len( publicname ) > 255:
-        return "Public name cannot be more than 255 characters in length"
+    if len( publicname ) < PUBLICNAME_MIN_LEN:
+        return "Public name must be at least %d characters in length" % ( PUBLICNAME_MIN_LEN )
+    if len( publicname ) > PUBLICNAME_MAX_LEN:
+        return "Public name cannot be more than %d characters in length" % ( PUBLICNAME_MAX_LEN )
     if not( VALID_PUBLICNAME_RE.match( publicname ) ):
         return "Public name must contain only lower-case letters, numbers and '-'"
     if trans.sa_session.query( trans.app.model.User ).filter_by( username=publicname ).first():

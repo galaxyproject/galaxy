@@ -92,7 +92,7 @@
                         <label>
                             Email address of user to share with
                         </label>
-                        <div style="float: left; width: 250px; margin-right: 10px;">
+                        <div style="float: left; width: 100%;  margin-right: 10px;">
                             <input type="hidden" id="email_select" name="email" >
                             </input>
                         </div>
@@ -131,6 +131,7 @@
 
     $("#email_select").select2({
         placeholder: "Select a user",
+	width: "33%",
         multiple: false,
         initSelection: function(element, callback) {
             var data = [];

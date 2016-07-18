@@ -148,9 +148,10 @@ def expose_api( func, to_json=True, user_required=True ):
     return expose( _save_orig_fn( decorator, func ) )
 
 
-def __extract_payload_from_request(trans, func, kwargs):
-    content_type = trans.request.headers['content-type']
-    if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
+def __extract_payload_from_request( trans, func, kwargs ):
+
+    content_type = trans.request.headers[ 'content-type' ]
+    if content_type.startswith( 'application/x-www-form-urlencoded' ) or content_type.startswith( 'multipart/form-data' ):
         # If the content type is a standard type such as multipart/form-data, the wsgi framework parses the request body
         # and loads all field values into kwargs. However, kwargs also contains formal method parameters etc. which
         # are not a part of the request body. This is a problem because it's not possible to differentiate between values
@@ -158,13 +159,16 @@ def __extract_payload_from_request(trans, func, kwargs):
         # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
         # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
         payload = kwargs.copy()
-        named_args, _, _, _ = inspect.getargspec(func)
+        named_args, _, _, _ = inspect.getargspec( func )
         for arg in named_args:
-            payload.pop(arg, None)
+            payload.pop( arg, None )
         for k, v in payload.iteritems():
-            if isinstance(v, string_types):
+            if isinstance( v, string_types ):
                 try:
-                    payload[k] = loads(v)
+                    # note: parse_non_hex_float only needed here for single string values where something like
+                    # 40000000000000e5 will be parsed as a scientific notation float. This is as opposed to hex strings
+                    # in larger JSON structures where quoting prevents this (further below)
+                    payload[ k ] = loads( v, parse_float=util.parse_non_hex_float )
                 except:
                     # may not actually be json, just continue
                     pass
