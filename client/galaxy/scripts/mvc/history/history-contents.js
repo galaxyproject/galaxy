@@ -285,10 +285,14 @@ var HistoryContents = Backbone.Collection
             type = ( contentType === 'hdca'? 'dataset_collection' : 'dataset' );
         }
         var collection = this,
-            xhr = jQuery.post( this.url(), {
-                content : id,
-                source  : contentType,
-                type    : type
+            xhr = jQuery.ajax( this.url(), {
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    content : id,
+                    source  : contentType,
+                    type    : type
+                })
             })
             .done( function( response ){
                 collection.add([ response ]);
