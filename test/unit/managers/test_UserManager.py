@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+User Manager testing.
+
+Executable directly using: python -m test.unit.managers.test_UserManager
 """
 import imp
 import os
@@ -12,6 +15,7 @@ import sqlalchemy
 from six import string_types
 
 from galaxy import exceptions, model
+from galaxy.managers import base as base_manager
 from galaxy.managers import histories, users
 
 from .base import BaseTestCase
@@ -216,6 +220,45 @@ class CurrentUserSerializerTestCase( BaseTestCase ):
 
 
 # =============================================================================
+class UserDeserializerTestCase( BaseTestCase ):
+
+    def set_up_managers( self ):
+        super( UserDeserializerTestCase, self ).set_up_managers()
+        self.deserializer = users.UserDeserializer( self.app )
+
+    def _assertRaises_and_return_raised( self, exception_class, fn, *args, **kwargs ):
+        try:
+            fn( *args, **kwargs )
+        except exception_class as exception:
+            self.assertTrue( True )
+            return exception
+        assert False, '%s not raised' % ( exception_class.__name__ )
+
+    def test_username_validation( self ):
+        user = self.user_manager.create( **user2_data )
+
+        # self.log( "usernames can be unicode" ) #TODO: nope they can't
+        # self.deserializer.deserialize( user, { 'username': 'Σίσυφος' }, trans=self.trans )
+
+        self.log( "usernames must be long enough and with no non-hyphen punctuation" )
+        exception = self._assertRaises_and_return_raised( base_manager.ModelDeserializingError,
+            self.deserializer.deserialize, user, { 'username': 'ed' }, trans=self.trans )
+        self.assertTrue( 'Public name must be at least' in str( exception ) )
+        self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
+            user, { 'username': 'f.d.r.' }, trans=self.trans )
+
+        self.log( "usernames must be unique" )
+        self.user_manager.create( **user3_data )
+        self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
+            user, { 'username': 'user3' }, trans=self.trans )
+
+        self.log( "username should be updatable" )
+        new_name = 'double-plus-good'
+        self.deserializer.deserialize( user, { 'username': new_name }, trans=self.trans )
+        self.assertEqual( self.user_manager.by_id( user.id ).username, new_name )
+
+
+# =============================================================================
 class AdminUserFilterParserTestCase( BaseTestCase ):
 
     def set_up_managers( self ):
@@ -237,5 +280,4 @@ class AdminUserFilterParserTestCase( BaseTestCase ):
 
 # =============================================================================
 if __name__ == '__main__':
-    # or more generally, nosetests test_resourcemanagers.py -s -v
     unittest.main()
