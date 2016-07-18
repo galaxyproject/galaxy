@@ -192,6 +192,9 @@ class ToolExecutionTracker( object ):
                 job.add_output_dataset_collection( output_name, collection )
             collections[ output_name ] = collection
 
+        # Needed to flush the association created just above with
+        # job.add_output_dataset_collection.
+        trans.sa_session.flush()
         self.implicit_collections = collections
 
 __all__ = [ execute ]
