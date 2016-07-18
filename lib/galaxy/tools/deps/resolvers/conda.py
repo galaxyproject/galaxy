@@ -152,7 +152,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             )
 
             if not exit_code:
-                return CondaDepenency(
+                return CondaDependency(
                     self.conda_context.activate,
                     conda_environment,
                     exact,
@@ -182,7 +182,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         return self.conda_context.conda_prefix
 
 
-class CondaDepenency(Dependency):
+class CondaDependency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path', 'name', 'version']
     dependency_type = 'conda'
 

@@ -61,7 +61,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
 
     # Finds all possible dependency to use
     # Should be extended as required
-    # Returns CandidateDepenency objects with data for preference picking
+    # Returns CandidateDependency objects with data for preference picking
     def _find_possible_depenencies(self, name, version, type):
         possibles = []
         if exists(self.base_path):
@@ -71,7 +71,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                 package = self._galaxy_package_dep(path, version, True)
                 if package != INDETERMINATE_DEPENDENCY:
                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, path)
-                    possibles.append(CandidateDepenency(package, path))
+                    possibles.append(CandidateDependency(package, path))
                 # now try with an owner/name/revision
                 for owner in listdir(path):
                     owner_path = join(path, owner)
@@ -83,7 +83,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                                 package = self._galaxy_package_dep(revision_path, version, True)
                                 if package != INDETERMINATE_DEPENDENCY:
                                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, revision_path)
-                                    possibles.append(CandidateDepenency(package, package_path, owner))
+                                    possibles.append(CandidateDependency(package, package_path, owner))
         return possibles
 
     def _select_preferred_dependency(self, possibles, by_owner=None):
@@ -133,7 +133,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
     """
 
 
-class CandidateDepenency(Dependency):
+class CandidateDependency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['dependency', 'path', 'owner']
     dependency_type = 'unlinked_tool_shed_package'
 
