@@ -1026,7 +1026,7 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency_resolver( resolver_dependencies )">
+<%def name="render_tool_dependency_resolver( requirements_status )">
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
@@ -1039,17 +1039,17 @@
                     </tr>
                 </head>
                 <body>
-                    %for dependency in resolver_dependencies:
+                    %for dependency in requirements_status:
                         <tr>
                             <td>${dependency['name'] | h}</td>
                             <td>${dependency['version'] | h}</td>
-                        %if dependency['model_class'] == 'NullDependency':
+                        %if dependency['status'] == 'not installed':
                             <td>None</td>
                             <td>
                                <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency not resolved'/>
                             </td>
                         %else:
-                            <td>${dependency['model_class'] | h}</td>
+                            <td>${dependency['resolver_type'] | h}</td>
                             <td><img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/></td>
                         %endif
                         </tr>
@@ -1060,13 +1060,13 @@
     </tr>
 </%def>
 
-<%def name="render_resolver_dependencies( resolver_dependencies )">
-    %if resolver_dependencies:
+<%def name="render_resolver_dependencies( requirements_status )">
+    %if requirements_status:
         <div class="toolForm">
             <div class="toolFormTitle">Dependency Resolver Details</div>
             <div class="toolFormBody">
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="module_resolvers">
-                    ${render_tool_dependency_resolver( resolver_dependencies)}
+                    ${render_tool_dependency_resolver( requirements_status )}
                 </table>
             </div>
         </div>

@@ -110,6 +110,7 @@ class ToolBox( BaseGalaxyToolBox ):
         )
         self._view = views.DependencyResolversView(app)
 
+    @property
     def all_tools_requirements(self):
         reqs = []
         for desc, tool in self.tools():
@@ -118,22 +119,6 @@ class ToolBox( BaseGalaxyToolBox ):
                     reqs.append(json.dumps(requirement.to_dict(), sort_keys=True))
         reqs = [json.loads(req) for req in set(reqs)]
         return reqs
-
-    def tool_requirements(self, tool):
-        reqs = [req.to_dict() for req in tool.requirements if req.type == 'package']
-        return reqs
-
-    def tool_requirements_status(self, id):
-        tool = self._tools_by_id[id]
-        requirements = self.tool_requirements(tool)
-        installed_requirements = self._view.manager_requirements()
-        result = []
-        for req in requirements:
-            for ireq in installed_requirements:
-                if req == ireq['requirement']:
-                    req['status'] = "installed through %i" % ireq['index']
-                    result.append(req)
-        return result
 
     @property
     def tools_by_id( self ):
@@ -337,6 +322,7 @@ class Tool( object, Dictifiable ):
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
         self.history_manager = histories.HistoryManager( app )
+        self._view = views.DependencyResolversView(app)
 
     @property
     def sa_session( self ):
@@ -1318,6 +1304,21 @@ class Tool( object, Dictifiable ):
         else:
             installed_tool_dependencies = None
         return installed_tool_dependencies
+
+    @property
+    def tool_requirements(self):
+        """
+        Return all requiremens of type package
+        """
+        reqs = [req.to_dict() for req in self.requirements if req.type == 'package']
+        return reqs
+
+    @property
+    def tool_requirements_status(self):
+        """
+        Return a list of dictionaries for all tool dependencies with their associated status
+        """
+        return self._view.get_requirements_status(self.tool_requirements)
 
     def build_redirect_url_params( self, param_dict ):
         """

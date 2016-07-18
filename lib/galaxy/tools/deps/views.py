@@ -95,3 +95,20 @@ class DependencyResolversView(object):
         dependency_manager = self._dependency_manager
         dependency_resolvers = dependency_manager.dependency_resolvers
         return dependency_resolvers
+
+    def get_requirements_status(self, requested_requirements):
+        result = []
+        installed_requirements = self.manager_requirements()
+        for req in requested_requirements:
+            resolved = False
+            for ireq in installed_requirements:
+                if req == ireq['requirement']:
+                    req['status'] = "installed"
+                    req['resolver_type'] = self._dependency_resolvers[ireq['index']].resolver_type
+                    req['versionless'] = self._dependency_resolvers[ireq['index']].versionless
+                    result.append(req)
+                    resolved = True
+            if not resolved:
+                req['status'] = "not installed"
+                result.append(req)
+        return result

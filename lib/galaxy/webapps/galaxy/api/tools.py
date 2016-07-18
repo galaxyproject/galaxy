@@ -116,20 +116,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         Return list of unique requirements for all tools.
         """
 
-        return trans.app.toolbox.all_tools_requirements()
+        return trans.app.toolbox.all_requirements()
 
     @expose_api
     @web.require_admin
-    def tool_requirements_status(self, trans, id, **kwds):
+    def requirements(self, trans, id, **kwds):
         """
-        GET /api/tools/{tool_id}/requirements_status
-        Return the resolver status (Are dependencies resolved).
-
-	[{'name'='r-deseq2', 'resolver': 'CondaDependencyResolver', 'exact': True},
-	 {'name'='r-edger', 'resolver': 'CondaDependencyResolver', 'exact': False}]
+        GET /api/tools/{tool_id}/requirements
+        Return the resolver status.
+        [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}
         """
-
-        return trans.app.toolbox.tool_requirements_status(id)
+        tool = self._get_tool(id)
+        return tool.tool_requirements_status
 
     @expose_api
     @web.require_admin
