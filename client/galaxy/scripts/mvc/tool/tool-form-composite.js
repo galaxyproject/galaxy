@@ -372,7 +372,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation complete.', job_def );
                 Utils.request({
                     type    : 'POST',
-                    url     : Galaxy.root + 'internal_api/workflows/' + this.model.id + '/run',
+                    url     : Galaxy.root + 'api_internal/workflows/' + this.model.id + '/run',
                     data    : job_def,
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
