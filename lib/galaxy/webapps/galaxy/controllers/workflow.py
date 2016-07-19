@@ -29,7 +29,7 @@ from galaxy.workflow.extract import summarize
 from galaxy.workflow.modules import MissingToolException
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.modules import WorkflowModuleInjector
-from galaxy.workflow.render import WorkflowCanvas
+from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
 
@@ -519,7 +519,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             message = 'Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools.'
             return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored, status=status, message=message )
         trans.response.set_content_type("image/svg+xml")
-        return svg.tostring()
+        s = STANDALONE_SVG_TEMPLATE % svg.tostring()
+        return s.encode('utf-8')
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
