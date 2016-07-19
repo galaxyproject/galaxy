@@ -116,7 +116,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         Return list of unique requirements for all tools.
         """
 
-        return trans.app.toolbox.all_requirements()
+        return trans.app.toolbox.all_requirements
 
     @expose_api
     @web.require_admin
