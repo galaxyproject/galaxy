@@ -970,7 +970,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     data_checked = False
     temp = open( file_name, "U" )
     last_line = ''
-    while count <= LINE_COUNT:
+    while count < LINE_COUNT:
         line = last_line + temp.readline( WIDTH - len( last_line ) )
         if line and not is_multi_byte and not data_checked:
             # See if we have a compressed or binary file
@@ -988,7 +988,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
         if not line_wrap:
             if '\n' in line:
                 i = line.index( '\n' )
-                last_line = line[i:]
+                last_line = line[i + 1:]
                 line = line[:i]
             else:
                 last_line = ''
