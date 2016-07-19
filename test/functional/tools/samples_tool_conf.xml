@@ -41,6 +41,7 @@
   <tool file="output_format.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
   <tool file="create_10.xml" />
