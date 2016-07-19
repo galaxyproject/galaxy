@@ -427,11 +427,20 @@ class DeleteIntermediatesAction(DefaultJobAction):
                 else:
                     log.debug("No job found yet for wfi_step %s, (step %s)" % (wfi_step, wfi_step.workflow_step))
             for j2c in jobs_to_check:
-                creating_jobs = [(x, x.dataset.creating_job) for x in j2c.input_datasets if x.dataset.creating_job]
-                for (x, creating_job) in creating_jobs:
+                creating_jobs = []
+                for input_dataset in j2c.input_datasets:
+                    if not input_dataset.dataset:
+                        log.debug("PJA Async Issue: No dataset attached to input_dataset %s during handling of workflow invocation %s" % (input_dataset.id, wfi))
+                    elif not input_dataset.dataset.creating_job:
+                        log.debug("PJA Async Issue: No creating job attached to dataset %s during handling of workflow invocation %s" % (input_dataset.dataset.id, wfi))
+                    else:
+                        creating_jobs.append((input_dataset, input_dataset.dataset.creating_job))
+                for (input_dataset, creating_job) in creating_jobs:
                     sa_session.refresh(creating_job)
-                    sa_session.refresh(x)
+                    sa_session.refresh(input_dataset)
                 for input_dataset in [x.dataset for (x, creating_job) in creating_jobs if creating_job.workflow_invocation_step and creating_job.workflow_invocation_step.workflow_invocation == wfi]:
+                    # note that the above input_dataset is a reference to a
+                    # job.input_dataset.dataset at this point
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
                         if job_to_check != job and job_to_check.state not in [job.states.OK, job.states.DELETED]:

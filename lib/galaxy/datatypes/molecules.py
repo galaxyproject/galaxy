@@ -393,7 +393,7 @@ class OBFS(Binary):
             return "OpenBabel Fastsearch Index"
 
     def display_data(self, trans, data, preview=False, filename=None,
-                     to_ext=None, size=None, offset=None, **kwd):
+                     to_ext=None, **kwd):
         """Apparently an old display method, but still gets called.
 
         This allows us to format the data shown in the central pane via the "eye" icon.
