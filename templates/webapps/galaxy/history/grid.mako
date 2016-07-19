@@ -15,11 +15,25 @@
                 return ( $link.attr( 'href' ).match( /id=(\w+)/ ) || [] )[1];
             }
 
-            // wait for page ready and set it all up
+            // wait for page ready and set it all up, do it again when the grid refreshes
             $(function(){
-                var $buttons = $( '.popup.menubutton' ).each( function( i ){
-                    copyDialogHack.call( this, i, findHistoryId );
-                });
+                if( !gridView ){
+                    console.warn( 'no grid' );
+                    return;
+                }
+
+                function replaceCopyFunction(){
+                    gridView.$( '.popup.menubutton' ).each( function( i ){
+                        copyDialogHack.call( this, i, findHistoryId );
+                    });
+                }
+                replaceCopyFunction();
+
+                var originalInitGrid = gridView.init_grid;
+                gridView.init_grid = function __patched_init_grid( json ){
+                    originalInitGrid.call( gridView, json );
+                    replaceCopyFunction();
+                };
             });
         });
     </script>
