@@ -842,7 +842,8 @@ def validate_config(obj, return_bool=False):
                                             log.debug(error)
                                         valid_config = False
                                     else:
-                                        for priority, destination in (curr['default_destination']['priority']):
+                                        for priority in curr['default_destination']['priority']:
+                                            destination = curr['default_destination']['priority'][priority]
                                             if priority in ['low', 'med', 'high']:
                                                 if isinstance(destination, str):
                                                     new_config['tools'][tool]['default_destination']['priority'][priority] = destination
