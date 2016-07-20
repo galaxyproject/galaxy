@@ -123,8 +123,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     def requirements(self, trans, id, **kwds):
         """
         GET /api/tools/{tool_id}/requirements
-        Return the resolver status.
-        [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}
+        Return the resolver status for a specific tool id.
+        [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}]
         """
         tool = self._get_tool(id)
         return tool.tool_requirements_status
