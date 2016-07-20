@@ -98,17 +98,26 @@ class DependencyResolversView(object):
 
     def get_requirements_status(self, requested_requirements):
         result = []
-        installed_requirements = self.manager_requirements()
         for req in requested_requirements:
-            resolved = False
-            for ireq in installed_requirements:
-                if req == ireq['requirement']:
-                    req['status'] = "installed"
-                    req['resolver_type'] = self._dependency_resolvers[ireq['index']].resolver_type
-                    req['versionless'] = self._dependency_resolvers[ireq['index']].versionless
-                    result.append(req)
-                    resolved = True
-            if not resolved:
+            installed_requirement = self.requirement_installed(req)
+            if not installed_requirement:
                 req['status'] = "not installed"
+                req['exact'] = "NA"
+                req['resolver_type'] = None
                 result.append(req)
+            else:
+                result.append(installed_requirement)
         return result
+
+    def requirement_installed(self, requirement):
+        installed_requirements = self.manager_requirements()
+        for ireq in installed_requirements:
+            if requirement['name'] == ireq['requirement']['name']:
+                requirement['resolver_type'] = self._dependency_resolvers[ireq['index']].resolver_type
+                versionless = self._dependency_resolvers[ireq['index']].versionless
+                if (requirement['version'] == ireq['requirement']['version'] and requirement['version'] and not versionless) or (
+                    versionless and not ireq['requirement']['version']):
+                    requirement['status'] = "installed"
+                    requirement['exact'] = not versionless
+                    return requirement
+        return None

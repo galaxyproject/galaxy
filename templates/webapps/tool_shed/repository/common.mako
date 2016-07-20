@@ -1035,6 +1035,7 @@
                         <th>Dependency</th>
                         <th>Version</th>
                         <th>Resolver</th>
+                        <th>Exact version</th>
                         <th>Status<th>
                     </tr>
                 </head>
@@ -1043,13 +1044,17 @@
                         <tr>
                             <td>${dependency['name'] | h}</td>
                             <td>${dependency['version'] | h}</td>
+                            <td>${dependency['resolver_type'] | h}</td>
+                            <td>${dependency['exact'] | h}</td>
                         %if dependency['status'] == 'not installed':
-                            <td>None</td>
                             <td>
-                               <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency not resolved'/>
+                               <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
+                            </td>
+                        %elif not dependency['exact']:
+                            <td>
+                                <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
                             </td>
                         %else:
-                            <td>${dependency['resolver_type'] | h}</td>
                             <td><img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/></td>
                         %endif
                         </tr>
