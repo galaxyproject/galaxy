@@ -168,7 +168,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
     def install_dependency(self, name, version, type, **kwds):
         if type != "package":
-            raise NotImplemented("Can only install dependencies of type '%s'" % type)
+            raise NotImplemented("Can not install dependencies of type '%s'" % type)
 
         if self.versionless:
             version = None
