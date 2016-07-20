@@ -379,8 +379,19 @@
             <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->
         </destination>
         <destination id="dynamic" runner="dynamic">
-            <!-- A destination that represents a method in the dynamic runner. -->
+            <!-- A destination that represents a method in the dynamic runner.
+
+                 foo should be a Python function defined in any file in
+                 lib/galaxy/jobs/rules.
+            -->
             <param id="function">foo</param>
+        </destination>
+        <destination id="dtd_destination" runner="dynamic">
+            <!-- DTD is a special dynamic job destination type that builds up
+                 rules given a YAML-based DSL (see config/tool_destinations.yml.sample
+                 for the syntax).
+            -->
+            <param id="type">dtd</param>
         </destination>
         <destination id="load_balance" runner="dynamic">
             <param id="type">choose_one</param>
