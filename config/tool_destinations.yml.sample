@@ -1,22 +1,31 @@
-# The configuration for each tool is done in tool_destinations.yml. You may either edit
-# this file in the root folder and run make clean then make install, or you can
-# edit this file directly in galaxy_path/config/tool_destinations.yml
-#
-# The configuration will have three main levels (or key properties) - tools,
-# default_destination, and verbose.
+# Dynamic Tool Destinations config has four main levels (or key properties) - tools,
+# default_destination, users, and verbose.
 #
 # Under tools is where you put the IDs of the tools. Tool IDs must be
 # distinct. In each tool is a list of rules, each of which contain rule-specific
-# paremeters. DynamicToolDestination.py is set up to allow and fix a few light errors
+# paremeters. Dynamic Tool Destination is set up to allow and fix a few light errors
 # in the config, but it's best to follow the specified template.
 #
 # default_destination, the second key property, specifies which global destination
 # to default to in case none of the rules apply.
 #
-# A third key property is verbose. When this is set to True, Dynamic Tool Destination
+# users, the third key property, can be used to assign a priority to a user. Three priorities
+# are available low, med, and high. By default all users are assumed to be med priority. If
+# a rule has priority destinations the user will be set to the destination which matches their priority
+# or if their priority isn't available they will be matched to the next closest one.
+#
+# A fourth key property is verbose. When this is set to True, Dynamic Tool Destination
 # gives much more descriptive output regarding the steps it's taking in mapping your tools to
 # the appropriate destinations, including config validation and any potential errors found in the
 # config.
+#
+# Note: Configurations can be validated with the following command:
+#
+#    python lib/galaxy/jobs/dynamic_tool_destination.py -c
+#
+# or
+#
+#    python lib/galaxy/jobs/dynamic_tool_destination.py -c /path/to/tool_destinations.yml
 #
 # The general template is as follows (note that this template
 # does not use quote symbols), using spades and smalt as an example
@@ -27,15 +36,15 @@
 #
 # tools:
 #   spades:
-# 	rules:
+#     rules:
 #       - rule_type: what kind of rule is it?
 #         nice_value: what kind of priority does this rule have over others?
 #         destination: how should this tool be run?
 #         lower_bound: what's the max file size?
 #         upper_bound: what's the minimum file size?
-#         users: (optional) which users does this rule apply to
+#         users: #(optional) which users does this rule apply to
 #           - user@example.com
-# 	default_destination: this tool-specific field is optional
+#     default_destination: this tool-specific field is optional
 #   smalt_map:
 #     rules:
 #       - rule_type: file_size
