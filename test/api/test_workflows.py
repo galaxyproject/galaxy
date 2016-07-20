@@ -920,7 +920,11 @@ steps:
         index_map = {
             '0': self._ds_entry(hda1),
         }
-        invocation_id = self.__invoke_workflow( history_id, uploaded_workflow_id, index_map )
+        invocation_id = self.__invoke_workflow(
+            history_id,
+            uploaded_workflow_id,
+            index_map,
+        )
         # Give some time for workflow to get scheduled before scanning the history.
         time.sleep( 5 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
@@ -932,10 +936,17 @@ steps:
 
         self.__review_paused_steps( uploaded_workflow_id, invocation_id, order_index=2, action=True )
 
-        time.sleep( 5 )
+        invocation_scheduled = False
+        for i in range( 25 ):
+            invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+            if invocation[ 'state' ] == 'scheduled':
+                invocation_scheduled = True
+                break
+
+            time.sleep( .5 )
+
+        assert invocation_scheduled, "Workflow state is not scheduled..."
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
-        assert invocation[ 'state' ] == 'scheduled', invocation
 
     @skip_without_tool( "cat" )
     def test_workflow_pause_cancel( self ):
