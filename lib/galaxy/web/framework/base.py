@@ -464,6 +464,6 @@ def flatten( seq ):
     """
     if isinstance( seq, ( types.GeneratorType, list, tuple ) ):
         for y in flatten( seq ):
-            yield y
+            yield smart_str(y)
     else:
-        yield seq
+        yield smart_str(seq)
