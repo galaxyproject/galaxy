@@ -462,9 +462,8 @@ def flatten( seq ):
     """
     Flatten a possible nested set of iterables
     """
-    for x in seq:
-        if isinstance( x, ( types.GeneratorType, list, tuple ) ):
-            for y in flatten( x ):
-                yield y
-        else:
-            yield x
+    if isinstance( seq, ( types.GeneratorType, list, tuple ) ):
+        for y in flatten( seq ):
+            yield y
+    else:
+        yield seq
