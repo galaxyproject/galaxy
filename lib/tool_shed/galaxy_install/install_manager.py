@@ -908,9 +908,9 @@ class InstallRepositoryManager( object ):
                     error_message += "from the installed repository's <b>Repository Actions</b> menu.  "
                 if install_tool_dependencies:
                     requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
-                    [self.app.toolbox.dependency_manager.find_dep(name = req['name'],
-                                                                  version = req['version'],
-                                                                  type = 'package',
+                    [self.app.toolbox.dependency_manager.find_dep(name=req['name'],
+                                                                  version=req['version'],
+                                                                  type='package',
                                                                   **dict(job_directory=None,
                                                                          index=None,
                                                                          manual_install=True))

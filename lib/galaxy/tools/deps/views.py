@@ -115,8 +115,7 @@ class DependencyResolversView(object):
             if requirement['name'] == ireq['requirement']['name']:
                 requirement['resolver_type'] = self._dependency_resolvers[ireq['index']].resolver_type
                 versionless = self._dependency_resolvers[ireq['index']].versionless
-                if (requirement['version'] == ireq['requirement']['version'] and requirement['version'] and not versionless) or (
-                    versionless and not ireq['requirement']['version']):
+                if (requirement['version'] == ireq['requirement']['version'] and requirement['version'] and not versionless) or (versionless and not ireq['requirement']['version']):
                     requirement['status'] = "installed"
                     requirement['exact'] = not versionless
                     return requirement
