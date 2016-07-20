@@ -462,8 +462,9 @@ def flatten( seq ):
     """
     Flatten a possible nested set of iterables
     """
-    if isinstance( seq, ( types.GeneratorType, list, tuple ) ):
-        for y in flatten( seq ):
-            yield smart_str(y)
-    else:
-        yield smart_str(seq)
+    for x in seq:
+        if isinstance( x, ( types.GeneratorType, list, tuple ) ):
+            for y in flatten( x ):
+                yield smart_str( y )
+        else:
+            yield smart_str( x )
