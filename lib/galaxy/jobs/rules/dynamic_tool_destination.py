@@ -1103,7 +1103,7 @@ def importer(test):
 
 
 def map_tool_to_destination(
-        job, app, tool, user_email, test=False, path="/config/tool_destinations.yml"):
+        job, app, tool, user_email, test=False, path=None):
     """
     Dynamically allocate resources
 
@@ -1128,6 +1128,9 @@ def map_tool_to_destination(
     records_rule_present = False
 
     # Get configuration from tool_destinations.yml
+    if path is None:
+        path = app.config.tool_destinations_config_file
+
     try:
         config = parse_yaml(path)
     except MalformedYMLException as e:
