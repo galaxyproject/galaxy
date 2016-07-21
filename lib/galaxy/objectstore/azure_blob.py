@@ -29,7 +29,7 @@ NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.bl
 log = logging.getLogger( __name__ )
 
 
-class AzureObjectStore(ObjectStore):
+class AzureBlobObjectStore(ObjectStore):
     """
     Object store that stores objects as blobs in an Azure Blob Container. A local
     cache exists that is used as an intermediate location for files between
@@ -38,7 +38,7 @@ class AzureObjectStore(ObjectStore):
     def __init__(self, config, config_xml):
         if BlockBlobService is None:
             raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
-        super(AzureObjectStore, self).__init__(config)
+        super(AzureBlobObjectStore, self).__init__(config)
 
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
