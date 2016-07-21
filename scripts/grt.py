@@ -9,7 +9,6 @@ import os
 import sys
 import json
 import urllib2
-from ConfigParser import ConfigParser
 import argparse
 import sqlalchemy as sa
 import yaml
@@ -17,6 +16,7 @@ import re
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
+from galaxy.util.properties import load_app_properties
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
@@ -31,16 +31,8 @@ def init(config):
     else:
         config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
 
-    config_parser = ConfigParser(dict(
-        here=os.getcwd(),
-        database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'
-    ))
-    config_parser.read(config)
-    config_dict = {}
-    for key, value in config_parser.items("app:main"):
-        config_dict[key] = value
-
-    config = galaxy.config.Configuration(**config_dict)
+    properties = load_app_properties(ini_file=config)
+    config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
 
     return (
