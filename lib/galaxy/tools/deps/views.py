@@ -46,6 +46,14 @@ class DependencyResolversView(object):
         return self._dependency(**kwds)
 
     def install_dependency(self, index=None, **payload):
+        """
+        Installs dependency using highest priority resolver that supports dependency installation
+        (Currently only the conda resolver supports this). If index is given, attempt
+        installation directly using the corresponding resolver.
+        Returns True on success, False on failure.
+        payload is dictionary that must container name, version and type,
+        e.g. {'name': 'numpy', version='1.9.1', type='package'}
+        """
         if index:
             return self._install_dependency(index, **payload)
         else:
