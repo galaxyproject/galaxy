@@ -9,4 +9,5 @@ raven
 pbs_python
 drmaa
 statsd
+azure-storage
 # PyRods not in PyPI

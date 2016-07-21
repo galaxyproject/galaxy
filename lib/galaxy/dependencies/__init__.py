@@ -76,6 +76,9 @@ class ConditionalDependencies( object ):
         # pygments is a dependency of weberror and only weberror
         return self.check_weberror()
 
+    def check_azure_storage( self ):
+        return self.config.get("azure_account_name", None) is not None and
+               self.config.get("azure_account_key", None) is not None
 
 def optional( config_file ):
     rval = []
