@@ -45,6 +45,10 @@
     margin-bottom: @ui-margin-vertical !important;
 }
 
+.ui-margin-right {
+    margin-right: @ui-margin-vertical !important;
+}
+
 .ui-margin-both {
     &:extend(ui-margin-top);
     &:extend(ui-margin-bottom);
@@ -110,7 +114,7 @@
 
 // buttons
 .ui-button {
-    i {
+    .icon {
         font-size: 1.1em;
     }
 }
@@ -131,14 +135,12 @@
     .button {
         margin-right: @ui-margin-horizontal;
         margin-left: @ui-margin-horizontal;
-    
         .title {
             position: relative;
             font-size: 0.8em;
             font-weight: normal;
             top: -1px;
             word-break:break-word;
-            margin-left: 5px;
         }
     }
     .button.disabled {

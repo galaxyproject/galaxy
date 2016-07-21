@@ -16,7 +16,6 @@ define( [ 'utils/utils' ], function( Utils ) {
             }).set( options );
             this.setElement( $( '<button/>' ).attr( 'type', 'button' )
                                              .append( this.$icon  = $( '<i/>' ) )
-                                             .append( '&nbsp;' )
                                              .append( this.$title = $( '<span/>' ) ) );
             this.listenTo( this.model, 'change', this.render, this );
             this.render();
@@ -38,6 +37,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     .tooltip( { title: options.tooltip, placement: 'bottom' } );
             this.$icon.removeClass().addClass( 'icon fa' ).addClass( options.icon );
             this.$title.removeClass().addClass( 'title' ).html( options.title );
+            options.icon && options.title && this.$icon.addClass( 'ui-margin-right' );
             if ( options.wait ) {
                 this.$el.removeClass( options.cls ).addClass( options.wait_cls ).prop( 'disabled', true );
                 this.$icon.removeClass( options.icon ).addClass( 'fa-spinner fa-spin' );
@@ -134,7 +134,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     });
             this.$title.html( options.title );
             this.$icon.removeClass()
-                      .addClass( 'icon fa' )
+                      .addClass( 'icon fa ui-margin-right' )
                       .addClass( options.icons[ options.value ] );
         },
 
@@ -188,7 +188,8 @@ define( [ 'utils/utils' ], function( Utils ) {
                     });
             this.$button.addClass( 'button' ).tooltip( { title: options.tooltip, placement: 'bottom' } );
             this.$icon.removeClass().addClass( 'icon fa' ).addClass( options.icon );
-            options.title && this.$title.addClass( 'title' ).html( options.title );
+            this.$title.addClass( 'title' ).html( options.title );
+            options.icon && options.title && this.$icon.addClass( 'ui-margin-right' );
         }
     });
 
@@ -235,7 +236,8 @@ define( [ 'utils/utils' ], function( Utils ) {
                             options.onclick && options.onclick();
                       } );
             this.$icon.removeClass().addClass( 'icon fa' ).addClass( options.icon );
-            options.title && this.$title.removeClass().addClass( 'title' ).html( options.title );
+            this.$title.removeClass().addClass( 'title' ).html( options.title );
+            options.icon && options.title && this.$icon.addClass( 'ui-margin-right' );
         },
 
         /** Add a new menu item */
