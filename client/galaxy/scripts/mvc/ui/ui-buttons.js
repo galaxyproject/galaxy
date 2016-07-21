@@ -29,7 +29,7 @@ define(['utils/utils'], function( Utils ) {
                     .addClass( options.cls )
                     .addClass( options.disabled && 'disabled' )
                     .attr( 'id', options.id )
-                    .prop( 'disabled', options.disabled )
+                    .attr( 'disabled', options.disabled )
                     .css( 'float', options.floating )
                     .off( 'click' ).on( 'click' , function() {
                         $( '.tooltip' ).hide();
@@ -63,6 +63,11 @@ define(['utils/utils'], function( Utils ) {
         /** Hide spinner to indicate that the button is ready to be clicked */
         unwait: function() {
             this.model.set( 'wait', false );
+        },
+
+        /** Change icon */
+        setIcon: function( icon ) {
+            this.model.set( 'icon', icon );
         }
     });
 
@@ -141,82 +146,40 @@ define(['utils/utils'], function( Utils ) {
         }
     });
 
-    /** This renders a differently styled, more compact button version.
-        TODO: Consolidate with icon-button.js and/or button-default.js.
-    */
-    var ButtonIcon = Backbone.View.extend({
-        initialize : function( options ) {
-            // get options
-            this.options = Utils.merge( options, {
+    /** This renders a differently styled, more compact button version. */
+    var ButtonIcon = ButtonDefault.extend({
+        initialize: function( options ) {
+            this.model = options && options.model || new Backbone.Model({
                 id          : Utils.uid(),
                 title       : '',
                 floating    : 'right',
-                cls         : 'ui-button-icon',
                 icon        : '',
-                tooltip     : '',
-                onclick     : null
-            });
+                cls         : 'ui-button-icon',
+                disabled    : false
+            }).set( options );
+            this.setElement( $( '<div/>' ).append( this.$button = $( '<div/>' ).append( this.$icon  = $( '<i/>' ) )
+                                                                               .append( this.$title = $( '<span/>' ) ) ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
+        },
 
-            // create new element
-            this.setElement( this._template( this.options ) );
-
-            // link button element
-            this.$button = this.$el.find( '.button' );
-
-            // add event
+        render : function( options ) {
             var self = this;
-            $(this.el).on('click', function() {
-                // hide all tooltips
-                $( '.tooltip' ).hide();
-
-                // execute onclick callback
-                if ( options.onclick && !self.disabled ) {
-                    options.onclick();
-                }
-            });
-
-            // add tooltip
-            this.$button.tooltip( { title: options.tooltip, placement: 'bottom' } );
-        },
-
-        // disable
-        disable: function() {
-            this.$button.addClass( 'disabled' );
-            this.disabled = true;
-        },
-
-        // enable
-        enable: function() {
-            this.$button.removeClass( 'disabled' );
-            this.disabled = false;
-        },
-
-        // change icon
-        setIcon: function(icon_cls) {
-            this.$('i').removeClass( this.options.icon ).addClass( icon_cls );
-            this.options.icon = icon_cls;
-        },
-
-        // template
-        _template: function( options ) {
-            // width
-            var width = '';
-            if ( options.title ) {
-                width = 'width: auto;';
-            }
-
-            // string
-            var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="' + options.cls + '">' +
-                            '<div class="button">';
-            if (options.title) {
-                str +=          '<i class="icon fa ' + options.icon + '"/>&nbsp;' +
-                                '<span class="title">' + options.title + '</span>';
-            } else {
-                str +=          '<i class="icon fa ' + options.icon + '"/>';
-            }
-            str +=          '</div>' +
-                        '</div>';
-            return str;
+            var options = this.model.attributes;
+            this.$el.removeClass()
+                    .addClass( options.cls )
+                    .addClass( options.disabled && 'disabled' )
+                    .attr( 'disabled', options.disabled )
+                    .attr( 'id', options.id )
+                    .css( { float : options.floating,
+                            width : options.title && 'auto' } )
+                    .off( 'click' ).on( 'click', function() {
+                        $( '.tooltip' ).hide();
+                        !options.disabled && options.onclick && options.onclick();
+                    });
+            this.$button.addClass( 'button' ).tooltip( { title: options.tooltip, placement: 'bottom' } );
+            this.$icon.removeClass().addClass( 'icon fa' ).addClass( options.icon );
+            options.title && this.$title.addClass( 'title' ).html( options.title );
         }
     });
 

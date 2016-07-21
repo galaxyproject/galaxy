@@ -30,14 +30,33 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         model.set( 'wait', false );
         ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
     });
-
-    test( 'button-link', function() {
-        var button = new Ui.ButtonLink( { title: 'title' } );
+    test( 'button-default', function() {
+        var button = new Ui.Button( { title: 'title' } );
         var model = button.model;
         $( 'body' ).prepend( button.$el );
-        ok( button.$el.attr( 'title' ) == 'title', 'Has correct title' );
+        ok( button.$title.html() == 'title', 'Has correct title' );
         model.set( 'title', '_title' );
-        ok( button.$el.attr( 'title' ) == '_title', 'Has correct new title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        model.set( 'disabled', true );
+        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        model.set( 'disabled', false );
+        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        model.set( 'wait', true );
+        ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
+        model.set( 'wait_text', 'wait_text' );
+        ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
+        model.set( 'wait', false );
+        ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
+    });
+
+    test( 'button-icon', function() {
+        var button = new Ui.ButtonIcon( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
         ok( !button.$el.attr( 'disabled' ), 'Button active' );
         model.set( 'disabled', true );
         ok( button.$el.attr( 'disabled' ), 'Button disabled' );
