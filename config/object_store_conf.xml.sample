@@ -43,7 +43,7 @@
         -->
 
         <!-- Sample Azure Object Store
-        <object_store type="Azure">
+        <object_store type="azure_blob">
             <auth account_name="..." account_key="...." />
             <container name="unique_container_name" max_chunk_size="250"/>
             <cache path="database/object_store_cache" size="100" />
