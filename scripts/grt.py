@@ -103,7 +103,8 @@ def sanitize_value(unsanitized_value):
     return sanitized_value
 
 
-if __name__ == '__main__':
+def main(argv):
+    """Entry point for GRT statistics collection."""
     parser = argparse.ArgumentParser()
     parser.add_argument('instance_id', help='Galactic Radio Telescope Instance ID')
     parser.add_argument('api_key', help='Galactic Radio Telescope API Key')
@@ -111,7 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', dest='config', help='Path to GRT config file (scripts/grt.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
     parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)')
-    args = parser.parse_args()
+    args = parser.parse_args(argv[1:])
 
     print 'Loading GRT ini...'
     try:
@@ -228,3 +229,6 @@ if __name__ == '__main__':
         # Update grt.ini with last id of job (prevent duplicates from being sent)
         with open(args.config, 'w') as f:
             yaml.dump(config_dict, f, default_flow_style=False)
+
+if __name__ == '__main__':
+    main(sys.argv)
