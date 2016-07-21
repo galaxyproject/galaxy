@@ -96,34 +96,34 @@ define(['utils/utils'], function( Utils ) {
     /** The check button is used in the tool form and allows to distinguish between multiple states e.g. all, partially and nothing selected. */
     var ButtonCheck = Backbone.View.extend({
         initialize: function( options ) {
-            // configure options
-            this.options = Utils.merge(options, {
-                title : 'Select/Unselect all',
-                icons : ['fa fa-square-o', 'fa fa-minus-square-o', 'fa fa-check-square-o'],
-                value : 0
-            });
-
-            // create new element
-            this.setElement( this._template() );
-            this.$title = this.$( '.title' );
-            this.$icon  = this.$( '.icon' );
-
-            // set initial value
-            this.value( this.options.value );
-
-            // set title
-            this.$title.html( this.options.title );
-
-            // add event handler
-            var self = this;
-            this.$el.on('click', function() {
-                self.current = ( self.current === 0 && 2 ) || 0;
-                self.value( self.current );
-                self.options.onclick && self.options.onclick();
-            });
+            this.model = options && options.model || new Backbone.Model({
+                id          : Utils.uid(),
+                title       : 'Select/Unselect all',
+                icons       : [ 'fa-square-o', 'fa-minus-square-o', 'fa-check-square-o' ],
+                value       : 0,
+                onchange    : function(){}
+            }).set( options );
+            this.setElement( $( '<div/>' ).append( this.$icon   = $( '<span/>' ) )
+                                          .append( this.$title  = $( '<span/>' ) ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
         },
 
-        /* Sets a new value and/or returns the current value.
+        render: function( options ) {
+            var self = this;
+            var options = this.model.attributes;
+            this.$el.addClass( 'ui-button-check' )
+                    .off( 'click' ).on('click', function() {
+                        self.model.set( 'value', ( self.model.get( 'value' ) === 0 && 2 ) || 0 );
+                        options.onclick && options.onclick();
+                    });
+            this.$title.html( options.title );
+            this.$icon.removeClass()
+                      .addClass( 'icon fa' )
+                      .addClass( options.icons[ options.value ] );
+        },
+
+        /* Sets a new value and/or returns the value.
         * @param{Integer}   new_val - Set a new value 0=unchecked, 1=partial and 2=checked.
         * OR:
         * @param{Integer}   new_val - Number of selected options.
@@ -131,27 +131,13 @@ define(['utils/utils'], function( Utils ) {
         */
         value: function ( new_val, total ) {
             if ( new_val !== undefined ) {
-                if ( total ) {
-                    if ( new_val !== 0 ) {
-                        new_val = ( new_val !== total ) && 1 || 2;
-                    }
+                if ( total && new_val !== 0 ) {
+                    new_val = ( new_val !== total ) && 1 || 2;
                 }
-                this.current = new_val;
-                this.$icon.removeClass()
-                          .addClass( 'icon' )
-                          .addClass( this.options.icons[ new_val ] );
-                this.options.onchange && this.options.onchange( new_val );
+                this.model.set( 'value', new_val );
+                this.model.get( 'onchange' )( this.model.get( 'value' ) );
             }
-            return this.current;
-        },
-
-        /** Template containing the check button and the title
-        */
-        _template: function() {
-            return  '<div class="ui-button-check" >' +
-                        '<span class="icon"/>' +
-                        '<span class="title"/>' +
-                    '</div>';
+            return this.model.get( 'value' );
         }
     });
 
