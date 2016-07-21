@@ -14,7 +14,7 @@ from datetime import datetime
 from galaxy.exceptions import ObjectNotFound, ObjectInvalid
 from galaxy.util import umask_fix_perms, safe_relpath, directory_hash_id
 from galaxy.util.sleeper import Sleeper
-dfrom ..objectstore import ObjectStore, convert_bytes
+from ..objectstore import ObjectStore, convert_bytes
 
 
 try:
