@@ -89,9 +89,14 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         auto_install = _string_as_bool(get_option("auto_install"))
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
 
-        if auto_init and not os.path.exists(conda_context.conda_prefix):
-            if install_conda(conda_context):
-                raise Exception("Conda installation requested and failed.")
+        if not os.path.exists(conda_context.conda_prefix):
+            if auto_init:
+                if install_conda(conda_context):
+                    self.disabled = True
+                    log.warning("Conda installation requested and failed.")
+            else:
+                self.disabled = True
+                log.warning("Conda not installed and auto-installation disabled.")
 
         self.conda_context = conda_context
         self.auto_install = auto_install

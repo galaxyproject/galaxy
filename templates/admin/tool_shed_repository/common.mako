@@ -110,6 +110,7 @@
             </p>
         </div>
     </div>
+    %if install_resolver_dependencies_check_box:
     <div class="form-row">
         <label>Install resolvable dependencies (Currently conda-only) ?</label>
         ${install_resolver_dependencies_check_box.get_html()}
@@ -117,9 +118,10 @@
             Un-check to skip automatic installation of tool dependencies.
         </div>
     </div>
+    %endif
     <div style="clear: both"></div>
     %if repository_dependencies_root_folder or missing_repository_dependencies_root_folder:
-        %if repository_dependencies_check_box is not None:
+        %if repository_dependencies_check_box:
             <div class="form-row">
                 %if export:
                     <label>Export repository dependencies?</label>
@@ -159,19 +161,20 @@
         %endif
     %endif
     %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
-        <div class="form-row">
-            <label>Handle tool dependencies?</label>
-            <% disabled = trans.app.config.tool_dependency_dir is None %>
-            ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
-            <div class="toolParamHelp" style="clear: both;">
-                %if disabled:
-                    Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
-                %else:
-                    Un-check to skip automatic handling of tool dependencies (if any).
-                %endif
-            </div>
-        </div>
-        <div style="clear: both"></div>
+        %if install_tool_dependencies_check_box is not None:
+            <div class="form-row">
+                <label>Handle tool dependencies?</label>
+                <% disabled = trans.app.config.tool_dependency_dir is None %>
+                ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+                <div class="toolParamHelp" style="clear: both;">
+                    %if disabled:
+                        Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
+                    %else:
+                        Un-check to skip automatic handling of these tool dependencies.
+                    %endif
+                </div>
+            <div style="clear: both"></div>
+        %endif
         %if tool_dependencies_root_folder:
             <div class="form-row">
                 <p/>

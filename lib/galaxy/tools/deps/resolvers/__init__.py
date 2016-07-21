@@ -13,6 +13,7 @@ class DependencyResolver(Dictifiable, object):
     # because the repository install context is used in dependency resolution
     # so the same requirement tags in different tools will have very different
     # resolution.
+    disabled = False
     resolves_simple_dependencies = True
     __metaclass__ = ABCMeta
 

@@ -121,9 +121,9 @@ class DependencyResolversView(object):
     @property
     def installable_resolvers(self):
         """
-        List index for all resolvers that have the 'install_dependency' attribute
+        List index for all active resolvers that have the 'install_dependency' attribute
         """
-        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency")]
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
 
     def get_requirements_status(self, requested_requirements):
         result = []

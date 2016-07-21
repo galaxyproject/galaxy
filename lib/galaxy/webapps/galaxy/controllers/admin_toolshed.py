@@ -692,8 +692,8 @@ class AdminToolshed( AdminGalaxy ):
                                     encoded_updated_metadata=encoded_updated_metadata,
                                     encoded_relative_install_dir=encoded_relative_install_dir,
                                     encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
-                                    install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                     install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
+                                    install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                     tool_dependencies_dict=tool_dependencies_dict,
                                     message=message,
                                     status=status )
@@ -738,11 +738,11 @@ class AdminToolshed( AdminGalaxy ):
                 reinstalling = util.string_as_bool( kwd.get( 'reinstalling', False ) )
                 encoded_kwd = kwd[ 'encoded_kwd' ]
                 decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
-                install_tool_dependencies = CheckboxField.is_checked( decoded_kwd.get( 'install_tool_dependencies', '' ) )
                 install_resolver_dependencies = CheckboxField.is_checked( decoded_kwd.get( 'install_resolver_dependencies', '' ) )
+                install_tool_dependencies = CheckboxField.is_checked( decoded_kwd.get( 'install_tool_dependencies', '' ) )
                 tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
-                decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
                 decoded_kwd['install_resolver_dependencies'] = install_resolver_dependencies
+                decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
                 try:
                     tool_shed_repositories = irm.install_repositories(
                         tsr_ids=tsr_ids,
@@ -1099,7 +1099,7 @@ class AdminToolshed( AdminGalaxy ):
                 install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
             else:
                 install_tool_dependencies = False
-            install_repository_dependencies = CheckboxField.is_checked( install_resolver_dependencies )
+            install_resolver_dependencies = CheckboxField.is_checked( install_resolver_dependencies )
             tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans.app, shed_tool_conf )
             installation_dict = dict( install_repository_dependencies=install_repository_dependencies,
                                       new_tool_panel_section_label=new_tool_panel_section_label,
@@ -1283,6 +1283,7 @@ class AdminToolshed( AdminGalaxy ):
                                         includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                         includes_tool_dependencies=includes_tool_dependencies,
                                         install_tool_dependencies_check_box=install_tool_dependencies_check_box,
+                                        install_resolver_dependencies_check_box=install_resolver_dependencies_check_box,
                                         has_repository_dependencies=has_repository_dependencies,
                                         install_repository_dependencies_check_box=install_repository_dependencies_check_box,
                                         new_tool_panel_section_label=new_tool_panel_section_label,
