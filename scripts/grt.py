@@ -25,7 +25,7 @@ sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
-def init(config):
+def _init(config):
     if config.startswith('/'):
         config = os.path.abspath(config)
     else:
@@ -47,14 +47,14 @@ def init(config):
     )
 
 
-def sanitize_dict(unsanitized_dict):
+def _sanitize_dict(unsanitized_dict):
     sanitized_dict = dict()
 
     for key in unsanitized_dict:
         if key == 'values' and type(unsanitized_dict[key]) is list:
             sanitized_dict[key] = None
         else:
-            sanitized_dict[key] = sanitize_value(unsanitized_dict[key])
+            sanitized_dict[key] = _sanitize_value(unsanitized_dict[key])
 
         if sanitized_dict[key] is None:
             del sanitized_dict[key]
@@ -65,11 +65,11 @@ def sanitize_dict(unsanitized_dict):
         return sanitized_dict
 
 
-def sanitize_list(unsanitized_list):
+def _sanitize_list(unsanitized_list):
     sanitized_list = list()
 
     for key in range(len(unsanitized_list)):
-        sanitized_value = sanitize_value(unsanitized_list[key])
+        sanitized_value = _sanitize_value(unsanitized_list[key])
         if not None:
             sanitized_list.append(sanitized_value)
 
@@ -79,15 +79,15 @@ def sanitize_list(unsanitized_list):
         return sanitized_list
 
 
-def sanitize_value(unsanitized_value):
+def _sanitize_value(unsanitized_value):
     sanitized_value = None
 
     fp_regex = re.compile('^(\/[^\/]+)+$')
 
     if type(unsanitized_value) is dict:
-        sanitized_value = sanitize_dict(unsanitized_value)
+        sanitized_value = _sanitize_dict(unsanitized_value)
     elif type(unsanitized_value) is list:
-        sanitized_value = sanitize_list(unsanitized_value)
+        sanitized_value = _sanitize_list(unsanitized_value)
     else:
         if fp_regex.match(str(unsanitized_value)):
             sanitized_value = None
@@ -128,7 +128,7 @@ def main(argv):
         config_dict['grt_url'] = args.grt_url
 
     print('Loading Galaxy...')
-    model, object_store, engine = init(config_dict['galaxy_config'])
+    model, object_store, engine = _init(config_dict['galaxy_config'])
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
@@ -182,7 +182,7 @@ def main(argv):
             'tool': grt_tool_idx,
             'date': job.update_time.strftime('%s'),
             'metrics': grt_metrics,
-            'params': sanitize_dict(params)
+            'params': _sanitize_dict(params)
         }
         grt_jobs_data.append(job_data)
 
