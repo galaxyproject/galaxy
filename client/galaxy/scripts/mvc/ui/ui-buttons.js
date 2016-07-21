@@ -1,7 +1,7 @@
 /** This class contains all button views. */
 define(['utils/utils'], function( Utils ) {
     /** This renders the default button which is used e.g. at the bottom of the upload modal. */
-    var ButtonBase = Backbone.View.extend({
+    var ButtonDefault = Backbone.View.extend({
         initialize: function( options ) {
             this.model = options && options.model || new Backbone.Model({
                 id          : Utils.uid(),
@@ -66,21 +66,34 @@ define(['utils/utils'], function( Utils ) {
         }
     });
 
-    /** This button allows the right-click/open-in-new-tab feature, its used e.g. for panel buttons.
-    */
-    var ButtonLink = ButtonBase.extend({
+    /** This button allows the right-click/open-in-new-tab feature, its used e.g. for panel buttons. */
+    var ButtonLink = ButtonDefault.extend({
         initialize: function( options ) {
-            ButtonBase.prototype.initialize.call( this, options );
+            this.model = options && options.model || new Backbone.Model({
+                id          : Utils.uid(),
+                title       : '',
+                icon        : '',
+                cls         : ''
+            }).set( options );
+            this.setElement( $( '<a/>' ).append( this.$icon  = $( '<span/>' ) ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
         },
-        _template: function( options ) {
-            return  '<a id="' + options.id + '" class="' + options.cls + '" href="' + ( options.href || 'javascript:void(0)' ) + '"' +
-                        ' title="' + options.title + '" target="' + ( options.target || '_top' ) + '">' + '<span class="' + options.icon + '"/>' +
-                    '</a>';
+
+        render: function() {
+            var options = this.model.attributes;
+            this.$el.removeClass()
+                    .addClass( options.cls )
+                    .attr( { id         : options.id,
+                             href       : options.href || 'javascript:void(0)',
+                             title      : options.title,
+                             target     : options.target || '_top',
+                             disabled   : options.disabled } );
+            this.$icon.removeClass().addClass( options.icon );
         }
     });
 
-    /** The check button is used in the tool form and allows to distinguish between multiple states e.g. all, partially and nothing selected.
-    */
+    /** The check button is used in the tool form and allows to distinguish between multiple states e.g. all, partially and nothing selected. */
     var ButtonCheck = Backbone.View.extend({
         initialize: function( options ) {
             // configure options
@@ -383,7 +396,7 @@ define(['utils/utils'], function( Utils ) {
     });
 
     return {
-        ButtonDefault   : ButtonBase,
+        ButtonDefault   : ButtonDefault,
         ButtonLink      : ButtonLink,
         ButtonIcon      : ButtonIcon,
         ButtonCheck     : ButtonCheck,
