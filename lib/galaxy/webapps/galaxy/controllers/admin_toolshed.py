@@ -1116,18 +1116,6 @@ class AdminToolshed( AdminGalaxy ):
                                           tool_path=tool_path,
                                           tool_shed_url=tool_shed_url )
 
-                requirements = suc.get_tool_shed_repo_requirements(app=self.app,
-                                                                   tool_shed_url=tool_shed_url,
-                                                                   repository=created_or_updated_tool_shed_repositories)
-                if install_tool_dependencies:
-                    #  TODO: make this async so we can check on progress on the next page
-
-                    dependency_results = [self.app.toolbox.dependency_manager.find_dep(
-                        name=requirement['name'], version=requirement['version'], type='package',
-                        **dict(job_directory=None, index=None, manual_install=True)
-                    ) for requirement in requirements]
-                    [log.info(dependency) for dependency in dependency_results]  # TODO: use this information to inform admin of success/failure
-
                 encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                     install_repository_manager.initiate_repository_installation( installation_dict )
                 return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',

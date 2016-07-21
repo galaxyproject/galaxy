@@ -10,6 +10,7 @@ from six import string_types
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
+from galaxy.tools.deps import views
 from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.util import tool_util, xml_util
@@ -432,6 +433,7 @@ class InstallRepositoryManager( object ):
     def __init__( self, app, tpm=None ):
         self.app = app
         self.install_model = self.app.install_model
+        self._view = views.DependencyResolversView(app)
         if tpm is None:
             self.tpm = tool_panel_manager.ToolPanelManager( self.app )
         else:
@@ -908,13 +910,7 @@ class InstallRepositoryManager( object ):
                     error_message += "from the installed repository's <b>Repository Actions</b> menu.  "
                 if install_tool_dependencies:
                     requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
-                    [self.app.toolbox.dependency_manager.find_dep(name=req['name'],
-                                                                  version=req['version'],
-                                                                  type='package',
-                                                                  **dict(job_directory=None,
-                                                                         index=None,
-                                                                         manual_install=True))
-                     for req in requirements]
+                    [self._view.install_dependency(id=None, **req) for req in requirements]
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
                 # Install tool dependencies.
