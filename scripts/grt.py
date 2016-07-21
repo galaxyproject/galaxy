@@ -15,8 +15,8 @@ import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
 
-sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini.sample'))
-default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini'))
+sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
+default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
 def init(config):
