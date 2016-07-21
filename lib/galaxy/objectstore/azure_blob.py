@@ -5,7 +5,6 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 import logging
 import os
 import shutil
-import subprocess
 import threading
 import time
 
@@ -20,12 +19,12 @@ from ..objectstore import ObjectStore, convert_bytes
 try:
     from azure.storage import CloudStorageAccount
     from azure.storage.blob import BlockBlobService, PublicAccess
-    from azure.common import AzureHttpError, AzureConflictHttpError, AzureMissingResourceHttpError
+    from azure.common import AzureHttpError
 except ImportError:
     BlockBlobService = None
 
 NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.blob dependency available."
-            "Please install and properly configure azure.storage.blob or modify Object Store configuration.")
+                                "Please install and properly configure azure.storage.blob or modify Object Store configuration.")
 
 log = logging.getLogger( __name__ )
 
@@ -37,7 +36,8 @@ class AzureObjectStore(ObjectStore):
     Galaxy and Azure.
     """
     def __init__(self, config, config_xml):
-        if BlockBlobService is None: raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
+        if BlockBlobService is None:
+            raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
         super(AzureObjectStore, self).__init__(config)
 
         self.staging_path = self.config.file_path
@@ -56,8 +56,9 @@ class AzureObjectStore(ObjectStore):
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
 
-    ##########################################################################
-    ############################### Private Methods ##########################
+    ###################
+    # Private Methods #
+    ###################
 
     # config_xml is an ElementTree object.
     def _parse_config_xml(self, config_xml):
@@ -209,11 +210,11 @@ class AzureObjectStore(ObjectStore):
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
             if self.cache_size > 0 and self._get_size_in_azure(rel_path) > self.cache_size:
                 log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                        rel_path, self._get_size_in_azure(rel_path), self.cache_size)
+                             rel_path, self._get_size_in_azure(rel_path), self.cache_size)
                 return False
             else:
                 self.transfer_progress = 0  # Reset transfer progress counter
-                blob = self.service.get_blob_to_path(self.container_name, rel_path, local_destination, progress_callback=self._transfer_cb)
+                self.service.get_blob_to_path(self.container_name, rel_path, local_destination, progress_callback=self._transfer_cb)
                 return True
         except AzureHttpError:
             log.exception("Problem downloading '%s' from Azure", rel_path)
@@ -255,8 +256,9 @@ class AzureObjectStore(ObjectStore):
             log.exception("Trouble pushing to Azure Blob '%s' from file '%s'", rel_path, source_file)
         return False
 
-    ##########################################################################
-    ############################### Public Methods ###########################
+    ##################
+    # Public Methods #
+    ##################
 
     def exists(self, obj, **kwargs):
         in_cache = in_azure = False
@@ -483,8 +485,9 @@ class AzureObjectStore(ObjectStore):
     def get_store_usage_percent(self):
         return 0.0
 
-    ##########################################################################
-    ############################### Secret Methods ###########################
+    ##################
+    # Secret Methods #
+    ##################
 
     def __cache_monitor(self):
         time.sleep(2)  # Wait for things to load before starting the monitor
