@@ -29,6 +29,7 @@ NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.bl
 
 log = logging.getLogger( __name__ )
 
+
 class AzureObjectStore(ObjectStore):
     """
     Object store that stores objects as blobs in an Azure Blob Container. A local
@@ -55,9 +56,8 @@ class AzureObjectStore(ObjectStore):
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
 
-
     ##########################################################################
-      ############################# Private Methods #########################
+    ############################### Private Methods ##########################
 
     # config_xml is an ElementTree object.
     def _parse_config_xml(self, config_xml):
@@ -98,7 +98,7 @@ class AzureObjectStore(ObjectStore):
         for i in range(5):
             try:
                 container_lease = self.service.acquire_container_lease(container_name)
-                log.debug("Using azure blob store with container '%s'", container.name)
+                log.debug("Using azure blob store with container '%s'", container_name)
                 return container_lease
             except AzureHttpError:
                 try:
@@ -169,9 +169,9 @@ class AzureObjectStore(ObjectStore):
 
     def _get_size_in_azure(self, rel_path):
         try:
-            properties = self.service.get_blob_properties(container_name, blob_name)
+            properties = self.service.get_blob_properties(self.container_name, rel_path)
             if properties:
-                size_in_bytes = blob.properties.content_length
+                size_in_bytes = properties.content_length
                 return size_in_bytes
         except AzureHttpError:
             log.exception("Could not get size of blob '%s' from Azure", rel_path)
@@ -179,7 +179,7 @@ class AzureObjectStore(ObjectStore):
 
     def _in_azure(self, rel_path):
         try:
-           exists = self.service.exists(self.container_name, rel_path)
+            exists = self.service.exists(self.container_name, rel_path)
         except AzureHttpError:
             log.exception("Trouble checking existence of Azure blob '%s'", rel_path)
             return False
@@ -209,11 +209,11 @@ class AzureObjectStore(ObjectStore):
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
             if self.cache_size > 0 and self._get_size_in_azure(rel_path) > self.cache_size:
                 log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                                    rel_path, self._get_size_in_azure(rel_path), self.cache_size)
+                        rel_path, self._get_size_in_azure(rel_path), self.cache_size)
                 return False
             else:
                 self.transfer_progress = 0  # Reset transfer progress counter
-                blob = self.service.get_blob_to_path(self.container_name, rel_path, local_destination, progress_callback=_transfer_cb)
+                blob = self.service.get_blob_to_path(self.container_name, rel_path, local_destination, progress_callback=self._transfer_cb)
                 return True
         except AzureHttpError:
             log.exception("Problem downloading '%s' from Azure", rel_path)
@@ -239,13 +239,13 @@ class AzureObjectStore(ObjectStore):
                 return True
 
             if from_string:
-                self.service.create_blob_from_text(self.container_name, blob_name, from_string, progress_callback=callback)
+                self.service.create_blob_from_text(self.container_name, rel_path, from_string, progress_callback=self._transfer_cb)
                 log.debug("Pushed data from string '%s' to blob '%s'", from_string, rel_path)
             else:
                 start_time = datetime.now()
                 log.debug("Pushing cache file '%s' of size %s bytes to '%s'", source_file, os.path.getsize(source_file), rel_path)
                 self.transfer_progress = 0  # Reset transfer progress counter
-                self.service.create_blob_from_path(self.container_name, blob_name, source_file, progress_callback=callback)
+                self.service.create_blob_from_path(self.container_name, rel_path, source_file, progress_callback=self._transfer_cb)
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to blob '%s' (%s bytes transfered in %s sec)",
                           source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
@@ -256,7 +256,7 @@ class AzureObjectStore(ObjectStore):
         return False
 
     ##########################################################################
-      ############################# Public Methods #########################
+    ############################### Public Methods ###########################
 
     def exists(self, obj, **kwargs):
         in_cache = in_azure = False
@@ -443,10 +443,10 @@ class AzureObjectStore(ObjectStore):
         #     return cache_path
         raise ObjectNotFound( 'objectstore.get_filename, no cache_path: %s, kwargs: %s' % ( str( obj ), str( kwargs ) ) )
 
-        return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
+        return cache_path  # Until the upload tool does not explicitly create the dataset, return expected path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
-        if create == True:
+        if create is True:
             self.create(obj, **kwargs)
         elif self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
@@ -484,7 +484,7 @@ class AzureObjectStore(ObjectStore):
         return 0.0
 
     ##########################################################################
-      ############################# Secret Methods #########################
+    ############################### Secret Methods ###########################
 
     def __cache_monitor(self):
         time.sleep(2)  # Wait for things to load before starting the monitor
