@@ -974,29 +974,24 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     file_type = None
     data_checked = False
     temp = open( file_name, "U" )
-    last_line = ''
-    while count <= LINE_COUNT:
-        line = last_line + temp.readline( WIDTH - len( last_line ) )
+    while count < LINE_COUNT:
+        line = temp.readline( WIDTH )
         if line and not is_multi_byte and not data_checked:
             # See if we have a compressed or binary file
             if line[0:2] == util.gzip_magic:
                 file_type = 'gzipped'
-                break
             else:
                 for char in line:
                     if ord( char ) > 128:
                         file_type = 'binary'
                         break
             data_checked = True
-        if file_type in [ 'gzipped', 'binary' ]:
-            break
+            if file_type in [ 'gzipped', 'binary' ]:
+                break
         if not line_wrap:
-            if '\n' in line:
-                i = line.index( '\n' )
-                last_line = line[i:]
-                line = line[:i]
+            if line.endswith('\n'):
+                line = line[:-1]
             else:
-                last_line = ''
                 while True:
                     i = temp.read(1)
                     if not i or i == '\n':
