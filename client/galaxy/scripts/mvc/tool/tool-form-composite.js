@@ -9,10 +9,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.setElement( $( '<div/>' ).addClass( 'ui-form-composite' )
                                           .append( this.$message      = $( '<div/>' ) )
                                           .append( this.$header       = $( '<div/>' ) )
-                                          .append( this.$parameters   = $( '<div/>' ) )
-                                          .append( this.$steps        = $( '<div/>' ) )
                                           .append( this.$history      = $( '<div/>' ) )
-                                          .append( this.$execute      = $( '<div/>' ) ) );
+                                          .append( this.$parameters   = $( '<div/>' ) )
+                                          .append( this.$steps        = $( '<div/>' ) ) );
             $( 'body' ).append( this.$el );
             this._configure();
             this.render();
@@ -155,23 +154,23 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderParameters();
             this._renderHistory();
             _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
-            this.deferred.execute( function() { self._renderExecute() } );
+            this.deferred.execute( function() { self.execute_btn.unwait(); } );
         },
 
         /** Render header */
         _renderHeader: function() {
             var self = this;
+            this.execute_btn = new Ui.Button({
+                icon        : 'fa-check',
+                title       : 'Run workflow',
+                cls         : 'btn btn-primary',
+                wait        : true,
+                wait_text   : 'Loading...',
+                onclick     : function() { self._execute() }
+            });
             this.$header.addClass( 'ui-form-header' ).empty()
-                        .append( new Ui.Label({
-                            title    : 'Workflow: ' + this.model.get( 'name' ) }).$el )
-                        .append( new Ui.Button({
-                            title    : 'Collapse',
-                            icon     : 'fa-angle-double-up',
-                            onclick  : function() { _.each( self.forms, function( form ) { form.portlet.collapse() }) } }).$el )
-                        .append( new Ui.Button({
-                            title    : 'Expand all',
-                            icon     : 'fa-angle-double-down',
-                            onclick  : function() { _.each( self.forms, function( form ) { form.portlet.expand() }) } }).$el );
+                        .append( new Ui.Label( { title: 'Workflow: ' + this.model.get( 'name' ) } ).$el )
+                        .append( this.execute_btn.$el );
         },
 
         /** Render message */
@@ -311,19 +310,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 });
                 this._append( this.$history.empty(), this.history_form.$el );
             }
-        },
-
-        /** Render execute button */
-        _renderExecute: function() {
-            var self = this;
-            this.execute_btn = new Ui.Button({
-                icon     : 'fa-check',
-                title    : 'Run workflow',
-                cls      : 'btn btn-primary',
-                floating : 'clear',
-                onclick  : function() { self._execute() }
-            });
-            this._append( this.$execute.empty(), this.execute_btn.$el );
         },
 
         /** Execute workflow */

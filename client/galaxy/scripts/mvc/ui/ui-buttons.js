@@ -1,64 +1,68 @@
-/** This class contains all button views.
-*/
+/** This class contains all button views. */
 define(['utils/utils'], function( Utils ) {
-    /** This renders the default button which is used e.g. at the bottom of the upload modal.
-    */
+    /** This renders the default button which is used e.g. at the bottom of the upload modal. */
     var ButtonBase = Backbone.View.extend({
         initialize: function( options ) {
-            this.options = Utils.merge( options, {
+            this.model = options && options.model || new Backbone.Model({
                 id          : Utils.uid(),
                 title       : '',
                 floating    : 'right',
                 icon        : '',
                 cls         : 'ui-button btn btn-default',
-                cls_wait    : 'btn btn-info'
-            } );
-            this.setElement( this._template( this.options ) );
+                wait        : false,
+                wait_text   : 'Sending...',
+                wait_cls    : 'btn btn-info',
+                disabled    : false
+            }).set( options );
+            this.setElement( $( '<button/>' ).attr( 'type', 'button' )
+                                             .append( this.$icon  = $( '<i/>' ) )
+                                             .append( '&nbsp;' )
+                                             .append( this.$title = $( '<span/>' ) ) );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
+        },
+
+        render: function() {
             var self = this;
-            $( this.el ).on( 'click' , function() {
-                $( '.tooltip' ).hide();
-                if ( options.onclick && !self.disabled ) {
-                    options.onclick();
-                }
-            } );
-            $( this.el ).tooltip( { title: options.tooltip, placement: 'bottom' } );
-        },
-
-        // disable
-        disable: function() {
-            this.$el.addClass( 'disabled' );
-            this.disabled = true;
-        },
-
-        // enable
-        enable: function() {
-            this.$el.removeClass( 'disabled' );
-            this.disabled = false;
-        },
-
-        // show spinner
-        wait: function() {
-            this.$el.removeClass( this.options.cls ).addClass( this.options.cls_wait ).prop( 'disabled', true );
-            this.$( '.icon' ).removeClass( this.options.icon ).addClass( 'fa-spinner fa-spin' );
-            this.$( '.title' ).html( 'Sending...' );
-        },
-
-        // hide spinner
-        unwait: function() {
-            this.$el.removeClass( this.options.cls_wait ).addClass( this.options.cls ).prop( 'disabled', false );
-            this.$( '.icon' ).removeClass( 'fa-spinner fa-spin' ).addClass( this.options.icon );
-            this.$( '.title' ).html( this.options.title );
-        },
-
-        // template
-        _template: function( options ) {
-            var str =   '<button id="' + options.id + '" type="submit" style="float: ' + options.floating + ';" type="button" class="' + options.cls + '">';
-            if (options.icon) {
-                str +=      '<i class="icon fa ' + options.icon + '"/>&nbsp;';
+            var options = this.model.attributes;
+            this.$el.removeClass()
+                    .addClass( options.cls )
+                    .addClass( options.disabled && 'disabled' )
+                    .attr( 'id', options.id )
+                    .prop( 'disabled', options.disabled )
+                    .css( 'float', options.floating )
+                    .off( 'click' ).on( 'click' , function() {
+                        $( '.tooltip' ).hide();
+                        options.onclick && !self.disabled && options.onclick();
+                    })
+                    .tooltip( { title: options.tooltip, placement: 'bottom' } );
+            this.$icon.removeClass().addClass( 'icon fa' ).addClass( options.icon );
+            this.$title.removeClass().addClass( 'title' ).html( options.title );
+            if ( options.wait ) {
+                this.$el.removeClass( options.cls ).addClass( options.wait_cls ).prop( 'disabled', true );
+                this.$icon.removeClass( options.icon ).addClass( 'fa-spinner fa-spin' );
+                this.$title.html( options.wait_text );
             }
-            str +=          '<span class="title">' + options.title + '</span>' +
-                        '</button>';
-            return str;
+        },
+
+        /** Disable button */
+        disable: function() {
+            this.model.set( 'disabled', true );
+        },
+
+        /** Enable button */
+        enable: function() {
+            this.model.set( 'disabled', false );
+        },
+
+        /** Show spinner to indicate that the button is not ready to be clicked */
+        wait: function() {
+            this.model.set( 'wait', true );
+        },
+
+        /** Hide spinner to indicate that the button is ready to be clicked */
+        unwait: function() {
+            this.model.set( 'wait', false );
         }
     });
 
