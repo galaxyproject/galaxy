@@ -57,13 +57,10 @@ class DependencyResolversView(object):
         if index:
             return self._install_dependency(index, **payload)
         else:
-            for index, resolver in enumerate(self._dependency_resolvers):
-                if not hasattr(resolver, "install_dependency"):
-                    continue
-                else:
-                    success = self._install_dependency(index, **payload)
-                    if success:
-                        return success
+            for index in self.installable_resolvers:
+                success = self._install_dependency(index, **payload)
+                if success:
+                    return success
             return False
 
     def _install_dependency(self, index, **payload):
@@ -120,6 +117,13 @@ class DependencyResolversView(object):
         dependency_manager = self._dependency_manager
         dependency_resolvers = dependency_manager.dependency_resolvers
         return dependency_resolvers
+
+    @property
+    def installable_resolvers(self):
+        """
+        List index for all resolvers that have the 'install_dependency' attribute
+        """
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency")]
 
     def get_requirements_status(self, requested_requirements):
         result = []
