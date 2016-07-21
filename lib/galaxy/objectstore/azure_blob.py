@@ -37,7 +37,7 @@ class AzureObjectStore(ObjectStore):
     Galaxy and Azure.
     """
     def __init__(self, config, config_xml):
-        if BlobService is None: raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
+        if BlockBlobService is None: raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
         super(AzureObjectStore, self).__init__(config)
 
         self.staging_path = self.config.file_path
