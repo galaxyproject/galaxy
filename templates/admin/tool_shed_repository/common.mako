@@ -65,7 +65,7 @@
     </script>
 </%def>
 
-<%def name="render_dependencies_section( repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )">
+<%def name="render_dependencies_section( install_resolver_dependencies_check_box, repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )">
     <style type="text/css">
         #dependency_table{ table-layout:fixed;
                            width:100%;
@@ -110,6 +110,14 @@
             </p>
         </div>
     </div>
+    <div class="form-row">
+        <label>Install resolvable dependencies (Currently conda-only) ?</label>
+        ${install_resolver_dependencies_check_box.get_html()}
+        <div class="toolParamHelp" style="clear: both;">
+            Un-check to skip automatic installation of tool dependencies.
+        </div>
+    </div>
+    <div style="clear: both"></div>
     %if repository_dependencies_root_folder or missing_repository_dependencies_root_folder:
         %if repository_dependencies_check_box is not None:
             <div class="form-row">
