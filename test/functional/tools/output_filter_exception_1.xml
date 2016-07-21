@@ -22,7 +22,7 @@
     <data format="txt" from_work_dir="1" name="out_1">
     </data>
     <data format="txt" from_work_dir="2" name="out_2">
-      <filter>opitons['adv_opt1'] is True</filter>
+      <filter>options['adv_opt1'] is True</filter>
     </data>
   </outputs>
   <tests>
