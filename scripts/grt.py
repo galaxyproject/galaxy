@@ -3,6 +3,8 @@
 
 See doc/source/admin/grt.rst for more detailed usage information.
 """
+from __future__ import print_function
+
 import os
 import sys
 import json
@@ -114,11 +116,11 @@ def main(argv):
     parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)')
     args = parser.parse_args(argv[1:])
 
-    print 'Loading GRT ini...'
+    print('Loading GRT ini...')
     try:
         with open(args.config) as f:
             config_dict = yaml.load(f)
-    except:
+    except Exception:
         with open(sample_config) as f:
             config_dict = yaml.load(f)
 
@@ -133,7 +135,7 @@ def main(argv):
     if args.grt_url:
         config_dict['grt_url'] = args.grt_url
 
-    print 'Loading Galaxy...'
+    print('Loading Galaxy...')
     model, object_store, engine = init(config_dict['galaxy_config'])
     sa_session = model.context.current
 
@@ -216,14 +218,12 @@ def main(argv):
     }
 
     if args.dryrun:
-        print json.dumps(grt_report_data, indent=2)
+        print(json.dumps(grt_report_data, indent=2))
     else:
         try:
-            req = urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
-
-        except urllib2.HTTPError, htpe:
-            # print htpe.reason
-            print htpe.read()
+            urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
+        except urllib2.HTTPError as htpe:
+            print(htpe.read())
             exit(1)
 
         # Update grt.ini with last id of job (prevent duplicates from being sent)
