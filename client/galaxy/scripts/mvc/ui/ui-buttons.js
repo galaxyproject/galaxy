@@ -1,5 +1,5 @@
 /** This module contains all button views. */
-define(['utils/utils'], function( Utils ) {
+define( [ 'utils/utils' ], function( Utils ) {
     /** This renders the default button which is used e.g. at the bottom of the upload modal. */
     var ButtonDefault = Backbone.View.extend({
         initialize: function( options ) {
@@ -256,9 +256,8 @@ define(['utils/utils'], function( Utils ) {
                 this.$el.append( this.$menu );
             }
             var $link = $( '<a/>' ).addClass( 'dropdown-item' )
-                                   .attr( { href        : options.href,
-                                            target      : options.target,
-                                            download    : options.download } )
+                                   .attr( { href    : options.href,
+                                            target  : options.target } )
                                    .append( $( '<i/>' ).addClass( 'fa' )
                                                        .addClass( options.icon )
                                                        .css( 'display', options.icon ? 'inline-block' : 'none' ) )
