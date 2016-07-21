@@ -167,6 +167,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             yield self._to_requirement(name, version)
 
     def install_dependency(self, name, version, type, **kwds):
+        "Returns True on (seemingly) successfull installation"
         if type != "package":
             raise NotImplemented("Can not install dependencies of type '%s'" % type)
 
@@ -176,6 +177,11 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         if install_conda_target(conda_target, conda_context=self.conda_context):
             raise Exception("Failed to install conda recipe.")
+
+        is_installed = is_conda_target_installed(
+            conda_target, conda_context=self.conda_context
+        )
+        return is_installed
 
     @property
     def prefix(self):

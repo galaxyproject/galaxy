@@ -45,7 +45,24 @@ class DependencyResolversView(object):
     def resolver_dependency(self, index, **kwds):
         return self._dependency(**kwds)
 
-    def install_dependency(self, index, payload):
+    def install_dependency(self, index=None, **payload):
+        if index:
+            return self._install_dependency(index, **payload)
+        else:
+            for index, resolver in enumerate(self._dependency_resolvers):
+                if not hasattr(resolver, "install_dependency"):
+                    continue
+                else:
+                    success = self._install_dependency(index, **payload)
+                    if success:
+                        return success
+            return False
+
+    def _install_dependency(self, index, **payload):
+        """
+        Resolver install dependency should return True when installation succeeds,
+        False if not successful
+        """
         resolver = self._dependency_resolver(index)
         if not hasattr(resolver, "install_dependency"):
             raise NotImplemented()

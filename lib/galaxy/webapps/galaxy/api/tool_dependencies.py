@@ -73,6 +73,32 @@ class ToolDependenciesAPIController( BaseAPIController ):
 
     @expose_api
     @require_admin
+    def install_dependency(self, trans, id=None, **kwds):
+        """
+        POST /api/dependencies_resolver/{index}/dependency
+
+        Install described requirement against specified dependency resolver.
+
+        :type   index:    int
+        :param  index:    index of the dependency resolver
+        :type   kwds:     dict
+        :param  kwds:     dictionary structure containing extra parameters
+        :type   name:     str
+        :param  name:     name of the requirement to find a dependency for (required)
+        :type   version:  str
+        :param  version:  version of the requirement to find a dependency for (required)
+        :type   exact:    bool
+        :param  exact:    require an exact match to specify requirement (do not discard
+                          version information to resolve dependency).
+
+        :rtype:     dict
+        :returns:   a dictified description of the dependency, with attribute
+                    ``dependency_type: null`` if no match was found.
+        """
+        return self._view.install_dependency(id, **kwds)
+
+    @expose_api
+    @require_admin
     def manager_dependency(self, trans, **kwds):
         """
         GET /api/dependencies_resolvers/dependency
