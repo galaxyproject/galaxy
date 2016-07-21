@@ -1,9 +1,14 @@
 #!/usr/bin/env python
+"""Script for uploading Galaxy statistics to the Galactic radio telescope.
+
+See doc/source/admin/grt.rst for more detailed usage information.
+"""
+from __future__ import print_function
+
 import os
 import sys
 import json
 import urllib2
-from ConfigParser import ConfigParser
 import argparse
 import sqlalchemy as sa
 import yaml
@@ -11,30 +16,23 @@ import re
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
+from galaxy.util.properties import load_app_properties
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.model import mapping
 
-sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini.sample'))
-default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.ini'))
+sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
+default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
-def init(config):
+def _init(config):
     if config.startswith('/'):
         config = os.path.abspath(config)
     else:
         config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
 
-    config_parser = ConfigParser(dict(
-        here=os.getcwd(),
-        database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'
-    ))
-    config_parser.read(config)
-    config_dict = {}
-    for key, value in config_parser.items("app:main"):
-        config_dict[key] = value
-
-    config = galaxy.config.Configuration(**config_dict)
+    properties = load_app_properties(ini_file=config)
+    config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
 
     return (
@@ -49,14 +47,14 @@ def init(config):
     )
 
 
-def sanitize_dict(unsanitized_dict):
+def _sanitize_dict(unsanitized_dict):
     sanitized_dict = dict()
 
     for key in unsanitized_dict:
         if key == 'values' and type(unsanitized_dict[key]) is list:
             sanitized_dict[key] = None
         else:
-            sanitized_dict[key] = sanitize_value(unsanitized_dict[key])
+            sanitized_dict[key] = _sanitize_value(unsanitized_dict[key])
 
         if sanitized_dict[key] is None:
             del sanitized_dict[key]
@@ -67,11 +65,11 @@ def sanitize_dict(unsanitized_dict):
         return sanitized_dict
 
 
-def sanitize_list(unsanitized_list):
+def _sanitize_list(unsanitized_list):
     sanitized_list = list()
 
     for key in range(len(unsanitized_list)):
-        sanitized_value = sanitize_value(unsanitized_list[key])
+        sanitized_value = _sanitize_value(unsanitized_list[key])
         if not None:
             sanitized_list.append(sanitized_value)
 
@@ -81,15 +79,15 @@ def sanitize_list(unsanitized_list):
         return sanitized_list
 
 
-def sanitize_value(unsanitized_value):
+def _sanitize_value(unsanitized_value):
     sanitized_value = None
 
     fp_regex = re.compile('^(\/[^\/]+)+$')
 
     if type(unsanitized_value) is dict:
-        sanitized_value = sanitize_dict(unsanitized_value)
+        sanitized_value = _sanitize_dict(unsanitized_value)
     elif type(unsanitized_value) is list:
-        sanitized_value = sanitize_list(unsanitized_value)
+        sanitized_value = _sanitize_list(unsanitized_value)
     else:
         if fp_regex.match(str(unsanitized_value)):
             sanitized_value = None
@@ -99,7 +97,8 @@ def sanitize_value(unsanitized_value):
     return sanitized_value
 
 
-if __name__ == '__main__':
+def main(argv):
+    """Entry point for GRT statistics collection."""
     parser = argparse.ArgumentParser()
     parser.add_argument('instance_id', help='Galactic Radio Telescope Instance ID')
     parser.add_argument('api_key', help='Galactic Radio Telescope API Key')
@@ -107,13 +106,13 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', dest='config', help='Path to GRT config file (scripts/grt.ini)', default=default_config)
     parser.add_argument('--dry-run', dest='dryrun', help='Dry run (show data to be sent, but do not send)', action='store_true', default=False)
     parser.add_argument('--grt-url', dest='grt_url', help='GRT Server (You can run your own!)')
-    args = parser.parse_args()
+    args = parser.parse_args(argv[1:])
 
-    print 'Loading GRT ini...'
+    print('Loading GRT ini...')
     try:
         with open(args.config) as f:
             config_dict = yaml.load(f)
-    except:
+    except Exception:
         with open(sample_config) as f:
             config_dict = yaml.load(f)
 
@@ -128,8 +127,8 @@ if __name__ == '__main__':
     if args.grt_url:
         config_dict['grt_url'] = args.grt_url
 
-    print 'Loading Galaxy...'
-    model, object_store, engine = init(config_dict['galaxy_config'])
+    print('Loading Galaxy...')
+    model, object_store, engine = _init(config_dict['galaxy_config'])
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
@@ -183,7 +182,7 @@ if __name__ == '__main__':
             'tool': grt_tool_idx,
             'date': job.update_time.strftime('%s'),
             'metrics': grt_metrics,
-            'params': sanitize_dict(params)
+            'params': _sanitize_dict(params)
         }
         grt_jobs_data.append(job_data)
 
@@ -211,16 +210,17 @@ if __name__ == '__main__':
     }
 
     if args.dryrun:
-        print json.dumps(grt_report_data, indent=2)
+        print(json.dumps(grt_report_data, indent=2))
     else:
         try:
-            req = urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
-
-        except urllib2.HTTPError, htpe:
-            # print htpe.reason
-            print htpe.read()
+            urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
+        except urllib2.HTTPError as htpe:
+            print(htpe.read())
             exit(1)
 
         # Update grt.ini with last id of job (prevent duplicates from being sent)
         with open(args.config, 'w') as f:
             yaml.dump(config_dict, f, default_flow_style=False)
+
+if __name__ == '__main__':
+    main(sys.argv)
