@@ -1,5 +1,5 @@
 """
-API operations allowing clients to determine datatype supported by Galaxy.
+API operations allowing clients to manage tool dependencies.
 """
 
 from galaxy.web import _future_expose_api as expose_api
