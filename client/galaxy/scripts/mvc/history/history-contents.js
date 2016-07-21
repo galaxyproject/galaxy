@@ -44,12 +44,16 @@ var HistoryContents = Backbone.Collection
                     return new HDCA_MODEL.HistoryPairDatasetCollection( attrs, options );
                 case 'list:paired':
                     return new HDCA_MODEL.HistoryListPairedDatasetCollection( attrs, options );
+                case 'list:list':
+                    return new HDCA_MODEL.HistoryListOfListsDatasetCollection( attrs, options );
             }
             // This is a hack inside a hack:
             // Raise a plain object with validationError to fake a model.validationError
             // (since we don't have a model to use validate with)
             // (the outer hack being the mixed content/model function in this collection)
-            return { validationError : 'Unknown collection_type: ' + attrs.history_content_type };
+            var msg = 'Unknown collection_type: ' + attrs.collection_type;
+            console.warn( msg, attrs );
+            return { validationError : msg };
         }
         return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
     },
@@ -202,6 +206,19 @@ var HistoryContents = Backbone.Collection
         options = options || {};
         var detailsFlag = { details: 'all' };
         options.data = ( options.data )?( _.extend( options.data, detailsFlag ) ):( detailsFlag );
+        return this.fetch( options );
+    },
+
+    /** specialty fetch method for retrieving the element_counts of all hdcas in the history */
+    fetchCollectionCounts : function( options ){
+        options = options || {};
+        options.data = _.defaults({
+            keys : [ 'type_id', 'element_count' ].join( ',' ),
+            q    : 'history_content_type',
+            qv   : 'dataset_collection',
+        }, options.data || {} );
+        options.merge = true;
+        options.remove = false;
         return this.fetch( options );
     },
 
