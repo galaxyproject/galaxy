@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""Script for uploading Galaxy statistics to the Galactic radio telescope.
+
+See doc/source/admin/grt.rst for more detailed usage information.
+"""
 import os
 import sys
 import json
