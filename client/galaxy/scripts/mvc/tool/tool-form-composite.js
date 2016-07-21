@@ -154,7 +154,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderParameters();
             this._renderHistory();
             _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
-            this.deferred.execute( function() { self.execute_btn.unwait(); } );
+            this.deferred.execute( function() { self.execute_btn.unwait();
+                                                self.execute_btn.model.set( 'wait_text', 'Sending...' ) } );
         },
 
         /** Render header */
