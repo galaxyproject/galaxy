@@ -1,9 +1,8 @@
 """
-Object Store plugin for the Microsoft Azure Blob Storage system
+Object Store plugin for the Microsoft Azure Block Blob Storage system
 """
 
 import logging
-import multiprocessing
 import os
 import shutil
 import subprocess
@@ -13,10 +12,9 @@ import time
 from datetime import datetime
 
 from galaxy.exceptions import ObjectNotFound, ObjectInvalid
-from galaxy.util import string_as_bool, umask_fix_perms, safe_relpath, directory_hash_id
+from galaxy.util import umask_fix_perms, safe_relpath, directory_hash_id
 from galaxy.util.sleeper import Sleeper
-from .s3_multipart_upload import multipart_upload
-from ..objectstore import ObjectStore, convert_bytes
+dfrom ..objectstore import ObjectStore, convert_bytes
 
 
 try:
@@ -29,6 +27,7 @@ except ImportError:
 NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.blob dependency available."
             "Please install and properly configure azure.storage.blob or modify Object Store configuration.")
 
+log = logging.getLogger( __name__ )
 
 class AzureObjectStore(ObjectStore):
     """
@@ -112,7 +111,6 @@ class AzureObjectStore(ObjectStore):
         # raise error
         raise AzureHttpError
 
-
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
@@ -152,7 +150,6 @@ class AzureObjectStore(ObjectStore):
 
         return rel_path
 
-
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
         for basedir, _, files in os.walk(rel_path):
@@ -164,14 +161,11 @@ class AzureObjectStore(ObjectStore):
                     continue
                 umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
 
-
     def _get_cache_path(self, rel_path):
         return os.path.abspath(os.path.join(self.staging_path, rel_path))
 
-
     def _get_transfer_progress(self):
         return self.transfer_progress
-
 
     def _get_size_in_azure(self, rel_path):
         try:
@@ -183,7 +177,6 @@ class AzureObjectStore(ObjectStore):
             log.exception("Could not get size of blob '%s' from Azure", rel_path)
             return -1
 
-
     def _in_azure(self, rel_path):
         try:
            exists = self.service.exists(self.container_name, rel_path)
@@ -192,12 +185,10 @@ class AzureObjectStore(ObjectStore):
             return False
         return exists
 
-
     def _in_cache(self, rel_path):
         """ Check if the given dataset is in the local cache. """
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
-
 
     def _pull_into_cache(self, rel_path):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
@@ -209,10 +200,8 @@ class AzureObjectStore(ObjectStore):
         self._fix_permissions(self._get_cache_path(rel_path_dir))
         return file_ok
 
-
     def _transfer_cb(self, complete, total):
         self.transfer_progress = float(complete) / float(total) * 100  # in percent
-
 
     def _download(self, rel_path):
         local_destination = self._get_cache_path(rel_path)
@@ -229,7 +218,6 @@ class AzureObjectStore(ObjectStore):
         except AzureHttpError:
             log.exception("Problem downloading '%s' from Azure", rel_path)
         return False
-
 
     def _push_to_os(self, rel_path, source_file=None, from_string=None):
         """
@@ -267,7 +255,6 @@ class AzureObjectStore(ObjectStore):
             log.exception("Trouble pushing to Azure Blob '%s' from file '%s'", rel_path, source_file)
         return False
 
-
     ##########################################################################
       ############################# Public Methods #########################
 
@@ -301,7 +288,6 @@ class AzureObjectStore(ObjectStore):
         else:
             return False
 
-
     def file_ready(self, obj, **kwargs):
         """
         A helper method that checks if a file corresponding to a dataset is
@@ -318,7 +304,6 @@ class AzureObjectStore(ObjectStore):
                 log.debug("Waiting for dataset %s to transfer from OS: %s/%s", rel_path, local_size, remote_size)
 
         return False
-
 
     def create(self, obj, **kwargs):
 
@@ -355,7 +340,6 @@ class AzureObjectStore(ObjectStore):
                 rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_os(rel_path, from_string='')
-
 
     def empty(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
@@ -461,7 +445,6 @@ class AzureObjectStore(ObjectStore):
 
         return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
-
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create == True:
             self.create(obj, **kwargs)
@@ -497,15 +480,11 @@ class AzureObjectStore(ObjectStore):
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
 
-
     def get_store_usage_percent(self):
         return 0.0
 
-
-
     ##########################################################################
       ############################# Secret Methods #########################
-
 
     def __cache_monitor(self):
         time.sleep(2)  # Wait for things to load before starting the monitor
@@ -553,5 +532,3 @@ class AzureObjectStore(ObjectStore):
                         log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
 
             self.sleeper.sleep(30)  # Test cache size every 30 seconds?
-
-
