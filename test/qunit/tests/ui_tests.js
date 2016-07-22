@@ -11,6 +11,85 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         }
     } );
 
+    test( 'button-default', function() {
+        var button = new Ui.Button( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        model.set( 'disabled', true );
+        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        model.set( 'disabled', false );
+        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        model.set( 'wait', true );
+        ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
+        model.set( 'wait_text', 'wait_text' );
+        ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
+        model.set( 'wait', false );
+        ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
+    });
+    test( 'button-default', function() {
+        var button = new Ui.Button( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        model.set( 'disabled', true );
+        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        model.set( 'disabled', false );
+        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        model.set( 'wait', true );
+        ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
+        model.set( 'wait_text', 'wait_text' );
+        ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
+        model.set( 'wait', false );
+        ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
+    });
+
+    test( 'button-icon', function() {
+        var button = new Ui.ButtonIcon( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        model.set( 'disabled', true );
+        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        model.set( 'disabled', false );
+        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+    });
+
+    test( 'button-check', function() {
+        var button = new Ui.ButtonCheck( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        button.value( 1 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        button.value( 2 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        button.value( 0, 100 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        button.value( 10, 100 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        button.value( 100, 100 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        button.$el.trigger( 'click' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+        button.$el.trigger( 'click' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+        button.$el.trigger( 'click' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+    });
+
     test( 'options', function() {
         function _test( obj, options ) {
             ok( JSON.stringify( obj.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
