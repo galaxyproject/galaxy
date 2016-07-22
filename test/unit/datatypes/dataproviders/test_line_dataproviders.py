@@ -4,16 +4,15 @@ Unit tests for base DataProviders.
 """
 
 import imp
-import os
 import unittest
-
+import os.path
 import logging
 log = logging.getLogger( __name__ )
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
 
-import test_base_dataproviders
+from . import test_base_dataproviders
 from galaxy.datatypes.dataproviders import line
 
 
@@ -178,7 +177,7 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
         ( contents, provider, data ) = self.contents_provider_and_data()
         self.assertEqual( data, self.parses_default_content_as() )
         self.assertTrue( isinstance( provider.source, line.FilteredLineDataProvider ) )
-        self.assertTrue( isinstance( provider.source.source, file ) )
+        self.assertTrue( hasattr(provider.source.source, 'read' ) )
         # provider should call close on file
         self.assertTrue( provider.source.source.closed )
 

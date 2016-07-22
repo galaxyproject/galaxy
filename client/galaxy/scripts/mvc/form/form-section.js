@@ -23,7 +23,7 @@ define(['utils/utils',
 
             // create/render views
             this.table = new Table.View(options);
-            this.parameters = new Parameters(app, options);
+            this.parameters = new Parameters();
             this.setElement(this.table.$el);
             this.render();
         },
@@ -187,7 +187,9 @@ define(['utils/utils',
         /** Add a single input field element
         */
         _addRow: function(input_def) {
+            var self = this;
             var id = input_def.id;
+            input_def.onchange = function() { self.app.trigger( 'change' ) };
             var field = this.parameters.create(input_def);
             this.app.field_list[id] = field;
             var input_element = new InputElement(this.app, {

@@ -1,6 +1,8 @@
 """
 Add support for job destinations to the job table
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, MetaData, String, Table
@@ -11,12 +13,12 @@ log = logging.getLogger( __name__ )
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds 'destination_id' and 'destination_params' columns to the Job table."
+    print("")
+    print("This migration script adds 'destination_id' and 'destination_params' columns to the Job table.")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata = MetaData()
     metadata.bind = migrate_engine
     metadata.reflect()

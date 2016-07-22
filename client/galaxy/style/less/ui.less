@@ -164,15 +164,24 @@
 
 // tabs
 .ui-tabs {
-    .ui-tabs-add {
-        font-size       : 0.8em;
-        margin-right    : @ui-margin-horizontal;
+    .tab-operations {
+        float: right;
+        margin-bottom: 4px;
+        .ui-button-icon {
+            margin-left: 4px;
+        }
     }
-    
-    .ui-tabs-delete {
-        font-size       : 0.8em;
-        margin-left     : @ui-margin-horizontal;
-        cursor          : pointer;
+    .tab-element {
+        cursor: pointer;
+    }
+    .tab-icon {
+        font-size: 1.1em;
+        margin-right: @ui-margin-horizontal;
+    }
+    .tab-delete {
+        font-size: 0.8em;
+        margin-left: @ui-margin-horizontal;
+        cursor: pointer;
     }
 }
 
@@ -433,7 +442,7 @@
     }
 }
 
-.ui-portlet-section {
+.ui-portlet-panel {
     &:extend(.ui-portlet-repeat all);
     margin-top: @ui-margin-vertical;
     border-left: solid 3px @side-panel-bg;
@@ -441,6 +450,10 @@
         background: @side-panel-bg;
         border-bottom: solid darken(@side-panel-bg, 10%) 1px;
     }
+}
+
+.ui-portlet-section {
+    &:extend(.ui-portlet-panel all);
     .portlet-highlight {
         text-decoration: underline;
     }
@@ -475,6 +488,14 @@
 .ui-portlet-limited {
     &:extend(.ui-portlet all);
     max-width: 900px;
+}
+
+.ui-portlet-plain {
+    &:extend(.ui-portlet all);
+    border: none;
+    .portlet-content {
+        padding: 0px;
+    }
 }
 
 // popovers

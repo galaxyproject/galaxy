@@ -1,0 +1,14 @@
+tools:
+  test_users:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 1 KB
+        upper_bound: Infinity
+        destination: special_cluster
+        users:
+          - user@email.com
+          - notuserblah@email.com
+    default_destination: lame_cluster
+default_destination: even_lamer_cluster
+verbose: False

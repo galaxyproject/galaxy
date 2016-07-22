@@ -41,6 +41,7 @@
   <tool file="output_format.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
   <tool file="create_10.xml" />
@@ -64,6 +65,7 @@
   <tool file="validation_empty_dataset.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
+  <tool file="identifier_collection.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="collection_paired_test.xml" />

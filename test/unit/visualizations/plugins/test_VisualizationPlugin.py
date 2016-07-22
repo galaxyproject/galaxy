@@ -1,9 +1,11 @@
 """
 Test lib/galaxy/visualization/plugins/plugin.
 """
-import os
 import imp
+import os
 import unittest
+
+from six import string_types
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), os.pardir, os.pardir, 'unittest_utils', 'utility.py' ) )
@@ -187,7 +189,7 @@ class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
         plugin.template_lookup = plugin._build_template_lookup( mock_app_dir.root_path )
 
         response = plugin.render( trans=galaxy_mock.MockTrans( app=mock_app ) )
-        self.assertIsInstance( response, basestring )
+        self.assertIsInstance( response, string_types )
         self.assertEqual( response.strip(), "True" )
 
 

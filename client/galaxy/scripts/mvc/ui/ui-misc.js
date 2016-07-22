@@ -67,7 +67,7 @@ define(['utils/utils',
                 if ( !this.model.get( 'persistent' ) ) {
                     var self = this;
                     this.timeout = window.setTimeout( function() {
-                        self.$el.fadeOut();
+                        self.model.set( 'message', '' );
                     }, 3000 );
                 }
             } else {

@@ -20,6 +20,7 @@ from ..conda_util import (
     CondaTarget,
     install_conda,
     is_conda_target_installed,
+    cleanup_failed_install,
     install_conda_target,
     build_isolated_environment,
     installed_conda_targets,
@@ -50,6 +51,11 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_prefix = os.path.join(
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
+
+        # warning is related to conda problem discussed in https://github.com/galaxyproject/galaxy/issues/2537, remove when that is resolved
+        conda_prefix_warning_length = 50
+        if len(conda_prefix) >= conda_prefix_warning_length:
+            log.warning('Conda install prefix ({}) is long ({} characters), this can cause problems with package installation, consider setting a shorter prefix (conda_prefix in galaxy.ini)')
 
         condarc_override = get_option("condarc_override")
         if condarc_override is None:
@@ -114,12 +120,19 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_target, conda_context=self.conda_context
         )
         if not is_installed and self.auto_install:
-            install_conda_target(conda_target, conda_context=self.conda_context)
-
-            # Recheck if installed
-            is_installed = is_conda_target_installed(
-                conda_target, conda_context=self.conda_context
-            )
+            return_code = install_conda_target(conda_target, conda_context=self.conda_context)
+            if return_code != 0:
+                is_installed = False
+                log.debug('Cleaning up after failed install of {}, {}'.format(name, version))
+                cleanup_failed_install(conda_target, conda_context=self.conda_context)
+            else:
+                # Recheck if installed
+                is_installed = is_conda_target_installed(
+                    conda_target, conda_context=self.conda_context
+                )
+                if not is_installed:
+                    log.debug('Cleaning up after failing to verify installed environment for {}, {}'.format(name, version))
+                    cleanup_failed_install(conda_target, conda_context=self.conda_context)
 
         if not is_installed:
             return INDETERMINATE_DEPENDENCY

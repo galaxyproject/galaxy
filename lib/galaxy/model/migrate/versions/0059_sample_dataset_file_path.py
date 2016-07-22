@@ -2,6 +2,8 @@
 Migration script to modify the 'file_path' field type in 'sample_dataset' table
 to 'TEXT' so that it can support large file paths exceeding 255 characters
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -15,7 +17,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         SampleDataset_table = Table( "sample_dataset", metadata, autoload=True )

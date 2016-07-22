@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
 """
+User Manager testing.
+
+Executable directly using: python -m test.unit.managers.test_UserManager
 """
-import os
 import imp
+import os
 import unittest
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 import sqlalchemy
+from six import string_types
 
-from galaxy import model
-from galaxy import exceptions
+from galaxy import exceptions, model
+from galaxy.managers import base as base_manager
+from galaxy.managers import histories, users
 
-from base import BaseTestCase
-from galaxy.managers import users
-from galaxy.managers import histories
+from .base import BaseTestCase
 
 
 # =============================================================================
@@ -114,7 +117,7 @@ class UserManagerTestCase( BaseTestCase ):
 
         self.log( "should be able to generate and retrieve valid api key" )
         user2_api_key = self.user_manager.create_api_key( user2 )
-        self.assertIsInstance( user2_api_key, basestring )
+        self.assertIsInstance( user2_api_key, string_types )
         self.assertEqual( self.user_manager.valid_api_key( user2 ).key, user2_api_key )
 
         self.log( "should return the most recent (i.e. most valid) api key" )
@@ -179,7 +182,7 @@ class UserSerializerTestCase( BaseTestCase ):
         # self.assertIsInstance( serialized[ 'active' ], bool )
         self.assertIsInstance( serialized[ 'is_admin' ], bool )
         self.assertIsInstance( serialized[ 'total_disk_usage' ], float )
-        self.assertIsInstance( serialized[ 'nice_total_disk_usage' ], basestring )
+        self.assertIsInstance( serialized[ 'nice_total_disk_usage' ], string_types )
         self.assertIsInstance( serialized[ 'quota_percent' ], ( type( None ), float ) )
         self.assertIsInstance( serialized[ 'tags_used' ], list )
         self.assertIsInstance( serialized[ 'has_requests' ], bool )
@@ -209,11 +212,50 @@ class CurrentUserSerializerTestCase( BaseTestCase ):
         self.assertEqual( serialized[ 'id' ], None )
         self.log( 'everything serialized should be of the proper type' )
         self.assertIsInstance( serialized[ 'total_disk_usage' ], float )
-        self.assertIsInstance( serialized[ 'nice_total_disk_usage' ], basestring )
+        self.assertIsInstance( serialized[ 'nice_total_disk_usage' ], string_types )
         self.assertIsInstance( serialized[ 'quota_percent' ], ( type( None ), float ) )
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
+
+
+# =============================================================================
+class UserDeserializerTestCase( BaseTestCase ):
+
+    def set_up_managers( self ):
+        super( UserDeserializerTestCase, self ).set_up_managers()
+        self.deserializer = users.UserDeserializer( self.app )
+
+    def _assertRaises_and_return_raised( self, exception_class, fn, *args, **kwargs ):
+        try:
+            fn( *args, **kwargs )
+        except exception_class as exception:
+            self.assertTrue( True )
+            return exception
+        assert False, '%s not raised' % ( exception_class.__name__ )
+
+    def test_username_validation( self ):
+        user = self.user_manager.create( **user2_data )
+
+        # self.log( "usernames can be unicode" ) #TODO: nope they can't
+        # self.deserializer.deserialize( user, { 'username': 'Σίσυφος' }, trans=self.trans )
+
+        self.log( "usernames must be long enough and with no non-hyphen punctuation" )
+        exception = self._assertRaises_and_return_raised( base_manager.ModelDeserializingError,
+            self.deserializer.deserialize, user, { 'username': 'ed' }, trans=self.trans )
+        self.assertTrue( 'Public name must be at least' in str( exception ) )
+        self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
+            user, { 'username': 'f.d.r.' }, trans=self.trans )
+
+        self.log( "usernames must be unique" )
+        self.user_manager.create( **user3_data )
+        self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
+            user, { 'username': 'user3' }, trans=self.trans )
+
+        self.log( "username should be updatable" )
+        new_name = 'double-plus-good'
+        self.deserializer.deserialize( user, { 'username': new_name }, trans=self.trans )
+        self.assertEqual( self.user_manager.by_id( user.id ).username, new_name )
 
 
 # =============================================================================
@@ -238,5 +280,4 @@ class AdminUserFilterParserTestCase( BaseTestCase ):
 
 # =============================================================================
 if __name__ == '__main__':
-    # or more generally, nosetests test_resourcemanagers.py -s -v
     unittest.main()

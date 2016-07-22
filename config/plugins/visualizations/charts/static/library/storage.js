@@ -1,142 +1,82 @@
-// dependencies
-define(['utils/utils', 'plugin/models/chart', 'plugin/models/group', 'mvc/visualization/visualization-model'], function(Utils, Chart, Group) {
-
 /**
  *  This class saves and loads a chart through the api.
  */
-return Backbone.Model.extend({
-    // viz model
-    vis: null,
-    
-    // initialize
-    initialize: function(app) {
-        // link app
-        this.app = app;
-        
-        // link chart
-        this.chart = this.app.chart;
-        
-        // link options
-        this.options = this.app.options;
-        
-        // initialize parameters
-        this.id = this.options.id;
-        
-        // create visualization
-        this.vis = new Visualization({
-            type        : 'charts',
-            config  : {
-                dataset_id  : this.options.config.dataset_id,
-                chart_dict  : {}
-            }
-        });
-        
-        // add visualization id
-        if (this.id) {
-            this.vis.id = this.id;
-        }
-        
-        // add charts
-        var chart_dict = this.options.config.chart_dict;
-        if (chart_dict) {
-            this.vis.get('config').chart_dict = chart_dict;
-        }
-    },
-    
-    // pack and save nested chart model
-    save: function() {
-        // link chart
-        var chart = this.app.chart;
-        
-        // reset
-        this.vis.get('config').chart_dict = {};
-        
-        // set title
-        var title = chart.get('title');
-        if (title != '') {
-            this.vis.set('title', title);
-        }
-        
-        // create chart dictionary
-        var chart_dict = {
-            attributes : chart.attributes,
-            settings   : chart.settings.attributes,
-            groups     : []
-        };
-        
-        // append groups
-        chart.groups.each(function(group) {
-            chart_dict.groups.push(group.attributes);
-        });
-        
-        // add chart to charts array
-        this.vis.get('config').chart_dict = chart_dict;
-        
-        // save visualization
-        var self = this;
-        this.vis.save()
-            .fail(function(xhr, status, message) {
-               console.error(xhr, status, message);
-            })
-            .then(function(response) {
-                if (response && response.id) {
-                    self.id = response.id;
+ define( [ 'utils/utils', 'plugin/models/chart', 'mvc/visualization/visualization-model' ],
+         function( Utils, Chart ) {
+    return Backbone.Model.extend({
+        vis: null,
+
+        initialize: function( app ) {
+            this.app = app;
+            this.chart = this.app.chart;
+            this.options = this.app.options;
+            this.id = this.options.id;
+            this.vis = new Visualization({
+                id      : this.id,
+                type    : 'charts',
+                config  : {
+                    dataset_id  : this.options.config.dataset_id,
+                    chart_dict  : {}
                 }
             });
-    },
-    
-    // load nested models/collections from packed dictionary
-    load: function() {
-        // get charts array
-        var chart_dict = this.vis.get('config').chart_dict;
-        
-        // check
-        if (!chart_dict.attributes) {
-            return false;
-        }
-        
-        // get chart type
-        var chart_type = chart_dict.attributes['type'];
-        
-        // check chart type
-        if (!chart_type) {
-            console.debug('Storage::load() - Chart type not provided. Invalid format.');
-            return false;
-        }
-        
-        // get chart definition
-        var chart_definition = this.app.types.get(chart_type);
-        if (!chart_definition) {
-            console.debug('Storage::load() - Chart type not supported. Please re-configure the chart. Resetting chart.');
-            return false;
-        }
-        
-        // initiating chart
-        console.debug('Storage::load() - Loading chart type ' + chart_type + '.');
-        
-        // parse chart definition
-        this.chart.definition = chart_definition;
-        
-        // main
-        this.chart.set(chart_dict.attributes);
-        
-        // set state
-        this.chart.state('ok', 'Loading saved visualization...');
-        
-        // get settings
-        this.chart.settings.set(chart_dict.settings);
-        
-        // get groups
-        for (var j in chart_dict.groups) {
-            this.chart.groups.add(new Group(chart_dict.groups[j]));
-        }
-        
-        // reset modified flag
-        this.chart.set('modified', false);
-        
-        // return
-        return true;
-    }
-});
+            var chart_dict = this.options.config.chart_dict;
+            if ( chart_dict ) {
+                this.vis.get( 'config' ).chart_dict = chart_dict;
+            }
+        },
 
+        /** Pack and save nested chart model */
+        save: function() {
+            var self = this;
+            var chart = this.app.chart;
+            var chart_dict = {
+                attributes : chart.attributes,
+                settings   : chart.settings.attributes,
+                groups     : []
+            };
+            chart.groups.each( function( group ) {
+                chart_dict.groups.push( group.attributes );
+            });
+            this.vis.set( 'title', chart.get( 'title' ) || '' );
+            this.vis.get( 'config' ).chart_dict = chart_dict;
+            this.vis.save().fail(function( xhr, status, message ) {
+                                self.app.showModal( 'Saving failed.', 'An attempt to save this chart to the server failed. Please try again and contact the administrator.' );
+                            })
+                            .then( function( response ) {
+                                if ( response && response.id ) {
+                                    self.id = response.id;
+                                } else {
+                                    console.debug('Storage::save() - Unrecognized response. Saving may have failed.');
+                                }
+                            });
+        },
+
+        /** Load nested models/collections from packed dictionary */
+        load: function() {
+            var chart_dict = this.vis.get( 'config' ).chart_dict;
+            if ( !chart_dict.attributes ) {
+                console.debug('Storage::load() - Chart attributes not found. Invalid format.');
+                return false;
+            }
+            var chart_type = chart_dict.attributes[ 'type' ];
+            if ( !chart_type ) {
+                console.debug('Storage::load() - Chart type not provided. Invalid format.');
+                return false;
+            }
+            var chart_definition = this.app.types.get( chart_type );
+            if ( !chart_definition ) {
+                console.debug('Storage::load() - Chart type not supported. Please re-configure the chart. Resetting chart.');
+                return false;
+            }
+            this.chart.definition = chart_definition;
+            this.chart.set( chart_dict.attributes );
+            this.chart.state( 'ok', 'Loading saved visualization...' );
+            this.chart.settings.set( chart_dict.settings );
+            this.chart.groups.reset();
+            this.chart.groups.add( chart_dict.groups );
+            this.chart.set( 'modified', false );
+            console.debug('Storage::load() - Loading chart type ' + chart_type + '.');
+            return true;
+        }
+    });
 });

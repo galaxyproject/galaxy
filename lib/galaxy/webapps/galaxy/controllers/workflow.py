@@ -32,6 +32,7 @@ from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.render import WorkflowCanvas
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
+from galaxy.tools.parameters.basic import workflow_building_modes
 
 log = logging.getLogger( __name__ )
 
@@ -1130,6 +1131,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             else:
                 # Prepare each step
                 missing_tools = []
+                trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
                 for step in workflow.steps:
                     try:
                         module_injector.inject( step )

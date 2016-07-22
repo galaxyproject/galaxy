@@ -6,7 +6,7 @@ usage: %prog bed_file out_file
     -1, --cols1=N,N,N,N: Columns for chrom, start, end, strand in interval file
     -2, --cols2=N,N,N,N: Columns for chrom, start, end, strand in coverage file
 """
-import commands
+import subprocess
 import tempfile
 from bisect import bisect
 from os import environ
@@ -42,11 +42,11 @@ def main( interval, coverage ):
     for record in interval:
         chrom = record.chrom
         if lastchrom and not lastchrom == chrom and partitions:
-            for partition in xrange(0, len(partitions) - 1):
+            for partition in range(0, len(partitions) - 1):
                 forward = forward_covs[partition]
                 reverse = reverse_covs[partition]
                 if forward + reverse > 0:
-                    coverage.write(chrom=chrom, position=xrange(partitions[partition], partitions[partition + 1]),
+                    coverage.write(chrom=chrom, position=range(partitions[partition], partitions[partition + 1]),
                                    forward=forward, reverse=reverse)
             partitions = []
             forward_covs = []
@@ -64,7 +64,7 @@ def main( interval, coverage ):
         forward_covs.insert(start_index, forward_base)
         reverse_covs.insert(start_index, reverse_base)
         end_index = bisect(partitions, record.end)
-        for index in xrange(start_index, end_index):
+        for index in range(start_index, end_index):
             forward_covs[index] += forward
             reverse_covs[index] += reverse
         partitions.insert(end_index, record.end)
@@ -72,11 +72,11 @@ def main( interval, coverage ):
         reverse_covs.insert(end_index, reverse_covs[end_index - 1] - reverse )
 
         if partitions:
-            for partition in xrange(0, start_index):
+            for partition in range(0, start_index):
                 forward = forward_covs[partition]
                 reverse = reverse_covs[partition]
                 if forward + reverse > 0:
-                    coverage.write(chrom=chrom, position=xrange(partitions[partition], partitions[partition + 1]),
+                    coverage.write(chrom=chrom, position=range(partitions[partition], partitions[partition + 1]),
                                    forward=forward, reverse=reverse)
             partitions = partitions[start_index:]
             forward_covs = forward_covs[start_index:]
@@ -86,11 +86,11 @@ def main( interval, coverage ):
 
     # Finish the last chromosome
     if partitions:
-        for partition in xrange(0, len(partitions) - 1):
+        for partition in range(0, len(partitions) - 1):
             forward = forward_covs[partition]
             reverse = reverse_covs[partition]
             if forward + reverse > 0:
-                coverage.write(chrom=chrom, position=xrange(partitions[partition], partitions[partition + 1]),
+                coverage.write(chrom=chrom, position=range(partitions[partition], partitions[partition + 1]),
                                forward=forward, reverse=reverse)
 
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     temp_file = tempfile.NamedTemporaryFile(mode="r")
     environ['LC_ALL'] = 'POSIX'
     commandline = "sort -f -n -k %d -k %d -k %d -o %s %s" % (chr_col_1 + 1, start_col_1 + 1, end_col_1 + 1, temp_file.name, in_fname)
-    errorcode, stdout = commands.getstatusoutput(commandline)
+    subprocess.check_call(commandline, shell=True)
 
     coverage = CoverageWriter( out_stream=open(out_fname, "a"),
                                chromCol=chr_col_2, positionCol=position_col_2,

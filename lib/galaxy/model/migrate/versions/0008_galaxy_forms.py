@@ -9,6 +9,8 @@ This migration script adds the following new tables for supporting Galaxy forms:
 7) sample_state
 8) sample_event
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -31,17 +33,17 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script adds the following new tables for supporting Galaxy forms:"
-    print "1) form_definition_current"
-    print "2) form_definition"
-    print "3) form_values"
-    print "4) request_type"
-    print "5) request"
-    print "6) sample"
-    print "7) sample_state"
-    print "8) sample_event"
-    print "========================================"
+    print("========================================")
+    print("This migration script adds the following new tables for supporting Galaxy forms:")
+    print("1) form_definition_current")
+    print("2) form_definition")
+    print("3) form_values")
+    print("4) request_type")
+    print("5) request")
+    print("6) sample")
+    print("7) sample_state")
+    print("8) sample_event")
+    print("========================================")
 
 FormDefinitionCurrent_table = Table('form_definition_current', metadata,
                                     Column( "id", Integer, primary_key=True),

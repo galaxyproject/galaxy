@@ -2,6 +2,8 @@
 Migration script to create table for associating sessions and users with
 OpenIDs.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -24,7 +26,7 @@ UserOpenID_table = Table( "galaxy_user_openid", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Create galaxy_user_openid table
