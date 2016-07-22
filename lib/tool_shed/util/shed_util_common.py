@@ -224,6 +224,8 @@ def get_unique_requirements(requirements):
                 continue  # A requirement without a name can't be resolved, so let's skip those
             version = req.get("version", "versionless")
             type = req.get("type", None)
+            if not type == "package":
+                continue
             uniq_reqs["%s_%s" % (name, version)] = {'name': name, 'version': version, 'type': type}
     return uniq_reqs.values()
 
