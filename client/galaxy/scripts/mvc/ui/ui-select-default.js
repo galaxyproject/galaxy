@@ -18,7 +18,7 @@ var View = Backbone.View.extend({
             disabled    : false,
             onchange    : function(){}
         }).set( options );
-        this.on( 'change', function() { self.model.get( 'onchange' )( self.value() ) } );
+        this.on( 'change', function() { self.model.get( 'onchange' ) && self.model.get( 'onchange' )( self.value() ) } );
         this.listenTo( this.model, 'change:data', this._changeData, this );
         this.listenTo( this.model, 'change:disabled', this._changeDisabled, this );
         this.listenTo( this.model, 'change:wait', this._changeWait, this );

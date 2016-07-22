@@ -526,6 +526,7 @@ class Configuration( object ):
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
+            tool_destinations_config_file=[ 'config/tool_destinations.yml', 'config/tool_destinations.yml.sample' ],
             job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
