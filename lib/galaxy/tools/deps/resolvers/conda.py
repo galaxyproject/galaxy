@@ -6,8 +6,6 @@ incompatible changes coming.
 
 import os
 
-from galaxy.exceptions import NotImplemented
-
 from ..resolvers import (
     DependencyResolver,
     INDETERMINATE_DEPENDENCY,
@@ -65,6 +63,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
+        verbose_install_check = _string_as_bool(get_option("verbose_install_check"))
         ensure_channels = get_option("ensure_channels")
         use_path_exec = get_option("use_path_exec")
         if use_path_exec is None:
@@ -101,6 +100,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.conda_context = conda_context
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
+        self.verbose_install_check = verbose_install_check
 
     def resolve(self, name, version, type, **kwds):
         # Check for conda just not being there, this way we can enable
@@ -122,22 +122,10 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         conda_target = CondaTarget(name, version=version)
         is_installed = is_conda_target_installed(
-            conda_target, conda_context=self.conda_context
+            conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
         )
         if not is_installed and self.auto_install:
-            return_code = install_conda_target(conda_target, conda_context=self.conda_context)
-            if return_code != 0:
-                is_installed = False
-                log.debug('Cleaning up after failed install of {}, {}'.format(name, version))
-                cleanup_failed_install(conda_target, conda_context=self.conda_context)
-            else:
-                # Recheck if installed
-                is_installed = is_conda_target_installed(
-                    conda_target, conda_context=self.conda_context
-                )
-                if not is_installed:
-                    log.debug('Cleaning up after failing to verify installed environment for {}, {}'.format(name, version))
-                    cleanup_failed_install(conda_target, conda_context=self.conda_context)
+            is_installed = self.install_dependency(name, version, type)
 
         if not is_installed:
             return INDETERMINATE_DEPENDENCY
@@ -174,18 +162,34 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
     def install_dependency(self, name, version, type, **kwds):
         "Returns True on (seemingly) successfull installation"
         if type != "package":
-            raise NotImplemented("Can not install dependencies of type '%s'" % type)
+            raise NotImplemented("Cannot install dependencies of type '%s'" % type)
 
         if self.versionless:
             version = None
+
         conda_target = CondaTarget(name, version=version)
 
-        if install_conda_target(conda_target, conda_context=self.conda_context):
-            raise Exception("Failed to install conda recipe.")
-
         is_installed = is_conda_target_installed(
-            conda_target, conda_context=self.conda_context
+            conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
         )
+
+        if is_installed:
+            return is_installed
+
+        return_code = install_conda_target(conda_target, conda_context=self.conda_context)
+        if return_code != 0:
+            is_installed = False
+            log.debug("Remove failed conda install of {}, version '{}'".format(name, version))
+            cleanup_failed_install(conda_target, conda_context=self.conda_context)
+        else:
+            # Recheck if installed
+            is_installed = is_conda_target_installed(
+                conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
+            )
+            if not is_installed:
+                log.debug("Remove failed conda install of {}, version '{}'".format(name, version))
+                cleanup_failed_install(conda_target, conda_context=self.conda_context)
+
         return is_installed
 
     @property
