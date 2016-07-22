@@ -13,7 +13,7 @@ define([ "test-app", "mvc/upload/upload-view"
     } );
 
     test( "test initial dialog state", function() {
-        $(this.app.ui_button_view.$el).trigger('click');
+        $(this.app.ui_button.$el).trigger('click');
         ok(this.app.default_view.collection.length == 0, 'Invalid initial upload item collection.');
         ok($('#btn-start').hasClass('disabled'), 'Start button should be disabled.');
         ok($('#btn-stop').hasClass('disabled'), 'Stop button should be disabled.');
@@ -21,7 +21,7 @@ define([ "test-app", "mvc/upload/upload-view"
     } );
 
     test( "test adding/removing paste/fetch upload item", function() {
-        $(this.app.ui_button_view.$el).trigger('click');
+        $(this.app.ui_button.$el).trigger('click');
         $('#btn-new').trigger('click');
         ok(!$('#btn-start').hasClass('disabled'), 'Start button should be enabled.');
         ok($('#btn-stop').hasClass('disabled'), 'Stop button should (still) be disabled.');
@@ -42,7 +42,7 @@ define([ "test-app", "mvc/upload/upload-view"
     } );
 
     test( "test ftp popup", function() {
-        $(this.app.ui_button_view.$el).trigger('click');
+        $(this.app.ui_button.$el).trigger('click');
         $('#btn-ftp').trigger('click');
         ok($('.upload-ftp-help').length == 1, 'Should show ftp help text.');
     } );
