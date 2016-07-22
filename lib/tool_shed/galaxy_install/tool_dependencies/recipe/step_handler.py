@@ -650,7 +650,7 @@ class DownloadBinary( Download, RecipeStep ):
             url_template_elem = tool_dependency_util.get_download_url_for_platform( url_template_elems, platform_info_dict )
         else:
             url_template_elem = url_template_elems[ 0 ]
-        action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
+        action_dict[ 'url' ] = Template( url_template_elem.text.strip() ).safe_substitute( platform_info_dict )
         action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
         action_dict.update( self.get_elem_checksums( action_elem ) )
         return action_dict
@@ -847,11 +847,17 @@ class MoveDirectoryFiles( RecipeStep ):
 
     def move_directory_files( self, current_dir, source_dir, destination_dir ):
         source_directory = os.path.abspath( os.path.join( current_dir, source_dir ) )
-        destination_directory = os.path.join( destination_dir )
-        destination_parent_directory = os.path.dirname(destination_directory)
-        if not os.path.isdir( destination_parent_directory ):
-            os.makedirs( destination_parent_directory )
-        shutil.move( source_directory, destination_directory )
+        destination_directory = os.path.abspath(os.path.join(destination_dir))
+        if not os.path.isdir(destination_directory):
+            os.makedirs(destination_directory)
+        for dir_entry in os.listdir(source_directory):
+            source_entry = os.path.join(source_directory, dir_entry)
+            if os.path.islink(source_entry):
+                destination_entry = os.path.join(destination_directory, dir_entry)
+                os.symlink(os.readlink(source_entry), destination_entry)
+                os.remove(source_entry)
+            else:
+                shutil.move(source_entry, destination_directory)
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="move_directory_files">
@@ -1169,7 +1175,7 @@ class SetupPerlEnvironment( Download, RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
-        self.type = 'setup_purl_environment'
+        self.type = 'setup_perl_environment'
 
     def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, current_dir=None, initial_download=False ):

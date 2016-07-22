@@ -157,6 +157,9 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         # along following argument value_map=self._path_rewriter.
         return self.input.to_param_dict_string( self.value, other_values=self._other_values )
 
+    def __add__( self, x ):
+        return '%s%s' % ( self, x )
+
     def __getattr__( self, key ):
         return getattr( self.input, key )
 
@@ -365,7 +368,7 @@ class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
             if dataset_collection_element.is_collection:
                 element_wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection_element, dataset_paths, **kwargs )
             else:
-                element_wrapper = self._dataset_wrapper( element_object, dataset_paths, **kwargs)
+                element_wrapper = self._dataset_wrapper( element_object, dataset_paths, identifier=element_identifier, **kwargs)
 
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append( element_wrapper )

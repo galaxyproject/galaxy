@@ -86,8 +86,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             }
         },
 
-        /** Highlights errors
-        */
+        /** Highlights errors */
         errors: function(options) {
             this.trigger('reset');
             if (options && options.errors) {
@@ -101,8 +100,12 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             }
         },
 
-        /** Render tool form
-        */
+        /** Modify onchange event handler */
+        setOnChange: function( callback ) {
+            this.options.onchange = callback;
+        },
+
+        /** Render tool form */
         render: function() {
             // link this
             var self = this;
@@ -153,8 +156,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             return this;
         },
 
-        /** Renders the UI elements required for the form
-        */
+        /** Renders the UI elements required for the form */
         _renderForm: function() {
             // create message view
             this.message = new Ui.Message();

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import sys
 
@@ -9,7 +10,7 @@ try:
     data[ 'update_type' ] = 'sample_state'
     data[ 'new_state' ] = sys.argv[3]
 except IndexError:
-    print 'usage: %s key url new_state [comment]' % os.path.basename( sys.argv[0] )
+    print('usage: %s key url new_state [comment]' % os.path.basename( sys.argv[0] ))
     sys.exit( 1 )
 try:
     data[ 'comment' ] = sys.argv[4]

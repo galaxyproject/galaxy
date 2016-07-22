@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -21,11 +23,11 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print """This script creates a request.folder_id column which is a foreign
+    print("========================================")
+    print("""This script creates a request.folder_id column which is a foreign
 key to the library_folder table. This also adds a 'type' and 'layout' column
-to the form_definition table."""
-    print "========================================"
+to the form_definition table.""")
+    print("========================================")
 
 
 def upgrade(migrate_engine):

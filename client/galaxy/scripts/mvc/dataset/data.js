@@ -64,7 +64,7 @@ var TabularDataset = Dataset.extend({
     defaults: _.extend({}, Dataset.prototype.defaults, {
         chunk_url: null,
         first_data_chunk: null,
-        chunk_index: -1,
+        offset: 0,
         at_eof: false
     }),
 
@@ -72,7 +72,9 @@ var TabularDataset = Dataset.extend({
         Dataset.prototype.initialize.call(this);
 
         // If first data chunk is available, next chunk is 1.
-        this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
+        if (this.attributes.first_data_chunk){
+            this.attributes.offset = this.attributes.first_data_chunk.offset;
+        }
         this.attributes.chunk_url = Galaxy.root + 'dataset/display?dataset_id=' + this.id;
         this.attributes.url_viz = Galaxy.root + 'visualization';
     },
@@ -90,12 +92,13 @@ var TabularDataset = Dataset.extend({
         var self = this,
             next_chunk = $.Deferred();
         $.getJSON(this.attributes.chunk_url, {
-            chunk: self.attributes.chunk_index++
+            offset: self.attributes.offset
         }).success(function(chunk) {
             var rval;
             if (chunk.ck_data !== '') {
                 // Found chunk.
                 rval = chunk;
+                self.attributes.offset = chunk.offset;
             }
             else {
                 // At EOF.

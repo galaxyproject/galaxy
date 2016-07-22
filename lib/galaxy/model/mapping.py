@@ -33,6 +33,7 @@ model.User.table = Table(
     Column( "email", TrimmedString( 255 ), index=True, nullable=False ),
     Column( "username", TrimmedString( 255 ), index=True, unique=True ),
     Column( "password", TrimmedString( 255 ), nullable=False ),
+    Column( "last_password_change", DateTime, default=now ),
     Column( "external", Boolean, default=False ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),

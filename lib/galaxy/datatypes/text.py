@@ -127,19 +127,17 @@ class Ipynb( Json ):
             except:
                 return False
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         config = trans.app.config
         trust = getattr( config, 'trust_ipython_notebook_conversion', False )
         if trust:
-            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd)
+            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
         else:
-            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd )
+            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd )
 
-    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         preview = string_as_bool( preview )
-        if chunk:
-            return self.get_chunk(trans, dataset, chunk)
-        elif to_ext or not preview:
+        if to_ext or not preview:
             return self._serve_raw(trans, dataset, to_ext)
         else:
             ofile_handle = tempfile.NamedTemporaryFile(delete=False)
@@ -426,7 +424,7 @@ class SnpEffDb( Text ):
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
         #  annotation files that are included in snpEff by a flag
-        annotations_dict = {'nextProt.bin' : '-nextprot', 'motif.bin': '-motif'}
+        annotations_dict = {'nextProt.bin': '-nextprot', 'motif.bin': '-motif'}
         regulations = []
         annotations = []
         genome_version = None

@@ -1,5 +1,6 @@
 # Test tools API.
 from base import api
+import json
 from operator import itemgetter
 from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
@@ -804,6 +805,38 @@ class ToolsTestCase( api.ApiTestCase ):
         output1 = outputs[ 0 ]
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEquals( output1_content.strip(), "Pasted Entry\nPasted Entry" )
+
+    @skip_without_tool( "identifier_collection" )
+    def test_identifier_with_data_collection( self ):
+        history_id = self.dataset_populator.new_history()
+
+        element_identifiers = self.dataset_collection_populator.list_identifiers( history_id )
+
+        payload = dict(
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=json.dumps(element_identifiers),
+            collection_type="list",
+        )
+
+        create_response = self._post( "dataset_collections", payload )
+        dataset_collection = create_response.json()
+
+        inputs = {
+            "input1": {'src': 'hdca', 'id': dataset_collection['id']},
+        }
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create_response = self._run( "identifier_collection", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEquals( output1_content.strip(), '\n'.join([d['name'] for d in element_identifiers]) )
 
     @skip_without_tool( "cat1" )
     def test_map_over_nested_collections( self ):
