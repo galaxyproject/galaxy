@@ -10,6 +10,8 @@ import re
 import string
 from cgi import escape
 
+from six import PY3
+
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.util.checkers import is_gzip
@@ -21,6 +23,8 @@ from . import data
 
 import bx.align.maf
 
+if PY3:
+    long = int
 
 log = logging.getLogger(__name__)
 

@@ -891,25 +891,33 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     return value
 
 
-def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
-    """
+def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
+    u"""
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
 
     If strings_only is True, don't convert (some) non-string-like objects.
 
     Adapted from an older, simpler version of django.utils.encoding.smart_str.
+
+    >>> assert smart_str(None) == b'None'
+    >>> assert smart_str(None, strings_only=True) is None
+    >>> assert smart_str(3) == b'3'
+    >>> assert smart_str(3, strings_only=True) == 3
+    >>> assert smart_str(b'a bytes string') == b'a bytes string'
+    >>> assert smart_str(u'a simple unicode string') == b'a simple unicode string'
+    >>> assert smart_str(u'à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
+    >>> assert smart_str(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string', encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
-    if not isinstance(s, string_types):
-        try:
-            return str(s)
-        except UnicodeEncodeError:
-            return text_type(s).encode(encoding, errors)
-    elif isinstance(s, text_type):
+    if not isinstance(s, string_types) and not isinstance(s, binary_type):
+        # In Python 2, s is not an instance of basestring
+        # In Python 3, s is not an instance of bytes or str
+        s = str(s)
+    if not isinstance(s, binary_type):
         return s.encode(encoding, errors)
-    elif s and encoding != 'utf-8':
-        return s.decode('utf-8', errors).encode(encoding, errors)
+    elif s and encoding != DEFAULT_ENCODING:
+        return s.decode(DEFAULT_ENCODING, errors).encode(encoding, errors)
     else:
         return s
 
@@ -1402,6 +1410,32 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
             return default
         else:
             raise
+
+
+def parse_non_hex_float( s ):
+    """
+    Parse string `s` into a float but throw a `ValueError` if the string is in
+    the otherwise acceptable format `\d+e\d+` (e.g. 40000000000000e5.)
+
+    This can be passed into `json.loads` to prevent a hex string in the above
+    format from being incorrectly parsed as a float in scientific notation.
+
+    >>> parse_non_hex_float( '123.4' )
+    123.4
+    >>> parse_non_hex_float( '2.45e+3' )
+    2450.0
+    >>> parse_non_hex_float( '2.45e-3' )
+    0.00245
+    >>> parse_non_hex_float( '40000000000000e5' )
+    Traceback (most recent call last):
+        ...
+    ValueError: could not convert string to float: 40000000000000e5
+    """
+    f = float( s )
+    # successfully parsed as float if here - check for format in original string
+    if 'e' in s and not ( '+' in s or '-' in s ):
+        raise ValueError( 'could not convert string to float: ' + s )
+    return f
 
 
 def build_url( base_url, port=80, scheme='http', pathspec=None, params=None, doseq=False ):

@@ -3,7 +3,7 @@
 
 Launch this script by running ``run_tests.sh -t`` from GALAXY_ROOT.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 import string
@@ -76,7 +76,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
         galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
         hgweb_config_dir = hgweb_config_file_path
         os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
-        print "Directory location for hgweb.config:", hgweb_config_dir
+        print("Directory location for hgweb.config:", hgweb_config_dir)
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
         kwargs = dict( admin_users='test@bx.psu.edu',
                        allow_user_creation=True,
@@ -152,7 +152,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
                     update_integrated_tool_panel=True,
                 )
             )
-            print "Galaxy database connection:", kwargs["database_connection"]
+            print("Galaxy database connection:", kwargs["database_connection"])
 
             # ---- Run galaxy webserver ------------------------------------------------------
             galaxyapp = driver_util.build_galaxy_app(kwargs)

@@ -113,6 +113,7 @@ class Configuration( object ):
 
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
+        self.password_expiration_period = timedelta( days=int( kwargs.get( "password_expiration_period", 0 ) ) )
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
@@ -162,7 +163,7 @@ class Configuration( object ):
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
-        self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "False" ) )
+        self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "True" ) )
         self.allow_user_impersonation = string_as_bool( kwargs.get( "allow_user_impersonation", "False" ) )
         self.new_user_dataset_access_role_default_private = string_as_bool( kwargs.get( "new_user_dataset_access_role_default_private", "False" ) )
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
@@ -529,6 +530,7 @@ class Configuration( object ):
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
+            tool_destinations_config_file=[ 'config/tool_destinations.yml', 'config/tool_destinations.yml.sample' ],
             job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],

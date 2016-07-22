@@ -4,6 +4,8 @@ adds the same to the 'sample' table. This also adds a 'datatx' column to request
 to store the sequencer login information. Finally, this adds a 'dataset_files' column to
 the sample table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -27,7 +29,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     # retuest_type table

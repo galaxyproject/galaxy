@@ -1,6 +1,8 @@
 """
 Migration script to add the request_type_permissions table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -21,7 +23,7 @@ RequestTypePermissions_table = Table( "request_type_permissions", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         RequestTypePermissions_table.create()

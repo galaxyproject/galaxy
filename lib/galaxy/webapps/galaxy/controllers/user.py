@@ -564,7 +564,21 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
                 message, status = self.resend_verification_email( trans, user.email, user.username )
         else:  # activation is OFF
+            pw_expires = trans.app.config.password_expiration_period
+            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
+                # Password is expired, we don't log them in.
+                trans.response.send_redirect(web.url_for(controller='user',
+                                                         action='change_password',
+                                                         message='Your password has expired. Please change it to access Galaxy.',
+                                                         redirect_home=True,
+                                                         status='error'))
             message, success, status = self.proceed_login( trans, user, redirect )
+            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
+                # If password is about to expire, modify message to state that.
+                expiredate = datetime.today() - user.last_password_change + pw_expires
+                message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                          (expiredate.days, user.email, redirect, url_for('/'))
+                status = 'warning'
         return ( message, status, user, success )
 
     def proceed_login( self, trans, user, redirect ):
@@ -1120,7 +1134,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         provided, don't require current password.
         """
         status = None
-        message = None
+        message = kwd.get( 'message', '' )
         user = None
         if kwd.get( 'change_password_button', False ):
             password = kwd.get( 'password', '' )
@@ -1164,11 +1178,17 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
                     trans.log_event( "User change password" )
-                    return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
+                    if kwd.get('display_top', False) == 'True':
+                        return trans.response.send_redirect( url_for( '/', message='Password has been changed' ))
+                    else:
+                        return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
+
         return trans.fill_template( '/user/change_password.mako',
                                     token=token,
                                     status=status,
-                                    message=message )
+                                    message=message,
+                                    display_top=kwd.get('redirect_home', False)
+                                    )
 
     @web.expose
     def change_communication( self, trans, cntrller, **kwd):

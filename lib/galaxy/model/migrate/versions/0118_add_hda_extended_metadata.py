@@ -1,6 +1,8 @@
 """
 Add link from history_dataset_association to the extended_metadata table
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
@@ -11,11 +13,11 @@ extended_metadata_hda_col = Column( "extended_metadata_id", Integer, ForeignKey(
 
 
 def display_migration_details():
-    print "This migration script adds a ExtendedMetadata links to HistoryDatasetAssociation tables"
+    print("This migration script adds a ExtendedMetadata links to HistoryDatasetAssociation tables")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
@@ -24,7 +26,7 @@ def upgrade(migrate_engine):
         extended_metadata_hda_col.create( hda_table )
         assert extended_metadata_hda_col is hda_table.c.extended_metadata_id
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.error( "Adding column 'extended_metadata_id' to history_dataset_association table failed: %s" % str( e ) )
 
 

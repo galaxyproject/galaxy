@@ -52,7 +52,8 @@ return $.extend(true, {}, {
         show_legend : {
             title       : 'Show legend',
             info        : 'Would you like to add a legend?',
-            type        : 'radiobutton',
+            type        : 'select',
+            display     : 'radiobutton',
             init        : 'false',
             data        : [
                 {
@@ -103,7 +104,8 @@ return $.extend(true, {}, {
         label_outside : {
             title       : 'Show outside',
             info        : 'Would you like to show labels outside the donut?',
-            type        : 'radiobutton',
+            type        : 'select',
+            display     : 'radiobutton',
             init        : 'false',
             data        : [
                 {

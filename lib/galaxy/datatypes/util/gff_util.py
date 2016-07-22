@@ -149,6 +149,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                                 self.default_strand, fix_strand=self.fix_strand )
         return interval
 
+    # For Python3 this needs to be changed to __next__() after bx-python library is ported too
     def next( self ):
         """ Returns next GFFFeature. """
 

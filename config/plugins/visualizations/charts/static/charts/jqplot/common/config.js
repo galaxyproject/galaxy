@@ -15,7 +15,8 @@ return $.extend(true, {}, config_default, {
         x_axis_grid : {
             title       : 'Axis grid',
             info        : 'Would you like to show grid lines for the X axis?',
-            type        : 'radiobutton',
+            type        : 'select',
+            display     : 'radiobutton',
             init        : 'false',
             data        : [
                 {
@@ -31,7 +32,8 @@ return $.extend(true, {}, config_default, {
         y_axis_grid : {
             title       : 'Axis grid',
             info        : 'Would you like to show grid lines for the Y axis?',
-            type        : 'radiobutton',
+            type        : 'select',
+            display     : 'radiobutton',
             init        : 'true',
             data        : [
                 {

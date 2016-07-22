@@ -16,6 +16,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
+    workflow_building_modes
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools import DefaultToolState
@@ -1148,10 +1149,12 @@ class ToolModule( WorkflowModule ):
 
         # Any connected input needs to have value RuntimeValue (these
         # are not persisted so we need to do it every time)
-        def callback( input, prefixed_name, **kwargs ):
+        def callback( input, prefixed_name, context, **kwargs ):
             if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
                 if connections is None or prefixed_name in input_connections_by_name:
                     return RuntimeValue()
+                elif self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+                    return input.get_initial_value( self.trans, context )
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
 
@@ -1336,11 +1339,9 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
         step_errors = module_injector.inject( step, step_args=step_args )
         if step.type == 'tool' or step.type is None:
             if step_errors:
-                message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
-                raise exceptions.MessageException( message )
+                raise exceptions.MessageException( step_errors )
             if step.upgrade_messages:
                 if allow_tool_state_corrections:
                     log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
                 else:
-                    message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
-                    raise exceptions.MessageException( message )
+                    raise exceptions.MessageException( step.upgrade_messages )
