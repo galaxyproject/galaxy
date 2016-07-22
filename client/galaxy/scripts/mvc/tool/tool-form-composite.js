@@ -3,6 +3,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
     function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
+            var self = this;
             this.modal = parent.Galaxy.modal || new Modal.View();
             this.model = options && options.model || new Backbone.Model( options );
             this.deferred = new Deferred();
@@ -10,11 +11,24 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                           .append( this.$message      = $( '<div/>' ) )
                                           .append( this.$header       = $( '<div/>' ) )
                                           .append( this.$history      = $( '<div/>' ) )
-                                          .append( this.$parameters   = $( '<div/>' ) )
                                           .append( this.$steps        = $( '<div/>' ) ) );
             $( 'body' ).append( this.$el );
             this._configure();
             this.render();
+            this._refresh();
+            this.$el.on( 'click', function() { self._refresh() } );
+            $( window ).resize( function() { self._refresh() } );
+        },
+
+        /** Refresh height of scrollable div below header */
+        _refresh: function() {
+            var margin = 0;
+            var children = this.$el.children();
+            for ( var i = 0; i < children.length; i++ ) {
+                margin += $( children[ i ] ).outerHeight();
+            }
+            margin -= this.$steps.height() - 30;
+            this.$steps.css( 'height', $( window ).height() - margin );
         },
 
         /** Configures form/step options for each workflow step */
@@ -44,7 +58,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     cls_enable              : 'fa fa-edit',
                     cls_disable             : 'fa fa-undo',
                     errors                  : step.messages,
-                    initial_errors          : true
+                    initial_errors          : true,
+                    cls                     : 'ui-portlet-narrow'
                 }, step );
                 self.steps[ i ] = step;
                 self.links[ i ] = [];
@@ -191,14 +206,47 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var self = this;
             this.wp_form = null;
             if ( !_.isEmpty( this.wp_inputs ) ) {
-                this.wp_form = new Form({ title: '<b>Workflow Parameters</b>', inputs: this.wp_inputs, onchange: function() {
-                    _.each( self.wp_form.input_list, function( input_def, i ) {
-                        _.each( input_def.links, function( step ) {
-                            self._refreshStep( step );
+                this.wp_form = new Form({ title: '<b>Workflow Parameters</b>', inputs: this.wp_inputs, cls: 'ui-portlet-narrow', onchange: function() {
+                        _.each( self.wp_form.input_list, function( input_def, i ) {
+                            _.each( input_def.links, function( step ) {
+                                self._refreshStep( step );
+                            });
                         });
-                    });
-                }});
-                this._append( this.$parameters.empty(), this.wp_form.$el );
+                    }
+                });
+                this._append( this.$steps.empty(), this.wp_form.$el );
+            }
+        },
+
+        /** Render workflow parameters */
+        _renderHistory: function() {
+            this.history_form = null;
+            if ( !this.model.get( 'history_id' ) ) {
+                this.history_form = new Form({
+                    cls    : 'ui-portlet-narrow',
+                    title  : '<b>History Options</b>',
+                    inputs : [{
+                        type        : 'conditional',
+                        name        : 'new_history',
+                        test_param  : {
+                            name        : 'check',
+                            label       : 'Send results to a new history',
+                            type        : 'boolean',
+                            value       : 'false',
+                            help        : ''
+                        },
+                        cases       : [{
+                            value   : 'true',
+                            inputs  : [{
+                                name    : 'name',
+                                label   : 'History name',
+                                type    : 'text',
+                                value   : this.model.get( 'name' )
+                            }]
+                        }]
+                    }]
+                });
+                this._append( this.$steps, this.history_form.$el );
             }
         },
 
@@ -207,6 +255,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var self = this;
             var form = null;
             var current = null;
+            self.$steps.addClass( 'ui-steps' );
             this.deferred.execute( function( promise ) {
                 current = promise;
                 if ( step.step_type == 'tool' ) {
@@ -281,36 +330,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     }
                 });
                 form.trigger( 'change' );
-            }
-        },
-
-        /** Render history form */
-        _renderHistory: function() {
-            this.history_form = null;
-            if ( !this.model.get( 'history_id' ) ) {
-                this.history_form = new Form({
-                    inputs : [{
-                        type        : 'conditional',
-                        name        : 'new_history',
-                        test_param  : {
-                            name        : 'check',
-                            label       : 'Send results to a new history',
-                            type        : 'boolean',
-                            value       : 'false',
-                            help        : ''
-                        },
-                        cases       : [{
-                            value   : 'true',
-                            inputs  : [{
-                                name    : 'name',
-                                label   : 'History name',
-                                type    : 'text',
-                                value   : this.model.get( 'name' )
-                            }]
-                        }]
-                    }]
-                });
-                this._append( this.$history.empty(), this.history_form.$el );
             }
         },
 

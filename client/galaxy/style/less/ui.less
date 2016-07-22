@@ -32,6 +32,7 @@
 @ui-margin-vertical-large: 10px;
 @ui-margin-horizontal: 5px;
 @ui-margin-horizontal-small: 4px;
+@ui-margin-horizontal-large: 10px;
 
 // margins
 .ui-margin-top {
@@ -344,6 +345,22 @@
         margin-top: 0px;
         .ui-label {
             width: ~'calc(100% - 200px)';
+        }
+    }
+    .ui-steps {
+        overflow: scroll;
+        margin-top: 15px;
+        border: dashed 1px darken(@form-heading-bg, 30%);
+        border-radius: @border-radius-base;
+        padding: @ui-margin-horizontal;
+        .ui-portlet-narrow {
+            padding: 0px @ui-margin-horizontal 0px @ui-margin-horizontal;
+            .portlet-content {
+                padding: 0px @ui-margin-horizontal 0px @ui-margin-horizontal;
+            }
+            .ui-table-section, .ui-portlet-repeat .portlet-content {
+                padding-left: @ui-margin-horizontal-large;
+            }
         }
     }
     .ui-message {
