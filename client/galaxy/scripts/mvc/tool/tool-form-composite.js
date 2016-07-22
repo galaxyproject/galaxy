@@ -166,7 +166,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 title       : 'Run workflow',
                 cls         : 'btn btn-primary',
                 wait        : true,
-                wait_text   : 'Loading...',
+                wait_text   : 'Preparing...',
                 onclick     : function() { self._execute() }
             });
             this.$header.addClass( 'ui-form-header' ).empty()
