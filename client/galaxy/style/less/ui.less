@@ -114,9 +114,18 @@
 }
 
 // buttons
-.ui-button {
+.ui-button-default {
     .icon {
         font-size: 1.1em;
+    }
+    .progress {
+        height: 3px;
+        margin: 0px;
+        margin-top: 1px;
+        .progress-bar {
+            &:extend(.no-transition);
+            background: darken(@state-success-bg, 30%);
+        }
     }
 }
 .ui-button-icon {
@@ -335,11 +344,6 @@
         .ui-label {
             width: ~'calc(100% - 200px)';
         }
-    }
-    .ui-button {
-        &:extend(.btn all);
-        &:extend(.btn-default all);
-        margin-left: @ui-margin-horizontal;
     }
     .ui-message {
         margin-top: 0px;

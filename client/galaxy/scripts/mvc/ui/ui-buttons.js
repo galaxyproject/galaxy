@@ -8,15 +8,17 @@ define( [ 'utils/utils' ], function( Utils ) {
                 title       : '',
                 floating    : 'right',
                 icon        : '',
-                cls         : 'ui-button btn btn-default',
+                cls         : 'btn btn-default',
                 wait        : false,
                 wait_text   : 'Sending...',
                 wait_cls    : 'btn btn-info',
-                disabled    : false
+                disabled    : false,
+                percentage  : -1
             }).set( options );
             this.setElement( $( '<button/>' ).attr( 'type', 'button' )
-                                             .append( this.$icon  = $( '<i/>' ) )
-                                             .append( this.$title = $( '<span/>' ) ) );
+                                             .append( this.$icon        = $( '<i/>' ) )
+                                             .append( this.$title       = $( '<span/>' ) )
+                                             .append( this.$progress    = $( '<div/>' ).append( this.$progress_bar = $( '<div/>' ) ) ) );
             this.listenTo( this.model, 'change', this.render, this );
             this.render();
         },
@@ -25,7 +27,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             var self = this;
             var options = this.model.attributes;
             this.$el.removeClass()
-                    .addClass( options.cls )
+                    .addClass( 'ui-button-default' )
                     .addClass( options.disabled && 'disabled' )
                     .attr( 'id', options.id )
                     .attr( 'disabled', options.disabled )
@@ -35,13 +37,19 @@ define( [ 'utils/utils' ], function( Utils ) {
                         options.onclick && !self.disabled && options.onclick();
                     })
                     .tooltip( { title: options.tooltip, placement: 'bottom' } );
-            this.$icon.removeClass().addClass( 'icon fa' ).addClass( options.icon );
-            this.$title.removeClass().addClass( 'title' ).html( options.title );
-            options.icon && options.title && this.$icon.addClass( 'ui-margin-right' );
+            this.$progress.addClass( 'progress' ).css( 'display', options.percentage !== -1 ? 'block' : 'none' );
+            this.$progress_bar.addClass( 'progress-bar' ).css( { width : options.percentage + '%' } );
+            this.$icon.removeClass().addClass( 'icon fa' );
+            this.$title.removeClass().addClass( 'title' );
             if ( options.wait ) {
-                this.$el.removeClass( options.cls ).addClass( options.wait_cls ).prop( 'disabled', true );
-                this.$icon.removeClass( options.icon ).addClass( 'fa-spinner fa-spin' );
+                this.$el.addClass( options.wait_cls ).prop( 'disabled', true );
+                this.$icon.addClass( 'fa-spinner fa-spin ui-margin-right' );
                 this.$title.html( options.wait_text );
+            } else {
+                this.$el.addClass( options.cls );
+                this.$icon.addClass( options.icon );
+                this.$title.html( options.title );
+                options.icon && options.title && this.$icon.addClass( 'ui-margin-right' );
             }
         },
 

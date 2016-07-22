@@ -155,7 +155,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderHistory();
             _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
             this.deferred.execute( function() { self.execute_btn.unwait();
-                                                self.execute_btn.model.set( 'wait_text', 'Sending...' ) } );
+                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } ) } );
         },
 
         /** Render header */
@@ -231,8 +231,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 }
                 self.forms[ i ] = form;
                 self._refreshStep( step );
-                Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
                 self._resolve( form.deferred, promise );
+                self.execute_btn.model.set( 'percentage', ( i + 1 ) * 100.0 / self.steps.length );
+                Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
             } );
         },
 
