@@ -317,6 +317,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         /** Execute workflow */
         _execute: function() {
             var self = this;
+            this._enabled( false );
             var job_def = {
                 new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
                 replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
@@ -356,7 +357,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 self._enabled( true );
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation failed.', job_def );
             } else {
-                self._enabled( false );
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation complete.', job_def );
                 Utils.request({
                     type    : 'POST',
