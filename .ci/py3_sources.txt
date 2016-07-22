@@ -10,6 +10,7 @@ lib/galaxy/datatypes/dataproviders/
 lib/galaxy/datatypes/sequence.py
 lib/galaxy/datatypes/sniff.py
 lib/galaxy/datatypes/tabular.py
+lib/galaxy/datatypes/tracks.py
 lib/galaxy/dependencies/
 lib/galaxy/eggs/
 lib/galaxy/exceptions/
