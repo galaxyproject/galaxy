@@ -35,7 +35,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.options = Utils.merge({
                 icon            : options.icon,
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations      : this._operations(),
+                operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
                     self.deferred.reset();
                     self.deferred.execute(function(process) {

@@ -59,7 +59,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     cls_disable             : 'fa fa-undo',
                     errors                  : step.messages,
                     initial_errors          : true,
-                    cls                     : 'ui-portlet-narrow'
+                    cls                     : 'ui-portlet-narrow',
+                    hide_operations         : true
                 }, step );
                 self.steps[ i ] = step;
                 self.links[ i ] = [];
