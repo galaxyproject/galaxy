@@ -41,7 +41,7 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
 
     def resolve(self, name, version, type, **kwds):
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
+            return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
         if version is None or self.versionless:
             return self._find_dep_default(name, version)

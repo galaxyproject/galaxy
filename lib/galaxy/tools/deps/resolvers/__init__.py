@@ -72,7 +72,7 @@ class InstallableDependencyResolver:
 
 
 class Dependency(Dictifiable, object):
-    dict_collection_visible_keys = ['dependency_type', 'exact']
+    dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version']
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -92,8 +92,12 @@ class NullDependency( Dependency ):
     dependency_type = None
     exact = True
 
+    def __init__(self, version, name):
+        self.version = version
+        self.name = name
+
     def shell_commands( self, requirement ):
         return None
 
 
-INDETERMINATE_DEPENDENCY = NullDependency()
+INDETERMINATE_DEPENDENCY = NullDependency

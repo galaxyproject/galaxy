@@ -48,7 +48,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
             possibles = self._find_possible_depenencies(name, version, type)
             if len(possibles) == 0:
                 log.debug("Unable to find dependency,'%s' '%s' '%s'", name, version, type)
-                return INDETERMINATE_DEPENDENCY
+                return INDETERMINATE_DEPENDENCY(version=version, name=name)
             elif len(possibles) == 1:
                 # Only one candidate found so ignore any preference rules
                 return possibles[0].dependency
@@ -57,7 +57,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                 return self._select_preferred_dependency(possibles).dependency
         except:
             log.exception("Unexpected error hunting for dependency '%s' '%s''%s'", name, version, type)
-            return INDETERMINATE_DEPENDENCY
+            return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
     # Finds all possible dependency to use
     # Should be extended as required

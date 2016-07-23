@@ -39,7 +39,7 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         base_path = self.base_path
         path = join( base_path, name, version )
-        return self._galaxy_package_dep(path, version, True)
+        return self._galaxy_package_dep(path, version, name, True)
 
     def _find_dep_default( self, name, type='package', exact=True, **kwds ):
         base_path = self.base_path
@@ -49,15 +49,15 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
             real_version = basename( real_path )
             return self._galaxy_package_dep(real_path, real_version, exact)
         else:
-            return INDETERMINATE_DEPENDENCY
+            return INDETERMINATE_DEPENDENCY(version=None, name=name)
 
-    def _galaxy_package_dep( self, path, version, exact ):
+    def _galaxy_package_dep( self, path, version, name, exact ):
         script = join( path, 'env.sh' )
         if exists( script ):
             return GalaxyPackageDependency(script, path, version, exact)
         elif exists( join( path, 'bin' ) ):
             return GalaxyPackageDependency(None, path, version, exact)
-        return INDETERMINATE_DEPENDENCY
+        return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
 
 class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver):

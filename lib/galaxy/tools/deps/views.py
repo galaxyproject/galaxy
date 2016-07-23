@@ -126,26 +126,4 @@ class DependencyResolversView(object):
         return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
 
     def get_requirements_status(self, requested_requirements):
-        result = []
-        for req in requested_requirements:
-            installed_requirement = self.requirement_installed(req)
-            if not installed_requirement:
-                req['status'] = "not installed"
-                req['exact'] = "NA"
-                req['resolver_type'] = None
-                result.append(req)
-            else:
-                result.append(installed_requirement)
-        return result
-
-    def requirement_installed(self, requirement):
-        installed_requirements = self.manager_requirements()
-        for ireq in installed_requirements:
-            if requirement['name'] == ireq['requirement']['name']:
-                requirement['resolver_type'] = self._dependency_resolvers[ireq['index']].resolver_type
-                versionless = self._dependency_resolvers[ireq['index']].versionless
-                if (requirement['version'] == ireq['requirement']['version'] and requirement['version'] and not versionless) or (versionless and not ireq['requirement']['version']):
-                    requirement['status'] = "installed"
-                    requirement['exact'] = not versionless
-                    return requirement
-        return None
+        return [self.manager_dependency(**req) for req in requested_requirements]

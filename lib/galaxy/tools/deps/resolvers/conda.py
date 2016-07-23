@@ -106,15 +106,10 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         # Check for conda just not being there, this way we can enable
         # conda by default and just do nothing in not configured.
         if not os.path.isdir(self.conda_context.conda_prefix):
-            return INDETERMINATE_DEPENDENCY
+            return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
-
-        job_directory = kwds.get("job_directory", None)
-        if job_directory is None:
-            log.warning("Conda dependency resolver not sent job directory.")
-            return INDETERMINATE_DEPENDENCY
+            return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
         exact = not self.versionless or version is None
         if self.versionless:
@@ -124,11 +119,26 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         is_installed = is_conda_target_installed(
             conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
         )
+
+        job_directory = kwds.get("job_directory", None)
+        if job_directory is None:  # Job directory is None when resolve() called by find_dep()
+            if is_installed:
+                return CondaDependency(
+                    False,
+                    os.path.join(self.conda_context.envs_path, conda_target.install_environment),
+                    exact,
+                    name=name,
+                    version=version
+                )
+            else:
+                log.warning("Conda dependency resolver not sent job directory.")
+                return INDETERMINATE_DEPENDENCY(version=version, name=name)
+
         if not is_installed and self.auto_install:
             is_installed = self.install_dependency(name, version, type)
 
         if not is_installed:
-            return INDETERMINATE_DEPENDENCY
+            return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
         # Have installed conda_target and job_directory to send it too.
         # If dependency is for metadata generation, store environment in conda-metadata-env

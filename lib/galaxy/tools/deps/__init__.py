@@ -58,7 +58,7 @@ class NullDependencyManager( object ):
         return []
 
     def find_dep( self, name, version=None, type='package', **kwds ):
-        return INDETERMINATE_DEPENDENCY
+        return INDETERMINATE_DEPENDENCY(name=name, version=version)
 
 
 class DependencyManager( object ):
@@ -115,10 +115,10 @@ class DependencyManager( object ):
                 continue
             dependency = resolver.resolve( name, version, type, **kwds )
             if require_exact and not dependency.exact:
-                dependency = INDETERMINATE_DEPENDENCY
-            if dependency != INDETERMINATE_DEPENDENCY:
+                dependency = INDETERMINATE_DEPENDENCY(version=version, name=name)
+            if not isinstance(dependency, INDETERMINATE_DEPENDENCY):
                 return dependency
-        return INDETERMINATE_DEPENDENCY
+        return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
     def __build_dependency_resolvers( self, conf_file ):
         if not conf_file:

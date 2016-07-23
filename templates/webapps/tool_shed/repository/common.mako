@@ -1044,9 +1044,9 @@
                         <tr>
                             <td>${dependency['name'] | h}</td>
                             <td>${dependency['version'] | h}</td>
-                            <td>${dependency['resolver_type'] | h}</td>
+                            <td>${dependency['dependency_type'] | h}</td>
                             <td>${dependency['exact'] | h}</td>
-                        %if dependency['status'] == 'not installed':
+                        %if dependency['dependency_type'] == None:
                             <td>
                                <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
                             </td>

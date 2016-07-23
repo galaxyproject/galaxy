@@ -95,7 +95,8 @@ class ToolDependenciesAPIController( BaseAPIController ):
         :returns:   a dictified description of the dependency, with attribute
                     ``dependency_type: null`` if no match was found.
         """
-        return self._view.install_dependency(id, **kwds)
+        self._view.install_dependency(id, **kwds)
+        return self._view.manager_dependency(**kwds)
 
     @expose_api
     @require_admin

@@ -52,14 +52,14 @@ class ModuleDependencyResolver(DependencyResolver):
 
     def resolve( self, name, version, type, **kwds ):
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
+            return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version, exact=True)
         elif self.versionless and self.__has_module(name, None):
             return ModuleDependency(self, name, None, exact=False)
 
-        return INDETERMINATE_DEPENDENCY
+        return INDETERMINATE_DEPENDENCY(version=version, name=name)
 
     def __has_module(self, name, version):
         return self.module_checker.has_module(name, version)
