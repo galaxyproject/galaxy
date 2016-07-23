@@ -74,14 +74,10 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
                 this.portlet.expand();
                 this.trigger('expand', input_id);
                 if (!silent) {
-                    if (self==top) {
-                        var $panel = this.$el.parents().filter(function() {
-                            return $(this).css('overflow') == 'auto';
-                        }).first();
-                        $panel.animate({ scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 50 }, 500);
-                    } else {
-                        $('html, body').animate({ scrollTop : input_element.$el.offset().top - 20 }, 500);
-                    }
+                    var $panel = this.$el.parents().filter(function() {
+                        return [ 'auto', 'scroll' ].indexOf( $( this ).css( 'overflow' ) ) != -1;
+                    }).first();
+                    $panel.animate( { scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 120 }, 500 );
                 }
             }
         },
