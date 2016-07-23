@@ -31,10 +31,10 @@
       <converter file="bedgraph_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="igb/bedgraph.xml" />
     </datatype>
-    <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
-    <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6">
+    <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" display_in_upload="true"/>
+    <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6" display_in_upload="true">
     </datatype>
-    <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" />
+    <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" display_in_upload="true"/>
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
