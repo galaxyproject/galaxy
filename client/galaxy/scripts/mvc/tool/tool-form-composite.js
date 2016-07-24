@@ -10,7 +10,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.setElement( $( '<div/>' ).addClass( 'ui-form-composite' )
                                           .append( this.$message      = $( '<div/>' ) )
                                           .append( this.$header       = $( '<div/>' ) )
-                                          .append( this.$history      = $( '<div/>' ) )
                                           .append( this.$steps        = $( '<div/>' ) ) );
             $( 'body' ).append( this.$el );
             this._configure();
@@ -22,12 +21,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Refresh height of scrollable div below header */
         _refresh: function() {
-            var margin = 0;
-            var children = this.$el.children();
-            for ( var i = 0; i < children.length; i++ ) {
-                margin += $( children[ i ] ).outerHeight();
-            }
-            margin -= this.$steps.height() - 30;
+            var margin = _.reduce( this.$el.children(), function( memo, child ) {
+                return memo + $( child ).outerHeight();
+            }, 0 ) - this.$steps.height() + 30;
             this.$steps.css( 'height', $( window ).height() - margin );
         },
 
