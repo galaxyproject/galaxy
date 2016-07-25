@@ -2546,7 +2546,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
 
     model_modules = [model]
     if map_install_models:
-        import galaxy.model.tool_shed_install.mapping  # noqa
+        import galaxy.model.tool_shed_install.mapping  # noqa: F401
         from galaxy.model import tool_shed_install
         model_modules.append(tool_shed_install)
 

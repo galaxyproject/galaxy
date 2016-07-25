@@ -56,7 +56,7 @@ for comptype in ( 'gz', 'bz2' ):
     except OSError:
         pass
 try:
-    import zlib  # noqa
+    import zlib  # noqa: F401
     comptypes.append( 'zip' )
 except ImportError:
     pass

@@ -22,7 +22,7 @@ log = logging.getLogger( __name__ )
 comptypes = []
 
 try:
-    import zlib  # noqa
+    import zlib  # noqa: F401
     comptypes.append( 'zip' )
 except ImportError:
     pass
