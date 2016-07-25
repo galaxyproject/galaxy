@@ -108,7 +108,6 @@ class ToolBox( BaseGalaxyToolBox ):
             tool_root_dir=tool_root_dir,
             app=app,
         )
-        self._view = views.DependencyResolversView(app)
 
     @property
     def all_requirements(self):
