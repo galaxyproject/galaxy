@@ -92,7 +92,7 @@ class NullDependency( Dependency ):
     dependency_type = None
     exact = True
 
-    def __init__(self, version, name):
+    def __init__(self, version=None, name=None):
         self.version = version
         self.name = name
 

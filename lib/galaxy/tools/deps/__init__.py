@@ -58,7 +58,7 @@ class NullDependencyManager( object ):
         return []
 
     def find_dep( self, name, version=None, type='package', **kwds ):
-        return NullDependency(name=name, version=version)
+        return NullDependency(version=version, name=name)
 
 
 class DependencyManager( object ):
@@ -90,7 +90,7 @@ class DependencyManager( object ):
         commands = []
         for requirement in requirements:
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = NullDependency(name=requirement.name)
+            dependency = NullDependency(version=None, name=requirement.name)
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,

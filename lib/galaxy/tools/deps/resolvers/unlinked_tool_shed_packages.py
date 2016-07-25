@@ -120,7 +120,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
             possibles = TODO
             if len(possibles) == 0:
                 log.debug("Unable to find dependency,'%s' default '%s'", name, type)
-                return NullDependency(name=name)
+                return NullDependency(version=None, name=name)
             elif len(possibles) == 1:
                 #Only one candidate found so ignore any preference rules
                 return possibles[0].dependency
@@ -129,7 +129,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                 return self._select_preferred_dependency(possibles, by_owner=False).dependency
         except:
             log.exception("Unexpected error hunting for dependency '%s' default '%s'", name, type)
-            return NullDependency(name=name)
+            return NullDependency(version=None, name=name)
     """
 
 
