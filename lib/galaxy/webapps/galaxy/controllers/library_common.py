@@ -10,6 +10,7 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
+import cProfile
 from json import dumps, loads
 
 from markupsafe import escape
@@ -788,6 +789,20 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     message=escape( message ),
                                     status=escape( status ) )
 
+
+    def do_cprofile(func):
+        def profiled_func(*args, **kwargs):
+            profile = cProfile.Profile()
+            try:
+                profile.enable()
+                result = func(*args, **kwargs)
+                profile.disable()
+                return result
+            finally:
+                profile.print_stats(sort='time')
+        return profiled_func
+
+
     @web.expose
     def upload_library_dataset( self, trans, cntrller, library_id, folder_id, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
@@ -909,6 +924,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         else:
                             processed_widgets.append( widget_dict )
                     widgets = processed_widgets
+
                 created_outputs_dict = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
                                                                                                     cntrller=cntrller,
                                                                                                     library_id=trans.security.encode_id( library.id ),
@@ -1034,9 +1050,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     message=escape( message ),
                                     status=escape( status ) )
 
+    #@do_cprofile
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
         # Set up the traditional tool state/params
-        tool_id = 'upload1'
+        tool_id = 'combat_tb_uploader'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
         tool.populate_state( trans, tool.inputs, kwd, state.inputs )
@@ -1118,7 +1135,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         job_params = {}
         job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
         job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder, job_params=job_params )
+
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output
@@ -1158,6 +1177,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             trans.sa_session.flush()
         return uploaded_dataset
 
+    #@do_cprofile
     def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message ):
         dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
         files = dir_response[0]
