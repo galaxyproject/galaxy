@@ -32,6 +32,7 @@
 @ui-margin-vertical-large: 10px;
 @ui-margin-horizontal: 5px;
 @ui-margin-horizontal-small: 4px;
+@ui-margin-horizontal-large: 10px;
 
 // margins
 .ui-margin-top {
@@ -114,11 +115,21 @@
 }
 
 // buttons
-.ui-button {
+.ui-button-default {
     .icon {
         font-size: 1.1em;
     }
+    .progress {
+        height: 4px;
+        margin: 0px;
+        margin-top: 2px;
+        .progress-bar {
+            &:extend(.no-transition);
+            background: darken(@state-success-bg, 30%);
+        }
+    }
 }
+
 .ui-button-icon {
     &:extend(.icon-btn);
     &:extend(.no-highlight);
@@ -336,10 +347,24 @@
             width: ~'calc(100% - 200px)';
         }
     }
-    .ui-button {
-        &:extend(.btn all);
-        &:extend(.btn-default all);
-        margin-left: @ui-margin-horizontal;
+    .ui-steps {
+        overflow: scroll;
+        margin-top: 15px;
+        border: dashed 1px darken(@form-heading-bg, 30%);
+        border-radius: @border-radius-base;
+        padding: @ui-margin-horizontal;
+        .ui-portlet-narrow {
+            .portlet-header {
+                padding: 1px 5px 0px 8px;
+            }
+            padding: 0px @ui-margin-horizontal 0px @ui-margin-horizontal;
+            .portlet-content {
+                padding: 0px @ui-margin-horizontal 0px @ui-margin-horizontal;
+            }
+            .ui-table-section, .ui-portlet-repeat .portlet-content {
+                padding-left: @ui-margin-horizontal-large;
+            }
+        }
     }
     .ui-message {
         margin-top: 0px;
