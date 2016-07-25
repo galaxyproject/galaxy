@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 
-from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.util import listify, url_get
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -207,7 +207,7 @@ class Package( RecipeTag ):
                     str( package_name ) )
                 # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
                 dep = self.app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package')
-                if not isinstance( dep, INDETERMINATE_DEPENDENCY ):
+                if not isinstance( dep, NullDependency ):
                     # TODO: Do something here such as marking it installed or configured externally.
                     pass
                 tool_dependency = \

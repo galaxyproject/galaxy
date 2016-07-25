@@ -8,7 +8,7 @@ import os
 
 from ..resolvers import (
     DependencyResolver,
-    INDETERMINATE_DEPENDENCY,
+    NullDependency,
     Dependency,
     ListableDependencyResolver,
     InstallableDependencyResolver,
@@ -106,10 +106,10 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         # Check for conda just not being there, this way we can enable
         # conda by default and just do nothing in not configured.
         if not os.path.isdir(self.conda_context.conda_prefix):
-            return INDETERMINATE_DEPENDENCY(version=version, name=name)
+            return NullDependency(version=version, name=name)
 
         if type != "package":
-            return INDETERMINATE_DEPENDENCY(version=version, name=name)
+            return NullDependency(version=version, name=name)
 
         exact = not self.versionless or version is None
         if self.versionless:
@@ -132,13 +132,13 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 )
             else:
                 log.warning("Conda dependency resolver not sent job directory.")
-                return INDETERMINATE_DEPENDENCY(version=version, name=name)
+                return NullDependency(version=version, name=name)
 
         if not is_installed and self.auto_install:
             is_installed = self.install_dependency(name, version, type)
 
         if not is_installed:
-            return INDETERMINATE_DEPENDENCY(version=version, name=name)
+            return NullDependency(version=version, name=name)
 
         # Have installed conda_target and job_directory to send it too.
         # If dependency is for metadata generation, store environment in conda-metadata-env

@@ -98,6 +98,3 @@ class NullDependency( Dependency ):
 
     def shell_commands( self, requirement ):
         return None
-
-
-INDETERMINATE_DEPENDENCY = NullDependency

@@ -3,7 +3,7 @@ from os.path import join, isdir, islink, realpath, basename, exists
 
 from ..resolvers import (
     DependencyResolver,
-    INDETERMINATE_DEPENDENCY,
+    NullDependency,
     Dependency,
     ListableDependencyResolver,
 )
@@ -49,7 +49,7 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
             real_version = basename( real_path )
             return self._galaxy_package_dep(real_path, real_version, exact)
         else:
-            return INDETERMINATE_DEPENDENCY(version=None, name=name)
+            return NullDependency(version=None, name=name)
 
     def _galaxy_package_dep( self, path, version, name, exact ):
         script = join( path, 'env.sh' )
@@ -57,7 +57,7 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
             return GalaxyPackageDependency(script, path, version, exact)
         elif exists( join( path, 'bin' ) ):
             return GalaxyPackageDependency(None, path, version, exact)
-        return INDETERMINATE_DEPENDENCY(version=version, name=name)
+        return NullDependency(version=version, name=name)
 
 
 class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver):

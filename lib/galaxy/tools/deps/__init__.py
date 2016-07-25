@@ -7,7 +7,7 @@ import os.path
 import logging
 log = logging.getLogger( __name__ )
 
-from .resolvers import INDETERMINATE_DEPENDENCY
+from .resolvers import NullDependency
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 from .resolvers.conda import CondaDependencyResolver
@@ -58,7 +58,7 @@ class NullDependencyManager( object ):
         return []
 
     def find_dep( self, name, version=None, type='package', **kwds ):
-        return INDETERMINATE_DEPENDENCY(name=name, version=version)
+        return NullDependency(name=name, version=version)
 
 
 class DependencyManager( object ):
@@ -90,7 +90,7 @@ class DependencyManager( object ):
         commands = []
         for requirement in requirements:
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = INDETERMINATE_DEPENDENCY(name=requirement.name)
+            dependency = NullDependency(name=requirement.name)
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,
@@ -115,10 +115,10 @@ class DependencyManager( object ):
                 continue
             dependency = resolver.resolve( name, version, type, **kwds )
             if require_exact and not dependency.exact:
-                dependency = INDETERMINATE_DEPENDENCY(version=version, name=name)
-            if not isinstance(dependency, INDETERMINATE_DEPENDENCY):
+                dependency = NullDependency(version=version, name=name)
+            if not isinstance(dependency, NullDependency):
                 return dependency
-        return INDETERMINATE_DEPENDENCY(version=version, name=name)
+        return NullDependency(version=version, name=name)
 
     def __build_dependency_resolvers( self, conf_file ):
         if not conf_file:
