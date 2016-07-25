@@ -135,11 +135,14 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
 
             // add listener which triggers on checksum change
             var current_check = this.data.checksum();
-            this.on('change', function( force ) {
-                var new_check = self.data.checksum();
-                if (new_check != current_check || force ) {
-                    current_check = new_check;
-                    self.options.onchange && self.options.onchange();
+            this.on('change', function( input_id ) {
+                var input = self.input_list[ input_id ];
+                if ( !input || input.refresh_on_change || self.options.always_refresh ) {
+                    var new_check = self.data.checksum();
+                    if ( new_check != current_check ) {
+                        current_check = new_check;
+                        self.options.onchange && self.options.onchange();
+                    }
                 }
             });
 
