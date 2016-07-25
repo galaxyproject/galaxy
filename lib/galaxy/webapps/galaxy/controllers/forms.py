@@ -8,13 +8,13 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.form_builder import FileField, TextField, HiddenField, SelectField
 from galaxy.web.framework.helpers import iff, grids
 
+# TODO: not used in this file
+from galaxy.tools.parameters.basic import parameter_types  # noqa: F401
+from xml.etree.ElementTree import XML, Element  # noqa: F401
+
 log = logging.getLogger( __name__ )
 
 VALID_FIELDNAME_RE = re.compile( "^[a-zA-Z0-9\_]+$" )
-
-# TODO: not used in this file
-from galaxy.tools.parameters.basic import parameter_types  # noqa
-from xml.etree.ElementTree import XML, Element  # noqa
 
 
 class FormsGrid( grids.Grid ):

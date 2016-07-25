@@ -442,7 +442,7 @@ def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_insta
             tool_configs.remove(relative_migrated_tool_panel_config)
         for installed_tool_panel_config in INSTALLED_TOOL_PANEL_CONFIGS:
             tool_configs.append(installed_tool_panel_config)
-        from galaxy import tools  # delay import because this brings in so many modules for small tests # noqa
+        from galaxy import tools  # delay import because this brings in so many modules for small tests # noqa: E402
         app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
 
 
