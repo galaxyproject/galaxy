@@ -181,7 +181,7 @@ return Backbone.View.extend({
         it.set('percentage', percentage);
 
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(percentage, it.get('file_size')));
+        this.ui_button.model.set('percentage', this._uploadPercentage(percentage, it.get('file_size')));
     },
 
     // success
@@ -192,7 +192,7 @@ return Backbone.View.extend({
         it.set('status', 'success');
 
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(100, it.get('file_size')));
+        this.ui_button.model.set('percentage', this._uploadPercentage(100, it.get('file_size')));
 
         // update completed
         this.upload_completed += it.get('file_size') * 100;
@@ -219,8 +219,7 @@ return Backbone.View.extend({
         it.set('info', message);
 
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(100, it.get('file_size')));
-        this.ui_button.set('status', 'danger');
+        this.ui_button.model.set( { 'percentage': this._uploadPercentage(100, it.get('file_size')), 'status': 'danger' } );
 
         // update completed
         this.upload_completed += it.get('file_size') * 100;
@@ -356,8 +355,7 @@ return Backbone.View.extend({
         });
 
         // reset progress
-        this.ui_button.set('percentage', 0);
-        this.ui_button.set('status', 'success');
+        this.ui_button.model.set( { 'percentage': 0, 'status': 'success' } );
 
         // update running
         this.counter.running = this.counter.announce;
@@ -377,7 +375,7 @@ return Backbone.View.extend({
         // check
         if (this.counter.running > 0) {
             // show upload has paused
-            this.ui_button.set('status', 'info');
+            this.ui_button.model.set('status', 'info');
 
             // set html content
             $('#upload-info').html('Queue will pause after completing the current file...');
@@ -405,7 +403,7 @@ return Backbone.View.extend({
             this.select_genome.value(this.options.default_genome);
 
             // reset button
-            this.ui_button.set('percentage', 0);
+            this.ui_button.model.set('percentage', 0);
 
             // show on screen info
             this._updateScreen();
