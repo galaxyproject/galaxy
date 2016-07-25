@@ -69,7 +69,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
             if exists(path):
                 # First try the way without owner/name/revision
                 package = self._galaxy_package_dep(path, version, True)
-                if package != INDETERMINATE_DEPENDENCY:
+                if not isinstance(package,INDETERMINATE_DEPENDENCY):
                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, path)
                     possibles.append(CandidateDependency(package, path))
                 # now try with an owner/name/revision
@@ -81,7 +81,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                             for revision in listdir(package_path):
                                 revision_path = join(package_path, revision)
                                 package = self._galaxy_package_dep(revision_path, version, True)
-                                if package != INDETERMINATE_DEPENDENCY:
+                                if not isinstance(package,INDETERMINATE_DEPENDENCY):
                                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, revision_path)
                                     possibles.append(CandidateDependency(package, package_path, owner))
         return possibles

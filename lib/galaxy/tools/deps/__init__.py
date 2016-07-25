@@ -90,7 +90,7 @@ class DependencyManager( object ):
         commands = []
         for requirement in requirements:
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = INDETERMINATE_DEPENDENCY
+            dependency = INDETERMINATE_DEPENDENCY(name=requirement.name)
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,

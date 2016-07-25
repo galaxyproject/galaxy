@@ -206,7 +206,8 @@ class Package( RecipeTag ):
                 log.debug( "Skipping installation of tool dependency package %s because tool shed dependency resolver not enabled." %
                     str( package_name ) )
                 # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
-                if self.app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package') != INDETERMINATE_DEPENDENCY:
+                dep = self.app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package')
+                if not isinstance( dep, INDETERMINATE_DEPENDENCY ):
                     # TODO: Do something here such as marking it installed or configured externally.
                     pass
                 tool_dependency = \
