@@ -41,8 +41,6 @@ class ConditionalDependencies( object ):
         except (OSError, IOError):
             pass
 
-        print "OBJECT STORES ARE %s" % self.object_stores
-
     def get_conditional_requirements( self ):
         crfile = join( dirname( __file__ ), 'conditional-requirements.txt' )
         for req in pkg_resources.parse_requirements( open( crfile ).readlines() ):
