@@ -74,6 +74,28 @@
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
+                    <span>History</span>
+                </div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_per_user' )}">History and dataset per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_type' )}">History and dataset type</a></div>
+                    </div>
+                </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
+                    <span>Tools</span>
+                </div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_per_user' )}">History and dataset per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_type' )}">History and dataset type</a></div>
+                    </div>
+                </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
                     <span>Workflows</span>
                 </div>
                 <div class="toolSectionBody">
@@ -93,6 +115,7 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='registered_users' )}">Registered users</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='last_access_date', sort_id='default', order='default' )}">Date of last login</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='user_disk_usage', sort_id='default', order='default' )}">User disk usage</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='history_per_user', sort_id='default', order='default' )}">Number of History per user</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
