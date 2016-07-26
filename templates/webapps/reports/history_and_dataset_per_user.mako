@@ -5,7 +5,8 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
+<div class="report">
+<div class="reportBody">
     <h3 align="center">Histories and Datasets per User</h3>
     <h4 align="center">Listed in
     %if descending == 1:
@@ -71,4 +72,5 @@
             %endfor
         %endif
     </table>
+</div>
 </div>

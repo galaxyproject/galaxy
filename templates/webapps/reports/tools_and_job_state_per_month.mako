@@ -5,7 +5,8 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
+<div class="report">
+<div class="reportBody">
     <h3 align="center">States of Jobs for ${tool}</h3>
     <h4 align="center">Listed in descending by month</h4>
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
@@ -41,4 +42,5 @@
             %endfor
         %endif
     </table>
+</div>
 </div>

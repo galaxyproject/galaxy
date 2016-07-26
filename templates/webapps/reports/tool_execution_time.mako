@@ -2,7 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 
-<div class="toolForm">
+<div class="report">
+<div class="reportBody">
     <h3 align="center">Execution Time per Tool</h3>
     <h4 align="center">Listed in
     %if descending == 1:
@@ -74,4 +75,5 @@
             %endfor
         %endif
     </table>
+</div>
 </div>
