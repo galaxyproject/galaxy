@@ -67,7 +67,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
 
         :rtype:     dict
         :returns:   a dictified description of the dependency, with attribute
-                    ``dependency_type: null`` if no match was found.
+                    ``dependency_type: None`` if no match was found.
         """
         return self._view.resolver_dependency(id, **kwds)
 
@@ -93,7 +93,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
 
         :rtype:     dict
         :returns:   a dictified description of the dependency, with attribute
-                    ``dependency_type: null`` if no match was found.
+                    ``dependency_type: None`` if no match was found.
         """
         self._view.install_dependency(id, **kwds)
         return self._view.manager_dependency(**kwds)
@@ -120,7 +120,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
                           version information to resolve dependency).
 
         :rtype:     dict
-        :returns:   a dictified description of the dependency, with type: null
+        :returns:   a dictified description of the dependency, with type: None
                     if no match was found.
         """
         return self._view.manager_dependency(**kwds)

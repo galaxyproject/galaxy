@@ -9,6 +9,7 @@ from tempfile import mkdtemp
 
 GNUPLOT = {u'version': u'4.6', u'type': u'package', u'name': u'gnuplot'}
 
+
 class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, ApiTestCase):
     """Test conda dependency resolution through API."""
 
@@ -17,6 +18,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.conda_tmp_prefix = mkdtemp()
+        cls.conda_tmp_prefix = '/tmp'
         config["conda_auto_init"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
 
@@ -29,38 +31,35 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
 
     def test_dependency_before_install( self ):
         """
-        GET request to dependency_resolvers/dependency with dependency.
-        Should not be installed (response['dependency_type'] == 'null').
+        Test that dependency is not installed (response['dependency_type'] == 'null').
         """
         data = GNUPLOT
         create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
-        assert response['dependency_type'] == 'null' and response['exact'] == True
+        assert response['dependency_type'] is None and response['exact']
 
     def test_dependency_install( self ):
         """
-        POST request to dependency_resolvers/dependency with GNUPLOT dependency.
-        Should install via conda (response[dependency_type] == 'conda').
+        Test installation of GNUPLOT dependency.
         """
         data = GNUPLOT
         create_response = self._post( "dependency_resolvers/dependency", data=data, admin=True )
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and response['exact'] == True
+        assert response['dependency_type'] == 'conda' and response['exact']
 
     def test_dependency_install_not_exact(self):
         """
-        POST request to dependency_resolvers/dependency with GNUPLOT dependency.
-        Should install through conda (response['dependency_type'] == 'conda'),
-        but version 4.9999 does not exist, so response['exact'] == False.
+        Test installation of gnuplot with a version that does not exist.
+        Sh
         """
         data = GNUPLOT.copy()
         data['version'] = '4.9999'
         create_response = self._post("dependency_resolvers/dependency", data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and response['exact'] == False
+        assert response['dependency_type'] == 'conda' and not response['exact']
 
     def test_dependency_status_installed_exact( self ):
         """
@@ -71,7 +70,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and response['exact'] == True
+        assert response['dependency_type'] == 'conda' and response['exact']
 
     def test_dependency_status_installed_not_exact( self ):
         """
@@ -84,4 +83,4 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and response['exact'] == False
+        assert response['dependency_type'] == 'conda' and not response['exact']
