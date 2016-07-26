@@ -35,7 +35,7 @@ class Godocker(object):
         requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert
         try:
-            url = self.server+query
+            url = self.server + query
             res = requests.post(url, data, headers=header, verify=verify_ssl)
 
         except requests.exceptions.ConnectionError as e:
@@ -55,7 +55,7 @@ class Godocker(object):
         requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert
         try:
-            url = self.server+query
+            url = self.server + query
             res = requests.get(url, headers=header, verify=verify_ssl)
 
         except requests.exceptions.ConnectionError as e:
@@ -75,7 +75,7 @@ class Godocker(object):
         requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert
         try:
-            url = self.server+query
+            url = self.server + query
             res = requests.delete(url, headers=header, verify=verify_ssl)
 
         except requests.exceptions.ConnectionError as e:
@@ -95,7 +95,7 @@ class Godocker(object):
         requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert
         try:
-            url = self.server+query
+            url = self.server + query
             res = requests.put(url, data, headers=header, verify=verify_ssl)
 
         except requests.exceptions.ConnectionError as e:
@@ -194,7 +194,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         '''
         """ Get task from GoDocker """
         job_status_god = self.get_task(job_state.job_id)
-        log.debug("Job ID: "+str(job_state.job_id)+" Job Status: "+str(job_status_god['status']['primary']))
+        log.debug("Job ID: " + str(job_state.job_id) + " Job Status: " + str(job_status_god['status']['primary']))
 
         if job_status_god['status']['primary'] == "over":
             job_state.running = False
@@ -281,7 +281,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
     # Helper functions
 
     def create_log_file(self, job_state, job_status_god):
-    	""" Create log files in galaxy, namely error_file, output_file, exit_code_file
+        """ Create log files in galaxy, namely error_file, output_file, exit_code_file
             Return true, if all the file creations are successful
         """
         path = None
@@ -289,8 +289,8 @@ class GodockerJobRunner(AsynchronousJobRunner):
             if vol['name'] == "go-docker":
                 path = str(vol['path'])
         if path:
-            god_output_file = path+"/god.log"
-            god_error_file = path+"/god.err"
+            god_output_file = path + "/god.log"
+            god_error_file = path + "/god.err"
             try:
                 # Read from GoDocker output_file and write it into galaxy output_file.
                 f = open(god_output_file, "r")
@@ -312,9 +312,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 log_file.write(out_log)
                 log_file.close()
                 f.close()
-                log.debug("CREATE OUTPUT FILE: "+str(job_state.output_file))
-                log.debug("CREATE ERROR FILE: "+str(job_state.error_file))
-                log.debug("CREATE EXIT CODE FILE: "+str(job_state.exit_code_file))
+                log.debug("CREATE OUTPUT FILE: " + str(job_state.output_file))
+                log.debug("CREATE ERROR FILE: " + str(job_state.error_file))
+                log.debug("CREATE EXIT CODE FILE: " + str(job_state.exit_code_file))
             except IOError as e:
                 log.error('Could not access task log file %s' % str(e))
                 log.debug("IO Error occurred when accessing the files!!")
@@ -328,7 +328,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             Create Login model schema of GoDocker and call the http_post_request method.
         """
         log.debug("LOGIN TASK TO BE EXECUTED \n")
-        log.debug("GODOCKER LOGIN: "+str(login))
+        log.debug("GODOCKER LOGIN: " + str(login))
         data = json.dumps({'user': login, 'apikey': apikey})
         # Create object of Godocker class
         g_auth = Godocker(server, login, apikey, noCert)
@@ -395,11 +395,11 @@ class GodockerJobRunner(AsynchronousJobRunner):
                     log.debug("Virtual environment is set!!!")
                     GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
                     venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-                    command = "#!/bin/bash\n"+"cd "+job_wrapper.working_directory+"\n"+venv+"\n"+job_wrapper.runner_command_line
+                    command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + venv + "\n" + job_wrapper.runner_command_line
                 else:
-                    command = "#!/bin/bash\n"+"cd "+job_wrapper.working_directory+"\n"+job_wrapper.runner_command_line
+                    command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
             except:
-                command = "#!/bin/bash\n"+"cd "+job_wrapper.working_directory+"\n"+job_wrapper.runner_command_line
+                command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
 
             # GoDocker Job model schema
             job = {
@@ -442,7 +442,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             log.debug("\n JOB POST TASK TO BE EXECUTED \n")
             result = self.auth.http_post_request(
                 "/api/1.0/task", json.dumps(job),
-                {'Authorization': 'Bearer '+self.auth.token, 'Content-type': 'application/json', 'Accept': 'application/json'}
+                {'Authorization': 'Bearer ' + self.auth.token, 'Content-type': 'application/json', 'Accept': 'application/json'}
             )
             log.debug("Response from godocker: " + str(result.json()['msg']) + " ID: " + str(result.json()['id']))
             # Return job_id
@@ -454,7 +454,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_get_request("/api/1.0/task/"+str(job_id), {'Authorization': 'Bearer '+self.auth.token})
+            result = self.auth.http_get_request("/api/1.0/task/" + str(job_id), {'Authorization': 'Bearer ' + self.auth.token})
             job = result.json()
         # Return the job
         return job
@@ -465,7 +465,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_get_request("/api/1.0/task/"+str(job_id)+"/suspend", {'Authorization': 'Bearer '+self.auth.token})
+            result = self.auth.http_get_request("/api/1.0/task/" + str(job_id) + "/suspend", {'Authorization': 'Bearer ' + self.auth.token})
             job = result.json()
         # Return the job
         return job
@@ -476,7 +476,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_get_request("/api/1.0/task/"+str(job_id)+"/status", {'Authorization': 'Bearer '+self.auth.token})
+            result = self.auth.http_get_request("/api/1.0/task/" + str(job_id) + "/status", {'Authorization': 'Bearer ' + self.auth.token})
             job = result.json()
         # Return task status
         return job
@@ -487,7 +487,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_delete_request("/api/1.0/task/"+str(job_id), {'Authorization': 'Bearer '+self.auth.token})
+            result = self.auth.http_delete_request("/api/1.0/task/" + str(job_id), {'Authorization': 'Bearer ' + self.auth.token})
             job = result.json()
         # Return the job
         return job
