@@ -16,6 +16,21 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     self._buildModel(process, options, true);
                 });
             }
+            // Listen to history panel
+            if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
+                this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
+                    this.refresh();
+                });
+            }
+        },
+
+        /** Listen to history panel changes and update the tool form */
+        refresh: function() {
+            var self = this;
+            self.deferred.reset();
+            this.deferred.execute( function (process){
+                self._updateModel( process)
+            });
         },
 
         /** Wait for deferred build processes before removal */
@@ -37,10 +52,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
                 operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
-                    self.deferred.reset();
-                    self.deferred.execute(function(process) {
-                        self._updateModel(process);
-                    });
+                    self.refresh();
                 }
             }, this.options);
             this.options.customize && this.options.customize( this.options );
