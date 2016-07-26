@@ -1,4 +1,4 @@
-"""Integration tests for the conda dependency resolution."""
+"""Integration tests for conda dependency resolution."""
 
 import os
 import shutil
@@ -17,7 +17,6 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.conda_tmp_prefix = mkdtemp()
-        cls.conda_tmp_prefix = '/tmp'
         config["conda_auto_init"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
 
