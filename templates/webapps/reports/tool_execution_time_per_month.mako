@@ -3,14 +3,14 @@
 
 
 <div class="toolForm">
-    <h3 align="center">Time execution for ${tool} peer month</h3>
-    <h4 align="center">Listed in 
+    <h3 align="center">Execution Time for ${tool} per Month</h3>
+    <h4 align="center">Listed in
     %if descending == 1:
         descending
     %else:
         ascending
     %endif
-    order by 
+    order by
     %if sort_by == 0:
         Month
     %elif sort_by == 1:
@@ -24,7 +24,7 @@
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
         <tr>
             <td>
-                <form method="post" controller="users" action="tool_execution_time_peer_month?tool=${tool}">
+                <form method="post" controller="users" action="tool_execution_time_per_month?tool=${tool}">
                     <p>
                         Top <input type="textfield" value="${user_cutoff}" size="3" name="user_cutoff"> shown (0 = all).
                         </br>

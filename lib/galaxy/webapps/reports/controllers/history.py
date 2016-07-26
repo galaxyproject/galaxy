@@ -1,12 +1,13 @@
+import galaxy.model
 import collections
 import logging
 import sqlalchemy as sa
-from markupsafe import escape
-from sqlalchemy import and_
 
-import galaxy.model
 from galaxy import util
 from galaxy.web.base.controller import BaseUIController, web
+
+from markupsafe import escape
+from sqlalchemy import and_
 
 log = logging.getLogger( __name__ )
 
@@ -34,11 +35,10 @@ def int_to_octet(size):
 class History( BaseUIController ):
     """
     Class defining functions used by reports to make requests to get
-    informations and fill templates before beeing displayed.
+    informations and fill templates before being displayed.
     The name of function must be the same as as the field "action" of
-    the "href" dict, in data.mako (templates/webapps/reports).
+    the "href" dict, in .mako templates (templates/webapps/reports).
     """
-
     @web.expose
     def history_and_dataset_per_user( self, trans, **kwd ):
         """
@@ -130,7 +130,6 @@ class History( BaseUIController ):
             - the name of history
             - the number of dataset foreach type
         """
-
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         user_cutoff = int( kwd.get( 'user_cutoff', 60 ) )
         descending = 1 if kwd.get( 'descending', 'desc' ) == 'desc' else -1

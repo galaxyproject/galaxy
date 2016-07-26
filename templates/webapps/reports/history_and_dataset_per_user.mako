@@ -6,14 +6,14 @@
 %endif
 
 <div class="toolForm">
-    <h3 align="center">Per-user number of History and Datasets</h3>
-    <h4 align="center">Listed in 
+    <h3 align="center">Histories and Datasets per User</h3>
+    <h4 align="center">Listed in
     %if descending == 1:
         descending
     %else:
         ascending
     %endif
-    order by 
+    order by
     %if sorting == 0:
         Users
     %elif sorting == 1:

@@ -3,14 +3,14 @@
 
 
 <div class="toolForm">
-    <h3 align="center">Time execution peer tool</h3>
-    <h4 align="center">Listed in 
+    <h3 align="center">Execution Time per Tool</h3>
+    <h4 align="center">Listed in
     %if descending == 1:
         descending
     %else:
         ascending
     %endif
-    order by 
+    order by
     %if sort_by == 0:
         Tool
     %elif sort_by == 1:
@@ -64,7 +64,7 @@
                     <tr class="tr">
                 %endif
                 <td>
-                <a href=tool_execution_time_peer_month?tool=${tool}>${tool}</a>
+                    <a href=tool_execution_time_per_month?tool=${tool}>${tool}</a>
                 </td>
                 <td>${data[tool]["avg"]}</td>
                 <td>${data[tool]["last"]}</td>

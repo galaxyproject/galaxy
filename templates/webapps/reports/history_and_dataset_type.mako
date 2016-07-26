@@ -6,8 +6,8 @@
 %endif
 
 <div class="toolForm">
-    <h3 align="center">History and Datasets types</h3>
-    <h4 align="center">Listed in 
+    <h3 align="center">States of Datasets per History</h3>
+    <h4 align="center">Listed in
     %if descending == 1:
         descending
     %else:

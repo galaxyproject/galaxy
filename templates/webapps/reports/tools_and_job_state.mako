@@ -6,14 +6,14 @@
 %endif
 
 <div class="toolForm">
-    <h3 align="center">Per-tool number of Jobs in function of the state</h3>
-    <h4 align="center">Listed in 
+    <h3 align="center">States of Jobs per Tool</h3>
+    <h4 align="center">Listed in
     %if descending == 1:
         descending
     %else:
         ascending
     %endif
-    order by 
+    order by
     %if sorting == 0:
         Tool
     %elif sorting == 1:
@@ -62,7 +62,7 @@
                 %endif
                 <td>
                 %if data[tool][0] + data[tool][1] != "--":
-                    <a href=tools_and_job_state_peer_month?tool=${tool}>${tool}</a>
+                    <a href=tools_and_job_state_per_month?tool=${tool}>${tool}</a>
                 %else:
                     ${tool}
                 %endif

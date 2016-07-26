@@ -6,7 +6,7 @@
 %endif
 
 <div class="toolForm">
-    <h3 align="center">Number of Jobs Ok or in error peer month for ${tool}</h3>
+    <h3 align="center">States of Jobs for ${tool}</h3>
     <h4 align="center">Listed in descending by month</h4>
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
         %if data:
