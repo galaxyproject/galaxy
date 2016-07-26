@@ -67,8 +67,8 @@ class AzureBlobObjectStore(ObjectStore):
             self.account_name = auth_xml.get('account_name')
             self.account_key = auth_xml.get('account_key')
             container_xml = config_xml.find('container')
-            self.container = container_xml.get('name')
-            self.max_chunk_size = int(container_xml.get('max_chunk_size', 250))
+            self.container_name = container_xml.get('name')
+            self.max_chunk_size = int(container_xml.get('max_chunk_size', 250))  # currently unused
             cache_xml = config_xml.find('cache')
             self.cache_size = float(cache_xml.get('size', -1))
             self.staging_path = cache_xml.get('path', self.config.object_store_cache_path)
@@ -79,9 +79,6 @@ class AzureBlobObjectStore(ObjectStore):
             log.debug("Object cache dir:    %s", self.staging_path)
             log.debug("       job work dir: %s", self.extra_dirs['job_work'])
 
-            self.AzureBlobServer = {'account_name': self.account_name,
-                                    'account_key': self.account_key,
-                                    'max_chunk_size': self.max_chunk_size}
 
         except Exception:
             # Toss it back up after logging, we can't continue loading at this point.
