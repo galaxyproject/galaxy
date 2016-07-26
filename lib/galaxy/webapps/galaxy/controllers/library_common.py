@@ -1053,7 +1053,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     #@do_cprofile
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
         # Set up the traditional tool state/params
-        tool_id = 'combat_tb_uploader'
+        #tool_id = 'combat_tb_uploader'
+        tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
         tool.populate_state( trans, tool.inputs, kwd, state.inputs )

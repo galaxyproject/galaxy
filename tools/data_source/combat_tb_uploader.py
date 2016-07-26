@@ -14,13 +14,11 @@ import sys
 import tempfile
 import zipfile
 import multiprocessing
-import cProfile
-import threading
-import copy_reg
-import time
 from json import dumps, loads
 
 from six.moves.urllib.request import urlopen
+
+sys.path.insert(0, "/home/zipho/workspace/sanbi/dev/galaxy/lib")
 
 from galaxy import util
 from galaxy.datatypes import sniff
@@ -96,20 +94,15 @@ def add_file( dataset, registry, json_file, output_path ):
     link_data_only = dataset.get( 'link_data_only', 'copy_files' )
     in_place = dataset.get( 'in_place', True )
     purge_source = dataset.get( 'purge_source', True )
+
+    #----------------- The following checks the sanity of the uploaded dataset -----------------#
+    # Looking for the file type on the file
     try:
         ext = dataset.file_type
     except AttributeError:
         file_err( 'Unable to process uploaded file, missing file_type parameter.', dataset, json_file )
         return
 
-    if dataset.type == 'url':
-        try:
-            page = urlopen( dataset.path )  # page will be .close()ed by sniff methods
-            temp_name, dataset.is_multi_byte = sniff.stream_to_file( page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers( page.headers ) )
-        except Exception as e:
-            file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
-            return
-        dataset.path = temp_name
     # See if we have an empty file
     if not os.path.exists( dataset.path ):
         file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )
@@ -117,39 +110,34 @@ def add_file( dataset, registry, json_file, output_path ):
     if not os.path.getsize( dataset.path ) > 0:
         file_err( 'The uploaded file is empty', dataset, json_file )
         return
-    if not dataset.type == 'url':
-        # Already set is_multi_byte above if type == 'url'
-        try:
-            dataset.is_multi_byte = multi_byte.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
-        except UnicodeDecodeError as e:
-            dataset.is_multi_byte = False
-    # Is dataset an image?
-    image = check_image( dataset.path )
 
-    if image:
-        if not PIL:
-            image = None
-        # get_image_ext() returns None if nor a supported Image type
-        ext = get_image_ext( dataset.path, image )
-        data_type = ext
+    #---------------- The following attempts to set the dataset ext and datatype ----------------------------#
+    # this attempts to set the multi_byte of the dataset
+    try:
+        dataset.is_multi_byte = multi_byte.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
+    except UnicodeDecodeError as e:
+        dataset.is_multi_byte = False
+
     # Is dataset content multi-byte?
-    elif dataset.is_multi_byte:
+    if dataset.is_multi_byte:
         data_type = 'multi-byte char'
         ext = sniff.guess_ext( dataset.path, registry.sniff_order, is_multi_byte=True )
     # Is dataset content supported sniffable binary?
     else:
-        # FIXME: This ignores the declared sniff order in datatype_conf.xml
-        # resulting in improper behavior
+        # FIXME: This ignores the declared sniff order in datatype_conf.xml resulting in improper behavior
         type_info = Binary.is_sniffable_binary( dataset.path )
         if type_info:
             data_type = type_info[0]
             ext = type_info[1]
+
+    #------------------ The following attempts to set the dataset ext and datatype, if the above failed -----#
     if not data_type:
         root_datatype = registry.get_datatype_by_extension( dataset.file_type )
         if getattr( root_datatype, 'compressed', False ):
             data_type = 'compressed archive'
             ext = dataset.file_type
         else:
+            ##### ----------- GZIP --------------#####
             # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
             is_gzipped, is_valid = check_gzip( dataset.path )
             if is_gzipped and not is_valid:
@@ -182,6 +170,8 @@ def add_file( dataset, registry, json_file, output_path ):
                     os.chmod(dataset.path, 0o644)
                 dataset.name = dataset.name.rstrip( '.gz' )
                 data_type = 'gzip'
+
+            ##### ----------- BZ2 --------------#####
             if not data_type and bz2 is not None:
                 # See if we have a bz2 file, much like gzip
                 is_bzipped, is_valid = check_bz2( dataset.path )
@@ -215,6 +205,7 @@ def add_file( dataset, registry, json_file, output_path ):
                         os.chmod(dataset.path, 0o644)
                     dataset.name = dataset.name.rstrip( '.bz2' )
                     data_type = 'bz2'
+            ##### ----------- ZIP --------------#####
             if not data_type:
                 # See if we have a zip archive
                 is_zipped = check_zip( dataset.path )
@@ -272,6 +263,8 @@ def add_file( dataset, registry, json_file, output_path ):
                             os.chmod(dataset.path, 0o644)
                             dataset.name = uncompressed_name
                     data_type = 'zip'
+
+            ##### ----------- BINARY --------------#####
             if not data_type:
                 # TODO refactor this logic.  check_binary isn't guaranteed to be
                 # correct since it only looks at whether the first 100 chars are
@@ -291,11 +284,14 @@ def add_file( dataset, registry, json_file, output_path ):
                             err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
                             file_err( err_msg, dataset, json_file )
                             return
+            ##### ----------- HTML --------------#####
             if not data_type:
                 # We must have a text file
                 if check_html( dataset.path ):
                     file_err( 'The uploaded file contains inappropriate HTML content', dataset, json_file )
                     return
+
+            #-------- This is when datatype is known -----------------------------------------------------------------#
             if data_type != 'binary':
                 if link_data_only == 'copy_files':
                     if dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
@@ -315,6 +311,8 @@ def add_file( dataset, registry, json_file, output_path ):
                 else:
                     ext = dataset.file_type
                 data_type = ext
+
+    #####-------------------- JOB PART ---------------------------#####
     # Save job info for the framework
     if ext == 'auto' and dataset.ext:
         ext = dataset.ext
@@ -328,7 +326,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             file_err( err_msg, dataset, json_file )
             return
-    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
+    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ): # and data_type not in [ 'gzip', 'bz2', 'zip' ]:
         # Move the dataset to its "real" path
         if converted_path is not None:
             shutil.copy( converted_path, output_path )
@@ -384,7 +382,6 @@ def __main__():
         sys.exit( 1 )
 
     output_paths = parse_outputs( sys.argv[4:] )
-    json_file = open( 'galaxy.json', 'w' )
 
     registry = Registry()
     registry.load_datatypes(root_dir=sys.argv[1], config=sys.argv[2])
@@ -397,34 +394,9 @@ def __main__():
         except:
             print('Output path for dataset %s not found on command line' % dataset.dataset_id, file=sys.stderr)
             sys.exit( 1 )
-        if dataset.type == 'composite':
-            pool = multiprocessing.Pool(multiprocessing.cpu_count())
-            objList = [uploadFileObject((dataset, sys.argv[1], sys.argv[2], json_file, output_path))]
-            pool.map(upload_worker, objList)
-            # Parallel map
-            #tic = time.time()
-            #pool.map(upload_worker, objList)
-            #toc = time.time()
-
-            # Serial map
-            #tic2 = time.time()
-            #map(upload_worker, objList)
-            #toc2 = time.time()
-
-            #print('Parallel processing time: %r\nSerial processing time: %r'
-            #        % (toc - tic, toc2 - tic2))
-
-            #this works - time is not impacted
-            #t = threading.Thread(target=add_file, args=(dataset, registry, json_file, output_path,))
-            #threads.append(t)
-            #t.start()
-
-            #this works - time is not impacted
-            #p = multiprocessing.Process(target=f, args=(dataset, registry, json_file, output_path))
-            #p.start()
-            #p.join()
-
-            #add_file( dataset, registry, json_file, output_path )
+        pool = multiprocessing.Pool(multiprocessing.cpu_count())
+        objList = [uploadFileObject((dataset, sys.argv[1], sys.argv[2], json_file, output_path))]
+        pool.map(upload_worker, objList)
 
     # clean up paramfile
     # TODO: this will not work when running as the actual user unless the
