@@ -18,7 +18,7 @@ from ..objectstore import ObjectStore, convert_bytes
 
 try:
     from azure.storage import CloudStorageAccount
-    from azure.storage.blob import BlockBlobService, PublicAccess
+    from azure.storage.blob import BlockBlobService
     from azure.common import AzureHttpError
 except ImportError:
     BlockBlobService = None
@@ -78,7 +78,6 @@ class AzureBlobObjectStore(ObjectStore):
 
             log.debug("Object cache dir:    %s", self.staging_path)
             log.debug("       job work dir: %s", self.extra_dirs['job_work'])
-
 
         except Exception:
             # Toss it back up after logging, we can't continue loading at this point.
