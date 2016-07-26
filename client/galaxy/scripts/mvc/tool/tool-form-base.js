@@ -11,7 +11,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.deferred = new Deferred();
             if (options.inputs) {
                 this._buildForm(options);
-                this.refresh();
+                //this.refresh();
             } else {
                 this.deferred.execute(function(process) {
                     self._buildModel(process, options, true);
@@ -28,6 +28,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Listen to history panel changes and update the tool form */
         refresh: function() {
             var self = this;
+            self.deferred.reset();
             this.deferred.execute( function (process){
                 self._updateModel( process)
             });
@@ -52,7 +53,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
                 operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
-                    self.deferred.reset();
                     self.refresh();
                 }
             }, this.options);
