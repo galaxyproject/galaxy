@@ -11,7 +11,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.deferred = new Deferred();
             if (options.inputs) {
                 this._buildForm(options);
-                //this.refresh();
             } else {
                 this.deferred.execute(function(process) {
                     self._buildModel(process, options, true);
