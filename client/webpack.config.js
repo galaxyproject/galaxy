@@ -29,7 +29,6 @@ var webpack = require( 'webpack' ),
         'onload',
     ];
 
-
 module.exports = {
     devtool : 'source-map',
     entry   : {
@@ -54,6 +53,7 @@ module.exports = {
         }
     },
     module : {
+        // https://github.com/webpack/webpack/issues/1617
         noParse: /galaxy\/scripts\/libs\/react.js/,
         loaders : [
             { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader", query: { compact: false } },

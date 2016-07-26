@@ -1,2 +1,2 @@
-define(["utils/localization"],function(a){function b(b,c){Galaxy.modal.show({title:a(c),body:a(b),buttons:{Ok:function(){Galaxy.modal.hide()}},closing_events:!0})}function c(a,b){alert(b+"\n\n"+a)}function d(a,d){return a?(d=d||"Error",window.Galaxy&&Galaxy.modal?b(a,d):c(a,d)):void 0}return d});
+define(["utils/localization"],function(a){function b(b,c){Galaxy.modal.show({title:a(c),body:a(b),buttons:{Ok:function(){Galaxy.modal.hide()}},closing_events:!0})}function c(a,b){alert(b+"\n\n"+a)}function d(a,d){if(a)return d=d||"Error",window.Galaxy&&Galaxy.modal?b(a,d):c(a,d)}return d});
 //# sourceMappingURL=../../../maps/mvc/ui/error-modal.js.map

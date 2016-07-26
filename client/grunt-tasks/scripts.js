@@ -6,18 +6,37 @@
 module.exports = function( grunt ){
     "use strict";
 
-    var app = grunt.config.get( 'app' ),
-        paths = grunt.config.get( 'paths' ),
-        // uglify settings used when scripts are decompressed/not-minified
-        decompressedSettings = {
-            mangle   : false,
-            beautify : true,
-            compress : {
-                drop_debugger : false
-            }
-        },
-        // uglify settings used when scripts are compressed/minified
-        compressedSettings = {
+    grunt.loadNpmTasks( 'grunt-contrib-watch' );
+    grunt.loadNpmTasks( 'grunt-contrib-uglify' );
+
+    var app = grunt.config.get( 'app' );
+    var paths = grunt.config.get( 'paths' );
+
+    // main tasks
+    var buildTasks = [ 'uglify' ];
+    grunt.registerTask( 'compress', buildTasks );
+    grunt.registerTask( 'decompress', function(){
+        grunt.log.writeln( "decompressing... (don't forget to call 'grunt' again before committing)" );
+        setToBeautify();
+        grunt.task.run( buildTasks );
+    });
+
+    // -------------------------------------------------------------------------- uglify
+    // minification and source maps
+    var uglifyTargetFiles = {
+        expand : true,
+        cwd : paths.srcSymlink,
+        src : [
+            '**/*.js',
+            // ignore webpack apps/bundles, the packed symlink
+            '!apps/**/*.js',
+            '!bundled/**',
+            '!packed/**'
+        ],
+        dest : paths.dist
+    };
+    grunt.config( 'uglify', {
+        options : {
             mangle : {
                 screw_ie8 : true
             },
@@ -38,92 +57,85 @@ module.exports = function( grunt ){
                 join_vars : true,
                 cascade : true,
             }
-        };
-
-    grunt.config( 'uglify', {
+        },
         target : {
-            files: [{
-                expand : true,
-                cwd : paths.srcSymlink,
-                // NOTE: do not use uglify in the apps dir (webpack will do that section)
-                src : [
-                    '**/*.js',
-                    '!apps/**/*.js'
-                ],
-                // src : '**/*.js',
-                dest : paths.dist
-            }],
+            options : {
+                sourceMap : true,
+                sourceMapName : function( path ){
+                    // rewrite name to have all source maps in 'static/maps'
+                    return path.replace( paths.dist, paths.maps ) + '.map';
+                }
+            },
+            files: [ uglifyTargetFiles ],
         }
     });
 
-
-    if (grunt.option( 'develop' )){
-        grunt.config( 'uglify.options', decompressedSettings );
-    } else {
-        grunt.config( 'uglify.target.options', {
-            sourceMap : true,
-            sourceMapName : function( path ){
-                // rewrite name to have all source maps in 'static/maps'
-                return path.replace( paths.dist, paths.maps ) + '.map';
+    // set uglify to make human readable instead, used with the --develop flag and decompress task
+    function setToBeautify(){
+        grunt.log.writeln( 'using more human readable build settings' );
+        // uglify settings used when scripts are decompressed/not-minified
+        grunt.config( 'uglify.options', {
+            mangle   : false,
+            beautify : true,
+            compress : {
+                drop_debugger : false
             }
         });
-        grunt.config( 'uglify.options', compressedSettings );
     }
 
-    // -------------------------------------------------------------------------- decompress for easier debugging
-    grunt.registerTask( 'decompress', function(){
-        grunt.log.writeln( "decompressing... (don't forget to call 'grunt' again before committing)" );
-        grunt.config( 'uglify.options', decompressedSettings );
-        grunt.config( 'uglify.target.options', {});
-        grunt.task.run( 'uglify' );
-    });
-    // alias for symmetry
-    grunt.registerTask( 'compress', [ 'uglify' ] );
+    // --develop: allow flag for beautified settings
+    if ( grunt.option( 'develop' ) ){
+        setToBeautify();
+    }
 
-    // -------------------------------------------------------------------------- watch & copy,pack only those changed
-    // use 'grunt watch' (from a new tab in your terminal) to have grunt re-copy changed files automatically
+    // -------------------------------------------------------------------------- grunt watch
     grunt.config( 'watch', {
-        watch: {
-            // watch for changes in the src dir
-            // NOTE: but not in the apps dir (which is only used by webpack)
-            files: [
-                paths.srcSymlink + '/**',
-                '!' + paths.srcSymlink + '/apps/**'
-            ],
-            tasks: [ 'uglify' ],
-            options: {
-                spawn: false
-            }
+        options : {
+            cwd : paths.src,
+            spawn : false
+        },
+        // NOTE: but not in the apps dir (which is only used by webpack)
+        compress : {
+            files : [ '*.js', '!apps/**' ],
+            tasks : [ 'compress' ],
         }
     });
 
-
-    // outer scope variable for the event handler and onChange fn - begin with empty hash
-    var changedFiles = Object.create(null);
+    // ------- build only what was changed
+    // cache for a list of files that have changed, to be sent to a debounced change fn
+    var changedFiles = [];
 
     // when files are changed, set the copy src and packScripts target to the filenames of the updated files
-    var onChange = grunt.util._.debounce(function() {
-        grunt.log.writeln( 'onChange, changedFiles:', Object.keys( changedFiles ) );
-        grunt.config( 'uglify.target.files', [{
-            expand : true,
-            cwd : paths.srcSymlink,
-            src : Object.keys( changedFiles ),
-            dest : paths.dist
-        }]);
-        changedFiles = Object.create(null);
-    }, 200);
+    var onChange = grunt.util._.debounce( function() {
+        grunt.log.writeln( 'onChange, changedFiles:', changedFiles );
+        respecifyTargetSrc( changedFiles );
+        changedFiles = [];
+    }, 200 );
 
-    var addChangedFile = function( action, filepath ) {
+    /** change the target files for babel and uglify */
+    function respecifyTargetSrc( newSrc ) {
+        // TODO: make this method generic to any series of tasks (i.e. css watch task)
+        uglifyTargetFiles.src = newSrc;
+    }
+
+    /** when a change event happens, cache that filepath in changed files and try the debounced change fn */
+    grunt.event.on( 'watch', function _addChangedFile( action, filepath, target ){
         // store each filepath in a Files obj, the debounced fn above will use it as an aggregate list for copying
         // we need to take galaxy/scripts out of the filepath or it will be copied to the wrong loc
-        filepath = filepath.replace( paths.srcSymlink + '/', '' );
-        // grunt.log.writeln( 'on.watch, filepath:', filepath );
-        changedFiles[ filepath ] = action;
+        filepath = filepath.replace( paths.src + '/', '' );
+        grunt.log.writeln( 'on.watch, filepath:', filepath );
+        changedFiles.push( filepath );
         onChange();
-    };
-    grunt.event.on( 'watch', addChangedFile );
+    });
 
-    // --------------------------------------------------------------------------
-    grunt.loadNpmTasks( 'grunt-contrib-watch' );
-    grunt.loadNpmTasks( 'grunt-contrib-uglify' );
+    // -------------------------------------------------------------------------- --target=<fileA,fileB,...>
+    // build only specified files (comma separated)
+    // note: these are relative to the paths.src (e.g. galaxy/scripts)
+    // example: grunt compress --target=utils/ajax-queue.js,layout/panel.js
+    var newTargetSrc = grunt.option( 'target' );
+    if( newTargetSrc ){
+        newTargetSrc = newTargetSrc.split( ',' );
+        grunt.log.writeln( 'only building the following files:', newTargetSrc );
+        respecifyTargetSrc( newTargetSrc );
+    }
 };
