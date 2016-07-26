@@ -195,7 +195,10 @@ class Tools( BaseUIController ):
 
         data = {}
         ordered_data = collections.OrderedDict()
-        field_sort = lambda first, second, field: descending if data[first][field] < data[second][field] else -descending
+
+        def field_sort(first, second, field):
+            descending if data[first][field] < data[second][field] else -descending
+
         sort_functions = [
             lambda first, second: -descending if first.lower() < second.lower() else descending,
             lambda first, second: field_sort(first, second, "avg"),
