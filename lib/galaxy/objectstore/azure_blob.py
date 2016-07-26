@@ -44,7 +44,7 @@ class AzureBlobObjectStore(ObjectStore):
         self.transfer_progress = 0
         self._parse_config_xml(config_xml)
         self._configure_connection()
-        self.container_lease = self._get_container_lease(self.container)
+        self.container_lease = self._get_container_lease()
 
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
@@ -90,20 +90,23 @@ class AzureBlobObjectStore(ObjectStore):
         self.account = CloudStorageAccount(self.account_name, self.account_key)
         self.service = self.account.create_block_blob_service()
 
-    def _get_container_lease(self, container_name):
+    def _get_container_lease(self):
         """ Sometimes a handle to a container is not established right away so try
         it a few times. Raise error is connection is not established. """
         for i in range(5):
             try:
-                container_lease = self.service.acquire_container_lease(container_name)
-                log.debug("Using azure blob store with container '%s'", container_name)
+                self.service.break_container_lease(self.container_name)
+                container_lease = self.service.acquire_container_lease(self.container_name)
+                log.debug("Using azure blob store with container '%s'", self.container_name)
                 return container_lease
             except AzureHttpError:
                 try:
-                    log.debug("container not found, creating azure blob store container with name '%s'", container_name)
-                    self.service.create_container(container_name, public_access=PublicAccess.Container)
+                    log.debug("container not found, creating azure blob store container with name '%s'", self.container_name)
+                    self.service.create_container(self.container_name)
+                    container_lease = self.service.acquire_container_lease(self.container_name)
+                    return container_lease
                 except AzureHttpError:
-                    log.exception("Could not get container '%s', attempt %s/5", container_name, i + 1)
+                    log.exception("Could not get container '%s', attempt %s/5", self.container_name, i + 1)
                     time.sleep(2)
         # All the attempts have been exhausted and connection was not established,
         # raise error
