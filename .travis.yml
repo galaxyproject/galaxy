@@ -8,6 +8,9 @@ env:
   - TOX_ENV=py27-unit
   - TOX_ENV=qunit
   - TOX_ENV=first_startup
+  - TOX_ENV=py27-lint-imports
+  - TOX_ENV=py27-lint-imports-include-list
+
 matrix:
   include:
   - os: osx
@@ -16,6 +19,8 @@ matrix:
   - os: osx
     env: TOX_ENV=py27-unit
     language: generic
+  allow_failures:
+  - env: TOX_ENV=py27-lint-imports
 
 before_install:
   - if [ `uname` == "Darwin"  ]; then bash -c "brew update && brew install python"; fi
