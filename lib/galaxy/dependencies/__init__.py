@@ -15,6 +15,7 @@ class ConditionalDependencies( object ):
         self.config_file = config_file
         self.config = None
         self.job_runners = []
+        self.object_stores = []
         self.conditional_reqs = []
         self.parse_configs()
         self.get_conditional_requirements()
@@ -30,6 +31,17 @@ class ConditionalDependencies( object ):
                     self.job_runners.append( plugin.attrib['load'] )
         except (OSError, IOError):
             pass
+        object_store_conf_xml = self.config.get(
+            "object_store_config_file",
+            join( dirname( self.config_file ), 'object_store_conf.xml' ) )
+        try:
+            for store in ElementTree.parse( object_store_conf_xml ).iter( 'object_store' ):
+                if 'type' in store.attrib:
+                    self.object_stores.append( store.attrib['type'] )
+        except (OSError, IOError):
+            pass
+
+        print "OBJECT STORES ARE %s" % self.object_stores
 
     def get_conditional_requirements( self ):
         crfile = join( dirname( __file__ ), 'conditional-requirements.txt' )
@@ -77,8 +89,7 @@ class ConditionalDependencies( object ):
         return self.check_weberror()
 
     def check_azure_storage( self ):
-        return (self.config.get("azure_account_name", None) is not None and
-                self.config.get("azure_account_key", None) is not None)
+        return 'azure_blob' in self.object_stores
 
 
 def optional( config_file ):
