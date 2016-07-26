@@ -3,7 +3,6 @@
 import os
 import shutil
 from base import integration_util
-import svgwrite  # svgwrite import after twill, otherwise twill's pyparsing breaks svgwrite import.
 from base.api import ApiTestCase
 from tempfile import mkdtemp
 
