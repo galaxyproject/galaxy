@@ -90,7 +90,7 @@ class DependencyManager( object ):
         commands = []
         for requirement in requirements:
             log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = NullDependency(version=None, name=requirement.name)
+            dependency = NullDependency(version=requirement.version, name=requirement.name)
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,
@@ -115,7 +115,7 @@ class DependencyManager( object ):
                 continue
             dependency = resolver.resolve( name, version, type, **kwds )
             if require_exact and not dependency.exact:
-                dependency = NullDependency(version=version, name=name)
+                continue
             if not isinstance(dependency, NullDependency):
                 return dependency
         return NullDependency(version=version, name=name)
