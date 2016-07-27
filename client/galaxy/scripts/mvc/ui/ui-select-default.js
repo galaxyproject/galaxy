@@ -243,7 +243,7 @@ var View = Backbone.View.extend({
     /** Update all available options at once */
     add: function( options, sorter ) {
         _.each( this.model.get( 'data' ), function( v ) {
-            v.keep && !_.findWhere( options, v ) && options.push( v );
+            v.keep && !_.findWhere( options, { value: v.value } ) && options.push( v );
         });
         sorter && options && options.sort( sorter );
         this.model.set( 'data', options );
