@@ -169,7 +169,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderHistory();
             _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
             this.deferred.execute( function() { self.execute_btn.unwait();
-                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } ) } );
+                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } ); } );
         },
 
         /** Render header */
@@ -266,16 +266,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 }, '' ) ) )
                             );
                     }
-                    self._append( self.$steps, form.$el );
                 } else {
                     _.each( step.inputs, function( input ) { input.flavor = 'module' } );
                     form = new Form( Utils.merge({
                         title    : '<b>' + step.name + '</b>',
                         onchange : function() { _.each( self.links[ i ], function( link ) { self._refreshStep( link ) } ) }
                     }, step ) );
-                    self._append( self.$steps, form.$el );
                 }
                 self.forms[ i ] = form;
+                self._append( self.$steps, form.$el );
                 step.needs_refresh && self._refreshStep( step );
                 self._resolve( form.deferred, promise );
                 self.execute_btn.model.set( 'percentage', ( i + 1 ) * 100.0 / self.steps.length );
