@@ -5,6 +5,7 @@
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
 from __future__ import print_function
 
+import cProfile
 import logging
 import codecs
 import gzip
@@ -85,7 +86,19 @@ def parse_outputs( args ):
         rval[int( id )] = ( path, files_path )
     return rval
 
+def do_cprofile(func):
+    def profiled_func(*args, **kwargs):
+        profile = cProfile.Profile()
+        try:
+            profile.enable()
+            result = func(*args, **kwargs)
+            profile.disable()
+            return result
+        finally:
+            profile.print_stats(sort='time')
+    return profiled_func
 
+#@do_cprofile
 def add_file( dataset, registry, json_file, output_path ):
     data_type = None
     line_count = None
@@ -293,19 +306,6 @@ def add_file( dataset, registry, json_file, output_path ):
 
             #-------- This is when datatype is known -----------------------------------------------------------------#
             if data_type != 'binary':
-                if link_data_only == 'copy_files':
-                    if dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
-                        in_place = False
-                    # Convert universal line endings to Posix line endings, but allow the user to turn it off,
-                    # so that is becomes possible to upload gzip, bz2 or zip files with binary data without
-                    # corrupting the content of those files.
-                    if dataset.to_posix_lines:
-                        tmpdir = output_adjacent_tmpdir( output_path )
-                        tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
-                        if dataset.space_to_tab:
-                            line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
-                        else:
-                            line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
                 if dataset.file_type == 'auto':
                     ext = sniff.guess_ext( dataset.path, registry.sniff_order )
                 else:
@@ -326,7 +326,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             file_err( err_msg, dataset, json_file )
             return
-    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ): # and data_type not in [ 'gzip', 'bz2', 'zip' ]:
+    if link_data_only == 'copy_files' and dataset.type in ( 'server_dir', 'path_paste' ) and data_type not in [ 'gzip', 'bz2', 'zip' ]:
         # Move the dataset to its "real" path
         if converted_path is not None:
             shutil.copy( converted_path, output_path )
@@ -382,6 +382,7 @@ def __main__():
         sys.exit( 1 )
 
     output_paths = parse_outputs( sys.argv[4:] )
+    json_file = open( 'galaxy.json', 'w' )
 
     registry = Registry()
     registry.load_datatypes(root_dir=sys.argv[1], config=sys.argv[2])
