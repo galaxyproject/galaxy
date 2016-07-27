@@ -20,7 +20,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
                 this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
                     this.refresh();
-                });
+                    this.deferred.execute(function(process) {
+                    self._buildModel(process, options, true);
+                    });
+               });
             }
         },
 
