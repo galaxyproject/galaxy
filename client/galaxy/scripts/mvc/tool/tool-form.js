@@ -7,6 +7,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base' ],
         initialize: function( options ) {
             var self = this;
             options.listen_to_history = true;
+            options.always_refresh = false;
             ToolFormBase.prototype.initialize.call( this, Utils.merge({
                 customize: function( options ) {
                     // build execute button
