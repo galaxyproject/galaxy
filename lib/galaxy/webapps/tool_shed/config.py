@@ -83,6 +83,7 @@ class Configuration( object ):
         # Galaxy flavor Docker Image
         self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.user_activation_on = None
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
         self.terms_url = kwargs.get( 'terms_url', None )
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
