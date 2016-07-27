@@ -8,7 +8,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             this.options = Utils.merge(options, {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
-                icon            : null
+                icon            : null,
+                always_refresh  : true
             });
             this.setElement('<div/>');
             this.render();
