@@ -2208,6 +2208,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
+        other_values = other_values or {}
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
