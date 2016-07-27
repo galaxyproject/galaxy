@@ -1613,6 +1613,8 @@ class Tool( object, Dictifiable ):
                 history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
             else:
                 history = trans.get_history()
+            if history is None and job is not None:
+                history = self.history_manager.get_owned( job.history.id, trans.user, current_history=trans.history )
             if history is None:
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception as e:
