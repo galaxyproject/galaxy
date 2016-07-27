@@ -19,7 +19,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
         installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
         if installed_tool_dependency:
             path = self._get_package_installed_dependency_path( installed_tool_dependency, name, version )
-            return self._galaxy_package_dep(path, version, True)
+            return self._galaxy_package_dep(path, version, name, True)
         else:
             return NullDependency(version=version, name=name)
 

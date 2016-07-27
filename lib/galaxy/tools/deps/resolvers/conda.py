@@ -159,6 +159,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 self.conda_context.activate,
                 conda_environment,
                 exact,
+                name,
+                version
             )
         else:
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")

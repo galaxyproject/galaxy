@@ -47,7 +47,7 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         if islink( path ):
             real_path = realpath( path )
             real_version = basename( real_path )
-            return self._galaxy_package_dep(real_path, real_version, exact)
+            return self._galaxy_package_dep(real_path, real_version, name, exact)
         else:
             return NullDependency(version=None, name=name)
 

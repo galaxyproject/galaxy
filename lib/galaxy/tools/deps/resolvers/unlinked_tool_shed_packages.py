@@ -45,7 +45,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         try:
-            possibles = self._find_possible_depenencies(name, version, type)
+            possibles = self._find_possible_dependencies(name, version, type)
             if len(possibles) == 0:
                 log.debug("Unable to find dependency,'%s' '%s' '%s'", name, version, type)
                 return NullDependency(version=version, name=name)
@@ -62,13 +62,13 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
     # Finds all possible dependency to use
     # Should be extended as required
     # Returns CandidateDependency objects with data for preference picking
-    def _find_possible_depenencies(self, name, version, type):
+    def _find_possible_dependencies(self, name, version, type):
         possibles = []
         if exists(self.base_path):
             path = join( self.base_path, name, version )
             if exists(path):
                 # First try the way without owner/name/revision
-                package = self._galaxy_package_dep(path, version, True)
+                package = self._galaxy_package_dep(path, version, name, True)
                 if not isinstance(package, NullDependency):
                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, path)
                     possibles.append(CandidateDependency(package, path))
@@ -80,7 +80,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                             package_path = join(owner_path, package_name)
                             for revision in listdir(package_path):
                                 revision_path = join(package_path, revision)
-                                package = self._galaxy_package_dep(revision_path, version, True)
+                                package = self._galaxy_package_dep(revision_path, version, name, True)
                                 if not isinstance(package, NullDependency):
                                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, revision_path)
                                     possibles.append(CandidateDependency(package, package_path, owner))
