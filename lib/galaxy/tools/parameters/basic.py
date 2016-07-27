@@ -2060,8 +2060,8 @@ class DataToolParameter( BaseDataToolParameter ):
         multiple = self.multiple
 
         # build and append a new select option
-        def append( list, id, hid, name, src ):
-            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src } )
+        def append( list, id, hid, name, src, keep=False ):
+            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src, 'keep': keep } )
 
         # add datasets
         visible_hda = other_values.get( self.name )
@@ -2073,7 +2073,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
                 append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
-            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda' )
+            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )

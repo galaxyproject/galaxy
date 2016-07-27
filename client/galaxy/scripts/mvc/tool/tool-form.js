@@ -1,13 +1,14 @@
 /**
     This is the regular tool form.
 */
-define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base' ],
-    function( Utils, Ui, ToolFormBase ) {
+define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base' ],
+    function( Utils, Ui, Modal, ToolFormBase ) {
     var View = ToolFormBase.extend({
         initialize: function( options ) {
             var self = this;
             options.listen_to_history = true;
             options.always_refresh = false;
+            this.modal = parent.Galaxy.modal || new Modal.View();
             ToolFormBase.prototype.initialize.call( this, Utils.merge({
                 customize: function( options ) {
                     // build execute button
@@ -82,20 +83,22 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base' ],
                 error   : function( response ) {
                     callback && callback();
                     Galaxy.emit.debug( 'tool-form::submit', 'Submission failed.', response );
+                    var input_found = false;
                     if ( response && response.err_data ) {
                         var error_messages = self.data.matchResponse( response.err_data );
                         for (var input_id in error_messages) {
                             self.highlight( input_id, error_messages[ input_id ]);
+                            input_found = true;
                             break;
                         }
-                    } else {
-                        var modal = parent.Galaxy.modal;
-                        modal && modal.show({
+                    }
+                    if ( !input_found ) {
+                        self.modal.show({
                             title   : 'Job submission failed',
                             body    : ( response && response.err_msg ) || self._templateError( job_def ),
                             buttons : {
                                 'Close' : function() {
-                                    modal.hide();
+                                    self.modal.hide();
                                 }
                             }
                         });
