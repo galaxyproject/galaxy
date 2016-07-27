@@ -56,7 +56,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     errors                  : step.messages,
                     initial_errors          : true,
                     cls                     : 'ui-portlet-narrow',
-                    hide_operations         : true
+                    hide_operations         : true,
+                    needs_refresh           : false,
+                    always_refresh          : step.step_type != 'tool'
                 }, step );
                 self.steps[ i ] = step;
                 self.links[ i ] = [];
@@ -205,9 +207,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             if ( !_.isEmpty( this.wp_inputs ) ) {
                 this.wp_form = new Form({ title: '<b>Workflow Parameters</b>', inputs: this.wp_inputs, cls: 'ui-portlet-narrow', onchange: function() {
                         _.each( self.wp_form.input_list, function( input_def, i ) {
-                            _.each( input_def.links, function( step ) {
-                                self._refreshStep( step );
-                            });
+                            _.each( input_def.links, function( step ) { self._refreshStep( step ) } );
                         });
                     }
                 });
@@ -276,7 +276,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     self._append( self.$steps, form.$el );
                 }
                 self.forms[ i ] = form;
-                self._refreshStep( step );
+                step.needs_refresh && self._refreshStep( step );
                 self._resolve( form.deferred, promise );
                 self.execute_btn.model.set( 'percentage', ( i + 1 ) * 100.0 / self.steps.length );
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
@@ -327,6 +327,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     }
                 });
                 form.trigger( 'change' );
+            } else {
+                step.needs_refresh = true;
             }
         },
 
