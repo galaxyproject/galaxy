@@ -409,12 +409,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Activation grace period (in hours).  Activation is not forced (login is not
 # disabled) until grace period has passed.  Users under grace period can't run
-# jobs (see inactivity_box_content).  Default is 3.  Enter 0 to disable grace
-# period.
+# jobs. Enter 0 to disable grace period.
 # Users with OpenID logins have grace period forever.
-#activation_grace_period = 0
+#activation_grace_period = 3
 
-# Used for warning box for inactive accounts (unable to run jobs).
+# Shown in warning box to users that were not activated yet.
 # In use only if activation_grace_period is set.
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
