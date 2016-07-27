@@ -110,15 +110,6 @@
             </p>
         </div>
     </div>
-    %if install_resolver_dependencies_check_box:
-    <div class="form-row">
-        <label>When available, install externally managed dependencies (e.g. conda)? <i>New Option</i></label>
-        ${install_resolver_dependencies_check_box.get_html()}
-        <div class="toolParamHelp" style="clear: both;">
-            Un-check to skip automatic installation of tool dependencies.
-        </div>
-    </div>
-    %endif
     <div style="clear: both"></div>
     %if repository_dependencies_root_folder or missing_repository_dependencies_root_folder:
         %if repository_dependencies_check_box:
@@ -195,6 +186,17 @@
                 <div style="clear: both"></div>
             </div>
         %endif
+    </div>
+    %endif
+    <div style="clear: both"></div>
+    %if install_resolver_dependencies_check_box:
+    <div class="form-row">
+        <label>When available, install externally managed dependencies (e.g. conda)? <i>Beta</i></label>
+        ${install_resolver_dependencies_check_box.get_html()}
+        <div class="toolParamHelp" style="clear: both;">
+            Un-check to skip automatic installation of tool dependencies.
+        </div>
+    </div>
     %endif
 </%def>
 
