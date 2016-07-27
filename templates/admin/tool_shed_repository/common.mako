@@ -112,7 +112,7 @@
     </div>
     %if install_resolver_dependencies_check_box:
     <div class="form-row">
-        <label>Install resolvable dependencies (Currently conda-only) ?</label>
+        <label>When available, install externally managed dependencies (e.g. conda)? <i>New Option</i></label>
         ${install_resolver_dependencies_check_box.get_html()}
         <div class="toolParamHelp" style="clear: both;">
             Un-check to skip automatic installation of tool dependencies.
@@ -163,7 +163,7 @@
     %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         %if install_tool_dependencies_check_box is not None:
             <div class="form-row">
-                <label>Handle tool dependencies?</label>
+                <label>When available, install tool shed managed dependencies?</label>
                 <% disabled = trans.app.config.tool_dependency_dir is None %>
                 ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
                 <div class="toolParamHelp" style="clear: both;">
