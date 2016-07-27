@@ -29,6 +29,7 @@ from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
+from galaxy.tools.deps import views
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -107,6 +108,11 @@ class ToolBox( BaseGalaxyToolBox ):
             tool_root_dir=tool_root_dir,
             app=app,
         )
+
+    @property
+    def all_requirements(self):
+        reqs = [json.dumps(req, sort_keys=True) for _, tool in self.tools() for req in tool.tool_requirements]
+        return [json.loads(req) for req in set(reqs)]
 
     @property
     def tools_by_id( self ):
@@ -310,6 +316,7 @@ class Tool( object, Dictifiable ):
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
         self.history_manager = histories.HistoryManager( app )
+        self._view = views.DependencyResolversView(app)
 
     @property
     def sa_session( self ):
@@ -1291,6 +1298,21 @@ class Tool( object, Dictifiable ):
         else:
             installed_tool_dependencies = None
         return installed_tool_dependencies
+
+    @property
+    def tool_requirements(self):
+        """
+        Return all requiremens of type package
+        """
+        reqs = [req.to_dict() for req in self.requirements if req.type == 'package']
+        return reqs
+
+    @property
+    def tool_requirements_status(self):
+        """
+        Return a list of dictionaries for all tool dependencies with their associated status
+        """
+        return self._view.get_requirements_status(self.tool_requirements)
 
     def build_redirect_url_params( self, param_dict ):
         """
