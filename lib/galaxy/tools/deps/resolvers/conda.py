@@ -135,7 +135,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 return NullDependency(version=version, name=name)
 
         if not is_installed and self.auto_install:
-            is_installed = self.install_dependency(name, version, type)
+            is_installed = self.install_dependency(name=name, version=version, type=type)
 
         if not is_installed:
             return NullDependency(version=version, name=name)
@@ -190,16 +190,14 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         return_code = install_conda_target(conda_target, conda_context=self.conda_context)
         if return_code != 0:
             is_installed = False
-            log.debug("Remove failed conda install of {}, version '{}'".format(name, version))
-            cleanup_failed_install(conda_target, conda_context=self.conda_context)
         else:
             # Recheck if installed
             is_installed = is_conda_target_installed(
                 conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
             )
-            if not is_installed:
-                log.debug("Remove failed conda install of {}, version '{}'".format(name, version))
-                cleanup_failed_install(conda_target, conda_context=self.conda_context)
+        if not is_installed:
+            log.debug("Removing failed conda install of {}, version '{}'".format(name, version))
+            cleanup_failed_install(conda_target, conda_context=self.conda_context)
 
         return is_installed
 
