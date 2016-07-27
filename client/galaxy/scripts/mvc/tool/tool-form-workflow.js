@@ -31,6 +31,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                 initial_errors  : true,
                 sustain_version : true,
                 cls             : 'ui-portlet-narrow',
+                always_refresh  : true,
 
                 // configure model update
                 update_url      : Galaxy.root + 'api/workflows/build_module',
