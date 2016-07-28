@@ -14,6 +14,7 @@ MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
 COLOR_OPTS = ['COLOR_SCALARS', 'red', 'green', 'blue']
 
+
 class Ply(object):
     """
     The PLY format describes an object as a collection of vertices,
