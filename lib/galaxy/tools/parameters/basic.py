@@ -2208,6 +2208,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
+        other_values = other_values or {}
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
@@ -2215,7 +2216,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED or other_values is None:
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return d
 
         # prepare dataset/collection matching
