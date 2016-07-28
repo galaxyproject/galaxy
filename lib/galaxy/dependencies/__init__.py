@@ -16,6 +16,7 @@ class ConditionalDependencies( object ):
         self.config = None
         self.job_runners = []
         self.authenticators = []
+        self.object_stores = []
         self.conditional_reqs = []
         self.parse_configs()
         self.get_conditional_requirements()
@@ -29,6 +30,15 @@ class ConditionalDependencies( object ):
             for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ).findall( 'plugin' ):
                 if 'load' in plugin.attrib:
                     self.job_runners.append( plugin.attrib['load'] )
+        except (OSError, IOError):
+            pass
+        object_store_conf_xml = self.config.get(
+            "object_store_config_file",
+            join( dirname( self.config_file ), 'object_store_conf.xml' ) )
+        try:
+            for store in ElementTree.parse( object_store_conf_xml ).iter( 'object_store' ):
+                if 'type' in store.attrib:
+                    self.object_stores.append( store.attrib['type'] )
         except (OSError, IOError):
             pass
 
@@ -92,6 +102,9 @@ class ConditionalDependencies( object ):
     def check_python_ldap( self ):
         return ('ldap' in self.authenticators or
                 'activedirectory' in self.authenticators)
+
+    def check_azure_storage( self ):
+        return 'azure_blob' in self.object_stores
 
 
 def optional( config_file ):
