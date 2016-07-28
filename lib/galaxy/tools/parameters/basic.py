@@ -50,17 +50,17 @@ class ToolParameter( object, Dictifiable ):
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
     """
-    dict_collection_visible_keys = ( 'name', 'argument', 'type', 'label', 'help' )
+    dict_collection_visible_keys = ( 'name', 'argument', 'type', 'label', 'help', 'refresh_on_change' )
 
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source(input_source)
         self.tool = tool
-        self.refresh_on_change = False
         self.refresh_on_change_values = []
         self.argument = input_source.get("argument")
         self.name = ToolParameter.parse_name( input_source )
         self.type = input_source.get("type")
         self.hidden = input_source.get("hidden", False)
+        self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
         self.label = input_source.parse_label()
@@ -1608,6 +1608,7 @@ class BaseDataToolParameter( ToolParameter ):
 
     def __init__( self, tool, input_source, trans ):
         super(BaseDataToolParameter, self).__init__( tool, input_source )
+        self.refresh_on_change = True
 
     def _get_history( self, trans ):
         class_name = self.__class__.__name__
@@ -1838,7 +1839,7 @@ class DataToolParameter( BaseDataToolParameter ):
               happens twice (here and when generating HTML).
         """
         # Can't look at history in workflow mode. Tool shed has no histories.
-        if trans.workflow_building_mode or trans.app.name == 'tool_shed':
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
             return RuntimeValue()
         history = self._get_history( trans )
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
@@ -2059,8 +2060,8 @@ class DataToolParameter( BaseDataToolParameter ):
         multiple = self.multiple
 
         # build and append a new select option
-        def append( list, id, hid, name, src ):
-            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src } )
+        def append( list, id, hid, name, src, keep=False ):
+            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src, 'keep': keep } )
 
         # add datasets
         visible_hda = other_values.get( self.name )
@@ -2072,7 +2073,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
                 append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
-            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda' )
+            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
@@ -2207,6 +2208,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
+        other_values = other_values or {}
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
@@ -2214,7 +2216,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED or other_values is None:
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return d
 
         # prepare dataset/collection matching

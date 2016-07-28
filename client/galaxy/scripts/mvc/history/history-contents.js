@@ -35,12 +35,16 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
                     return new HDCA_MODEL.HistoryPairDatasetCollection( attrs, options );
                 case 'list:paired':
                     return new HDCA_MODEL.HistoryListPairedDatasetCollection( attrs, options );
+                case 'list:list':
+                    return new HDCA_MODEL.HistoryListOfListsDatasetCollection( attrs, options );
             }
             // This is a hack inside a hack:
             // Raise a plain object with validationError to fake a model.validationError
             // (since we don't have a model to use validate with)
             // (the outer hack being the mixed content/model function in this collection)
-            return { validationError : 'Unknown collection_type: ' + attrs.history_content_type };
+            var msg = 'Unknown collection_type: ' + attrs.collection_type;
+            console.warn( msg, attrs );
+            return { validationError : msg };
         }
         return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
     },
@@ -397,12 +401,14 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
             type = ( contentType === 'hdca'? 'dataset_collection' : 'dataset' );
         }
         var collection = this,
-            xhr = jQuery.post( this.url(), {
-                content : id,
-                source  : contentType,
-                type    : type,
-                view    : 'detailed',
-                keys    : 'create_time,update_time'
+            xhr = jQuery.ajax( this.url(), {
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    content : id,
+                    source  : contentType,
+                    type    : type
+                })
             })
             .done( function( response ){
                 collection.add([ response ], { parse: true });

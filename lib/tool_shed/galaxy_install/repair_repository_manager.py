@@ -194,6 +194,7 @@ class RepairRepositoryManager():
                                               shed_tool_conf,
                                               tool_path,
                                               install_tool_dependencies=True,
+                                              install_resolver_dependencies=False,  # Assuming repairs are only necessary toolshed packages
                                               reinstalling=True )
             if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.ERROR ]:
                 repair_dict = add_repair_dict_entry( repository.name, repository.error_message )

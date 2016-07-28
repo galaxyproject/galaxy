@@ -6,12 +6,14 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
     <title>${hda.name} | ${visualization_name}</title>
-<%
-    root = h.url_for( '/' )
-%>
-<script type="text/javascript" src="/static/scripts/libs/jquery/jquery.js"></script>
+    <%
+        root = h.url_for( '/' )
+    %>
+
+    <script type="text/javascript" src="/static/scripts/libs/jquery/jquery.js"></script>
+
     ${h.stylesheet_link( root + 'plugins/visualizations/graphviz/static/css/style.css' )}
-    
+
     ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/jquery.qtip.js' )}
     ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/cytoscape.min.js' )}
     ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/collapse.js' )}
@@ -25,63 +27,62 @@
     ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/wz_tooltip.js' )}
 
     <script>
+        function parseNodeEdge( data ){
+            data = data.data[0];
+            parseJson( data );
+        }
+
         $(document).ready(function() {
-        
-            var hdaId   = '${trans.security.encode_id( hda.id )}',
-            hdaExt  = '${hda.ext}',
-            dataUrl = "${h.url_for( controller='/datasets', action='index')}/" + hdaId + "/display?to_ext=" + hdaExt;
 
-			// var reader = new FileReader();
-			
-             $.ajax({
-                 'async': true,
-                 'global': false,
-                 'url': dataUrl,
-                 'dataType': "json",
-                 'success': function(data) {
-                     parseJson(data);
-                     //  createGraph(data);
-                 },
-                 'error': function(data) {
-                 
-							jQuery.get(dataUrl, function(data) {
-  		 				
-  							var lines = data.split('\n');
-                         var chars;
-                         for (var line = 0; line < lines.length; line++) {
-                             chars = lines[line].split(/,?\s+/); // split by comma or space
+            var hdaName = '${ hda.name | h }',
+                hdaId = '${trans.security.encode_id( hda.id )}',
+                hdaExt = '${hda.ext}',
+                rawUrl = '${h.url_for( controller="/datasets", action="index" )}',
+                apiUrl = '${h.url_for( "/" ) + "api/datasets"}',
+                dataUrl;
 
-                             demoNodes.push({
-                                 data: {
-                                     id: chars[0],
-                                     label: chars[0]
-                                 }
-                             });
+            function errorHandler( xhr, status, message ){
+                console.error(x, s, m);
+                alert("error loading data:\n" + m);
+            }
 
-                             for (var i = 1; i < chars.length; i++) {
-                                 demoEdges.push({
-                                     data: {
-                                         source: chars[0],
-                                         target: chars[i],
-                                         id: chars[0] + chars[i],
+            switch( hdaExt ){
+                case 'txt':
+                    dataUrl = rawUrl + '/' + hdaId + '/display?to_ext=txt';
+                    $.ajax(dataUrl, {
+                        dataType    : 'text',
+                        success     : parseTextMatrix,
+                        error       : errorHandler
+                    });
+                    break;
 
-                                     }
-                                 })
-                             }
-                         }
-					  
-  								parseAndCreate(demoNodes, demoEdges);
-  
-							});                     
-                     
-                  
-                 }
-             });
+                case 'json':
+                    dataUrl = rawUrl + '/' + hdaId + '/display?to_ext=json';
+                    $.ajax(dataUrl, {
+                        dataType    : 'json',
+                        success     : parseJson,
+                        error       : errorHandler
+                    });
+                    break;
 
-        } );
+                default:
+                    dataUrl = apiUrl + '/' + hdaId;
+                    $.ajax(dataUrl, {
+                        dataType    : 'json',
+                        success     : parseNodeEdge,
+                        error       : errorHandler,
+                        data : {
+                            data_type : 'raw_data',
+                            provider  : 'node-edge'
+                        }
+                    });
+            }
+        });
 
     </script>
     <div id="cy"></div>
+
+    <!-- left control panel for rendering controls, hiding nodes, etc. - initially hidden -->
     <div class="panel">
         <br>
         <div id="mainselection">
@@ -139,11 +140,9 @@
         <br>
         <br>
 
-
         <input type="button" class="btn delNode" name="deleteNodes" id="deleteNodes" value="Delete Selected Nodes " onclick="deleteSelectedNodes()" disabled="disabled">
         <br>
         <br>
-
 
         <input type="button" class="btn" name="restoreNodes" id="restoreNodes" value="Restore Deleted Nodes" onclick="restoreDeletedNodes()">
         <br>
@@ -158,13 +157,16 @@
         <br>
         <br>
     </div>
-
+    <!-- button to show above panel -->
     <a href="javascript:void(0);" class="slider-arrow show">&raquo;</a>
-    <div id="nodeInfoDiv" class="nodePanel"> 
+
+    <!-- right control panel for displaying node data - initially hidden -->
+    <div id="nodeInfoDiv" class="nodePanel">
         <p> <strong>Node Description </strong></p>
         <br><br>
         <p> Please select a node </p>
     </div>
+    <!-- button to show above panel -->
     <a href="javascript:void(0);" class="slider-arrow-forNode show">&laquo;</a>
 </body>
 

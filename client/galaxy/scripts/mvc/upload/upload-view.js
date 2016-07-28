@@ -50,18 +50,14 @@ return Backbone.View.extend({
         // merge parsed options
         this.options = Utils.merge( options, this.options );
 
-        // create model for upload/progress button
-        this.ui_button = new UploadButton.Model();
-
         // create view for upload/progress button
-        this.ui_button_view = new UploadButton.View({
-            model       : this.ui_button,
+        this.ui_button = new UploadButton.View({
             onclick     : function(e) {
                 e.preventDefault();
                 self.show()
             },
             onunload    : function() {
-                var percentage = self.ui_button.get('percentage', 0);
+                var percentage = self.ui_button.model.get('percentage', 0);
                 if (percentage > 0 && percentage < 100) {
                     return 'Several uploads are queued.';
                 }
@@ -69,7 +65,7 @@ return Backbone.View.extend({
         });
 
         // set element to button view
-        this.setElement( this.ui_button_view.$el );
+        this.setElement( this.ui_button.$el );
 
         // load extensions
         var self = this;

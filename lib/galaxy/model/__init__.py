@@ -3119,11 +3119,17 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
 
     @property
     def populated( self ):
-        return self.populated_state == DatasetCollection.populated_states.OK
+        top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
+        if top_level_populated and self.has_subcollections:
+            return all(map(lambda e: e.child_collection.populated, self.elements))
+        return top_level_populated
 
     @property
     def waiting_for_elements( self ):
-        return self.populated_state == DatasetCollection.populated_states.NEW
+        top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
+        if not top_level_waiting and self.has_subcollections:
+            return any(map(lambda e: e.child_collection.waiting_for_elements, self.elements))
+        return top_level_waiting
 
     def mark_as_populated( self ):
         self.populated_state = DatasetCollection.populated_states.OK
@@ -3187,6 +3193,10 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     def set_from_dict( self, new_data ):
         # Nothing currently editable in this class.
         return {}
+
+    @property
+    def has_subcollections(self):
+        return ":" in self.collection_type
 
 
 class DatasetCollectionInstance( object, HasName ):

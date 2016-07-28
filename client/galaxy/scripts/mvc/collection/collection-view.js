@@ -164,6 +164,8 @@ CollectionView.prototype.templates = (function(){
                         _l( 'a pair of datasets' ),
                     '<% } else if( collection.collection_type === "list:paired" ){ %>',
                         _l( 'a list of paired datasets' ),
+                    '<% } else if( collection.collection_type === "list:list" ){ %>',
+                        _l( 'a list of dataset lists' ),
                     '<% } %>',
                 '</div>',
             '</div>',
@@ -226,11 +228,28 @@ var ListOfPairsCollectionView = CollectionView.extend(
 });
 
 
+// =============================================================================
+/** @class non-editable, read-only View/Controller for a list of lists dataset collection. */
+var ListOfListsCollectionView = CollectionView.extend({
+
+    /** sub view class used for nested collections */
+    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView.extend({
+        foldoutPanelClass : PairCollectionView
+    }),
+
+    /** string rep */
+    toString    : function(){
+        return 'ListOfListsCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+    }
+});
+
+
 //==============================================================================
     return {
         CollectionView              : CollectionView,
         ListCollectionView          : ListCollectionView,
         PairCollectionView          : PairCollectionView,
-        ListOfPairsCollectionView   : ListOfPairsCollectionView
+        ListOfPairsCollectionView   : ListOfPairsCollectionView,
+        ListOfListsCollectionView   : ListOfListsCollectionView
     };
 });

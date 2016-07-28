@@ -13,6 +13,7 @@ class DependencyResolver(Dictifiable, object):
     # because the repository install context is used in dependency resolution
     # so the same requirement tags in different tools will have very different
     # resolution.
+    disabled = False
     resolves_simple_dependencies = True
     __metaclass__ = ABCMeta
 
@@ -71,7 +72,7 @@ class InstallableDependencyResolver:
 
 
 class Dependency(Dictifiable, object):
-    dict_collection_visible_keys = ['dependency_type', 'exact']
+    dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version']
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -91,8 +92,9 @@ class NullDependency( Dependency ):
     dependency_type = None
     exact = True
 
+    def __init__(self, version=None, name=None):
+        self.version = version
+        self.name = name
+
     def shell_commands( self, requirement ):
         return None
-
-
-INDETERMINATE_DEPENDENCY = NullDependency()

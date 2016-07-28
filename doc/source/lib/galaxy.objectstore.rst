@@ -41,4 +41,12 @@ galaxy.objectstore.s3_multipart_upload module
     :undoc-members:
     :show-inheritance:
 
+galaxy.objectstore.azure_blob module
+---------------------------------------------
+
+.. automodule:: galaxy.objectstore.azure_blob
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

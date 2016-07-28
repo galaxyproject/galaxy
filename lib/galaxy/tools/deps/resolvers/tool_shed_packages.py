@@ -2,7 +2,7 @@ from os.path import abspath, join, exists
 
 from .resolver_mixins import UsesInstalledRepositoriesMixin
 from .galaxy_packages import BaseGalaxyPackageDependencyResolver, GalaxyPackageDependency
-from ..resolvers import INDETERMINATE_DEPENDENCY
+from ..resolvers import NullDependency
 
 
 class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, UsesInstalledRepositoriesMixin):
@@ -19,9 +19,9 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
         installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
         if installed_tool_dependency:
             path = self._get_package_installed_dependency_path( installed_tool_dependency, name, version )
-            return self._galaxy_package_dep(path, version, True)
+            return self._galaxy_package_dep(path, version, name, True)
         else:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
     def _find_dep_default( self, name, type='package', **kwds ):
         if type == 'set_environment' and kwds.get('installed_tool_dependencies', None):
@@ -33,7 +33,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
                 if has_script_dep:
                     # Environment settings do not use versions.
                     return GalaxyPackageDependency(dependency.script, dependency.path, None, True)
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=None, name=name)
 
     def _get_package_installed_dependency_path( self, installed_tool_dependency, name, version ):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
@@ -59,7 +59,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
         if exists( path ):
             script = join( path, 'env.sh' )
             return GalaxyPackageDependency(script, path, None, True)
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=None, name=name)
 
 
 __all__ = ['ToolShedPackageDependencyResolver']

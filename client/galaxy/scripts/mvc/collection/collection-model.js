@@ -415,9 +415,57 @@ var ListPairedDatasetCollection = DatasetCollection.extend(
 
 
 //==============================================================================
+/** @class Backbone model for a list dataset collection within a list:list dataset collection. */
+var NestedListDCDCE = ListDatasetCollection.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
+/** @lends NestedListDCDCE.prototype */{
+
+    /** This is both a collection and a collection element - call the constructor */
+    constructor : function( attributes, options ){
+        this.debug( '\t NestedListDCDCE.constructor:', attributes, options );
+        DatasetCollectionElementMixin.constructor.call( this, attributes, options );
+    },
+
+    /** String representation. */
+    toString : function(){
+        var objStr = ( this.object )?( '' + this.object ):( this.get( 'element_identifier' ) );
+        return ([ 'NestedListDCDCE(', objStr, ')' ].join( '' ));
+    }
+}));
+
+
+//==============================================================================
+/** @class Backbone collection containing list dataset collections. */
+var NestedListDCDCECollection = NestedDCDCECollection.extend({
+
+    /** We know this collection is composed of only nested pair collections */
+    model: NestedListDCDCE,
+
+    /** String representation. */
+    toString : function(){
+        return ([ 'NestedListDCDCECollection(', this.length, ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
+/** @class Backbone Model for a DatasetCollection (list) that contains other lists. */
+var ListOfListsDatasetCollection = DatasetCollection.extend({
+
+    /** list:paired is the only collection that itself contains collections */
+    collectionClass : NestedListDCDCECollection,
+
+    /** String representation. */
+    toString : function(){
+        return ([ 'ListOfListsDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
     return {
-        ListDatasetCollection               : ListDatasetCollection,
-        PairDatasetCollection               : PairDatasetCollection,
-        ListPairedDatasetCollection         : ListPairedDatasetCollection
+        ListDatasetCollection       : ListDatasetCollection,
+        PairDatasetCollection       : PairDatasetCollection,
+        ListPairedDatasetCollection : ListPairedDatasetCollection,
+        ListOfListsDatasetCollection: ListOfListsDatasetCollection
     };
 });

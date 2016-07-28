@@ -18,7 +18,8 @@ TODO:
 var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
     ListDC = DC_MODEL.ListDatasetCollection,
     PairDC = DC_MODEL.PairDatasetCollection,
-    ListPairedDC = DC_MODEL.ListPairedDatasetCollection;
+    ListPairedDC = DC_MODEL.ListPairedDatasetCollection,
+    ListOfListsDC = DC_MODEL.ListOfListsDatasetCollection;
 
 //==============================================================================
 /** Override to post to contents route w/o id. */
@@ -81,11 +82,8 @@ var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
 
 
 //==============================================================================
-/** @class Backbone model for List of Pairs Dataset Collection within a History.
- *  @constructs
- */
-var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend(
-/** @lends HistoryListPairedDatasetCollection.prototype */{
+/** @class Backbone model for List of Pairs Dataset Collection within a History. */
+var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend({
 
     defaults : _.extend( _.clone( ListPairedDC.prototype.defaults ), {
         history_content_type: 'dataset_collection',
@@ -104,9 +102,35 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).ex
 
 
 //==============================================================================
+/** @class Backbone model for List of Lists Dataset Collection within a History. */
+var HistoryListOfListsDatasetCollection = ListOfListsDC.extend( hcontentMixin ).extend({
+
+    defaults : _.extend( _.clone( ListOfListsDC.prototype.defaults ), {
+        history_content_type: 'dataset_collection',
+        collection_type     : 'list:list',
+        model_class         : 'HistoryDatasetCollectionAssociation'
+    }),
+
+    initialize : function( model, options ){
+        ListOfListsDC.prototype.initialize.call( this, model, options );
+        hcontentMixin.initialize.call( this, model, options );
+    },
+
+    /** Override to post to contents route w/o id. */
+    save : buildHDCASave( ListOfListsDC.prototype.save ),
+
+    /** String representation. */
+    toString : function(){
+         return ([ 'HistoryListOfListsDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
     return {
         HistoryListDatasetCollection        : HistoryListDatasetCollection,
         HistoryPairDatasetCollection        : HistoryPairDatasetCollection,
-        HistoryListPairedDatasetCollection  : HistoryListPairedDatasetCollection
+        HistoryListPairedDatasetCollection  : HistoryListPairedDatasetCollection,
+        HistoryListOfListsDatasetCollection : HistoryListOfListsDatasetCollection
     };
 });

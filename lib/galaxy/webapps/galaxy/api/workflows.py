@@ -88,7 +88,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def run( self, trans, workflow_id, payload, **kwd ):
         """
-        POST /api/workflows/{encoded_workflow_id}/run
+        POST /api_internal/workflows/{encoded_workflow_id}/run
 
         Run a workflow with a dictionary of prefixed_name/value pairs e.g.
             payload = { inputs: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }

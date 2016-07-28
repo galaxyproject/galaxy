@@ -1,9 +1,9 @@
 from os import listdir
-from os.path import join, islink, realpath, basename, exists
+from os.path import join, isdir, islink, realpath, basename, exists
 
 from ..resolvers import (
     DependencyResolver,
-    INDETERMINATE_DEPENDENCY,
+    NullDependency,
     Dependency,
     ListableDependencyResolver,
 )
@@ -39,7 +39,7 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         base_path = self.base_path
         path = join( base_path, name, version )
-        return self._galaxy_package_dep(path, version, True)
+        return self._galaxy_package_dep(path, version, name, True)
 
     def _find_dep_default( self, name, type='package', exact=True, **kwds ):
         base_path = self.base_path
@@ -47,17 +47,17 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         if islink( path ):
             real_path = realpath( path )
             real_version = basename( real_path )
-            return self._galaxy_package_dep(real_path, real_version, exact)
+            return self._galaxy_package_dep(real_path, real_version, name, exact)
         else:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=None, name=name)
 
-    def _galaxy_package_dep( self, path, version, exact ):
+    def _galaxy_package_dep( self, path, version, name, exact ):
         script = join( path, 'env.sh' )
         if exists( script ):
             return GalaxyPackageDependency(script, path, version, exact)
         elif exists( join( path, 'bin' ) ):
             return GalaxyPackageDependency(None, path, version, exact)
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
 
 class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver):
@@ -67,13 +67,14 @@ class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Lista
         base_path = self.base_path
         for package_name in listdir(base_path):
             package_dir = join(base_path, package_name)
-            for version in listdir(package_dir):
-                version_dir = join(package_dir, version)
-                if version == "default":
-                    version = None
-                valid_dependency = _is_dependency_directory(version_dir)
-                if valid_dependency:
-                    yield self._to_requirement(package_name, version)
+            if isdir(package_dir):
+                for version in listdir(package_dir):
+                    version_dir = join(package_dir, version)
+                    if version == "default":
+                        version = None
+                    valid_dependency = _is_dependency_directory(version_dir)
+                    if valid_dependency:
+                        yield self._to_requirement(package_name, version)
 
 
 def _is_dependency_directory(directory):

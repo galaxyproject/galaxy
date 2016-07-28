@@ -737,7 +737,7 @@ class ModelDeserializer( HasAModelManager ):
     """
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__( self, app, **kwargs ):
+    def __init__( self, app, validator=None, **kwargs ):
         """
         Set up deserializers and validator.
         """
@@ -748,7 +748,7 @@ class ModelDeserializer( HasAModelManager ):
         self.deserializable_keyset = set([])
         self.add_deserializers()
         # a sub object that can validate incoming values
-        self.validate = ModelValidator( self.app )
+        self.validate = validator or ModelValidator( self.app )
 
     def add_deserializers( self ):
         """
