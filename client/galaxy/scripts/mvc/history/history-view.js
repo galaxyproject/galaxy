@@ -241,7 +241,7 @@ var HistoryView = _super.extend(
 
     /** override to render pagination also */
     renderItems: function( $whereTo ){
-        console.log( this + '.renderItems-----------------', new Date() );
+        // console.log( this + '.renderItems-----------------', new Date() );
         $whereTo = $whereTo || this.$el;
         var self = this;
         var $list = self.$list( $whereTo );
@@ -391,7 +391,7 @@ var HistoryView = _super.extend(
         contents.setIncludeDeleted( show, options );
         self.trigger( 'show-deleted', show );
 
-        contents.fetchCurrentPage();
+        contents.fetchCurrentPage({ renderAll: true });
         return show;
     },
 
@@ -399,13 +399,14 @@ var HistoryView = _super.extend(
      * @returns {Boolean} new setting
      */
     toggleShowHidden : function( show, store, options ){
+        // console.log( 'toggleShowHidden', show, store );
         show = ( show !== undefined )?( show ):( !this.model.contents.includeHidden );
         var self = this;
         var contents = self.model.contents;
         contents.setIncludeHidden( show, options );
         self.trigger( 'show-hidden', show );
 
-        contents.fetchCurrentPage();
+        contents.fetchCurrentPage({ renderAll: true });
         return show;
     },
 
@@ -596,7 +597,7 @@ HistoryView.prototype.templates = (function(){
     var paginationTemplate = BASE_MVC.wrapTemplate([
         '<button class="prev" <%- pages.current === 1 ? "disabled" : "" %>>previous</button>',
         '<select class="pages form-control" ',
-                'title="', _l( 'Click to open and select a page. Begin typing a page number to jump to it' ), '">',
+                'title="', _l( 'Click to open and select a page. Begin typing a page number to select it' ), '">',
             '<% _.range( 1, pages.last + 1 ).forEach( function( i ){ %>',
                 '<option value="<%- i - 1 %>" <%- i === pages.current ? "selected" : "" %>>',
                     '<%- view.ordinalIndicator( i ) %> of <%- pages.last %> pages',

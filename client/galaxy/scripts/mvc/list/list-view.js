@@ -153,16 +153,18 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(/** @lends
                 this.trigger( 'error', model, xhr, options, msg, details );
             },
             update  : function( collection, options ){
-                this.info( 'update:', collection, options, '\n', options.changes );
                 var changes = options.changes;
+                // console.info( collection + ', update:', changes, '\noptions:', options );
+                // more than one: render everything
+                if( options.renderAll || ( changes.added.length + changes.removed.length > 1 ) ){
+                    return this.renderItems();
+                }
+                // otherwise, let the single add/remove handlers do it
                 if( changes.added.length === 1 ){
                     return this.addItemView( _.first( changes.added ), collection, options );
                 }
                 if( changes.removed.length === 1 ){
                     return this.removeItemView( _.first( changes.removed ), collection, options );
-                }
-                if( changes.added.length + changes.removed.length > 1 ){
-                    return this.renderItems();
                 }
             }
         });

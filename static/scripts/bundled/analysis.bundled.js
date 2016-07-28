@@ -18281,7 +18281,7 @@ webpackJsonp([0,1],[
 	
 	    /** override to render pagination also */
 	    renderItems: function( $whereTo ){
-	        console.log( this + '.renderItems-----------------', new Date() );
+	        // console.log( this + '.renderItems-----------------', new Date() );
 	        $whereTo = $whereTo || this.$el;
 	        var self = this;
 	        var $list = self.$list( $whereTo );
@@ -18431,7 +18431,7 @@ webpackJsonp([0,1],[
 	        contents.setIncludeDeleted( show, options );
 	        self.trigger( 'show-deleted', show );
 	
-	        contents.fetchCurrentPage();
+	        contents.fetchCurrentPage({ renderAll: true });
 	        return show;
 	    },
 	
@@ -18439,13 +18439,14 @@ webpackJsonp([0,1],[
 	     * @returns {Boolean} new setting
 	     */
 	    toggleShowHidden : function( show, store, options ){
+	        // console.log( 'toggleShowHidden', show, store );
 	        show = ( show !== undefined )?( show ):( !this.model.contents.includeHidden );
 	        var self = this;
 	        var contents = self.model.contents;
 	        contents.setIncludeHidden( show, options );
 	        self.trigger( 'show-hidden', show );
 	
-	        contents.fetchCurrentPage();
+	        contents.fetchCurrentPage({ renderAll: true });
 	        return show;
 	    },
 	
@@ -18636,7 +18637,7 @@ webpackJsonp([0,1],[
 	    var paginationTemplate = BASE_MVC.wrapTemplate([
 	        '<button class="prev" <%- pages.current === 1 ? "disabled" : "" %>>previous</button>',
 	        '<select class="pages form-control" ',
-	                'title="', _l( 'Click to open and select a page. Begin typing a page number to jump to it' ), '">',
+	                'title="', _l( 'Click to open and select a page. Begin typing a page number to select it' ), '">',
 	            '<% _.range( 1, pages.last + 1 ).forEach( function( i ){ %>',
 	                '<option value="<%- i - 1 %>" <%- i === pages.current ? "selected" : "" %>>',
 	                    '<%- view.ordinalIndicator( i ) %> of <%- pages.last %> pages',
@@ -18824,16 +18825,18 @@ webpackJsonp([0,1],[
 	                this.trigger( 'error', model, xhr, options, msg, details );
 	            },
 	            update  : function( collection, options ){
-	                this.info( 'update:', collection, options, '\n', options.changes );
 	                var changes = options.changes;
+	                // console.info( collection + ', update:', changes, '\noptions:', options );
+	                // more than one: render everything
+	                if( options.renderAll || ( changes.added.length + changes.removed.length > 1 ) ){
+	                    return this.renderItems();
+	                }
+	                // otherwise, let the single add/remove handlers do it
 	                if( changes.added.length === 1 ){
 	                    return this.addItemView( _.first( changes.added ), collection, options );
 	                }
 	                if( changes.removed.length === 1 ){
 	                    return this.removeItemView( _.first( changes.removed ), collection, options );
-	                }
-	                if( changes.added.length + changes.removed.length > 1 ){
-	                    return this.renderItems();
 	                }
 	            }
 	        });
