@@ -114,16 +114,6 @@ class ToolParameter( object, Dictifiable ):
         """
         return None
 
-    def get_initial_value_from_history_prevent_repeats( self, trans, other_values, already_used ):
-        """
-        Get the starting value for the parameter, but if fetching from the history, try
-        to find a value that has not yet been used. already_used is a list of objects that
-        tools must manipulate (by adding to it) to store a memento that they can use to detect
-        if a value has already been chosen from the history. This is to support the capability to
-        choose each dataset once
-        """
-        return self.get_initial_value( trans, other_values )
-
     def get_required_enctype( self ):
         """
         If this parameter needs the form to have a specific encoding
@@ -1668,6 +1658,19 @@ class BaseDataToolParameter( ToolParameter ):
             self.options_filter_attribute = options_elem.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
 
+    def get_initial_value( self, trans, other_values ):
+        """
+        NOTE: This is wasteful since to_dict is called twice when populating the tool model.
+        """
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
+            return RuntimeValue()
+        if self.optional:
+            return None
+        d = self.to_dict( trans, other_values=other_values )
+        src = 'hda' if isinstance( self, DataToolParameter ) else 'hdca'
+        if 'options' in d and src in d[ 'options'] and len( d[ 'options' ][ src ] ) > 0:
+            return d[ 'options' ][ src ][ 0 ]
+
     def to_json( self, value, app ):
         def single_to_json( value ):
             src = None
@@ -1829,44 +1832,6 @@ class DataToolParameter( BaseDataToolParameter ):
 
         for item in dataset_collector( history.active_datasets_children_and_roles, None ):
             yield item
-
-    def get_initial_value( self, trans, other_values ):
-        return self.get_initial_value_from_history_prevent_repeats(trans, other_values, None )
-
-    def get_initial_value_from_history_prevent_repeats( self, trans, other_values, already_used ):
-        """
-        NOTE: This is wasteful since dynamic options and dataset collection
-              happens twice (here and when generating HTML).
-        """
-        # Can't look at history in workflow mode. Tool shed has no histories.
-        if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
-            return RuntimeValue()
-        history = self._get_history( trans )
-        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        if self.optional:
-            return None
-        most_recent_dataset = []
-
-        def dataset_collector( datasets ):
-            for data in datasets:
-                if data.visible and dataset_matcher.hda_accessible( data, check_security=False ):
-                    match = dataset_matcher.valid_hda_match( data, check_security=False )
-                    if not match or dataset_matcher.filter( match.hda ):
-                        continue
-                    data = match.hda
-                    most_recent_dataset.append(data)
-                # Also collect children via association object
-                dataset_collector( data.children )
-        dataset_collector( history.active_datasets_children_and_roles )
-        most_recent_dataset.reverse()
-        if already_used is not None:
-            for val in most_recent_dataset:
-                if val is not None and val not in already_used:
-                    already_used.append(val)
-                    return val
-        if len(most_recent_dataset) > 0:
-            return most_recent_dataset[0]
-        return ''
 
     def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
