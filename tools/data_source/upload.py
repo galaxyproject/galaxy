@@ -135,6 +135,11 @@ def add_file( dataset, registry, json_file, output_path ):
         if type_info:
             data_type = type_info[0]
             ext = type_info[1]
+    is_gzipped, is_valid = check_gzip(dataset.path)
+    if is_gzipped and is_valid:
+        ext = sniff.guess_ext(dataset.path,registry.sniff_order)
+        if ext:
+            data_type = ext
     if not data_type:
         root_datatype = registry.get_datatype_by_extension( dataset.file_type )
         if getattr( root_datatype, 'compressed', False ):

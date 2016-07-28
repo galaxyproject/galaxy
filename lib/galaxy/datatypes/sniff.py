@@ -198,7 +198,12 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
     """
     headers = []
-    for idx, line in enumerate(open(fname)):
+    compress = is_gzip(fname)
+    if compress:
+        in_file = gzip.GzipFile(fname,'r')
+    else:
+        in_file = open(fname)
+    for idx, line in enumerate(in_file):
         line = line.rstrip('\n\r')
         if is_multi_byte:
             # TODO: fix this - sep is never found in line
@@ -470,7 +475,7 @@ DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
 COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
 COMPRESSION_DATATYPES = dict( gzip=[ 'bam' ] )
 COMPRESSED_EXTENSIONS = []
-for exts in COMPRESSION_DATATYPES.values():
+for exts in COMPRESSION_DATATYPES.itervalues():
     COMPRESSED_EXTENSIONS.extend( exts )
 
 

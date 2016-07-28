@@ -143,6 +143,12 @@ def add_file( dataset, registry, json_file, output_path ):
             data_type = type_info[0]
             ext = type_info[1]
 
+    is_gzipped, is_valid = check_gzip(dataset.path)
+    if is_gzipped and is_valid:
+        ext = sniff.guess_ext(dataset.path,registry.sniff_order)
+        if ext:
+            data_type = ext
+
     #------------------ The following attempts to set the dataset ext and datatype, if the above failed -----#
     if not data_type:
         root_datatype = registry.get_datatype_by_extension( dataset.file_type )
@@ -150,7 +156,6 @@ def add_file( dataset, registry, json_file, output_path ):
             data_type = 'compressed archive'
             ext = dataset.file_type
         else:
-            ##### ----------- GZIP --------------#####
             # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
             is_gzipped, is_valid = check_gzip( dataset.path )
             if is_gzipped and not is_valid:
@@ -184,7 +189,6 @@ def add_file( dataset, registry, json_file, output_path ):
                 dataset.name = dataset.name.rstrip( '.gz' )
                 data_type = 'gzip'
 
-            ##### ----------- BZ2 --------------#####
             if not data_type and bz2 is not None:
                 # See if we have a bz2 file, much like gzip
                 is_bzipped, is_valid = check_bz2( dataset.path )
@@ -218,7 +222,6 @@ def add_file( dataset, registry, json_file, output_path ):
                         os.chmod(dataset.path, 0o644)
                     dataset.name = dataset.name.rstrip( '.bz2' )
                     data_type = 'bz2'
-            ##### ----------- ZIP --------------#####
             if not data_type:
                 # See if we have a zip archive
                 is_zipped = check_zip( dataset.path )
@@ -277,7 +280,6 @@ def add_file( dataset, registry, json_file, output_path ):
                             dataset.name = uncompressed_name
                     data_type = 'zip'
 
-            ##### ----------- BINARY --------------#####
             if not data_type:
                 # TODO refactor this logic.  check_binary isn't guaranteed to be
                 # correct since it only looks at whether the first 100 chars are
@@ -297,14 +299,13 @@ def add_file( dataset, registry, json_file, output_path ):
                             err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
                             file_err( err_msg, dataset, json_file )
                             return
-            ##### ----------- HTML --------------#####
+
             if not data_type:
                 # We must have a text file
                 if check_html( dataset.path ):
                     file_err( 'The uploaded file contains inappropriate HTML content', dataset, json_file )
                     return
 
-            #-------- This is when datatype is known -----------------------------------------------------------------#
             if data_type != 'binary':
                 if dataset.file_type == 'auto':
                     ext = sniff.guess_ext( dataset.path, registry.sniff_order )
@@ -312,7 +313,6 @@ def add_file( dataset, registry, json_file, output_path ):
                     ext = dataset.file_type
                 data_type = ext
 
-    #####-------------------- JOB PART ---------------------------#####
     # Save job info for the framework
     if ext == 'auto' and dataset.ext:
         ext = dataset.ext

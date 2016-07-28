@@ -10,8 +10,6 @@ import re
 import string
 from cgi import escape
 
-from six import PY3
-
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.util.checkers import is_gzip
@@ -23,8 +21,6 @@ from . import data
 
 import bx.align.maf
 
-if PY3:
-    long = int
 
 log = logging.getLogger(__name__)
 
@@ -557,6 +553,7 @@ class Fastq ( Sequence ):
     """Class representing a generic FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq"
+    MetadataElement( name="is_gzipped", desc="Indicates whether fastq is gzip compressed", readonly=True, defaule= False, optional=True, visible=True, no_value=False )
 
     def set_meta( self, dataset, **kwd ):
         """
@@ -567,11 +564,19 @@ class Fastq ( Sequence ):
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
+            dataset.metadata.is_gzipped = False
             return
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        for line in open( dataset.file_name ):
+        is_gzipped = False
+        #fetch the file handler based on compressed or uncompressed data
+        is_gzipped = is_gzip(dataset.file_name)
+        if is_gzipped:
+            in_file = gzip.GzipFile(dataset.file_name, 'r')
+        else:
+            in_file = open(dataset.file_name)
+        for line in in_file :
             line = line.strip()
             if line and line.startswith( '#' ) and not data_lines:
                 # We don't count comment lines for sequence data types
