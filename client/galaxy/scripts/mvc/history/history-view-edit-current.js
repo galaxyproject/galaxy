@@ -420,7 +420,12 @@ var CurrentHistoryView = _super.extend(/** @lends CurrentHistoryView.prototype *
             return self.model.contents._filterAndUpdate(
                 { visible: false, deleted: '', purged: '' },
                 { visible : true }
-            );
+            ).done( function(){
+                // TODO: would be better to render these as they're unhidden instead of all at once
+                if( !self.model.contents.includeHidden ){
+                    self.renderItems();
+                }
+            });
         }
         return jQuery.when();
     },

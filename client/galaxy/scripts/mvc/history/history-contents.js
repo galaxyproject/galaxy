@@ -326,7 +326,7 @@ var HistoryContents = _super.extend( BASE_MVC.LoggableMixin ).extend({
         return new AJAX_QUEUE.AjaxQueue( collection.slice().reverse().map( function( content, i ){
             var fn = _.isString( ajaxFn )? content[ ajaxFn ] : ajaxFn;
             return function(){ return fn.apply( content, args ); };
-        })).start();
+        })).deferred;
     },
 
     /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
