@@ -436,10 +436,11 @@
     <datatype extension="oxliss" type="galaxy.datatypes.binary:OxliSubset" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxligl" type="galaxy.datatypes.binary:OxliGraphLabels" mimetype="application/octet-stream" display_in_upload="true"/>
     <!-- Constructive solid geometry datatypes -->
-    <datatype extension="plyascii" type="galaxy.datatypes.constructive_solid_geometry:PlyAscii" display_in_upload="true" />
-    <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
-    <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
-    <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
+    <datatype extension="stl" type="galaxy.datatypes.constructive_solid_geometry:STL" display_in_upload="True"/>
+    <datatype extension="ply" type="galaxy.datatypes.constructive_solid_geometry:PlyAscii" display_in_upload="true" />
+    <datatype extension="ply" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
+    <datatype extension="vtk" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
+    <datatype extension="vtk" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
     <!-- Metagenomic Datatype -->
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json">
         <display file="biom/biom_simple.xml" />
@@ -559,6 +560,7 @@
     <sniffer type="galaxy.datatypes.mothur:LaneMask"/>
     <sniffer type="galaxy.datatypes.mothur:RefTaxonomy"/>
     <sniffer type="galaxy.datatypes.mothur:Axes"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:STL"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>

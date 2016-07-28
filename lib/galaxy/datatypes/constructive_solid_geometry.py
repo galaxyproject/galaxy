@@ -7,11 +7,13 @@ from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy import util
+from . import data
+
+from stl import mesh
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
 COLOR_OPTS = ['COLOR_SCALARS', 'red', 'green', 'blue']
-
 
 class Ply(object):
     """
@@ -110,7 +112,7 @@ class Ply(object):
 
 class PlyAscii(Ply, data.Text):
 
-    file_ext = "plyascii"
+    file_ext = "ply"
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
@@ -121,7 +123,7 @@ class PlyAscii(Ply, data.Text):
 
 class PlyBinary(Ply, Binary):
 
-    file_ext = "plybinary"
+    file_ext = "ply"
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
@@ -437,7 +439,7 @@ class Vtk(object):
 
 class VtkAscii(Vtk, data.Text):
 
-    file_ext = "vtkascii"
+    file_ext = "vtk"
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
@@ -448,7 +450,7 @@ class VtkAscii(Vtk, data.Text):
 
 class VtkBinary(Vtk, Binary):
 
-    file_ext = "vtkbinary"
+    file_ext = "vtk"
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
@@ -463,3 +465,18 @@ Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
 def get_next_line(fh):
     line = fh.readline(MAX_LINE_LEN)
     return line.strip()
+
+
+class STL(data.Data):
+    file_ext = "stl"
+
+    def sniff(self, filename):
+        is_stl = False
+        try:
+        	mesh.Mesh.from_file(filename)
+        	is_stl = True
+        except Exception:
+        	pass
+        return is_stl
+
+Binary.register_sniffable_binary_format("stl", "stl", STL)
