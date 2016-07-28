@@ -7,7 +7,6 @@ from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy import util
-from . import data
 
 from stl import mesh
 
@@ -468,15 +467,16 @@ def get_next_line(fh):
 
 
 class STL(data.Data):
+
     file_ext = "stl"
 
     def sniff(self, filename):
         is_stl = False
         try:
-        	mesh.Mesh.from_file(filename)
-        	is_stl = True
+            mesh.Mesh.from_file(filename)
+            is_stl = True
         except Exception:
-        	pass
+            pass
         return is_stl
 
 Binary.register_sniffable_binary_format("stl", "stl", STL)
