@@ -112,7 +112,7 @@ class Ply(object):
 
 class PlyAscii(Ply, data.Text):
 
-    file_ext = "ply"
+    file_ext = "plyascii"
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
@@ -123,7 +123,7 @@ class PlyAscii(Ply, data.Text):
 
 class PlyBinary(Ply, Binary):
 
-    file_ext = "ply"
+    file_ext = "plybinary"
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
@@ -439,7 +439,7 @@ class Vtk(object):
 
 class VtkAscii(Vtk, data.Text):
 
-    file_ext = "vtk"
+    file_ext = "vtkascii"
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
@@ -450,7 +450,7 @@ class VtkAscii(Vtk, data.Text):
 
 class VtkBinary(Vtk, Binary):
 
-    file_ext = "vtk"
+    file_ext = "vtkbinary"
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
