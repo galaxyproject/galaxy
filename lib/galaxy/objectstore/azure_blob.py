@@ -19,6 +19,7 @@ from ..objectstore import ObjectStore, convert_bytes
 try:
     from azure.storage import CloudStorageAccount
     from azure.storage.blob import BlockBlobService
+    from azure.storage.blob.models import Blob
     from azure.common import AzureHttpError
 except ImportError:
     BlockBlobService = None
@@ -170,6 +171,11 @@ class AzureBlobObjectStore(ObjectStore):
     def _get_size_in_azure(self, rel_path):
         try:
             properties = self.service.get_blob_properties(self.container_name, rel_path)
+            # Currently this returns a blob and not a BlobProperties object
+            # Similar issue for the ruby https://github.com/Azure/azure-storage-ruby/issues/13
+            # The typecheck is an attempt at future-proofing this when/if the bug is fixed.
+            if type(properties) is Blob:
+                properties = properties.properties
             if properties:
                 size_in_bytes = properties.content_length
                 return size_in_bytes
