@@ -1187,11 +1187,17 @@ class ColumnListParameter( SelectToolParameter ):
         """
         # Get the value of the associated data reference (a dataset)
         dataset = other_values.get( self.data_ref, None )
+
         # Check if a dataset is selected
         if not dataset:
             return []
+
         column_list = None
         for dataset in util.listify( dataset ):
+            # Use representative dataset if a dataset collection is parsed
+            if isinstance( dataset, trans.app.model.HistoryDatasetCollectionAssociation ):
+                dataset = dataset.to_hda_agent()
+
             # Columns can only be identified if metadata is available
             if not hasattr( dataset, 'metadata' ) or not hasattr( dataset.metadata, 'columns' ) or not dataset.metadata.columns:
                 return []
@@ -1659,17 +1665,23 @@ class BaseDataToolParameter( ToolParameter ):
         self.is_dynamic = self.options is not None
 
     def get_initial_value( self, trans, other_values ):
-        """
-        NOTE: This is wasteful since to_dict is called twice when populating the tool model.
-        """
         if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
             return RuntimeValue()
         if self.optional:
             return None
-        d = self.to_dict( trans, other_values=other_values )
-        src = 'hda' if isinstance( self, DataToolParameter ) else 'hdca'
-        if 'options' in d and src in d[ 'options'] and len( d[ 'options' ][ src ] ) > 0:
-            return d[ 'options' ][ src ][ 0 ]
+        history = trans.history
+        if history is not None:
+            dataset_matcher = DatasetMatcher( trans, self, None, other_values )
+            if isinstance( self, DataToolParameter ):
+                for hda in reversed( history.active_datasets_children_and_roles ):
+                    match = dataset_matcher.hda_match( hda )
+                    if match:
+                        return match.hda
+            else:
+                dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+                for hdca in reversed( history.active_dataset_collections ):
+                    if dataset_collection_matcher.hdca_match( hdca, reduction=self.multiple ):
+                        return hdca
 
     def to_json( self, value, app ):
         def single_to_json( value ):
@@ -1684,7 +1696,6 @@ class BaseDataToolParameter( ToolParameter ):
                 src = 'hda'
             if src is not None:
                 return { 'id' : app.security.encode_id( value.id ), 'src' : src }
-
         if value not in [ None, '', 'None' ]:
             if isinstance( value, list ) and len( value ) > 0:
                 values = [ single_to_json( v ) for v in value ]

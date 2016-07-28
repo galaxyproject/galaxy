@@ -3299,6 +3299,10 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
         return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
                   type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
+    def to_hda_agent( self ):
+        if len( self.collection.dataset_elements ) > 0:
+            return self.collection.dataset_elements[ 0 ].dataset_instance
+
     def to_dict( self, view='collection' ):
         dict_value = dict(
             hid=self.hid,

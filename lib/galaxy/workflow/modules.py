@@ -1157,7 +1157,10 @@ class ToolModule( WorkflowModule ):
                             output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
                             if output_step.type.startswith( 'data' ):
                                 output_inputs = output_step.module.get_runtime_inputs()
-                                return output_inputs[ 'input' ].get_initial_value( self.trans, context )
+                                output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
+                                if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
+                                    output_value = output_value.to_hda_agent()
+                                return output_value
                         return RuntimeValue()
                     else:
                         return input.get_initial_value( self.trans, context )
