@@ -13,6 +13,8 @@ import tempfile
 from cgi import escape
 from json import dumps
 
+from six import PY3
+
 from galaxy import util
 from galaxy.datatypes import data, metadata
 from galaxy.datatypes.metadata import MetadataElement
@@ -20,6 +22,9 @@ from galaxy.datatypes.sniff import get_headers
 from galaxy.util.checkers import is_gzip
 
 from . import dataproviders
+
+if PY3:
+    long = int
 
 log = logging.getLogger(__name__)
 
@@ -53,26 +58,23 @@ class TabularData( data.Text ):
         except:
             return False
 
-    def get_chunk(self, trans, dataset, chunk):
-        ck_index = int(chunk)
-        f = open(dataset.file_name)
-        f.seek(ck_index * trans.app.config.display_chunk_size)
-        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
-        if f.tell() != 0:
-            cursor = f.read(1)
-            while cursor and cursor != '\n':
+    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+        with open(dataset.file_name) as f:
+            f.seek(offset)
+            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+            if ck_data and ck_data[-1] != '\n':
                 cursor = f.read(1)
-        ck_data = f.read(trans.app.config.display_chunk_size)
-        cursor = f.read(1)
-        while cursor and ck_data[-1] != '\n':
-            ck_data += cursor
-            cursor = f.read(1)
-        return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
+                while cursor and cursor != '\n':
+                    ck_data += cursor
+                    cursor = f.read(1)
+            last_read = f.tell()
+        return dumps( { 'ck_data': util.unicodify( ck_data ),
+                        'offset': last_read } )
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         preview = util.string_as_bool( preview )
-        if chunk:
-            return self.get_chunk(trans, dataset, chunk)
+        if offset is not None:
+            return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
@@ -853,10 +855,10 @@ class Eland( Tabular ):
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21
             dataset.metadata.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'str', 'int', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str']
-            dataset.metadata.lanes = lanes.keys()
+            dataset.metadata.lanes = list(lanes.keys())
             dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
-            dataset.metadata.barcodes = filter(lambda x: x != '0', barcodes.keys()) + ['NoIndex' for x in barcodes.keys() if x == '0']
-            dataset.metadata.reads = reads.keys()
+            dataset.metadata.barcodes = [_ for _ in barcodes.keys() if _ != '0'] + ['NoIndex' for _ in barcodes.keys() if _ == '0']
+            dataset.metadata.reads = list(reads.keys())
 
 
 class ElandMulti( Tabular ):
@@ -919,7 +921,7 @@ class BaseCSV( TabularData ):
             # check the dialect works
             reader = csv.reader(open(filename, 'r'), self.dialect)
             # Check we can read header and get columns
-            header_row = reader.next()
+            header_row = next(reader)
             if len(header_row) < 2:
                 # No columns so not separated by this dialect.
                 return False
@@ -937,7 +939,7 @@ class BaseCSV( TabularData ):
                 if not found_second_line:
                     return False
             else:
-                data_row = reader.next()
+                data_row = next(reader)
                 if len(data_row) < 2:
                     # No columns so not separated by this dialect.
                     return False
@@ -975,8 +977,8 @@ class BaseCSV( TabularData ):
             data_row = None
             header_row = None
             try:
-                header_row = reader.next()
-                data_row = reader.next()
+                header_row = next(reader)
+                data_row = next(reader)
                 for row in reader:
                     pass
             except csv.Error as e:

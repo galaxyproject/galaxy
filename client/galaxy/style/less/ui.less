@@ -31,6 +31,8 @@
 @ui-margin-vertical: 5px;
 @ui-margin-vertical-large: 10px;
 @ui-margin-horizontal: 5px;
+@ui-margin-horizontal-small: 4px;
+@ui-margin-horizontal-large: 10px;
 
 // margins
 .ui-margin-top {
@@ -43,6 +45,10 @@
 
 .ui-margin-bottom {
     margin-bottom: @ui-margin-vertical !important;
+}
+
+.ui-margin-right {
+    margin-right: @ui-margin-horizontal-small !important;
 }
 
 .ui-margin-both {
@@ -109,15 +115,26 @@
 }
 
 // buttons
-.ui-button {
-    i {
+.ui-button-default {
+    .icon {
         font-size: 1.1em;
     }
+    .progress {
+        height: 4px;
+        margin: 0px;
+        margin-top: 2px;
+        .progress-bar {
+            &:extend(.no-transition);
+            background: darken(@state-success-bg, 30%);
+        }
+    }
 }
+
 .ui-button-icon {
     &:extend(.icon-btn);
     &:extend(.no-highlight);
     height: auto !important;
+    width: auto !important;
     ul {
         i {
             width: 1.2em;
@@ -130,13 +147,12 @@
     .button {
         margin-right: @ui-margin-horizontal;
         margin-left: @ui-margin-horizontal;
-    
         .title {
             position: relative;
             font-size: 0.8em;
             font-weight: normal;
             top: -1px;
-            word-break:break-word;
+            word-wrap:break-word;
         }
     }
     .button.disabled {
@@ -164,15 +180,24 @@
 
 // tabs
 .ui-tabs {
-    .ui-tabs-add {
-        font-size       : 0.8em;
-        margin-right    : @ui-margin-horizontal;
+    .tab-operations {
+        float: right;
+        margin-bottom: 4px;
+        .ui-button-icon {
+            margin-left: 4px;
+        }
     }
-    
-    .ui-tabs-delete {
-        font-size       : 0.8em;
-        margin-left     : @ui-margin-horizontal;
-        cursor          : pointer;
+    .tab-element {
+        cursor: pointer;
+    }
+    .tab-icon {
+        font-size: 1.1em;
+        margin-right: @ui-margin-horizontal;
+    }
+    .tab-delete {
+        font-size: 0.8em;
+        margin-left: @ui-margin-horizontal;
+        cursor: pointer;
     }
 }
 
@@ -230,7 +255,7 @@
     margin-bottom: @ui-margin-vertical;
     overflow: visible;
     .ui-form-title {
-        word-break: break-word;
+        word-wrap: break-word;
         font-weight: bold;
         .ui-form-collapsible {
             cursor: pointer;
@@ -295,6 +320,7 @@
 .ui-form-info {
     &:extend(.toolParamHelp);
     clear: both !important;
+    word-wrap: break-word;
     i {
         font-size: 1.2em;
         padding: 2px 5px;
@@ -322,10 +348,24 @@
             width: ~'calc(100% - 200px)';
         }
     }
-    .ui-button {
-        &:extend(.btn all);
-        &:extend(.btn-default all);
-        margin-left: @ui-margin-horizontal;
+    .ui-steps {
+        overflow: scroll;
+        margin-top: 15px;
+        border: dashed 1px darken(@form-heading-bg, 30%);
+        border-radius: @border-radius-base;
+        padding: @ui-margin-horizontal;
+        .ui-portlet-narrow {
+            .portlet-header {
+                padding: 1px 5px 0px 8px;
+            }
+            padding: 0px @ui-margin-horizontal 0px @ui-margin-horizontal;
+            .portlet-content {
+                padding: 0px @ui-margin-horizontal 0px @ui-margin-horizontal;
+            }
+            .ui-table-section, .ui-portlet-repeat .portlet-content {
+                padding-left: @ui-margin-horizontal-large;
+            }
+        }
     }
     .ui-message {
         margin-top: 0px;
@@ -349,7 +389,7 @@
         float: right;
         width:100%;
         .portlet-title {
-            word-break: break-word;
+            word-wrap: break-word;
             display: inline;
             vertical-align: middle;
             .portlet-title-text {
@@ -433,7 +473,7 @@
     }
 }
 
-.ui-portlet-section {
+.ui-portlet-panel {
     &:extend(.ui-portlet-repeat all);
     margin-top: @ui-margin-vertical;
     border-left: solid 3px @side-panel-bg;
@@ -441,6 +481,10 @@
         background: @side-panel-bg;
         border-bottom: solid darken(@side-panel-bg, 10%) 1px;
     }
+}
+
+.ui-portlet-section {
+    &:extend(.ui-portlet-panel all);
     .portlet-highlight {
         text-decoration: underline;
     }
@@ -475,6 +519,14 @@
 .ui-portlet-limited {
     &:extend(.ui-portlet all);
     max-width: 900px;
+}
+
+.ui-portlet-plain {
+    &:extend(.ui-portlet all);
+    border: none;
+    .portlet-content {
+        padding: 0px;
+    }
 }
 
 // popovers

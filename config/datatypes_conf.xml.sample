@@ -31,10 +31,10 @@
       <converter file="bedgraph_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="igb/bedgraph.xml" />
     </datatype>
-    <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
-    <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6">
+    <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" display_in_upload="true"/>
+    <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6" display_in_upload="true">
     </datatype>
-    <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" />
+    <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" display_in_upload="true"/>
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
@@ -45,6 +45,7 @@
     <datatype extension="bigwig" type="galaxy.datatypes.binary:BigWig" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigwig.xml" />
       <display file="igb/bigwig.xml" />
+      <display file="igv/bigwig.xml" />
     </datatype>
     <datatype extension="cxb" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="true" description="Cuffquant output format" />
     <datatype extension="chrint" type="galaxy.datatypes.interval:ChromatinInteractions" display_in_upload="True">
@@ -146,6 +147,7 @@
     <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
     <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="True"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="True"/>
+    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="True" display_in_upload="True"/>
     <!-- Proteomics Datatypes -->
     <datatype extension="pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" display_in_upload="True"/>
     <datatype extension="raw_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="True"/>
@@ -531,6 +533,10 @@
     <datatype extension="mothur.axes" type="galaxy.datatypes.mothur:Axes" display_in_upload="true"/>
     <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
     <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
+    <datatype extension="neostore" type="galaxy.datatypes.neo4j:Neo4jDB" mimetype="text/html"  display_in_upload="false"/>
+    <datatype extension="trackhub" type="galaxy.datatypes.tracks:UCSCTrackHub" display_in_upload="true">
+        <display file="ucsc/trackhub.xml" />
+    </datatype>
   </registration>
   <sniffers>
     <!--

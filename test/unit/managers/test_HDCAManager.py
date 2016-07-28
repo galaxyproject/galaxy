@@ -6,8 +6,8 @@ import unittest
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
-from base import BaseTestCase
-from base import CreatesCollectionsMixin
+from .base import BaseTestCase
+from .base import CreatesCollectionsMixin
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.datasets import DatasetManager
@@ -72,7 +72,7 @@ class HDCASerializerTestCase( HDCATestCase ):
     def test_views( self ):
         serializer = self.hdca_serializer
         item = self._create_list_hdca([
-            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in xrange( 5 )
+            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in range( 5 )
         ])
 
         self.log( 'should have a summary view' )
@@ -99,7 +99,7 @@ class HDCASerializerTestCase( HDCATestCase ):
     def test_views_and_keys( self ):
         serializer = self.hdca_serializer
         item = self._create_list_hdca([
-            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in xrange( 5 )
+            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in range( 5 )
         ])
         summary_plus_key = [ 'elements' ]
         only_keys = [ 'id', 'populated_state_message' ]

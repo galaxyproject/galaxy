@@ -196,6 +196,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
+# Set to True to perform additional checking of installed conda environment
+#conda_verbose_install_check=False
 # Set to True to instruct Galaxy to install conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
 #conda_auto_init = False
@@ -409,16 +411,19 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Activation grace period (in hours).  Activation is not forced (login is not
 # disabled) until grace period has passed.  Users under grace period can't run
-# jobs (see inactivity_box_content).  Default is 3.  Enter 0 to disable grace
-# period.
+# jobs. Enter 0 to disable grace period.
 # Users with OpenID logins have grace period forever.
-#activation_grace_period = 0
+#activation_grace_period = 3
 
-# Used for warning box for inactive accounts (unable to run jobs).
+# Shown in warning box to users that were not activated yet.
 # In use only if activation_grace_period is set.
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
-
+# Password expiration period (in days). Users are required to change their
+# password every x days. Users will be redirected to the change password
+# screen when they log in after their password expires. Enter 0 to disable
+# password expiration.
+#password_expiration_period = 0
 
 # Galaxy Session Timeout
 # This provides a timeout (in minutes) after which a user will have to log back in.
@@ -922,7 +927,7 @@ use_interactive = True
 # Allow users to remove their datasets from disk immediately (otherwise,
 # datasets will be removed after a time period specified by an administrator in
 # the cleanup scripts run via cron)
-#allow_user_dataset_purge = False
+#allow_user_dataset_purge = True
 
 # By default, users' data will be public, but setting this to True will cause
 # it to be private.  Does not affect existing users and data, only ones created
@@ -1202,6 +1207,12 @@ use_interactive = True
 
 #amqp_internal_connection = sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
+# Galaxy real time communication server settings
+#enable_communication_server = False
+#communication_server_host = http://localhost
+#communication_server_port = 7070
+# persistent_communication_rooms is a comma-separated list of rooms that should be always available.
+#persistent_communication_rooms = 
 
 
 # ---- Galaxy External Message Queue -------------------------------------------------

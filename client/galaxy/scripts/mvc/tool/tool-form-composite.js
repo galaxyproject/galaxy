@@ -1,20 +1,30 @@
 /** This is the run workflow tool form view. */
-define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base' ],
-    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase ) {
+define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal' ],
+    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
+            var self = this;
+            this.modal = parent.Galaxy.modal || new Modal.View();
             this.model = options && options.model || new Backbone.Model( options );
             this.deferred = new Deferred();
             this.setElement( $( '<div/>' ).addClass( 'ui-form-composite' )
                                           .append( this.$message      = $( '<div/>' ) )
                                           .append( this.$header       = $( '<div/>' ) )
-                                          .append( this.$parameters   = $( '<div/>' ) )
-                                          .append( this.$steps        = $( '<div/>' ) )
-                                          .append( this.$history      = $( '<div/>' ) )
-                                          .append( this.$execute      = $( '<div/>' ) ) );
+                                          .append( this.$steps        = $( '<div/>' ) ) );
             $( 'body' ).append( this.$el );
             this._configure();
             this.render();
+            this._refresh();
+            this.$el.on( 'click', function() { self._refresh() } );
+            $( window ).resize( function() { self._refresh() } );
+        },
+
+        /** Refresh height of scrollable div below header */
+        _refresh: function() {
+            var margin = _.reduce( this.$el.children(), function( memo, child ) {
+                return memo + $( child ).outerHeight();
+            }, 0 ) - this.$steps.height() + 30;
+            this.$steps.css( 'height', $( window ).height() - margin );
         },
 
         /** Configures form/step options for each workflow step */
@@ -44,7 +54,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     cls_enable              : 'fa fa-edit',
                     cls_disable             : 'fa fa-undo',
                     errors                  : step.messages,
-                    initial_errors          : true
+                    initial_errors          : true,
+                    cls                     : 'ui-portlet-narrow',
+                    hide_operations         : true
                 }, step );
                 self.steps[ i ] = step;
                 self.links[ i ] = [];
@@ -154,23 +166,24 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderParameters();
             this._renderHistory();
             _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
-            this.deferred.execute( function() { self._renderExecute() } );
+            this.deferred.execute( function() { self.execute_btn.unwait();
+                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } ) } );
         },
 
         /** Render header */
         _renderHeader: function() {
             var self = this;
+            this.execute_btn = new Ui.Button({
+                icon        : 'fa-check',
+                title       : 'Run workflow',
+                cls         : 'btn btn-primary',
+                wait        : true,
+                wait_text   : 'Preparing...',
+                onclick     : function() { self._execute() }
+            });
             this.$header.addClass( 'ui-form-header' ).empty()
-                        .append( new Ui.Label({
-                            title    : 'Workflow: ' + this.model.get( 'name' ) }).$el )
-                        .append( new Ui.Button({
-                            title    : 'Collapse',
-                            icon     : 'fa-angle-double-up',
-                            onclick  : function() { _.each( self.forms, function( form ) { form.portlet.collapse() }) } }).$el )
-                        .append( new Ui.Button({
-                            title    : 'Expand all',
-                            icon     : 'fa-angle-double-down',
-                            onclick  : function() { _.each( self.forms, function( form ) { form.portlet.expand() }) } }).$el );
+                        .append( new Ui.Label( { title: 'Workflow: ' + this.model.get( 'name' ) } ).$el )
+                        .append( this.execute_btn.$el );
         },
 
         /** Render message */
@@ -190,14 +203,47 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var self = this;
             this.wp_form = null;
             if ( !_.isEmpty( this.wp_inputs ) ) {
-                this.wp_form = new Form({ title: '<b>Workflow Parameters</b>', inputs: this.wp_inputs, onchange: function() {
-                    _.each( self.wp_form.input_list, function( input_def, i ) {
-                        _.each( input_def.links, function( step ) {
-                            self._refreshStep( step );
+                this.wp_form = new Form({ title: '<b>Workflow Parameters</b>', inputs: this.wp_inputs, cls: 'ui-portlet-narrow', onchange: function() {
+                        _.each( self.wp_form.input_list, function( input_def, i ) {
+                            _.each( input_def.links, function( step ) {
+                                self._refreshStep( step );
+                            });
                         });
-                    });
-                }});
-                this._append( this.$parameters.empty(), this.wp_form.$el );
+                    }
+                });
+                this._append( this.$steps.empty(), this.wp_form.$el );
+            }
+        },
+
+        /** Render workflow parameters */
+        _renderHistory: function() {
+            this.history_form = null;
+            if ( !this.model.get( 'history_id' ) ) {
+                this.history_form = new Form({
+                    cls    : 'ui-portlet-narrow',
+                    title  : '<b>History Options</b>',
+                    inputs : [{
+                        type        : 'conditional',
+                        name        : 'new_history',
+                        test_param  : {
+                            name        : 'check',
+                            label       : 'Send results to a new history',
+                            type        : 'boolean',
+                            value       : 'false',
+                            help        : ''
+                        },
+                        cases       : [{
+                            value   : 'true',
+                            inputs  : [{
+                                name    : 'name',
+                                label   : 'History name',
+                                type    : 'text',
+                                value   : this.model.get( 'name' )
+                            }]
+                        }]
+                    }]
+                });
+                this._append( this.$steps, this.history_form.$el );
             }
         },
 
@@ -206,6 +252,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var self = this;
             var form = null;
             var current = null;
+            self.$steps.addClass( 'ui-steps' );
             this.deferred.execute( function( promise ) {
                 current = promise;
                 if ( step.step_type == 'tool' ) {
@@ -230,8 +277,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 }
                 self.forms[ i ] = form;
                 self._refreshStep( step );
-                Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
                 self._resolve( form.deferred, promise );
+                self.execute_btn.model.set( 'percentage', ( i + 1 ) * 100.0 / self.steps.length );
+                Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
             } );
         },
 
@@ -282,55 +330,13 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             }
         },
 
-        /** Render history form */
-        _renderHistory: function() {
-            this.history_form = null;
-            if ( !this.model.get( 'history_id' ) ) {
-                this.history_form = new Form({
-                    inputs : [{
-                        type        : 'conditional',
-                        name        : 'new_history',
-                        test_param  : {
-                            name        : 'check',
-                            label       : 'Send results to a new history',
-                            type        : 'boolean',
-                            value       : 'false',
-                            help        : ''
-                        },
-                        cases       : [{
-                            value   : 'true',
-                            inputs  : [{
-                                name    : 'name',
-                                label   : 'History name',
-                                type    : 'text',
-                                value   : this.model.get( 'name' )
-                            }]
-                        }]
-                    }]
-                });
-                this._append( this.$history.empty(), this.history_form.$el );
-            }
-        },
-
-        /** Render execute button */
-        _renderExecute: function() {
-            var self = this;
-            this.execute_btn = new Ui.Button({
-                icon     : 'fa-check',
-                title    : 'Run workflow',
-                cls      : 'btn btn-primary',
-                floating : 'clear',
-                onclick  : function() { self._execute() }
-            });
-            this._append( this.$execute.empty(), this.execute_btn.$el );
-        },
-
         /** Execute workflow */
         _execute: function() {
             var self = this;
+            this._enabled( false );
             var job_def = {
                 new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
-                wf_parm             : this.wp_form ? this.wp_form.data.create() : {},
+                replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
                 inputs              : {}
             };
             var validated = true;
@@ -367,11 +373,10 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 self._enabled( true );
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation failed.', job_def );
             } else {
-                self._enabled( false );
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation complete.', job_def );
                 Utils.request({
                     type    : 'POST',
-                    url     : Galaxy.root + 'api/workflows/' + this.workflow_id + '/invocations',
+                    url     : Galaxy.root + 'api_internal/workflows/' + this.model.id + '/run',
                     data    : job_def,
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
@@ -393,13 +398,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 }
                             }
                         } else {
-                            var modal = parent.Galaxy.modal;
-                            modal && modal.show({
+                            self.modal.show({
                                 title   : 'Job submission failed',
                                 body    : self._templateError( response && response.err_msg || job_def ),
                                 buttons : {
                                     'Close' : function() {
-                                        modal.hide();
+                                        self.modal.hide();
                                     }
                                 }
                             });

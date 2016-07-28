@@ -14,7 +14,6 @@ import time
 import routes
 import webob
 
-from six import string_types
 from Cookie import SimpleCookie
 
 # We will use some very basic HTTP/wsgi utilities from the paste library
@@ -22,6 +21,7 @@ from paste.request import get_cookies
 from paste import httpexceptions
 from paste.response import HeaderDict
 
+from galaxy.util import smart_str
 
 log = logging.getLogger( __name__ )
 
@@ -223,15 +223,12 @@ class WebApplication( object ):
         if isinstance( body, ( types.GeneratorType, list, tuple ) ):
             # Recursively stream the iterable
             return flatten( body )
-        elif isinstance( body, string_types ):
-            # Wrap the string so it can be iterated
-            return [ body ]
         elif body is None:
             # Returns an empty body
             return []
         else:
             # Worst case scenario
-            return [ str( body ) ]
+            return [ smart_str( body ) ]
 
     def handle_controller_exception( self, e, trans, **kwargs ):
         """
@@ -472,6 +469,6 @@ def flatten( seq ):
     for x in seq:
         if isinstance( x, ( types.GeneratorType, list, tuple ) ):
             for y in flatten( x ):
-                yield y
+                yield smart_str( y )
         else:
-            yield x
+            yield smart_str( x )

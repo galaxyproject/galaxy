@@ -1026,40 +1026,52 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency_resolver( resolver_dependencies )">
+<%def name="render_tool_dependency_resolver( requirements_status )">
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
-               %if resolver_dependencies['model_class'] == 'NullDependency':
-                   <tr>
-                        <td><b> Dependency was not resolved by any resolver module.</b></td>
-                   </tr>
-               %else:
-                   <tr>
-                       <td><b>Dependency Resolver </b></td>
-                       <td> ${resolver_dependencies['model_class'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Exact </b></td>
-                       <td> ${resolver_dependencies['exact'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Dependency Type</b></td>
-                      <td> ${resolver_dependencies['dependency_type'] | h}</td>
-                   </tr>
-               %endif
+                <head>
+                    <tr>
+                        <th>Dependency</th>
+                        <th>Version</th>
+                        <th>Resolver</th>
+                        <th>Exact version</th>
+                        <th>Status<th>
+                    </tr>
+                </head>
+                <body>
+                    %for dependency in requirements_status:
+                        <tr>
+                            <td>${dependency['name'] | h}</td>
+                            <td>${dependency['version'] | h}</td>
+                            <td>${dependency['dependency_type'] | h}</td>
+                            <td>${dependency['exact'] | h}</td>
+                        %if dependency['dependency_type'] == None:
+                            <td>
+                               <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
+                            </td>
+                        %elif not dependency['exact']:
+                            <td>
+                                <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
+                            </td>
+                        %else:
+                            <td><img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/></td>
+                        %endif
+                        </tr>
+                    %endfor
+                </body>
             </table>
         </td>
     </tr>
 </%def>
 
-<%def name="render_resolver_dependency_items( resolver_dependencies )">
-    %if resolver_dependencies:
+<%def name="render_resolver_dependencies( requirements_status )">
+    %if requirements_status:
         <div class="toolForm">
             <div class="toolFormTitle">Dependency Resolver Details</div>
             <div class="toolFormBody">
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="module_resolvers">
-                    ${render_tool_dependency_resolver( resolver_dependencies)}
+                    ${render_tool_dependency_resolver( requirements_status )}
                 </table>
             </div>
         </div>

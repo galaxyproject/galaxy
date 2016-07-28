@@ -3,6 +3,7 @@
 check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
+from __future__ import print_function
 import filecmp
 import formatter
 import getopt
@@ -55,14 +56,14 @@ def usage():
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
 except getopt.GetoptError as e:
-    print str(e)
+    print(str(e))
     usage()
 if len( args ) < 1:
     usage()
 server = args[0]
 if server.endswith(".g2.bx.psu.edu"):
     if debug:
-        print "Checking a PSU Galaxy server, using maint file"
+        print("Checking a PSU Galaxy server, using maint file")
     maint = "/errordocument/502/%s/maint" % args[0].split('.', 1)[0]
 else:
     maint = None
@@ -70,7 +71,7 @@ new_history = False
 for o, a in opts:
     if o == "-n":
         if debug:
-            print "Specified -n, will create a new history"
+            print("Specified -n, will create a new history")
         new_history = True
     else:
         usage()
@@ -78,7 +79,7 @@ for o, a in opts:
 # state information
 var_dir = os.path.join( os.path.expanduser('~'), ".check_galaxy", server )
 if not os.access( var_dir, os.F_OK ):
-    os.makedirs( var_dir, 0700 )
+    os.makedirs( var_dir, 0o700 )
 
 # get user/pass
 login_file = os.path.join( var_dir, "login" )
@@ -137,7 +138,7 @@ class Browser:
         p = didParser()
         p.feed(tc.browser.get_html())
         if len(p.dids) > 0:
-            print "Remaining datasets ids:", " ".join( p.dids )
+            print("Remaining datasets ids:", " ".join( p.dids ))
             raise Exception("History still contains datasets after attempting to delete them")
         if new_history:
             self.get("/history/delete_current")
@@ -363,7 +364,7 @@ class loggedinParser(htmllib.HTMLParser):
 
 def dprint(str):
     if debug:
-        print str
+        print(str)
 
 # do stuff here
 if __name__ == "__main__":
@@ -379,7 +380,7 @@ if __name__ == "__main__":
         dprint("not logged in... logging in")
         b.login(username, password)
 
-    for tool, params in tools.iteritems():
+    for tool, params in tools.items():
 
         check_file = ""
 

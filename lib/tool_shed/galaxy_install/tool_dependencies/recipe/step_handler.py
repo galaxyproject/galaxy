@@ -650,7 +650,7 @@ class DownloadBinary( Download, RecipeStep ):
             url_template_elem = tool_dependency_util.get_download_url_for_platform( url_template_elems, platform_info_dict )
         else:
             url_template_elem = url_template_elems[ 0 ]
-        action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
+        action_dict[ 'url' ] = Template( url_template_elem.text.strip() ).safe_substitute( platform_info_dict )
         action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
         action_dict.update( self.get_elem_checksums( action_elem ) )
         return action_dict
@@ -1175,7 +1175,7 @@ class SetupPerlEnvironment( Download, RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
-        self.type = 'setup_purl_environment'
+        self.type = 'setup_perl_environment'
 
     def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, current_dir=None, initial_download=False ):

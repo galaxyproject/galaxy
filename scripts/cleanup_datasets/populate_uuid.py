@@ -6,7 +6,7 @@ Populates blank uuid fields in datasets with randomly generated values
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
 """
-
+from __future__ import print_function
 import sys
 import uuid
 
@@ -17,13 +17,13 @@ assert sys.version_info[:2] >= ( 2, 4 )
 
 
 def usage(prog):
-    print "usage: %s galaxy.ini" % prog
-    print """
+    print("usage: %s galaxy.ini" % prog)
+    print("""
 Populates blank uuid fields in datasets with randomly generated values.
 
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
-    """
+    """)
 
 
 def main():
@@ -38,13 +38,13 @@ def main():
     for row in model.context.query( model.Dataset ):
         if row.uuid is None:
             row.uuid = uuid.uuid4()
-            print "Setting dataset:", row.id, " UUID to ", row.uuid
+            print("Setting dataset:", row.id, " UUID to ", row.uuid)
     model.context.flush()
 
     for row in model.context.query( model.Workflow ):
         if row.uuid is None:
             row.uuid = uuid.uuid4()
-            print "Setting Workflow:", row.id, " UUID to ", row.uuid
+            print("Setting Workflow:", row.id, " UUID to ", row.uuid)
     model.context.flush()
 
 

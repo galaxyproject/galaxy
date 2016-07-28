@@ -7,6 +7,7 @@ import sys
 import logging
 import logging.config
 import ConfigParser
+from datetime import timedelta
 from galaxy.util import string_as_bool
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
@@ -80,9 +81,7 @@ class Configuration( object ):
         # Galaxy flavor Docker Image
         self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
-        self.user_activation_on = kwargs.get( 'user_activation_on', None )
-        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
-        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.user_activation_on = None
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
         self.terms_url = kwargs.get( 'terms_url', None )
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
@@ -148,6 +147,7 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
+        self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
     @property
     def shed_tool_data_path( self ):

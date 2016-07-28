@@ -33,6 +33,7 @@ model.User.table = Table(
     Column( "email", TrimmedString( 255 ), index=True, nullable=False ),
     Column( "username", TrimmedString( 255 ), index=True, unique=True ),
     Column( "password", TrimmedString( 255 ), nullable=False ),
+    Column( "last_password_change", DateTime, default=now ),
     Column( "external", Boolean, default=False ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
@@ -2545,7 +2546,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
 
     model_modules = [model]
     if map_install_models:
-        import galaxy.model.tool_shed_install.mapping  # noqa
+        import galaxy.model.tool_shed_install.mapping  # noqa: F401
         from galaxy.model import tool_shed_install
         model_modules.append(tool_shed_install)
 

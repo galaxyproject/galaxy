@@ -45,7 +45,29 @@ class DependencyResolversView(object):
     def resolver_dependency(self, index, **kwds):
         return self._dependency(**kwds)
 
-    def install_dependency(self, index, payload):
+    def install_dependency(self, index=None, **payload):
+        """
+        Installs dependency using highest priority resolver that supports dependency installation
+        (Currently only the conda resolver supports this). If index is given, attempt
+        installation directly using the corresponding resolver.
+        Returns True on success, False on failure.
+        payload is dictionary that must container name, version and type,
+        e.g. {'name': 'numpy', version='1.9.1', type='package'}
+        """
+        if index:
+            return self._install_dependency(index, **payload)
+        else:
+            for index in self.installable_resolvers:
+                success = self._install_dependency(index, **payload)
+                if success:
+                    return success
+            return False
+
+    def _install_dependency(self, index, **payload):
+        """
+        Resolver install dependency should return True when installation succeeds,
+        False if not successful
+        """
         resolver = self._dependency_resolver(index)
         if not hasattr(resolver, "install_dependency"):
             raise NotImplemented()
@@ -64,7 +86,7 @@ class DependencyResolversView(object):
 
         name, version, type, extra_kwds = self._parse_dependency_info(kwds)
         resolve_kwds = dict(
-            job_directory="/path/to/example/job_directory",
+            job_directory=None,
             index=index,
             **extra_kwds
         )
@@ -95,3 +117,13 @@ class DependencyResolversView(object):
         dependency_manager = self._dependency_manager
         dependency_resolvers = dependency_manager.dependency_resolvers
         return dependency_resolvers
+
+    @property
+    def installable_resolvers(self):
+        """
+        List index for all active resolvers that have the 'install_dependency' attribute
+        """
+        return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
+
+    def get_requirements_status(self, requested_requirements):
+        return [self.manager_dependency(**req) for req in requested_requirements]

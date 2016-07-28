@@ -10,6 +10,7 @@ from six import string_types
 from sqlalchemy import or_
 
 from galaxy import exceptions, util
+from galaxy.tools.deps import views
 from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.util import tool_util, xml_util
@@ -432,6 +433,7 @@ class InstallRepositoryManager( object ):
     def __init__( self, app, tpm=None ):
         self.app = app
         self.install_model = self.app.install_model
+        self._view = views.DependencyResolversView(app)
         if tpm is None:
             self.tpm = tool_panel_manager.ToolPanelManager( self.app )
         else:
@@ -642,6 +644,7 @@ class InstallRepositoryManager( object ):
         includes_tools = installation_dict[ 'includes_tools' ]
         includes_tools_for_display_in_tool_panel = installation_dict[ 'includes_tools_for_display_in_tool_panel' ]
         install_repository_dependencies = installation_dict[ 'install_repository_dependencies' ]
+        install_resolver_dependencies = installation_dict['install_resolver_dependencies']
         install_tool_dependencies = installation_dict[ 'install_tool_dependencies' ]
         message = installation_dict[ 'message' ]
         new_tool_panel_section_label = installation_dict[ 'new_tool_panel_section_label' ]
@@ -669,6 +672,7 @@ class InstallRepositoryManager( object ):
                         has_repository_dependencies=has_repository_dependencies,
                         install_repository_dependencies=install_repository_dependencies,
                         includes_tool_dependencies=includes_tool_dependencies,
+                        install_resolver_dependencies=install_resolver_dependencies,
                         install_tool_dependencies=install_tool_dependencies,
                         message=message,
                         repo_info_dicts=filtered_repo_info_dicts,
@@ -723,6 +727,7 @@ class InstallRepositoryManager( object ):
             raise exceptions.InternalServerError( "Tool shed response missing required parameter 'includes_tools_for_display_in_tool_panel'." )
         # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = install_options.get( 'install_repository_dependencies', False )
+        install_resolver_dependencies = install_options.get( 'install_resolver_dependencies', False)
         install_tool_dependencies = install_options.get( 'install_tool_dependencies', False )
         if install_tool_dependencies:
             self.__assert_can_install_dependencies()
@@ -764,6 +769,7 @@ class InstallRepositoryManager( object ):
                                       includes_tools=includes_tools,
                                       includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                       install_repository_dependencies=install_repository_dependencies,
+                                      install_resolver_dependencies=install_resolver_dependencies,
                                       install_tool_dependencies=install_tool_dependencies,
                                       message='',
                                       new_tool_panel_section_label=new_tool_panel_section_label,
@@ -793,6 +799,7 @@ class InstallRepositoryManager( object ):
                 tool_path=tool_path,
                 tool_panel_section_keys=tool_panel_section_keys,
                 repo_info_dicts=filtered_repo_info_dicts,
+                install_resolver_dependencies=install_resolver_dependencies,
                 install_tool_dependencies=install_tool_dependencies,
                 tool_panel_section_mapping=tool_panel_section_mapping,
             )
@@ -804,6 +811,7 @@ class InstallRepositoryManager( object ):
         tool_panel_section_keys = util.listify( decoded_kwd[ 'tool_panel_section_keys' ] )
         tool_panel_section_mapping = decoded_kwd.get( 'tool_panel_section_mapping', {} )
         repo_info_dicts = util.listify( decoded_kwd[ 'repo_info_dicts' ] )
+        install_resolver_dependencies = decoded_kwd['install_resolver_dependencies']
         install_tool_dependencies = decoded_kwd['install_tool_dependencies']
         filtered_repo_info_dicts = []
         filtered_tool_panel_section_keys = []
@@ -839,6 +847,7 @@ class InstallRepositoryManager( object ):
                                                    tool_panel_section_key=tool_panel_section_key,
                                                    shed_tool_conf=shed_tool_conf,
                                                    tool_path=tool_path,
+                                                   install_resolver_dependencies=install_resolver_dependencies,
                                                    install_tool_dependencies=install_tool_dependencies,
                                                    reinstalling=reinstalling,
                                                    tool_panel_section_mapping=tool_panel_section_mapping )
@@ -848,7 +857,7 @@ class InstallRepositoryManager( object ):
         return installed_tool_shed_repositories
 
     def install_tool_shed_repository( self, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path,
-                                      install_tool_dependencies, reinstalling=False, tool_panel_section_mapping={} ):
+                                      install_resolver_dependencies, install_tool_dependencies, reinstalling=False, tool_panel_section_mapping={} ):
         self.app.install_model.context.flush()
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section( tool_panel_section_key )
@@ -906,6 +915,9 @@ class InstallRepositoryManager( object ):
                     error_message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % tool_shed_repository.name
                     error_message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
                     error_message += "from the installed repository's <b>Repository Actions</b> menu.  "
+                if install_resolver_dependencies:
+                    requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
+                    [self._view.install_dependency(id=None, **req) for req in requirements]
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
                 # Install tool dependencies.

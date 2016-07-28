@@ -1,28 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 """
-import os
-import imp
-import unittest
-import random
 import datetime
+import imp
+import os
+import random
+import unittest
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
-from sqlalchemy import true
-from sqlalchemy import false
-from sqlalchemy import desc
+from sqlalchemy import column, desc, false, true
 from sqlalchemy.sql import text
-from sqlalchemy import column
 
-from base import BaseTestCase
-from base import CreatesCollectionsMixin
-
+from galaxy.managers import collections, hdas, history_contents
 from galaxy.managers.histories import HistoryManager
-from galaxy.managers import hdas
-from galaxy.managers import collections
-from galaxy.managers import history_contents
+
+from .base import BaseTestCase
+from .base import CreatesCollectionsMixin
 
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
@@ -62,10 +57,10 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         self.assertEqual( [], list( self.contents_manager.contents( history ) ) )
 
         self.log( "calling contents on an history with hdas should return those in order of their hids" )
-        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ]
         random.shuffle( hdas )
         ordered_hda_contents = list( self.contents_manager.contents( history ) )
-        self.assertEqual( map( lambda hda: hda.hid, ordered_hda_contents ), [ 1, 2, 3 ] )
+        self.assertEqual( [hda.hid for hda in ordered_hda_contents], [ 1, 2, 3 ] )
 
         self.log( "calling contents on an history with both hdas and collections should return both" )
         hdca = self.add_list_collection_to_history( history, hdas )
@@ -80,7 +75,7 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         self.assertEqual( [], list( self.contents_manager.contained( history ) ) )
 
         self.log( "calling contained on an history with both hdas and collections should return only hdas" )
-        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ]
         self.add_list_collection_to_history( history, hdas )
         self.assertEqual( list( self.contents_manager.contained( history ) ), hdas )
 
@@ -92,7 +87,7 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         self.assertEqual( [], list( self.contents_manager.subcontainers( history ) ) )
 
         self.log( "calling subcontainers on an history with both hdas and collections should return only collections" )
-        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ]
         hdca = self.add_list_collection_to_history( history, hdas )
         subcontainers = list( self.contents_manager.subcontainers( history ) )
         self.assertEqual( subcontainers, [ hdca ] )
@@ -101,9 +96,9 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         user2 = self.user_manager.create( **user2_data )
         history = self.history_manager.create( name='history', user=user2 )
         contents = []
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
         # _subquery = self.contents_manager._contents_common_query( self.contents_manager.subcontainer_class, history.id )
@@ -130,9 +125,9 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         user2 = self.user_manager.create( **user2_data )
         history = self.history_manager.create( name='history', user=user2 )
         contents = []
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
         self.log( "should allow filter on deleted" )
@@ -207,9 +202,9 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         user2 = self.user_manager.create( **user2_data )
         history = self.history_manager.create( name='history', user=user2 )
         contents = []
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
         self.log( "should default to hid order_by" )
@@ -240,9 +235,9 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         user2 = self.user_manager.create( **user2_data )
         history = self.history_manager.create( name='history', user=user2 )
         contents = []
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
         self.log( "should allow filtering by update_time" )
@@ -264,9 +259,9 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         user2 = self.user_manager.create( **user2_data )
         history = self.history_manager.create( name='history', user=user2 )
         contents = []
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
         self.log( "should show correct count with filters" )
@@ -292,9 +287,9 @@ class HistoryAsContainerTestCase( HistoryAsContainerBaseTestCase ):
         user2 = self.user_manager.create( **user2_data )
         history = self.history_manager.create( name='history', user=user2 )
         contents = []
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 3 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[:3] ) )
-        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 4, 6 ) ])
+        contents.extend([ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in range( 4, 6 ) ])
         contents.append( self.add_list_collection_to_history( history, contents[4:6] ) )
 
         self.log( "should be able to use eq and in with hybrid type_id" )

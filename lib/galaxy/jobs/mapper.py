@@ -5,6 +5,7 @@ import sys
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
+from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from .rule_helper import RuleHelper
 
 log = logging.getLogger( __name__ )
@@ -33,6 +34,7 @@ STOCK_RULES = dict(
     choose_one=stock_rules.choose_one,
     burst=stock_rules.burst,
     docker_dispatch=stock_rules.docker_dispatch,
+    dtd=map_tool_to_destination,
 )
 
 
