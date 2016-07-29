@@ -1,4 +1,23 @@
 """
+Batch API middleware
+
+Adds a single route to the installation that:
+  1. accepts a POST call containing a JSON array of 'http-like' JSON
+     dictionaries.
+  2. Each dictionary describes a single API call within the batch and is routed
+     back by the middleware to the application's `handle_request` as if it was
+     a seperate request.
+  3. Each response generated is combined into a final JSON list that is
+     returned from the POST call.
+
+In this way, API calls can be kept properly atomic and the endpoint can compose
+them into complex tasks using only one request.
+
+..note: This batch system is primarily designed for use by the UI as these
+types of batch operations *reduce the number of requests* for a given group of
+API tasks. IOW, this ain't about batching jobs.
+
+..warning: this endpoint is experimental is likely to change.
 """
 import io
 from urlparse import urlparse
@@ -14,12 +33,29 @@ log = logging.getLogger( __name__ )
 
 class BatchMiddleware( object ):
     """
+    Adds a URL endpoint for processing batch API calls formatted as a JSON
+    array of JSON dictionaries. These dictionaries are in the form:
+    [
+        {
+            "url": "/api/histories",
+            "type": "POST",
+            "body": "{ \"name\": \"New History Name\" }"
+        },
+        ...
+    ]
+
+    where:
+      * `url` is the url for the API call to be made including any query string
+      * `type` is the HTTP method used (e.g. 'POST', 'PUT') - defaults to 'GET'
+      * `body` is the text body of the request (optional)
+      * `contentType` content-type request header (defaults to application/json)
     """
     DEFAULT_CONFIG = {
         'route' : '/api/batch',
         'allowed_routes' : [
             '^api\/users.*',
             '^api\/histories.*',
+            '^api\/jobs.*',
         ]
     }
 
@@ -39,13 +75,15 @@ class BatchMiddleware( object ):
         return self.application( environ, start_response )
 
     def process_batch_requests( self, batch_environ, start_response ):
+        """
+        Loops through any provided JSON formatted 'requests', aggregates their
+        JSON responses, and wraps them in the batch call response.
+        """
         payload = self._read_post_payload( batch_environ )
         requests = payload.get( 'batch', [] )
 
         responses = []
         for request in requests:
-            print '------------------------'
-            print request
             if not self._is_allowed_route( request[ 'url' ] ):
                 responses.append( self._disallowed_route_response( request[ 'url' ] ) )
                 continue
@@ -71,10 +109,8 @@ class BatchMiddleware( object ):
 
     def _is_allowed_route( self, route ):
         if self.config.get( 'allowed_routes', None ):
-            print self.base_url
             shortened_route = route.replace( self.base_url, '', 1 )
             matches = [ re.match( allowed, shortened_route ) for allowed in self.config[ 'allowed_routes' ] ]
-            print matches
             return any( matches )
         return True
 
@@ -83,12 +119,6 @@ class BatchMiddleware( object ):
             'err_msg'   : 'Disallowed route used for batch operation',
             'route'     : route,
             'allowed'   : self.config[ 'allowed_routes' ]
-        })
-
-    def _create_invalid_batch_response( self ):
-        return dict( status=403, headers=self._default_headers(), body={
-            "err_msg"   : "Disallowed route used for batch operation",
-            "allowed"   : self.allowed_routes,
         })
 
     def _build_request_environ( self, original_environ, request ):
@@ -103,8 +133,7 @@ class BatchMiddleware( object ):
         request_environ[ 'CONTENT_TYPE' ] = request.get( 'contentType', 'application/json' )
         request_environ[ 'REQUEST_METHOD' ] = request.get( 'method', request.get( 'type', 'GET' ) )
         url = '{0}://{1}{2}'.format( request_environ.get( 'wsgi.url_scheme' ),
-                                     request_environ.get( 'HTTP_HOST' ),
-                                     request[ 'url' ] )
+            request_environ.get( 'HTTP_HOST' ), request[ 'url' ] )
         parsed = urlparse( url )
         request_environ[ 'PATH_INFO' ] = parsed.path
         request_environ[ 'QUERY_STRING' ] = parsed.query
@@ -137,6 +166,7 @@ class BatchMiddleware( object ):
 
     def body_renderer( self, trans, body, environ, start_response ):
         # this is a dummy renderer that does not call start_response
+        # See 'We have to re-create the handle request method...' in _process_batch_request above
         return dict(
             status=trans.response.status,
             headers=trans.response.headers,

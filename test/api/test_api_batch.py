@@ -59,7 +59,7 @@ class ApiBatchTestCase( api.ApiTestCase ):
     def test_errors( self ):
         batch = [
             dict( url=self._with_key( '/api/histories/abc123' ) ),
-            dict( url=self._with_key( '/api/users/123' ), method='PUT' ),
+            dict( url=self._with_key( '/api/jobs' ), method='POST', body=json.dumps( dict( name='Wat' ) ) ),
         ]
         response = self._post_batch( batch )
         response = response.json()
