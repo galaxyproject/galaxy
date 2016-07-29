@@ -21,7 +21,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools import DefaultToolState
 from galaxy.tools import ToolInputsNotReadyException
-from galaxy.util import odict
+from galaxy.util import odict, listify
 from galaxy.util.bunch import Bunch
 from galaxy.web.framework import formbuilder
 from tool_shed.util import common_util
@@ -1158,8 +1158,10 @@ class ToolModule( WorkflowModule ):
                             if output_step.type.startswith( 'data' ):
                                 output_inputs = output_step.module.get_runtime_inputs()
                                 output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
-                                if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
-                                    output_value = output_value.to_hda_representative()
+                                if isinstance( input, DataToolParameter ):
+                                    for v in listify( output_value ):
+                                        if isinstance( v, self.trans.app.model.HistoryDatasetCollectionAssociation ):
+                                            return v.to_hda_representative()
                                 return output_value
                         return RuntimeValue()
                     else:
