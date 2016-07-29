@@ -3306,10 +3306,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
             if multiple is False:
                 break
         if len( rval ) > 0:
-            if multiple:
-                return rval
-            else:
-                return rval[ 0 ]
+            return rval if multiple else rval[ 0 ]
 
     def to_dict( self, view='collection' ):
         dict_value = dict(
