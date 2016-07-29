@@ -490,7 +490,7 @@ if wf_parms:
                     ## FIXME: Initialize in the controller
                     <%
                     if value is None:
-                        value = other_values[ param.name ] = param.get_initial_value_from_history_prevent_repeats( t, other_values, already_used )
+                        value = other_values[ param.name ] = param.get_initial_value( t, other_values )
                         if not enable_unique_defaults:
                             del already_used[:]
                     %>
@@ -521,7 +521,7 @@ if wf_parms:
                 ## load, fill in initial values where needed, and mark
                 ## all that are runtime modifiable in some way.
                 <%
-                    value = other_values[ param.name ] = param.get_initial_value_from_history_prevent_repeats( t, other_values, already_used )
+                    value = other_values[ param.name ] = param.get_initial_value( t, other_values )
                     if not enable_unique_defaults:
                         del already_used[:]
                 %>
