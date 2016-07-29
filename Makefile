@@ -33,7 +33,11 @@ lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
-	if [ ! `git remote -v | grep -q $(RELEASE_UPSTREAM)` ]; then git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git; fi
+ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
+	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
+else
+	@echo "Remote $(RELEASE_UPSTREAM) already exists."
+endif
 
 release-merge-stable-to-next: release-ensure-upstream ## Merge last release into dev
 	git fetch $(RELEASE_UPSTREAM) && git checkout dev && git merge --ff-only $(RELEASE_UPSTREAM)/dev && git merge $(RELEASE_UPSTREAM)/$(RELEASE_PREVIOUS)
@@ -106,6 +110,7 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git commit -m "Merge branch 'version-$(RELEASE_CURR)' into version-$(RELEASE_NEXT).dev"
 	git push $(MY_UPSTREAM) version-$(RELEASE_CURR):version-$(RELEASE_CURR)
 	git push $(MY_UPSTREAM) version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
+	git checkout dev
 	git branch -d version-$(RELEASE_CURR)
 	git branch -d version-$(RELEASE_NEXT).dev
 	# TODO: Use hub to automate these PR creations or push directly.
