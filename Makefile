@@ -13,7 +13,6 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
-UPSTREAM_CHECK?= $(shell git remote -v | grep $(RELEASE_UPSTREAM))
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
