@@ -1,3 +1,4 @@
+import abc
 import logging
 import os
 
@@ -13,7 +14,6 @@ log = logging.getLogger(__name__)
 class Hmmer( Text ):
     edam_data = "data_1364"
     edam_format = "format_1370"
-    file_ext = "hmm"
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -29,9 +29,14 @@ class Hmmer( Text ):
         except:
             return "HMMER database (%s)" % ( nice_size( dataset.get_size() ) )
 
+    @abc.abstractmethod
+    def sniff(self, filename):
+        raise NotImplementedError
+
 
 class Hmmer2( Hmmer ):
     edam_format = "format_3328"
+    file_ext = "hmm2"
 
     def sniff(self, filename):
         """HMMER2 files start with HMMER2.0
@@ -43,6 +48,7 @@ class Hmmer2( Hmmer ):
 
 class Hmmer3( Hmmer ):
     edam_format = "format_3329"
+    file_ext = "hmm3"
 
     def sniff(self, filename):
         """HMMER3 files start with HMMER3/f

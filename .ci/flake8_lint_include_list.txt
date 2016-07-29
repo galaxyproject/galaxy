@@ -12,6 +12,8 @@ lib/galaxy/dataset_collections/__init__.py
 lib/galaxy/dataset_collections/structure.py
 lib/galaxy/dataset_collections/subcollections.py
 lib/galaxy/dataset_collections/type_description.py
+lib/galaxy/datatypes/assembly.py
+lib/galaxy/datatypes/constructive_solid_geometry.py
 lib/galaxy/datatypes/converters/bcf_bgzip_to_bcf_converter.py
 lib/galaxy/datatypes/converters/bcf_to_bcf_bgzip_converter.py
 lib/galaxy/datatypes/converters/bedgraph_to_array_tree_converter.py
@@ -40,11 +42,15 @@ lib/galaxy/datatypes/converters/pileup_to_interval_index_converter.py
 lib/galaxy/datatypes/converters/vcf_to_vcf_bgzip.py
 lib/galaxy/datatypes/converters/wiggle_to_array_tree_converter.py
 lib/galaxy/datatypes/coverage.py
+lib/galaxy/datatypes/dataproviders/base.py
 lib/galaxy/datatypes/dataproviders/exceptions.py
+lib/galaxy/datatypes/data.py
 lib/galaxy/datatypes/display_applications/__init__.py
 lib/galaxy/datatypes/display_applications/util.py
+lib/galaxy/datatypes/images.py
 lib/galaxy/datatypes/__init__.py
 lib/galaxy/datatypes/msa.py
+lib/galaxy/datatypes/ngsindex.py
 lib/galaxy/datatypes/proteomics.py
 lib/galaxy/datatypes/tabular.py
 lib/galaxy/datatypes/text.py
