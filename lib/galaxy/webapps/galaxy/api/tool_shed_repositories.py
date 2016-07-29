@@ -246,6 +246,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/install
         Initiate the installation of a repository.
 
+        :param install_resolver_dependencies: True to install resolvable dependencies.
         :param install_tool_dependencies: True to install tool dependencies.
         :param install_repository_dependencies: True to install repository dependencies.
         :param tool_panel_section_id: The unique identifier for an existing tool panel section
@@ -263,6 +264,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         params[ 'tool_panel_section_id' ] = kwd.get( 'tool_panel_section_id', None )
         params[ 'new_tool_panel_section_label' ] = kwd.get( 'new_tool_panel_section', None )
         params[ 'tool_panel_section_mapping' ] = json.loads( kwd.get( 'tool_panel_section', '{}' ) )
+        params[ 'install_resolver_dependencies' ] = util.asbool( kwd.get( 'install_resolver_dependencies', False ) )
         params[ 'install_tool_dependencies' ] = util.asbool( kwd.get( 'install_tool_dependencies', False ) )
         params[ 'install_repository_dependencies' ] = util.asbool( kwd.get( 'install_repository_dependencies', False ) )
         params[ 'shed_tool_conf' ] = kwd.get( 'shed_tool_conf', None )
@@ -394,6 +396,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # TODO: we may want to enhance this method to allow for each of the following to be associated with each repository instead of
         # forcing all repositories to use the same settings.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
+        install_resolver_dependencies = payload.get( 'install_resolver_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
         new_tool_panel_section_label = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
@@ -407,6 +410,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                     new_tool_panel_section_label=new_tool_panel_section_label,
                                     tool_panel_section_id=tool_panel_section_id,
                                     install_repository_dependencies=install_repository_dependencies,
+                                    install_resolver_dependencies=install_resolver_dependencies,
                                     install_tool_dependencies=install_tool_dependencies,
                                     shed_tool_conf=shed_tool_conf )
             installed_tool_shed_repositories = self.install_repository_revision( trans, **current_payload )

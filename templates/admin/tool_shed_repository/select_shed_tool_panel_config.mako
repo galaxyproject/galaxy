@@ -38,6 +38,8 @@
             can_display_tool_dependencies = False
     else:
         can_display_tool_dependencies = False
+    can_display_resolver_installation = install_resolver_dependencies_check_box is not None
+
 %>
 
 %if message:
@@ -84,13 +86,13 @@
                 ${render_readme_section( containers_dict )}
                 <div style="clear: both"></div>
             %endif
-            %if can_display_repository_dependencies or can_display_tool_dependencies:
+            %if can_display_repository_dependencies or can_display_tool_dependencies or can_display_resolver_installation:
                 <div class="form-row">
                     <table class="colored" width="100%">
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>
                     </table>
                 </div>
-                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )}
+                ${render_dependencies_section( install_resolver_dependencies_check_box, install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )}
                 <div style="clear: both"></div>
             %endif
             <div class="form-row">

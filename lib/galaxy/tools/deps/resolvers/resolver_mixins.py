@@ -1,6 +1,6 @@
 import os
 from ..brew_exts import DEFAULT_HOMEBREW_ROOT, recipe_cellar_path, build_env_statements
-from ..resolvers import INDETERMINATE_DEPENDENCY, Dependency
+from ..resolvers import NullDependency, Dependency
 
 
 class UsesHomebrewMixin:
@@ -15,7 +15,7 @@ class UsesHomebrewMixin:
     def _find_dep_versioned(self, name, version):
         recipe_path = recipe_cellar_path(self.cellar_root, name, version)
         if not os.path.exists(recipe_path) or not os.path.isdir(recipe_path):
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         commands = build_env_statements(self.cellar_root, recipe_path, relaxed=True)
         return HomebrewDependency(commands)
@@ -23,7 +23,7 @@ class UsesHomebrewMixin:
     def _find_dep_default(self, name, version):
         installed_versions = self._installed_versions(name)
         if not installed_versions:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         # Just grab newest installed version - may make sense some day to find
         # the linked version instead.

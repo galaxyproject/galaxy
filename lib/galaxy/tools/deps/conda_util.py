@@ -322,11 +322,13 @@ def is_target_available(conda_target, conda_context=None):
         return False
 
 
-def is_conda_target_installed(conda_target, conda_context=None):
+def is_conda_target_installed(conda_target, conda_context=None, verbose_install_check=False):
     conda_context = _ensure_conda_context(conda_context)
     # fail by default
     success = False
     if conda_context.has_env(conda_target.install_environment):
+        if not verbose_install_check:
+            return True
         # because export_list directs output to a file we
         # need to make a temporary file, not use StringIO
         f, package_list_file = tempfile.mkstemp(suffix='.env_packages')
@@ -342,10 +344,11 @@ def is_conda_target_installed(conda_target, conda_context=None):
     return success
 
 
-def filter_installed_targets(conda_targets, conda_context=None):
+def filter_installed_targets(conda_targets, conda_context=None, verbose_install_check=False):
     conda_context = _ensure_conda_context(conda_context)
     installed = functools.partial(is_conda_target_installed,
-                                  conda_context=conda_context)
+                                  conda_context=conda_context,
+                                  verbose_install_check=verbose_install_check)
     return filter(installed, conda_targets)
 
 
