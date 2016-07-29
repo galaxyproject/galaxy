@@ -244,6 +244,7 @@
                             </div>
                         </div>
                     %endif
+
                     <div class="form-row">
                         <label>
                             Convert spaces to tabs:
@@ -266,6 +267,32 @@
                             Use this option if you are entering intervals by hand.
                         </div>
                     </div>
+
+                    <!-- Convert from universal line endings to Posix line endings. -->
+
+                    <div class="form-row">
+                        <label>
+                            Convert universal line endings to Posix line edndings:
+                        </label>
+                        <div class="form-row-input">
+                            <%
+                                if uni_to_posix == 'true':
+                                    checked = ' checked'
+                                else:
+                                    checked = ''
+                                if upload_option == 'upload_file':
+                                    name = 'files_0|uni_to_posix'
+                                else:
+                                    name = 'uni_to_posix'
+                                uni2posix = '<input type="checkbox" name="%s" value="true"%s/>No' % ( name, checked )
+                            %>
+                            ${uni2posix}
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            Use this option if you are have sanitized your datasets before-hand.
+                        </div>
+                    </div>
+
                     <div style="clear: both"></div>
                     <div class="form-row">
                         <label>Genome:</label>

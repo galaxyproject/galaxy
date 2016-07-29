@@ -790,19 +790,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
 
 
-    def do_cprofile(func):
-        def profiled_func(*args, **kwargs):
-            profile = cProfile.Profile()
-            try:
-                profile.enable()
-                result = func(*args, **kwargs)
-                profile.disable()
-                return result
-            finally:
-                profile.print_stats(sort='time')
-        return profiled_func
-
-
     @web.expose
     def upload_library_dataset( self, trans, cntrller, library_id, folder_id, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
@@ -818,6 +805,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
             space_to_tab = kwd.get( 'space_to_tab', '' )
+        if kwd.get( 'files_0|uni_to_posix', False ):
+            uni_to_posix = kwd.get( 'files_0|uni_to_posix', '' )
+        else:
+            uni_to_posix = kwd.get( 'uni_to_posix', '' )
+
         link_data_only = kwd.get( 'link_data_only', 'copy_files' )
         dbkey = kwd.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
@@ -1044,17 +1036,16 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     widgets=widgets,
                                     template_id=template_id,
                                     space_to_tab=space_to_tab,
+                                    uni_to_posix=uni_to_posix,
                                     link_data_only=link_data_only,
                                     show_deleted=show_deleted,
                                     ldda_message=ldda_message,
                                     message=escape( message ),
                                     status=escape( status ) )
 
-    #@do_cprofile
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
         # Set up the traditional tool state/params
-        tool_id = 'combat_tb_uploader'
-        #tool_id = 'upload1'
+        tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
         tool.populate_state( trans, tool.inputs, kwd, state.inputs )
@@ -1164,6 +1155,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.file_type = file_type
         uploaded_dataset.dbkey = params.get( 'dbkey', None )
         uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
+        uploaded_dataset.uni_to_posix = params.get( 'uni_to_posix', None )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
@@ -1178,7 +1170,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             trans.sa_session.flush()
         return uploaded_dataset
 
-    #@do_cprofile
     def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message ):
         dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
         files = dir_response[0]
@@ -1294,6 +1285,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
             space_to_tab = kwd.get( 'space_to_tab', '' )
+        if kwd.get( 'files_0|uni_to_posix', False ):
+            uni_to_posix = kwd.get( 'files_0|uni_to_posix', '' )
+        else:
+            uni_to_posix = kwd.get( 'uni_to_posix', '' )
         link_data_only = kwd.get( 'link_data_only', 'copy_files' )
         dbkey = kwd.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
@@ -1464,6 +1459,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             widgets=[],
                                             template_id=template_id,
                                             space_to_tab=space_to_tab,
+                                            uni_to_posix=uni_to_posix,
                                             link_data_only=link_data_only,
                                             show_deleted=show_deleted,
                                             ldda_message=ldda_message,

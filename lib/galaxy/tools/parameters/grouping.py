@@ -342,6 +342,9 @@ class UploadDataset( Group ):
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
+            uni_to_posix = False
+            if context.get( 'uni_to_posix', None ) not in [ "None", None, False ]:
+                uni_to_posix = True
             file_bunch = get_data_file_filename( data_file, override_name=name, override_info=info )
             if file_bunch.path:
                 if url_paste is not None and url_paste.strip():
@@ -379,6 +382,7 @@ class UploadDataset( Group ):
                         break
             file_bunch.to_posix_lines = to_posix_lines
             file_bunch.space_to_tab = space_to_tab
+            file_bunch.uni_to_posix = uni_to_posix
             file_bunch.uuid = uuid
             return file_bunch, warnings
 
@@ -395,17 +399,22 @@ class UploadDataset( Group ):
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
+            uni_to_posix = False
+            if context.get( 'uni_to_posix', None ) not in [ "None", None, False ]:
+                uni_to_posix = True
             file_bunch = get_data_file_filename( data_file, override_name=name, override_info=info )
             file_bunch.uuid = uuid
             if file_bunch.path:
                 file_bunch.to_posix_lines = to_posix_lines
                 file_bunch.space_to_tab = space_to_tab
+                file_bunch.uni_to_posix = uni_to_posix
                 rval.append( file_bunch )
             for file_bunch in get_url_paste_urls_or_filename( context, override_name=name, override_info=info ):
                 if file_bunch.path:
                     file_bunch.uuid = uuid
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
+                    file_bunch.uni_to_posix = uni_to_posix
                     rval.append( file_bunch )
             # look for files uploaded via FTP
             valid_files = []
@@ -443,6 +452,7 @@ class UploadDataset( Group ):
                 if file_bunch.path:
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
+                    file_bunch.uni_to_posix = uni_to_posix
                     rval.append( file_bunch )
             return rval
         file_type = self.get_file_type( context )
@@ -483,12 +493,14 @@ class UploadDataset( Group ):
                 dataset.primary_file = temp_name
                 dataset.to_posix_lines = True
                 dataset.space_to_tab = False
+                dataset.uni_to_posix = False
             else:
                 file_bunch, warnings = get_one_filename( groups_incoming[ 0 ] )
                 writable_files_offset = 1
                 dataset.primary_file = file_bunch.path
                 dataset.to_posix_lines = file_bunch.to_posix_lines
                 dataset.space_to_tab = file_bunch.space_to_tab
+                dataset.uni_to_posix = file_bunch.uni_to_posix
                 dataset.warnings.extend( warnings )
             if dataset.primary_file is None:  # remove this before finish, this should create an empty dataset
                 raise Exception( 'No primary dataset file was available for composite upload' )
