@@ -34,8 +34,10 @@ lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
-ifeq ($(UPSTREAM_CHECK), )
+ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
 	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
+else
+	@echo "Remote $(RELEASE_UPSTREAM) already exists."
 endif
 
 release-merge-stable-to-next: release-ensure-upstream ## Merge last release into dev
