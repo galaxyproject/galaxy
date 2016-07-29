@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['mvc/tours'], function( Tours ) {
+define(['mvc/tours', 'mvc/user/user-preferences'], function( Tours, Preferences ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -202,11 +202,22 @@ var Collection = Backbone.Collection.extend({
                 tooltip         : 'Account preferences and saved data',
                 menu            : [{
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
-                    },{
-                        title   : 'Preferences',
-                        url     : 'user?cntrller=user',
-                        target  : 'galaxy_main'
-                    },{
+                    },
+
+                    {
+                        title   : 'User Preferences',
+                        url     : 'user',
+                        onclick : function() {
+                            if (Galaxy.app) {
+                                Galaxy.app.display(new Preferences.UserPreferences());
+                            } 
+                            else {
+                                window.location = Galaxy.root + "user";
+                            }
+                       }
+                    },
+
+                    {
                         title   : 'Custom Builds',
                         url     : 'user/dbkeys',
                         target  : 'galaxy_main'
