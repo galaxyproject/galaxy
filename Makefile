@@ -13,6 +13,7 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
+UPSTREAM_CHECK?= $(shell git remote -v | grep $(RELEASE_UPSTREAM))
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
@@ -33,7 +34,9 @@ lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
-	if [ ! `git remote -v | grep -q $(RELEASE_UPSTREAM)` ]; then git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git; fi
+ifeq ($(UPSTREAM_CHECK), )
+	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
+endif
 
 release-merge-stable-to-next: release-ensure-upstream ## Merge last release into dev
 	git fetch $(RELEASE_UPSTREAM) && git checkout dev && git merge --ff-only $(RELEASE_UPSTREAM)/dev && git merge $(RELEASE_UPSTREAM)/$(RELEASE_PREVIOUS)
