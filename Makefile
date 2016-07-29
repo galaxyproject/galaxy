@@ -110,6 +110,7 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git commit -m "Merge branch 'version-$(RELEASE_CURR)' into version-$(RELEASE_NEXT).dev"
 	git push $(MY_UPSTREAM) version-$(RELEASE_CURR):version-$(RELEASE_CURR)
 	git push $(MY_UPSTREAM) version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
+	git checkout dev
 	git branch -d version-$(RELEASE_CURR)
 	git branch -d version-$(RELEASE_NEXT).dev
 	# TODO: Use hub to automate these PR creations or push directly.
