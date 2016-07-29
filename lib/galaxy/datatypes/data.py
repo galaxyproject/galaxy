@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+
+import abc
 import logging
 import mimetypes
 import os
@@ -7,9 +9,10 @@ import tempfile
 import zipfile
 from cgi import escape
 from inspect import isclass
-from six import string_types
 
-from . import metadata
+import paste
+import six
+
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
 from galaxy.util import inflector
@@ -19,8 +22,7 @@ from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 
 from . import dataproviders
-
-import paste
+from . import metadata
 
 XSS_VULNERABLE_MIME_TYPES = [
     'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -35,7 +37,7 @@ col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vc
 valid_strand = ['+', '-', '.']
 
 
-class DataMeta( type ):
+class DataMeta( abc.ABCMeta ):
     """
     Metaclass for Data class.  Sets up metadata spec.
     """
@@ -47,6 +49,7 @@ class DataMeta( type ):
         metadata.Statement.process( cls )
 
 
+@six.add_metaclass(DataMeta)
 @dataproviders.decorators.has_dataproviders
 class Data( object ):
     """
@@ -72,7 +75,6 @@ class Data( object ):
     #: dictionary of metadata fields for this datatype::
     metadata_spec = None
 
-    __metaclass__ = DataMeta
     # Add metadata elements
     MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?" )
     # Stores the set of display applications, and viewing methods, supported by this datatype
@@ -158,7 +160,7 @@ class Data( object ):
         Specifying a list of 'skip' items will return True even when a named metadata value is missing
         """
         if check:
-            to_check = [ ( to_check, dataset.metadata.get( to_check ) ) for to_check in check ]
+            to_check = ( ( to_check, dataset.metadata.get( to_check ) ) for to_check in check )
         else:
             to_check = dataset.metadata.items()
         for key, value in to_check:
@@ -327,7 +329,7 @@ class Data( object ):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
-        if isinstance( data, string_types ):
+        if isinstance( data, six.string_types ):
             return data
         if filename and filename != "index":
             # For files in extra_files_path
@@ -454,7 +456,7 @@ class Data( object ):
 
     def get_display_applications_by_dataset( self, dataset, trans ):
         rval = odict()
-        for key, value in self.display_applications.iteritems():
+        for key, value in self.display_applications.items():
             value = value.filter_by_dataset( dataset, trans )
             if value.links:
                 rval[key] = value
@@ -462,7 +464,7 @@ class Data( object ):
 
     def get_display_types(self):
         """Returns display types available"""
-        return self.supported_display_apps.keys()
+        return list(self.supported_display_apps.keys())
 
     def get_display_label(self, type):
         """Returns primary label for display app"""
@@ -525,7 +527,7 @@ class Data( object ):
         if len(params) > 0:
             trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
         if not visible:
-            for value in converted_dataset.itervalues():
+            for value in converted_dataset.values():
                 value.visible = False
         if return_output:
             return converted_dataset
@@ -571,7 +573,7 @@ class Data( object ):
         files = odict()
         if self.composite_type != 'auto_primary_file':
             files[ self.primary_file_name ] = self.__new_composite_file( self.primary_file_name )
-        for key, value in self.get_composite_files( dataset=dataset ).iteritems():
+        for key, value in self.get_composite_files( dataset=dataset ).items():
             files[ key ] = value
         return files
 
@@ -585,7 +587,7 @@ class Data( object ):
                 return key % meta_value
             return key
         files = odict()
-        for key, value in self.composite_files.iteritems():
+        for key, value in self.composite_files.items():
             files[ substitute_composite_key( key, value ) ] = value
         return files
 
