@@ -1196,7 +1196,7 @@ class ColumnListParameter( SelectToolParameter ):
         for dataset in util.listify( dataset ):
             # Use representative dataset if a dataset collection is parsed
             if isinstance( dataset, trans.app.model.HistoryDatasetCollectionAssociation ):
-                dataset = dataset.to_hda_agent()
+                dataset = dataset.to_hda_representative()
 
             # Columns can only be identified if metadata is available
             if not hasattr( dataset, 'metadata' ) or not hasattr( dataset.metadata, 'columns' ) or not dataset.metadata.columns:

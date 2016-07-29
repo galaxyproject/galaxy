@@ -3299,7 +3299,7 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
         return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
                   type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
 
-    def to_hda_agent( self, multiple=False ):
+    def to_hda_representative( self, multiple=False ):
         rval = []
         for dataset in self.collection.dataset_elements:
             rval.append( dataset.dataset_instance )

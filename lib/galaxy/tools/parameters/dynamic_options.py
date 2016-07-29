@@ -126,7 +126,7 @@ class DataMetaFilter( Filter ):
             return file_value == dataset_value
         ref = other_values.get( self.ref_name, None )
         if isinstance( ref, HistoryDatasetCollectionAssociation ):
-            ref = ref.to_hda_agent( self.multiple )
+            ref = ref.to_hda_representative( self.multiple )
         is_data = isinstance( ref, galaxy.tools.wrappers.DatasetFilenameWrapper )
         is_data_list = isinstance( ref, galaxy.tools.wrappers.DatasetListWrapper ) or isinstance( ref, list )
         is_data_or_data_list = is_data or is_data_list
@@ -401,7 +401,7 @@ class RemoveValueFilter( Filter ):
             else:
                 data_ref = other_values.get( self.meta_ref )
                 if isinstance( data_ref, HistoryDatasetCollectionAssociation ):
-                    data_ref = data_ref.to_hda_agent()
+                    data_ref = data_ref.to_hda_representative()
                 if not isinstance( data_ref, HistoryDatasetAssociation ) and not isinstance( data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper ):
                     return options  # cannot modify options
                 value = data_ref.metadata.get( self.metadata_key, None )
