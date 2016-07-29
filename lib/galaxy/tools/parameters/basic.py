@@ -1187,21 +1187,17 @@ class ColumnListParameter( SelectToolParameter ):
         """
         # Get the value of the associated data reference (a dataset)
         dataset = other_values.get( self.data_ref, None )
-
         # Check if a dataset is selected
         if not dataset:
             return []
-
         column_list = None
         for dataset in util.listify( dataset ):
             # Use representative dataset if a dataset collection is parsed
             if isinstance( dataset, trans.app.model.HistoryDatasetCollectionAssociation ):
                 dataset = dataset.to_hda_representative()
-
             # Columns can only be identified if metadata is available
             if not hasattr( dataset, 'metadata' ) or not hasattr( dataset.metadata, 'columns' ) or not dataset.metadata.columns:
                 return []
-
             # Build up possible columns for this dataset
             this_column_list = []
             if self.numerical:
@@ -1212,7 +1208,6 @@ class ColumnListParameter( SelectToolParameter ):
             else:
                 for i in range( 0, dataset.metadata.columns ):
                     this_column_list.append( str( i + 1 ) )
-
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
