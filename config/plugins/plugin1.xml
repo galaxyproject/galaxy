@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<webhook name="Plugin 1" type="topbar">
-    <params></params>
-    <template></template>
-</webhook>
