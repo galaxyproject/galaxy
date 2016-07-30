@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<webhook name="Plugin 2" type="mainview">
+    <params></params>
+    <template></template>
+</webhook>
