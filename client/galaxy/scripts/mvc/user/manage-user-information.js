@@ -8,9 +8,6 @@ var ManageUserInformation = Backbone.View.extend({
 
     initialize: function ( ) {
         this.render( this );
-        //original_email = $( '#email_input' ).val();
-        //original_username = $( '#name_input' ).val();
-        //this.submitForm();
     },
 
     /** validates email and username */

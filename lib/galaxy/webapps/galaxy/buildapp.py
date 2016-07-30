@@ -80,6 +80,8 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/tours' )
     webapp.add_client_route( '/tours/{tour_id}' )
 
+    webapp.add_client_route( '/user_preferences' )
+
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
@@ -450,6 +452,17 @@ def populate_api_routes( webapp, app ):
                            controller='tours',
                            action='update_tour',
                            conditions=dict( method=[ "POST" ] ) )
+
+    # ================================
+    # ===== USER PREFERENCES API =====
+    # ================================
+    
+    webapp.mapper.connect( 'index',
+                           '/api/user_preferences',
+                           controller='user_preferences',
+                           action='index',
+                           conditions=dict( method=["GET"] ) )
+
 
     # =======================
     # ===== LIBRARY API =====
