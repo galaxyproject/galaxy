@@ -170,7 +170,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
 # Set to the string none to explicitly disable tool dependency handling.
 # If this option is set to none or an invalid path, installing tools with dependencies
-# from the Tool Shed will fail. 
+# from the Tool Shed will fail.
 #tool_dependency_dir = database/dependencies
 
 # The dependency resolves config file specifies an ordering and options for how
@@ -285,6 +285,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
 # separated list.
 #tour_config_dir = config/plugins/tours
+
+# Webhooks directory
+#webhooks_dir = config/plugins/webhooks
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -1228,4 +1231,3 @@ use_interactive = True
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
 #rabbitmqctl_path = /path/to/rabbitmqctl
-
