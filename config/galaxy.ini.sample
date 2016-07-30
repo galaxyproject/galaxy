@@ -294,6 +294,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # separated list.
 #tour_config_dir = config/plugins/tours
 
+# Webhooks directory
+#webhooks_dir = config/plugins/webhooks
+
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.
@@ -1241,4 +1244,3 @@ use_interactive = True
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
 #rabbitmqctl_path = /path/to/rabbitmqctl
-
