@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 class WebhooksController(BaseAPIController):
     def __init__(self, app):
         super(WebhooksController, self).__init__(app)
+<<<<<<< HEAD
 
     @expose_api_anonymous_and_sessionless
     def get_all(self, trans, **kwd):
@@ -45,3 +46,5 @@ class WebhooksController(BaseAPIController):
                    if w.name == webhook_name]
         return imp.load_source('helper', webhook[0].helper).main(webhook[0]) \
             if webhook and webhook[0].helper != '' else {}
+=======
+>>>>>>> add Webhooks draft
