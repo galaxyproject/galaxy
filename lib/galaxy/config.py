@@ -103,6 +103,8 @@ class Configuration( object ):
 
         self.tour_config_dir = resolve_path( kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
 
+        self.webhooks_dir = resolve_path( kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
+
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
         self.password_expiration_period = timedelta( days=int( kwargs.get( "password_expiration_period", 0 ) ) )
