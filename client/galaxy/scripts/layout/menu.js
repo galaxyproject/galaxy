@@ -203,7 +203,6 @@ var Collection = Backbone.Collection.extend({
                 menu            : [{
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },
-
                     {
                         title   : 'Preferences Mako',
                         url     : 'user?cntrller=user',

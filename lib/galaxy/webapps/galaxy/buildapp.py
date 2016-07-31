@@ -82,6 +82,7 @@ def paste_app_factory( global_conf, **kwargs ):
 
     webapp.add_client_route( '/user_preferences' )
     webapp.add_client_route( '/user_preferences/manage_user_info' )
+    webapp.add_client_route( '/user_preferences/edit_info' )
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
@@ -470,6 +471,11 @@ def populate_api_routes( webapp, app ):
                            action='manage_user_info',
                            conditions=dict( method=["GET"] ) )
 
+    webapp.mapper.connect( 'edit_info',
+                           '/api/user_preferences/edit_info',
+                           controller='user_preferences',
+                           action='edit_info',
+                           conditions=dict( method=["GET"] ) )
 
     # =======================
     # ===== LIBRARY API =====
