@@ -203,8 +203,14 @@ var Collection = Backbone.Collection.extend({
                 menu            : [{
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },
+
                     {
-                        title   : 'Preferences',
+                        title   : 'Preferences Mako',
+                        url     : 'user?cntrller=user',
+                        target  : 'galaxy_main'
+                    },
+                    {
+                        title   : 'New Preferences',
                         url     : 'user',
                         onclick : function() {
                             if (Galaxy.app) {

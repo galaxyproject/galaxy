@@ -81,6 +81,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/tours/{tour_id}' )
 
     webapp.add_client_route( '/user_preferences' )
+    webapp.add_client_route( '/user_preferences/manage_user_info' )
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
@@ -461,6 +462,12 @@ def populate_api_routes( webapp, app ):
                            '/api/user_preferences',
                            controller='user_preferences',
                            action='index',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'manage_user_info',
+                           '/api/user_preferences/manage_user_info',
+                           controller='user_preferences',
+                           action='manage_user_info',
                            conditions=dict( method=["GET"] ) )
 
 

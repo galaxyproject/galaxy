@@ -8,15 +8,18 @@ var UserPreferences = Backbone.View.extend({
 
     /** redirects to manage user information view */
     callManageInfo: function( e ) {
-        var userInfo = null;
+        var userInfo = null,
+            url = Galaxy.root + 'api/user_preferences/manage_user_info';
         e.preventDefault();
         $( '.user-pref' ).css( 'display','none' );
-        userInfo = new Manage.ManageUserInformation();
+        $.getJSON( url, function( data ) {
+              userInfo = new Manage.ManageUserInformation( data );  
+        });
     },
 
     /** fetch data for user preferences */
     getUserPreferencesData: function() {
-        var url = Galaxy.root + 'api/user_preferences/',
+        var url = Galaxy.root + 'api/user_preferences',
             self = this;
         $.getJSON( url, function( data ) {
               self.render(data);  
@@ -82,7 +85,7 @@ var UserPreferences = Backbone.View.extend({
                        "</ul>";
         }
         template = template + "</div></div>";
-        this.$el.html(template).on( "click", ".manage-userinfo", self.callManageInfo);
+        this.$el.html(template).on( "click", ".manage-userinfo", self.callManageInfo );
     }
 });
 
