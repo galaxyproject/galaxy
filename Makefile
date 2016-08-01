@@ -93,14 +93,14 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
 	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
 	git checkout -b version-$(RELEASE_CURR)
-	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
+	sed -i '' "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
+	sed -i '' "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR).rc1"
 	git checkout dev
 
 	git checkout -b version-$(RELEASE_NEXT).dev
-	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_NEXT)\"/" lib/galaxy/version.py
+	sed -i '' "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_NEXT)\"/" lib/galaxy/version.py
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_NEXT).dev"
 
@@ -130,7 +130,7 @@ release-create: release-ensure-upstream ## Create a release branch
 	# Test run of merging. If there are conflicts, it will fail here.
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
+	sed -i '' "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR)"
 	git tag -m "Tag version $(RELEASE_CURR)" v$(RELEASE_CURR)
@@ -158,7 +158,7 @@ release-create-point: ## Create a point release
 	#git push $(MY_UPSTREAM) $(RELEASE_NEXT_BRANCH)
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py
+	sed -i '' "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)"
 	git tag -m "Tag version $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)" v$(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)
