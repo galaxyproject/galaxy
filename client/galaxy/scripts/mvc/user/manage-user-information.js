@@ -8,7 +8,7 @@ var ManageUserInformation = Backbone.View.extend({
     user_id: "",
 
     initialize: function ( data ) {
-        $(".manage-userinfo-section").remove();
+        $( ".manage-userinfo-section" ).remove();
         this.render( this, data );
         this.user_id = data["user_id"];
         this.original_email = data["email"];
@@ -29,21 +29,24 @@ var ManageUserInformation = Backbone.View.extend({
 
     /** renders the error message */
     renderError: function( message ) {
-        $(".donemessage").hide();
-        if ($(".validate.errormessage").length === 1) {
-            $(".validate.errormessage").html(message);
-            $(".validate.errormessage").show();
-        } else {
-            $('.user-preferences-all').prepend("<div class='validate errormessage'>" + message + "</div>");            
+        var $el_errormessage = $( ".validate.errormessage" );
+        $( ".donemessage" ).hide();
+        if ( $el_errormessage.length === 1 ) {
+            $el_errormessage.html(message);
+            $el_errormessage.show();
+        } 
+        else {
+            $( '.user-preferences-all' ).prepend( "<div class='validate errormessage'>" + message + "</div>" );            
         }
     },
  
     /** renders the done message when nothing is changed */
     renderDone: function( message ) {
-        $(".validate.errormessage").hide();
-        if ($(".donemessage").length === 1) {
-            $(".donemessage").html(message);
-            $(".donemessage").show();
+        var $el_donemessage = $( ".donemessage" );
+        $( ".validate.errormessage" ).hide();
+        if ( $el_donemessage.length === 1 ) {
+            $el_donemessage.html( message );
+            $el_donemessage.show();
         } 
         else {
             $('.user-preferences-all').prepend("<div class='donemessage'>" + message + "</div>");
@@ -60,7 +63,7 @@ var ManageUserInformation = Backbone.View.extend({
             validForm = true,
             nothing_changed = ( self.original_email === email && self.original_username === name ), 
             hidden_input = '<input type="hidden" id="login_info_button" name="login_info_button" value="Submit"/>',
-            url = ""; 
+            url = "";
 
         // we need this value to detect submitting at backend
         $( '#send' ).attr( 'disabled', 'disabled' );
@@ -70,9 +73,9 @@ var ManageUserInformation = Backbone.View.extend({
                 self.renderError( error_text_email_long ); 
                 validForm = false; 
             }
-            else if ( !self.validateString( email, "email" ) ) { 
-                self.renderError( error_text_email ); 
-                validForm = false; 
+            else if ( !self.validateString( email, "email" ) ) {
+                self.renderError( error_text_email );
+                validForm = false;
             }
         }
         if ( self.original_username !== name ) {
@@ -94,29 +97,32 @@ var ManageUserInformation = Backbone.View.extend({
             url = Galaxy.root + 'api/user_preferences/edit_info/';
             data = { 'user_id': self.user_id, 'email': email, 'username': name, 'button_name': e.target.attributes['name'].nodeValue };
             $.getJSON( url, data, function( response ) {
+                // removes the old content
+                $( ".manage-userinfo-section" ).remove();
+                $( ".donemessage" ).remove();
+                $( ".validate.errormessage" ).remove();
                 // renders the user info again with the messages and updated data
-                $(".manage-userinfo-section").remove();
-                $(".donemessage").remove();
-                $(".validate.errormessage").remove();
                 self.render( self, response );
+                self.original_email = email;
+                self.original_username = name;
             }, 'json');
         }
     },
 
     /** renders the error message when manage user info page is rebuilt */
     renderMessage: function( msg, status ) {
-        return '<div class="'+ ( status === "" ? 'done': status ) +'message'+ (status === "error" ? " validate" : "") + '">'+ msg +'</div>';
+        return '<div class="'+ ( status === "" ? 'done': status ) +'message'+ ( status === "error" ? " validate" : "" ) + '">'+ msg +'</div>';
     },
 
     /** renders manage user information */
     render: function( self, data ) {
         var template = "",
             filters = ['Active', 'Deleted', 'All'];
-
+        // appends the appropriate message
         if( data["message"].length > 0 ) {
             template = self.renderMessage( data["message"], data['status'] );
         }
-        
+        // builds the markup based on the data from the service call
         template = template + '<div class="manage-userinfo-section"> <h2>Manage User Information</h2>';
         if( !Galaxy.user.attributes.is_admin ) {
             template = template + '<ul class="manage-table-actions">' +
@@ -127,11 +133,11 @@ var ManageUserInformation = Backbone.View.extend({
         
         template = template + '<div class="toolForm">' +
                    '<form name="login_info" id="login_info">' +
-                       '<div class="toolFormTitle">Login Information</div>' + 
-                       '<div class="form-row">' + 
-                           '<label>Email address:</label>' + 
-                           '<input type="text" id ="email_input" name="email" value="'+ data["email"] +'" size="40"/>' + 
-                           '<div class="toolParamHelp" style="clear: both;">' + 
+                       '<div class="toolFormTitle">Login Information</div>' +
+                       '<div class="form-row">' +
+                           '<label>Email address:</label>' +
+                           '<input type="text" id ="email_input" name="email" value="'+ data["email"] +'" size="40"/>' +
+                           '<div class="toolParamHelp" style="clear: both;">' +
                                'If you change your email address you will receive an activation link in the new mailbox and you have to ' + 
                                'activate your account by visiting it.' +
                            '</div>' +
@@ -165,8 +171,8 @@ var ManageUserInformation = Backbone.View.extend({
                            'letters, numbers, and the "-" character.' +
                        '</div>';
         }
-        template = template + '</div>';           
-        template = template + 
+        template = template + '</div>';          
+        template = template +
                    '<div class="form-row">' +
                        '<input type="button" class="save-userdata action-button" name="login_info_button" value="Save"/>' +
                    '</div>' +
@@ -174,9 +180,9 @@ var ManageUserInformation = Backbone.View.extend({
                    '</div>';
 
         if( data['values'] || data['user_info_forms'].length > 0 ) {
-            template = template + '<p></p>' + 
+            template = template + '<p></p>' +
                        '<div class="toolForm">' +
-                           '<form name="user_info" id="user_info">' + 
+                           '<form name="user_info" id="user_info">' +
                                '<div class="toolFormTitle">User information</div>';
             if( data["user_type_fd_id_select_field_options"].length > 0 ) {
                 template = template + '<div class="form-row">' +
@@ -188,9 +194,9 @@ var ManageUserInformation = Backbone.View.extend({
                 template = template + '<input type="hidden" name="user_type_fd_id" value="' + data["user_type_fd_id_encoded"] + '"/>';
             }
             // build markup for all the widgets
-            if( typeof data["widgets"] === "object" && Object.keys(data["widgets"]).length > 0 ) {
+            if( typeof data["widgets"] === "object" && Object.keys( data["widgets"] ).length > 0 ) {
 
-                for( var item in data["widgets"] ) { 
+                for( var item in data["widgets"] ) {
                     var item_object = data["widgets"][item];
                     template = template + '<div class="form-row">' +
                            '<label>'+ item_object['label'] + ':</label>' +
@@ -203,13 +209,13 @@ var ManageUserInformation = Backbone.View.extend({
                 }
             }
             template = template + '<div class="form-row">' +
-                           '<input type="submit" class="save-userdata action-button" name="edit_user_info_button" value="Save"/>' +
+                           '<input type="button" class="save-userdata action-button" name="edit_user_info_button" value="Save"/>' +
                        '</div>';
             template = template + '</form></div><p></p>';
         }
         // markup for user addresses
         template = template + '<div class="toolForm">' +
-                   '<form name="user_addresses" id="user_addresses">' + 
+                   '<form name="user_addresses" id="user_addresses">' +
                        '<div class="toolFormTitle">User Addresses</div>' +
                            '<div class="toolFormBody">';
 
@@ -221,11 +227,11 @@ var ManageUserInformation = Backbone.View.extend({
                      template = template + '<span>|</span>';
                  }
                  if( data["show_filter"] === filters[counter] ) {
-                     template = template + '<span class="filter">' + 
+                     template = template + '<span class="filter">' +
                                 '<a class="current-filter"><b>' + filters[counter] + '</b></a></span>';
                  }
                  else {
-                     template = template + '<span class="filter">' + 
+                     template = template + '<span class="filter">' +
                                 '<a class="other-filter">' + filters[counter] + '</a></span>';
                  }
             }
@@ -235,11 +241,11 @@ var ManageUserInformation = Backbone.View.extend({
             for( var item in data["addresses"] ) {
                 var item_object = data["addresses"][item];
                 template = template + '<tr class="libraryRow libraryOrFolderRow" id="libraryRow">' +
-                           '<td>' + 
-                           '<div class="form-row">' + 
+                           '<td>' +
+                           '<div class="form-row">' +
                            '<label>' + item_object['desc'] + ':</label>' +
                                item_object['html'] +
-                           '</div>' + 
+                           '</div>' +
                            '<div class="form-row">' +
                                '<ul class="manage-table-actions">' +
                                '<li>';
@@ -263,15 +269,16 @@ var ManageUserInformation = Backbone.View.extend({
         template = template + '</div></form></div>';
         // end of outermost div section
         template = template + "</div>";
-        $('.user-preferences-all').append(template).on( 'click', '.back-user-pref', self.showUserPref )
-                                                   .on( 'click', '.save-userdata', function( e ) {  self.saveUserData( self, e ); } );
+        $('.user-preferences-all').append(template);
+        $('.back-user-pref').on( 'click', self.showUserPref );
+        $('.save-userdata').on( 'click', function( e ) { self.saveUserData( self, e ) });
     },
 
     /** go back to all user preferences */
     showUserPref: function( e ) {
         $(".donemessage").hide();
         $(".validate.errormessage").hide();
-        $('.manage-userinfo-section').hide();
+        $('.manage-userinfo-section').remove();
         $( '.user-pref' ).show();
     }
 });
