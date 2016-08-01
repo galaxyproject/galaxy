@@ -23,7 +23,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _refresh: function() {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
-            }, 0 ) - this.$steps.height() + 20;
+            }, 0 ) - this.$steps.height() + 25;
             this.$steps.css( 'height', $( window ).height() - margin );
         },
 
