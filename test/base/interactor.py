@@ -124,8 +124,8 @@ class GalaxyInteractorApi( object ):
                 try:
                     dataset_value = dataset.get( key, None )
                     if dataset_value != value:
-                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]."
-                        msg_params = ( key, value, dataset_value )
+                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
+                        msg_params = ( key, value, dataset_value, dataset )
                         msg = msg % msg_params
                         raise Exception( msg )
                 except KeyError:
