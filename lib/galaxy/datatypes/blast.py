@@ -27,17 +27,17 @@ class BlastXml(GenericXml):
             dataset.blurb = 'file purged from disk'
 
     def sniff(self, filename):
-        """
-        Determines whether the file is blastxml
+        """Determines whether the file is blastxml
 
-        >>> fname = get_test_fname( 'megablast_xml_parser_test1.blastxml' )
-        >>> BlastXml().sniff( fname )
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
+        >>> BlastXml().sniff(fname)
         True
-        >>> fname = get_test_fname( 'tblastn_four_human_vs_rhodopsin.xml' )
-        >>> BlastXml().sniff( fname )
+        >>> fname = get_test_fname('tblastn_four_human_vs_rhodopsin.xml')
+        >>> BlastXml().sniff(fname)
         True
-        >>> fname = get_test_fname( 'interval.interval' )
-        >>> BlastXml().sniff( fname )
+        >>> fname = get_test_fname('interval.interval')
+        >>> BlastXml().sniff(fname)
         False
         """
         # TODO - Use a context manager on Python 2.5+ to close handle
