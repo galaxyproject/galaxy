@@ -7,6 +7,7 @@ from logging import getLogger
 
 from requests import get, post, delete, patch
 from six import StringIO
+from six import text_type
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -123,7 +124,7 @@ class GalaxyInteractorApi( object ):
             for key, value in metadata.items():
                 try:
                     dataset_value = dataset.get( key, None )
-                    if dataset_value != value:
+                    if text_type(dataset_value) != text_type(value):
                         msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
                         msg_params = ( key, value, dataset_value, dataset )
                         msg = msg % msg_params
