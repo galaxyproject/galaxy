@@ -2,13 +2,13 @@
 BlastXml class
 """
 
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.data import Text, Data
-from galaxy.datatypes.xml import GenericXml
-
-from time import sleep
-import os
 import logging
+import os
+from time import sleep
+
+from galaxy.datatypes.data import get_file_peek
+from galaxy.datatypes.data import Data, Text
+from galaxy.datatypes.xml import GenericXml
 
 log = logging.getLogger(__name__)
 
