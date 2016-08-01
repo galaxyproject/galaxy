@@ -31,7 +31,7 @@ The following individuals have contributed code to Galaxy:
 * Saket Choudhary <saketkc@gmail.com>
 * Wen-Yu Chung <wychung@bx.psu.edu>
 * Dave Clements <clements@galaxyproject.org>
-* Peter Cock <p.j.a.cock@googlemail.com>
+* Peter Cock <p.j.a.cock@googlemail.com> <peter.cock@hutton.ac.uk>
 * Ira Cooke <iracooke@gmail.com>
 * Nate Coraor <nate@bx.psu.edu>
 * Michael Cotterell <mepcotterell@gmail.com>
