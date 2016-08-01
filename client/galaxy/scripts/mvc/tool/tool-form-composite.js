@@ -23,7 +23,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _refresh: function() {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
-            }, 0 ) - this.$steps.height() + 30;
+            }, 0 ) - this.$steps.height() + 20;
             this.$steps.css( 'height', $( window ).height() - margin );
         },
 
@@ -195,7 +195,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 this.$message.append( new Ui.Message( {
                     message     : 'Some tools in this workflow may have changed since it was last saved or some errors were found. The workflow may still run, but any new options will have default values. Please review the messages below to make a decision about whether the changes will affect your analysis.',
                     status      : 'warning',
-                    persistent  : true
+                    persistent  : true,
+                    fade        : false
                 } ).$el );
             }
         },
