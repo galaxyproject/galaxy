@@ -30,7 +30,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
 
     @expose_api
     def index( self, trans, cntrller='user_preferences', **kwd ):
-        return {'id': trans.security.encode_id( trans.user.id ),
+        return {'user_id': trans.security.encode_id( trans.user.id ),
                 'message': "",
                 'username': trans.user.username,
                 'email': trans.user.email,
@@ -180,9 +180,9 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         """
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text( params.get( 'message', ''  ) )
+        message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        user_id = params.get( 'user_id', None )
+        user_id = params.get( 'id', None )
         button_type = params.get( 'button_name', None )
         
         if user_id and is_admin:
@@ -269,3 +269,211 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
 
         # makes a call to manage user info method
         return self.user_info(cntrller, trans, kwd)
+
+    @expose_api
+    def edit_address( self, trans, cntrller='user_preferences', **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        user_id = params.get( 'id', False )
+        if is_admin:
+            if not user_id:
+                return trans.show_error_message( "You must specify a user to add a new address to." )
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+        address_id = params.get( 'address_id', None )
+        if not address_id:
+            return trans.show_error_message( "Invalid address id." )
+        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
+        if address_obj.user_id != user.id:
+            return trans.show_error_message( "Invalid address id." )
+        if params.get( 'edit_address_button', False  ):
+            short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
+            name = util.restore_text( params.get( 'name', ''  ) )
+            institution = util.restore_text( params.get( 'institution', ''  ) )
+            address = util.restore_text( params.get( 'address', ''  ) )
+            city = util.restore_text( params.get( 'city', ''  ) )
+            state = util.restore_text( params.get( 'state', ''  ) )
+            postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
+            country = util.restore_text( params.get( 'country', ''  ) )
+            phone = util.restore_text( params.get( 'phone', ''  ) )
+            ok = True
+            if not short_desc:
+                ok = False
+                message = 'Enter a short description for this address'
+            elif not name:
+                ok = False
+                message = 'Enter the name'
+            elif not institution:
+                ok = False
+                message = 'Enter the institution associated with the user'
+            elif not address:
+                ok = False
+                message = 'Enter the address'
+            elif not city:
+                ok = False
+                message = 'Enter the city'
+            elif not state:
+                ok = False
+                message = 'Enter the state/province/region'
+            elif not postal_code:
+                ok = False
+                message = 'Enter the postal code'
+            elif not country:
+                ok = False
+                message = 'Enter the country'
+            if ok:
+                address_obj.desc = short_desc
+                address_obj.name = name
+                address_obj.institution = institution
+                address_obj.address = address
+                address_obj.city = city
+                address_obj.state = state
+                address_obj.postal_code = postal_code
+                address_obj.country = country
+                address_obj.phone = phone
+                trans.sa_session.add( address_obj )
+                trans.sa_session.flush()
+                message = 'Address (%s) has been updated.' % escape( address_obj.desc )
+                new_kwd = dict( message=message, status=status )
+                if is_admin:
+                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
+
+                return self.user_info(cntrller, trans, new_kwd)
+            else:
+                status = 'error'
+
+        # Display the address form with the current values filled in
+        address_item = dict()
+        address_item["desc"] = address_obj.desc
+        address_item["name"] = address_obj.name
+        address_item["institution"] = address_obj.institution 
+        address_item["address"] = address_obj.address
+        address_item["city"] = address_obj.city
+        address_item["state"] = address_obj.state
+        address_item["postal_code"] = address_obj.postal_code
+        address_item["country"] = address_obj.country
+        address_item["phone"] = address_obj.phone
+
+        return {
+            'user_id': user_id,
+            'address_obj': address_item,
+            'address_id': address_id,
+            'message': escape( message ),
+            'status': status
+        }
+    
+    @expose_api
+    def delete_address( self, trans, cntrller='user_preferences', address_id=None, **kwd ):
+        return self.__delete_undelete_address( trans, cntrller, 'delete', address_id=address_id, **kwd )
+
+    @expose_api
+    def undelete_address( self, trans, cntrller='user_preferences', address_id=None, **kwd ):
+        return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
+
+    def __delete_undelete_address( self, trans, cntrller, op, address_id=None, **kwd ):
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        user_id = kwd.get( 'id', False )
+        if is_admin:
+            if not user_id:
+                return trans.show_error_message( "You must specify a user to %s an address from." % op )
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+        try:
+            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
+        except:
+            return trans.show_error_message( "Invalid address id." )
+        if user_address:
+            if user_address.user_id != user.id:
+                return trans.show_error_message( "Invalid address id." )
+            user_address.deleted = True if op == 'delete' else False
+            trans.sa_session.add( user_address )
+            trans.sa_session.flush()
+            message = 'Address (%s) %sd' % ( escape( user_address.desc ), op )
+            status = 'done'
+
+        kwd[ 'id' ] = trans.security.encode_id( user.id )
+        if message:
+            kwd[ 'message' ] = util.sanitize_text( message )
+        if status:
+            kwd[ 'status' ] = status
+
+        return self.user_info(cntrller, trans, kwd)
+
+    @expose_api
+    def new_address( self, trans, cntrller='user_preferences', **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        user_id = params.get( 'id', False )
+        if is_admin:
+            if not user_id:
+                return trans.show_error_message( "You must specify a user to add a new address to." )
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+        short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
+        name = util.restore_text( params.get( 'name', ''  ) )
+        institution = util.restore_text( params.get( 'institution', ''  ) )
+        address = util.restore_text( params.get( 'address', ''  ) )
+        city = util.restore_text( params.get( 'city', ''  ) )
+        state = util.restore_text( params.get( 'state', ''  ) )
+        postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
+        country = util.restore_text( params.get( 'country', ''  ) )
+        phone = util.restore_text( params.get( 'phone', ''  ) )
+        ok = True
+        if not trans.app.config.allow_user_creation and not is_admin:
+            return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
+        if params.get( 'new_address_button', False ):
+            if not short_desc:
+                ok = False
+                message = 'Enter a short description for this address'
+            elif not name:
+                ok = False
+                message = 'Enter the name'
+            elif not institution:
+                ok = False
+                message = 'Enter the institution associated with the user'
+            elif not address:
+                ok = False
+                message = 'Enter the address'
+            elif not city:
+                ok = False
+                message = 'Enter the city'
+            elif not state:
+                ok = False
+                message = 'Enter the state/province/region'
+            elif not postal_code:
+                ok = False
+                message = 'Enter the postal code'
+            elif not country:
+                ok = False
+                message = 'Enter the country'
+            if ok:
+                user_address = trans.model.UserAddress( user=user,
+                                                        desc=short_desc,
+                                                        name=name,
+                                                        institution=institution,
+                                                        address=address,
+                                                        city=city,
+                                                        state=state,
+                                                        postal_code=postal_code,
+                                                        country=country,
+                                                        phone=phone )
+                trans.sa_session.add( user_address )
+                trans.sa_session.flush()
+                message = 'Address (%s) has been added' % escape( user_address.desc )
+                new_kwd = dict( message=message, status=status )
+                if is_admin:
+                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
+                return self.user_info(cntrller, trans, new_kwd)
+            else:
+                return {
+                    'user_id': user_id,
+                    'message': escape( message ),
+                    'status': 'error'
+                }

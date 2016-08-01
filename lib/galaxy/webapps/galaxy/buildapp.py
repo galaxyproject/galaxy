@@ -83,6 +83,10 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/user_preferences' )
     webapp.add_client_route( '/user_preferences/manage_user_info' )
     webapp.add_client_route( '/user_preferences/edit_info' )
+    webapp.add_client_route( '/user_preferences/edit_address' )
+    webapp.add_client_route( '/user_preferences/delete_address' )
+    webapp.add_client_route( '/user_preferences/undelete_address' )
+    webapp.add_client_route( '/user_preferences/new_address' )
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
@@ -475,6 +479,30 @@ def populate_api_routes( webapp, app ):
                            '/api/user_preferences/edit_info',
                            controller='user_preferences',
                            action='edit_info',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'edit_address',
+                           '/api/user_preferences/edit_address',
+                           controller='user_preferences',
+                           action='edit_address',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'delete_address',
+                           '/api/user_preferences/delete_address',
+                           controller='user_preferences',
+                           action='delete_address',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'undelete_address',
+                           '/api/user_preferences/undelete_address',
+                           controller='user_preferences',
+                           action='undelete_address',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'new_address',
+                           '/api/user_preferences/new_address',
+                           controller='user_preferences',
+                           action='new_address',
                            conditions=dict( method=["GET"] ) )
 
     # =======================

@@ -6,9 +6,13 @@ var ManageUserInformation = Backbone.View.extend({
     original_email: "",
     original_username: "",
     user_id: "",
+    address_id: "",
 
     initialize: function ( data ) {
-        $( ".manage-userinfo-section" ).remove();
+        this.initializeSection( data );
+    },
+
+    initializeSection: function( data ) {
         this.render( this, data );
         this.user_id = data["user_id"];
         this.original_email = data["email"];
@@ -79,7 +83,7 @@ var ManageUserInformation = Backbone.View.extend({
             }
         }
         if ( self.original_username !== name ) {
-            if ( name && !( self.validateString( name, "username" ) ) ) { 
+            if ( name && !( self.validateString( name, "username" ) ) || name.length < 3 ) { 
                 self.renderError( error_text_username_characters );
                 validForm = false;
             }
@@ -95,7 +99,7 @@ var ManageUserInformation = Backbone.View.extend({
         // if values are changed and the form is valid
         if ( !nothing_changed && validForm ) {
             url = Galaxy.root + 'api/user_preferences/edit_info/';
-            data = { 'user_id': self.user_id, 'email': email, 'username': name, 'button_name': e.target.attributes['name'].nodeValue };
+            data = { 'id': self.user_id, 'email': email, 'username': name, 'button_name': e.target.attributes['name'].nodeValue };
             $.getJSON( url, data, function( response ) {
                 // removes the old content
                 $( ".manage-userinfo-section" ).remove();
@@ -119,6 +123,9 @@ var ManageUserInformation = Backbone.View.extend({
         var template = "",
             filters = ['Active', 'Deleted', 'All'];
         // appends the appropriate message
+        $( ".manage-userinfo-section" ).remove();
+        $( ".donemessage" ).remove();
+        $( ".validate.errormessage" ).remove();
         if( data["message"].length > 0 ) {
             template = self.renderMessage( data["message"], data['status'] );
         }
@@ -219,20 +226,22 @@ var ManageUserInformation = Backbone.View.extend({
                        '<div class="toolFormTitle">User Addresses</div>' +
                            '<div class="toolFormBody">';
 
-        if( Object.keys( data["addresses"] ).length > 0 ) {
+        if( data["addresses"] ) {
             template = template + '<div class="form-row">' +
                        '<div class="grid-header">';
             for( var counter = 0; counter < filters.length; counter++ ) {
                  if( counter > 0 ) {
-                     template = template + '<span>|</span>';
+                     template = template + ' <span> | </span> ';
                  }
                  if( data["show_filter"] === filters[counter] ) {
                      template = template + '<span class="filter">' +
-                                '<a class="current-filter"><b>' + filters[counter] + '</b></a></span>';
+                                '<a class="link-filter" data-id="' + filters[counter] + '"><b>' + 
+                                filters[counter] + '</b></a></span>';
                  }
                  else {
                      template = template + '<span class="filter">' +
-                                '<a class="other-filter">' + filters[counter] + '</a></span>';
+                                '<a class="link-filter" data-id="' + filters[counter] + '">' + 
+                                filters[counter] + '</a></span>';
                  }
             }
             template = template + '</div></div>';
@@ -263,15 +272,289 @@ var ManageUserInformation = Backbone.View.extend({
         }
         // markup for adding a new address
         template = template + ' <div class="form-row">' +
-                   '<input type="submit" value="Add a new address">' +
+                   '<input type="button" class="add-address action-button" value="Add a new address">' +
                    '</div>';
         // end of markup of user addresses
         template = template + '</div></form></div>';
         // end of outermost div section
         template = template + "</div>";
-        $('.user-preferences-all').append(template);
+        $('.user-preferences-all').append( template );
+        // registers the events
         $('.back-user-pref').on( 'click', self.showUserPref );
         $('.save-userdata').on( 'click', function( e ) { self.saveUserData( self, e ) });
+        $('.link-filter').on( 'click', function( e ) { self.setAddressFilter( self, e ) } );
+        $('.edit-address').on( 'click', function( e ) { self.editAddress( self, e ) } );
+        $('.delete-address').on( 'click', function( e ) { self.deleteAddress( self, e ) } );
+        $('.undelete-address').on( 'click', function( e ) { self.undeleteAddress( self, e ) } );
+        $('.add-address').on( 'click', function( e ) { self.addAddress( self, e ) } );
+    },
+
+    /** adds an address */
+    addAddress: function( self, e ) {
+        var template = "";
+        template = self.getAddressTemplate( self, null, "Add new address",
+                                            "savenew-address", "Save", "add-address-section", "new_address_button" );
+
+        $('.user-preferences-all').append( template );
+        $( ".manage-userinfo-section" ).hide();
+        $('.back-manage-info').on( 'click', function( e ) {
+            e.preventDefault();
+            $( ".manage-userinfo-section" ).show();
+            $( ".add-address-section" ).remove();
+            self.hideErrorDoneMessage();
+        } );
+        $('.savenew-address').on( 'click', function( e ) { self.saveNewAddress( self, e ) } );
+    },
+
+    /** saves the new address */
+    saveNewAddress: function( self, e ) {
+        var short_desc = $( "input[name='short_desc']" ).val(),
+            name = $( "input[name='name']" ).val(),
+            institution = $( "input[name='institution']" ).val(),
+            address = $( "input[name='address']" ).val(),
+            city = $( "input[name='city']" ).val(),
+            state = $( "input[name='state']" ).val(),
+            postal_code = $( "input[name='postal_code']" ).val(),
+            country = $( "input[name='country']" ).val(),
+            phone = $( "input[name='phone']" ).val(),
+            data = {},
+            url = Galaxy.root + 'api/user_preferences/new_address/';
+ 
+        data = { 
+            'new_address_button': true,  
+            'id': self.user_id,
+            'short_desc': short_desc,
+            'name': name,
+            'institution': institution,
+            'address': address,
+            'city': city,
+            'state': state,
+            'postal_code': postal_code,
+            'country': country,
+            'phone': phone
+        }
+        $.getJSON( url, data, function( response ) {
+            if( response["status"] === "error" ) {
+                self.renderError( response["message"] );
+                return;
+            }
+            self.hideErrorDoneMessage();
+            // rebuilds the manage user info section with updated address
+            self.initializeSection( response );
+            self.renderDone( response["message"] );
+            $( ".add-address-section" ).remove();
+        });
+    },
+
+    /** builds address template for edit and add cases */
+    getAddressTemplate: function( self, data, headerText, cssClass, value, sectionClass, btnName ) {
+        var template = "",
+            address_object = null;
+        if( data ) { 
+            address_object = data['address_obj'];
+            if ( data["message"].length > 0 ) {
+                template = self.renderMessage( data["message"], data["status"] );
+            }
+        }
+        template = template + '<div class="'+ sectionClass +'"> <h3>' + headerText + '</h3>' +
+                   '<ul class="manage-table-actions">' +
+                       '<li>' +
+                           '<a class="action-button back-manage-info">Manage user information</a>' +
+                       '</li>' +
+                   '</ul>';
+        template = template +
+                   '<div class="toolForm">' +
+                       '<div class="toolFormTitle">' + headerText + '</div>' +
+                       '<div class="toolFormBody">' +
+                           '<form name="login_info" id="login_info">' +
+                               '<div class="form-row">' +
+                                   '<label>Short Description:</label>' +
+                                   '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                                       '<input type="text" name="short_desc" value="' + ( address_object ? address_object.desc : '' ) + '" size="40">' +
+                                   '</div>' +
+                                   '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                                   '<div style="clear: both"></div>' +
+                                '</div>' +
+                                '<div class="form-row">' +
+                                    '<label>Name:</label>' +
+                                    '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                                        '<input type="text" name="name" value="' + ( address_object ? address_object.name : '' ) + '" size="40">' +
+                                    '</div>' +
+                                    '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                                    '<div style="clear: both"></div>' +
+                                '</div>' +
+                                '<div class="form-row">' +
+				    '<label>Institution:</label>' +
+				    '<div style="float: left; width: 250px; margin-right: 10px;">' +
+				        '<input type="text" name="institution" value="' + ( address_object ? address_object.institution : '' ) + '" size="40">' +
+				    '</div>' +
+				    '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+				    '<div style="clear: both"></div>' +
+			        '</div>' +
+                                '<div class="form-row">' +
+                                    '<label>Address:</label>' +
+                                    '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                                        '<input type="text" name="address" value="' + ( address_object ? address_object.address : '' ) + '" size="40">' +
+                                    '</div>' +
+                                    '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                                    '<div style="clear: both"></div>' +
+                                '</div>' +
+                                '<div class="form-row">' +
+                                    '<label>City:</label>' + 
+                                    '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                                        '<input type="text" name="city" value="' +  ( address_object ? address_object.city : '' ) + '" size="40">' +
+                                    '</div>' +
+                                    '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                                    '<div style="clear: both"></div>' +
+                                    '</div>' +
+			    '<div class="form-row">' +
+				'<label>State/Province/Region:</label>' +
+				'<div style="float: left; width: 250px; margin-right: 10px;">' +
+				    '<input type="text" name="state" value="' +  ( address_object ? address_object.state : '' ) + '" size="40">' +
+				'</div>' +
+				'<div class="toolParamHelp" style="clear: both;">Required</div>' +
+				'<div style="clear: both"></div>' +
+			    '</div>' +
+			    '<div class="form-row">' +
+				'<label>Postal Code:</label>' +
+				'<div style="float: left; width: 250px; margin-right: 10px;">' +
+				   '<input type="text" name="postal_code" value="' +  ( address_object ? address_object.postal_code : '' ) + '" size="40">' +
+				'</div>' +
+				'<div class="toolParamHelp" style="clear: both;">Required</div>' +
+				'<div style="clear: both"></div>' +
+			    '</div>' +
+			    '<div class="form-row">' +
+				'<label>Country:</label>' +
+				'<div style="float: left; width: 250px; margin-right: 10px;">' +
+				    '<input type="text" name="country" value="' +  ( address_object ? address_object.country : '' ) + '" size="40">' +
+				'</div>' +
+				'<div class="toolParamHelp" style="clear: both;">Required</div>' +
+				'<div style="clear: both"></div>' +
+			    '</div>' +
+			    '<div class="form-row">' +
+				'<label>Phone:</label>' +
+				'<div style="float: left; width: 250px; margin-right: 10px;">' +
+				    '<input type="text" name="phone" value="' +  ( address_object ? address_object.phone : '' ) + '" size="40">' +
+				'</div>' +
+				'<div style="clear: both"></div>' +
+			    '</div>' +
+			    '<div class="form-row">' +
+				'<input type="button" class="action-button '+ cssClass +'" name="'+ btnName +'" value="'+ value +'">' +
+			    '</div>';
+        template = template + '</form></div></div></div>';
+        return template;
+    },
+
+    /** fills the edit address markup with data in edit mode */
+    renderEditAddress: function( self, data ) {
+        var template = "";
+        $( ".edit-address-section" ).remove();
+        template = self.getAddressTemplate( self, data, "Edit Address", "saveedit-address",
+                                            "Save changes", "edit-address-section", "edit_address_button" );
+        // appends the edit address template to the main div
+        $('.user-preferences-all').append(template);
+        $( ".manage-userinfo-section" ).hide();
+        $('.back-manage-info').on( 'click', function( e ) {
+            e.preventDefault();
+            $( ".manage-userinfo-section" ).show();
+            $( ".edit-address-section" ).remove();
+            self.hideErrorDoneMessage();
+        } );
+        $('.saveedit-address').on( 'click', function( e ) { self.saveEditedAddress( self, e ) } );
+    },
+
+    /** saves the edited address */
+    saveEditedAddress: function( self, e ) {
+        var short_desc = $( "input[name='short_desc']" ).val(),
+            name = $( "input[name='name']" ).val(),
+            institution = $( "input[name='institution']" ).val(),
+            address = $( "input[name='address']" ).val(),
+            city = $( "input[name='city']" ).val(),
+            state = $( "input[name='state']" ).val(),
+            postal_code = $( "input[name='postal_code']" ).val(),
+            country = $( "input[name='country']" ).val(),
+            phone = $( "input[name='phone']" ).val(),
+            data = {},
+            url = Galaxy.root + 'api/user_preferences/edit_address/';
+ 
+        data = { 
+            'edit_address_button': true,  
+            'id': self.user_id,
+            'address_id': self.address_id,
+            'short_desc': short_desc,
+            'name': name,
+            'institution': institution,
+            'address': address,
+            'city': city,
+            'state': state,
+            'postal_code': postal_code,
+            'country': country,
+            'phone': phone
+        }
+        $.getJSON( url, data, function( response ) {
+            if( response["status"] === "error" ) {
+                self.renderError( response["message"] );
+                return;
+            }
+            self.hideErrorDoneMessage();
+            // rebuilds the manage user info section with updated address
+            self.initializeSection( response );
+            self.renderDone( response["message"] );
+            $( ".edit-address-section" ).remove();
+        });
+    },
+
+    /** hides error and success messages bar */
+    hideErrorDoneMessage: function() {
+        $('.donemessage').hide();
+        $('.validate.errormessage').hide();
+    },
+
+    /** fetch address based on the filter selected */
+    setAddressFilter: function( self, e ) {
+        var url = Galaxy.root + 'api/user_preferences/manage_user_info/',
+            data = {};
+        data = { 'id': self.user_id, 'show_filter': e.currentTarget.attributes["data-id"].nodeValue }
+        $.getJSON( url, data, function( response ) {
+              // rebuilds the section
+              self.initializeSection( response );
+        });
+    },
+    
+    /** opens an address in edit mode */
+    editAddress: function( self, e ) {
+        var url = Galaxy.root + 'api/user_preferences/edit_address/',
+            data = {};
+        data = { 'id': self.user_id, 'address_id': e.currentTarget.attributes["data-id"].nodeValue };
+        $.getJSON( url, data, function( response ) {
+            self.hideErrorDoneMessage();
+            self.renderEditAddress( self, response );
+            self.address_id = response["address_id"];
+        });
+    },
+
+    /** deletes an address */
+    deleteAddress: function( self, e ) {
+        var url = Galaxy.root + 'api/user_preferences/delete_address/',
+            data = {};
+        data = { 'id': self.user_id, 'address_id': e.currentTarget.attributes["data-id"].nodeValue };
+        $.getJSON( url, data, function( response ) {
+            self.hideErrorDoneMessage();
+            self.initializeSection( response );
+            self.renderDone( response["message"] );
+        });
+    },
+
+    /** brings back a deleted address to active state */
+    undeleteAddress: function( self, e ) {
+        var url = Galaxy.root + 'api/user_preferences/undelete_address/',
+            data = {};
+        data = { 'id': self.user_id, 'address_id': e.currentTarget.attributes["data-id"].nodeValue };
+        $.getJSON( url, data, function( response ) {
+            self.hideErrorDoneMessage();
+            self.initializeSection( response );
+            self.renderDone( response["message"] );
+        });
     },
 
     /** go back to all user preferences */
