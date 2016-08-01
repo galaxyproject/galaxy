@@ -91,11 +91,21 @@ class GalaxyInteractorApi( object ):
         self._verify_metadata( history_id, hda_id, attributes )
 
     def _verify_metadata( self, history_id, hid, attributes ):
+        """Check dataset metadata.
+
+        ftype on output maps to `file_ext` on the hda's API description, `name`, `info`,
+        and `dbkey` all map to the API description directly. Other metadata attributes
+        are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
+        """
         metadata = attributes.get( 'metadata', {} ).copy()
         for key, value in metadata.copy().items():
-            new_key = "metadata_%s" % key
-            metadata[ new_key ] = metadata[ key ]
-            del metadata[ key ]
+            if key not in ['name', 'info']:
+                new_key = "metadata_%s" % key
+                metadata[ new_key ] = metadata[ key ]
+                del metadata[ key ]
+            elif key == "info":
+                metadata[ "misc_info" ] = metadata[ "info" ]
+                del metadata[ "info" ]
         expected_file_type = attributes.get( 'ftype', None )
         if expected_file_type:
             metadata[ "file_ext" ] = expected_file_type

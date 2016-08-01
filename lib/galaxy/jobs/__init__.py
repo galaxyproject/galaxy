@@ -1298,11 +1298,12 @@ class JobWrapper( object ):
                             dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
-                    try:
-                        # set the name if provided by the tool
-                        dataset.name = context['name']
-                    except:
-                        pass
+                    for context_key in ['name', 'info', 'dbkey']:
+                        try:
+                            context_value = context[context_key]
+                            setattr(dataset, context_key, context_value)
+                        except Exception:
+                            pass
                 else:
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
