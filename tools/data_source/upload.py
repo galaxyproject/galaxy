@@ -102,6 +102,7 @@ def add_file( dataset, registry, json_file, output_path ):
             file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
             return
         dataset.path = temp_name
+
     # See if we have an empty file
     if not os.path.exists( dataset.path ):
         file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )
@@ -115,6 +116,7 @@ def add_file( dataset, registry, json_file, output_path ):
             dataset.is_multi_byte = multi_byte.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError as e:
             dataset.is_multi_byte = False
+
     # Is dataset an image?
     image = check_image( dataset.path )
     if image:
@@ -135,6 +137,7 @@ def add_file( dataset, registry, json_file, output_path ):
         if type_info:
             data_type = type_info[0]
             ext = type_info[1]
+
     if not data_type:
         root_datatype = registry.get_datatype_by_extension( dataset.file_type )
         if getattr( root_datatype, 'compressed', False ):
@@ -297,9 +300,9 @@ def add_file( dataset, registry, json_file, output_path ):
                     if dataset.to_posix_lines:
                         tmpdir = output_adjacent_tmpdir( output_path )
                         tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
-                        if dataset.space_to_tab:
+                        if dataset.space_to_tab and not dataset.uni_to_posix:
                             line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
-                        else:
+                        elif(not dataset.uni_to_posix):
                             line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
                 if dataset.file_type == 'auto':
                     ext = sniff.guess_ext( dataset.path, registry.sniff_order )

@@ -106,7 +106,7 @@ if [ -n "$GALAXY_RUN_ALL" ]; then
     fi
     for server in $servers; do
         if [ -n "$wait_arg_set" -a -n "$daemon_or_restart_arg_set" ]; then
-            python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $paster_args
+            python ./scripts/paster.py serve --reload $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $paster_args
             while true; do
                 sleep 1
                 printf "."
@@ -124,10 +124,10 @@ if [ -n "$GALAXY_RUN_ALL" ]; then
             echo
         else
             echo "Handling $server with log file $server.log..."
-            python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $paster_args
+            python ./scripts/paster.py serve --reload $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $paster_args
         fi
     done
 else
     # Handle only 1 server, whose name can be specified with --server-name parameter (defaults to "main")
-    python ./scripts/paster.py serve $GALAXY_CONFIG_FILE $paster_args
+    python ./scripts/paster.py serve --reload $GALAXY_CONFIG_FILE $paster_args
 fi

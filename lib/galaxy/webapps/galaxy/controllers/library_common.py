@@ -10,6 +10,7 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
+import cProfile
 from json import dumps, loads
 
 from markupsafe import escape
@@ -788,6 +789,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     message=escape( message ),
                                     status=escape( status ) )
 
+
     @web.expose
     def upload_library_dataset( self, trans, cntrller, library_id, folder_id, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
@@ -803,6 +805,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
             space_to_tab = kwd.get( 'space_to_tab', '' )
+        if kwd.get( 'files_0|uni_to_posix', False ):
+            uni_to_posix = kwd.get( 'files_0|uni_to_posix', '' )
+        else:
+            uni_to_posix = kwd.get( 'uni_to_posix', '' )
+
         link_data_only = kwd.get( 'link_data_only', 'copy_files' )
         dbkey = kwd.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
@@ -909,6 +916,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         else:
                             processed_widgets.append( widget_dict )
                     widgets = processed_widgets
+
                 created_outputs_dict = trans.webapp.controllers[ 'library_common' ].upload_dataset( trans,
                                                                                                     cntrller=cntrller,
                                                                                                     library_id=trans.security.encode_id( library.id ),
@@ -1028,6 +1036,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     widgets=widgets,
                                     template_id=template_id,
                                     space_to_tab=space_to_tab,
+                                    uni_to_posix=uni_to_posix,
                                     link_data_only=link_data_only,
                                     show_deleted=show_deleted,
                                     ldda_message=ldda_message,
@@ -1118,7 +1127,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         job_params = {}
         job_params['link_data_only'] = dumps( kwd.get( 'link_data_only', 'copy_files' ) )
         job_params['uuid'] = dumps( kwd.get( 'uuid', None ) )
+
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder, job_params=job_params )
+
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output
@@ -1144,6 +1155,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.file_type = file_type
         uploaded_dataset.dbkey = params.get( 'dbkey', None )
         uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
+        uploaded_dataset.uni_to_posix = params.get( 'uni_to_posix', None )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
@@ -1273,6 +1285,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
             space_to_tab = kwd.get( 'space_to_tab', '' )
+        if kwd.get( 'files_0|uni_to_posix', False ):
+            uni_to_posix = kwd.get( 'files_0|uni_to_posix', '' )
+        else:
+            uni_to_posix = kwd.get( 'uni_to_posix', '' )
         link_data_only = kwd.get( 'link_data_only', 'copy_files' )
         dbkey = kwd.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
@@ -1443,6 +1459,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             widgets=[],
                                             template_id=template_id,
                                             space_to_tab=space_to_tab,
+                                            uni_to_posix=uni_to_posix,
                                             link_data_only=link_data_only,
                                             show_deleted=show_deleted,
                                             ldda_message=ldda_message,
