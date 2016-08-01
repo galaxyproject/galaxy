@@ -72,6 +72,7 @@ The following individuals have contributed code to Galaxy:
 * Jan Kanis <jan.code@jankanis.nl>
 * David King <dcking@bx.psu.edu>
 * Rory Kirchner <roryk@mit.edu>
+* Edward Kirton <eskirton@lbl.gov>
 * Brad Langhorst <langhorst@neb.com>
 * Ross Lazarus <ross.lazarus@gmail.com> <rossl@bx.psu.edu>
 * Gildas Le Corguillé @lecorguille
