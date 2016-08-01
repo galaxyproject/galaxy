@@ -3,9 +3,8 @@ BlastXml class
 """
 
 from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.data import Text, Data, GenericAsn1
+from galaxy.datatypes.data import Text, Data
 from galaxy.datatypes.xml import GenericXml
-from galaxy.datatypes.metadata import MetadataElement
 
 from time import sleep
 import os
