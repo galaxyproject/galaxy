@@ -4,9 +4,16 @@ lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
 lib/galaxy/dataset_collections/
+lib/galaxy/datatypes/assembly.py
 lib/galaxy/datatypes/binary.py
+lib/galaxy/datatypes/constructive_solid_geometry.py
 lib/galaxy/datatypes/converters/
 lib/galaxy/datatypes/dataproviders/
+lib/galaxy/datatypes/data.py
+lib/galaxy/datatypes/images.py
+lib/galaxy/datatypes/msa.py
+lib/galaxy/datatypes/ngsindex.py
+lib/galaxy/datatypes/proteomics.py
 lib/galaxy/datatypes/sequence.py
 lib/galaxy/datatypes/sniff.py
 lib/galaxy/datatypes/tabular.py

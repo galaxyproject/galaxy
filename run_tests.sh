@@ -510,7 +510,9 @@ if [ "$driver" = "python" ]; then
         export GALAXY_TEST_TOOL_CONF
     fi
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
+    exit_status=$?
     echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
+    exit ${exit_status}
 else
     ensure_grunt
     if [ -n "$watch" ]; then

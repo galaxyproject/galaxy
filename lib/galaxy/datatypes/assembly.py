@@ -5,14 +5,15 @@ for velvet assembler tool in galaxy
 """
 from __future__ import absolute_import
 
-from galaxy.datatypes import data
 import logging
 import os
 import re
 import sys
+
+from galaxy.datatypes import data
 from galaxy.datatypes import sequence
-from galaxy.datatypes.text import Html
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +150,7 @@ class Velvet( Html ):
     MetadataElement( name="short2_reads", desc="has 2nd short reads", default="False", readonly=False, set_in_upload=True)
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
-    file_ext = 'html'
+    file_ext = 'velvet'
 
     def __init__( self, **kwd ):
         Html.__init__( self, **kwd )
@@ -161,7 +162,7 @@ class Velvet( Html ):
         log.debug( "Velvet log info  %s %s" % ('JJ generate_primary_file', dataset))
         rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files( dataset=dataset ).iteritems():
+        for composite_name, composite_file in self.get_composite_files( dataset=dataset ).items():
             fn = composite_name
             log.debug( "Velvet log info  %s %s %s" % ('JJ generate_primary_file', fn, composite_file))
             opt_text = ''
@@ -208,7 +209,7 @@ class Velvet( Html ):
         # rval.append('<div>Generated:<p/><code> %s </code></div>' %(re.sub('\n','<br>',log_msg)))
         rval.append('<div>Generated:<p/> %s </div>' % (gen_msg))
         rval.append('<div>Velveth dataset:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files( dataset=dataset ).iteritems():
+        for composite_name, composite_file in self.get_composite_files( dataset=dataset ).items():
             fn = composite_name
             log.debug( "Velvet log info  %s %s %s" % ('JJ regenerate_primary_file', fn, composite_file))
             if re.search('Log', fn) is None:
