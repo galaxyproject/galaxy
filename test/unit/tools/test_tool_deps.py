@@ -3,7 +3,8 @@ import os.path
 from stat import S_IXUSR
 from os import makedirs, stat, symlink, chmod, environ
 from shutil import rmtree
-from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps import DependencyManager
+from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
 from galaxy.tools.deps.resolvers.modules import ModuleDependencyResolver, ModuleDependency
 from galaxy.util.bunch import Bunch
@@ -141,7 +142,7 @@ advisor/2013/update3    intel/12.0              mkl/10.2.7.041
         assert module.module_version == "3.0.1"
 
         module = resolver.resolve( name="R", version="3.0.4", type="package" )
-        assert module == INDETERMINATE_DEPENDENCY
+        assert isinstance(module, NullDependency)
 
 
 def test_module_dependency():

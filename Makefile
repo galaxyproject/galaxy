@@ -33,7 +33,11 @@ lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
-	if [ ! `git remote -v | grep -q $(RELEASE_UPSTREAM)` ]; then git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git; fi
+ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
+	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
+else
+	@echo "Remote $(RELEASE_UPSTREAM) already exists."
+endif
 
 release-merge-stable-to-next: release-ensure-upstream ## Merge last release into dev
 	git fetch $(RELEASE_UPSTREAM) && git checkout dev && git merge --ff-only $(RELEASE_UPSTREAM)/dev && git merge $(RELEASE_UPSTREAM)/$(RELEASE_PREVIOUS)
@@ -89,14 +93,16 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
 	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
 	git checkout -b version-$(RELEASE_CURR)
-	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR).rc1"
 	git checkout dev
 
 	git checkout -b version-$(RELEASE_NEXT).dev
-	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_NEXT)\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_NEXT)\"/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_NEXT).dev"
 
@@ -106,6 +112,7 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git commit -m "Merge branch 'version-$(RELEASE_CURR)' into version-$(RELEASE_NEXT).dev"
 	git push $(MY_UPSTREAM) version-$(RELEASE_CURR):version-$(RELEASE_CURR)
 	git push $(MY_UPSTREAM) version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
+	git checkout dev
 	git branch -d version-$(RELEASE_CURR)
 	git branch -d version-$(RELEASE_NEXT).dev
 	# TODO: Use hub to automate these PR creations or push directly.
@@ -125,7 +132,8 @@ release-create: release-ensure-upstream ## Create a release branch
 	# Test run of merging. If there are conflicts, it will fail here.
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR)"
 	git tag -m "Tag version $(RELEASE_CURR)" v$(RELEASE_CURR)
@@ -153,7 +161,8 @@ release-create-point: ## Create a point release
 	#git push $(MY_UPSTREAM) $(RELEASE_NEXT_BRANCH)
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)"
 	git tag -m "Tag version $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)" v$(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)
