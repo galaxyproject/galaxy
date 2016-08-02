@@ -196,7 +196,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def browse_toolsheds( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        return trans.fill_template( '/webapps/galaxy/admin/toolsheds.mako',
+        return trans.fill_template( '/admin/tool_shed_repository/browse_toolsheds.mako',
                                     message=message,
                                     status='error' )
 
