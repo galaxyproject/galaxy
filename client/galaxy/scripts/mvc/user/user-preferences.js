@@ -1,5 +1,5 @@
 /** User Preferences view */
-define(['mvc/user/manage-user-information'], function( Manage ) {
+define(['mvc/user/manage-user-information', 'mvc/user/change-password'], function( Manage, Password ) {
 var UserPreferences = Backbone.View.extend({
 
     initialize: function ( ) {
@@ -11,9 +11,19 @@ var UserPreferences = Backbone.View.extend({
         var userInfo = null,
             url = Galaxy.root + 'api/user_preferences/manage_user_info';
         e.preventDefault();
-        $( '.user-pref' ).css( 'display','none' );
+        $( '.user-pref' ).css( 'display', 'none' );
         $.getJSON( url, function( data ) {
               userInfo = new Manage.ManageUserInformation( data );  
+        });
+    },
+  
+    /** redirects to change password view */
+    callChangePassword: function( e ) {
+        $( '.user-pref' ).css( 'display', 'none' );
+        var url = Galaxy.root + 'api/user_preferences/change_password';
+        $.getJSON( url, function( data ) {
+            console.log( data );
+            changePassword = new Password.ChangePassword( data );     
         });
     },
 
@@ -85,7 +95,9 @@ var UserPreferences = Backbone.View.extend({
                        "</ul>";
         }
         template = template + "</div></div>";
-        this.$el.html(template).on( "click", ".manage-userinfo", self.callManageInfo );
+        $( "#center-panel" ).html(template);
+        $( ".manage-userinfo" ).on( "click", self.callManageInfo );
+        $( ".change-password" ).on( "click", self.callChangePassword );
     }
 });
 

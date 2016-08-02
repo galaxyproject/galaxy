@@ -559,10 +559,7 @@ var ManageUserInformation = Backbone.View.extend({
 
     /** go back to all user preferences */
     showUserPref: function( e ) {
-        $(".donemessage").hide();
-        $(".validate.errormessage").hide();
-        $('.manage-userinfo-section').remove();
-        $( '.user-pref' ).show();
+        require("mvc/user/user-preferences").UserPreferences.prototype.getUserPreferencesData();
     }
 });
 

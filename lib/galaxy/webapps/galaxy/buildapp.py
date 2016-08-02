@@ -87,6 +87,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/user_preferences/delete_address' )
     webapp.add_client_route( '/user_preferences/undelete_address' )
     webapp.add_client_route( '/user_preferences/new_address' )
+    webapp.add_client_route( '/user_preferences/change_password' )
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
@@ -504,6 +505,13 @@ def populate_api_routes( webapp, app ):
                            controller='user_preferences',
                            action='new_address',
                            conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'change_password',
+                           '/api/user_preferences/change_password',
+                           controller='user_preferences',
+                           action='change_password',
+                           conditions=dict( method=["GET"] ) )
+
 
     # =======================
     # ===== LIBRARY API =====
