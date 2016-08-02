@@ -1,5 +1,5 @@
-##CREATE RUNNER FOR GALAXY
-###A walk through the steps of creating a runner for Galaxy.
+##BUILD RUNNER FOR GALAXY
+###A walk through the steps of building a runner for Galaxy.
 
 In this tutorial, we would build the runner in a block by block fashion (like the building blocks), so we would divide the runner into components based on their function.
 
