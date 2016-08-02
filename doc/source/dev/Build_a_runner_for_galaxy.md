@@ -207,7 +207,7 @@ Destination of the files will be:
 * exit code file -> job_state.exit_code_file
 
 ###4. stop_job method - STAGE 4
-Input params: job (Object of [galaxy]())
+Input params: job (Object of [galaxy.model.Job](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L344))
 
 Output params: None
 
@@ -222,7 +222,7 @@ job.id
 
 ###5. recover method - STAGE 5
 Input params: 
-* job (Object of [galaxy]())
+* job (Object of [galaxy.model.Job](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L344))
 * job_wrapper (Object of [galaxy.jobs.JobWrapper](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/__init__.py#L743))
 
 Output params: None
