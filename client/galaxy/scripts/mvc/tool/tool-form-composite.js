@@ -16,15 +16,28 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.render();
             this._refresh();
             this.$el.on( 'click', function() { self._refresh() } );
+            this.$steps.on( 'mousewheel DOMMouseScroll', function() { self._refresh() } );
             $( window ).resize( function() { self._refresh() } );
         },
 
-        /** Refresh height of scrollable div below header */
-        _refresh: function() {
+        /** Refresh height of scrollable div below header, handle scrolling by lazy loading steps */
+        _refresh: function( step_index ) {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
             }, 0 ) - this.$steps.height() + 25;
             this.$steps.css( 'height', $( window ).height() - margin );
+            var size    = 0;
+            var top     = this.$steps.scrollTop();
+            var height  = this.$steps.height();
+            var index   = step_index || 0;
+            for ( var i = 0; i < this.forms.length && ( size < top + height || index >= i ); i++ ) {
+                var form = this.forms[ i ];
+                if( !form.is_shown ) {
+                    this._append( this.$steps, form.$el );
+                    form.is_shown = true;
+                }
+                size += form.$el.height();
+            }
         },
 
         /** Configures form/step options for each workflow step */
@@ -275,24 +288,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     }, step ) );
                 }
                 self.forms[ i ] = form;
-                self._append( self.$steps, form.$el );
                 step.needs_refresh && self._refreshStep( step );
-                self._resolve( form.deferred, promise );
+                self._refresh();
+                setTimeout( function() { promise.resolve() }, 0 );
                 self.execute_btn.model.set( 'percentage', ( i + 1 ) * 100.0 / self.steps.length );
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
             } );
-        },
-
-        /** This helps with rendering lazy loaded steps */
-        _resolve: function( deferred, promise ) {
-            var self = this;
-            setTimeout( function() {
-                if ( deferred && deferred.ready() || !deferred ) {
-                    promise.resolve();
-                } else {
-                    self._resolve( deferred, promise );
-                }
-            }, 0 );
         },
 
         /** Refreshes step values from source step values */
@@ -360,6 +361,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             validated = input_def.optional || ( input_def.is_workflow && input_value !== '' ) || ( !input_def.is_workflow && input_value !== null );
                         }
                         if ( !validated ) {
+                            this._refresh( i );
                             form.highlight( input_id );
                             break;
                         }
