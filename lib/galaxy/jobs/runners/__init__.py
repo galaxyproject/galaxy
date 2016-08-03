@@ -207,13 +207,18 @@ class BaseJobRunner( object ):
             container=container
         )
 
-    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
+    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None, tool_working_directory=None ):
         """
         Returns list of pairs (source_file, destination) describing path
         to work_dir output file and ultimate destination.
         """
-        if not job_working_directory:
-            job_working_directory = os.path.abspath( job_wrapper.working_directory )
+        if tool_working_directory is not None and job_working_directory is not None:
+            raise Exception("get_work_dir_outputs called with both a job and tool working directory, only one may be specified")
+
+        if tool_working_directory is None:
+            if not job_working_directory:
+                job_working_directory = os.path.abspath( job_wrapper.working_directory )
+            tool_working_directory = os.path.join(job_working_directory, "working")
 
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
@@ -234,9 +239,9 @@ class BaseJobRunner( object ):
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
-                    source_file = os.path.join( job_working_directory, 'working', hda_tool_output.from_work_dir )
+                    source_file = os.path.join( tool_working_directory, hda_tool_output.from_work_dir )
                     destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
-                    if in_directory( source_file, job_working_directory ):
+                    if in_directory( source_file, tool_working_directory ):
                         output_pairs.append( ( source_file, destination ) )
                     else:
                         # Security violation.
