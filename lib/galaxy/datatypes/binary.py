@@ -203,13 +203,23 @@ class Bam( Binary ):
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def _get_samtools_version( self ):
-        # Determine the version of samtools being used.  Wouldn't it be nice if
-        # samtools provided a version flag to make this much simpler?
         version = '0.0.0'
         samtools_exec = which('samtools')
         if not samtools_exec:
             message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
             raise Exception(message)
+
+        # Get the version of samtools via --version-only, if available
+        p = subprocess.Popen( ['samtools', '--version-only'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        output, error = p.communicate()
+
+        # --version-only is available
+        # Format is <version x.y.z>+htslib-<a.b.c>
+        if p.returncode == 0:
+            version = output.split('+')[0]
+            return version
 
         output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
         lines = output.split( '\n' )
