@@ -176,7 +176,8 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
                 this.$progress_bar.css( { width : percentage + '%' } );
             } else {
                 this.$progress_bar.addClass( 'no-transition' );
-                this.$progress_bar.css( { width : '0%' } )
+                this.$progress_bar.css( { width : '0%' } );
+                this.$progress_bar[ 0 ].offsetHeight;
                 this.$progress_bar.removeClass( 'no-transition' );
             }
             this.$percentage.html( percentage != 100 ? percentage + '%' : 'Adding to history...' );
