@@ -23,8 +23,8 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
 
             // select extension
             this.select_extension = new Select.View({
-                css         : 'footer-selection',
-                container   : this.$( '.footer-extension' ),
+                css         : 'upload-footer-selection',
+                container   : this.$( '.upload-footer-extension' ),
                 data        : _.filter( this.list_extensions, function( ext ) { return ext.composite_files } ),
                 onchange    : function( extension ) {
                     self.collection.reset();
@@ -39,7 +39,7 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
             });
 
             // handle extension info popover
-            this.$( '.footer-extension-info' ).on( 'click', function( e ) {
+            this.$( '.upload-footer-extension-info' ).on( 'click', function( e ) {
                 self._showExtensionInfo({
                     $el         : $( e.target ),
                     title       : self.select_extension.text(),
@@ -50,8 +50,8 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
 
             // genome extension
             this.select_genome = new Select.View({
-                css         : 'footer-selection',
-                container   : this.$( '.footer-genome' ),
+                css         : 'upload-footer-selection',
+                container   : this.$( '.upload-footer-genome' ),
                 data        : this.list_genomes,
                 value       : this.options.default_genome
             });
@@ -162,11 +162,11 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
         _template: function() {
             return  '<div class="upload-view-composite">' +
                         '<div class="upload-footer">' +
-                            '<span class="footer-title">Composite Type:</span>' +
-                            '<span class="footer-extension"/>' +
-                            '<span class="footer-extension-info upload-icon-button fa fa-search"/> ' +
-                            '<span class="footer-title">Genome/Build:</span>' +
-                            '<span class="footer-genome"/>' +
+                            '<span class="upload-footer-title">Composite Type:</span>' +
+                            '<span class="upload-footer-extension"/>' +
+                            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
+                            '<span class="upload-footer-title">Genome/Build:</span>' +
+                            '<span class="upload-footer-genome"/>' +
                         '</div>' +
                         '<div class="upload-box">' +
                             '<table class="upload-table ui-table-striped" style="display: none;">' +
