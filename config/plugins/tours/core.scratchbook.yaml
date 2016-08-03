@@ -16,7 +16,7 @@ steps:
       postclick:
         - "#btn-new"
 
-    - element: ".text-content:first"
+    - element: ".upload-text-content:first"
       intro: "...and paste content into the text area field."
       position: "top"
       textinsert: |
