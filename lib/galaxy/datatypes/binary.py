@@ -1321,3 +1321,35 @@ class SearchGuiArchive ( CompressedArchive ):
             return "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
 
 Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
+
+
+class NetCDF( Binary ):
+    """Binary data in netCDF format"""
+    file_ext = "netcdf"
+    edam_format = "format_3650"
+    edam_data = "data_0943"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary netCDF file (%s)" % ( nice_size( dataset.get_size() ) )
+
+    def sniff( self, filename ):
+        try:
+            header = open( filename ).read(3)
+            if binascii.b2a_hex( header ) == binascii.hexlify( 'CDF' ):
+                return True
+            return Falses
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
