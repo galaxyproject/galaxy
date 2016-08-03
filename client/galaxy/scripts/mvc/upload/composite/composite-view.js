@@ -18,7 +18,7 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
 
             // append buttons to dom
             _.each( [ this.btnStart, this.btnClose ], function( button ) {
-                this.$( '.upload-buttons' ).prepend( button.$el );
+                self.$( '.upload-buttons' ).prepend( button.$el );
             });
 
             // select extension
@@ -181,7 +181,7 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
                                         '<th>Status</th>' +
                                     '</tr>' +
                                 '</thead>' +
-                                '<tbody></tbody>' +
+                                '<tbody/>' +
                             '</table>' +
                         '</div>' +
                         '<div class="upload-buttons"/>' +

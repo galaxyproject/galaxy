@@ -275,7 +275,7 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
                             '</div>' +
                         '</td>' +
                         '<td>' +
-                            '<div class="status"/>' +
+                            '<div class="upload-status"/>' +
                         '</td>' +
                         '<td>' +
                             '<div class="upload-file-desc upload-title"/>' +
@@ -290,8 +290,8 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
                         '<td>' +
                             '<div class="upload-info">' +
                                 '<div class="upload-info-text"/>' +
-                                '<div class="upload-info-progress">' +
-                                    '<div class="upload-progress-bar progress-bar-success"/>' +
+                                '<div class="upload-info-progress progress">' +
+                                    '<div class="upload-progress-bar progress-bar progress-bar-success"/>' +
                                     '<div class="upload-percentage">0%</div>' +
                                 '</div>' +
                             '</div>' +
