@@ -57,9 +57,29 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
             });
 
             // listener for collection triggers on change in composite datatype and extension selection
-            this.collection.on( 'add', function ( model ) { self._eventAnnounce( model ) } );
-            this.collection.on( 'change add', function() { self._updateScreen() } ).trigger( 'change' );
+            this.listenTo( this.collection, 'add', function ( model ) { self._eventAnnounce( model ) } );
+            this.listenTo( this.collection, 'change add', function() { self.render() } );
             this.select_extension.options.onchange( this.select_extension.value() );
+            this.render();
+        },
+
+        render: function () {
+            var model = this.collection.first();
+            if ( model && model.get( 'status' ) == 'running' ) {
+                this.select_genome.disable();
+                this.select_extension.disable();
+            } else {
+                this.select_genome.enable();
+                this.select_extension.enable();
+            }
+            if ( this.collection.where( { status : 'ready' } ).length == this.collection.length && this.collection.length > 0 ) {
+                this.btnStart.enable();
+                this.btnStart.$el.addClass( 'btn-primary' );
+            } else {
+                this.btnStart.disable();
+                this.btnStart.$el.removeClass( 'btn-primary' );
+            }
+            this.$( '.upload-table' )[ this.collection.length > 0 ? 'show' : 'hide' ]();
         },
 
         //
@@ -123,26 +143,6 @@ function( Utils, UploadModel, UploadRow, Popover, Select, Ui ) {
             this.extension_popup.empty();
             this.extension_popup.append( this._templateDescription( description ) );
             this.extension_popup.show();
-        },
-
-        /** Update screen */
-        _updateScreen: function () {
-            var model = this.collection.first();
-            if ( model && model.get( 'status' ) == 'running' ) {
-                this.select_genome.disable();
-                this.select_extension.disable();
-            } else {
-                this.select_genome.enable();
-                this.select_extension.enable();
-            }
-            if ( this.collection.where( { status : 'ready' } ).length == this.collection.length && this.collection.length > 0 ) {
-                this.btnStart.enable();
-                this.btnStart.$el.addClass( 'btn-primary' );
-            } else {
-                this.btnStart.disable();
-                this.btnStart.$el.removeClass( 'btn-primary' );
-            }
-            this.$( '.upload-table' )[ this.collection.length > 0 ? 'show' : 'hide' ]();
         },
 
         /* Template for extensions description */
