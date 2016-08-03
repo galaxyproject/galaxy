@@ -175,16 +175,11 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
             if ( percentage != 0 ) {
                 this.$progress_bar.css( { width : percentage + '%' } );
             } else {
-                this.$progress_bar.addClass('no-transition')
-                                  .css( { width : '0%' } )
-                                  .removeClass( 'no-transition' );
-                this.$progress_bar[ 0 ].offsetHeight;
+                this.$progress_bar.addClass( 'no-transition' );
+                this.$progress_bar.css( { width : '0%' } )
+                this.$progress_bar.removeClass( 'no-transition' );
             }
-            if ( percentage != 100 ) {
-                this.$percentage.html( percentage + '%' );
-            } else {
-                this.$percentage.html( 'Adding to history...' );
-            }
+            this.$percentage.html( percentage != 100 ? percentage + '%' : 'Adding to history...' );
         },
 
         /** Refresh status */
