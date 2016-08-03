@@ -1135,7 +1135,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
                 for step in workflow.steps:
                     try:
-                        module_injector.inject( step )
+                        module_injector.inject( step, steps=workflow.steps )
                     except MissingToolException:
                         if step.tool_id not in missing_tools:
                             missing_tools.append(step.tool_id)
