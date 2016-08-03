@@ -1348,7 +1348,7 @@ class NetCDF( Binary ):
             header = open( filename ).read(3)
             if binascii.b2a_hex( header ) == binascii.hexlify( 'CDF' ):
                 return True
-            return Falses
+            return False
         except:
             return False
 
