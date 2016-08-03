@@ -73,8 +73,7 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
                 icon        : 'fa-edit',
                 title       : 'Paste/Fetch data',
                 onclick     : function() {
-                    self.model.reset( { 'file_mode': 'new',
-                                        'file_name': 'New File' } );
+                    self.model.reset( { 'file_mode': 'new', 'file_name': 'New File' } );
                 }
             });
 
