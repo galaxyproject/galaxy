@@ -91,10 +91,6 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
                 placement   : 'bottom'
             });
 
-            //
-            // ui events
-            //
-
             // handle text editing event
             this.$text_content.on( 'change input', function( e ) {
                 self.model.set( { 'url_paste': $( e.target ).val(),
@@ -103,12 +99,10 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
             });
 
             // handle settings popover
-            this.$settings.on('click' , function(e) { self._showSettings(); })
-                          .on('mousedown', function(e) { e.preventDefault(); });
+            this.$settings.on( 'click',     function( e ) { self._showSettings() } )
+                          .on( 'mousedown', function( e ) { e.preventDefault() } );
 
-            //
             // model events
-            //
             this.listenTo( this.model, 'change:percentage', function() { self._refreshPercentage() } );
             this.listenTo( this.model, 'change:status',     function() { self._refreshStatus() } );
             this.listenTo( this.model, 'change:info',       function() { self._refreshInfo() } );
@@ -116,14 +110,14 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
             this.listenTo( this.model, 'change:file_mode',  function() { self._refreshMode() } );
             this.listenTo( this.model, 'change:file_size',  function() { self._refreshFileSize() } );
             this.listenTo( this.model, 'remove', function() { self.remove() } );
-            this.app.collection.on('reset', function() { self.remove() } );
+            this.app.collection.on( 'reset', function() { self.remove() } );
         },
 
         render: function() {
             this.$el.attr( 'id', 'upload-row-' + this.model.id );
             this.$file_name.html( this.model.get( 'file_name' ) || '-' );
             this.$file_desc.html( this.model.get( 'file_desc' ) || 'Unavailable' );
-            this.$file_size.html( Utils.bytesToString ( this.model.get('file_size') ) );
+            this.$file_size.html( Utils.bytesToString ( this.model.get( 'file_size' ) ) );
             this.$status.removeClass().addClass( this.status_classes.init );
         },
 
@@ -152,7 +146,7 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
                 this.$text.css( { 'width' : this.$el.width() - 16 + 'px',
                                   'top'   : this.$el.height() - 8 + 'px' } ).show();
                 this.$el.height( this.$el.height() - 8 + this.$text.height() + 16 );
-                this.$text_content.val( '' ).trigger('keyup');
+                this.$text_content.val( '' ).trigger( 'keyup' );
             } else {
                 this.$el.height( this.height );
                 this.$text.hide();
