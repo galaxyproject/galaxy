@@ -667,6 +667,7 @@
     <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
+    <sniffer type="galaxy.datatypes.binary:NetCDF"/>
   </sniffers>
   <build_sites>
       <!--
