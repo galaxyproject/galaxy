@@ -146,7 +146,7 @@ function( Utils, UploadModel, UploadSettings, Popover, Select ) {
         /** Refresh status */
         _refreshStatus : function() {
             var status = this.model.get( 'status' );
-            this.$symbol.removeClass().addClass( this.status_classes[ status ] );
+            this.$symbol.removeClass().addClass( 'upload-symbol' ).addClass( this.status_classes[ status ] );
             this.model.set( 'enabled', status == 'init' );
             var enabled = this.model.get( 'enabled' );
             this.$text_content.attr( 'disabled', !enabled );
