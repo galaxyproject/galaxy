@@ -140,6 +140,7 @@ class DCASerializer( base.ModelSerializer ):
         self.default_view = 'summary'
         self.add_view( 'summary', [
             'id',
+            'create_time', 'update_time',
             'collection_type',
             'populated',
             'populated_state',
@@ -193,6 +194,11 @@ class HDCASerializer(
         self.default_view = 'summary'
         self.add_view( 'summary', [
             'id',
+            'type_id',
+            'name',
+            'history_id', 'hid',
+            'history_content_type',
+
             'collection_type',
             'populated',
             'populated_state',
@@ -206,8 +212,8 @@ class HDCASerializer(
             'deleted',
             # 'purged',
             'visible',
-            'type',
-            'url'
+            'type', 'url',
+            'create_time', 'update_time',
         ])
         self.add_view( 'detailed', [
             'elements'

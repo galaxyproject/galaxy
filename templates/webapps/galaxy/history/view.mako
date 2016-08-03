@@ -38,23 +38,17 @@ ${parent.stylesheets()}
         padding: 0px;
     }
 %endif
-#header {
+#history-view-controls {
+    flex: 0 0 44px;
     background-color: white;
     border-bottom: 1px solid #DDD;
     width: 100%;
-    height: 48px;
+    padding: 8px;
 }
-#history-view-controls {
-    margin: 10px 10px 10px 10px;
-}
-.history-panel {
-    /* this and the height of #header above are way too tweaky */
-    margin-top: 18px;
-}
-.history-title {
+.history-panel > .controls .title {
     font-size: 120%;
 }
-.history-title input {
+.history-panel > .controls .title input {
     font-size: 100%;
 }
 a.btn {
@@ -83,22 +77,24 @@ a.btn {
     show_hidden_json   = h.dumps( show_hidden )
 %>
 
-<div id="header" class="clear">
-    <div id="history-view-controls">
-        <div class="pull-left">
-            %if not history[ 'purged' ]:
-                %if not user_is_owner:
-                    <button id="import" class="btn btn-default">${ _( 'Import and start using history' ) }</button>
-                %elif not history_is_current:
-                    <button id="switch" class="btn btn-default">${ _( 'Switch to this history' ) }</button>
-                %endif
-                <a id="structure" href="${ structure_url }" class="btn btn-default">${ _( 'Show structure' ) }</a>
+<div id="history-view-controls" class="clear">
+    <div class="pull-left">
+        %if not history[ 'purged' ]:
+            %if not user_is_owner:
+                <button id="import" class="btn btn-default">${ _( 'Import and start using history' ) }</button>
+            %elif not history_is_current:
+                <button id="switch" class="btn btn-default">${ _( 'Switch to this history' ) }</button>
             %endif
-        </div>
-        <div class="pull-right">
-            <button id="toggle-deleted" class="btn btn-default"></button>
-            <button id="toggle-hidden" class="btn btn-default"></button>
-        </div>
+            <a id="structure" href="${ structure_url }" class="btn btn-default">${ _( 'Show structure' ) }</a>
+        %endif
+    </div>
+    <div class="pull-right">
+        <button id="toggle-deleted" class="btn btn-default">
+            ${ _( 'Include deleted' ) }
+        </button>
+        <button id="toggle-hidden" class="btn btn-default">
+            ${ _( 'Include hidden' ) }
+        </button>
     </div>
 </div>
 
@@ -106,45 +102,12 @@ a.btn {
 
 <script type="text/javascript">
 
-    function setUpBehaviors(){
-
-        $( '#toggle-deleted' ).modeButton({
-            initialMode : "${ 'showing_deleted' if show_deleted else 'not_showing_deleted' }",
-            modes: [
-                { mode: 'showing_deleted',      html: _l( 'Exclude deleted' ) },
-                { mode: 'not_showing_deleted',  html: _l( 'Include deleted' ) }
-            ]
-        });
-
-        $( '#toggle-hidden' ).modeButton({
-            initialMode : "${ 'showing_hidden' if show_hidden else 'not_showing_hidden' }",
-            modes: [
-                { mode: 'showing_hidden',     html: _l( 'Exclude hidden' ) },
-                { mode: 'not_showing_hidden', html: _l( 'Include hidden' ) }
-            ]
-        });
-
-        $( '#switch' ).click( function( ev ){
-            //##HACK:ity hack hack
-            //##TODO: remove when out of iframe
-            var hview = Galaxy.currHistoryPanel
-                     || ( top.Galaxy && top.Galaxy.currHistoryPanel )? top.Galaxy.currHistoryPanel : null;
-            if( hview ){
-                hview.switchToHistory( "${ history[ 'id' ] }" );
-            } else {
-                window.location = "${ switch_to_url }";
-            }
-        });
-
-    }
-
     // use_panels effects where the the center_panel() is rendered:
     //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
     var hasMasthead  = ${ 'true' if use_panels else 'false' },
         userIsOwner  = ${ 'true' if user_is_owner else 'false' },
         isCurrent    = ${ 'true' if history_is_current else 'false' },
         historyJSON  = ${ h.dumps( history ) },
-        contentsJSON = ${ h.dumps( contents ) },
         viewToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-view-edit',  className: 'HistoryViewEdit' }):
@@ -163,17 +126,46 @@ a.btn {
         'utils/localization',
         'ui/mode-button'
     ], function( user, viewMod, historyCopyDialog, _l ){
-        $(function(){
-            setUpBehaviors();
+        +(function setUpBehaviors(){
+            $( '#toggle-deleted' ).modeButton({
+                initialMode : "${ 'showing_deleted' if show_deleted else 'not_showing_deleted' }",
+                modes: [
+                    { mode: 'showing_deleted',      html: _l( 'Exclude deleted' ) },
+                    { mode: 'not_showing_deleted',  html: _l( 'Include deleted' ) }
+                ]
+            });
 
+            $( '#toggle-hidden' ).modeButton({
+                initialMode : "${ 'showing_hidden' if show_hidden else 'not_showing_hidden' }",
+                modes: [
+                    { mode: 'showing_hidden',     html: _l( 'Exclude hidden' ) },
+                    { mode: 'not_showing_hidden', html: _l( 'Include hidden' ) }
+                ]
+            });
+
+            $( '#switch' ).click( function( ev ){
+                //##HACK:ity hack hack
+                //##TODO: remove when out of iframe
+                var hview = Galaxy.currHistoryPanel
+                         || ( top.Galaxy && top.Galaxy.currHistoryPanel )? top.Galaxy.currHistoryPanel : null;
+                if( hview ){
+                    hview.switchToHistory( "${ history[ 'id' ] }" );
+                } else {
+                    window.location = "${ switch_to_url }";
+                }
+            });
+
+        })();
+
+        $(function(){
             if( hasMasthead ){
-                $( '#center' ).css( 'overflow', 'auto' );
+                $( '#center' ).addClass( 'flex-vertical-container' );
             }
 
             var viewClass = viewMod[ viewToUse.className ],
                 // history module is already in the dpn chain from the view. We can re-scope it here.
                 HISTORY = require( 'mvc/history/history-model' ),
-                historyModel = new HISTORY.History( historyJSON, contentsJSON );
+                historyModel = new HISTORY.History( historyJSON );
 
             // attach the copy dialog to the import button now that we have a history
             $( '#import' ).click( function( ev ){
@@ -191,13 +183,21 @@ a.btn {
             });
 
             window.historyView = new viewClass({
+                el              : $( "#history-" + historyJSON.id ),
+                className       : viewClass.prototype.className + ' wide',
+                $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
+                model           : historyModel,
                 show_deleted    : ${show_deleted_json},
                 show_hidden     : ${show_hidden_json},
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
-                el              : $( "#history-" + historyJSON.id ),
-                $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
-                model           : historyModel
-            }).render();
+            });
+            historyView.trigger( 'loading' );
+            historyModel.fetchContents({ silent: true })
+                .fail( function(){ alert( 'Galaxy history failed to load' ); })
+                .done( function(){
+                    historyView.trigger( 'loading-done' );
+                    historyView.render();
+                });
 
             $( '#toggle-deleted' ).on( 'click', function(){
                 historyView.toggleShowDeleted();

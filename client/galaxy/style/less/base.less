@@ -30,6 +30,7 @@
 @import "toastr.less";
 @import "jstree.less";
 @import "tour.less";
+@import "flex.less";
 
 // Mixins
 .unselectable {
@@ -253,6 +254,7 @@ body.has-message-box.has-inactivity-box {
         content:'\f054';
     }
     z-index: 201;
+    cursor: pointer;
     display: block;
     position: fixed;
     left: 0;
@@ -292,8 +294,9 @@ div.unified-panel-body {
     width: 100%;
     padding: 0px;
 }
+@panel-bg-color: #DFE5F9;
 div.unified-panel-body-background {
-    background: none repeat scroll 0 0 #DFE5F9;
+    background: none repeat scroll 0 0 @panel-bg-color;
 }
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
@@ -1451,8 +1454,9 @@ div.permissionContainer {
 // ============================================================================ History
 @import "ui/icon-btn.less";
 @import "list-item.less";
+@import "dataset.less";
 @import "history.less";
-@import "collections.less";
+@import "collection.less";
 @import "job.less";
 
 @import "ui/paired-collection-creator.less";
@@ -1461,6 +1465,7 @@ div.permissionContainer {
 @import "ui/dataset-choice.less";
 @import "ui/peek-column-selector.less";
 @import "ui/pagination.less";
+@import "ui/error-modal.less";
 
 
 // ==== Tool menu styles

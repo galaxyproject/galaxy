@@ -84,6 +84,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
     webapp.add_route( '/history', controller='history', action='view' )
+    webapp.add_route( '/history/view/{id}', controller='history', action='view' )
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
     webapp.add_route( '/login', controller='root', action='login' )
