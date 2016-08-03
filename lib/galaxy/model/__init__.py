@@ -215,6 +215,16 @@ class User( object, Dictifiable ):
                     roles.append( role )
         return roles
 
+    def all_roles_exploiting_cache( self ):
+        """
+        """
+        roles = [ ura.role for ura in self.roles ]
+        for group in [ uga.group for uga in self.groups ]:
+            for role in [ gra.role for gra in group.roles ]:
+                if role not in roles:
+                    roles.append( role )
+        return roles
+
     def get_disk_usage( self, nice_size=False ):
         """
         Return byte count of disk space used by user or a human-readable

@@ -12,6 +12,7 @@ define([
     "mvc/collection/list-of-pairs-collection-creator",
     "ui/fa-icon-button",
     "mvc/ui/popup-menu",
+    "mvc/base-mvc",
     "utils/localization",
     "ui/editable-text",
 ], function(
@@ -28,6 +29,7 @@ define([
     LIST_OF_PAIRS_COLLECTION_CREATOR,
     faIconButton,
     PopupMenu,
+    BASE_MVC,
     _l
 ){
 
@@ -49,9 +51,6 @@ var _super = HISTORY_VIEW.HistoryView;
  */
 var HistoryViewEdit = _super.extend(
 /** @lends HistoryViewEdit.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     /** class to use for constructing the HistoryDatasetAssociation views */
     HDAViewClass    : HDA_LI_EDIT.HDAListItemEdit,
@@ -83,39 +82,50 @@ var HistoryViewEdit = _super.extend(
 
     /** Override to handle history as drag-drop target */
     _setUpListeners : function(){
-        var panel = this;
-        _super.prototype._setUpListeners.call( panel );
-
-        panel.on( 'drop', function( ev, data ){
-            panel.dataDropped( data );
-            // remove the drop target
-            panel.dropTargetOff();
-        });
-        panel.on( 'view:attached view:removed', function(){
-            panel._renderCounts();
+        _super.prototype._setUpListeners.call( this );
+        return this.on({
+            'droptarget:drop': function( ev, data ){
+                // process whatever was dropped and re-hide the drop target
+                this.dataDropped( data );
+                this.dropTargetOff();
+            },
+            'view:attached view:removed': function(){
+                this._renderCounts();
+            },
+            'search:loading-progress': this._renderSearchProgress,
+            'search:searching': this._renderSearchFindings,
         });
     },
 
     // ------------------------------------------------------------------------ listeners
-    /** listening for collection events */
-    _setUpCollectionListeners : function(){
-        _super.prototype._setUpCollectionListeners.call( this );
-
-        this.listenTo( this.collection, {
-            'change:deleted': this._handleHdaDeletionChange,
-            'change:visible': this._handleHdaVisibleChange,
-            'change:purged' : function( model ){
-                // hafta get the new nice-size w/o the purged model
-                this.model.fetch();
-            }
-        });
-        return this;
-    },
-
     /** listening for history and HDA events */
     _setUpModelListeners : function(){
         _super.prototype._setUpModelListeners.call( this );
         this.listenTo( this.model, 'change:size', this.updateHistoryDiskSize );
+        return this;
+    },
+
+    /** listening for collection events */
+    _setUpCollectionListeners : function(){
+        _super.prototype._setUpCollectionListeners.call( this );
+        this.listenTo( this.collection, {
+            'change:deleted': this._handleItemDeletedChange,
+            'change:visible': this._handleItemVisibleChange,
+            'change:purged' : function( model ){
+                // hafta get the new nice-size w/o the purged model
+                this.model.fetch();
+            },
+            // loading indicators for deleted/hidden
+            'fetching-deleted'      : function( collection ){
+                this.$( '> .controls .deleted-count' )
+                    .html( '<i>' + _l( 'loading...' ) + '</i>' );
+            },
+            'fetching-hidden'       : function( collection ){
+                this.$( '> .controls .hidden-count' )
+                    .html( '<i>' + _l( 'loading...' ) + '</i>' );
+            },
+            'fetching-deleted-done fetching-hidden-done'  : this._renderCounts,
+        });
         return this;
     },
 
@@ -133,40 +143,23 @@ var HistoryViewEdit = _super.extend(
         return $newRender;
     },
 
+    /** Update the history size display (curr. upper right of panel). */
+    updateHistoryDiskSize : function(){
+        this.$( '.history-size' ).text( this.model.get( 'nice_size' ) );
+    },
+
     /** override to render counts when the items are rendered */
     renderItems : function( $whereTo ){
         var views = _super.prototype.renderItems.call( this, $whereTo );
-        this._renderCounts( $whereTo );
+        if( !this.searchFor ){ this._renderCounts( $whereTo ); }
         return views;
     },
 
     /** override to show counts, what's deleted/hidden, and links to toggle those */
     _renderCounts : function( $whereTo ){
-//TODO: too complicated
-        function toggleLink( _class, text ){
-            return [ '<a class="', _class, '" href="javascript:void(0);">', text, '</a>' ].join( '' );
-        }
-        $whereTo = $whereTo || this.$el;
-        var deleted  = this.collection.where({ deleted: true }),
-            hidden   = this.collection.where({ visible: false }),
-            msgs = [];
-
-        if( this.views.length ){
-            msgs.push( [ this.views.length, _l( 'shown' ) ].join( ' ' ) );
-        }
-        if( deleted.length ){
-            msgs.push( ( !this.showDeleted )?
-                 ([ deleted.length, toggleLink( 'toggle-deleted-link', _l( 'deleted' ) ) ].join( ' ' ))
-                :( toggleLink( 'toggle-deleted-link', _l( 'hide deleted' ) ) )
-            );
-        }
-        if( hidden.length ){
-            msgs.push( ( !this.showHidden )?
-                 ([ hidden.length, toggleLink( 'toggle-hidden-link', _l( 'hidden' ) ) ].join( ' ' ))
-                :( toggleLink( 'toggle-hidden-link', _l( 'hide hidden' ) ) )
-            );
-        }
-        return $whereTo.find( '> .controls .subtitle' ).html( msgs.join( ', ' ) );
+        $whereTo = $whereTo instanceof jQuery? $whereTo : this.$el;
+        var html = this.templates.counts( this.model.toJSON(), this );
+        return $whereTo.find( '> .controls .subtitle' ).html( html );
     },
 
     /** render the tags sub-view controller */
@@ -294,100 +287,111 @@ var HistoryViewEdit = _super.extend(
         return [
             {   html: _l( 'Build Dataset List' ), func: function() {
                     LIST_COLLECTION_CREATOR.createListCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh() });
+                        .done( function(){ panel.model.refresh(); });
                 }
             },
             // TODO: Only show quick pair if two things selected.
             {   html: _l( 'Build Dataset Pair' ), func: function() {
                     PAIR_COLLECTION_CREATOR.createPairCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh() });
+                        .done( function(){ panel.model.refresh(); });
                 }
             },
             {   html: _l( 'Build List of Dataset Pairs' ), func: function() {
                     LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection( panel.getSelectedModels() )
-                        .done( function(){ panel.model.refresh() });
+                        .done( function(){ panel.model.refresh(); });
                 }
             },
         ];
     },
 
     // ------------------------------------------------------------------------ sub-views
-    // reverse HID order
-    /** Override to reverse order of views - newest contents on top */
-    _attachItems : function( $whereTo ){
-        this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
-            return view.$el;
-        }));
-        return this;
-    },
-
-    /** Override to add new contents at the top */
-    _attachView : function( view ){
-        var panel = this;
-        // override to control where the view is added, how/whether it's rendered
-        panel.views.unshift( view );
-        panel.$list().prepend( view.render( 0 ).$el.hide() );
-        panel.trigger( 'view:attached', view );
-        view.$el.slideDown( panel.fxSpeed, function(){
-            panel.trigger( 'view:attached:rendered' );
-        });
-    },
-
     /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
     _getItemViewOptions : function( model ){
         var options = _super.prototype._getItemViewOptions.call( this, model );
         _.extend( options, {
             purgeAllowed            : this.purgeAllowed,
-//TODO: not working
             tagsEditorShown         : ( this.tagsEditor && !this.tagsEditor.hidden ),
             annotationEditorShown   : ( this.annotationEditor && !this.annotationEditor.hidden )
         });
         return options;
     },
 
-    ///** Override to alter data in drag based on multiselection */
-    //_setUpItemViewListeners : function( view ){
-    //    var panel = this;
-    //    _super.prototype._setUpItemViewListeners.call( panel, view );
-    //
-    //},
-
     /** If this item is deleted and we're not showing deleted items, remove the view
      *  @param {Model} the item model to check
      */
-    _handleHdaDeletionChange : function( itemModel ){
-        if( itemModel.get( 'deleted' ) && !this.showDeleted ){
-            this.removeItemView( itemModel );
+    _handleItemDeletedChange : function( itemModel ){
+        if( itemModel.get( 'deleted' ) ){
+            this._handleItemDeletion( itemModel );
+        } else {
+            this._handleItemUndeletion( itemModel );
         }
         this._renderCounts();
+    },
+
+    _handleItemDeletion : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.deleted += 1;
+        contentsShown.active -= 1;
+        if( !this.model.contents.includeDeleted ){
+            this.removeItemView( itemModel );
+        }
+        this.model.set( 'contents_active', contentsShown );
+    },
+
+    _handleItemUndeletion : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.deleted -= 1;
+        if( !this.model.contents.includeDeleted ){
+            contentsShown.active -= 1;
+        }
+        this.model.set( 'contents_active', contentsShown );
     },
 
     /** If this item is hidden and we're not showing hidden items, remove the view
      *  @param {Model} the item model to check
      */
-    _handleHdaVisibleChange : function( itemModel ){
-        if( itemModel.hidden() && !this.showHidden ){
-            this.removeItemView( itemModel );
+    _handleItemVisibleChange : function( itemModel ){
+        if( itemModel.hidden() ){
+            this._handleItemHidden( itemModel );
+        } else {
+            this._handleItemUnhidden( itemModel );
         }
         this._renderCounts();
     },
 
+    _handleItemHidden : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.hidden += 1;
+        contentsShown.active -= 1;
+        if( !this.model.contents.includeHidden ){
+            this.removeItemView( itemModel );
+        }
+        this.model.set( 'contents_active', contentsShown );
+    },
+
+    _handleItemUnhidden : function( itemModel ){
+        var contentsShown = this.model.get( 'contents_active' );
+        contentsShown.hidden -= 1;
+        if( !this.model.contents.includeHidden ){
+            contentsShown.active -= 1;
+        }
+        this.model.set( 'contents_active', contentsShown );
+    },
+
     /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */
-    toggleHDATagEditors : function( showOrHide ){
-        var args = Array.prototype.slice.call( arguments, 1 );
+    toggleHDATagEditors : function( showOrHide, speed ){
         _.each( this.views, function( view ){
             if( view.tagsEditor ){
-                view.tagsEditor.toggle.apply( view.tagsEditor, args );
+                view.tagsEditor.toggle( showOrHide, speed );
             }
         });
     },
 
     /** toggle the visibility of each content's annotationEditor applying all the args sent to this function */
-    toggleHDAAnnotationEditors : function( showOrHide ){
-        var args = Array.prototype.slice.call( arguments, 1 );
+    toggleHDAAnnotationEditors : function( showOrHide, speed ){
         _.each( this.views, function( view ){
             if( view.annotationEditor ){
-                view.annotationEditor.toggle.apply( view.annotationEditor, args );
+                view.annotationEditor.toggle( showOrHide, speed );
             }
         });
     },
@@ -400,14 +404,26 @@ var HistoryViewEdit = _super.extend(
         'click .toggle-hidden-link'                 : function( ev ){ this.toggleShowHidden(); }
     }),
 
-    /** Update the history size display (curr. upper right of panel).
-     */
-    updateHistoryDiskSize : function(){
-        this.$el.find( '.history-size' ).text( this.model.get( 'nice_size' ) );
+    // ------------------------------------------------------------------------ search
+    _renderSearchProgress : function( limit, offset ){
+        var stop = limit + offset;
+        return this.$( '> .controls .subtitle' ).html([
+            '<i>',
+                _l( 'Searching ' ), stop, '/', this.model.contentsShown(),
+            '</i>'
+        ].join(''));
+    },
+
+    /** override to display number found in subtitle */
+    _renderSearchFindings : function(){
+        this.$( '> .controls .subtitle' ).html([
+            _l( 'Found' ), this.views.length
+        ].join(' '));
+        return this;
     },
 
     // ------------------------------------------------------------------------ as drop target
-    /**  */
+    /** turn all the drag and drop handlers on and add some help text above the drop area */
     dropTargetOn : function(){
         if( this.dropTarget ){ return this; }
         this.dropTarget = true;
@@ -419,7 +435,7 @@ var HistoryViewEdit = _super.extend(
             'dragleave' : _.bind( this.dragleave, this ),
             'drop'      : _.bind( this.drop, this )
         };
-//TODO: scroll to top
+
         var $dropTarget = this._renderDropTarget();
         this.$list().before([ this._renderDropTargetHelp(), $dropTarget ]);
         for( var evName in dropHandlers ){
@@ -431,32 +447,20 @@ var HistoryViewEdit = _super.extend(
         return this;
     },
 
-    /**  */
+    /** render a box to serve as a 'drop here' area on the history */
     _renderDropTarget : function(){
         this.$( '.history-drop-target' ).remove();
-        return $( '<div/>' ).addClass( 'history-drop-target' )
-            .css({
-                'height': '64px',
-                'margin': '0px 10px 10px 10px',
-                'border': '1px dashed black',
-                'border-radius' : '3px'
-            });
+        return $( '<div/>' ).addClass( 'history-drop-target' );
     },
 
-    /**  */
+    /** tell the user how it works  */
     _renderDropTargetHelp : function(){
         this.$( '.history-drop-target-help' ).remove();
         return $( '<div/>' ).addClass( 'history-drop-target-help' )
-            .css({
-                'margin'        : '10px 10px 4px 10px',
-                'color'         : 'grey',
-                'font-size'     : '80%',
-                'font-style'    : 'italic'
-            })
             .text( _l( 'Drag datasets here to copy them to the current history' ) );
     },
 
-    /**  */
+    /** shut down drag and drop event handlers and remove drop target */
     dropTargetOff : function(){
         if( !this.dropTarget ){ return this; }
         //this.log( 'dropTargetOff' );
@@ -471,7 +475,7 @@ var HistoryViewEdit = _super.extend(
         this.$( '.history-drop-target-help' ).remove();
         return this;
     },
-    /**  */
+    /** toggle the target on/off */
     dropTargetToggle : function(){
         if( this.dropTarget ){
             this.dropTargetOff();
@@ -481,51 +485,54 @@ var HistoryViewEdit = _super.extend(
         return this;
     },
 
-    /**  */
     dragenter : function( ev ){
         //console.debug( 'dragenter:', this, ev );
         ev.preventDefault();
         ev.stopPropagation();
         this.$( '.history-drop-target' ).css( 'border', '2px solid black' );
     },
-    /**  */
     dragover : function( ev ){
         ev.preventDefault();
         ev.stopPropagation();
     },
-    /**  */
     dragleave : function( ev ){
         //console.debug( 'dragleave:', this, ev );
         ev.preventDefault();
         ev.stopPropagation();
         this.$( '.history-drop-target' ).css( 'border', '1px dashed black' );
     },
-    /**  */
+    /** when (text) is dropped try to parse as json and trigger an event */
     drop : function( ev ){
         ev.preventDefault();
         //ev.stopPropagation();
 
+        var self = this;
         var dataTransfer = ev.originalEvent.dataTransfer;
-        dataTransfer.dropEffect = 'move';
+        var data = dataTransfer.getData( "text" );
 
-        var panel = this,
-            data = dataTransfer.getData( "text" );
+        dataTransfer.dropEffect = 'move';
         try {
             data = JSON.parse( data );
-
         } catch( err ){
-            this.warn( 'error parsing JSON from drop:', data );
+            self.warn( 'error parsing JSON from drop:', data );
         }
-        this.trigger( 'droptarget:drop', ev, data, panel );
+
+        self.trigger( 'droptarget:drop', ev, data, self );
         return false;
     },
 
-    /**  */
+    /** handler that copies data into the contents */
     dataDropped : function( data ){
-        var panel = this;
+        var self = this;
         // HDA: dropping will copy it to the history
         if( _.isObject( data ) && data.model_class === 'HistoryDatasetAssociation' && data.id ){
-            return panel.model.contents.copy( data.id );
+            if( self.contents.currentPage !== 0 ){
+                return self.contents.fetchPage( 0 )
+                    .then( function(){
+                        return self.model.contents.copy( data.id );
+                    });
+            }
+            return self.model.contents.copy( data.id );
         }
         return jQuery.when();
     },
@@ -536,6 +543,54 @@ var HistoryViewEdit = _super.extend(
         return 'HistoryViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
+
+//------------------------------------------------------------------------------ TEMPLATES
+HistoryViewEdit.prototype.templates = (function(){
+
+    var countsTemplate = BASE_MVC.wrapTemplate([
+        '<% var shown = Math.max( view.views.length, history.contents_active.active ) %>',
+        '<% if( shown ){ %>',
+            '<span class="shown-count">',
+                '<%- shown %> ', _l( 'shown' ),
+            '</span>',
+        '<% } %>',
+
+        '<% if( history.contents_active.deleted ){ %>',
+            '<span class="deleted-count">',
+            '<% if( view.model.contents.includeDeleted ){ %>',
+                '<a class="toggle-deleted-link" href="javascript:void(0);">',
+                    _l( 'hide deleted' ),
+                '</a>',
+            '<% } else { %>',
+                '<%- history.contents_active.deleted %> ',
+                '<a class="toggle-deleted-link" href="javascript:void(0);">',
+                    _l( 'deleted' ),
+                '</a>',
+            '<% } %>',
+            '</span>',
+        '<% } %>',
+
+        '<% if( history.contents_active.hidden ){ %>',
+            '<span class="hidden-count">',
+            '<% if( view.model.contents.includeHidden ){ %>',
+                '<a class="toggle-hidden-link" href="javascript:void(0);">',
+                    _l( 'hide hidden' ),
+                '</a>',
+            '<% } else { %>',
+                '<%- history.contents_active.hidden %> ',
+                '<a class="toggle-hidden-link" href="javascript:void(0);">',
+                    _l( 'hidden' ),
+                '</a>',
+            '<% } %>',
+            '</span>',
+        '<% } %>',
+    ], 'history' );
+
+    return _.extend( _.clone( _super.prototype.templates ), {
+        counts : countsTemplate
+    });
+}());
+
 
 //==============================================================================
     return {

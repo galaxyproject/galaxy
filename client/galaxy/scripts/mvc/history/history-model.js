@@ -1,14 +1,14 @@
 
 define([
     "mvc/history/history-contents",
+    "mvc/history/history-preferences",
+    "mvc/base/controlled-fetch-collection",
     "utils/utils",
     "mvc/base-mvc",
     "utils/localization"
-], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
-
+], function( HISTORY_CONTENTS, HISTORY_PREFS, CONTROLLED_FETCH_COLLECTION, UTILS, BASE_MVC, _l ){
 'use strict';
 
-var logNamespace = 'history';
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -18,7 +18,10 @@ var logNamespace = 'history';
 var History = Backbone.Model
         .extend( BASE_MVC.LoggableMixin )
         .extend( BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
-    _logNamespace : logNamespace,
+    _logNamespace : 'history',
+
+    /** ms between fetches when checking running jobs/datasets for updates */
+    UPDATE_DELAY : 4000,
 
     // values from api (may need more)
     defaults : {
@@ -27,78 +30,92 @@ var History = Backbone.Model
         name            : 'Unnamed History',
         state           : 'new',
 
-        deleted         : false
+        deleted         : false,
+        contents_active : {},
+        contents_states : {},
     },
 
-    // ........................................................................ urls
     urlRoot: Galaxy.root + 'api/histories',
+
+    contentsClass : HISTORY_CONTENTS.HistoryContents,
+
+    /** What model fields to search with */
+    searchAttributes : [
+        'name', 'annotation', 'tags'
+    ],
+
+    /** Adding title and singular tag */
+    searchAliases : {
+        title       : 'name',
+        tag         : 'tags'
+    },
 
     // ........................................................................ set up/tear down
     /** Set up the model
      *  @param {Object} historyJSON model data for this History
-     *  @param {Object[]} contentsJSON   array of model data for this History's contents (hdas or collections)
      *  @param {Object} options     any extra settings including logger
      */
-    initialize : function( historyJSON, contentsJSON, options ){
+    initialize : function( historyJSON, options ){
         options = options || {};
         this.logger = options.logger || null;
-        this.log( this + ".initialize:", historyJSON, contentsJSON, options );
+        this.log( this + ".initialize:", historyJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
-        this.log( 'creating history contents:', contentsJSON );
-        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], { historyId: this.get( 'id' )});
-        //// if we've got hdas passed in the constructor, load them
-        //if( contentsJSON && _.isArray( contentsJSON ) ){
-        //    this.log( 'resetting history contents:', contentsJSON );
-        //    this.contents.reset( contentsJSON );
-        //}
+        this.contents = new this.contentsClass( [], {
+            history     : this,
+            historyId   : this.get( 'id' ),
+            order       : options.order,
+        });
 
         this._setUpListeners();
+        this._setUpCollectionListeners();
 
         /** cached timeout id for the dataset updater */
         this.updateTimeoutId = null;
-        // set up update timeout if needed
-        //this.checkForUpdates();
     },
 
     /** set up any event listeners for this history including those to the contained HDAs
      *  events: error:contents  if an error occurred with the contents collection
      */
     _setUpListeners : function(){
-        this.on( 'error', function( model, xhr, options, msg, details ){
-            this.errorHandler( model, xhr, options, msg, details );
-        });
-
-        // hda collection listening
-        if( this.contents ){
-            this.listenTo( this.contents, 'error', function(){
-                this.trigger.apply( this, [ 'error:contents' ].concat( jQuery.makeArray( arguments ) ) );
-            });
-        }
         // if the model's id changes ('current' or null -> an actual id), update the contents history_id
-        this.on( 'change:id', function( model, newId ){
-            if( this.contents ){
-                this.contents.historyId = newId;
-            }
+        return this.on({
+            'error' : function( model, xhr, options, msg, details ){
+                this.clearUpdateTimeout();
+            },
+            'change:id' : function( model, newId ){
+                if( this.contents ){
+                    this.contents.historyId = newId;
+                }
+            },
         });
     },
 
-    //TODO: see base-mvc
-    //onFree : function(){
-    //    if( this.contents ){
-    //        this.contents.free();
-    //    }
-    //},
+    /** event handlers for the contents submodels */
+    _setUpCollectionListeners : function(){
+        if( !this.contents ){ return this; }
+        // bubble up errors
+        return this.listenTo( this.contents, {
+            'error' : function(){
+                this.trigger.apply( this, jQuery.makeArray( arguments ) );
+            },
+        });
+    },
 
-    /** event listener for errors. Generally errors are handled outside this model */
-    errorHandler : function( model, xhr, options, msg, details ){
-        // clear update timeout on model err
-        this.clearUpdateTimeout();
+    // ........................................................................ derived attributes
+    /**  */
+    contentsShown : function(){
+        var contentsActive = this.get( 'contents_active' );
+        var shown = contentsActive.active || 0;
+        shown += this.contents.includeDeleted? contentsActive.deleted : 0;
+        shown += this.contents.includeHidden?  contentsActive.hidden  : 0;
+        return shown;
     },
 
     /** convert size in bytes to a more human readable version */
     nice_size : function(){
-        return UTILS.bytesToString( this.get( 'size' ), true, 2 );
+        var size = this.get( 'size' );
+        return size? UTILS.bytesToString( size, true, 2 ) : _l( '(empty)' );
     },
 
     /** override to add nice_size */
@@ -132,11 +149,6 @@ var History = Backbone.Model
         return true;
     },
 
-    /**  */
-    contentsCount : function(){
-        return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
-    },
-
     /** Return the number of running jobs assoc with this history (note: unknown === 0) */
     numOfUnfinishedJobs : function(){
         var unfinishedJobIds = this.get( 'non_ready_jobs' );
@@ -145,35 +157,30 @@ var History = Backbone.Model
 
     /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
     numOfUnfinishedShownContents : function(){
-        var contents = this.contents.running().visibleAndUndeleted();
-        return contents? contents.length : 0;
-    },
-
-    // ........................................................................ search
-    /** What model fields to search with */
-    searchAttributes : [
-        'name', 'annotation', 'tags'
-    ],
-
-    /** Adding title and singular tag */
-    searchAliases : {
-        title       : 'name',
-        tag         : 'tags'
+        return this.contents.runningAndActive().length || 0;
     },
 
     // ........................................................................ updates
-    _getSizeAndRunning : function(){
-        return this.fetch({ data : $.param({ keys : 'size,non_ready_jobs' }) });
+    _fetchContentRelatedAttributes : function(){
+        var contentRelatedAttrs = [ 'size', 'non_ready_jobs', 'contents_active', 'hid_counter' ];
+        return this.fetch({ data : $.param({ keys : contentRelatedAttrs.join( ',' ) }) });
     },
 
-    /**  */
+    /** check for any changes since the last time we updated (or fetch all if ) */
     refresh : function( options ){
+        // console.log( this + '.refresh' );
         options = options || {};
         var self = this;
 
+        // note if there was no previous update time, all summary contents will be fetched
         var lastUpdateTime = self.lastUpdateTime;
+        // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
+        this.contents.allFetched = false;
+        var fetchFn = self.contents.currentPage !== 0
+            ? function(){ return self.contents.fetchPage( 0 ); }
+            : function(){ return self.contents.fetchUpdated( lastUpdateTime ); };
         // note: if there was no previous update time, all summary contents will be fetched
-        return self.contents.fetchUpdated( lastUpdateTime )
+        return fetchFn()
             .done( function( response, status, xhr ){
                 var serverResponseDatetime;
                 try {
@@ -184,11 +191,13 @@ var History = Backbone.Model
             });
     },
 
-    /**  */
+    /** continuously fetch updated contents every UPDATE_DELAY ms if this history's datasets or jobs are unfinished */
     checkForUpdates : function( options ){
+        // console.log( this + '.checkForUpdates' );
         options = options || {};
-        var delay = History.UPDATE_DELAY;
+        var delay = this.UPDATE_DELAY;
         var self = this;
+        if( !self.id ){ return; }
 
         function _delayThenUpdate(){
             // prevent buildup of updater timeouts by clearing previous if any, then set new and cache id
@@ -199,15 +208,18 @@ var History = Backbone.Model
         }
 
         // if there are still datasets in the non-ready state, recurse into this function with the new time
-        if( this.numOfUnfinishedShownContents() > 0 ){
+        var nonReadyContentCount = this.numOfUnfinishedShownContents();
+        // console.log( 'nonReadyContentCount:', nonReadyContentCount );
+        if( nonReadyContentCount > 0 ){
             _delayThenUpdate();
 
         } else {
             // no datasets are running, but currently runnning jobs may still produce new datasets
             // see if the history has any running jobs and continue to update if so
             // (also update the size for the user in either case)
-            self._getSizeAndRunning()
+            self._fetchContentRelatedAttributes()
                 .done( function( historyData ){
+                    // console.log( 'non_ready_jobs:', historyData.non_ready_jobs );
                     if( self.numOfUnfinishedJobs() > 0 ){
                         _delayThenUpdate();
 
@@ -228,6 +240,45 @@ var History = Backbone.Model
     },
 
     // ........................................................................ ajax
+    /** override to use actual Dates objects for create/update times */
+    parse : function( response, options ){
+        var parsed = Backbone.Model.prototype.parse.call( this, response, options );
+        if( parsed.create_time ){
+            parsed.create_time = new Date( parsed.create_time );
+        }
+        if( parsed.update_time ){
+            parsed.update_time = new Date( parsed.update_time );
+        }
+        return parsed;
+    },
+
+    /** fetch this histories data (using options) then it's contents (using contentsOptions) */
+    fetchWithContents : function( options, contentsOptions ){
+        options = options || {};
+        var self = this;
+
+        // console.log( this + '.fetchWithContents' );
+        // TODO: push down to a base class
+        options.view = 'dev-detailed';
+
+        // fetch history then use history data to fetch (paginated) contents
+        return this.fetch( options ).then( function getContents( history ){
+            self.contents.history = self;
+            self.contents.setHistoryId( history.id );
+            return self.fetchContents( contentsOptions );
+        });
+    },
+
+    /** fetch this histories contents, adjusting options based on the stored history preferences */
+    fetchContents : function( options ){
+        options = options || {};
+        var self = this;
+
+        // we're updating, reset the update time
+        self.lastUpdateTime = new Date();
+        return self.contents.fetchCurrentPage( options );
+    },
+
     /** save this history, _Mark_ing it as deleted (just a flag) */
     _delete : function( options ){
         if( this.get( 'deleted' ) ){ return jQuery.when(); }
@@ -266,9 +317,10 @@ var History = Backbone.Model
         if( !allDatasets ){
             postData.all_datasets = false;
         }
+        postData.view = 'dev-detailed';
 
-        var history = this,
-            copy = jQuery.post( this.urlRoot, postData );
+        var history = this;
+        var copy = jQuery.post( this.urlRoot, postData );
         // if current - queue to setAsCurrent before firing 'copied'
         if( current ){
             return copy.then( function( response ){
@@ -300,241 +352,46 @@ var History = Backbone.Model
     }
 }));
 
-//------------------------------------------------------------------------------ CLASS VARS
-/** When the history has running hdas,
- *  this is the amount of time between update checks from the server
- */
-History.UPDATE_DELAY = 4000;
-
-/** Get data for a history then its hdas using a sequential ajax call, return a deferred to receive both */
-History.getHistoryData = function getHistoryData( historyId, options ){
-    options = options || {};
-    var detailIdsFn = options.detailIdsFn || [];
-    var hdcaDetailIds = options.hdcaDetailIds || [];
-    //console.debug( 'getHistoryData:', historyId, options );
-
-    var df = jQuery.Deferred(),
-        historyJSON = null;
-
-    function getHistory( id ){
-        // get the history data
-        if( historyId === 'current' ){
-            return jQuery.getJSON( Galaxy.root + 'history/current_history_json' );
-        }
-        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyId );
-    }
-    function isEmpty( historyData ){
-        // get the number of hdas accrd. to the history
-        return historyData && historyData.empty;
-    }
-    function getContents( historyData ){
-        // get the hda data
-        // if no hdas accrd. to history: return empty immed.
-        if( isEmpty( historyData ) ){ return []; }
-        // if there are hdas accrd. to history: get those as well
-        if( _.isFunction( detailIdsFn ) ){
-            detailIdsFn = detailIdsFn( historyData );
-        }
-        if( _.isFunction( hdcaDetailIds ) ){
-            hdcaDetailIds = hdcaDetailIds( historyData );
-        }
-        var data = {
-            v : 'dev'
-        };
-        if( detailIdsFn.length ) {
-            data.details = detailIdsFn.join( ',' );
-        }
-        return jQuery.ajax( Galaxy.root + 'api/histories/' + historyData.id + '/contents', { data: data });
-    }
-
-    // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
-    //  chain the api calls - getting history first then contents
-
-    var historyFn = options.historyFn || getHistory,
-        contentsFn = options.contentsFn || getContents;
-
-    // chain ajax calls: get history first, then hdas
-    var historyXHR = historyFn( historyId );
-    historyXHR.done( function( json ){
-        // set outer scope var here for use below
-        historyJSON = json;
-        df.notify({ status: 'history data retrieved', historyJSON: historyJSON });
-    });
-    historyXHR.fail( function( xhr, status, message ){
-        // call reject on the outer deferred to allow its fail callback to run
-        df.reject( xhr, 'loading the history' );
-    });
-
-    var contentsXHR = historyXHR.then( contentsFn );
-    contentsXHR.then( function( contentsJSON ){
-        df.notify({ status: 'contents data retrieved', historyJSON: historyJSON, contentsJSON: contentsJSON });
-        // we've got both: resolve the outer scope deferred
-        df.resolve( historyJSON, contentsJSON );
-    });
-    contentsXHR.fail( function( xhr, status, message ){
-        // call reject on the outer deferred to allow its fail callback to run
-        df.reject( xhr, 'loading the contents', { history: historyJSON } );
-    });
-
-    return df;
-};
-
 
 //==============================================================================
-var ControlledFetchMixin = {
-
-    /** Override to convert certain options keys into API index parameters */
-    fetch : function( options ){
-        options = options || {};
-        options.data = options.data || this._buildFetchData( options );
-        // use repeated params for arrays, e.g. q=1&qv=1&q=2&qv=2
-        options.traditional = true;
-        return Backbone.Collection.prototype.fetch.call( this, options );
-    },
-
-    /** These attribute keys are valid params to fetch/API-index */
-    _fetchOptions : [
-        /** model dependent string to control the order of models returned */
-        'order',
-        /** limit the number of models returned from a fetch */
-        'limit',
-        /** skip this number of models when fetching */
-        'offset',
-        /** what series of attributes to return (model dependent) */
-        'view',
-        /** individual keys to return for the models (see api/histories.index) */
-        'keys'
-    ],
-
-    /** Build the data dictionary to send to fetch's XHR as data */
-    _buildFetchData : function( options ){
-        var data = {},
-            fetchDefaults = this._fetchDefaults();
-        options = _.defaults( options || {}, fetchDefaults );
-        data = _.pick( options, this._fetchOptions );
-
-        var filters = _.has( options, 'filters' )? options.filters : ( fetchDefaults.filters || {} );
-        if( !_.isEmpty( filters ) ){
-            _.extend( data, this._buildFetchFilters( filters ) );
-        }
-        return data;
-    },
-
-    /** Override to have defaults for fetch options and filters */
-    _fetchDefaults : function(){
-        // to be overridden
-        return {};
-    },
-
-    /** Convert dictionary filters to qqv style arrays */
-    _buildFetchFilters : function( filters ){
-        var filterMap = {
-            q  : [],
-            qv : []
-        };
-        _.each( filters, function( v, k ){
-            if( v === true ){ v = 'True'; }
-            if( v === false ){ v = 'False'; }
-            if( v === null ){ v = 'None'; }
-            filterMap.q.push( k );
-            filterMap.qv.push( v );
-        });
-        return filterMap;
-    },
-};
-
-//==============================================================================
-/** @class A collection of histories (per user).
- *      (stub) currently unused.
+var _collectionSuper = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection;
+/** @class A collection of histories (per user)
+ *      that maintains the current history as the first in the collection.
+ *  New or copied histories become the current history.
  */
-var HistoryCollection = Backbone.Collection
-        .extend( BASE_MVC.LoggableMixin )
-        .extend( ControlledFetchMixin )
-        .extend(/** @lends HistoryCollection.prototype */{
-    _logNamespace : logNamespace,
+var HistoryCollection = _collectionSuper.extend( BASE_MVC.LoggableMixin ).extend({
+    _logNamespace       : 'history',
 
-    model   : History,
-
-    /** @type {String} the default sortOrders key for sorting */
-    DEFAULT_ORDER : 'update_time',
-
-    /** @type {Object} map of collection sorting orders generally containing a getter to return the attribute
-     *      sorted by and asc T/F if it is an ascending sort.
-     */
-    sortOrders : {
-        'update_time' : {
-            getter : function( h ){ return new Date( h.get( 'update_time' ) ); },
-            asc : false
-        },
-        'update_time-asc' : {
-            getter : function( h ){ return new Date( h.get( 'update_time' ) ); },
-            asc : true
-        },
-        'name' : {
-            getter : function( h ){ return h.get( 'name' ); },
-            asc : true
-        },
-        'name-dsc' : {
-            getter : function( h ){ return h.get( 'name' ); },
-            asc : false
-        },
-        'size' : {
-            getter : function( h ){ return h.get( 'size' ); },
-            asc : false
-        },
-        'size-asc' : {
-            getter : function( h ){ return h.get( 'size' ); },
-            asc : true
-        }
-    },
+    model               : History,
+    /** @type {String} initial order used by collection */
+    order               : 'update_time',
+    /** @type {Number} limit used for the first fetch (or a reset) */
+    limitOnFirstFetch   : 10,
+    /** @type {Number} limit used for each subsequent fetch */
+    limitPerFetch       : 10,
 
     initialize : function( models, options ){
         options = options || {};
-        this.log( 'HistoryCollection.initialize', arguments );
+        this.log( 'HistoryCollection.initialize', models, options );
+        _collectionSuper.prototype.initialize.call( this, models, options );
 
-        // instance vars
         /** @type {boolean} should deleted histories be included */
         this.includeDeleted = options.includeDeleted || false;
-        // set the sort order
-        this.setOrder( options.order || this.DEFAULT_ORDER );
+
         /** @type {String} encoded id of the history that's current */
         this.currentHistoryId = options.currentHistoryId;
-        /** @type {boolean} have all histories been fetched and in the collection? */
-        this.allFetched = options.allFetched || false;
 
-        // this.on( 'all', function(){
-        //    console.info( 'event:', arguments );
-        // });
         this.setUpListeners();
+        // note: models are sent to reset *after* this fn ends; up to this point
+        // the collection *is empty*
     },
 
     urlRoot : Galaxy.root + 'api/histories',
     url     : function(){ return this.urlRoot; },
 
-    /** returns map of default filters and settings for fetching from the API */
-    _fetchDefaults : function(){
-        // to be overridden
-        var defaults = {
-            order   : this.order,
-            view    : 'detailed'
-        };
-        if( !this.includeDeleted ){
-            defaults.filters = {
-                deleted : false,
-                purged  : false,
-            };
-        } else {
-            defaults.filters = {
-                // TODO: for bypassing defaults on current API
-                deleted : null,
-            };
-        }
-        return defaults;
-    },
-
     /** set up reflexive event handlers */
     setUpListeners : function setUpListeners(){
-        this.on({
+        return this.on({
             // when a history is deleted, remove it from the collection (if optionally set to do so)
             'change:deleted' : function( history ){
                 // TODO: this becomes complicated when more filters are used
@@ -556,65 +413,71 @@ var HistoryCollection = Backbone.Collection
         });
     },
 
-    /** override to allow passing options.order and setting the sort order to one of sortOrders */
+    /** override to change view */
+    _buildFetchData : function( options ){
+        return _.extend( _collectionSuper.prototype._buildFetchData.call( this, options ), {
+            view : 'dev-detailed'
+        });
+    },
+
+    /** override to filter out deleted and purged */
+    _buildFetchFilters : function( options ){
+        var superFilters = _collectionSuper.prototype._buildFetchFilters.call( this, options ) || {};
+        var filters = {};
+        if( !this.includeDeleted ){
+            filters.deleted = false;
+            filters.purged = false;
+        } else {
+            // force API to return both deleted and non
+            //TODO: when the API is updated, remove this
+            filters.deleted = null;
+        }
+        return _.defaults( superFilters, filters );
+    },
+
+    /** override to fetch current as well (as it may be outside the first 10, etc.) */
+    fetchFirst : function( options ){
+        var self = this;
+        // TODO: batch?
+        var xhr = $.when();
+        if( this.currentHistoryId ){
+            xhr = _collectionSuper.prototype.fetchFirst.call( self, {
+                silent: true,
+                limit : 1,
+                filters: {
+                    // without these a deleted current history will return [] here and block the other xhr
+                    'purged'        : '',
+                    'deleted'       : '',
+                    'encoded_id-in' : this.currentHistoryId,
+                }
+            });
+        }
+        return xhr.then( function(){
+            options = options || {};
+            options.offset = 0;
+            return self.fetchMore( options );
+        });
+    },
+
+    /** @type {Object} map of collection available sorting orders containing comparator fns */
+    comparators : _.extend( _.clone( _collectionSuper.prototype.comparators ), {
+        'name'       : BASE_MVC.buildComparator( 'name', { ascending: true }),
+        'name-dsc'   : BASE_MVC.buildComparator( 'name', { ascending: false }),
+        'size'       : BASE_MVC.buildComparator( 'size', { ascending: false }),
+        'size-asc'   : BASE_MVC.buildComparator( 'size', { ascending: true }),
+    }),
+
+    /** override to always have the current history first */
     sort : function( options ){
         options = options || {};
-        this.setOrder( options.order );
-        return Backbone.Collection.prototype.sort.call( this, options );
-    },
-
-    /** build the comparator used to sort this collection using the sortOrder map and the given order key
-     *  @event 'changed-order' passed the new order and the collection
-     */
-    setOrder : function( order ){
-        var collection = this,
-            sortOrder = this.sortOrders[ order ];
-        if( _.isUndefined( sortOrder ) ){ return; }
-
-        collection.order = order;
-        collection.comparator = function comparator( a, b ){
-            var currentHistoryId = collection.currentHistoryId;
-            // current always first
-            if( a.id === currentHistoryId ){ return -1; }
-            if( b.id === currentHistoryId ){ return 1; }
-            // then compare by an attribute
-            a = sortOrder.getter( a );
-            b = sortOrder.getter( b );
-            return sortOrder.asc?
-                ( ( a === b )?( 0 ):( a > b ?  1 : -1 ) ):
-                ( ( a === b )?( 0 ):( a > b ? -1 :  1 ) );
-        };
-        collection.trigger( 'changed-order', collection.order, collection );
-        return collection;
-    },
-
-    /** override to provide order and offsets based on instance vars, set limit if passed,
-     *  and set allFetched/fire 'all-fetched' when xhr returns
-     */
-    fetch : function( options ){
-        options = options || {};
-        if( this.allFetched ){ return jQuery.when({}); }
-        var collection = this,
-            fetchOptions = _.defaults( options, {
-                remove : false,
-                offset : collection.length >= 1? ( collection.length - 1 ) : 0,
-                order  : collection.order
-            }),
-            limit = options.limit;
-        if( !_.isUndefined( limit ) ){
-            fetchOptions.limit = limit;
+        var silent = options.silent;
+        var currentHistory = this.remove( this.get( this.currentHistoryId ) );
+        _collectionSuper.prototype.sort.call( this, _.defaults({ silent: true }, options ) );
+        this.unshift( currentHistory, { silent: true });
+        if( !silent ){
+            this.trigger( 'sort', this, options );
         }
-
-        return ControlledFetchMixin.fetch.call( this, fetchOptions )
-            .done( function _postFetchMore( fetchData ){
-                var numFetched = _.isArray( fetchData )? fetchData.length : 0;
-                // anything less than a full page means we got all there is to get
-                if( !limit || numFetched < limit ){
-                    collection.allFetched = true;
-                    collection.trigger( 'all-fetched', collection );
-                }
-            }
-        );
+        return this;
     },
 
     /** create a new history and by default set it to be the current history */
@@ -642,16 +505,11 @@ var HistoryCollection = Backbone.Collection
         return this;
     },
 
-    /** override to reset allFetched flag to false */
-    reset : function( models, options ){
-        this.allFetched = false;
-        return Backbone.Collection.prototype.reset.call( this, models, options );
-    },
-
     toString: function toString(){
-        return 'HistoryCollection(' + this.length + ')';
+        return 'HistoryCollection(' + this.length + ',current:' + this.currentHistoryId + ')';
     }
 });
+
 
 //==============================================================================
 return {

@@ -63,6 +63,7 @@ AjaxQueue.prototype.add = function add( fn ){
             }
         });
     });
+    return this;
 };
 
 /** start processing the queue */
@@ -71,6 +72,7 @@ AjaxQueue.prototype.start = function start(){
         this.running = true;
         this.queue.shift()();
     }
+    return this;
 };
 
 /** stop the queue
@@ -151,13 +153,14 @@ NamedAjaxQueue.prototype.add = function add( obj ){
     }
     this.names[ obj.name ] = true;
     //console.debug( '\t names: ', this.names )
-    AjaxQueue.prototype.add.call( this, obj.fn );
+    return AjaxQueue.prototype.add.call( this, obj.fn );
     //console.debug( '\t queue: ', this.queue.length );
 };
 
 /** override to remove names */
 NamedAjaxQueue.prototype.clear = function clear(){
     this.names = {};
+    return this;
 };
 
 /** shortcut constructor / fire and forget
