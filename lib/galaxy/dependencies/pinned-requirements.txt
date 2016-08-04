@@ -70,4 +70,4 @@ ecdsa==0.13
 pysam==0.8.4+gx1
 
 # CSG dependencies
-numpy-stl==1.8.0
+numpy-stl==1.9.1
