@@ -182,7 +182,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderHistory();
             _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
             this.deferred.execute( function() { self.execute_btn.unwait();
-                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } ); } );
+                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } );
+                                                self._refresh( self.steps.length - 1 ); } );
         },
 
         /** Render header */
@@ -361,7 +362,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             validated = input_def.optional || ( input_def.is_workflow && input_value !== '' ) || ( !input_def.is_workflow && input_value !== null );
                         }
                         if ( !validated ) {
-                            this._refresh( i );
                             form.highlight( input_id );
                             break;
                         }
@@ -396,7 +396,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {
-                                        self._refresh( i );
                                         form.highlight( input_id, error_messages[ input_id ] );
                                         break;
                                     }
@@ -430,7 +429,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _enabled: function( enabled ) {
             if ( enabled ) { this.execute_btn.unwait() } else { this.execute_btn.wait() }
             if ( enabled ) { this.history_form.portlet.enable() } else { this.history_form.portlet.disable() }
-            _.each( this.forms, function( form ) { if ( enabled ) {  form.portlet.enable() } else { form.portlet.disable() } });
+            _.each( this.forms, function( form ) { if ( enabled ) {  form.portlet.enable() } else { form.portlet.disable() } } );
         },
 
         /** Handle workflow parameter */
