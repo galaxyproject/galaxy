@@ -490,12 +490,12 @@ function select_tps(params) {
 }
 function show_global_tps_select() {
     $('#tool_panel_section').empty();
-    $('#tool_panel_section').append(tps_selection_template());
+    $('#tool_panel_section').append(tps_selection_template(repository_data.panel_section_dict));
     $('#create_new').click(show_global_tps_create);
 }
 function show_global_tps_create() {
     $('#tool_panel_section').empty();
-    $('#tool_panel_section').append(tps_creation_template());
+    $('#tool_panel_section').append(tps_creation_template(repository_data.panel_section_dict));
     $('#select_existing').click(show_global_tps_select);
 }
 function initiate_repository_installation(data) {
@@ -662,6 +662,8 @@ function bind_repository_events() {
         console.log(localStorage.repositories);
         check_queue();
     });
+    console.log('Binding TPS.');
+    $('#create_new').click(show_global_tps_create);
     console.log('Binding submit.');
     $('#repository_installation').submit(function(form) {
         console.log('Installing');

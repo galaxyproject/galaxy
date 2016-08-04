@@ -402,6 +402,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         includes_tools_for_display_in_tool_panel = False
         has_repository_dependencies = False
         includes_tool_dependencies = False
+        install_resolver_dependencies = util.asbool( kwd.get( 'install_resolver_dependencies', False ) )
         for encoded_repo_info_dict in repo_info_dict.get( 'repo_info_dicts', [] ):
             decoded_repo_info_dict = encoding_util.tool_shed_decode( encoded_repo_info_dict )
             if not includes_tools:
@@ -442,6 +443,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                       message='',
                                       new_tool_panel_section_label=new_tool_panel_section_label,
                                       tool_panel_section_mapping=tool_panel_section_mapping,
+                                      install_resolver_dependencies=install_resolver_dependencies,
                                       shed_tool_conf=shed_tool_conf,
                                       status='ok',
                                       tool_panel_section_id=tool_panel_section_id,
