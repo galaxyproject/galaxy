@@ -159,8 +159,7 @@ repository_details_template = _.template([
                 '</div>',
             '<\% } \%>',
         '</div>',
-    '</div>',
-'</form>',
+    '</form>',
 ].join(''));
 var tool_dependency_template = _.template([
     '<\% if (has_repository_dependencies) { \%>',
@@ -280,7 +279,7 @@ tps_selection_template = _.template([
     '<div class="form-row" id="select_tps">',
         '<select name="<\%= name \%>" id="<\%= id \%>',
             '<\% _.each(sections, function(section) { \%>',
-                '<option value="<\%= id \%>"><\%= name \%>',
+                '<option value="<\%= section.id \%>"><\%= section.name \%>',
             '<\% }); \%>',
         '</select>',
         '<input class="menubutton" type="button" id="create_new" value="Create new" />',
@@ -650,7 +649,7 @@ function bind_repository_events() {
     $('#queue_install').click(function() {
         var changeset = $('#changeset').find("option:selected").text();
         $("#current_changeset").text(changeset);
-        var repository_metadata = repository_information.metadata[changeset];
+        var repository_metadata = repository_data.metadata[changeset];
         var queue_key = $("#tool_shed_url").val() + ':' + repository_metadata.id + ':' + changeset;
         var queued_repos = new Object();
         if (localStorage.repositories) {
@@ -659,12 +658,13 @@ function bind_repository_events() {
         if (!queued_repos.hasOwnProperty(queue_key)) {
             queued_repos[queue_key] = repository_metadata;
         }
-        // console.log(queued_repos);
         localStorage.repositories = JSON.stringify(queued_repos);
         console.log(localStorage.repositories);
         check_queue();
     });
+    console.log('Binding submit.');
     $('#repository_installation').submit(function(form) {
+        console.log('Installing');
         form.preventDefault();
         var params = {};
         // params.repositories = JSON.stringify(get_queued_repositories());
@@ -675,9 +675,9 @@ function bind_repository_events() {
         params.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
         params.changeset = $("#changeset").val();
         url = $('#repository_installation').attr('action');
-        $.post(url, params, function(data) {
-            initiate_repository_installation(JSON.parse(data));
-        });
+        // $.post(url, params, function(data) {
+        //     initiate_repository_installation(JSON.parse(data));
+        // });
     });
 }
 
