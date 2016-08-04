@@ -6,6 +6,10 @@ not easily made.
 from sqlalchemy import literal
 from sqlalchemy import sql
 from sqlalchemy import asc, desc
+from sqlalchemy import true, false
+from sqlalchemy import func
+from sqlalchemy.orm import eagerload
+from sqlalchemy.orm import undefer
 
 from galaxy import model
 from galaxy import exceptions as glx_exceptions
@@ -90,10 +94,15 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         """
         Returns a count of both/all types of contents, based on the given filters.
         """
-        # TODO?: we could branch here based on 'if limit is None and offset is None' - to a simpler (non-union) query
-        # for now, I'm just using this (even for non-limited/offset queries) to reduce code paths
-        return self._union_of_contents_query( container,
+        return self.contents_query( container,
             filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs ).count()
+
+    def contents_query( self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs ):
+        """
+        Returns the contents union query for subqueries, etc.
+        """
+        return self._union_of_contents_query( container,
+            filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
 
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by( self, order_by_string, default=None ):
@@ -119,6 +128,53 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         # TODO: allow order_by None
         raise glx_exceptions.RequestParameterInvalidException( 'Unknown order_by', order_by=order_by_string,
             available=[ 'create_time', 'update_time', 'name', 'hid' ])
+
+    # history specific methods
+    def state_counts( self, history ):
+        """
+        Return a dictionary containing the counts of all contents in each state
+        keyed by the distinct states.
+
+        Note: does not include deleted/hidden contents.
+        """
+        filters = [
+            sql.column( 'deleted' ) == false(),
+            sql.column( 'visible' ) == true()
+        ]
+        contents_subquery = self._union_of_contents_query( history, filters=filters ).subquery()
+        statement = ( sql.select([ sql.column( 'state' ), func.count('*') ])
+            .select_from( contents_subquery )
+            .group_by( sql.column( 'state' ) ) )
+        counts = self.app.model.context.execute( statement ).fetchall()
+        return dict( counts )
+
+    def active_counts( self, history ):
+        """
+        Return a dictionary keyed with 'deleted', 'hidden', and 'active' with values
+        for each representing the count of contents in each state.
+
+        Note: counts for deleted and hidden overlap; In other words, a dataset that's
+        both deleted and hidden will be added to both totals.
+        """
+        returned = dict( deleted=0, hidden=0, active=0 )
+        contents_subquery = self._union_of_contents_query( history ).subquery()
+        columns = [
+            sql.column( 'deleted' ),
+            sql.column( 'visible' ),
+            func.count( '*' )
+        ]
+        statement = ( sql.select( columns )
+            .select_from( contents_subquery )
+            .group_by( sql.column( 'deleted' ), sql.column( 'visible' ) ) )
+        groups = self.app.model.context.execute( statement ).fetchall()
+        for deleted, visible, count in groups:
+            if deleted:
+                returned[ 'deleted' ] += count
+            if not visible:
+                returned[ 'hidden' ] += count
+            if not deleted and visible:
+                returned[ 'active' ] += count
+        return returned
 
     # ---- private
     def _session( self ):
@@ -153,8 +209,10 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
                 raise TypeError( 'Unknown contents type:', result_type )
 
         # query 2 & 3: use the ids to query each component_class, returning an id->full component model map
-        id_map[ self.contained_class_type_name ] = self._by_ids( self.contained_class, id_map[ self.contained_class_type_name ] )
-        id_map[ self.subcontainer_class_type_name ] = self._by_ids( self.subcontainer_class, id_map[ self.subcontainer_class_type_name ] )
+        contained_ids = id_map[ self.contained_class_type_name ]
+        id_map[ self.contained_class_type_name ] = self._contained_id_map( contained_ids )
+        subcontainer_ids = id_map[ self.subcontainer_class_type_name ]
+        id_map[ self.subcontainer_class_type_name ] = self._subcontainer_id_map( subcontainer_ids )
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
@@ -256,11 +314,76 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
         """Return the id for this row in the union results"""
         return union[ 2 ]
 
-    def _by_ids( self, component_class, id_list ):
+    def _contained_id_map( self, id_list ):
+        """Return an id to model map of all contained-type models in the id_list."""
         if not id_list:
             return []
-        query = self._session().query( component_class ).filter( component_class.id.in_( id_list ) )
+        component_class = self.contained_class
+        query = ( self._session().query( component_class )
+            .filter( component_class.id.in_( id_list ) )
+            .options( undefer( '_metadata' ) )
+            .options( eagerload( 'dataset.actions' ) )
+            .options( eagerload( 'tags' ) )
+            .options( eagerload( 'annotations' ) ) )
         return dict( ( row.id, row ) for row in query.all() )
+
+    def _subcontainer_id_map( self, id_list ):
+        """Return an id to model map of all subcontainer-type models in the id_list."""
+        if not id_list:
+            return []
+        component_class = self.subcontainer_class
+        query = ( self._session().query( component_class )
+            .filter( component_class.id.in_( id_list ) )
+            .options( eagerload( 'collection' ) )
+            .options( eagerload( 'tags' ) )
+            .options( eagerload( 'annotations' ) ) )
+        return dict( ( row.id, row ) for row in query.all() )
+
+
+class HistoryContentsSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
+    """
+    Interface/service object for serializing histories into dictionaries.
+    """
+    model_manager_class = HistoryContentsManager
+
+    def __init__( self, app, **kwargs ):
+        super( HistoryContentsSerializer, self ).__init__( app, **kwargs )
+
+        self.default_view = 'summary'
+        self.add_view( 'summary', [
+            "id",
+            "type_id",
+            "history_id",
+            "hid",
+            "history_content_type",
+            "visible",
+            "dataset_id",
+            "collection_id",
+            "name",
+            "state",
+            "deleted",
+            "purged",
+            "create_time",
+            "update_time",
+        ])
+
+    # assumes: outgoing to json.dumps and sanitized
+    def add_serializers( self ):
+        super( HistoryContentsSerializer, self ).add_serializers()
+        deletable.PurgableSerializerMixin.add_serializers( self )
+
+        self.serializers.update({
+            'type_id'       : self.serialize_type_id,
+            'history_id'    : self.serialize_id,
+            'dataset_id'    : self.serialize_id_or_skip,
+            'collection_id' : self.serialize_id_or_skip,
+        })
+
+    def serialize_id_or_skip( self, content, key, **context ):
+        """Serialize id or skip if attribute with `key` is not present."""
+        if not hasattr( content, key ):
+            raise base.SkipAttribute( 'no such attribute' )
+        return self.serialize_id( content, key, **context )
 
 
 class HistoryContentsFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):

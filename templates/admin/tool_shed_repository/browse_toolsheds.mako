@@ -262,8 +262,8 @@ tool_sheds_template = _.template([
                     '<\% _.each(tool_sheds, function(shed) { \%>',
                         '<tr class="libraryTitle">',
                             '<td>',
-                                '<div style="float: left; margin-left: 1px;" class="menubutton split shed-selector" data-shedurl="<\%= shed.url \%>">',
-                                    '<a class="view-info" href="<\%= shed.url \%>"><\%= shed.name \%></a>',
+                                '<div style="float: left; margin-left: 1px;" class="menubutton split">',
+                                    '<a class="view-info shed-selector" data-shedurl="<\%= shed.url \%>" href="#"><\%= shed.name \%></a>',
                                 '</div>',
                             '</td>',
                         '</tr>',
@@ -332,10 +332,6 @@ function array_contains_dict(array, dict) {
     return false;
 
 }
-
-function clean_tool_name(name) {
-    return name.replace(/[^a-zA-Z0-9]+/g, "_").toLowerCase();
-}
 function process_dependencies(metadata, selector) {
     has_repo_dependencies = false;
     if (metadata.has_repository_dependencies) {
@@ -388,7 +384,7 @@ function process_dependencies(metadata, selector) {
         $('#tools_toggle').show();
         for (var i = 0; i < metadata.tools.length; i++) {
             var tool = metadata.tools[i];
-            valid_tool = {clean_name: clean_tool_name(tool.name), name: tool.name, version: tool.version, description: tool.description, guid: tool.guid};
+            valid_tool = {clean_name: tool.clean, name: tool.name, version: tool.version, description: tool.description, guid: tool.guid};
             if (!array_contains_dict(valid_tools, valid_tool) && tool.add_to_tool_panel) {
                 valid_tools.push(valid_tool);
             }
@@ -408,35 +404,6 @@ function tool_panel_section() {
         $("#new_tool_panel_section").prop('disabled', true);
         $("#new_tps").hide();
     }
-}
-function show_select_html() {
-    clean_name = $(this).attr('data-toolname');
-    tool_guid = $(this).attr('data-toolguid');
-    containing_element = $(this).parent().parent();
-    containing_element.children().each(function(){$(this).remove()});
-    select_html = select_tps_template({tool: tool});
-    containing_element.append(select_html);
-    $('#create_new_' + clean_name).click(show_create_html);
-    $('#cancel_' + clean_name).click(show_picker_button);
-}
-function show_picker_button() {
-    clean_name = $(this).attr('data-toolname');
-    tool_guid = $(this).attr('data-toolguid');
-    containing_element = $(this).parent().parent();
-    containing_element.children().each(function(){$(this).remove()});
-    picker_html = tps_picker_template({tool: tool});
-    containing_element.append(picker_html);
-    $('#select_tps_button_' + clean_name).click(show_select_html);
-}
-function show_create_html() {
-    clean_name = $(this).attr('data-toolname');
-    tool_guid = $(this).attr('data-toolguid');
-    containing_element = $(this).parent().parent();
-    containing_element.children().each(function(){$(this).remove()});
-    create_html = create_tps_template(clean_name, tool_guid);
-    containing_element.append(create_html);
-    $('#select_existing_' + clean_name).click(show_select_html);
-    $('#cancel_' + clean_name).click(show_picker_button);
 }
 function check_if_installed(name, owner, changeset) {
     params = {name: name, owner: owner}
@@ -560,8 +527,74 @@ function remove_children(element) {
         element.removeChild(element.firstChild);
     }
 }
+function find_tool_by_guid(tool_guid, changeset) {
+    var tools = repository_data.tools[changeset];
+    for (var index = 0; index < tools.length; index++) {
+        var tool = tools[index];
+        if (tool.guid === tool_guid) {
+            return tool;
+        }
+    }
+}
+function show_panel_button(tool_guid, changeset) {
+    var tool = find_tool_by_guid(tool_guid, changeset);
+    var selector = '#per_tool_tps_container_' + tool.clean;
+    $(selector).empty();
+    $(selector).append(tps_picker_template({tool: tool}));
+    $('#select_tps_button_' + tool.clean).click(function() {
+        var changeset = $('#changeset').find("option:selected").text();
+        var tool_guid = $(this).attr('data-toolguid');
+        show_panel_selector(tool_guid, changeset);
+    });
+}
+function show_tool_create(tool_guid, changeset) {
+    var tool = find_tool_by_guid(tool_guid, changeset);
+    var selector = '#per_tool_tps_container_' + tool.clean;
+    $(selector).empty();
+    $(selector).append(create_tps_template({tool: tool}));
+    $('#per_tool_select_' + tool.clean).click(function() {
+        var changeset = $('#changeset').find("option:selected").text();
+        var tool_guid = $(this).attr('data-toolguid');
+        show_tool_select(tool_guid, changeset);
+    });
+    $('#cancel_' + tool.clean).click(function() {
+        var changeset = $('#changeset').find("option:selected").text();
+        var tool_guid = $(this).attr('data-toolguid');
+        show_panel_button(tool_guid, changeset);
+    });
+}
+function show_tool_select(tool_guid, changeset) {
+    var tool = find_tool_by_guid(tool_guid, changeset);
+    console.log({'f': 'show_tool_select', 'tool_guid': tool_guid, 'changeset': changeset});
+    var selector = '#per_tool_tps_container_' + tool.clean;
+    $(selector).empty();
+    $(selector).append(select_tps_template({tool: tool}));
+    $('#per_tool_create_' + tool.clean).click(function() {
+        var changeset = $('#changeset').find("option:selected").text();
+        var tool_guid = $(this).attr('data-toolguid');
+        show_tool_create(tool_guid, changeset);
+    });
+    $('#cancel_' + tool.clean).click(function() {
+        var changeset = $('#changeset').find("option:selected").text();
+        var tool_guid = $(this).attr('data-toolguid');
+        show_panel_button(tool_guid, changeset);
+    });
+}
+function show_panel_selector(tool_guid, changeset) {
+    var tool = find_tool_by_guid(tool_guid, changeset);
+    var selector = '#per_tool_tps_container_' + tool.clean;
+    $(selector).empty();
+    $(selector).append(select_tps_template({tool: tool}));
+    $('#per_tool_create_' + tool.clean).click(function() {
+        show_tool_create(tool_guid, changeset);
+    });
+    $('#cancel_' + tool.clean).click(function() {
+        show_panel_button(tool_guid, changeset);
+    });
+}
 function bind_shed_events() {
     $('.category-selector').click(function() {
+        $('#browse_toolshed').empty(); // TODO: Remove this when the tabs work. Replace with tab switcher.
         $('#browse_category').empty();
         $('#browse_category').append('<a href="#">Repositories</a><p><img src="/static/images/jstree/throbber.gif" alt="Loading repositories..." /></p>');
         $('#repository_details').attr('data-shedurl', $(this).attr('data-shedurl'));
@@ -577,6 +610,7 @@ function bind_shed_events() {
 }
 function bind_category_events() {
     $('.repository-selector').click(function() {
+        $('#browse_category').empty(); // TODO: Remove this when the tabs work. Replace with tab switcher.
         console.log('selected repository ' + $(this).attr('data-tsrid'));
         $('#repository_details').empty();
         $('#repository_details').append('<a href="#">Repository</a><p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p>');
@@ -602,79 +636,7 @@ function bind_category_events() {
         $('#repository_details').click();
     });
 }
-function find_tool_by_guid(tool_guid, changeset) {
-    var tools = repository_data.tools[changeset];
-    for (var index = 0; index < tools.length; index++) {
-        var tool = tools[index];
-        if (tool.guid === tool_guid) {
-            return tool;
-        }
-    }
-}
-function show_panel_button(tool_guid, changeset) {
-    var tool = find_tool_by_guid(tool_guid, changeset);
-    console.log({'f': 'show_panel_button', 'tool_guid': tool_guid, 'changeset': changeset});
-    var selector = '#per_tool_tps_container_' + tool.clean;
-    $(selector).empty();
-    $(selector).append(tps_picker_template({tool: tool}));
-    $('#select_tps_button_' + tool.clean).click(function() {
-        var changeset = $('#changeset').find("option:selected").text();
-        var tool_guid = $(this).attr('data-toolguid');
-        show_panel_selector(tool_guid, changeset);
-    });
-}
-function show_tool_create(tool_guid, changeset) {
-    var tool = find_tool_by_guid(tool_guid, changeset);
-    console.log({'f': 'show_tool_create', 'tool_guid': tool_guid, 'changeset': changeset});
-    var selector = '#per_tool_tps_container_' + tool.clean;
-    $(selector).empty();
-    $(selector).append(create_tps_template({tool: tool}));
-    $('#per_tool_select_' + tool.clean).click(function() {
-        var changeset = $('#changeset').find("option:selected").text();
-        var tool_guid = $(this).attr('data-toolguid');
-        show_tool_select(tool_guid, changeset);
-    });
-    $('#cancel_' + tool.clean).click(function() {
-        var changeset = $('#changeset').find("option:selected").text();
-        var tool_guid = $(this).attr('data-toolguid');
-        show_panel_button(tool_guid, changeset);
-    });
-}
-function show_tool_select(tool_guid, changeset) {
-    var tool = find_tool_by_guid(tool_guid, changeset);
-    console.log({'f': 'show_tool_select', 'tool_guid': tool_guid, 'changeset': changeset});
-    var selector = '#per_tool_tps_container_' + tool.clean;
-    $(selector).empty();
-    $(selector).append(select_tps_template({tool: tool}));
-    $('#per_tool_create_' + tool.clean).click(function() {
-        var changeset = $('#changeset').find("option:selected").text();
-        var tool_guid = $(this).attr('data-toolguid');
-        console.log({'f': '#per_tool_create_.click()', 'tool_guid': tool_guid, 'changeset': changeset});
-        show_tool_create(tool_guid, changeset);
-    });
-    $('#cancel_' + tool.clean).click(function() {
-        var changeset = $('#changeset').find("option:selected").text();
-        var tool_guid = $(this).attr('data-toolguid');
-        show_panel_button(tool_guid, changeset);
-    });
-}
-function show_panel_selector(tool_guid, changeset) {
-    var tool = find_tool_by_guid(tool_guid, changeset);
-    var selector = '#per_tool_tps_container_' + tool.clean;
-    $(selector).empty();
-    $(selector).append(select_tps_template({tool: tool}));
-    console.log('Binding click handler for #per_tool_create_' + tool.clean);
-    $('#per_tool_create_' + tool.clean).click(function() {
-        show_tool_create(tool_guid, changeset);
-    });
-    $('#cancel_' + tool.clean).click(function() {
-        show_panel_button(tool_guid, changeset);
-    });
-}
 function bind_repository_events() {
-    $('.tool_tps_selector').each(function() {
-        $(this).hide();
-    });
     $('.show_tool_tps_selector').click(function() {
         var changeset = $('#changeset').find("option:selected").text();
         var tool_guid = $(this).attr('data-toolguid');
@@ -723,6 +685,7 @@ $(function() {
     $('#list_toolsheds').append(tool_sheds_template({tool_sheds: tool_sheds}));
     check_queue();
     $('.shed-selector').click(function() {
+        $('#list_toolsheds').empty(); // TODO: Remove this when the tabs work. Replace with tab switcher.
         $('#browse_toolshed').empty();
         $('#browse_toolshed').append('<a href="#">Categories</a><p><img src="/static/images/jstree/throbber.gif" alt="Loading categories..." /></p>');
         $('#browse_category').attr('data-shedurl', $(this).attr('data-shedurl'));

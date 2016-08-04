@@ -91,7 +91,7 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
         """
         Return T/F if the user has role-based access to the dataset.
         """
-        roles = user.all_roles() if user else []
+        roles = user.all_roles_exploiting_cache() if user else []
         return self.app.security_agent.can_access_dataset( roles, dataset )
 
     # TODO: implement above for groups

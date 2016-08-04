@@ -12,6 +12,10 @@ import zipfile
 from json import loads
 from xml.etree import ElementTree
 
+# Be sure to use Galaxy's vanilla pyparsing instead of the older version
+# imported by twill.
+import pyparsing  # noqa: F401
+
 import twill
 import twill.commands as tc
 from markupsafe import escape

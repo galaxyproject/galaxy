@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['mvc/tours'], function( Tours ) {
+define(['mvc/tours', 'layout/generic-nav-view'], function( Tours, GenericNav ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -10,6 +10,12 @@ var Collection = Backbone.Collection.extend({
     fetch: function( options ){
         options = options || {};
         this.reset();
+
+        //
+        // Chat server tab
+        //
+        var extendedNavItem = new GenericNav.GenericNavView();
+        this.add(extendedNavItem.render()); 
 
         //
         // Analyze data tab.

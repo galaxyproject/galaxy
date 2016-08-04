@@ -808,7 +808,7 @@ def asbool(obj):
 
 
 def string_as_bool( string ):
-    if str( string ).lower() in ( 'true', 'yes', 'on' ):
+    if str( string ).lower() in ( 'true', 'yes', 'on', '1' ):
         return True
     else:
         return False
@@ -892,7 +892,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
 
 
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
-    """
+    u"""
     Returns a bytestring version of 's', encoded as specified in 'encoding'.
 
     If strings_only is True, don't convert (some) non-string-like objects.
@@ -905,8 +905,8 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
     >>> assert smart_str(3, strings_only=True) == 3
     >>> assert smart_str(b'a bytes string') == b'a bytes string'
     >>> assert smart_str(u'a simple unicode string') == b'a simple unicode string'
-    >>> assert smart_str(u'à strange ünicode ڃtring') == b'\xc3\xa0 strange \xc3\xbcnicode \xda\x83tring'
-    >>> assert smart_str(b'\xc3\xa0n \xc3\xabncoded utf-8 string', encoding='latin-1') == b'\xe0n \xebncoded utf-8 string'
+    >>> assert smart_str(u'à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
+    >>> assert smart_str(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string', encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s

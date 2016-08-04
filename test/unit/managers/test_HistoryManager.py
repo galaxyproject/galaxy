@@ -559,7 +559,7 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.assertIsInstance( serialized[ 'hdas' ][0], string_types )
 
         serialized = self.history_serializer.serialize( history1, [ 'contents' ] )
-        self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'peek', 'create_time' ])
+        self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'state', 'create_time' ])
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )

@@ -176,6 +176,8 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
       - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
 
+      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `{version}` so it properly tags new PRs.
+
 - [ ] **Deploy and Test Release**
 
       - [ ] Update test to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).

@@ -8,7 +8,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             this.options = Utils.merge(options, {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
-                icon            : null
+                icon            : null,
+                always_refresh  : true
             });
             this.setElement('<div/>');
             this.render();
@@ -74,20 +75,15 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
                 this.portlet.expand();
                 this.trigger('expand', input_id);
                 if (!silent) {
-                    if (self==top) {
-                        var $panel = this.$el.parents().filter(function() {
-                            return $(this).css('overflow') == 'auto';
-                        }).first();
-                        $panel.animate({ scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 50 }, 500);
-                    } else {
-                        $('html, body').animate({ scrollTop : input_element.$el.offset().top - 20 }, 500);
-                    }
+                    var $panel = this.$el.parents().filter(function() {
+                        return [ 'auto', 'scroll' ].indexOf( $( this ).css( 'overflow' ) ) != -1;
+                    }).first();
+                    $panel.animate( { scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 120 }, 500 );
                 }
             }
         },
 
-        /** Highlights errors
-        */
+        /** Highlights errors */
         errors: function(options) {
             this.trigger('reset');
             if (options && options.errors) {
@@ -101,8 +97,12 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             }
         },
 
-        /** Render tool form
-        */
+        /** Modify onchange event handler */
+        setOnChange: function( callback ) {
+            this.options.onchange = callback;
+        },
+
+        /** Render tool form */
         render: function() {
             // link this
             var self = this;
@@ -136,11 +136,14 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
 
             // add listener which triggers on checksum change
             var current_check = this.data.checksum();
-            this.on('change', function( force ) {
-                var new_check = self.data.checksum();
-                if (new_check != current_check || force ) {
-                    current_check = new_check;
-                    self.options.onchange && self.options.onchange();
+            this.on('change', function( input_id ) {
+                var input = self.input_list[ input_id ];
+                if ( !input || input.refresh_on_change || self.options.always_refresh ) {
+                    var new_check = self.data.checksum();
+                    if ( new_check != current_check ) {
+                        current_check = new_check;
+                        self.options.onchange && self.options.onchange();
+                    }
                 }
             });
 
@@ -153,8 +156,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             return this;
         },
 
-        /** Renders the UI elements required for the form
-        */
+        /** Renders the UI elements required for the form */
         _renderForm: function() {
             // create message view
             this.message = new Ui.Message();

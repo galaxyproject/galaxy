@@ -103,7 +103,7 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
 
     def test_0015_install_freebayes_repository( self ):
         '''Install the freebayes repository without installing tool dependencies.'''
-        strings_displayed = [ 'Never installed', 'dependencies can be automatically handled', 'Handle', 'tool dependencies' ]
+        strings_displayed = [ 'Never installed', 'dependencies can be automatically handled', 'install tool shed managed', 'tool dependencies' ]
         strings_displayed.extend( [ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18' ] )
         self.install_repository( repository_name,
                                  common.test_user_1_name,

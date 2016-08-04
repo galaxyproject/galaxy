@@ -157,6 +157,9 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         # along following argument value_map=self._path_rewriter.
         return self.input.to_param_dict_string( self.value, other_values=self._other_values )
 
+    def __add__( self, x ):
+        return '%s%s' % ( self, x )
+
     def __getattr__( self, key ):
         return getattr( self.input, key )
 

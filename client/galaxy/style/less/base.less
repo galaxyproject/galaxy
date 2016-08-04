@@ -30,6 +30,7 @@
 @import "toastr.less";
 @import "jstree.less";
 @import "tour.less";
+@import "flex.less";
 
 // Mixins
 .unselectable {
@@ -253,6 +254,7 @@ body.has-message-box.has-inactivity-box {
         content:'\f054';
     }
     z-index: 201;
+    cursor: pointer;
     display: block;
     position: fixed;
     left: 0;
@@ -292,8 +294,9 @@ div.unified-panel-body {
     width: 100%;
     padding: 0px;
 }
+@panel-bg-color: #DFE5F9;
 div.unified-panel-body-background {
-    background: none repeat scroll 0 0 #DFE5F9;
+    background: none repeat scroll 0 0 @panel-bg-color;
 }
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
@@ -1451,8 +1454,9 @@ div.permissionContainer {
 // ============================================================================ History
 @import "ui/icon-btn.less";
 @import "list-item.less";
+@import "dataset.less";
 @import "history.less";
-@import "collections.less";
+@import "collection.less";
 @import "job.less";
 
 @import "ui/paired-collection-creator.less";
@@ -1461,6 +1465,7 @@ div.permissionContainer {
 @import "ui/dataset-choice.less";
 @import "ui/peek-column-selector.less";
 @import "ui/pagination.less";
+@import "ui/error-modal.less";
 
 
 // ==== Tool menu styles
@@ -1719,3 +1724,42 @@ div.toolTitleNoSection
 #for_bears {
     display: none;
 }
+
+// communication channel bootstrap modal 
+
+.chat-modal {
+    overflow: hidden;
+}
+
+.modal-header-body {
+    padding: 2px;
+}
+
+.communication-iframe {
+    width: 100%;
+    height: 100%;
+}
+
+.close-modal {
+    float: right; 
+    cursor: pointer;
+}
+
+.expand-compress-modal {
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 93.2%;
+}
+
+// password complexity monitor
+#change_password,#registrationForm {
+    .progress {
+        width:200px;
+        margin-left: 20px;
+    }
+    .progress-bar {
+        color:black;
+        text-align:left;
+    }
+}
+

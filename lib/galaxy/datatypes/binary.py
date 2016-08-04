@@ -203,13 +203,23 @@ class Bam( Binary ):
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def _get_samtools_version( self ):
-        # Determine the version of samtools being used.  Wouldn't it be nice if
-        # samtools provided a version flag to make this much simpler?
         version = '0.0.0'
         samtools_exec = which('samtools')
         if not samtools_exec:
             message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
             raise Exception(message)
+
+        # Get the version of samtools via --version-only, if available
+        p = subprocess.Popen( ['samtools', '--version-only'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        output, error = p.communicate()
+
+        # --version-only is available
+        # Format is <version x.y.z>+htslib-<a.b.c>
+        if p.returncode == 0:
+            version = output.split('+')[0]
+            return version
 
         output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
         lines = output.split( '\n' )
@@ -1321,3 +1331,36 @@ class SearchGuiArchive ( CompressedArchive ):
             return "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
 
 Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
+
+
+class NetCDF( Binary ):
+    """Binary data in netCDF format"""
+    file_ext = "netcdf"
+    edam_format = "format_3650"
+    edam_data = "data_0943"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary netCDF file (%s)" % ( nice_size( dataset.get_size() ) )
+
+    def sniff( self, filename ):
+        try:
+            with open( filename, 'r' ) as f:
+                header = f.read(3)
+            if binascii.b2a_hex( header ) == binascii.hexlify( 'CDF' ):
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
