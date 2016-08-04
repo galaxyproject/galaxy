@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from time import strftime
 
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
@@ -81,6 +82,35 @@ class ToolShedRepositoriesController( BaseAPIController ):
         value_mapper = { 'id': trans.security.encode_id( tool_shed_repository.id ),
                          'error_message': tool_shed_repository.error_message or '' }
         return value_mapper
+
+    def __get_tool_dependencies( self, metadata, tool_dependencies=None ):
+        if tool_dependencies is None:
+            tool_dependencies = []
+        for key, dependency_dict in metadata[ 'tool_dependencies' ].items():
+            if 'readme' in dependency_dict:
+                del( dependency_dict[ 'readme' ] )
+            if dependency_dict not in tool_dependencies:
+                tool_dependencies.append( dependency_dict )
+        if metadata[ 'has_repository_dependencies' ]:
+            for dependency in metadata[ 'repository_dependencies' ]:
+                tool_dependencies = self.__get_tool_dependencies( dependency, tool_dependencies )
+        return tool_dependencies
+
+    def __get_tools( self, metadata, tools=None ):
+        if tools is None:
+            tools = []
+        if metadata[ 'includes_tools_for_display_in_tool_panel' ]:
+            for key, tool_dict in metadata[ 'tools' ]:
+                tool_info = dict( clean=re.sub( '[^a-zA-Z0-9]+', '_', tool_dict[ 'name' ] ).lower(),
+                                  name=tool_dict[ 'name' ],
+                                  version=tool_dict[ 'version' ],
+                                  description=tool_dict[ 'description' ] )
+                if tool_info not in tools:
+                    tools.append( tool_info )
+        if metadata[ 'has_repository_dependencies' ]:
+            for dependency in metadata[ 'repository_dependencies' ]:
+                tools = self.__get_tools( dependency, tools )
+        return tools
 
     @expose_api
     def check_for_updates( self, trans, **kwd ):
@@ -211,6 +241,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
         :param tsr_id: the tool_shed_repository_id
         """
+        tool_dependencies = dict()
+        tools = dict()
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tsr_id = kwd.get( 'tsr_id', '' )
         tool_panel_section_select_field =tool_util.build_tool_panel_section_select_field( trans.app )
@@ -222,11 +254,38 @@ class ToolShedRepositoriesController( BaseAPIController ):
         repository_data = dict()
         repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
         repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
-        repository_data[ 'shed_conf' ] = tool_util.build_shed_tool_conf_select_field( trans.app )
-        repository_data[ 'panel_section_html' ] = tool_panel_section_select_field.get_html( extra_attr={ 'style': 'width: 30em;' } ) \
-                                                                                 .replace( '\n', '' )
-
+        repository_data[ 'shed_conf' ] = tool_util.build_shed_tool_conf_select_field( trans.app ).get_html().replace('\n', '')
+        repository_data[ 'panel_section_html' ] = tool_panel_section_select_field.get_html( extra_attr={ 'style': 'width: 30em;' } ).replace( '\n', '' )
         repository_data[ 'panel_section_dict' ] = tool_panel_section_dict
+        for changeset, metadata in repository_data[ 'repository' ][ 'metadata' ].items():
+            if changeset not in tool_dependencies:
+                tool_dependencies[ changeset ] = []
+            if metadata[ 'includes_tools_for_display_in_tool_panel' ]:
+                if changeset not in tools:
+                    tools[ changeset ] = []
+                for tool_dict in metadata[ 'tools' ]:
+                    tool_info = dict( clean=re.sub( '[^a-zA-Z0-9]+', '_', tool_dict[ 'name' ] ).lower(),
+                                      guid=tool_dict[ 'guid' ],
+                                      name=tool_dict[ 'name' ],
+                                      version=tool_dict[ 'version' ],
+                                      description=tool_dict[ 'description' ] )
+                    if tool_info not in tools[ changeset ]:
+                        tools[ changeset ].append( tool_info )
+                if metadata[ 'has_repository_dependencies' ]:
+                    for repository_dependency in metadata[ 'repository_dependencies' ]:
+                        tools[ changeset ] = self.__get_tools( repository_dependency, tools[ changeset ] )
+                repository_data[ 'tools' ] = tools
+            for key, dependency_dict in metadata[ 'tool_dependencies' ].items():
+                if 'readme' in dependency_dict:
+                    del( dependency_dict[ 'readme' ] )
+                if dependency_dict not in tool_dependencies[ changeset ]:
+                    tool_dependencies[ changeset ].append( dependency_dict )
+                    # log.debug(tool_dependencies)
+            if metadata[ 'has_repository_dependencies' ]:
+                for repository_dependency in metadata[ 'repository_dependencies' ]:
+                    tool_dependencies[ changeset ] = self.__get_tool_dependencies( repository_dependency, tool_dependencies[ changeset ] )
+        repository_data[ 'tool_dependencies' ] = tool_dependencies
+        return repository_data
 
     @expose_api
     def import_workflow( self, trans, payload, **kwd ):
