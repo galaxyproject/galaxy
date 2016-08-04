@@ -11,6 +11,7 @@ from datetime import timedelta
 from galaxy.util import string_as_bool
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
+from galaxy.config import configure_logging
 
 log = logging.getLogger( __name__ )
 
@@ -252,46 +253,3 @@ def get_database_engine_options( kwargs ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
-
-
-def configure_logging( config ):
-    """
-    Allow some basic logging configuration to be read from the cherrpy
-    config.
-    """
-    # PasteScript will have already configured the logger if the appropriate
-    # sections were found in the config file, so we do nothing if the
-    # config has a loggers section, otherwise we do some simple setup
-    # using the 'log_*' values from the config.
-    if config.global_conf_parser.has_section( "loggers" ):
-        return
-    format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
-    level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
-    destination = config.get( "log_destination", "stdout" )
-    log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
-    # Get root logger
-    root = logging.getLogger()
-    # Set level
-    root.setLevel( level )
-    # Turn down paste httpserver logging
-    if level <= logging.DEBUG:
-        logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
-    # Remove old handlers
-    for h in root.handlers[:]:
-        root.removeHandler(h)
-    # Create handler
-    if destination == "stdout":
-        handler = logging.StreamHandler( sys.stdout )
-    else:
-        handler = logging.FileHandler( destination )
-    # Create formatter
-    formatter = logging.Formatter( format )
-    # Hook everything up
-    handler.setFormatter( formatter )
-    root.addHandler( handler )
-    # If sentry is configured, also log to it
-    if config.sentry_dsn:
-        from raven.handlers.logging import SentryHandler
-        sentry_handler = SentryHandler( config.sentry_dsn )
-        sentry_handler.setLevel( logging.WARN )
-        root.addHandler( sentry_handler )
