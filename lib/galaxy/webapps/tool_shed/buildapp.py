@@ -210,14 +210,15 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     conf = global_conf.copy()
     conf.update( local_conf )
     debug = asbool( conf.get( 'debug', False ) )
-    # Load the Routes middleware which we use for redirecting
-    app = RoutesMiddleware( app, app.mapper )
-    log.debug( "Enabling 'routes' middleware" )
+    routes_mapper = app.mapper
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # Load the Routes middleware which we use for redirecting
+    app = RoutesMiddleware( app, routes_mapper )
+    log.debug( "Enabling 'routes' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
