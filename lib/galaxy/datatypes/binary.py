@@ -1345,7 +1345,8 @@ class NetCDF( Binary ):
 
     def sniff( self, filename ):
         try:
-            header = open( filename ).read(3)
+            with open( filename, 'r' ) as f:
+                header = f.read(3)
             if binascii.b2a_hex( header ) == binascii.hexlify( 'CDF' ):
                 return True
             return False
