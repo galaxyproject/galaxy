@@ -20,6 +20,6 @@ def _split_dataset_collection( dataset_collection, collection_type ):
         if child_collection.collection_type == collection_type:
             split_elements.append( element )
         else:
-            split_elements.extend( _split_dataset_collection( element.child_collection ) )
+            split_elements.extend( _split_dataset_collection( element.child_collection, element.child_collection.collection_type ) )
 
     return split_elements
