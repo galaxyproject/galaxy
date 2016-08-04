@@ -396,6 +396,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {
+                                        self._refresh( i );
                                         form.highlight( input_id, error_messages[ input_id ] );
                                         break;
                                     }
