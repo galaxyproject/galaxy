@@ -4,6 +4,7 @@ Provides factory methods to assemble the Galaxy web application
 import atexit
 import logging
 import os
+import urlparse
 
 from inspect import isclass
 from paste import httpexceptions
@@ -17,6 +18,7 @@ from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
 from galaxy.config import process_is_uwsgi
 from galaxy.util.properties import load_app_properties
+from routes.middleware import RoutesMiddleware
 
 log = logging.getLogger( __name__ )
 
@@ -68,6 +70,10 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="tool_shed" )
+
+    # Redirects go first because they are handled in Routes middleware
+    # before the app is reached.
+    webapp = _map_redirects( webapp )
     add_ui_controllers( webapp, app )
     webapp.add_route( '/view/{owner}', controller='repository', action='sharable_owner' )
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
@@ -113,6 +119,11 @@ def app_factory( global_conf, **kwargs ):
                            '/api/categories/{category_id}/repositories',
                            controller='categories',
                            action='get_repositories',
+                           conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'check_updates_for_repository',
+                           '/api/repositories/check_updates',
+                           controller='repositories',
+                           action='check_updates',
                            conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'repository',
                             'repositories',
@@ -199,6 +210,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     conf = global_conf.copy()
     conf.update( local_conf )
     debug = asbool( conf.get( 'debug', False ) )
+    # Load the Routes middleware which we use for redirecting
+    app = RoutesMiddleware( app, app.mapper )
+    log.debug( "Enabling 'routes' middleware" )
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
@@ -284,3 +298,19 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
 def wrap_in_static( app, global_conf, **local_conf ):
     urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
+
+
+def _map_redirects( app ):
+    """
+    Add redirect to the Routes mapper and forward the received query string.
+    Subsequently when the redirect is triggered in Routes middleware the request
+    will not even reach the webapp.
+    """
+    def forward_qs(environ, result):
+        qs_dict = urlparse.parse_qs(environ['QUERY_STRING'])
+        for qs in qs_dict:
+            result[ qs ] = qs_dict[ qs ]
+        return True
+
+    app.mapper.redirect( "/repository/status_for_installed_repository", "/api/repositories/check_updates/", _redirect_code="301 Moved Permanently", conditions=dict( function=forward_qs ) )
+    return app
