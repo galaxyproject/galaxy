@@ -201,7 +201,7 @@ def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
         possible = possible[0]
     if len( possible ) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    default_options_dict = dict( ( r[1].replace( '-', '_' ), r[2] ) for r in possible.values()[0][1][1] )
+    default_options_dict = dict( ( r[1].replace( '-', '_' ), r[2] ) for r in next(iter(possible.values()))[1][1] )
     for option in kwd:
         default_options_dict[ option ] = kwd[ option ]
     return default_options_dict

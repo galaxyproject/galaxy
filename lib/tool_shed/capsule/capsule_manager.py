@@ -5,32 +5,21 @@ import shutil
 import tarfile
 import tempfile
 import threading
-import urllib
-from time import gmtime
-from time import strftime
+from time import gmtime, strftime
 
+from six.moves.urllib.request import urlopen
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
-from galaxy.util import asbool
-from galaxy.util import CHUNK_SIZE
-from galaxy.util import safe_relpath
-from galaxy.util import build_url
+from galaxy.util import asbool, build_url, CHUNK_SIZE, safe_relpath
 from galaxy.util.odict import odict
-from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.dependencies import attribute_handlers
+from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
 from tool_shed.metadata import repository_metadata_manager
-from tool_shed.util import basic_util
-from tool_shed.util import commit_util
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import xml_util
+from tool_shed.util import (basic_util, commit_util, common_util, encoding_util,
+    hg_util, metadata_util, repository_util, shed_util_common as suc, xml_util)
 
 log = logging.getLogger( __name__ )
 
@@ -822,7 +811,7 @@ class ImportRepositoryManager( object ):
         if url:
             valid_url = True
             try:
-                stream = urllib.urlopen( url )
+                stream = urlopen( url )
             except Exception as e:
                 valid_url = False
                 return_dict['error_message'] = 'Error importing file via http: %s' % str( e )

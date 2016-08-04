@@ -1,8 +1,10 @@
 import logging
-import unrestricted
-import repository_suite_definition
-import tool_dependency_definition
+
 from galaxy.util.odict import odict
+
+from . import repository_suite_definition
+from . import tool_dependency_definition
+from . import unrestricted
 
 log = logging.getLogger( __name__ )
 
