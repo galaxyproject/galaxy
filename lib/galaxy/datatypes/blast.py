@@ -118,7 +118,7 @@ class BlastXml(GenericXml):
                     out.write(header)
                     out.close()
                     h.close()
-                    raise ValueError("BLAST XML file %s has too long a header!" % f)
+                    raise ValueError("The header in BLAST XML file %s is too long" % f)
             if "<BlastOutput>" not in header:
                 out.close()
                 h.close()
