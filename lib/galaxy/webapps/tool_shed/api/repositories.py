@@ -718,9 +718,9 @@ class RepositoriesController( BaseAPIController ):
         return repository_dict
 
     @expose_api_raw_anonymous_and_sessionless
-    def check_updates( self, trans, **kwd ):
+    def updates( self, trans, **kwd ):
         """
-        GET /api/repositories/check_updates
+        GET /api/repositories/updates
         Return a dictionary with boolean values for whether there are updates available
         for the repository revision, newer installable revisions available,
         the revision is the latest installable revision, and if the repository is deprecated.

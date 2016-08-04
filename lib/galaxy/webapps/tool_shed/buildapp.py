@@ -120,10 +120,10 @@ def app_factory( global_conf, **kwargs ):
                            controller='categories',
                            action='get_repositories',
                            conditions=dict( method=[ "GET" ] ) )
-    webapp.mapper.connect( 'check_updates_for_repository',
-                           '/api/repositories/check_updates',
+    webapp.mapper.connect( 'show_updates_for_repository',
+                           '/api/repositories/updates',
                            controller='repositories',
-                           action='check_updates',
+                           action='updates',
                            conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'repository',
                             'repositories',
@@ -310,5 +310,5 @@ def _map_redirects( app ):
             result[ qs ] = qs_dict[ qs ]
         return True
 
-    app.mapper.redirect( "/repository/status_for_installed_repository", "/api/repositories/check_updates/", _redirect_code="301 Moved Permanently", conditions=dict( function=forward_qs ) )
+    app.mapper.redirect( "/repository/status_for_installed_repository", "/api/repositories/updates/", _redirect_code="301 Moved Permanently", conditions=dict( function=forward_qs ) )
     return app
