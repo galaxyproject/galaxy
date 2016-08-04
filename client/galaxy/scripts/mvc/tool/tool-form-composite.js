@@ -16,7 +16,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.render();
             this._refresh();
             this.$el.on( 'click', function() { self._refresh() } );
-            this.$steps.on( 'mousewheel DOMMouseScroll', function() { self._refresh() } );
+            this.$steps.scroll( function() { self._refresh() } );
             $( window ).resize( function() { self._refresh() } );
         },
 
