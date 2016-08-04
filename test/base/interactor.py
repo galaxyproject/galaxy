@@ -87,7 +87,13 @@ class GalaxyInteractorApi( object ):
 
     def verify_output_dataset( self, history_id, hda_id, outfile, attributes, shed_tool_id ):
         fetcher = self.__dataset_fetcher( history_id )
-        self.twill_test_case.verify_hid( outfile, hda_id=hda_id, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        self.twill_test_case.verify_hid(
+            outfile,
+            hda_id=hda_id,
+            attributes=attributes,
+            dataset_fetcher=fetcher,
+            shed_tool_id=shed_tool_id
+        )
         self._verify_metadata( history_id, hda_id, attributes )
 
     def _verify_metadata( self, history_id, hid, attributes ):
@@ -111,6 +117,8 @@ class GalaxyInteractorApi( object ):
             metadata[ "file_ext" ] = expected_file_type
 
         if metadata:
+            import time
+            time.sleep(5)
             dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
             for key, value in metadata.items():
                 try:

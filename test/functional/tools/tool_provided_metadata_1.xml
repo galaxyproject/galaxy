@@ -4,7 +4,7 @@
       cp $c1 galaxy.json;
     </command>
     <configfiles>
-      <configfile name="c1">{"type": "dataset", "dataset_id": ${str($out1.id)}, "name": "my dynamic name", "ext": "txt", "info": "my dynamic info", "dbkey": "cust1"}</configfile>
+      <configfile name="c1">{"type": "dataset", "dataset_id": $out1.dataset.dataset.id, "name": "my dynamic name", "ext": "txt", "info": "my dynamic info", "dbkey": "cust1"}</configfile>
     </configfiles>
     <inputs>
         <param name="input1" type="data" label="Input Dataset"/>
