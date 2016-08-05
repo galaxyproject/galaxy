@@ -4,8 +4,8 @@ Provides factory methods to assemble the Galaxy web application
 import atexit
 import logging
 import os
-import urlparse
 
+from six.moves.urllib.parse import parse_qs
 from inspect import isclass
 from paste import httpexceptions
 from galaxy.util import asbool
@@ -308,7 +308,7 @@ def _map_redirects( app ):
     will not even reach the webapp.
     """
     def forward_qs(environ, result):
-        qs_dict = urlparse.parse_qs(environ['QUERY_STRING'])
+        qs_dict = parse_qs(environ['QUERY_STRING'])
         for qs in qs_dict:
             result[ qs ] = qs_dict[ qs ]
         return True
