@@ -1,19 +1,18 @@
-import tempfile
 import logging
-
-log = logging.getLogger( __name__ )
+import tempfile
 
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
-
-from tool_shed.util import hg_util
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import hg_util
 from tool_shed.util import repository_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
+
+log = logging.getLogger( __name__ )
 
 
 class RepairRepositoryManager():
@@ -118,7 +117,7 @@ class RepairRepositoryManager():
                 # Currently all tools contained within an installed tool shed repository must be loaded into the same
                 # section in the tool panel, so we can get the section id of the first guid in the tool_panel_section_dict.
                 # In the future, we'll have to handle different sections per guid.
-                guid = tool_panel_section_dict.keys()[ 0 ]
+                guid = next(iter(tool_panel_section_dict))
                 section_dicts = tool_panel_section_dict[ guid ]
                 section_dict = section_dicts[ 0 ]
                 tool_panel_section_id = section_dict[ 'id' ]

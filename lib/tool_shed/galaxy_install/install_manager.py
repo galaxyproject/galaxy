@@ -11,10 +11,6 @@ from sqlalchemy import or_
 
 from galaxy import exceptions, util
 from galaxy.tools.deps import views
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
-from tool_shed.util import shed_util_common as suc, tool_dependency_util
-from tool_shed.util import tool_util, xml_util
-
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
@@ -23,8 +19,10 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment impor
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
-
 from tool_shed.tools import data_table_manager, tool_version_manager
+from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
+from tool_shed.util import shed_util_common as suc, tool_dependency_util
+from tool_shed.util import tool_util, xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -478,8 +476,8 @@ class InstallRepositoryManager( object ):
             repository_revision_dict = items[ 1 ]
             repo_info_dict = items[ 2 ]
         else:
-            message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
-                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
+            message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s" % \
+                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ) )
             log.warning( message )
             raise exceptions.InternalServerError( message )
         # Make sure the tool shed returned everything we need for installing the repository.

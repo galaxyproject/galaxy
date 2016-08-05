@@ -7,10 +7,10 @@ import threading
 from sqlalchemy import false
 
 import tool_shed.util.shed_util_common as suc
+from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import repository_util
-from galaxy import util
 
 log = logging.getLogger( __name__ )
 
