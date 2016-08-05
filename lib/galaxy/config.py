@@ -780,7 +780,7 @@ def configure_logging( config ):
         if disable_chatty_loggers:
             # Turn down paste httpserver logging
             if level <= logging.DEBUG:
-                for chatty_logger in ["paste.httpserver.ThreadPool"]:
+                for chatty_logger in ["paste.httpserver.ThreadPool", "routes.middleware"]:
                     logging.getLogger( chatty_logger ).setLevel( logging.WARN )
 
         # Remove old handlers
