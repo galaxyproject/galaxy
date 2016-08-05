@@ -661,7 +661,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             # each work_dir output substitute the effective path on the Pulsar
             # server relative to the remote working directory as the
             # false_path to send the metadata command generation module.
-            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, job_working_directory=working_directory)
+            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
             outputs = [Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path) for path in self.get_output_files(job_wrapper)]
             for output in outputs:
                 for pulsar_workdir_path, real_path in work_dir_outputs:

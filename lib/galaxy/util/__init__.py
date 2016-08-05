@@ -707,9 +707,11 @@ class Params( object ):
                 # name. Anything relying on NEVER_SANITIZE should be
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
-                                                                    nonsanitize_parameter in self.NEVER_SANITIZE ]:
-                    self.__dict__[ key ] = sanitize_param( value )
+                if (value is not None and
+                    key not in self.NEVER_SANITIZE and
+                    True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
+                                  nonsanitize_parameter in self.NEVER_SANITIZE ]):
+                        self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
         else:
