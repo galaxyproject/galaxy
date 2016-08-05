@@ -475,8 +475,8 @@ class STL(data.Data):
     def sniff(self, filename):
         is_stl = False
         try:
-            test_mesh = mesh.Mesh.from_file(filename)
-            if np.sum(np.isinf(test_mesh.areas)) == 0:
+            t_mesh = mesh.Mesh.from_file(filename)
+            if np.sum(np.isnan(t_mesh.areas)) + np.sum(np.isinf(t_mesh.areas)) + np.sum(np.isneginf(t_mesh.areas)) == 0:
                 is_stl = True
         except Exception:
             pass
