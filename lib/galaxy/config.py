@@ -31,13 +31,14 @@ log = logging.getLogger( __name__ )
 # The uwsgi module is automatically injected by the parent uwsgi
 # process and only exists that way.  If anything works, this is a
 # uwsgi-managed process.
+process_is_uwsgi = False
 try:
     import uwsgi
-    if uwsgi.numproc:
+    if hasattr( uwsgi, "numproc" ):
         process_is_uwsgi = True
 except ImportError:
     # This is not a uwsgi process, or something went horribly wrong.
-    process_is_uwsgi = False
+    pass
 
 
 def resolve_path( path, root ):
