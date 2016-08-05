@@ -8,13 +8,12 @@ In this tutorial, we would build the runner in a block by block fashion
 (like the building blocks), so we would divide the runner into
 components based on their function.
 
-Assuming you are familiar with setting up local install of galaxy and
-execution of galaxy. 
+We assume you are familiar with setting up and managing a local installation of Galaxy.
 
-To learn more about the basics, refer :
-https://wiki.galaxyproject.org/Admin/GetGalaxy#Install\_More\_Tools 
+To learn more about the basics, please refer to:
+https://wiki.galaxyproject.org/Admin/GetGalaxy
 
-To explore existing runners, refer:
+To explore existing runners, please refer to:
 https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runner
 
 What is required to make a runner for Galaxy?
@@ -22,10 +21,10 @@ What is required to make a runner for Galaxy?
 
 `galaxy.jobs.runners.\_\_init\_\_.py <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners/__init__.py>`__
 has the base runner implementation. To create a new runner, that base
-runner must be inherited and only certain functions need to be
+runner must be inherited and only certain methods need to be
 overridden with your logic.
 
-These are the following functions which need to be implemented: \*
+These are the following methods which need to be implemented: \*
 \_\_init\_\_(app, nworkers, \*\*kwargs) \* queue\_job(job\_wrapper) \*
 check\_watched\_item(job\_state) \* stop\_job(job) \* recover(job,
 job\_wrapper)
@@ -33,10 +32,10 @@ job\_wrapper)
 The big picture
 ---------------
 
-The above functions are invoked at various state of a job execution in
-Galaxy. These functions will act as a mediator between the Galaxy
+The above methods are invoked at various state of a job execution in
+Galaxy. These methods will act as a mediator between the Galaxy
 framework and the external executor framework. To know, when and how
-these functions are invoked, we will see about the implementation of
+these methods are invoked, we will see about the implementation of
 parent class and process lifecycle of the runner.
 
 Implementation of parent class (galaxy.jobs.runners.\_\_init\_\_.py)
@@ -185,7 +184,7 @@ functionality. We can use the following statement:
 
     docker_image = self._find_container(job_wrapper).container_id
 
-Note: This pre-written function is only for getting the external
+Note: This pre-written method is only for getting the external
 image/container/os..
 
 C. After successful submission of job in the external runner, submit the
@@ -255,7 +254,7 @@ job\_state.running and job\_state.job\_wrapper.change\_state()
                 self.mark_as_failed(job_state)
                 return None
 
-Note: \* Functions prefixed with ! are user-defined functions. \* Return
+Note: \* Methods prefixed with ! are user-defined methods. \* Return
 value is job\_state for running,pending jobs and None for rest of the
 states of jobs.
 
