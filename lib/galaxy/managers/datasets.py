@@ -429,7 +429,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             if isinstance( dataset_assoc.metadata.spec[ meta_type ].param, galaxy.datatypes.metadata.FileParameter ):
                 meta_files.append(
                     dict( file_type=meta_type,
-                          download_url=self.url_for( 'history_contents_get_metadata_file',
+                          download_url=self.url_for( 'history_contents_metadata_file',
                                                      history_id=self.app.security.encode_id(dataset_assoc.history_id),
                                                      history_content_id=self.app.security.encode_id(dataset_assoc.id),
                                                      metadata_file=meta_type) ) )
