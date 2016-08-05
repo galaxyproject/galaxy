@@ -9,9 +9,12 @@ In this tutorial, we would build the runner in a block by block fashion
 components based on their function.
 
 Assuming you are familiar with setting up local install of galaxy and
-execution of galaxy. To learn more about the basics, refer :
-https://wiki.galaxyproject.org/Admin/GetGalaxy#Install\_More\_Tools To
-explore existing runners, refer:
+execution of galaxy. 
+
+To learn more about the basics, refer :
+https://wiki.galaxyproject.org/Admin/GetGalaxy#Install\_More\_Tools 
+
+To explore existing runners, refer:
 https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runner
 
 What is required to make a runner for Galaxy?
