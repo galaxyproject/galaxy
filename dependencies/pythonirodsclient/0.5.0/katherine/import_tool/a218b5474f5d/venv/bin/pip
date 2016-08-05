@@ -1,0 +1,9 @@
+#!/home/katie/galaxy-1/dependencies/pythonirodsclient/0.5.0/katherine/import_tool/a218b5474f5d/venv/bin/python2.7
+# EASY-INSTALL-ENTRY-SCRIPT: 'pip==1.3.1','console_scripts','pip'
+__requires__ = 'pip==1.3.1'
+import sys
+from pkg_resources import load_entry_point
+
+sys.exit(
+   load_entry_point('pip==1.3.1', 'console_scripts', 'pip')()
+)

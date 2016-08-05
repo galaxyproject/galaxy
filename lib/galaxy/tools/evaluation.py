@@ -51,6 +51,8 @@ class ToolEvaluator( object ):
         self.unstructured_path_rewriter = compute_environment.unstructured_path_rewriter()
 
         job = self.job
+	for p in job.parameters:
+		print "I am from eval.py: " + str(dir(p))
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
 
@@ -112,7 +114,8 @@ class ToolEvaluator( object ):
         self.param_dict = param_dict
 
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[] ):
-        """
+	
+	"""
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
         all the attributes of the value to be used in the template, *but*
@@ -123,7 +126,6 @@ class ToolEvaluator( object ):
 
         def input():
             raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
-
         param_dict["input"] = input
 
         param_dict.update(self.tool.template_macro_params)

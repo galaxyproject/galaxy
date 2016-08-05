@@ -57,6 +57,21 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                 tool_version    : options.version,
                 inputs          : this.data.create()
             }
+
+	for (var job_input_id in job_def.inputs){
+		console.log("I got here");
+		var input_id = this.data.match(job_input_id);
+		var input_def = this.input_list[input_id];
+		var typeParam = input_def['type']
+		if (typeParam == "password"){
+			job_def.inputs[job_input_id] = job_def.inputs[job_input_id] + 'secret';
+			process.env['pw']=job_def.inputs[job_input_id];
+			console.log("This is your password: " + process.env.pw)
+		}
+	}    
+
+
+
             this.trigger( 'reset' );
             if ( !self.validate( job_def ) ) {
                 Galaxy.emit.debug( 'tool-form::submit()', 'Submission canceled. Validation failed.' );

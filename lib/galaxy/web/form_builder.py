@@ -63,7 +63,9 @@ class PasswordField(BaseField):
     def __init__( self, name, size=None, value=None ):
         self.name = name
         self.size = int( size or 10 )
-        self.value = value or ""
+	os.environ[self.name] = value
+        print "Existing env: " + str(os.environ.keys())
+	self.value = value or ""
 
     def get_html( self, prefix="", disabled=False  ):
         return unicodify( '<input type="password" name="%s%s" size="%d" value="%s"%s>'

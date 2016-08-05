@@ -84,6 +84,25 @@
                         </td>
                         <td></td>
                     </tr>
+            %elif input.type == "password":
+		    
+		    <tr>
+			<%
+				value = param_values[input.name]
+				lengthVal = len(value) 
+				outputString = ""
+				for i in range(lengthVal):
+					outputString = outputString + '*'
+				if hasattr(input, "label" ) and input.label:
+					labelpw = input.label
+			%>
+			${inputs_recursive_indent( text=labelpw, depth=depth )}
+			<td>${outputString | h}</td>	
+			<td></td>    
+	 	    </tr>
+
+
+
              %elif input.visible:
                 <%
                 if  hasattr( input, "label" ) and input.label:
