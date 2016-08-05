@@ -197,6 +197,11 @@ def populate_api_routes( webapp, app ):
                            controller="datasets",
                            action="display",
                            conditions=dict(method=["GET"]))
+    webapp.mapper.connect( "history_contents_get_metadata_file",
+                           "/api/histories/{history_id}/contents/{history_content_id}/get_metadata_file",
+                           controller="datasets",
+                           action="get_metadata_file",
+                           conditions=dict(method=["GET"]))
     webapp.mapper.resource( 'user',
                             'users',
                             controller='group_users',
