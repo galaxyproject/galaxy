@@ -53,7 +53,7 @@
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging", "tool_menu", "jquery-ui/smoothness/jquery-ui" )}
+    ${h.css( "base", "autocomplete_tagging", "jquery-ui/smoothness/jquery-ui" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
