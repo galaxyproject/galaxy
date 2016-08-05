@@ -548,3 +548,28 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                                     message=message,
                                     display_top=kwd.get('redirect_home', False)
                                     )'''
+
+
+    @expose_api
+    def get_extra_preferences( self, trans, cntrller='user_preferences', **kwd ):
+        """
+        Reads the file user_preferences_extra_conf.xml to display admin defined user informations
+        """
+        from yaml import load
+
+        path = trans.app.config.user_preferences_extra_config_file
+
+        try:
+            with open(path, 'r') as stream:
+                config = load(stream)
+        except:
+            log.warn('Config file (%s) could not be found or is malformed.' % path)
+        return config
+
+
+
+
+
+
+
+
