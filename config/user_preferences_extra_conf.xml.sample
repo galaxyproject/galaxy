@@ -1,0 +1,27 @@
+preferences:
+    # the key you can refer to
+    apollo_url_01:
+        # description that is displayed to the user
+        description: The URL to your personal Apollo instance
+
+        inputs:
+            # the content can be accessed by apollo_url_01.apollo_url
+            - name: apollo_url
+              # type of input field that will be displayed to the user
+              # can be string or password
+              type: string
+              # by defaul all inputs are required
+              required: True
+
+    openstack_account:
+        description: Your own Globus account
+        inputs:
+            - name: username
+              type: string
+              required: False
+            - name: password
+              type: password
+              required: False
+            - name: url
+              type: string
+              required: True
