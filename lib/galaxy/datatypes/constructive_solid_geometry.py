@@ -9,6 +9,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy import util
 
 from stl import mesh
+import numpy as np
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -474,8 +475,9 @@ class STL(data.Data):
     def sniff(self, filename):
         is_stl = False
         try:
-            mesh.Mesh.from_file(filename)
-            is_stl = True
+            test_mesh = mesh.Mesh.from_file(filename)
+            if np.sum(np.isinf(test_mesh.areas)) == 0:
+                is_stl = True
         except Exception:
             pass
         return is_stl
