@@ -6,6 +6,7 @@ import galaxy.quota
 import galaxy.tools.data
 import galaxy.webapps.tool_shed.model
 from galaxy import tools
+from galaxy.config import configure_logging
 from galaxy.managers.tags import CommunityTagManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.util.dbkeys import GenomeBuilds
