@@ -3,7 +3,6 @@ Universe configuration builder.
 """
 import os
 import re
-import sys
 import logging
 import logging.config
 import ConfigParser
@@ -11,7 +10,6 @@ from datetime import timedelta
 from galaxy.util import string_as_bool
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
-from galaxy.config import configure_logging
 
 log = logging.getLogger( __name__ )
 
