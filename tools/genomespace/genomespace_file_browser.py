@@ -7,6 +7,7 @@ import urllib
 import urllib2
 import urlparse
 
+from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 
@@ -45,8 +46,6 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
 
 GENOMESPACE_UNKNOWN_FORMAT_KEY = 'unknown'
 GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = None
-
-VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
 
 def chunk_write( source_stream, target_stream, source_method="read", target_method="write" ):
@@ -166,7 +165,7 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
         metadata_dict = None
         original_filename = filename
         if output_filename is None:
-            filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
+            filename = ''.join( c in FILENAME_VALID_CHARS and c or '-' for c in filename )
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )

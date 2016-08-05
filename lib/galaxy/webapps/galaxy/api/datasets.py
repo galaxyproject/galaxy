@@ -324,8 +324,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         try:
             hda = self.hda_manager.get_accessible( decoded_content_id, trans.user )
             file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
-            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            fname = ''.join(c in valid_chars and c or '_' for c in hda.name)[0:150]
+            fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (hda.hid, fname, file_ext)
             return open(hda.metadata.get(metadata_file).file_name)

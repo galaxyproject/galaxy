@@ -12,6 +12,7 @@ import urlparse
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
+from galaxy.util import FILENAME_VALID_CHARS
 
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
@@ -44,8 +45,6 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'GFF': 'gff',
                                  'gmt': 'gmt',
                                  'gct': 'gct'}
-
-VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
 
 def chunk_write( source_stream, target_stream, source_method="read", target_method="write" ):
@@ -192,7 +191,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
         # if using tmp file, move the file to the new file path dir to get scooped up later
         if using_temp_file:
             original_filename = filename
-            filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
+            filename = ''.join( c in FILENAME_VALID_CHARS and c or '-' for c in filename )
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )
