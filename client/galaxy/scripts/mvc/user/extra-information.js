@@ -33,13 +33,43 @@ var ExtraInformation = Backbone.View.extend({
             }
             template = template + '</div>';
         }
-        template = template + '</div></form></div></div>';
+        template = template + '</div>';
+        template = template + '<div class="form-row">' +
+            '<input type="button" class="save-password action-button" name="change_password_button" value="Save"/>' +
+            '</div></form></div></div>';
+        $('.save-password').on( 'click', function( e ) { self.saveExtraInformation( self, e ) } );
         $('.user-preferences-all').append( template );
         $('.back-user-pref').on( 'click', function( e ) {
              $('.extra-information-section').remove();
              $( '.user-pref' ).show();
         });
+    },
+
+    /** saves extra user information */
+    saveExtraInformation: function( self, e ) {
+        /* var url = Galaxy.root + 'api/user_preferences/change_password',
+            current = $( "input[name='current']" ).val(),
+            password = $( "input[name='password']" ).val(),
+            confirm = $( "input[name='confirm']" ).val(),
+            data = {},
+            messageBar = Manage.ManageUserInformation.prototype;
+
+        data = { 'change_password_button': true, 'password': password, 'current': current, 'confirm': confirm, 'token': "" }
+        $.getJSON( url, data, function( response ) {
+             if( response["status"] === 'error' ) {
+                  messageBar.renderError( response["message"] );
+             }
+             else {
+                  $('.change-password-section').remove();
+                  messageBar.renderDone( response["message"] );
+                  $( '.user-pref' ).show();
+             }
+        });
+        */
     }
+
+
+
 });
 
 return {
