@@ -7,21 +7,25 @@ preferences:
         inputs:
             # the content can be accessed by apollo_url_01.apollo_url
             - name: apollo_url
+              label: Apollo URL
               # type of input field that will be displayed to the user
               # can be string or password
-              type: string
+              type: text
               # by defaul all inputs are required
               required: True
 
     openstack_account:
-        description: Your own Globus account
+        description: Your own Open Stack account
         inputs:
             - name: username
-              type: string
+              label: Username
+              type: text
               required: False
             - name: password
+              label: Password
               type: password
               required: False
             - name: url
-              type: string
+              label: Open Stack URL
+              type: text
               required: True

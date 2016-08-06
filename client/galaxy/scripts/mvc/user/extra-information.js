@@ -27,7 +27,7 @@ var ExtraInformation = Backbone.View.extend({
             for( var i = 0; i < item_object["inputs"].length; i++ ) {
                 var input_object = item_object["inputs"][i];
                 template = template + '<div class="form-row">';
-                template = template + '<input type="'+ (input_object.type === "string" ? "text" : input_object.type) +
+                template = template + "<label>" + input_object.label + ':</label><input type="'+ input_object.type +
                            '" name="'+ input_object.name +'" value="" '+ (input_object.required ? 'required': '') + '/>';
                 template = template + '</div>';
             }
