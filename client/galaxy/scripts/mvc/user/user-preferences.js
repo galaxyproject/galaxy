@@ -1,5 +1,8 @@
 /** User Preferences view */
-define(['mvc/user/manage-user-information', 'mvc/user/change-password'], function( Manage, Password ) {
+define(['mvc/user/manage-user-information',
+        'mvc/user/change-password',
+        'mvc/user/extra-information'], 
+function( Manage, Password, ExtraInformation ) {
 var UserPreferences = Backbone.View.extend({
 
     initialize: function ( ) {
@@ -22,8 +25,16 @@ var UserPreferences = Backbone.View.extend({
         $( '.user-pref' ).css( 'display', 'none' );
         var url = Galaxy.root + 'api/user_preferences/change_password';
         $.getJSON( url, function( data ) {
-            console.log( data );
             changePassword = new Password.ChangePassword( data );     
+        });
+    },
+
+    /** redirects to change password view */
+    callExtraInformation: function( e ) {
+        $( '.user-pref' ).css( 'display', 'none' );
+        var url = Galaxy.root + 'api/user_preferences/get_extra_preferences';
+        $.getJSON( url, function( data ) {
+            extraInformation = new ExtraInformation.ExtraInformation( data );     
         });
     },
 
@@ -49,7 +60,8 @@ var UserPreferences = Backbone.View.extend({
                 if( !data["remote_user"] ) {
                        template = template +
                        "<li><a target='galaxy_main' class='manage-userinfo'>Manage your information</a> (email, address, etc.) </li>" + 
-                       "<li><a target='galaxy_main' class='change-password'>Change your password</a> </li>";
+                       "<li><a target='galaxy_main' class='change-password'>Change your password</a> </li>" + 
+                       "<li><a target='galaxy_main' class='extra-information'>Extra information</a> </li>";
                 }
                 template = template + 
                            "<li><a target='galaxy_main' class='change-permissions'>Change default permissions</a> for new histories </li>" + 
@@ -69,6 +81,7 @@ var UserPreferences = Backbone.View.extend({
                            "<li><a target='galaxy_main' class='change-password'> Change your password </a> </li>" + 
                            "<li><a target='galaxy_main' class='manage-api-keys'> Manage your API keys </a> </li>" + 
                            "<li><a target='galaxy_main' class='manage-email-alert'> Manage your email alerts </a> </li>" + 
+                           "<li><a target='galaxy_main' class='extra-information'>Extra information</a> </li>" +
                            "<li><a target='galaxy_main' class='logout-user'> Logout </a> of all user sessions </li>";
             }
             template = template + "</ul>";
@@ -98,6 +111,7 @@ var UserPreferences = Backbone.View.extend({
         $( "#center-panel" ).html(template);
         $( ".manage-userinfo" ).on( "click", self.callManageInfo );
         $( ".change-password" ).on( "click", self.callChangePassword );
+        $( ".extra-information" ).on( "click", self.callExtraInformation );
     }
 });
 
