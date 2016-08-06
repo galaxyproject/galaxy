@@ -29,7 +29,7 @@ var UserPreferences = Backbone.View.extend({
         });
     },
 
-    /** redirects to change password view */
+    /** redirects to extra information view */
     callExtraInformation: function( e ) {
         $( '.user-pref' ).css( 'display', 'none' );
         var url = Galaxy.root + 'api/user_preferences/get_extra_preferences';
