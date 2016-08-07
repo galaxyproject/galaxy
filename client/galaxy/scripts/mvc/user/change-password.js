@@ -16,7 +16,7 @@ var ChangePassword = Backbone.View.extend({
     render: function( data ) {
         var template = "",
             self = this;
-        $( '.user-pref' ).css( 'display', 'none' );
+        $( '.user-pref' ).hide();
         $('.change-password-section').remove();
         Manage.ManageUserInformation.prototype.hideErrorDoneMessage();
         if( data["status"] ) {
@@ -82,7 +82,7 @@ var ChangePassword = Backbone.View.extend({
                   $('.change-password-section').remove();
                   messageBar.renderDone( response["message"] );
                   $( '.user-pref' ).show();
-             }            
+             }    
         });
     }
 });

@@ -4,6 +4,8 @@ API operations on User Preferences objects.
 
 import sys
 import logging
+import sets
+import json
 
 from markupsafe import escape
 from sqlalchemy import false, and_, or_, true, func
@@ -542,9 +544,158 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                'message': message,
                'display_top': kwd.get('redirect_home', False)
         }
-        '''return trans.fill_template( '/user/change_password.mako',
-                                    token=token,
-                                    status=status,
-                                    message=message,
-                                    display_top=kwd.get('redirect_home', False)
-                                    )'''
+
+    @expose_api
+    def set_default_permissions( self, trans, cntrller='user_preferences', **kwd ):
+        """Set the user's default permissions for the new histories"""
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if trans.user:
+            if 'update_roles_button' in kwd:
+                p = util.Params( kwd )
+                
+                permissions = {}
+                for k, v in trans.app.model.Dataset.permitted_actions.items():
+                    in_roles = p.get( k + '_in', [] )
+                    if not isinstance( in_roles, list ):
+                        in_roles = [ in_roles ]
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
+                    action = trans.app.security_agent.get_action( v.action ).action
+                    permissions[ action ] = in_roles
+                trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
+                message = 'Default new history permissions have been changed.'
+                return {
+                    'message': message,
+                    'status': status
+                }
+            else:
+                return self.render_permission_form( trans, message, status )
+
+        else:
+            # User not logged in, history group must be only public
+            #return trans.show_error_message( "You must be logged in to change your default permitted actions." )
+            return {
+                'message': "You must be logged in to change your default permitted actions.",
+                'status': "error"
+            }
+
+     
+    def render_permission_form( self, trans, message, status, do_not_render=[], all_roles=[] ):
+        ''' 
+        Obtains parameters to build change permission form
+        '''
+        obj = trans.user
+        obj_name = trans.user.email
+        roles = trans.user.all_roles()
+        if isinstance( obj, trans.app.model.User ):
+            current_actions = obj.default_permissions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+            obj_str = 'user %s' % obj_name
+            obj_type = 'dataset'
+        elif isinstance( obj, trans.app.model.History ):
+            current_actions = obj.default_permissions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+            obj_str = 'history %s' % obj_name
+            obj_type = 'dataset'
+        elif isinstance( obj, trans.app.model.Dataset ):
+            current_actions = obj.actions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+            obj_str = obj_name
+            obj_type = 'dataset'
+        elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
+            current_actions = obj.actions + obj.dataset.actions
+            permitted_actions = trans.app.model.Dataset.permitted_actions.items() + trans.app.model.Library.permitted_actions.items()
+            obj_str = obj_name
+            obj_type = 'dataset'
+        elif isinstance( obj, trans.app.model.Library ):
+            current_actions = obj.actions
+            permitted_actions = trans.app.model.Library.permitted_actions.items()
+            obj_str = 'library %s' % obj_name
+            obj_type = 'library'
+        elif isinstance( obj, trans.app.model.LibraryDataset ):
+            current_actions = obj.actions
+            permitted_actions = trans.app.model.Library.permitted_actions.items()
+            obj_str = 'library dataset %s' % obj_name
+            obj_type = 'library'
+        elif isinstance( obj, trans.app.model.LibraryFolder ):
+            current_actions = obj.actions
+            permitted_actions = trans.app.model.Library.permitted_actions.items()
+            obj_str = 'library folder %s' % obj_name
+            obj_type = 'library'
+        else:
+            current_actions = []
+            permitted_actions = {}.items()
+            obj_str = 'unknown object %s' % obj_name
+            obj_type = ''
+
+        # converts the list to JSON iterable
+        index = 0
+        current_action_list = dict()
+        for item in current_actions:
+            current_action_list[index] = dict()
+            current_action_list[index]["action"] = item.action
+            #current_action_list[index]["action_key"] = item
+            index = index + 1
+
+        index = 0
+        permitted_action_list = dict()
+        for item, action in permitted_actions:
+            if item not in do_not_render: 
+                permitted_action_list[index] = dict()
+                if( item == 'LIBRARY_ACCESS' ):
+                    role_list = self.get_roles_action( current_actions, permitted_actions, action, do_not_render, all_roles )
+                else:
+                    role_list = self.get_roles_action( current_actions, permitted_actions, action, do_not_render, roles )
+	        permitted_action_list[index]["action"] = action.action
+	        permitted_action_list[index]["description"] = action.description
+	        permitted_action_list[index]["action_key"] = item
+	        permitted_action_list[index]["in_roles"] = role_list["in_role_iterable"]
+	        permitted_action_list[index]["out_roles"] = role_list["out_role_iterable"]
+            index = index + 1
+ 
+        return {
+            'userid': trans.user.id,
+            'current_actions': current_action_list,
+            'permitted_actions': permitted_action_list,
+            'obj_str': obj_str,
+            'obj_type': obj_type,
+            'data_access': trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
+            'all_roles': all_roles,
+            'message': message,
+            'status': status
+        }
+
+
+    def get_roles_action( self, current_actions, permitted_actions, action, do_not_render, roles ):
+        '''
+        Fetch in and out roles based on action
+        '''
+        in_roles = sets.Set()
+        out_roles = []
+        for a in current_actions:
+            if a.action == action.action:
+                in_roles.add( a.role )
+        out_roles = filter( lambda x: x not in in_roles, roles )
+        in_role_iterable = self.get_iterable_roles( in_roles )
+        out_role_iterable = self.get_iterable_roles( out_roles )
+        return {
+            'in_role_iterable': in_role_iterable,
+            'out_role_iterable': out_role_iterable
+        }
+
+
+    def get_iterable_roles( self, role_list ):
+        '''
+        Converts list to JSON iterable list
+        '''
+        index = 0
+        iterable_roles_list = dict()
+        for item in role_list:
+            iterable_roles_list[index] = dict()
+            iterable_roles_list[index]["id"] = item.id
+            iterable_roles_list[index]["name"] = item.name
+            index = index + 1
+        return iterable_roles_list
+     
+         

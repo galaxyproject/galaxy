@@ -1,5 +1,8 @@
 /** User Preferences view */
-define(['mvc/user/manage-user-information', 'mvc/user/change-password'], function( Manage, Password ) {
+define(['mvc/user/manage-user-information',
+        'mvc/user/change-password',
+        'mvc/user/change-permissions'],
+function( Manage, Password, Permissions ) {
 var UserPreferences = Backbone.View.extend({
 
     initialize: function ( ) {
@@ -11,7 +14,7 @@ var UserPreferences = Backbone.View.extend({
         var userInfo = null,
             url = Galaxy.root + 'api/user_preferences/manage_user_info';
         e.preventDefault();
-        $( '.user-pref' ).css( 'display', 'none' );
+        $( '.user-pref' ).hide();
         $.getJSON( url, function( data ) {
               userInfo = new Manage.ManageUserInformation( data );  
         });
@@ -19,11 +22,21 @@ var UserPreferences = Backbone.View.extend({
   
     /** redirects to change password view */
     callChangePassword: function( e ) {
-        $( '.user-pref' ).css( 'display', 'none' );
+        $( '.user-pref' ).hide();
         var url = Galaxy.root + 'api/user_preferences/change_password';
         $.getJSON( url, function( data ) {
-            console.log( data );
             changePassword = new Password.ChangePassword( data );     
+        });
+    },
+
+    /** redirects to change permissions view */
+    callChangePermissions: function( e ) {
+        $( '.user-pref' ).hide();
+        var url = Galaxy.root + 'api/user_preferences/set_default_permissions',
+            data = {};
+        data = { 'message': "", 'status': "" };
+        $.getJSON( url, data, function( response ) {
+            changePassword = new Permissions.ChangePermissions( response );     
         });
     },
 
@@ -98,6 +111,7 @@ var UserPreferences = Backbone.View.extend({
         $( "#center-panel" ).html(template);
         $( ".manage-userinfo" ).on( "click", self.callManageInfo );
         $( ".change-password" ).on( "click", self.callChangePassword );
+        $( ".change-permissions" ).on( "click", self.callChangePermissions );
     }
 });
 
