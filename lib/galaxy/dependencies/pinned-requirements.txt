@@ -80,4 +80,4 @@ pysam==0.8.4+gx5
 chronos-python==0.38.0
 
 # GenomeSpace dependencies
-python-genomespaceclient==0.1.6
+python-genomespaceclient==0.1.8

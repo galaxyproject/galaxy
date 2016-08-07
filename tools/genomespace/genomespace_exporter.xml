@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <tool name="GenomeSpace Exporter" id="genomespace_exporter" version="0.0.4">
     <description> - send data to GenomeSpace</description>
-    <command>genomespace
+    <command interpreter="python">genomespace_exporter.py
         #set $target_folder = $genomespace_browser.split("^")[0]
         #set $token = $genomespace_browser.split("^")[1] or $__user__.preferences.get( 'genomespace_token', None )
         
@@ -9,11 +9,11 @@
         #assert $token, Exception( 'Invalid token. You must be logged into GenomeSpace through OpenID or select a valid folder via the GenomeSpace browse dialog.' )
         #import binascii
         --token "${ binascii.hexlify(str(token).encode('utf-8')) }"
-        encoded_cp "${ binascii.hexlify( str($input1).encode('utf8') ) }"
+        --input_file "${ binascii.hexlify( str($input1).encode('utf8') ) }"
         #if $filename:
-            "${ binascii.hexlify( str($target_folder + '/' + str( $filename )).encode('utf8') ) }"
+        --target_url "${ binascii.hexlify( str($target_folder + '/' + str( $filename )).encode('utf8') ) }"
         #else:
-            "${ binascii.hexlify( ($target_folder + '/' + 'Galaxy History Item %s (%s) - %s: %s.%s' % ( $__app__.security.encode_id( $input1.id ), $__app__.security.encode_id( $output_log.id ), $input1.hid, $input1.name.replace('/', '_'), $input1.ext )).encode('utf8') )  }"
+        --target_url "${ binascii.hexlify( ($target_folder + '/' + 'Galaxy History Item %s (%s) - %s: %s.%s' % ( $__app__.security.encode_id( $input1.id ), $__app__.security.encode_id( $output_log.id ), $input1.hid, $input1.name.replace('/', '_'), $input1.ext )).encode('utf8') )  }"
         #end if
     </command>
     <inputs>
@@ -25,7 +25,7 @@
         <param name="filename" type="text" label="Filename" help="Leave blank to generate automatically" />
     </inputs>
     <outputs>
-        <data format="html" name="output_log" />
+        <data format="auto" name="output_log" />
     </outputs>
     <help>
 This Tool allows you to export data to GenomeSpace. Click the Browse button to select a file to import. The tool will automatically
