@@ -126,4 +126,6 @@ class DependencyResolversView(object):
         return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
 
     def get_requirements_status(self, requested_requirements, installed_tool_dependencies=None):
+        for req in requested_requirements:
+            req['installed_tool_dependencies'] = installed_tool_dependencies
         return [self.manager_dependency(**req) for req in requested_requirements]
