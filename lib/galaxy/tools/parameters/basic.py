@@ -275,10 +275,6 @@ class TextToolParameter( ToolParameter ):
 class WebComponentToolParameter( ToolParameter ):
     """
     Parameter that can take on any text value.
-
-    >>> p = WebComponentToolParameter( None, XML( '<param name="blah" type="webcomponent" component="test-app" value="default" />' ) )
-    >>> print p.name
-    blah
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
