@@ -46,125 +46,121 @@ var valid_tools = Array();
 var repository_data = Object();
 var tool_sheds = JSON.parse('${tool_sheds}');
 repository_details_template = _.template([
-    '<h2 style="font-weight: normal;">Repository information for <strong><\%= repository.name \%></strong> from <strong><\%= repository.owner \%></strong></h2>',
-    '<form id="repository_installation" name="install_repository" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">',
-        '<\% if (current_changeset === undefined) { \%>',
-            '<\% current_changeset = $("#changeset").find("option:selected").text(); \%>',
-        '<\% } \%>',
-        '<input type="hidden" id="repositories" name="tsr_id" value="ID" />',
-        '<input type="hidden" id="tool_shed_url" name="tool_shed_url" value="None" />',
-        '<div class="toolForm">',
-            '<div class="toolFormTitle">Changeset</div>',
-            '<div class="toolFormBody changeset">',
-                '<select id="changeset" name="changeset">',
-                    '<\% _.each(Object.keys(repository.metadata), function(changeset) { \%>',
-                        '<option data-changeset="<\%= changeset \%>" value="<\%= changeset.split(":")[1] \%>"><\%= changeset \%></option>',
-                    '<\% }); \%>',
-                '</select>',
-                '<input class="btn btn-primary" data-shedurl="" data-tsrid="<\%= repository.metadata[current_changeset].repository.id \%>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
-                '<input class="btn btn-primary" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
-                '<div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>',
-            '</div>',
-            '<div class="toolParamHelp" style="clear: both;">',
-            'Please select a revision and review the settings below before installing.',
-            '</div>',
-        '</div>',
-        '<\%= shed_tool_conf \%>',
-        '<\%= tool_panel_section \%>',
-        '<\% current_metadata = repository.metadata[current_changeset]; \%>',
-        '<div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"><\%= current_changeset \%></strong></div>',
-        '<div class="toolFormBody">',
-            '<\% if (current_metadata.includes_tool_dependencies) { \%>',
-                '<p id="install_resolver_dependencies_checkbox">',
-                    '<input type="checkbox" checked id="install_resolver_dependencies" />',
-                    '<label for="install_resolver_dependencies">Install resolver dependencies</label>',
-                '</p>',
-            '<\% } \%>',
-            '<p id="install_repository_dependencies_checkbox">',
-                '<input type="checkbox" checked id="install_repository_dependencies" />',
-                '<label for="install_repository_dependencies">Install repository dependencies</label>',
-            '</p>',
-            '<p id="install_tool_dependencies_checkbox">',
-                '<input type="checkbox" checked id="install_tool_dependencies" />',
-                '<label for="install_tool_dependencies">Install tool dependencies</label>',
-            '</p>',
-            '<\% current_metadata = repository.metadata[current_changeset]; \%>',
-            '<\% if (current_metadata.has_repository_dependencies) { \%>',
-                '<\% current_metadata.repository_dependency_template = repository_dependency_template; \%>',
-                '<div class="tables container-table" id="repository_dependencies">',
-                    '<div class="expandLink">',
-                        '<a class="toggle_folder" data_target="repository_dependencies_table">',
-                            'Repository dependencies &ndash; <em>installation of these additional repositories is required</em>',
-                        '</a>',
-                    '</div>',
-                    '<\%= repository_dependencies_template(current_metadata) \%>',
+    '<div id="repository_installation_form">',
+        '<h2 style="font-weight: normal;">Repository information for <strong><\%= repository.name \%></strong> from <strong><\%= repository.owner \%></strong></h2>',
+        '<form id="repository_installation" name="install_repository" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">',
+            '<input type="hidden" id="repositories" name="<\%= current_metadata.repository.id \%>" value="ID" />',
+            '<input type="hidden" id="tool_shed_url" name="tool_shed_url" value="None" />',
+            '<div class="toolForm">',
+                '<div class="toolFormTitle">Changeset</div>',
+                '<div class="toolFormBody changeset">',
+                    '<select id="changeset" name="changeset">',
+                        '<\% _.each(Object.keys(repository.metadata), function(changeset) { \%>',
+                            '<\% if (changeset == current_changeset) { var selected = "selected "; } else { var selected = ""; } \%>',
+                            '<option <\%= selected \%>data-changeset="<\%= changeset \%>" value="<\%= changeset.split(":")[1] \%>"><\%= changeset \%></option>',
+                        '<\% }); \%>',
+                    '</select>',
+                    '<input class="btn btn-primary" data-shedurl="" data-tsrid="<\%= current_metadata.repository.id \%>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
+                    '<input class="btn btn-primary" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
+                    '<div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>',
                 '</div>',
-            '<\% } \%>',
-            '<\% if (current_metadata.includes_tool_dependencies) { \%>',
-                '<div class="tables container-table" id="tool_dependencies">',
-                    '<div class="expandLink">',
-                        '<a class="toggle_folder" data_target="tool_dependencies_table">',
-                            'Tool dependencies &ndash; <em>repository tools require handling of these dependencies</em>',
-                        '</a>',
+                '<div class="toolParamHelp" style="clear: both;">',
+                'Please select a revision and review the settings below before installing.',
+                '</div>',
+            '</div>',
+            '<\%= shed_tool_conf \%>',
+            '<\%= tool_panel_section \%>',
+            '<div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"><\%= current_changeset \%></strong></div>',
+            '<div class="toolFormBody">',
+                '<\% if (current_metadata.has_repository_dependencies) { \%>',
+                    '<p id="install_repository_dependencies_checkbox">',
+                        '<input type="checkbox" checked id="install_repository_dependencies" />',
+                        '<label for="install_repository_dependencies">Install repository dependencies</label>',
+                    '</p>',
+                    '<\% current_metadata.repository_dependency_template = repository_dependency_template; \%>',
+                    '<div class="tables container-table" id="repository_dependencies">',
+                        '<div class="expandLink">',
+                            '<a class="toggle_folder" data_target="repository_dependencies_table">',
+                                'Repository dependencies &ndash; <em>installation of these additional repositories is required</em>',
+                            '</a>',
+                        '</div>',
+                        '<\%= repository_dependencies_template(current_metadata) \%>',
                     '</div>',
-                    '<table class="tables container-table" id="tool_dependencies_table" border="0" cellpadding="2" cellspacing="2" width="100%">',
-                        '<tbody id="tool_deps">',
-                            '<tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">',
-                                '<th style="padding-left: 40px;">Name</th>',
-                                '<th>Version</th>',
-                                '<th>Type</th>',
-                            '</tr>',
-                            '<\% _.each(tool_dependencies[current_changeset], function(dependency) { \%>',
-                                '<tr class="datasetRow tool_dependency_row" style="display: table-row;">',
-                                    '<td style="padding-left: 40px;">',
-                                    '<\%= dependency.name \%></td>',
-                                    '<td><\%= dependency.version \%></td>',
-                                    '<td><\%= dependency.type \%></td>',
+                '<\% } \%>',
+                '<\% if (current_metadata.includes_tool_dependencies) { \%>',
+                    '<p id="install_resolver_dependencies_checkbox">',
+                        '<input type="checkbox" checked id="install_resolver_dependencies" />',
+                        '<label for="install_resolver_dependencies">Install resolver dependencies</label>',
+                    '</p>',
+                    '<p id="install_tool_dependencies_checkbox">',
+                        '<input type="checkbox" checked id="install_tool_dependencies" />',
+                        '<label for="install_tool_dependencies">Install tool dependencies</label>',
+                    '</p>',
+                    '<div class="tables container-table" id="tool_dependencies">',
+                        '<div class="expandLink">',
+                            '<a class="toggle_folder" data_target="tool_dependencies_table">',
+                                'Tool dependencies &ndash; <em>repository tools require handling of these dependencies</em>',
+                            '</a>',
+                        '</div>',
+                        '<table class="tables container-table" id="tool_dependencies_table" border="0" cellpadding="2" cellspacing="2" width="100%">',
+                            '<tbody id="tool_deps">',
+                                '<tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">',
+                                    '<th style="padding-left: 40px;">Name</th>',
+                                    '<th>Version</th>',
+                                    '<th>Type</th>',
                                 '</tr>',
-                            '<\% }); \%>',
-                        '</tbody>',
-                    '</table>',
-                '</div>',
-            '<\% } \%>',
-            '<\% if (current_metadata.includes_tools_for_display_in_tool_panel) { \%>',
-                '<div class="tables container-table" id="tools_toggle">',
-                    '<div class="expandLink">',
-                        '<a class="toggle_folder" data_target="valid_tools">',
-                            'Valid tools &ndash; <em>click the name to preview the tool and use the pop-up menu to inspect all metadata</em>',
-                        '</a>',
-                    '</div>',
-                    '<table class="tables container-table" id="valid_tools" border="0" cellpadding="2" cellspacing="2" width="100%">',
-                        '<tbody id="tools_in_repo">',
-                            '<tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">',
-                                '<th style="padding-left: 40px;">Name</th>',
-                                '<th>Description</th>',
-                                '<th>Version</th>',
-                                '<th>Tool Panel Section</th>',
-                            '</tr>',
-                                '<\% _.each(tools[current_changeset], function(tool) { \%>',
-                                    '<tr id="libraryItem" class="tool_row" style="display: table-row;" style="width: 15%">',
+                                '<\% _.each(tool_dependencies[current_changeset], function(dependency) { \%>',
+                                    '<tr class="datasetRow tool_dependency_row" style="display: table-row;">',
                                         '<td style="padding-left: 40px;">',
-                                            '<div id="tool" class="menubutton split popup" style="float: left;">',
-                                                '<a class="view-info"><\%= tool.name \%></a>',
-                                            '</div>',
-                                        '</td>',
-                                        '<td><\%= tool.description \%></td>',
-                                        '<td style="width: 15%"><\%= tool.version \%></td>',
-                                        '<td style="width: 35%">',
-                                            '<div class="tool_tps_switcher tps_switcher_<\%= tool.clean \%>" id="per_tool_tps_container_<\%= tool.clean \%>">',
-                                                '<span id="tps_button_<\%= tool.clean \%>" >',
-                                                    '<input class="menubutton show_tool_tps_selector" id="select_tps_button_<\%= tool.clean \%>" data-toolguid="<\%= tool.guid \%>" data-toolname="<\%= tool.clean \%>" type="button" value="Specify panel section" />',
-                                                '</span>',
-                                            '</div>',
-                                        '</td>',
+                                        '<\%= dependency.name \%></td>',
+                                        '<td><\%= dependency.version \%></td>',
+                                        '<td><\%= dependency.type \%></td>',
                                     '</tr>',
                                 '<\% }); \%>',
-                        '</tbody>',
-                    '</table>',
-                '</div>',
-            '<\% } \%>',
-        '</div>',
-    '</form>',
+                            '</tbody>',
+                        '</table>',
+                    '</div>',
+                '<\% } \%>',
+                '<\% if (current_metadata.includes_tools_for_display_in_tool_panel) { \%>',
+                    '<div class="tables container-table" id="tools_toggle">',
+                        '<div class="expandLink">',
+                            '<a class="toggle_folder" data_target="valid_tools">',
+                                'Valid tools &ndash; <em>click the name to preview the tool and use the pop-up menu to inspect all metadata</em>',
+                            '</a>',
+                        '</div>',
+                        '<table class="tables container-table" id="valid_tools" border="0" cellpadding="2" cellspacing="2" width="100%">',
+                            '<tbody id="tools_in_repo">',
+                                '<tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">',
+                                    '<th style="padding-left: 40px;">Name</th>',
+                                    '<th>Description</th>',
+                                    '<th>Version</th>',
+                                    '<th>Tool Panel Section</th>',
+                                '</tr>',
+                                    '<\% _.each(tools[current_changeset], function(tool) { \%>',
+                                        '<tr id="libraryItem" class="tool_row" style="display: table-row;" style="width: 15%">',
+                                            '<td style="padding-left: 40px;">',
+                                                '<div id="tool" class="menubutton split popup" style="float: left;">',
+                                                    '<a class="view-info"><\%= tool.name \%></a>',
+                                                '</div>',
+                                            '</td>',
+                                            '<td><\%= tool.description \%></td>',
+                                            '<td style="width: 15%"><\%= tool.version \%></td>',
+                                            '<td style="width: 35%">',
+                                                '<div class="tool_tps_switcher tps_switcher_<\%= tool.clean \%>" id="per_tool_tps_container_<\%= tool.clean \%>">',
+                                                    '<span id="tps_button_<\%= tool.clean \%>" >',
+                                                        '<input class="menubutton show_tool_tps_selector" id="select_tps_button_<\%= tool.clean \%>" data-toolguid="<\%= tool.guid \%>" data-toolname="<\%= tool.clean \%>" type="button" value="Specify panel section" />',
+                                                    '</span>',
+                                                '</div>',
+                                            '</td>',
+                                        '</tr>',
+                                    '<\% }); \%>',
+                            '</tbody>',
+                        '</table>',
+                    '</div>',
+                '<\% } \%>',
+            '</div>',
+        '</form>',
+    '</div>',
 ].join(''));
 shed_tool_conf = _.template([
     '<div class="toolFormTitle">Shed tool configuration file:</div>',
@@ -470,17 +466,12 @@ function get_queued_repositories(current_ids = null, processed_ids = null, metad
 }
 function changeset_metadata() {
     var changeset = $('#changeset').find("option:selected").text();
-    $("#current_changeset").text(changeset);
-    $('#repository_details').empty();
     repository_data.current_changeset = changeset;
-    if (repository_information.includes_tools_for_display_in_tool_panel) {
-        repository_data.stc_or_tps = tps_selection_template(repository_data.panel_section_dict)
-    }
-    else {
-        repository_data.stc_or_tps = repository_data.shed_conf
-    }
-    $('#repository_details').append(repository_details_template(repository_data));
+    repository_data.current_metadata = repository_data.repository.metadata[changeset];
+    repository_information = repository_data.repository;
+    $('#repository_installation_form').replaceWith(repository_details_template(repository_data));
     check_if_installed(repository_information.name, repository_information.owner, changeset.split(':')[1]);
+    bind_repository_events();
 }
 function toggle_folder(folder) {
     target_selector = '#' + folder.attr('data_target');
@@ -629,7 +620,9 @@ function bind_category_events() {
         $('#repository_details').attr('data-shedurl', $(this).attr('data-shedurl'));
         $.get(api_url, params, function(data) {
             $('#repository_details').empty();
-            data.current_changeset = Object.keys(data.repository.metadata)[0];
+            var changesets = Object.keys(data.repository.metadata);
+            data.current_changeset = changesets[changesets.length - 1];
+            data.current_metadata = data.repository.metadata[data.current_changeset];
             data.repository_dependencies_template = repository_dependencies_template;
             data.repository_dependency_template = repository_dependency_template;
             data.tps_selection_template = tps_selection_template;
@@ -653,11 +646,14 @@ function bind_category_events() {
     });
 }
 function bind_repository_events() {
+    var current_changeset = $('#changeset').find("option:selected").text();
+    var current_metadata = repository_data.repository.metadata[current_changeset];
     $('.show_tool_tps_selector').click(function() {
         var changeset = $('#changeset').find("option:selected").text();
         var tool_guid = $(this).attr('data-toolguid');
         show_panel_selector(tool_guid, changeset);
     });
+    check_if_installed(current_metadata.repository.name, current_metadata.repository.owner, current_changeset.split(':')[1]);
     $('#changeset').change(changeset_metadata);
     $('.toggle_folder').click(function() {
         toggle_folder($(this));
@@ -675,7 +671,6 @@ function bind_repository_events() {
             queued_repos[queue_key] = repository_metadata;
         }
         localStorage.repositories = JSON.stringify(queued_repos);
-        console.log(localStorage.repositories);
         check_queue();
     });
     $('#create_new').click(show_global_tps_create);
