@@ -37,7 +37,6 @@ class TextField(BaseField):
     <input type="text" name="bins" size="4" value="default">
     """
     def __init__( self, name, size=None, value=None ):
-        log.error("##OSALLOU TextField "+str(name))
         self.name = name
         self.size = int( size or 10 )
         self.value = value or ""
@@ -50,6 +49,7 @@ class TextField(BaseField):
 
     def set_size(self, size):
         self.size = int( size )
+
 
 class WebComponentField(TextField):
     """

@@ -143,6 +143,7 @@ class FormDefinitionTextFieldFactory( FormDefinitionFieldFactory ):
         rval['type'] = self.__get_stored_field_type( string_as_bool( elem.get( 'area', 'false' ) ) )
         return rval
 
+
 class FormDefinitionWebComponentFieldFactory( FormDefinitionFieldFactory ):
     type = 'webcomponent'
 

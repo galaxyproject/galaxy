@@ -271,6 +271,7 @@ class TextToolParameter( ToolParameter ):
         d['size'] = self.size
         return d
 
+
 class WebComponentToolParameter( ToolParameter ):
     """
     Parameter that can take on any text value.
