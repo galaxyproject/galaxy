@@ -6,13 +6,12 @@
         #set $token = $URL.split("^")[1] if "^" in $URL and $URL.split("^")[1] else $__user__.preferences.get( 'genomespace_token', None )
 
         #assert $input_file, Exception( 'You must select a valid input file.' )
-        #assert $token, Exception( 'Invalid token. You must be logged into GenomeSpace through OpenID or select a valid file via the GenomeSpace browse dialog.' )
-        #import binascii
+        #assert $token, Exception( 'Invalid token. You must be logged into GenomeSpace through OpenID.' )
         --json_parameter_file "${output_file1}"
         --galaxy_root $__root_dir__
         --data_conf $__datatypes_config__
     </command>
-    <!-- If using this tool through bioblend, the genomespace_browser parameter should contain the path to the GenomeSpaceFile + the security token
+    <!-- If using this tool through bioblend, the URL parameter should contain the path to the GenomeSpaceFile + the security token
          separated by a ^ as follows: GenomeSpaceFilePath^Token -->
     <inputs check_values="False">
         <param name="URL" type="genomespacefile" label="Choose Input File from GenomeSpace" select_type="FILE" />
