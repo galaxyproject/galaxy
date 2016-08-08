@@ -54,9 +54,9 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
     def _galaxy_package_dep( self, path, version, name, exact ):
         script = join( path, 'env.sh' )
         if exists( script ):
-            return GalaxyPackageDependency(script, path, version, exact)
+            return GalaxyPackageDependency(script, path, version, name, exact)
         elif exists( join( path, 'bin' ) ):
-            return GalaxyPackageDependency(None, path, version, exact)
+            return GalaxyPackageDependency(None, path, version, name, exact)
         return NullDependency(version=version, name=name)
 
 
@@ -82,13 +82,14 @@ def _is_dependency_directory(directory):
 
 
 class GalaxyPackageDependency(Dependency):
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version']
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version', 'name']
     dependency_type = 'galaxy_package'
 
-    def __init__( self, script, path, version, exact=True ):
+    def __init__( self, script, path, version, name, exact=True ):
         self.script = script
         self.path = path
         self.version = version
+        self.name = name
         self._exact = exact
 
     @property

@@ -32,7 +32,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
                 has_script_dep = is_galaxy_dep and dependency.script and dependency.path
                 if has_script_dep:
                     # Environment settings do not use versions.
-                    return GalaxyPackageDependency(dependency.script, dependency.path, None, True)
+                    return GalaxyPackageDependency(dependency.script, dependency.path, None, name, True)
         return NullDependency(version=None, name=name)
 
     def _get_package_installed_dependency_path( self, installed_tool_dependency, name, version ):
@@ -58,7 +58,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
                               tool_shed_repository.installed_changeset_revision ) )
         if exists( path ):
             script = join( path, 'env.sh' )
-            return GalaxyPackageDependency(script, path, None, True)
+            return GalaxyPackageDependency(script, path, None, name, True)
         return NullDependency(version=None, name=name)
 
 

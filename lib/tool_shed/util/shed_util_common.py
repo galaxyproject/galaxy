@@ -234,7 +234,10 @@ def get_unique_requirements_from_repository(repository):
     if not repository.includes_tools:
         return []
     else:
-        return get_unique_requirements_from_tools(repository.metadata.get('tools', []))
+        requirements = get_unique_requirements_from_tools(repository.metadata.get('tools', []))
+        for req in requirements:
+            req['installed_tool_dependencies'] = repository.installed_tool_dependencies
+        return requirements
 
 
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
