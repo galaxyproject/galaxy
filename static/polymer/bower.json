@@ -1,0 +1,13 @@
+{
+  "name": "polymer-libs",
+  "version": "0.0.0",
+  "description": "polymer client-side libraries used by Galaxy",
+  "keywords": [
+    "galaxy",
+    "galaxyproject"
+  ],
+  "homepage": "usegalaxy.org",
+  "dependencies": {
+    "polymer": "~1.6.1"
+  }
+}
