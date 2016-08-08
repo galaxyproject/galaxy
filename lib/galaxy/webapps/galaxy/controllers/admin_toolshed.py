@@ -661,7 +661,13 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def manage_repositories( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
+        api_installation = util.asbool( kwd.get( 'api', 'false' ) )
+        if api_installation:
+            tsr_ids = json.loads( kwd.get( 'tool_shed_repository_ids', '[]' ) )
+            kwd[ 'tool_shed_repository_ids' ] = tsr_ids
+            tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
+        else:
+            tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if not tsridslist:
@@ -709,9 +715,12 @@ class AdminToolshed( AdminGalaxy ):
                         reinstalling=reinstalling,
                     )
                     tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
-                    trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                               action='monitor_repository_installation',
-                                                               tool_shed_repository_ids=tsr_ids_for_monitoring ) )
+                    if api_installation:
+                        return json.dumps( tsr_ids_for_monitoring )
+                    else:
+                        trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                   action='monitor_repository_installation',
+                                                                   tool_shed_repository_ids=tsr_ids_for_monitoring ) )
                 except install_manager.RepositoriesInstalledException as e:
                     kwd[ 'message' ] = e.message
                     kwd[ 'status' ] = 'error'

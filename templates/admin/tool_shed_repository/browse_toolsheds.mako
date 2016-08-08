@@ -47,8 +47,11 @@ var repository_data = Object();
 var tool_sheds = JSON.parse('${tool_sheds}');
 repository_details_template = _.template([
     '<h2 style="font-weight: normal;">Repository information for <strong><\%= repository.name \%></strong> from <strong><\%= repository.owner \%></strong></h2>',
-    '<form id="repository_installation" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">',
-        '<input type="hidden" id="tsr_id" name="tsr_id" value="ID" />',
+    '<form id="repository_installation" name="install_repository" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">',
+        '<\% if (current_changeset === undefined) { \%>',
+            '<\% current_changeset = $("#changeset").find("option:selected").text(); \%>',
+        '<\% } \%>',
+        '<input type="hidden" id="repositories" name="tsr_id" value="ID" />',
         '<input type="hidden" id="tool_shed_url" name="tool_shed_url" value="None" />',
         '<div class="toolForm">',
             '<div class="toolFormTitle">Changeset</div>',
@@ -58,7 +61,7 @@ repository_details_template = _.template([
                         '<option data-changeset="<\%= changeset \%>" value="<\%= changeset.split(":")[1] \%>"><\%= changeset \%></option>',
                     '<\% }); \%>',
                 '</select>',
-                '<input class="btn btn-primary" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
+                '<input class="btn btn-primary" data-shedurl="" data-tsrid="<\%= repository.metadata[current_changeset].repository.id \%>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
                 '<input class="btn btn-primary" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
                 '<div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>',
             '</div>',
@@ -66,12 +69,17 @@ repository_details_template = _.template([
             'Please select a revision and review the settings below before installing.',
             '</div>',
         '</div>',
-        '<div class="toolFormTitle" id="tps_title">Tool panel section:</div>',
-        '<div class="toolFormBody" id="tool_panel_section">',
-            '<\%= tps_selection_template(panel_section_dict) \%>',
-        '</div>',
-        '<div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"></strong></div>',
+        '<\%= shed_tool_conf \%>',
+        '<\%= tool_panel_section \%>',
+        '<\% current_metadata = repository.metadata[current_changeset]; \%>',
+        '<div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"><\%= current_changeset \%></strong></div>',
         '<div class="toolFormBody">',
+            '<\% if (current_metadata.includes_tool_dependencies) { \%>',
+                '<p id="install_resolver_dependencies_checkbox">',
+                    '<input type="checkbox" checked id="install_resolver_dependencies" />',
+                    '<label for="install_resolver_dependencies">Install resolver dependencies</label>',
+                '</p>',
+            '<\% } \%>',
             '<p id="install_repository_dependencies_checkbox">',
                 '<input type="checkbox" checked id="install_repository_dependencies" />',
                 '<label for="install_repository_dependencies">Install repository dependencies</label>',
@@ -80,9 +88,6 @@ repository_details_template = _.template([
                 '<input type="checkbox" checked id="install_tool_dependencies" />',
                 '<label for="install_tool_dependencies">Install tool dependencies</label>',
             '</p>',
-            '<\% if (current_changeset === undefined) { \%>',
-                '<\% current_changeset = $("#changeset").find("option:selected").text(); \%>',
-            '<\% } \%>',
             '<\% current_metadata = repository.metadata[current_changeset]; \%>',
             '<\% if (current_metadata.has_repository_dependencies) { \%>',
                 '<\% current_metadata.repository_dependency_template = repository_dependency_template; \%>',
@@ -161,6 +166,14 @@ repository_details_template = _.template([
         '</div>',
     '</form>',
 ].join(''));
+shed_tool_conf = _.template([
+    '<div class="toolFormTitle">Shed tool configuration file:</div>',
+    '<div class="toolFormBody">',
+    '<div class="form-row">',
+        '<\%= stc_html \%>',
+        '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
+    '</div>',
+].join(''));
 var tool_dependency_template = _.template([
     '<\% if (has_repository_dependencies) { \%>',
         '<\% _.each(repository_dependencies, function(dependency) { \%>',
@@ -176,7 +189,6 @@ repository_dependencies_template = _.template([
         '<span class="repository_dependency_row"><p>Repository installation requires the following:</p></span>',
         '<ul id="repository_deps">',
             '<\% if (has_repository_dependencies) { \%>',
-                '<\% console.log("dependencies 1"); \%>',
                 '<\% _.each(repository_dependencies, function(dependency) { \%>',
                     '<\% dependency.repository_dependency_template = repository_dependency_template; \%>',
                     '<\%= repository_dependency_template(dependency) \%>',
@@ -191,9 +203,9 @@ repository_dependency_template = _.template([
     '<\% if (has_repository_dependencies) { \%>',
         '<\% _.each(repository_dependencies, function(dependency) { \%>',
             '<\% dependency.repository_dependency_template = repository_dependency_template; \%>',
-            '<ul id="repository_<\%= id \%>">',
+            '<li id="repository_<\%= id \%>_deps">',
                 '<\%= repository_dependency_template(dependency) \%>',
-            '</ul>',
+            '</li>',
         '<\% }); \%>',
     '<\% } \%>'
 ].join(''));
@@ -461,6 +473,12 @@ function changeset_metadata() {
     $("#current_changeset").text(changeset);
     $('#repository_details').empty();
     repository_data.current_changeset = changeset;
+    if (repository_information.includes_tools_for_display_in_tool_panel) {
+        repository_data.stc_or_tps = tps_selection_template(repository_data.panel_section_dict)
+    }
+    else {
+        repository_data.stc_or_tps = repository_data.shed_conf
+    }
     $('#repository_details').append(repository_details_template(repository_data));
     check_if_installed(repository_information.name, repository_information.owner, changeset.split(':')[1]);
 }
@@ -499,17 +517,10 @@ function show_global_tps_create() {
     $('#select_existing').click(show_global_tps_select);
 }
 function initiate_repository_installation(data) {
-    var tsr_ids = data[0];
-    var encoded_kwd = data[1];
-    $.ajax( {
-        type: "POST",
-        url: "${h.url_for( controller='admin_toolshed', action='manage_repositories' )}",
-        dataType: "html",
-        data: { operation: "install", tool_shed_repository_ids: tsr_ids, encoded_kwd: encoded_kwd, reinstalling: false },
-        success : function ( data ) {
-            console.log( "Initializing repository installation succeeded" );
-        },
-    });
+    var params = data;
+    $.post("${h.url_for( controller='admin_toolshed', action='manage_repositories' )}", params, function(data) {
+        console.log( "Initializing repository installation succeeded" );
+    })
 }
 function show_queue() {
     console.log(localStorage.repositories);
@@ -564,7 +575,6 @@ function show_tool_create(tool_guid, changeset) {
 }
 function show_tool_select(tool_guid, changeset) {
     var tool = find_tool_by_guid(tool_guid, changeset);
-    console.log({'f': 'show_tool_select', 'tool_guid': tool_guid, 'changeset': changeset});
     var selector = '#per_tool_tps_container_' + tool.clean;
     $(selector).empty();
     $(selector).append(select_tps_template({tool: tool}));
@@ -610,7 +620,6 @@ function bind_shed_events() {
 function bind_category_events() {
     $('.repository-selector').click(function() {
         $('#browse_category').empty(); // TODO: Remove this when the tabs work. Replace with tab switcher.
-        console.log('selected repository ' + $(this).attr('data-tsrid'));
         $('#repository_details').empty();
         $('#repository_details').append('<a href="#">Repository</a><p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p>');
         tsr_id = $(this).attr('data-tsrid');
@@ -625,13 +634,21 @@ function bind_category_events() {
             data.repository_dependency_template = repository_dependency_template;
             data.tps_selection_template = tps_selection_template;
             repository_data = data;
+            repository_data.shed_tool_conf = shed_tool_conf({'stc_html': repository_data.shed_conf});
+            repository_data.tool_panel_section = '';
+            if (repository_data.repository.metadata[data.current_changeset].includes_tools_for_display_in_tool_panel) {
+                repository_data.tool_panel_section = tps_selection_template(repository_data.panel_section_dict)
+            }
             $('#repository_details').append(repository_details_template(data));
             require(["libs/jquery/jstree"], function() {
                 $('#repository_deps').jstree();
             });
-            bind_repository_events();
+            $('#repository_installation').ready(function() {
+                bind_repository_events();
+            });
         });
         $('#repository_details').attr('data-shedurl', shed_url);
+        $('#install_repository').attr('data-shedurl', shed_url);
         $('#repository_details').click();
     });
 }
@@ -639,7 +656,6 @@ function bind_repository_events() {
     $('.show_tool_tps_selector').click(function() {
         var changeset = $('#changeset').find("option:selected").text();
         var tool_guid = $(this).attr('data-toolguid');
-        console.log({'f': 'show_tool_tps_selector.click()', 'tool_guid': tool_guid, 'changeset': changeset});
         show_panel_selector(tool_guid, changeset);
     });
     $('#changeset').change(changeset_metadata);
@@ -662,28 +678,28 @@ function bind_repository_events() {
         console.log(localStorage.repositories);
         check_queue();
     });
-    console.log('Binding TPS.');
     $('#create_new').click(show_global_tps_create);
-    console.log('Binding submit.');
-    $('#repository_installation').submit(function(form) {
-        console.log('Installing');
-        form.preventDefault();
+    $('#install_repository').click(function() {
+        var form = $('#repository_installation');
         var params = {};
-        // params.repositories = JSON.stringify(get_queued_repositories());
-        params.tool_shed_url = $("#tool_shed_url").val();
+        params.repositories = JSON.stringify([[$('#install_repository').attr('data-tsrid'), $('#changeset').find("option:selected").val()]]);
+        params.tool_shed_repository_ids = JSON.stringify([$('#install_repository').attr('data-tsrid')]);
+        params.tool_shed_url = $('#repository_details').attr('data-shedurl');
         params.install_tool_dependencies = $("#install_tool_dependencies").val();
         params.install_repository_dependencies = $("#install_repository_dependencies").val();
+        params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
         params.tool_panel_section = JSON.stringify(select_tps(params));
         params.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
-        params.changeset = $("#changeset").val();
+        params.changeset = $('#changeset').find("option:selected").val();
         url = $('#repository_installation').attr('action');
-        // $.post(url, params, function(data) {
-        //     initiate_repository_installation(JSON.parse(data));
-        // });
+        $.post(url, params, function(data) {
+            params = JSON.parse(data);
+            initiate_repository_installation(params);
+        });
     });
 }
 
-$(function() {
+$(document).ready(function() {
     $('#list_toolsheds').append(tool_sheds_template({tool_sheds: tool_sheds}));
     check_queue();
     $('.shed-selector').click(function() {

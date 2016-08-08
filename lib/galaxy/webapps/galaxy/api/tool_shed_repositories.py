@@ -453,7 +453,14 @@ class ToolShedRepositoriesController( BaseAPIController ):
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                 irm.initiate_repository_installation( installation_dict )
             decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
-            return json.dumps( [ repositories, encoded_kwd, False ] )
+            return json.dumps( dict( operation='install',
+                                     api=True,
+                                     install_resolver_dependencies=install_resolver_dependencies,
+                                     install_tool_dependencies=install_tool_dependencies,
+                                     encoded_kwd=encoded_kwd,
+                                     reinstalling=False,
+                                     tool_shed_repository_ids=json.dumps( [ repo[0] for repo in repositories ] ),
+                                     repositories=[ trans.security.encode_id( repo.id ) for repo in new_repositories ] ) )
 
     @expose_api
     def install_repository_revision( self, trans, payload, **kwd ):
