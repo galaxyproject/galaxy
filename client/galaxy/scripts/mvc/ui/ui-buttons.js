@@ -111,7 +111,10 @@ define( [ 'utils/utils' ], function( Utils ) {
                              href       : options.href || 'javascript:void(0)',
                              title      : options.title,
                              target     : options.target || '_top',
-                             disabled   : options.disabled } );
+                             disabled   : options.disabled } )
+                    .off( 'click' ).on( 'click' , function() {
+                        options.onclick && !options.disabled && options.onclick();
+                    });
             this.$icon.removeClass().addClass( options.icon );
         }
     });
