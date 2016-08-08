@@ -37,8 +37,9 @@ from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
-                                     PasswordField, SelectField, TextArea, TextField, WorkflowField,
-                                     WorkflowMappingField, WebComponentField)
+                                     PasswordField, SelectField, TextArea,
+                                     TextField, WebComponentField,
+                                     WorkflowField, WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
