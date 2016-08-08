@@ -697,5 +697,33 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             iterable_roles_list[index]["name"] = item.name
             index = index + 1
         return iterable_roles_list
-     
-         
+
+
+    @expose_api
+    def api_keys( self, trans, cntrller='user_preferences', **kwd ):
+        '''
+        Generate API keys
+        '''
+        params = util.Params( kwd )
+        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
+        status = params.get( 'status', 'done' )
+        if params.get( 'new_api_key_button', False ):
+            self.create_api_key( trans, trans.user )
+            message = "Generated a new web API key"
+            status = "done"
+
+        if( trans.user.api_keys ):
+            return {
+                'message': message,
+                'status': status,
+                'has_api_key': True,
+                'user_api_key': trans.user.api_keys[0].key,
+                'app_name': trans.webapp.name
+            }
+        else:
+            return {
+                'message': message,
+                'status': status,
+                'has_api_key': False,
+                'app_name': trans.webapp.name
+            }

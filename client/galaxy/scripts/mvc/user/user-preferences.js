@@ -1,8 +1,9 @@
 /** User Preferences view */
 define(['mvc/user/manage-user-information',
         'mvc/user/change-password',
-        'mvc/user/change-permissions'],
-function( Manage, Password, Permissions ) {
+        'mvc/user/change-permissions',
+        'mvc/user/api-keys'],
+function( Manage, Password, Permissions, Keys ) {
 var UserPreferences = Backbone.View.extend({
 
     initialize: function ( ) {
@@ -37,6 +38,17 @@ var UserPreferences = Backbone.View.extend({
         data = { 'message': "", 'status': "" };
         $.getJSON( url, data, function( response ) {
             changePassword = new Permissions.ChangePermissions( response );     
+        });
+    },
+
+    /** redirects to API keys view */
+    callApiKeys: function( e ) {
+        $( '.user-pref' ).hide();
+        var url = Galaxy.root + 'api/user_preferences/api_keys',
+            data = {};
+        data = { 'message': "", 'status': "" };
+        $.getJSON( url, data, function( response ) {
+            apiKey = new Keys.APIKeys( response );     
         });
     },
 
@@ -112,6 +124,7 @@ var UserPreferences = Backbone.View.extend({
         $( ".manage-userinfo" ).on( "click", self.callManageInfo );
         $( ".change-password" ).on( "click", self.callChangePassword );
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
+        $( ".manage-api-keys" ).on( "click", self.callApiKeys );
     }
 });
 

@@ -6,7 +6,7 @@ var ChangePermissions = Backbone.View.extend({
         this.render( data );
     },
 
-    /** renders the error message when manage user info page is rebuilt */
+    /** renders the error message when view is rebuilt */
     renderMessage: function( msg, status ) {
         return '<div class="'+ ( status === "" ? 'done': status ) +'message'+ ( status === "error" ? " validate" : "" ) + '">'+ msg +'</div>';
     },
