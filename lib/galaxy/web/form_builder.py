@@ -37,6 +37,7 @@ class TextField(BaseField):
     <input type="text" name="bins" size="4" value="default">
     """
     def __init__( self, name, size=None, value=None ):
+        log.error("##OSALLOU TextField "+str(name))
         self.name = name
         self.size = int( size or 10 )
         self.value = value or ""
@@ -49,6 +50,25 @@ class TextField(BaseField):
 
     def set_size(self, size):
         self.size = int( size )
+
+class WebComponentField(TextField):
+    """
+    A web component.
+
+    >>> print WebComponentField("customapp", "foo" ).get_html()
+    <customapp galaxyid="foo" ></custom-app>
+    """
+    def __init__( self, component, name, value=None ):
+        log.error("## OSALLOU WebComponentField")
+        self.component = component
+        self.name = name
+        self.value = value or ""
+
+    def get_html( self, prefix="", disabled=False ):
+        value = self.value
+        value = unicodify( value )
+        return unicodify( '<script src="/plugins/visualization/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/plugins/visualization/polymer/test-app/%s.html"><%s galaxyid="%s%s" galaxyvalue="%s"></%s>'
+                          % ( self.component, self.component, prefix, self.name, escape( value, quote=True ), self.component ) )
 
 
 class PasswordField(BaseField):

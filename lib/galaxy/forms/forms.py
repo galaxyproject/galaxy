@@ -143,6 +143,31 @@ class FormDefinitionTextFieldFactory( FormDefinitionFieldFactory ):
         rval['type'] = self.__get_stored_field_type( string_as_bool( elem.get( 'area', 'false' ) ) )
         return rval
 
+class FormDefinitionWebComponentFieldFactory( FormDefinitionFieldFactory ):
+    type = 'webcomponent'
+
+    def __get_stored_field_type( self ):
+        return 'WebComponentField'
+
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
+        """
+        Return new FormDefinition field.
+        """
+        rval = super( FormDefinitionWebComponentFieldFactory, self ).new( name=name, label=label,
+                                                                     required=required, helptext=helptext,
+                                                                     default=default, visible=visible,
+                                                                     layout=layout )
+        rval['type'] = self.__get_stored_field_type()
+        return rval
+
+    def from_elem( self, elem, layout=None ):
+        """
+        Return FormDefinition field created from an xml element.
+        """
+        rval = super( FormDefinitionWebComponentFieldFactory, self ).from_elem( elem, layout=layout )
+        rval['type'] = self.__get_stored_field_type()
+        return rval
+
 
 class FormDefinitionPasswordFieldFactory( FormDefinitionFieldFactory ):
     type = 'password'
@@ -317,6 +342,7 @@ field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefini
                                                                       FormDefinitionSelectFieldFactory,
                                                                       FormDefinitionWorkflowFieldFactory,
                                                                       FormDefinitionWorkflowMappingFieldFactory,
-                                                                      FormDefinitionHistoryFieldFactory ) ] )
+                                                                      FormDefinitionHistoryFieldFactory,
+                                                                      FormDefinitionWebComponentFieldFactory ) ] )
 
 form_factory = FormDefinitionFactory( FORM_TYPES, field_type_factories )

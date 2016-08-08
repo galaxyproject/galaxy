@@ -19,7 +19,7 @@ from galaxy import security
 from galaxy import util
 
 from galaxy.web import error, url_for
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WebComponentField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
 from galaxy.workflow.modules import WorkflowModuleInjector, MissingToolException
 from galaxy.security.validate_user_input import validate_publicname
@@ -1753,7 +1753,7 @@ class UsesFormDefinitionsMixin:
         # Return True if any of the fields in widgets contain contents, widgets is a list of dictionaries that looks something like:
         # [{'widget': <galaxy.web.form_builder.TextField object at 0x10867aa10>, 'helptext': 'Field 0 help (Optional)', 'label': 'Field 0'}]
         for field in widgets:
-            if ( isinstance( field[ 'widget' ], TextArea ) or isinstance( field[ 'widget' ], TextField ) ) and field[ 'widget' ].value:
+            if ( isinstance( field[ 'widget' ], TextArea ) or isinstance( field[ 'widget' ], TextField ) or isinstance( field['widget'], WebComponent) ) and field[ 'widget' ].value:
                 return True
             if isinstance( field[ 'widget' ], SelectField ) and field[ 'widget' ].options:
                 for option_label, option_value, selected in field[ 'widget' ].options:

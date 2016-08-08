@@ -1,6 +1,6 @@
 <%def name="render_template_field( field, render_as_hidden=False )">
     <%
-        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
+        from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField, WebComponentField
 
         widget = field[ 'widget' ]
         has_contents = False
@@ -13,6 +13,9 @@
             else:
                 value = '<pre>%s</pre>' % widget.value
         elif isinstance( widget, TextField ) and widget.value:
+            has_contents = True
+            value = widget.value
+        elif isinstance( widget, WebComponentField) and widget.value:
             has_contents = True
             value = widget.value
         elif isinstance( widget, SelectField ) and widget.options:

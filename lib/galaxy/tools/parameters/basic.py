@@ -271,6 +271,48 @@ class TextToolParameter( ToolParameter ):
         d['size'] = self.size
         return d
 
+class WebComponentToolParameter( ToolParameter ):
+    """
+    Parameter that can take on any text value.
+
+    >>> p = WebComponentToolParameter( None, XML( '<param name="blah" type="webcomponent" component="test-app" value="default" />' ) )
+    >>> print p.name
+    blah
+    """
+    def __init__( self, tool, input_source ):
+        print "#####OSALLOU INIT Web component"
+        input_source = ensure_input_source(input_source)
+        ToolParameter.__init__( self, tool, input_source )
+        print "####OSALLOU  WEB COMPONENT"
+        self.component = input_source.get( 'component' )
+        self.value = input_source.get( 'value' )
+
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        if value is None:
+            value = self.value
+        return form_builder.WebComponentField( self.component, self.name, value )
+
+    def to_json( self, value, app ):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            rval = ''
+        else:
+            rval = util.smart_str( value )
+        return rval
+
+    def validate( self, value, trans=None ):
+        search = self.type == "webcomponent"
+        if not ( trans and trans.workflow_building_mode is workflow_building_modes.ENABLED and contains_workflow_parameter(value, search=search) ):
+            return super( WebComponentToolParameter, self ).validate( value, trans )
+
+    def get_initial_value( self, trans, other_values ):
+        return self.value
+
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+        d = super(WebComponentToolParameter, self).to_dict(trans)
+        d['component'] = self.component
+        return d
+
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -2333,6 +2375,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
         return d
 
 parameter_types = dict(
+    webcomponent=WebComponentToolParameter,
     text=TextToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,

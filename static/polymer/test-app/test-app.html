@@ -1,0 +1,45 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+
+<dom-module id="test-app">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      .red {
+          color: red;
+      }
+    </style>
+    <h2 class="title">Hello [[prop1]]</h2>
+    <input class="ui-input" id="{{galaxyid}}" name="{{galaxyid}}" on-input="galaxyinputchange" value="[[galaxyinput]]"/>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'test-app',
+
+      properties: {
+        prop1: {
+          type: String,
+          value: 'test-app',
+        },
+        galaxyid: {
+            type: String,
+            value: null
+        },
+        galaxyinput: {
+            type: String,
+            value: null
+        }
+      },
+
+      galaxyinputchange: function(e){
+          console.log(this.galaxyid);
+          console.log(this.$$("#"+this.galaxyid).value);
+
+      }
+    });
+  </script>
+</dom-module>
+
