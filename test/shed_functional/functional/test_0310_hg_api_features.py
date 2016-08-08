@@ -15,7 +15,6 @@ category_description = 'Test 0310 for verifying the tool shed http interface to 
 '''
 1. Create a repository.
 2. Clone the repository to a local path.
-3. Check Mercurial push is disabled.
 '''
 
 
@@ -93,24 +92,3 @@ class TestHgWebFeatures( ShedTwillTestCase ):
         self.clone_repository( repository, clone_path )
         files_in_repository = os.listdir( clone_path )
         assert 'filtering.py' in files_in_repository, 'File not found in repository: filtering.py'
-
-    def test_0015_commit_and_push( self ):
-        '''
-        Edit a file and attempt a push as a user that does have write access.
-        We expect this to fail as pushing is disabled by default via disable_push config option.
-
-        We are at step 3 - Check Mercurial push is disabled.
-        '''
-        repository = self.test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        clone_path = self.generate_temp_path( 'test_0310', additional_paths=[ 'filtering_0310', 'user1' ] )
-        self.clone_repository( repository, clone_path )
-        hgrepo = self.get_hg_repo( clone_path )
-        files_in_repository = os.listdir( clone_path )
-        assert 'filtering.py' in files_in_repository, 'File not found in repository: filtering.py'
-        filepath = os.path.join( clone_path, 'filtering.py' )
-        file_contents = [ '# This is another dummy comment to generate a new changeset.' ]
-        file_contents.extend( open( filepath, 'r' ).readlines() )
-        open( filepath, 'w' ).write( '\n'.join( file_contents ) )
-        commit_options = dict( user=common.test_user_1_name, message='Added another line to filtering.py.' )
-        success = self.commit_and_push( repository, hgrepo, commit_options, username=common.test_user_1_name, password='testuser' )
-        assert success is False, 'Test user 1 (repo owner) was able to commit and push to the remote repository.'
