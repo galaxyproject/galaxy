@@ -13,7 +13,6 @@ import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
 from galaxy.webapps.util import build_template_error_formatters
-from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
 from galaxy.util.postfork import process_is_uwsgi
 from galaxy.util.properties import load_app_properties
@@ -204,9 +203,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
-    # Then load the Hg middleware.
-    # app = hg.Hg( app, conf )
-    # log.debug( "Enabling 'hg' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
