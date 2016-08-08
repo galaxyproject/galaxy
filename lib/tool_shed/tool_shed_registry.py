@@ -1,8 +1,9 @@
 import logging
 
+from six.moves.urllib import request as urlrequest
+
 from galaxy.util.odict import odict
 from tool_shed.util import common_util, xml_util
-from six.moves.urllib import request as urlrequest
 
 log = logging.getLogger( __name__ )
 

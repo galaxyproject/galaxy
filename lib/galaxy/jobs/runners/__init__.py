@@ -328,10 +328,14 @@ class BaseJobRunner( object ):
         job_wrapper,
         compute_working_directory=None,
         compute_tool_directory=None,
-        compute_job_directory=None
+        compute_job_directory=None,
     ):
+        job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
             compute_working_directory = job_wrapper.tool_working_directory
+
+        if not compute_job_directory:
+            compute_job_directory = job_wrapper.working_directory
 
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir
@@ -339,7 +343,12 @@ class BaseJobRunner( object ):
         tool = job_wrapper.tool
         from galaxy.tools.deps import containers
         tool_info = containers.ToolInfo(tool.containers, tool.requirements)
-        job_info = containers.JobInfo(compute_working_directory, compute_tool_directory, compute_job_directory)
+        job_info = containers.JobInfo(
+            compute_working_directory,
+            compute_tool_directory,
+            compute_job_directory,
+            job_directory_type,
+        )
 
         destination_info = job_wrapper.job_destination.params
         return self.app.container_finder.find_container(

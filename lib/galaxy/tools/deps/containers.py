@@ -197,12 +197,13 @@ class ToolInfo(object):
 
 class JobInfo(object):
 
-    def __init__(self, working_directory, tool_directory, job_directory):
+    def __init__(self, working_directory, tool_directory, job_directory, job_directory_type):
         self.working_directory = working_directory
         self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
         # of the job not of the tool.
         self.tool_directory = tool_directory
+        self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
 class Container( object ):
@@ -321,16 +322,16 @@ class DockerContainer(Container):
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
 
-        if self.job_info.job_directory:
-            # We have a job directory, so everything needed (excluding index
+        if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
+            # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
             defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
         elif self.app_info.outputs_to_working_directory:
             # Should need default_file_path (which is a course estimate given
             # object stores anyway).
-            defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro"
+            defaults = "$galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro"
         else:
-            defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw"
+            defaults = "$galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw"
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:ro"

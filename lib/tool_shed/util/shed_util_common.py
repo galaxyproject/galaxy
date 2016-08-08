@@ -10,11 +10,9 @@ from sqlalchemy import and_, false, true
 
 import tool_shed.util.repository_util
 from galaxy import util
-from galaxy.web import url_for
 from galaxy.util import checkers
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
+from galaxy.web import url_for
+from tool_shed.util import basic_util, common_util, hg_util
 
 log = logging.getLogger( __name__ )
 
@@ -227,7 +225,7 @@ def get_unique_requirements(requirements):
             if not type == "package":
                 continue
             uniq_reqs["%s_%s" % (name, version)] = {'name': name, 'version': version, 'type': type}
-    return uniq_reqs.values()
+    return list(uniq_reqs.values())
 
 
 def get_unique_requirements_from_repository(repository):

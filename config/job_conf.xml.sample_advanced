@@ -263,7 +263,7 @@
           <!-- For a stock Galaxy instance and traditional job runner $defaults will
                expand out as:
 
-               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw
+               $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw
 
                This assumes most of what is needed is available under Galaxy's root directory,
                the tool directory, and the Galaxy's file_path (if using object store creatively
@@ -274,7 +274,7 @@
                galaxy.ini. This will cause $defaults to allow writing to much
                less. It will then expand as follows:
 
-               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro
+               $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro
 
                If using the Pulsar, defaults will be even further restricted because the
                Pulsar will (by default) stage all needed inputs into the job's job_directory

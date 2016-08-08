@@ -77,7 +77,8 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                 data    : job_def,
                 success : function( response ) {
                     callback && callback();
-                    self.$el.empty().append( self._templateSuccess( response ) );
+                    self.$el.children().hide();
+                    self.$el.append( self._templateSuccess( response ) );
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
                 },
                 error   : function( response ) {
