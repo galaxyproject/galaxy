@@ -113,4 +113,4 @@ def _is_dependency_directory(directory):
     return exists(join(directory, 'env.sh')) or exists(join(directory, 'bin'))
 
 
-__all__ = ['GalaxyPackageDependencyResolver', 'GalaxyPackageDependency', 'GalaxyToolShedDependency']
+__all__ = ['GalaxyPackageDependencyResolver', 'GalaxyPackageDependency', 'ToolShedDependency']
