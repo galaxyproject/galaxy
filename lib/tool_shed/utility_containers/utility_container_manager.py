@@ -212,7 +212,7 @@ class UtilityContainerManager( object ):
                                         version='Version',
                                         data_tables='Data Tables' )
             folder.valid_data_managers.append( data_manager )
-            for data_manager_dict in data_managers.itervalues():
+            for data_manager_dict in data_managers.values():
                 data_manager_id += 1
                 try:
                     name = data_manager_dict.get( 'name', '' )

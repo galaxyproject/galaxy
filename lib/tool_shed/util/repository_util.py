@@ -5,18 +5,15 @@ import shutil
 
 from six.moves import configparser
 from six.moves.urllib.error import HTTPError
-from sqlalchemy import false, and_, or_
+from sqlalchemy import and_, false, or_
 
+import tool_shed.dependencies.repository
+import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
 from galaxy.web.form_builder import build_select_field
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-import tool_shed.util.metadata_util as metadata_util
+from tool_shed.util import basic_util, common_util, encoding_util, hg_util
 from tool_shed.util.web_util import escape
-import tool_shed.dependencies.repository
 
 log = logging.getLogger( __name__ )
 
