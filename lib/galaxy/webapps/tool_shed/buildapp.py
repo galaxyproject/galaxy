@@ -205,8 +205,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
     # Then load the Hg middleware.
-    app = hg.Hg( app, conf )
-    log.debug( "Enabling 'hg' middleware" )
+    # app = hg.Hg( app, conf )
+    # log.debug( "Enabling 'hg' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
