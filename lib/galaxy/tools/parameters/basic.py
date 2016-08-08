@@ -281,10 +281,8 @@ class WebComponentToolParameter( ToolParameter ):
     blah
     """
     def __init__( self, tool, input_source ):
-        print "#####OSALLOU INIT Web component"
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
-        print "####OSALLOU  WEB COMPONENT"
         self.component = input_source.get( 'component' )
         self.value = input_source.get( 'value' )
 

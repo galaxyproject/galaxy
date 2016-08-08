@@ -59,7 +59,6 @@ class WebComponentField(TextField):
     <customapp galaxyid="foo" ></custom-app>
     """
     def __init__( self, component, name, value=None ):
-        log.error("## OSALLOU WebComponentField")
         self.component = component
         self.name = name
         self.value = value or ""
