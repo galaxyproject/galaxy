@@ -54,9 +54,6 @@ class TextField(BaseField):
 class WebComponentField(TextField):
     """
     A web component.
-
-    >>> print WebComponentField("customapp", "foo" ).get_html()
-    <customapp galaxyid="foo" ></custom-app>
     """
     def __init__( self, component, name, value=None ):
         self.component = component
