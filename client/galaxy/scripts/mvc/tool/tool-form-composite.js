@@ -421,6 +421,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         /** Set enabled/disabled state */
         _enabled: function( enabled ) {
             this.execute_btn.model.set( { wait: !enabled, wait_text: 'Sending...', percentage: -1 } );
+            this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
             this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
             _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
         },
