@@ -175,7 +175,7 @@ def test_galaxy_dependency_object_script():
         # Create env.sh file that just exports variable FOO and verify it
         # shell_commands export it correctly.
         env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
-        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_VERSION)
+        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_REPO_NAME, TEST_VERSION)
         __assert_foo_exported( dependency.shell_commands( Bunch( type="package" ) ) )
 
 
