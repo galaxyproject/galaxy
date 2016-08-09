@@ -46,7 +46,7 @@ class ToolShedDependency(GalaxyPackageDependency):
 
 class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirMixin):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'versionless']
-    DependencyType = GalaxyPackageDependency
+    dependency_type = GalaxyPackageDependency
 
     def __init__(self, dependency_manager, **kwds):
         # Galaxy tool shed requires explicit versions on XML elements,
@@ -86,9 +86,9 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
     def _galaxy_package_dep( self, path, version, name, exact ):
         script = join( path, 'env.sh' )
         if exists( script ):
-            return self.DependencyType(script, path, version, name, exact)
+            return self.dependency_type(script, path, version, name, exact)
         elif exists( join( path, 'bin' ) ):
-            return self.DependencyType(None, path, version, name, exact)
+            return self.dependency_type(None, path, version, name, exact)
         return NullDependency(version=version, name=name)
 
 

@@ -10,7 +10,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
     # Resolution of these dependencies depends on more than just the requirement
     # tag, it depends on the tool installation context - therefore these are
     # non-simple.
-    DependencyType = ToolShedDependency
+    dependency_type = ToolShedDependency
     resolves_simple_dependencies = False
 
     def __init__(self, dependency_manager, **kwds):
