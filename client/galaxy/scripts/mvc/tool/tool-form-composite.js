@@ -266,7 +266,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     _.each( step.inputs, function( input ) { input.flavor = 'module' } );
                     form = new Form( Utils.merge({
                         title    : '<b>' + step.name + '</b>',
-                        onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) }
+                        onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
+                        inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );
                 }
                 self.forms[ step.index ] = form;
