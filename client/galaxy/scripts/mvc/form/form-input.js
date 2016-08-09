@@ -73,6 +73,8 @@ define([], function() {
                 help_text += ' (' + help_argument + ')';
             }
             this.$info.html( help_text );
+            // render visibility
+            this.$el[ this.model.get( 'hidden' ) ? 'hide' : 'show' ]();
             // render preview view for collapsed fields
             this.$preview[ ( this.field.collapsed && this.model.get( 'collapsible_preview' ) || this.model.get( 'disabled' ) ) ? 'show' : 'hide' ]()
                          .html( _.escape( this.model.get( 'text_value' ) ) );
