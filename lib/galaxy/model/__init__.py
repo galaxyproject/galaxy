@@ -38,7 +38,7 @@ from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea,
-                                     TextField, WebComponentField,
+                                     TextField,
                                      WorkflowField, WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
@@ -4173,7 +4173,7 @@ class MetadataFile( StorableObject ):
 
 class FormDefinition( object, Dictifiable ):
     # The following form_builder classes are supported by the FormDefinition class.
-    supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField, WebComponentField ]
+    supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
     types = Bunch( REQUEST='Sequencing Request Form',
                    SAMPLE='Sequencing Sample Form',
                    EXTERNAL_SERVICE='External Service Information Form',
@@ -4208,9 +4208,6 @@ class FormDefinition( object, Dictifiable ):
         params = Params( kwd )
         widgets = []
         for index, field in enumerate( self.fields ):
-            field_component = None
-            if 'component' in field:
-                field_component = field['component']
             field_type = field[ 'type' ]
             if 'name' in field:
                 field_name = field[ 'name' ]
@@ -4252,12 +4249,11 @@ class FormDefinition( object, Dictifiable ):
                     value = field.get( 'default', '' )
             # Create the field widget
             field_widget = eval( field_type )( field_name )
+            if 'template' in field and field['template']:
+                field_widget.template = field['template']
             if field_type in [ 'TextField', 'PasswordField' ]:
                 field_widget.set_size( 40 )
                 field_widget.value = value
-            elif field_type == 'WebComponentField':
-                field_widget.value = value
-                field_widget.component = field_component
             elif field_type == 'TextArea':
                 field_widget.set_size( 3, 40 )
                 field_widget.value = value

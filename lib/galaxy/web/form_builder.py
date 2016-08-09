@@ -51,22 +51,6 @@ class TextField(BaseField):
         self.size = int( size )
 
 
-class WebComponentField(TextField):
-    """
-    A web component.
-    """
-    def __init__( self, component, name, value=None ):
-        self.component = component
-        self.name = name
-        self.value = value or ""
-
-    def get_html( self, prefix="", disabled=False ):
-        value = self.value
-        value = unicodify( value )
-        return unicodify( '<script src="/plugins/visualization/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/plugins/visualization/polymer/test-app/%s.html"><%s galaxyid="%s%s" galaxyvalue="%s"></%s>'
-                          % ( self.component, self.component, prefix, self.name, escape( value, quote=True ), self.component ) )
-
-
 class PasswordField(BaseField):
     """
     A password input box. text appears as "******"

@@ -70,6 +70,7 @@ class ToolParameter( object, Dictifiable ):
             self.sanitizer = ToolParameterSanitizer.from_element( sanitizer_elem )
         else:
             self.sanitizer = None
+        self.template = input_source.get('template', None)
         try:
             # These don't do anything right? These we should
             # delete these two lines and eliminate checks for
@@ -194,6 +195,8 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
         tool_dict[ 'is_dynamic' ] = self.is_dynamic
+        if trans.app.config.get_bool('allow_web_components', False) and hasattr( self, 'template' ):
+            tool_dict['template'] = self.template
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
@@ -269,43 +272,6 @@ class TextToolParameter( ToolParameter ):
         d = super(TextToolParameter, self).to_dict(trans)
         d['area'] = self.area
         d['size'] = self.size
-        return d
-
-
-class WebComponentToolParameter( ToolParameter ):
-    """
-    Parameter that can take on any text value.
-    """
-    def __init__( self, tool, input_source ):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__( self, tool, input_source )
-        self.component = input_source.get( 'component' )
-        self.value = input_source.get( 'value' )
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        if value is None:
-            value = self.value
-        return form_builder.WebComponentField( self.component, self.name, value )
-
-    def to_json( self, value, app ):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            rval = ''
-        else:
-            rval = util.smart_str( value )
-        return rval
-
-    def validate( self, value, trans=None ):
-        search = self.type == "webcomponent"
-        if not ( trans and trans.workflow_building_mode is workflow_building_modes.ENABLED and contains_workflow_parameter(value, search=search) ):
-            return super( WebComponentToolParameter, self ).validate( value, trans )
-
-    def get_initial_value( self, trans, other_values ):
-        return self.value
-
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
-        d = super(WebComponentToolParameter, self).to_dict(trans)
-        d['component'] = self.component
         return d
 
 
@@ -2370,7 +2336,6 @@ class LibraryDatasetToolParameter( ToolParameter ):
         return d
 
 parameter_types = dict(
-    webcomponent=WebComponentToolParameter,
     text=TextToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,

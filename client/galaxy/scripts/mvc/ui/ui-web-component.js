@@ -10,7 +10,7 @@ define(['utils/utils',
     var WebComponent = Backbone.View.extend({
         initialize: function( options ) {
             this.model = options && options.model || new Backbone.Model({
-                component       : null,
+                template       : null,
                 type            : 'text',
                 placeholder     : '',
                 disabled        : false,
@@ -20,8 +20,8 @@ define(['utils/utils',
                 color           : null,
                 style           : null
             }).set( options );
-            this.webcomponent = '<script src="/plugins/visualization/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/plugins/visualization/polymer/test-app/'+this.model.get('component')+'.html"><'+this.model.get('component')+'></'+this.model.get('component')+'>';
-            this.tagName = this.model.get( 'component' );
+            this.webcomponent = '<script src="/plugins/visualization/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/plugins/visualization/polymer/test-app/'+this.model.get('template')+'.html"><'+this.model.get('template')+'></'+this.model.get('template')+'>';
+            this.tagName = this.model.get( 'template' );
             this.setElement( $( '<' + this.tagName + '/>' ) );
             this.listenTo( this.model, 'change', this.render, this );
             this.render();
@@ -35,10 +35,11 @@ define(['utils/utils',
         },
         render: function() {
             this.$el.removeClass()
-                    .prepend('<script src="/static/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/static/polymer/test-app/'+this.model.get('component')+'.html">')
+                    .prepend('<script src="/static/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/static/polymer/test-app/'+this.model.get('template')+'.html">')
                     .addClass( this.model.get( 'cls' ) )
                     .addClass( this.model.get( 'style' ) )
                     .attr( 'galaxyid', this.model.id )
+                    .attr( 'galaxyplaceholder', this.model.get( 'placeholder' ) )
                     .css( 'color', this.model.get( 'color' ) || '' )
                     .css( 'border-color', this.model.get( 'color' ) || '' );
             if ( this.model.get( 'value' ) !== this.$el.attr('galaxyvalue') ) {

@@ -36,6 +36,10 @@ define(['utils/utils',
         /** Returns an input field for a given field type */
         create: function( input_def ) {
             var fieldClass = this.types[ input_def.type ];
+            if(input_def.template !== undefined && input_def.template != null) {
+                // If template, override type class to use web components
+                fieldClass = this.types['webcomponent'];
+            }
             var field = typeof( this[ fieldClass ] ) === 'function' ? this[ fieldClass ].call( this, input_def ) : null;
             if ( !field ) {
                 field = input_def.options ? this._fieldSelect( input_def ) : this._fieldText( input_def );
@@ -218,7 +222,7 @@ define(['utils/utils',
             return new WebComponent.WebComponent({
                 id   : 'field-' + input_def.id,
                 optional    : input_def.optional,
-                component   : input_def.component,
+                template   : input_def.template,
                 onchange    : input_def.onchange
             });
         }
