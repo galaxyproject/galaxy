@@ -24,10 +24,17 @@ has the base runner implementation. To create a new runner, that base
 runner must be inherited and only certain methods need to be
 overridden with your logic.
 
-These are the following methods which need to be implemented: \*
-\_\_init\_\_(app, nworkers, \*\*kwargs) \* queue\_job(job\_wrapper) \*
-check\_watched\_item(job\_state) \* stop\_job(job) \* recover(job,
-job\_wrapper)
+These are the following methods which need to be implemented: 
+
+1. \_\_init\_\_(app, nworkers, \*\*kwargs)
+
+2. queue\_job(job\_wrapper)
+
+3. check\_watched\_item(job\_state)
+
+4. stop\_job(job)
+
+5. recover(job, job\_wrapper)
 
 The big picture
 ---------------
@@ -50,8 +57,7 @@ Implementation of parent class (galaxy.jobs.runners.\_\_init\_\_.py)
 -  .. rubric:: The big picture!
       :name: the-big-picture-1
 
-   .. figure:: http://github.com/varunshankar/galaxy-godocker/raw/master/runner_diag.png
-      :alt: 
+   .. figure:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/runner_diag.png
 
 The whole process is divided into different stages for understanding
 purpose.
@@ -62,8 +68,13 @@ Runner Methods in detail
 1. \_\_init\_\_ method - STAGE 1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input params: \* app \* nworkers (Number of threads specified in
-job\_conf) \* \*\*kwargs (Variable length argument)
+Input params:
+
+1. app
+
+2. nworkers (Number of threads specified in job\_conf)
+
+3. \*\*kwargs (Variable length argument)
 
 Output params: NA
 
@@ -146,7 +157,7 @@ listen for incoming tool submissions.
 2. queue\_job method - STAGE 2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input params: \* job\_wrapper (Object of
+Input params: job\_wrapper (Object of
 `galaxy.jobs.JobWrapper <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/__init__.py#L743>`__)
 
 Output params: None
@@ -154,8 +165,9 @@ Output params: None
 galaxy.jobs.JobWrapper is a Wrapper around 'model.Job' with convenience
 methods for running processes and state management.
 
--  Functioning of queue\_job method. A. prepare\_job() method is invoked
-   to do some sanity checks that all runners' queue\_job() methods are
+-  Functioning of queue\_job method. 
+
+   A. prepare\_job() method is invoked to do some sanity checks that all runners' queue\_job() methods are
    likely to want to do and also to build runner command line for that
    job. Initial state and configuration of the job are set and every
    data is associated with **job\_wrapper**.
@@ -199,34 +211,41 @@ AsynchronousJobState and put it in monitor\_queue.
 3. check\_watched\_item method - STAGE 3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input params: \* job\_state (Object of
+Input params: job\_state (Object of
 `galaxy.jobs.runners.AsynchronousJobState <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners/__init__.py#L400>`__)
 
 Output params: AsynchronousJobState object
 
-| Without going into much detail, assume there is a queue to track the
-  status of every job. eg:
-| |image0|
+Without going into much detail, assume there is a queue to track the status of every job. eg:
 
-The galaxy framework updates status of a job by iterating through the
-queue. During iteration, it calls check\_watched\_item with the job.
-Your responsibility will be to get status of execution of job from
+.. image:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/queue.png
+    :align: center
+
+The galaxy framework updates the status of a job by iterating through the
+queue. During the iteration, it calls check\_watched\_item method with the job.
+Your responsibility will be to get the status of execution of the job from the
 external runner and return the updated status of the job, and also to
-copy output files for completed jobs.
+copy the output files for the completed jobs.
 
-Updated result after an iteration (after invocation of
-check\_watched\_item 6 times): |image1|
+Updated result after an iteration (after invocation of check\_watched\_item 6 times):
 
-Note: Iterating through the queue is already taken care by the
-framework.
+.. image:: https://raw.githubusercontent.com/varunshankar/galaxy-godocker/master/queue_b.png
+    :align: center
 
-To inform galaxy about the status of the job: \* Get the job status from
-external runner using the job\_id \* Check if the job is
-queued/running/completed.. etc. A general structure is provided below.
-\* Call self.mark\_as\_finished(job\_state), if the job has been
-successfully executed. \* Call self.mark\_as\_failed(job\_state), if the
-job has failed during execution. \* To change state of a job, change
-job\_state.running and job\_state.job\_wrapper.change\_state()
+
+Note: Iterating through the queue is already taken care by the framework.
+
+To inform galaxy about the status of the job:
+
+-  Get the job status from external runner using the job\_id.
+
+-  Check if the job is queued/running/completed.. etc. A general structure is provided below.
+
+-  Call self.mark\_as\_finished(job\_state), if the job has been successfully executed.
+
+-  Call self.mark\_as\_failed(job\_state), if the job has failed during execution.
+
+-  To change state of a job, change job\_state.running and job\_state.job\_wrapper.change\_state()
 
 ::
 
@@ -254,18 +273,24 @@ job\_state.running and job\_state.job\_wrapper.change\_state()
                 self.mark_as_failed(job_state)
                 return None
 
-Note: \* Methods prefixed with ! are user-defined methods. \* Return
-value is job\_state for running,pending jobs and None for rest of the
-states of jobs.
+Note:
+
+-  Methods prefixed with ! are user-defined methods.
+
+-  Return value is job\_state for running,pending jobs and None for rest of the states of jobs.
 
 create\_log\_files() are nothing but copying the files (error\_file,
 output\_file, exit\_code\_file) from external runner's directory to
 working directory of Galaxy.
 
 Source of the files are from the output directory of your external
-runner. Destination of the files will be: \* output file ->
-job\_state.output\_file \* error file -> job\_state.error\_file \* exit
-code file -> job\_state.exit\_code\_file
+runner. Destination of the files will be:
+
+-  output file -> job\_state.output\_file.
+
+-  error file -> job\_state.error\_file.
+
+-  exit code file -> job\_state.exit\_code\_file.
 
 4. stop\_job method - STAGE 4
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -290,10 +315,12 @@ The job\_id of the job to be deleted is accessed by
 5. recover method - STAGE 5
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input params: \* job (Object of
-`galaxy.model.Job <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L344>`__)
-\* job\_wrapper (Object of
-`galaxy.jobs.JobWrapper <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/__init__.py#L743>`__)
+Input params:
+
+-  job (Object of `galaxy.model.Job <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L344>`__).
+
+-  job\_wrapper (Object of `galaxy.jobs.JobWrapper <https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/__init__.py#L743>`__).
+
 
 Output params: None
 
@@ -323,6 +350,6 @@ The following is a generic code snippet for recover method.
         ajs.running = False
         self.monitor_queue.put(ajs)
 
-.. |image0| image:: http://github.com/varunshankar/galaxy-godocker/raw/master/queue.png
+.. |image0| image:: 
 .. |image1| image:: http://github.com/varunshankar/galaxy-godocker/raw/master/queue_b.png
 
