@@ -18,7 +18,8 @@ define(['utils/utils',
                 cls             : '',
                 area            : false,
                 color           : null,
-                style           : null
+                style           : null,
+                template_loaded : false
             }).set( options );
             this.webcomponent = '<script src="/plugins/visualization/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/plugins/visualization/polymer/test-app/'+this.model.get('template')+'.html"><'+this.model.get('template')+'></'+this.model.get('template')+'>';
             this.tagName = this.model.get( 'template' );
@@ -34,8 +35,11 @@ define(['utils/utils',
             return this.model.get( 'value' );
         },
         render: function() {
+            if(! this.model.template_loaded) {
+                this.$el.prepend('<script src="/static/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/static/polymer/test-app/'+this.model.get('template')+'.html">');
+                this.model.template_loaded = true;
+            }
             this.$el.removeClass()
-                    .prepend('<script src="/static/polymer/bower_components/webcomponentsjs/webcomponents-lite.js"></script><link rel="import" href="/static/polymer/test-app/'+this.model.get('template')+'.html">')
                     .addClass( this.model.get( 'cls' ) )
                     .addClass( this.model.get( 'style' ) )
                     .attr( 'galaxyid', this.model.id )

@@ -223,6 +223,7 @@ define(['utils/utils',
                 id   : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 template   : input_def.template,
+                placeholder : input_def.placeholder,
                 onchange    : input_def.onchange
             });
         }
