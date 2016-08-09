@@ -322,8 +322,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _execute: function() {
             var self = this;
             this.show_progress = true;
+            this._enabled( false );
             this.deferred.execute( function( promise ) {
-                self._enabled( false );
                 setTimeout( function() { promise.resolve(); self._submit(); }, 0 );
             });
         },
