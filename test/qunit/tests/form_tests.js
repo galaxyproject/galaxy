@@ -18,11 +18,11 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-dat
         ok( form.$( '.portlet-title-text' ).html() == '<b>_name</b> _description (Galaxy Version _version)', 'Title correct' );
         var tour_ids = [];
         $( '[tour_id]' ).each( function() { tour_ids.push( $( this ).attr( 'tour_id' ) ) } );
-        ok( JSON.stringify( tour_ids ) == '["a","b|c"]', 'Tour ids correct' );
-        ok( JSON.stringify( form.data.create() ) == '{"a":"","b|c":null}', 'Created data correct' );
+        ok( JSON.stringify( tour_ids ) == '["a","b|c","b|i","b|j"]', 'Tour ids correct' );
+        ok( JSON.stringify( form.data.create() ) == '{"a":"","b|c":"h","b|i":"","b|j":""}', 'Created data correct' );
         var mapped_ids = [];
-        form.data.matchModel( form.options, function( input, id ) { mapped_ids.push( $( '#' + id ).find( '[tour_id]' ).first().attr( 'tour_id' ) ) } );
-        ok( JSON.stringify( mapped_ids ) == '["a","b|c"]', 'Remapped tour ids correct' );
+        form.data.matchModel( form.options, function( input, id ) { mapped_ids.push( $( '#' + id ).attr( 'tour_id' ) ) } );
+        ok( JSON.stringify( mapped_ids ) == '["a","b|c","b|i","b|j"]', 'Remapped tour ids correct' );
         this.clock.tick ( window.WAIT_FADE );
         var dropdown = form.$( '#menu > .dropdown-menu' );
         ok( dropdown.children().length == 2, 'Found two menu items' );
@@ -40,7 +40,7 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-dat
             } );
         } } );
         window.fakeserver.respond();
-        ok( JSON.stringify( visits ) == '[{"name":"a","node":{"name":"a","type":"text"}},{"name":"b|c","node":{"name":"c","type":"select","value":"h"}},{"name":"b|i","node":{"name":"i","type":"text"}},{"name":"b|j","node":{"name":"j","type":"text"}},{"name":"k_0|l","node":{"name":"l","type":"text"}},{"name":"k_0|m|n","node":{"name":"n","type":"select","value":"o"}},{"name":"k_0|m|p","node":{"name":"p","type":"text"}},{"name":"k_0|m|q","node":{"name":"q","type":"text"}}]', 'Testing value visitor' );
+        ok( JSON.stringify( visits ) == '[{"name":"a","node":{"name":"a","type":"text"}},{"name":"b|c","node":{"name":"c","type":"select","value":"h","options":[["d","d",false],["h","h",false]]}},{"name":"b|i","node":{"name":"i","type":"text"}},{"name":"b|j","node":{"name":"j","type":"text"}},{"name":"k_0|l","node":{"name":"l","type":"text"}},{"name":"k_0|m|n","node":{"name":"n","type":"select","value":"o"}},{"name":"k_0|m|p","node":{"name":"p","type":"text"}},{"name":"k_0|m|q","node":{"name":"q","type":"text"}}]', 'Testing value visitor' );
     });
 
     test( 'input', function() {
