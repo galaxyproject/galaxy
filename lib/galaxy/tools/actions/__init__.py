@@ -66,16 +66,7 @@ class DefaultToolAction( object ):
                         if converted_dataset:
                             data = converted_dataset
                         else:
-                            # FIXME: merge with hda.get_converted_dataset() mode as it's nearly identical.
-                            # run converter here
-                            new_data = data.datatype.convert_dataset( trans, data, target_ext, return_output=True, visible=False ).values()[0]
-                            new_data.hid = data.hid
-                            new_data.name = data.name
-                            trans.sa_session.add( new_data )
-                            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation( parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False )
-                            trans.sa_session.add( assoc )
-                            trans.sa_session.flush()
-                            data = new_data
+                            data = data.get_converted_dataset( trans, target_ext, target_context=parent )
 
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                     raise Exception( "User does not have permission to use a dataset (%s) provided for input." % data.id )
