@@ -81,7 +81,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
         # Ensure Python is a supported version before creating .venv
         python ./scripts/check_python.py || exit 1
         if command -v virtualenv >/dev/null; then
-            virtualenv "$GALAXY_VIRTUAL_ENV"
+            virtualenv -p python2.7 "$GALAXY_VIRTUAL_ENV"
         else
             vvers=13.1.2
             vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
