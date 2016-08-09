@@ -11,7 +11,7 @@
       }
     </style>
     <h2 class="title">Hello [[prop1]]</h2>
-    <input class="ui-input" id="{{galaxyid}}" name="{{galaxyid}}" on-input="galaxyinputchange" value="[[galaxyinput]]"/>
+    <input class="ui-input" id="{{galaxyid}}" name="{{galaxyid}}" on-input="galaxyinputchange" value="{{galaxyvalue}}" placeholder="{{galaxyplaceholder}}"/>
   </template>
 
   <script>
@@ -28,9 +28,13 @@
             type: String,
             value: null
         },
-        galaxyinput: {
+        galaxyvalue: {
             type: String,
             value: null
+        },
+        galaxyplaceholder: {
+            type: String,
+            value: '^chr([0-9A-Za-z])+'
         }
       },
 
