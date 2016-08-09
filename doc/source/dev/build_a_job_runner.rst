@@ -349,7 +349,3 @@ The following is a generic code snippet for recover method.
         ajs.old_state = 'Q'
         ajs.running = False
         self.monitor_queue.put(ajs)
-
-.. |image0| image:: 
-.. |image1| image:: http://github.com/varunshankar/galaxy-godocker/raw/master/queue_b.png
-
