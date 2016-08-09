@@ -254,6 +254,7 @@
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
     overflow: visible;
+    clear: both;
     .ui-form-title {
         word-wrap: break-word;
         font-weight: bold;
@@ -339,6 +340,12 @@
     }
 }
 
+.ui-form-section {
+    border-left: solid 3px @form-heading-bg;
+    border-radius: @border-radius-large !important;
+    padding-left: 10px;
+}
+
 .ui-form-composite {
     max-width: 900px;
     .ui-form-header {
@@ -349,7 +356,7 @@
         }
     }
     .ui-steps {
-        overflow: scroll;
+        overflow: auto;
         margin-top: 15px;
         border: dashed 1px darken(@form-heading-bg, 30%);
         border-radius: @border-radius-base;
@@ -386,7 +393,6 @@
         border-bottom: solid @form-border 1px;
         padding: 2px 8px;
         overflow: visible;
-        float: right;
         width:100%;
         .portlet-title {
             word-wrap: break-word;
