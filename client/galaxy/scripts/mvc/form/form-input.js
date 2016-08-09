@@ -86,7 +86,7 @@ define([], function() {
             // render backdrop
             this.$backdrop[ this.model.get( 'backdrop' ) ? 'show' : 'hide' ]();
             // render input field
-            this.field.collapsed || this.model.get( 'disabled' ) ? this.$field.hide() : this.$field.fadeIn( 'fast' );
+            this.field.collapsed || this.model.get( 'disabled' ) ? this.$field.hide() : this.$field.show();
             // render input field color and style
             this.field.model && this.field.model.set( { 'color': this.model.get( 'color' ), 'style': this.model.get( 'style' ) } );
             // render collapsible options

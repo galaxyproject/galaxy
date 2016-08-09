@@ -71,7 +71,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             // add conditional sub sections
             for ( var i in input_def.cases ) {
                 var sub_section = new View( this.app, { inputs: input_def.cases[ i ].inputs } );
-                this._append( sub_section.$el, input_def.id + '-section-' + i );
+                this._append( sub_section.$el.addClass( 'ui-form-section' ), input_def.id + '-section-' + i );
             }
 
             // trigger refresh on conditional input field after all input elements have been created
