@@ -255,7 +255,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     form = new ToolFormBase( step );
                     if ( step.post_job_actions && step.post_job_actions.length ) {
                         form.portlet.append( $( '<div/>' ).addClass( 'ui-form-element-disabled' )
-                            .append( $( '<div/>' ).addClass( 'ui-form-title' ).html( 'Job Post Actions' ) )
+                            .append( $( '<div/>' ).addClass( 'ui-form-title' ).html( '<b>Job Post Actions</b>' ) )
                             .append( $( '<div/>' ).addClass( 'ui-form-preview' ).html(
                                 _.reduce( step.post_job_actions, function( memo, value ) {
                                     return memo + ' ' + value.short_str;
