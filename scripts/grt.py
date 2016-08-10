@@ -42,6 +42,7 @@ def resolve_location(config):
     """
     if config['autodetect']:
         # Get public IP
+        log.info("Locating server")
         try:
             ip_address = urllib2.urlopen('https://icanhazip.com').read()
         except (urllib2.HTTPError, urllib2.URLError) as err:
@@ -58,6 +59,7 @@ def resolve_location(config):
 
         # Construct or get the Location
         json_geoloc = json.loads(response)
+        log.info("Server Located (%s, %s)", json_geoloc['lat'], json_geoloc['lon'])
         return {
             'lat': json_geoloc['lat'],
             'lon': json_geoloc['lon'],
@@ -141,7 +143,7 @@ def _sanitize_value(unsanitized_value):
     elif type(unsanitized_value) is list:
         sanitized_value = _sanitize_list(unsanitized_value)
     else:
-        if fp_regex.match(str(unsanitized_value)):
+        if fp_regex.match(unicode(unsanitized_value)):
             sanitized_value = None
         else:
             sanitized_value = unsanitized_value
@@ -189,16 +191,9 @@ def main(argv):
 
     log.info('Loading Galaxy...')
     model, object_store, engine, gx_version = _init(config_dict['galaxy_config'])
-
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
-    jobs = sa_session.query(model.Job)\
-        .filter(sa.and_(
-            model.Job.table.c.state == "ok",
-            model.Job.table.c.id > config_dict['last_job_id_sent']
-        ))\
-        .all()
 
     # Set up our arrays
     active_users = []
@@ -212,10 +207,19 @@ def main(argv):
         }
 
     # For every job
-    for job in jobs:
+    job_count = 0
+    last_job_id = None
+    for job in sa_session.query(model.Job)\
+            .filter(sa.and_(
+                model.Job.table.c.state == "ok",
+                model.Job.table.c.id > config_dict['last_job_id_sent']
+            ))\
+            .all():
         if job.tool_id in config_dict['tool_blacklist']:
             continue
 
+        job_count += 1
+        last_job_id = job.id
         # Append an active user, we'll reduce at the end
         active_users.append(job.user_id)
 
@@ -247,8 +251,8 @@ def main(argv):
         }
         grt_jobs_data.append(job_data)
 
-    if len(jobs) > 0:
-        config_dict['last_job_id_sent'] = jobs[-1].id
+    if job_count > 0:
+        config_dict['last_job_id_sent'] = last_job_id
 
     grt_report_data = {
         'meta': {
@@ -264,7 +268,7 @@ def main(argv):
             # We do not record ANYTHING about your users other than count.
             'active_users': len(set(active_users)),
             'total_users': sa_session.query(model.User).count(),
-            'recent_jobs': len(jobs),
+            'recent_jobs': job_count,
             'url': config_dict['instance']['url'],
         },
         'tools': [
