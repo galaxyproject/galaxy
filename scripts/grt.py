@@ -67,15 +67,19 @@ def resolve_location(config):
             }
 
 
-def _init(config):
-    if config.startswith('/'):
-        config = os.path.abspath(config)
+def _init(config_path):
+    if config_path.startswith('/'):
+        config_path = os.path.abspath(config_path)
     else:
-        config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config))
+        config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, config_path))
 
-    properties = load_app_properties(ini_file=config)
+    properties = load_app_properties(ini_file=config_path)
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
+
+    if config.database_connection is False:
+        log.error("Database connection not configured in %s. You will need to uncomment the database URL. Additionally you are using the default sqlite database, but GRT is most appropriate for production Galaxies.", config_path)
+        exit(1)
 
     return (
         mapping.init(
@@ -169,12 +173,9 @@ def main(argv):
     if args.grt_url:
         config_dict['grt_server']['grt_url'] = args.grt_url
 
-
-    import pprint; pprint.pprint(resolve_location(config_dict['location']))
-    exit(0)
-
     log.info('Loading Galaxy...')
     model, object_store, engine = _init(config_dict['galaxy_config'])
+
     sa_session = model.context.current
 
     # Fetch jobs COMPLETED with status OK that have not yet been sent.
