@@ -12,7 +12,7 @@ from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager, RepositoriesInstalledException
+from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.util import common_util
@@ -69,7 +69,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
     def __get_repo_info_dict( self, trans, repositories, tool_shed_url ):
         repo_ids = []
         changesets = []
-        repo_info_dicts = []
         for repository_id, changeset in repositories:
             repo_ids.append( repository_id )
             changesets.append( changeset )
@@ -245,7 +244,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tools = dict()
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tsr_id = kwd.get( 'tsr_id', '' )
-        tool_panel_section_select_field =tool_util.build_tool_panel_section_select_field( trans.app )
+        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
                                     'id': tool_panel_section_select_field.field_id,
                                     'sections': [] }
@@ -392,9 +391,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_url: The URL for the toolshed whence this repository is being installed
         :param changeset: The changeset to update to after cloning the repository
         """
-        params = dict()
         irm = InstallRepositoryManager( self.app )
-        changeset = kwd.get( 'changeset', None )
         tool_shed_url = kwd.get( 'tool_shed_url', None )
         repositories = json.loads( kwd.get( 'repositories', '[]' ) )
         repo_info_dict = self.__get_repo_info_dict( trans, repositories, tool_shed_url )
@@ -452,7 +449,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                       tool_shed_url=tool_shed_url )
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                 irm.initiate_repository_installation( installation_dict )
-            decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
             return json.dumps( dict( operation='install',
                                      api=True,
                                      install_resolver_dependencies=install_resolver_dependencies,
@@ -504,6 +500,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                         owner,
                                                         changeset_revision,
                                                         payload )
+
         def to_dict( tool_shed_repository ):
             tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
             tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
