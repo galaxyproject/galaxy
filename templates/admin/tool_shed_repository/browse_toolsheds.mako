@@ -599,6 +599,7 @@ function install_repository(data) {
     var params = data;
     $.post("${h.url_for( controller='admin_toolshed', action='manage_repositories' )}", params, function(data) {
         console.log( "Initializing repository installation succeeded" );
+        window.location.assign('${h.url_for(controller='admin_toolshed', action='monitor_repository_installation')}');
     })
 }
 function install_from_queue(repository_metadata, queue_key) {
@@ -614,7 +615,7 @@ function install_from_queue(repository_metadata, queue_key) {
     params.changeset = repository_metadata.changeset_revision;
     var url = '${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}';
     $('#queued_repository_' + repository_metadata.repository.id).remove();
-    remove_from_queue(queue_key);
+    remove_from_queue(undefined, undefined, queue_key);
     prepare_installation(params, url);
 }
 function prepare_installation(params, api_url) {
@@ -683,6 +684,32 @@ function process_dependencies(metadata, selector) {
     }
     else {
         $('#tools_toggle').hide();
+    }
+}
+function process_queue() {
+    if (!localStorage.repositories) {
+        return;
+    }
+    var toolsheds = Array();
+    var queue = Object();
+    var queued_repositories = get_repository_queue();
+    var queue_keys = Object.keys(queued_repositories);
+    for (var i = 0; i < queue_keys.length; i++) {
+        queue_key = queue_keys[i];
+        toolshed = queue_key.split('|')[0];
+        if (toolsheds.indexOf(toolshed) === -1) {
+            toolsheds.push(toolshed);
+            queue[toolshed] = Array();
+        }
+        repository_metadata = queued_repositories[queue_key]
+        repository_metadata.queue_key = queue_key
+        queue[toolshed].push(repository_metadata);
+    }
+    for (i = 0; i < toolsheds.length; i++) {
+        for (var j = 0; j < queue[toolsheds[i]].length; j++) {
+            repository = queue[toolsheds[i]][j];
+            install_from_queue(repository, repository.queue_key);
+        }
     }
 }
 function remove_from_queue(repository_metadata, changeset, queue_key=undefined) {
@@ -808,6 +835,7 @@ function show_queue() {
         $('#repository_installation_queue').remove();
         localStorage.removeItem('repositories');
     });
+    $('#install_all').click(process_queue);
 }
 function show_tool_create(tool_guid, changeset) {
     var tool = find_tool_by_guid(tool_guid, changeset);
