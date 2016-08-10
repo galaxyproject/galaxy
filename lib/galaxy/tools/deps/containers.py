@@ -329,13 +329,13 @@ class DockerContainer(Container):
         else:
             defaults = "$galaxy_root:ro,$tool_directory:ro"
             if self.job_info.job_directory:
-                defaults += "$job_directory:ro"
+                defaults += ",$job_directory:ro"
             if self.app_info.outputs_to_working_directory:
                 # Should need default_file_path (which is a course estimate given
                 # object stores anyway).
-                defaults += "$working_directory:rw,$default_file_path:ro"
+                defaults += ",$working_directory:rw,$default_file_path:ro"
             else:
-                defaults += "$working_directory:rw,$default_file_path:rw"
+                defaults += ",$working_directory:rw,$default_file_path:rw"
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:ro"
