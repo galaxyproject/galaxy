@@ -16,11 +16,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.render();
             this._refresh();
             this.$el.on( 'click', function() { self._refresh() } );
+            this.$steps.scroll( function() { self._refresh() } );
             $( window ).resize( function() { self._refresh() } );
         },
 
-        /** Refresh height of scrollable div below header */
-        _refresh: function() {
+        /** Refresh height of scrollable div below header, handle scrolling by lazy loading steps */
+        _refresh: function( step_index ) {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
             }, 0 ) - this.$steps.height() + 25;
@@ -167,9 +168,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderMessage();
             this._renderParameters();
             this._renderHistory();
-            _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
-            this.deferred.execute( function() { self.execute_btn.unwait();
-                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } ); } );
+            _.each ( this.steps, function( step ) { self._renderStep( step ) } );
         },
 
         /** Render header */
@@ -179,8 +178,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 icon        : 'fa-check',
                 title       : 'Run workflow',
                 cls         : 'btn btn-primary',
-                wait        : true,
-                wait_text   : 'Preparing...',
                 onclick     : function() { self._execute() }
             });
             this.$header.addClass( 'ui-form-header' ).empty()
@@ -249,18 +246,16 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         },
 
         /** Render step */
-        _renderStep: function( step, i ) {
+        _renderStep: function( step ) {
             var self = this;
             var form = null;
-            var current = null;
-            self.$steps.addClass( 'ui-steps' );
             this.deferred.execute( function( promise ) {
-                current = promise;
+                self.$steps.addClass( 'ui-steps' );
                 if ( step.step_type == 'tool' ) {
                     form = new ToolFormBase( step );
                     if ( step.post_job_actions && step.post_job_actions.length ) {
                         form.portlet.append( $( '<div/>' ).addClass( 'ui-form-element-disabled' )
-                            .append( $( '<div/>' ).addClass( 'ui-form-title' ).html( 'Job Post Actions' ) )
+                            .append( $( '<div/>' ).addClass( 'ui-form-title' ).html( '<b>Job Post Actions</b>' ) )
                             .append( $( '<div/>' ).addClass( 'ui-form-preview' ).html(
                                 _.reduce( step.post_job_actions, function( memo, value ) {
                                     return memo + ' ' + value.short_str;
@@ -271,28 +266,20 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     _.each( step.inputs, function( input ) { input.flavor = 'module' } );
                     form = new Form( Utils.merge({
                         title    : '<b>' + step.name + '</b>',
-                        onchange : function() { _.each( self.links[ i ], function( link ) { self._refreshStep( link ) } ) }
+                        onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
+                        inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );
                 }
-                self.forms[ i ] = form;
+                self.forms[ step.index ] = form;
                 self._append( self.$steps, form.$el );
                 step.needs_refresh && self._refreshStep( step );
-                self._resolve( form.deferred, promise );
-                self.execute_btn.model.set( 'percentage', ( i + 1 ) * 100.0 / self.steps.length );
-                Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
-            } );
-        },
-
-        /** This helps with rendering lazy loaded steps */
-        _resolve: function( deferred, promise ) {
-            var self = this;
-            setTimeout( function() {
-                if ( deferred && deferred.ready() || !deferred ) {
-                    promise.resolve();
-                } else {
-                    self._resolve( deferred, promise );
-                }
-            }, 0 );
+                form.portlet[ !self.show_progress ? 'enable' : 'disable' ]();
+                self.show_progress && self.execute_btn.model.set( { wait        : true,
+                                                                    wait_text   : 'Preparing...',
+                                                                    percentage  : ( step.index + 1 ) * 100.0 / self.steps.length } );
+                Galaxy.emit.debug( 'tool-form-composite::initialize()', step.index + ' : Workflow step state ready.', step );
+                setTimeout( function() { promise.resolve() }, 0 );
+            });
         },
 
         /** Refreshes step values from source step values */
@@ -332,10 +319,19 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             }
         },
 
-        /** Execute workflow */
+        /** Build remaining steps */
         _execute: function() {
             var self = this;
+            this.show_progress = true;
             this._enabled( false );
+            this.deferred.execute( function( promise ) {
+                setTimeout( function() { promise.resolve(); self._submit(); }, 0 );
+            });
+        },
+
+        /** Validate and submit workflow */
+        _submit: function() {
+            var self = this;
             var job_def = {
                 new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
                 replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
@@ -425,9 +421,10 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Set enabled/disabled state */
         _enabled: function( enabled ) {
-            if ( enabled ) { this.execute_btn.unwait() } else { this.execute_btn.wait() }
-            if ( enabled ) { this.history_form.portlet.enable() } else { this.history_form.portlet.disable() }
-            _.each( this.forms, function( form ) { if ( enabled ) {  form.portlet.enable() } else { form.portlet.disable() } });
+            this.execute_btn.model.set( { wait: !enabled, wait_text: 'Sending...', percentage: -1 } );
+            this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
+            this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
+            _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
         },
 
         /** Handle workflow parameter */
