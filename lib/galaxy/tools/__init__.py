@@ -1312,7 +1312,7 @@ class Tool( object, Dictifiable ):
         """
         Return a list of dictionaries for all tool dependencies with their associated status
         """
-        return self._view.get_requirements_status(self.tool_requirements, self.installed_tool_dependencies)
+        return self._view.get_requirements_status(self.tool_requirements)
 
     def build_redirect_url_params( self, param_dict ):
         """
@@ -2290,6 +2290,50 @@ class ZipCollectionTool( DatabaseOperationTool ):
             self.outputs.values()[0], "output", elements=new_elements
         )
 
+class MergeCollectionTool( DatabaseOperationTool ):
+    tool_type = 'merge_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        list_one = incoming[ "input" ]
+        list_two = incoming[ "input2" ]
+        dupl_actions = incoming[ "duplicate_options" ]
+
+        identifier_seen = {}
+
+        
+        #first attempt where we only want list    
+        assert list_one.collection.collection_type == "list"
+        assert list_two.collection.collection_type == "list"
+
+        new_elements = odict()
+        for dce in list_one.collection.elements:
+            element = dce.element_object
+            if element.is_ok:
+                element_identifier = dce.element_identifier
+                identifier_seen[element_identifier] = 1
+                new_elements[element_identifier] = element.copy()
+
+        for dce in list_two.collection.elements:
+            element = dce.element_object
+            if element.is_ok:
+                element_identifier = dce.element_identifier
+                
+                if element_identifier in identifier_seen and dupl_actions == 'suffix':
+                    suffix = '__%i' % identifier_seen[element_identifier]
+                    identifier_seen[element_identifier] = identifier_seen[element_identifier] + 1
+                    element_identifier = element_identifier + suffix
+                elif element_identifier in identifier_seen and dupl_actions == 'first':
+                    continue
+
+                
+                new_elements[element_identifier] = element.copy()
+        
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+        
+        
 
 class FilterFailedDatasetsTool( DatabaseOperationTool ):
     tool_type = 'filter_failed_datasets_collection'
@@ -2338,7 +2382,7 @@ class FlattenTool( DatabaseOperationTool ):
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                    UnzipCollectionTool, ZipCollectionTool,
+                    UnzipCollectionTool, ZipCollectionTool,MergeCollectionTool,
                     DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 

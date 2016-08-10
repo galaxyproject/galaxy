@@ -1,0 +1,120 @@
+<tool id="__MERGE_COLLECTION__"
+      name="Merge Collections"
+      version="1.0.0"
+      tool_type="merge_collection">
+  <description>into single list of datasets</description>
+  <type class="MergeCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <inputs>
+    <param type="data_collection" name="input" label="First Collection" />
+    <param type="data_collection" name="input2" label="Second Collection" />
+    <param name="duplicate_options" type="select" label="When duplication dataset names encountered">
+      <option value="suffix">Append double underscore and number suffix</option>
+      <option value="first">Keep first instance</option>
+      <option value="second">Keep second instance</option>
+    </param>
+  </inputs>
+  <outputs>
+    <collection name="output" format_source="input" type="list" label="${on_string} (merged)" >
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input">
+        <collection type="list">
+          <element name='sample1' value ="simple_line.txt"/>
+          <element name='sample2' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>
+      <param name="input2">
+        <collection type="list">
+          <element name='sample1' value ="simple_line.txt"/>
+          <element name='sample2' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>      
+      <output_collection name="output" type="list">
+        <element name="sample1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample1__1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2__1">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>                
+      </output_collection>
+    </test>
+    <test>
+      <param name="duplicate_options" value="first"/>
+      <param name="input">
+        <collection type="list">
+          <element name='sample1' value ="simple_line.txt"/>
+          <element name='sample2' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>
+      <param name="input2">
+        <collection type="list">
+          <element name='sample1' value ="simple_line_alternative.txt"/>
+          <element name='sample2' value ="simple_line.txt"/>
+        </collection>
+      </param>      
+      <output_collection name="output" type="list">
+        <element name="sample1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <param name="duplicate_options" value="second"/>
+      <param name="input">
+        <collection type="list">
+          <element name='sample1' value ="simple_line.txt"/>
+          <element name='sample2' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>
+      <param name="input2">
+        <collection type="list">
+          <element name='sample1' value ="simple_line_alternative.txt"/>
+          <element name='sample2' value ="simple_line.txt"/>
+        </collection>
+      </param>      
+      <output_collection name="output" type="list">
+        <element name="sample1">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>    
+  </tests>
+  <help>
+    This tool takes two list and creates a single unified list.
+    
+    This tool will create new history datasets for your collection
+    but your quota usage will not increase.
+  </help>
+</tool>
