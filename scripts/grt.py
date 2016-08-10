@@ -173,6 +173,14 @@ def main(argv):
     if args.grt_url:
         config_dict['grt_server']['grt_url'] = args.grt_url
 
+    if config_dict['grt_server']['instance_id'] == '':
+        print("No Instance ID was provdied. One is required and may be obtained at https://telescope.galaxyproject.org")
+        exit(1)
+
+    if config_dict['grt_server']['api_key'] == '':
+        print("No API Key was provdied. One is required and may be obtained at https://telescope.galaxyproject.org")
+        exit(1)
+
     log.info('Loading Galaxy...')
     model, object_store, engine = _init(config_dict['galaxy_config'])
 

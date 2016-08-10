@@ -3,11 +3,11 @@ galaxy_config: config/galaxy.ini
 
 grt_server:
     ## URL to your GRT server
-    grt_url: https://radio-telescope.galaxyproject.org/api/v1/upload
+    grt_url: https://telescope.galaxyproject.org/api/v1/upload
     ## An instance ID uniquely identifies your Galaxy instance
-    #instance_id: none
+    instance_id: ""
     ## An API key is required to submit data to GRT
-    #api_key: none
+    api_key: ""
 
 ## The public name and description of your Galaxy instance
 instance:
