@@ -51,12 +51,7 @@ def build_command(
 
     __handle_version_command(commands_builder, job_wrapper)
     __handle_task_splitting(commands_builder, job_wrapper)
-
-    # One could imagine also allowing dependencies inside of the container but
-    # that is too sophisticated for a first crack at this - build your
-    # containers ready to go!
-    if not container:
-        __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
+    __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
         if container and modify_command_for_container:
