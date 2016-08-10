@@ -1,7 +1,35 @@
+---
 galaxy_config: config/galaxy.ini
-#instance_id: blah
-#api_key: blah
-grt_url: https://radio-telescope.galaxyproject.org/api/v1/upload
+
+grt_server:
+    ## URL to your GRT server
+    grt_url: https://radio-telescope.galaxyproject.org/api/v1/upload
+    ## An instance ID uniquely identifies your Galaxy instance
+    #instance_id: none
+    ## An API key is required to submit data to GRT
+    #api_key: none
+
+## The public name and description of your Galaxy instance
+instance:
+    name: "A Galaxy Server"
+    description: |
+        Galaxy server providing tools for private use
+    tags:
+        # As of now "public" and "private" are the only recognised
+        # tags. We will work on this ontology going forward.
+        - public
+
+location:
+    # If autodetect is set to true, then an attempt will be made to
+    # automatically detect your location using a third party service
+    # (http://ip-api.com).
+    autodetect: false
+    # If you still wish to share the location of your Galaxy server
+    # (great for helping people find local resources for Galaxy)
+    latitude: 30
+    longitude: -96
+
+
 tool_blacklist:
   - __SET_METADATA__
   - upload1
