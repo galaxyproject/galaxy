@@ -1669,7 +1669,7 @@ class BaseDataToolParameter( ToolParameter ):
             dataset_matcher = DatasetMatcher( trans, self, None, other_values )
             if isinstance( self, DataToolParameter ):
                 for hda in reversed( history.active_datasets_children_and_roles ):
-                    match = dataset_matcher.hda_match( hda )
+                    match = dataset_matcher.hda_match( hda, check_security=trans.workflow_building_mode is workflow_building_modes.DISABLED )
                     if match:
                         return match.hda
             else:
@@ -2038,7 +2038,7 @@ class DataToolParameter( BaseDataToolParameter ):
         visible_hda = other_values.get( self.name )
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, check_security=trans.workflow_building_mode is workflow_building_modes.DISABLED )
             if match:
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
