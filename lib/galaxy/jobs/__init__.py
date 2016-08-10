@@ -469,13 +469,20 @@ class JobConfiguration( object ):
         rval = {}
         for param in parent.findall('param'):
             key = param.get('id')
-            param_value = param.text
+            if key in ["container", "container_override"]:
+                from galaxy.tools.deps import requirements
+                containers = map(requirements.container_from_element, list(param))
+                param_value = map(lambda c: c.to_dict(), containers)
+            else:
+                param_value = param.text
+
             if 'from_environ' in param.attrib:
                 environ_var = param.attrib['from_environ']
                 param_value = os.environ.get(environ_var, param_value)
             elif 'from_config' in param.attrib:
                 config_val = param.attrib['from_config']
                 param_value = self.app.config.config_dict.get(config_val, param_value)
+
             rval[key] = param_value
         return rval
 

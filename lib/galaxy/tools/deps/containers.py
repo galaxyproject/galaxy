@@ -9,6 +9,7 @@ import six
 
 from galaxy.util import asbool
 from ..deps import docker_util
+from .requirements import ContainerDescription
 
 import logging
 log = logging.getLogger(__name__)
@@ -59,6 +60,13 @@ class ContainerFinder(object):
             )
             return container
 
+        if "container_override" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container_override"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
+
         # Is destination forcing Galaxy to use a particular container do it,
         # this is likely kind of a corner case. For instance if deployers
         # do not trust the containers annotated in tools.
@@ -90,6 +98,13 @@ class ContainerFinder(object):
 
         # If we still don't have a container, check to see if any container
         # types define a default container id and use that.
+        if "container" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
+
         for container_type in CONTAINER_CLASSES.keys():
             container_id = self.__default_container_id(container_type, destination_info)
             if container_id:

@@ -92,11 +92,16 @@ def parse_requirements_from_xml( xml_root ):
     if requirements_elem is not None:
         container_elems = requirements_elem.findall( 'container' )
 
-    containers = []
-    for container_elem in container_elems:
-        identifier = xml_text( container_elem )
-        type = container_elem.get( "type", DEFAULT_CONTAINER_TYPE )
-        container = ContainerDescription( identifier=identifier, type=type )
-        containers.append( container )
+    containers = map(container_from_element, container_elems)
 
     return requirements, containers
+
+
+def container_from_element(container_elem):
+    identifier = xml_text(container_elem)
+    type = container_elem.get("type", DEFAULT_CONTAINER_TYPE)
+    container = ContainerDescription(
+        identifier=identifier,
+        type=type,
+    )
+    return container
