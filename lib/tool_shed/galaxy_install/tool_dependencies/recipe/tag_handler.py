@@ -418,9 +418,9 @@ class Repository( RecipeTag, SyncDatabase ):
                                                                                                         dependent_install_dir,
                                                                                                         tool_dependency_type='package' )
                     if not can_install_tool_dependency:
-                        log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), " %
-                            ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
-                        log.debug( "so appending it to the list of handled tool dependencies." )
+                        log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), "
+                                   "so appending it to the list of handled tool dependencies.",
+                                   str( tool_dependency.name), str( tool_dependency.version ) )
                         handled_tool_dependencies.append( tool_dependency )
             else:
                 can_install_tool_dependency = True
