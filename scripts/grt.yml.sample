@@ -3,22 +3,36 @@ galaxy_config: config/galaxy.ini
 
 grt_server:
     ## URL to your GRT server
-    grt_url: https://telescope.galaxyproject.org/api/v1/upload
+    #grt_url: https://telescope.galaxyproject.org/api/v1/upload
+    grt_url: http://localhost:8000/grt/api/v1/upload
     ## An instance ID uniquely identifies your Galaxy instance
-    instance_id: ""
+    instance_id: "80b800b4-5507-4f19-8222-c81bbb630563"
     ## An API key is required to submit data to GRT
-    api_key: ""
+    api_key: "4f3c15e9-c054-4548-a135-7acc2fc2ea92"
 
 ## The public name and description of your Galaxy instance
 instance:
-    name: "A Galaxy Server"
+    ## The publicly accessible URL of your galaxy instance. E.g. https://fqdn/galaxy
+    url: ""
+    name: "Testing Galaxy instance"
     description: |
         Galaxy server providing tools for private use
     tags:
-        # As of now "public" and "private" are the only recognised
-        # tags. We will work on this ontology going forward.
-        - public
-
+        #- public
+        - private
+        ## If this is a cloudlaunch server, you could indicate that here
+        #- cloudlaunch
+        ## If you wish to share what infrastucture you're running on, there are
+        #tags for this:
+        #- infra/aws
+        #- infra/gcp
+        #- infra/azure
+        #- infra/other_cloud
+        #- infra/private
+        ## Additionally if you wish to share a bit about your job runners we
+        #would be interested to hear who is using which runners.
+        #- cluster/condor
+        #- cluster/slurm
 location:
     # If autodetect is set to true, then an attempt will be made to
     # automatically detect your location using a third party service
@@ -26,8 +40,8 @@ location:
     autodetect: false
     # If you still wish to share the location of your Galaxy server
     # (great for helping people find local resources for Galaxy)
-    latitude: 0.0
-    longitude: 0.0
+    latitude: 51
+    longitude: 4
 
 
 tool_blacklist:

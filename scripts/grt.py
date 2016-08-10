@@ -2,6 +2,11 @@
 """Script for uploading Galaxy statistics to the Galactic radio telescope.
 
 See doc/source/admin/grt.rst for more detailed usage information.
+
+TODO:
+    - toolbox
+    - job runners
+    - check if GIEs are enabled
 """
 from __future__ import print_function
 
@@ -255,10 +260,12 @@ def main(argv):
             'description': config_dict['instance']['description'],
             'tags': config_dict['instance']['tags'],
             'location': resolve_location(config_dict['location']),
+            'latest_job': config_dict.get('last_job_id_sent', 0),
             # We do not record ANYTHING about your users other than count.
             'active_users': len(set(active_users)),
             'total_users': sa_session.query(model.User).count(),
             'recent_jobs': len(jobs),
+            'url': config_dict['instance']['url'],
         },
         'tools': [
             {
