@@ -89,7 +89,8 @@ def _init(config_path):
             object_store=object_store
         ),
         object_store,
-        config.database_connection.split(':')[0]
+        config.database_connection.split(':')[0],
+        config.version_major
     )
 
 
@@ -182,7 +183,7 @@ def main(argv):
         exit(1)
 
     log.info('Loading Galaxy...')
-    model, object_store, engine = _init(config_dict['galaxy_config'])
+    model, object_store, engine, gx_version = _init(config_dict['galaxy_config'])
 
     sa_session = model.context.current
 
@@ -247,6 +248,7 @@ def main(argv):
     grt_report_data = {
         'meta': {
             'version': 1,
+            'galaxy_version': gx_version,
             'uuid': config_dict['grt_server']['instance_id'],
             'api_key': config_dict['grt_server']['api_key'],
             'name': config_dict['instance']['name'],
@@ -273,7 +275,7 @@ def main(argv):
         exit(0)
 
     try:
-        urllib2.urlopen(config_dict['grt_url'], data=json.dumps(grt_report_data))
+        urllib2.urlopen(config_dict['grt_server']['grt_url'], data=json.dumps(grt_report_data))
     except urllib2.HTTPError as htpe:
         print(htpe.read())
         exit(1)
