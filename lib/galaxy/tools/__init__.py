@@ -1312,7 +1312,7 @@ class Tool( object, Dictifiable ):
         """
         Return a list of dictionaries for all tool dependencies with their associated status
         """
-        return self._view.get_requirements_status(self.tool_requirements)
+        return self._view.get_requirements_status(self.tool_requirements, self.installed_tool_dependencies)
 
     def build_redirect_url_params( self, param_dict ):
         """
