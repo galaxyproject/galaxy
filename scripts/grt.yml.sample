@@ -22,12 +22,12 @@ instance:
 location:
     # If autodetect is set to true, then an attempt will be made to
     # automatically detect your location using a third party service
-    # (http://ip-api.com).
+    # (http://ip-api.com, https://icanhazip.com).
     autodetect: false
     # If you still wish to share the location of your Galaxy server
     # (great for helping people find local resources for Galaxy)
-    latitude: 30
-    longitude: -96
+    latitude: 0.0
+    longitude: 0.0
 
 
 tool_blacklist:
