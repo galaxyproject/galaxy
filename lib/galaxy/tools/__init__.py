@@ -2317,16 +2317,21 @@ class MergeCollectionTool( DatabaseOperationTool ):
             element = dce.element_object
             if element.is_ok:
                 element_identifier = dce.element_identifier
-                
+
+                #apply new suffix if identifier already seen
                 if element_identifier in identifier_seen and dupl_actions == 'suffix':
                     suffix = '__%i' % identifier_seen[element_identifier]
                     identifier_seen[element_identifier] = identifier_seen[element_identifier] + 1
                     element_identifier = element_identifier + suffix
+                    new_elements[element_identifier] = element.copy()
+                #ignore element if  identifier already seen and user want to keep first instance
                 elif element_identifier in identifier_seen and dupl_actions == 'first':
                     continue
+                #add  element as is, if the identifier is unique or user wants to keep this one 
+                elif not element_identifier in identifier_seen or dupl_actions == 'second':
+                    new_elements[element_identifier] = element.copy()
 
-                
-                new_elements[element_identifier] = element.copy()
+
         
 
         output_collections.create_collection(
