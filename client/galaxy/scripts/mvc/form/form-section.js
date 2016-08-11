@@ -86,7 +86,6 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             // create repeat block element
             var repeat = new Repeat.View({
                 title           : input_def.title || 'Repeat',
-                title_new       : input_def.title || '',
                 min             : input_def.min,
                 max             : input_def.max,
                 onnew           : function() { create( input_def.inputs ); self.app.trigger( 'change' ); }
@@ -105,7 +104,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             // add parsed/minimum number of repeat blocks
             //
             var n_cache = _.size( input_def.cache );
-            for ( var i = 0; i < Math.max( Math.max( n_cache, input_def.min ), input_def.default ); i++ ) {
+            for ( var i = 0; i < Math.max( Math.max( n_cache, input_def.min ), input_def.default || 0 ); i++ ) {
                 create( i < n_cache ? input_def.cache[ i ] : input_def.inputs );
             }
 
