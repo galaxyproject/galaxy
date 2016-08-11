@@ -28,17 +28,6 @@ from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
 
-# The uwsgi module is automatically injected by the parent uwsgi
-# process and only exists that way.  If anything works, this is a
-# uwsgi-managed process.
-try:
-    import uwsgi
-    if uwsgi.numproc:
-        process_is_uwsgi = True
-except ImportError:
-    # This is not a uwsgi process, or something went horribly wrong.
-    process_is_uwsgi = False
-
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
