@@ -269,10 +269,9 @@
                     </div>
 
                     <!-- Convert from universal line endings to Posix line endings. -->
-
                     <div class="form-row">
                         <label>
-                            Convert universal line endings to Posix line edndings:
+                            Convert universal line endings to Posix line endings:
                         </label>
                         <div class="form-row-input">
                             <%
