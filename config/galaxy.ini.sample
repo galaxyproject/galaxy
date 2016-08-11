@@ -164,29 +164,31 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # <toolbox> tag.
 #tool_path = tools
 
+# -- Tool dependencies
+
 # Path to the directory in which tool dependencies are placed.  This is used by
-# the tool shed to install dependencies and can also be used by administrators
+# the Tool Shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
 #   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
 # Set to the string none to explicitly disable tool dependency handling.
 # If this option is set to none or an invalid path, installing tools with dependencies
-# from the Tool Shed will fail. 
+# from the Tool Shed will fail.
 #tool_dependency_dir = database/dependencies
 
-# The dependency resolves config file specifies an ordering and options for how
+# The dependency resolvers config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
-# ordering is to the use the tool shed for tools installed that way, use local
-# Galaxy packages, and then use conda if available.
+# ordering is to the use the Tool Shed for tools installed that way, use local
+# Galaxy packages, and then use Conda if available.
 # See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
 # for more information on these options.
 #dependency_resolvers_config_file = config/dependency_resolvers_conf.xml
 
-# Following conda dependeny resolution options are experimental as of early
-# 2016. These will change the defaults for each conda resolver, but multiple
-# resolvers can be configured independently and these options overridden in
+# Following Conda dependency resolution options will change the defaults for each Conda resolver,
+# but multiple resolvers can be configured independently and these options overridden in
 # dependency_resolvers_config_file.
+# Location on the filesystem where Conda packages are installed
 #conda_prefix = <tool_dependency_dir>/_conda
-# Override the conda executable to use, it will default to the one on the
+# Override the Conda executable to use, it will default to the one on the
 # PATH (if available) and then to <conda_prefix>/bin/conda
 #conda_exec =
 # Pass debug flag to conda commands.
@@ -196,11 +198,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
-# Set to True to perform additional checking of installed conda environment
+# Set to True to perform additional checking of installed Conda environment
 #conda_verbose_install_check=False
-# Set to True to instruct Galaxy to install conda from the web automatically
+# Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
-#conda_auto_init = False
+#conda_auto_init = True
 
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
@@ -1212,7 +1214,7 @@ use_interactive = True
 #communication_server_host = http://localhost
 #communication_server_port = 7070
 # persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-#persistent_communication_rooms = 
+#persistent_communication_rooms =
 
 
 # ---- Galaxy External Message Queue -------------------------------------------------
