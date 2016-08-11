@@ -183,9 +183,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # for more information on these options.
 #dependency_resolvers_config_file = config/dependency_resolvers_conf.xml
 
-# Following Conda dependency resolution options will change the defaults for each Conda resolver,
-# but multiple resolvers can be configured independently and these options overridden in
-# dependency_resolvers_config_file.
+# The following Conda dependency resolution options will change the defaults for
+# all Conda resolvers, but multiple resolvers can be configured independently
+# in dependency_resolvers_config_file and these options overridden.
 # Location on the filesystem where Conda packages are installed
 #conda_prefix = <tool_dependency_dir>/_conda
 # Override the Conda executable to use, it will default to the one on the
