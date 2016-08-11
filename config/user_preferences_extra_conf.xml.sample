@@ -1,9 +1,9 @@
 preferences:
     # the key you can refer to
     apollo_url_01:
+        name: section_apollo_url
         # description that is displayed to the user
         description: The URL to your personal Apollo instance
-
         inputs:
             # the content can be accessed by apollo_url_01.apollo_url
             - name: apollo_url
@@ -15,6 +15,7 @@ preferences:
               required: True
 
     openstack_account:
+        name: section_openstack_account
         description: Your own Open Stack account
         inputs:
             - name: username

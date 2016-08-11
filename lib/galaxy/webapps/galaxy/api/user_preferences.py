@@ -542,13 +542,6 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                'message': message,
                'display_top': kwd.get('redirect_home', False)
         }
-        '''return trans.fill_template( '/user/change_password.mako',
-                                    token=token,
-                                    status=status,
-                                    message=message,
-                                    display_top=kwd.get('redirect_home', False)
-                                    )'''
-
 
     @expose_api
     def get_extra_preferences( self, trans, cntrller='user_preferences', **kwd ):
@@ -564,11 +557,43 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 config = load(stream)
         except:
             log.warn('Config file (%s) could not be found or is malformed.' % path)
-        return config
+
+        user = trans.user
+        # builds the plugin's section data
+        section_apollo_url = { "apollo_url": user.preferences.get("apollo_url", "") }
+        section_openstack_account = {
+            "url": user.preferences.get("openstack_url", ""),
+            "password": user.preferences.get("openstack_password", ""),
+            "username": user.preferences.get("openstack_username", "")
+        }
+
+        plugins = { "apollo": section_apollo_url,
+                    "openstack": section_openstack_account }
+
+        return { "config": config,
+                 "plugins": plugins
+        }
 
 
+    @expose_api
+    def save_extra_preferences( self, trans, cntrller='user_preferences', **kwd ):
+        """
+        Saves the admin defined user information
+        """
+        user = trans.user
+        user.preferences["apollo_url"] = kwd.get("section_apollo_url[apollo_url]", "")
+        user.preferences["openstack_url"] = kwd.get("section_openstack_account[url]", "")
+        user.preferences["openstack_password"] = kwd.get("section_openstack_account[password]", "")
+        user.preferences["openstack_username"] = kwd.get("section_openstack_account[username]", "")
 
+        trans.sa_session.add( user )
+        trans.sa_session.flush()
 
+        return {
+            'message': "The data was successfully saved",
+            'status': "done"
+        }
+    
 
 
 
