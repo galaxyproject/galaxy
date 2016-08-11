@@ -5,16 +5,17 @@ function( Utils, Table, Portlet, Ui ) {
         initialize: function( options ) {
             this.list = {};
             this.options = Utils.merge( options, {
-                title       : 'Section',
+                title       : 'Repeat',
                 empty_text  : 'Not available.',
                 max         : null,
                 min         : null
             });
             this.button_new = new Ui.ButtonIcon({
                 icon    : 'fa-plus',
-                title   : 'Insert ' + this.options.title_new,
-                tooltip : 'Add new ' + this.options.title_new + ' block',
+                title   : 'Insert ' + this.options.title,
+                tooltip : 'Add new ' + this.options.title + ' block',
                 floating: 'clear',
+                cls     : 'ui-button-icon form-repeat-add',
                 onclick : function() { options.onnew && options.onnew() }
             });
             this.setElement( $( '<div/>' ).append( this.$list = $( '<div/>' ) )
@@ -35,7 +36,7 @@ function( Utils, Table, Portlet, Ui ) {
             var button_delete = new Ui.ButtonIcon({
                 icon    : 'fa-trash-o',
                 tooltip : 'Delete this repeat block',
-                cls     : 'ui-button-icon-plain',
+                cls     : 'ui-button-icon-plain form-repeat-delete',
                 onclick : function() { options.ondel && options.ondel() }
             });
             var portlet = new Portlet.View({
