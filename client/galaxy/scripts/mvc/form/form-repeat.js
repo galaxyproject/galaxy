@@ -1,6 +1,6 @@
 /** This class creates a ui component which enables the dynamic creation of portlets */
-define( [ 'utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc' ],
-function( Utils, Table, Portlet, Ui ) {
+define( [ 'utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc' ],
+function( Utils, Portlet, Ui ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
             this.list = {};
@@ -85,7 +85,7 @@ function( Utils, Table, Portlet, Ui ) {
             for ( var id in this.list ) {
                 var portlet = this.list[ id ];
                 portlet.title( ++index + ': ' + this.options.title );
-                portlet[ this.size() > this.options.min ? 'showOperation' : 'hideOperation' ]('button_delete');
+                portlet[ this.size() > this.options.min ? 'showOperation' : 'hideOperation' ]( 'button_delete' );
             }
         }
     });
