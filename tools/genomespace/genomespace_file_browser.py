@@ -7,13 +7,13 @@ import urllib
 import urllib2
 import urlparse
 
-from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
 DEFAULT_GENOMESPACE_TOOLNAME = 'Galaxy'
+FILENAME_VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
 CHUNK_SIZE = 2**20  # 1mb
 
