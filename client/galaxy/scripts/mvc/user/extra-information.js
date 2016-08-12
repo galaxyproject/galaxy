@@ -29,12 +29,8 @@ var ExtraInformation = Backbone.View.extend({
             item_object = data["preferences"][item];
             // sets the model for each plugin data and 
             // values to each input field
-            if( item_object["name"] === "section_apollo_url" ) {
-                model = plugins["section_apollo_url"];
-            }
-            else if( item_object["name"] === "section_openstack_account" ) {
-                 model = plugins["section_openstack_account"];
-            }
+
+            model = item_object["name"];
 
             template = template + '<div class="form-row '+ item_object["name"] +' ">';
             template = template + "<label>" + item_object["description"] + ":</label>";

@@ -556,10 +556,11 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             with open(path, 'r') as stream:
                 config = load(stream)
         except:
-            log.warn('Config file (%s) could not be found or is malformed.' % path)
+            log.error('Config file (%s) could not be found or is malformed.' % path)
 
         user = trans.user
-        plugin_data = user.preferences.get("dynamic_user_preferences", {})
+        plugin_data = user.preferences.get("dynamic_user_preferences", '{}')
+        log.warn(plugin_data)
         # deserializes the json and returns to the client 
         return { "config": config,
                  "plugins": json.loads(plugin_data)
