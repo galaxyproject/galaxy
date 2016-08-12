@@ -16,6 +16,10 @@ div.expandLink {
 div.changeset {
     padding: 5px 10px 5px 10px;
 }
+div.container {
+    max-width: 100%;
+    width: 100%;
+}
 .container-table {
     padding-top: 1em;
 }
@@ -45,9 +49,13 @@ var valid_tool_dependencies = Array();
 var valid_tools = Array();
 var repository_data = Object();
 var tool_sheds = JSON.parse('${tool_sheds}');
+repository_queue_tab = _.template([
+    '<li class="nav-tab" role="presentation" id="repository_installation_queue">',
+        '<a href="#repository_queue" data-toggle="tab">Repository Installation Queue</a>',
+    '</li>',
+].join(''))
 repository_queue_template = _.template([
-    '<li class="nav-tab" role="presentation" id="repository_installation_queue" data-toggle="tab">',
-        '<a href="#">Repository Installation Queue</a>',
+    '<div class="tab-pane" id="repository_queue">',
         '<table id="queued_repositories" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
             '<thead id="grid-table-header">',
                 '<tr>',
@@ -76,10 +84,10 @@ repository_queue_template = _.template([
                 '<\% }); \%>',
             '</tbody>',
         '</table>',
-    '</li>',
+    '</div>',
 ].join(''));
 repository_details_template = _.template([
-    '<div id="repository_installation_form">',
+    '<div class="tab-pane" id="repository_details">',
         '<h2 style="font-weight: normal;">Repository information for <strong><\%= repository.name \%></strong> from <strong><\%= repository.owner \%></strong></h2>',
         '<form id="repository_installation" name="install_repository" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">',
             '<input type="hidden" id="repositories" name="<\%= current_metadata.repository.id \%>" value="ID" />',
@@ -93,8 +101,8 @@ repository_details_template = _.template([
                             '<option <\%= selected \%>data-changeset="<\%= changeset \%>" value="<\%= changeset.split(":")[1] \%>"><\%= changeset \%></option>',
                         '<\% }); \%>',
                     '</select>',
-                    '<input class="btn btn-primary" data-shedurl="<\%= tool_shed_url \%>" data-tsrid="<\%= current_metadata.repository.id \%>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
-                    '<input class="btn btn-primary" data-shedurl="<\%= tool_shed_url \%>" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
+                    '<input class="btn btn-primary" data-tsrid="<\%= current_metadata.repository.id \%>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
+                    '<input class="btn btn-primary" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
                     '<div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>',
                 '</div>',
                 '<div class="toolParamHelp" style="clear: both;">',
@@ -243,62 +251,66 @@ repository_dependency_template = _.template([
     '<\% } \%>'
 ].join(''));
 categories_in_shed = _.template([
-    '<a href="#">Categories</a>',
-    '<div style="clear: both; margin-top: 1em;">',
-        '<h2>Repositories by Category</h2>',
-        '<table class="grid">',
-            '<thead id="grid-table-header">',
-                '<tr>',
-                    '<th>Name</th>',
-                    '<th>Description</th>',
-                    '<th>Repositories</th>',
-                '</tr>',
-            '</thead>',
-            '<\% _.each(categories, function(category) { \%>',
-                '<tr>',
-                    '<td>',
-                        '<button class="category-selector" data-categoryid="<\%= category.id \%>" data-shedurl="<\%= shed_url \%>"><\%= category.name \%></button>',
-                    '</td>',
-                    '<td><\%= category.description \%></td>',
-                    '<td><\%= category.repositories \%></td>',
-                '</tr>',
-            '<\% }); \%>',
-        '</table>',
-    '</div>'].join(''));
-repositories_in_category = _.template([
-    '<a href="#">Repositories</a>',
-    '<div id="standard-search" style="height: 2em; margin: 1em;">',
-        '<span class="ui-widget" >',
-            '<input class="search-box-input" id="repository_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />',
-        '</span>',
+    '<div class="tab-pane" id="list_categories">',
+        '<div style="clear: both; margin-top: 1em;">',
+            '<h2>Repositories by Category</h2>',
+            '<table class="grid">',
+                '<thead id="grid-table-header">',
+                    '<tr>',
+                        '<th>Name</th>',
+                        '<th>Description</th>',
+                        '<th>Repositories</th>',
+                    '</tr>',
+                '</thead>',
+                '<\% _.each(categories, function(category) { \%>',
+                    '<tr>',
+                        '<td>',
+                            '<button class="category-selector" data-categoryid="<\%= category.id \%>"><\%= category.name \%></button>',
+                        '</td>',
+                        '<td><\%= category.description \%></td>',
+                        '<td><\%= category.repositories \%></td>',
+                    '</tr>',
+                '<\% }); \%>',
+            '</table>',
+        '</div>',
     '</div>',
-    '<div style="clear: both; margin-top: 1em;">',
-        '<h2>Repositories in <\%= name \%></h2>',
-        '<table class="grid">',
-            '<thead id="grid-table-header">',
-                '<tr>',
-                    '<th style="width: 10%;">Owner</th>',
-                    '<th style="width: 15%;">Name</th>',
-                    '<th>Synopsis</th>',
-                    '<th style="width: 10%;">Type</th>',
-                    '<th style="width: 5%;">Certified</th>',
-                '</tr>',
-            '</thead>',
-            '<\% _.each(repositories, function(repository) { \%>',
-                '<tr>',
-                    '<td><\%= repository.owner \%></td>',
-                    '<td>',
-                        '<button class="repository-selector" data-tsrid="<\%= repository.id \%>"><\%= repository.name \%></button>',
-                    '</td>',
-                    '<td><\%= repository.description \%></td>',
-                    '<td><\%= repository.type \%></td>',
-                    '<td><\%= repository.metadata.tools_functionally_correct \%></td>',
-                '</tr>',
-            '<\% }); \%>',
-        '</table>',
-    '<div>'].join(''));
+].join(''));
+repositories_in_category = _.template([
+    '<div class="tab-pane" id="list_repositories">',
+        '<div id="standard-search" style="height: 2em; margin: 1em;">',
+            '<span class="ui-widget" >',
+                '<input class="search-box-input" id="repository_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />',
+            '</span>',
+        '</div>',
+        '<div style="clear: both; margin-top: 1em;">',
+            '<h2>Repositories in <\%= name \%></h2>',
+            '<table class="grid">',
+                '<thead id="grid-table-header">',
+                    '<tr>',
+                        '<th style="width: 10%;">Owner</th>',
+                        '<th style="width: 15%;">Name</th>',
+                        '<th>Synopsis</th>',
+                        '<th style="width: 10%;">Type</th>',
+                        '<th style="width: 5%;">Certified</th>',
+                    '</tr>',
+                '</thead>',
+                '<\% _.each(repositories, function(repository) { \%>',
+                    '<tr>',
+                        '<td><\%= repository.owner \%></td>',
+                        '<td>',
+                            '<button class="repository-selector" data-tsrid="<\%= repository.id \%>"><\%= repository.name \%></button>',
+                        '</td>',
+                        '<td><\%= repository.description \%></td>',
+                        '<td><\%= repository.type \%></td>',
+                        '<td><\%= repository.metadata.tools_functionally_correct \%></td>',
+                    '</tr>',
+                '<\% }); \%>',
+            '</table>',
+        '</div>',
+    '</div>',
+].join(''));
 tool_sheds_template = _.template([
-    '<div class="toolForm">',
+    '<div class="tab-pane" id="list_toolsheds">',
         '<div class="toolFormTitle">Accessible Galaxy tool sheds</div>',
         '<div class="toolFormBody">',
             '<div class="form-row">',
@@ -316,12 +328,10 @@ tool_sheds_template = _.template([
             '</div>',
             '<div style="clear: both"></div>',
         '</div>',
-    '</div>'].join(''));
-show_queue_template = _.template([
-    '<li class="nav-tab" role="presentation" id="repository_installation_queue" data-toggle="tab"><a href="#">Repository Installation Queue</a></li>'
-    ].join(''));
+    '</div>',
+].join(''));
 tps_selection_template = _.template([
-    '<div class="form-row" id="select_tps">',
+    '<div class="tab-pane" id="select_tps">',
         '<select name="<\%= name \%>" id="<\%= id \%>',
             '<\% _.each(sections, function(section) { \%>',
                 '<option value="<\%= section.id \%>"><\%= section.name \%>',
@@ -378,16 +388,12 @@ function array_contains_dict(array, dict) {
 }
 function bind_category_events() {
     $('.repository-selector').click(function() {
-        $('#browse_category').empty(); // TODO: Remove this when the tabs work. Replace with tab switcher.
-        $('#repository_details').empty();
-        $('#repository_details').append('<a href="#">Repository</a><p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p>');
+        $('#repository_details').replaceWith('<div class="tab-pane" id="repository_details"><p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p></div>');
         tsr_id = $(this).attr('data-tsrid');
-        shed_url = $('#browse_category').attr('data-shedurl');
+        shed_url = $('#tab_contents').attr('data-shedurl');
         api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_repository")}'
         params = {"tool_shed_url": shed_url, "tsr_id": tsr_id}
-        $('#repository_details').attr('data-shedurl', $(this).attr('data-shedurl'));
         $.get(api_url, params, function(data) {
-            $('#repository_details').empty();
             var changesets = Object.keys(data.repository.metadata);
             data.tool_shed_url = shed_url;
             data.current_changeset = changesets[changesets.length - 1];
@@ -401,7 +407,8 @@ function bind_category_events() {
             if (repository_data.repository.metadata[data.current_changeset].includes_tools_for_display_in_tool_panel) {
                 repository_data.tool_panel_section = tps_selection_template(repository_data.panel_section_dict)
             }
-            $('#repository_details').append(repository_details_template(data));
+            $('#repository_details').replaceWith(repository_details_template(data));
+            $('#repo_info_tab').click();
             require(["libs/jquery/jstree"], function() {
                 $('#repository_deps').jstree();
             });
@@ -409,8 +416,7 @@ function bind_category_events() {
                 bind_repository_events();
             });
         });
-        $('#repository_details').attr('data-shedurl', shed_url);
-        $('#repository_details').click();
+        $('#repository_contents').click();
     });
 }
 function bind_repository_events() {
@@ -444,9 +450,6 @@ function bind_repository_events() {
         save_repository_queue(queued_repos);
         check_if_installed(repository_metadata.repository.name, repository_metadata.repository.owner, current_changeset.split(':')[1]);
         check_queue();
-        if ($('#queued_repositories')) {
-            show_queue();
-        }
     });
     $('#create_new').click(show_global_tps_create);
     $('#install_repository').click(function() {
@@ -454,7 +457,7 @@ function bind_repository_events() {
         var params = {};
         params.repositories = JSON.stringify([[$('#install_repository').attr('data-tsrid'), $('#changeset').find("option:selected").val()]]);
         params.tool_shed_repository_ids = JSON.stringify([$('#install_repository').attr('data-tsrid')]);
-        params.tool_shed_url = $('#repository_details').attr('data-shedurl');
+        params.tool_shed_url = $('#tab_contents').attr('data-shedurl');
         params.install_tool_dependencies = $("#install_tool_dependencies").val();
         params.install_repository_dependencies = $("#install_repository_dependencies").val();
         params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
@@ -468,26 +471,24 @@ function bind_repository_events() {
 }
 function bind_shed_events() {
     $('.category-selector').click(function() {
-        $('#browse_toolshed').empty(); // TODO: Remove this when the tabs work. Replace with tab switcher.
-        $('#browse_category').empty();
-        $('#browse_category').append('<a href="#">Repositories</a><p><img src="/static/images/jstree/throbber.gif" alt="Loading repositories..." /></p>');
-        category_id = $(this).attr('data-categoryid');
-        shed_url = $('#browse_toolshed').attr('data-shedurl');
-        api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_category")}'
-        $.get(api_url, { tool_shed_url: shed_url, category_id: category_id }, function(data) {
-            $('#browse_category').empty();
-            $('#browse_category').append(repositories_in_category(data));
+        var tabsw = $('#category_list_tab');
+        $('#list_repositories').replaceWith('<div id="list_repositories" class="tab-pane"><img src="/static/images/jstree/throbber.gif" alt="Loading repositories..." /></div>');
+        var category_id = $(this).attr('data-categoryid');
+        var shed_url = $('#tab_contents').attr('data-shedurl');
+        var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_category")}'
+        var params = {'tool_shed_url': shed_url, 'category_id': category_id};
+        $.get(api_url, params, function(data) {
+            $('#list_repositories').replaceWith(repositories_in_category(data));
+            $('#repo_list_tab').click();
             bind_category_events();
         });
-        $('#browse_toolshed').attr('data-shedurl', shed_url);
-        $('#list_toolsheds').attr('data-shedurl', shed_url);
     });
 }
 function changeset_metadata() {
     repository_data.current_changeset = get_current_changeset();
     repository_data.current_metadata = repository_data.repository.metadata[changeset];
     repository_information = repository_data.repository;
-    $('#repository_installation_form').replaceWith(repository_details_template(repository_data));
+    $('#repository_details').replaceWith(repository_details_template(repository_data));
     check_if_installed(repository_information.name, repository_information.owner, changeset.split(':')[1]);
     bind_repository_events();
 }
@@ -528,11 +529,55 @@ function check_if_installed(name, owner, changeset) {
     }
 }
 function check_queue() {
-    $('#repository_installation_queue').remove();
-    if (localStorage.repositories) {
-        $('#browse_toolsheds').append(show_queue_template());
+    if (localStorage.hasOwnProperty('repositories')) {
+        repository_queue = JSON.parse(localStorage.repositories);
+        queue_keys = Object.keys(repository_queue);
+        queue = Array();
+        for (var i = 0; i < queue_keys.length; i++) {
+            queue_key = queue_keys[i];
+            repository_metadata = repository_queue[queue_key];
+            repository = repository_metadata.repository;
+            key_parts = queue_key.split('|');
+            tool_shed_url = key_parts[0];
+            repository.queue_key = queue_key;
+            repository.changeset = repository_metadata.changeset_revision;
+            repository.tool_shed_url = tool_shed_url;
+            queue.push(repository);
+        }
+        if ($('#repository_installation_queue').length > 0) {
+            $('#repository_installation_queue').replaceWith(repository_queue_tab());
+        }
+        else {
+            $(repository_queue_tab()).insertAfter('#repository_contents');
+        }
+        if ($('#repository_queue').length > 0) {
+            $('#repository_queue').replaceWith(repository_queue_tab());
+        }
+        else {
+            $(repository_queue_template({'repositories': queue})).insertAfter('#repository_details');
+        }
+        $('.install_one').click(function() {
+            var repository_metadata = get_repository_from_queue($(this).attr('data-repokey'));
+            install_from_queue(repository_metadata, $(this).attr('data-repokey'));
+        });
+        $('.remove_one').click(function(){
+            queue_key = $(this).attr('data-repokey');
+            repository_metadata = get_repository_from_queue(queue_key);
+            repository_id = repository_metadata.repository.id;
+            selector = "#queued_repository_" + repository_id;
+            $(selector).remove();
+            remove_from_queue(undefined, undefined, queue_key);
+        });
+        $('#clear_queue').click(function() {
+            $('#repository_installation_queue').remove();
+            localStorage.removeItem('repositories');
+        });
+        $('#install_all').click(process_queue);
     }
-    $('#repository_installation_queue').click(show_queue);
+    else {
+        $('#repository_installation_queue').remove();
+        $('#repository_queue').remove();
+    }
 }
 function find_tool_by_guid(tool_guid, changeset) {
     var tools = repository_data.tools[changeset];
@@ -548,7 +593,7 @@ function get_current_changeset() {
 }
 function get_queue_key(repository_metadata, changeset, shed_url = undefined) {
     if (shed_url === undefined) {
-        shed_url = $("#queue_install").attr('data-shedurl');
+        shed_url = $("#tab_contents").attr('data-shedurl');
     }
     return shed_url + '|' + repository_metadata.id + '|' + changeset;
 }
@@ -797,46 +842,6 @@ function show_panel_selector(tool_guid, changeset) {
         show_panel_button(tool_guid, changeset);
     });
 }
-function show_queue() {
-    if (!localStorage.repositories) {
-        return;
-    }
-    var queued_repos = Array();
-    var data = Object();
-    var repositories = get_repository_queue();
-    var queue_keys = Object.keys(repositories);
-    for (var i = 0; i < queue_keys.length; i++) {
-        var queue_key = queue_keys[i];
-        var queue_entry = repositories[queue_key];
-        var stuff = queue_key.split('|'); // $("#queue_install").attr('data-shedurl') + '|' + repository_metadata.id + '|' + changeset
-        data = {'tool_shed_url': stuff[0],
-                'tsr_id': stuff[1],
-                'changeset': stuff[2],
-                'name': queue_entry.repository.name,
-                'owner': queue_entry.repository.owner,
-                'id': queue_entry.repository.id,
-                'queue_key': queue_key}
-        queued_repos.push(data);
-    }
-    $('#repository_installation_queue').replaceWith(repository_queue_template({'repositories': queued_repos}));
-    $('.install_one').click(function() {
-        var repository_metadata = get_repository_from_queue($(this).attr('data-repokey'));
-        install_from_queue(repository_metadata, $(this).attr('data-repokey'));
-    });
-    $('.remove_one').click(function(){
-        queue_key = $(this).attr('data-repokey');
-        repository_metadata = get_repository_from_queue(queue_key);
-        repository_id = repository_metadata.repository.id;
-        selector = "#queued_repository_" + repository_id;
-        $(selector).remove();
-        remove_from_queue(undefined, undefined, queue_key);
-    });
-    $('#clear_queue').click(function() {
-        $('#repository_installation_queue').remove();
-        localStorage.removeItem('repositories');
-    });
-    $('#install_all').click(process_queue);
-}
 function show_tool_create(tool_guid, changeset) {
     var tool = find_tool_by_guid(tool_guid, changeset);
     var selector = '#per_tool_tps_container_' + tool.clean;
@@ -885,34 +890,41 @@ function tool_panel_section() {
     }
 }
 $(document).ready(function() {
-    $('#list_toolsheds').append(tool_sheds_template({tool_sheds: tool_sheds}));
+    $('#list_toolsheds').replaceWith(tool_sheds_template({tool_sheds: tool_sheds}));
+    $('#shed_list_tab').click();
     check_queue();
     $('.shed-selector').click(function() {
-        $('#list_toolsheds').empty(); // TODO: Remove this when the tabs work. Replace with tab switcher.
-        $('#browse_toolshed').empty();
-        $('#browse_toolshed').append('<a href="#">Categories</a><p><img src="/static/images/jstree/throbber.gif" alt="Loading categories..." /></p>');
-        $('#browse_category').attr('data-shedurl', $(this).attr('data-shedurl'));
+        $('#list_categories').replaceWith('<div id="list_categories" class="nav-tab"><img src="/static/images/jstree/throbber.gif" alt="Loading categories..." /></div>');
         shed_url = $(this).attr('data-shedurl');
+        $('#tab_contents').attr('data-shedurl', shed_url);
         api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_categories")}'
         $.get(api_url, { tool_shed_url: shed_url }, function(data) {
-            $('#browse_toolshed').empty();
-            $('#browse_toolshed').append(categories_in_shed(data));
+            $('#list_categories').replaceWith(categories_in_shed(data));
+            $('#category_list_tab').click();
             bind_shed_events();
         });
-        $('#browse_toolshed').attr('data-shedurl', shed_url);
     });
 });
 </script>
-<ul class="nav nav-tabs" id="browse_toolsheds">
-    <li class="active nav-tab tab_toolsheds" role="presentation" id="list_toolsheds" data-toggle="tab"><a href="#">Toolsheds</a>
-    </li>
-    <li class="nav-tab tab_categories" role="presentation" id="browse_toolshed" data-toggle="tab"><a href="#">Categories</a>
-        <p><img src="/static/images/jstree/throbber.gif" alt="Loading categories..." /></p>
-    </li>
-    <li class="nav-tab tab_repositories" role="presentation" id="browse_category" data-toggle="tab"><a href="#">Repositories</a>
-        <p><img src="/static/images/jstree/throbber.gif" alt="Loading repositories..." /></p>
-    </li>
-    <li class="nav-tab tab_repository_details" role="presentation" id="repository_details" data-toggle="tab"><a href="#">Repository</a>
-        <p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p>
-    </li>
-</ul>
+<div class="container" role="navigation">
+    <ul class="nav nav-tabs" id="browse_toolsheds">
+        <li class="nav-tab tab_toolsheds" role="presentation" id="toolshed_list">
+            <a id="shed_list_tab" href="#list_toolsheds" data-toggle="tab">Toolsheds</a>
+        </li>
+        <li class="nav-tab tab_categories" role="presentation" id="category_list">
+            <a id="category_list_tab" href="#list_categories" data-toggle="tab">Categories</a>
+        </li>
+        <li class="nav-tab tab_repositories" role="presentation" id="repository_list">
+            <a id="repo_list_tab" href="#list_repositories" data-toggle="tab">Repositories</a>
+        </li>
+        <li class="nav-tab tab_repository_details" role="presentation" id="repository_contents">
+            <a id="repo_info_tab" href="#repository_details" data-toggle="tab">Repository</a>
+        </li>
+    </ul>
+    <div id="tab_contents" class="tab-content clearfix">
+        <div class="tab-pane active" id="list_toolsheds">Loading...</div>
+        <div class="tab-pane" id="list_categories">Loading...</div>
+        <div class="tab-pane" id="list_repositories">Loading...</div>
+        <div class="tab-pane" id="repository_details">Loading...</div>
+    </div>
+</div>
