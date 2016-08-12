@@ -23,14 +23,7 @@
                     'action_arguments'  : pja.action_arguments
                 } for pja in step.post_job_actions ]
             else:
-                type_filter = []
-                for oc in step.output_connections:
-                    for ic in oc.input_step.module.get_data_inputs():
-                        if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
-                            type_filter += ic[ 'extensions' ]
-                if not type_filter:
-                    type_filter = [ 'data' ]
-                inputs = step.module.get_runtime_inputs( filter_set=type_filter )
+                inputs = step.module.get_runtime_inputs( connections=step.output_connections )
                 step_model = {
                     'name'   : step.module.name,
                     'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]

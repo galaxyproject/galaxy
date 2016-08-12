@@ -528,9 +528,20 @@ class InputDataModule( InputModule ):
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
 
-    def get_runtime_inputs( self, filter_set=['data'] ):
+    def get_filter_set( self, connections=None ):
+        filter_set = []
+        if connections:
+            for oc in connections:
+                for ic in oc.input_step.module.get_data_inputs():
+                    if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
+                        filter_set += ic[ 'extensions' ]
+        if not filter_set:
+            filter_set = [ 'data' ]
+        return ', '.join( filter_set )
+
+    def get_runtime_inputs( self, connections=None ):
         label = self.state.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=', '.join(filter_set) ), self.trans ) )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
 
 
 class InputDataCollectionModule( InputModule ):
@@ -545,7 +556,7 @@ class InputDataCollectionModule( InputModule ):
     def default_state( Class ):
         return dict( name=Class.default_name, collection_type=Class.default_collection_type )
 
-    def get_runtime_inputs( self, filter_set=['data'] ):
+    def get_runtime_inputs( self, **kwds ):
         label = self.state.get( "name", self.default_name )
         collection_type = self.state.get( "collection_type", self.default_collection_type )
         input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
@@ -1156,7 +1167,7 @@ class ToolModule( WorkflowModule ):
                             connection = input_connections_by_name[ prefixed_name ]
                             output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
                             if output_step.type.startswith( 'data' ):
-                                output_inputs = output_step.module.get_runtime_inputs()
+                                output_inputs = output_step.module.get_runtime_inputs( connections=connections )
                                 output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
                                 if isinstance( input, DataToolParameter ):
                                     for v in listify( output_value ):
