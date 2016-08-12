@@ -384,13 +384,13 @@ var ManageUserInformation = Backbone.View.extend({
                                     '<div style="clear: both"></div>' +
                                 '</div>' +
                                 '<div class="form-row">' +
-				    '<label>Institution:</label>' +
-				    '<div style="float: left; width: 250px; margin-right: 10px;">' +
-				        '<input type="text" name="institution" value="' + ( address_object ? address_object.institution : '' ) + '" size="40">' +
-				    '</div>' +
-				    '<div class="toolParamHelp" style="clear: both;">Required</div>' +
-				    '<div style="clear: both"></div>' +
-			        '</div>' +
+                    '<label>Institution:</label>' +
+                    '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                        '<input type="text" name="institution" value="' + ( address_object ? address_object.institution : '' ) + '" size="40">' +
+                    '</div>' +
+                    '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                    '<div style="clear: both"></div>' +
+                    '</div>' +
                                 '<div class="form-row">' +
                                     '<label>Address:</label>' +
                                     '<div style="float: left; width: 250px; margin-right: 10px;">' +
@@ -407,40 +407,40 @@ var ManageUserInformation = Backbone.View.extend({
                                     '<div class="toolParamHelp" style="clear: both;">Required</div>' +
                                     '<div style="clear: both"></div>' +
                                     '</div>' +
-			    '<div class="form-row">' +
-				'<label>State/Province/Region:</label>' +
-				'<div style="float: left; width: 250px; margin-right: 10px;">' +
-				    '<input type="text" name="state" value="' +  ( address_object ? address_object.state : '' ) + '" size="40">' +
-				'</div>' +
-				'<div class="toolParamHelp" style="clear: both;">Required</div>' +
-				'<div style="clear: both"></div>' +
-			    '</div>' +
-			    '<div class="form-row">' +
-				'<label>Postal Code:</label>' +
-				'<div style="float: left; width: 250px; margin-right: 10px;">' +
-				   '<input type="text" name="postal_code" value="' +  ( address_object ? address_object.postal_code : '' ) + '" size="40">' +
-				'</div>' +
-				'<div class="toolParamHelp" style="clear: both;">Required</div>' +
-				'<div style="clear: both"></div>' +
-			    '</div>' +
-			    '<div class="form-row">' +
-				'<label>Country:</label>' +
-				'<div style="float: left; width: 250px; margin-right: 10px;">' +
-				    '<input type="text" name="country" value="' +  ( address_object ? address_object.country : '' ) + '" size="40">' +
-				'</div>' +
-				'<div class="toolParamHelp" style="clear: both;">Required</div>' +
-				'<div style="clear: both"></div>' +
-			    '</div>' +
-			    '<div class="form-row">' +
-				'<label>Phone:</label>' +
-				'<div style="float: left; width: 250px; margin-right: 10px;">' +
-				    '<input type="text" name="phone" value="' +  ( address_object ? address_object.phone : '' ) + '" size="40">' +
-				'</div>' +
-				'<div style="clear: both"></div>' +
-			    '</div>' +
-			    '<div class="form-row">' +
-				'<input type="button" class="action-button '+ cssClass +'" name="'+ btnName +'" value="'+ value +'">' +
-			    '</div>';
+                '<div class="form-row">' +
+                '<label>State/Province/Region:</label>' +
+                '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                    '<input type="text" name="state" value="' +  ( address_object ? address_object.state : '' ) + '" size="40">' +
+                '</div>' +
+                '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                '<div style="clear: both"></div>' +
+                '</div>' +
+                '<div class="form-row">' +
+                '<label>Postal Code:</label>' +
+                '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                   '<input type="text" name="postal_code" value="' +  ( address_object ? address_object.postal_code : '' ) + '" size="40">' +
+                '</div>' +
+                '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                '<div style="clear: both"></div>' +
+                '</div>' +
+                '<div class="form-row">' +
+                '<label>Country:</label>' +
+                '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                    '<input type="text" name="country" value="' +  ( address_object ? address_object.country : '' ) + '" size="40">' +
+                '</div>' +
+                '<div class="toolParamHelp" style="clear: both;">Required</div>' +
+                '<div style="clear: both"></div>' +
+                '</div>' +
+                '<div class="form-row">' +
+                '<label>Phone:</label>' +
+                '<div style="float: left; width: 250px; margin-right: 10px;">' +
+                    '<input type="text" name="phone" value="' +  ( address_object ? address_object.phone : '' ) + '" size="40">' +
+                '</div>' +
+                '<div style="clear: both"></div>' +
+                '</div>' +
+                '<div class="form-row">' +
+                '<input type="button" class="action-button '+ cssClass +'" name="'+ btnName +'" value="'+ value +'">' +
+                '</div>';
         template = template + '</form></div></div></div>';
         return template;
     },

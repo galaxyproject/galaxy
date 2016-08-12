@@ -575,7 +575,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         user = trans.user
         plugin_data = kwd.get( "plugin_data", {} )
         # serializes the json and save the user preferences
-        user.preferences["dynamic_user_preferences"] = json.dumps( plugin_data )
+        user.preferences["dynamic_user_preferences"] = plugin_data
         # saves the user data
         trans.sa_session.add( user )
         trans.sa_session.flush()
