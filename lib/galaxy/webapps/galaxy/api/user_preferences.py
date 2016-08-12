@@ -559,8 +559,9 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             log.error('Config file (%s) could not be found or is malformed.' % path)
 
         user = trans.user
-        plugin_data = user.preferences.get("dynamic_user_preferences", '{}')
+        plugin_data = user.preferences.get("dynamic_user_preferences", "{}")
         log.warn(plugin_data)
+        
         # deserializes the json and returns to the client 
         return { "config": config,
                  "plugins": json.loads(plugin_data)
@@ -584,8 +585,4 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             'message': "The data was successfully saved",
             'status': "done"
         }
-    
-
-
-
 
