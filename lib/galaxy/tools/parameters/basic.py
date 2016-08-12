@@ -2078,7 +2078,8 @@ class DataToolParameter( BaseDataToolParameter ):
             if match:
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
+                m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
+                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name if m.visible else '(hidden) %s' % m_name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
             append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda' )
 
