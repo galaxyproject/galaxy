@@ -9,7 +9,7 @@ var ExtraInformation = Backbone.View.extend({
     /** renders the markup of extra information */
     render: function( data_plugin ) {
         data = data_plugin["config"],
-        plugins = data_plugin["plugins"];
+        plugins = JSON.parse(data_plugin["plugins"]) ;
         var template = "",
             self = this,
             item_object = null,
@@ -30,10 +30,10 @@ var ExtraInformation = Backbone.View.extend({
             // sets the model for each plugin data and 
             // values to each input field
             if( item_object["name"] === "section_apollo_url" ) {
-                model = plugins["apollo"];
+                model = plugins["section_apollo_url"];
             }
             else if( item_object["name"] === "section_openstack_account" ) {
-                 model = plugins["openstack"];
+                 model = plugins["section_openstack_account"];
             }
 
             template = template + '<div class="form-row '+ item_object["name"] +' ">';
@@ -70,13 +70,12 @@ var ExtraInformation = Backbone.View.extend({
             userurl = $( "input[name='url']" ).val(),
             data = {},
             messageBar = Manage.ManageUserInformation.prototype,
-            section_name = "",
-            element = {},
             is_form_valid = true;
 
         $(".form-row input").each( function( item ) {
             if( $(this).attr('type') === 'text' || $(this).attr('type') === 'password' ) {
-                section_name = $($(this).parent().parent()[0]).attr("class").split(" ")[1];
+                var section_name = $($(this).parent().parent()[0]).attr("class").split(" ")[1],
+                    element = {};
                 attrname = $(this).attr('name');
                 attrvalue = $(this).val();
 
@@ -88,7 +87,6 @@ var ExtraInformation = Backbone.View.extend({
                 }
                 // builds the JSON object
                 element[ $(this).attr('name') ] = attrvalue;
-
                 if( data[section_name] ) {
                     data[section_name][attrname] = attrvalue;
                 }
@@ -98,7 +96,7 @@ var ExtraInformation = Backbone.View.extend({
             }
         });
         if( is_form_valid ) {
-            $.getJSON( url, data, function( response ) {
+            $.getJSON( url, {'plugin_data' : JSON.stringify(data)}, function( response ) {
                 messageBar.renderDone( response["message"] );
             });
         }

@@ -4,7 +4,7 @@ API operations on User Preferences objects.
 
 import sys
 import logging
-
+import json
 from markupsafe import escape
 from sqlalchemy import false, and_, or_, true, func
 
@@ -559,19 +559,10 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             log.warn('Config file (%s) could not be found or is malformed.' % path)
 
         user = trans.user
-        # builds the plugin's section data
-        section_apollo_url = { "apollo_url": user.preferences.get("apollo_url", "") }
-        section_openstack_account = {
-            "url": user.preferences.get("openstack_url", ""),
-            "password": user.preferences.get("openstack_password", ""),
-            "username": user.preferences.get("openstack_username", "")
-        }
-
-        plugins = { "apollo": section_apollo_url,
-                    "openstack": section_openstack_account }
-
+        plugin_data = user.preferences.get("dynamic_user_preferences", {})
+        # deserializes the json and returns to the client 
         return { "config": config,
-                 "plugins": plugins
+                 "plugins": json.loads(plugin_data)
         }
 
 
@@ -581,11 +572,10 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         Saves the admin defined user information
         """
         user = trans.user
-        user.preferences["apollo_url"] = kwd.get("section_apollo_url[apollo_url]", "")
-        user.preferences["openstack_url"] = kwd.get("section_openstack_account[url]", "")
-        user.preferences["openstack_password"] = kwd.get("section_openstack_account[password]", "")
-        user.preferences["openstack_username"] = kwd.get("section_openstack_account[username]", "")
-
+        plugin_data = kwd.get( "plugin_data", {} )
+        # serializes the json and save the user preferences
+        user.preferences["dynamic_user_preferences"] = json.dumps( plugin_data )
+        # saves the user data
         trans.sa_session.add( user )
         trans.sa_session.flush()
 
