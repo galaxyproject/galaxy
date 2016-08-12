@@ -1669,7 +1669,7 @@ class BaseDataToolParameter( ToolParameter ):
             dataset_matcher = DatasetMatcher( trans, self, None, other_values )
             if isinstance( self, DataToolParameter ):
                 for hda in reversed( history.active_datasets_children_and_roles ):
-                    match = dataset_matcher.hda_match( hda )
+                    match = dataset_matcher.hda_match( hda, check_security=False )
                     if match:
                         return match.hda
             else:
@@ -2038,11 +2038,12 @@ class DataToolParameter( BaseDataToolParameter ):
         visible_hda = other_values.get( self.name )
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
+                m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
+                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name if m.visible else '(hidden) %s' % m_name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
             append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
 

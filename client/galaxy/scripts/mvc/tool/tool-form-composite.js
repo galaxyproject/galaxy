@@ -319,6 +319,20 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             }
         },
 
+        /** Refresh the history after job submission while form is shown */
+        _refreshHistory: function() {
+            var self = this;
+            var history = parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
+            this._refresh_history && clearTimeout( this._refresh_history );
+            if ( history ) {
+                history.refresh().success( function() {
+                    if ( history.numOfUnfinishedShownContents() === 0 ) {
+                        self._refresh_history = setTimeout( function() { self._refreshHistory() }, history.UPDATE_DELAY );
+                    }
+                });
+            }
+        },
+
         /** Build remaining steps */
         _execute: function() {
             var self = this;
@@ -379,7 +393,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.empty().append( self._templateSuccess( response ) );
-                        parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
+                        self._refreshHistory();
                     },
                     error   : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission failed.', response );
@@ -449,23 +463,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         /** Templates */
         _templateSuccess: function( response ) {
             if ( response && response.length > 0 ) {
-                var $message = $( '<div/>' ).addClass( 'donemessagelarge' )
-                                .append( $( '<p/>' ).text( 'Successfully ran workflow \'' + this.model.get( 'name' ) + '\' and datasets will appear as jobs are created - you may need to refresh your history panel to see these.' ) );
-                for ( var i in response ) {
-                    var invocation = response[ i ];
-                    var $invocation = $( '<div/>' ).addClass( 'workflow-invocation-complete' );
-                    invocation.history && $invocation.append( $( '<p/>' ).text( 'These datasets will appear in a new history: ' )
-                                                     .append( $( '<a/>' ).addClass( 'new-history-link' )
-                                                                         .attr( 'data-history-id', invocation.history.id )
-                                                                         .attr( 'target', '_top' )
-                                                                         .attr( 'href', '/history/switch_to_history?hist_id=' + invocation.history.id )
-                                                                         .text( invocation.history.name ) ) );
-                    _.each( invocation.outputs, function( output ) {
-                        $invocation.append( $( '<div/>' ).addClass( 'messagerow' ).html( '<b>' + output.hid + '</b>: ' + output.name ) );
-                    });
-                    $message.append( $invocation );
-                }
-                return $message;
+                return $( '<div/>' ).addClass( 'donemessagelarge' ).append( $( '<p/>' ).html( 'Successfully invoked workflow <b>' + Utils.sanitize( this.model.get( 'name' ) ) + '</b>' + ( response.length > 1 ? ' <b>' + response.length + ' times</b>' : '' ) + '. Datasets will appear as jobs are created.' ) );
             } else {
                 return this._templateError( response );
             }
