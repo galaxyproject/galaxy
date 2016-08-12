@@ -22,9 +22,7 @@ var ExtraInformation = Backbone.View.extend({
         $( '.errormessage' ).hide();
 
         data = data_plugin["config"];
-        
         plugins = ( Object.keys( data_plugin["plugins"]).length === 0 ) ? {} : JSON.parse( data_plugin["plugins"] );
-        
         template = template + '<div class="extra-information-section"> <h2>Extra Information</h2>';
         template = template + '<ul class="manage-table-actions"> <li>' +
                               '<a class="action-button back-user-pref" target="galaxy_main">User preferences</a>' +
@@ -60,12 +58,12 @@ var ExtraInformation = Backbone.View.extend({
                     template = template + '<div class="form-row">';
                     template = template + "<label>" + input_object.label + ':</label><input type="'+ input_object.type +
                                '" name="'+ input_object.name +'" value="'+ input_val +'" '
-                               + (input_object.required ? 'required': '') + '/>';
+                               + (input_object.required ? 'required': '') + ' class=' + plugin_name + ' />';
                     template = template + '</div>';
                 }
                 template = template + '</div>';
             }
-        
+
             template = template + '<div class="form-row">' +
             '<input type="button" class="save-extra-info action-button" name="save_extra_information" value="Save"/>';
             template = template + '</div></div></form></div>';
@@ -94,7 +92,7 @@ var ExtraInformation = Backbone.View.extend({
 
         $(".form-row input").each( function( item ) {
             if( $(this).attr('type') === 'text' || $(this).attr('type') === 'password' ) {
-                var section_name = $($(this).parent().parent()[0]).attr("class").split(" ")[1],
+                var section_name = $(this).attr("class"),
                     element = {};
                 attrname = $(this).attr('name');
                 attrvalue = $(this).val();
