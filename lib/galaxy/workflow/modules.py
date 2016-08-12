@@ -21,7 +21,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools import DefaultToolState
 from galaxy.tools import ToolInputsNotReadyException
-from galaxy.util import odict, listify
+from galaxy.util import odict
 from galaxy.util.bunch import Bunch
 from galaxy.web.framework import formbuilder
 from tool_shed.util import common_util
@@ -1152,28 +1152,24 @@ class ToolModule( WorkflowModule ):
 
     def add_dummy_datasets( self, connections=None, steps=None ):
         if connections:
-            # Store onnections by input name
+            # Store connections by input name
             input_connections_by_name = dict( ( conn.input_name, conn ) for conn in connections )
         else:
             input_connections_by_name = {}
 
-        # Any connected input needs to have value RuntimeValue (these
-        # are not persisted so we need to do it every time)
+        # Any input needs to have value RuntimeValue or obtain the value from connected steps
         def callback( input, prefixed_name, context, **kwargs ):
             if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                if self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
-                    if connections is None or prefixed_name in input_connections_by_name:
-                        if steps:
-                            connection = input_connections_by_name[ prefixed_name ]
-                            output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
-                            if output_step.type.startswith( 'data' ):
-                                output_inputs = output_step.module.get_runtime_inputs( connections=connections )
-                                output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
-                                if isinstance( input, DataToolParameter ):
-                                    for v in listify( output_value ):
-                                        if isinstance( v, self.trans.app.model.HistoryDatasetCollectionAssociation ):
-                                            return v.to_hda_representative()
-                                return output_value
+                if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+                    if prefixed_name in input_connections_by_name:
+                        connection = input_connections_by_name[ prefixed_name ]
+                        output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
+                        if output_step.type.startswith( 'data' ):
+                            output_inputs = output_step.module.get_runtime_inputs( connections=connections )
+                            output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
+                            if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
+                                return output_value.to_hda_representative()
+                            return output_value
                         return RuntimeValue()
                     else:
                         return input.get_initial_value( self.trans, context )
