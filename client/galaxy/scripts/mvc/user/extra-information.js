@@ -44,14 +44,14 @@ var ExtraInformation = Backbone.View.extend({
                 // values to each input field
                 var input_val = "";
                 if( Object.keys(plugins).length !== 0 ) {
-                    plugin_name = item_object["name"];
+                    plugin_name = item;
                     model = plugins[plugin_name];
                 }
                 else {
                     is_plugin_empty = true;
                 }
 
-                template = template + '<div class="form-row '+ item_object["name"] +' ">';
+                template = template + '<div class="form-row '+ plugin_name +' ">';
                 template = template + "<label>" + item_object["description"] + ":</label>";
 
                 for( var i = 0; i < item_object["inputs"].length; i++ ) {
@@ -100,11 +100,12 @@ var ExtraInformation = Backbone.View.extend({
                 attrvalue = $(this).val();
 
                 // checks if the required fields are left empty
-                if( $( this ).attr("required") && attrvalue === "" ) {
+                /*if( $( this ).attr("required") && attrvalue === "" ) {
                     messageBar.renderError( "Please fill the "+ attrname +" required field" );
                     is_form_valid = false;
                     return;
-                }
+                }*/
+
                 // builds the JSON object
                 element[ $(this).attr('name') ] = attrvalue;
                 if( data[section_name] ) {

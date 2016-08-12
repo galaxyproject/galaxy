@@ -561,12 +561,11 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         user = trans.user
         plugin_data = user.preferences.get("dynamic_user_preferences", "{}")
         log.warn(plugin_data)
-        
         # deserializes the json and returns to the client 
-        return { "config": config,
-                 "plugins": json.loads(plugin_data)
+        return {
+            "config": config,
+            "plugins": json.loads(plugin_data)
         }
-
 
     @expose_api
     def save_extra_preferences( self, trans, cntrller='user_preferences', **kwd ):
@@ -585,4 +584,3 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             'message': "The data was successfully saved",
             'status': "done"
         }
-
