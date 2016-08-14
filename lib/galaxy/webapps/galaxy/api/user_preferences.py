@@ -15,7 +15,10 @@ from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
+from galaxy.tools.toolbox.filters import FilterFactory
+from galaxy.util import biostar, hash_util, docstring_trim, listify
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.util import string_as_bool
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import CreatesApiKeysMixin
@@ -727,3 +730,190 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 'has_api_key': False,
                 'app_name': trans.webapp.name
             }
+
+
+    def tool_filters( self, trans, cntrller='user_preferences', **kwd ):
+        """
+            Sets the user's default filters for the toolbox.
+            Toolbox filters are specified in galaxy.ini.
+            The user can activate them and the choice is stored in user_preferences.
+        """
+
+        def get_filter_mapping( db_filters, config_filters, factory ):
+            """
+                Compare the allowed filters from the galaxy.ini config file with the previously saved or default filters from the database.
+                We need that to toogle the checkboxes for the formular in the right way.
+                Furthermore we extract all information associated to a filter to display them in the formular.
+            """
+            filters = list()
+            for filter_name in config_filters:
+                function = factory._build_filter_function(filter_name)
+                doc_string = docstring_trim( function.__doc__ )
+                split = doc_string.split('\n\n')
+                if split:
+                    sdesc = split[0]
+                else:
+                    log.error( 'No description specified in the __doc__ string for %s.' % filter_name )
+                if len(split) > 1:
+                    description = split[1]
+                else:
+                    description = ''
+
+                if filter_name in db_filters:
+                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=True ) )
+                else:
+                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=False ) )
+            return filters
+
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+
+        user_id = params.get( 'user_id', False )
+        if user_id:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+
+        if user:
+            saved_user_tool_filters = list()
+            saved_user_section_filters = list()
+            saved_user_label_filters = list()
+
+            for name, value in user.preferences.items():
+                if name == 'toolbox_tool_filters':
+                    saved_user_tool_filters = listify( value, do_strip=True )
+                elif name == 'toolbox_section_filters':
+                    saved_user_section_filters = listify( value, do_strip=True )
+                elif name == 'toolbox_label_filters':
+                    saved_user_label_filters = listify( value, do_strip=True )
+
+            ff = FilterFactory(trans.app.toolbox)
+            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters, ff )
+            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters, ff )
+            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters, ff )
+            return {
+                'message': message,
+                'status': status,
+                'tool_filters': json.dumps( tool_filters ),
+                'section_filters': json.dumps( section_filters ),
+                'label_filters': json.dumps( label_filters ),
+            }
+        else:
+            # User not logged in, history group must be only public
+            return {
+                'message': "You must be logged in to change private toolbox filters.",
+                'status': "error"
+            }
+
+    @expose_api
+    def toolbox_filters( self, trans, cntrller='user_preferences', **kwd ):
+        """
+        API call for fetching toolbox filters data
+        """
+        return self.tool_filters( trans, **kwd )
+
+    @expose_api
+    def edit_toolbox_filters( self, trans, cntrller='user_preferences', **kwd ):
+        """
+        Saves the changes made to the toolbox filters
+        """
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        checked_filters = kwd.get('checked_filters', [])
+        checked_filters = json.loads(checked_filters)
+        if params.get( 'edit_toolbox_filter_button', False ):
+            tool_filters = list()
+            section_filters = list()
+            label_filters = list()
+            
+            for name in checked_filters:
+                if name.startswith('t_'):
+                    tool_filters.append( name[2:] )
+                elif name.startswith('l_'):
+                    label_filters.append( name[2:] )
+                elif name.startswith('s_'):
+                    section_filters.append( name[2:] )
+
+            trans.user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
+            trans.user.preferences['toolbox_section_filters'] = ','.join( section_filters )
+            trans.user.preferences['toolbox_label_filters'] = ','.join( label_filters )
+
+            trans.sa_session.add( trans.user )
+            trans.sa_session.flush()
+            message = 'ToolBox filters has been updated.'
+            kwd = dict( message=message, status='done' )
+
+        # Display the ToolBox filters form with the current values filled in
+        #return self.toolbox_filters( trans, cntrller, **kwd )
+        return self.tool_filters( trans, **kwd )
+
+    @expose_api
+    def change_communication( self, trans, cntrller='user_preferences', **kwd):
+        """
+            Provides a form with which the user can activate/deactivate
+            the commnication server.
+        """
+        params = util.Params( kwd )
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        user_id = params.get( 'user_id', None )
+        
+        if user_id and is_admin:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+
+        if user and kwd.get('button_comm_server', False):
+            enabled_comm = params.get( 'enable_communication_server', 'disable' )
+            if enabled_comm == 'enable':
+                message = 'Your communication settings has been updated and activated.'
+            else:
+                message = 'Your communication settings has been updated and deactivated.'
+
+            activated = enabled_comm
+            user.preferences['communication_server'] = enabled_comm
+
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+        else:
+            activated = user.preferences.get('communication_server', 'disable')
+
+        return {
+            'message': message,
+            'status': status,
+            'activated': activated
+        }
+
+    '''@expose_api
+    def logout( self, trans, logout_all=False ):
+        if trans.webapp.name == 'galaxy':
+            if trans.app.config.require_login:
+                refresh_frames = [ 'masthead', 'history', 'tools' ]
+            else:
+                refresh_frames = [ 'masthead', 'history' ]
+            # Since logging an event requires a session, we'll log prior to ending the session
+            trans.log_event( "User logged out" )
+        else:
+            refresh_frames = [ 'masthead' ]
+        trans.handle_user_logout( logout_all=logout_all )
+        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % \
+            ( url_for( '/' ) )
+        if biostar.biostar_logged_in( trans ):
+            biostar_url = biostar.biostar_logout( trans )
+            if biostar_url:
+                # TODO: It would be better if we automatically logged this user out of biostar
+                message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % ( biostar_url )
+        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            trans.response.send_redirect(trans.app.config.remote_user_logout_href)
+        else:
+            return {
+                'message': message,
+                'status': 'done'
+            }
+            return trans.fill_template('/user/logout.mako',
+                                       refresh_frames=refresh_frames,
+                                       message=message,
+                                       status='done',
+                                       active_view="user" )'''

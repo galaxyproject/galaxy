@@ -90,6 +90,11 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/user_preferences/change_password' )
     webapp.add_client_route( '/user_preferences/set_default_permissions' )
     webapp.add_client_route( '/user_preferences/api_keys' )
+    webapp.add_client_route( '/user_preferences/toolbox_filters' )
+    webapp.add_client_route( '/user_preferences/edit_toolbox_filters' )
+    webapp.add_client_route( '/user_preferences/change_communication' )
+    webapp.add_client_route( '/user_preferences/logout' )
+    
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
@@ -524,6 +529,30 @@ def populate_api_routes( webapp, app ):
                            '/api/user_preferences/api_keys',
                            controller='user_preferences',
                            action='api_keys',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'toolbox_filters',
+                           '/api/user_preferences/toolbox_filters',
+                           controller='user_preferences',
+                           action='toolbox_filters',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'edit_toolbox_filters',
+                           '/api/user_preferences/edit_toolbox_filters',
+                           controller='user_preferences',
+                           action='edit_toolbox_filters',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'logout',
+                           '/api/user_preferences/logout',
+                           controller='user_preferences',
+                           action='logout',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'change_communication',
+                           '/api/user_preferences/change_communication',
+                           controller='user_preferences',
+                           action='change_communication',
                            conditions=dict( method=["GET"] ) )
 
     # =======================

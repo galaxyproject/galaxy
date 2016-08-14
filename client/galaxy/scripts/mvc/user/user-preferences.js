@@ -2,8 +2,10 @@
 define(['mvc/user/manage-user-information',
         'mvc/user/change-password',
         'mvc/user/change-permissions',
-        'mvc/user/api-keys'],
-function( Manage, Password, Permissions, Keys ) {
+        'mvc/user/api-keys',
+        'mvc/user/toolbox-filter',
+        'mvc/user/change-communication'],
+function( Manage, Password, Permissions, Keys, ToolboxFilter, ChangeCommunication ) {
 var UserPreferences = Backbone.View.extend({
 
     initialize: function ( ) {
@@ -37,7 +39,7 @@ var UserPreferences = Backbone.View.extend({
             data = {};
         data = { 'message': "", 'status': "" };
         $.getJSON( url, data, function( response ) {
-            changePassword = new Permissions.ChangePermissions( response );     
+            changePermissions = new Permissions.ChangePermissions( response );     
         });
     },
 
@@ -50,6 +52,34 @@ var UserPreferences = Backbone.View.extend({
         $.getJSON( url, data, function( response ) {
             apiKey = new Keys.APIKeys( response );     
         });
+    },
+
+    /** redirects to manage toolbox filters */
+    callManageToolboxFilter: function( e ) {
+        $( '.user-pref' ).hide(); 
+        var url = Galaxy.root + 'api/user_preferences/toolbox_filters',
+            data = {};
+        $.getJSON( url, function( response ) {
+            toolbox = new ToolboxFilter.ToolboxFilter( response );     
+        });
+    },
+
+    /** redirects to change communication setting view */
+    callChangeCommunication: function( e ) {
+        $( '.user-pref' ).hide();
+        var url = Galaxy.root + 'api/user_preferences/change_communication';
+        $.getJSON( url, function( response ) {
+            changeCommunication = new ChangeCommunication.ChangeCommunication( response );     
+        });
+    },
+
+    /** logouts the user */
+    callLogout: function( e ) {
+        /*$( '.user-pref' ).hide();
+        var url = Galaxy.root + 'api/user_preferences/logout',
+            data = {};
+        $.getJSON( url, function( response ) {
+        });*/
     },
 
     /** fetch data for user preferences */
@@ -76,17 +106,18 @@ var UserPreferences = Backbone.View.extend({
                        "<li><a target='galaxy_main' class='manage-userinfo'>Manage your information</a> (email, address, etc.) </li>" + 
                        "<li><a target='galaxy_main' class='change-password'>Change your password</a> </li>";
                 }
-                template = template + 
+                template = template +
+                           "<li><a target='galaxy_main' class='change-communication-setting'>Change your communication settings</a></li>" +  
                            "<li><a target='galaxy_main' class='change-permissions'>Change default permissions</a> for new histories </li>" + 
                            "<li><a target='galaxy_main' class='manage-api-keys'>Manage your API keys</a></li>" + 
                            "<li><a target='galaxy_main' class='manage-toolbox-filters'>Manage your ToolBox filters</a></li>";
 
                 if( data["openid"] && !data["remote_user"] ) {
                     template = template + 
-                           "<li><a target='galaxy_main' class='change-permissions'>Manage OpenIDs</a> linked to your account </li>";
+                           "<li><a target='galaxy_main' class='manage-openid'>Manage OpenIDs</a> linked to your account </li>";
                 }
                 template = template + 
-                           "<li><a target='galaxy_main' class='change-permissions'>Logout</a> of all user sessions </li>";
+                           "<li><a target='galaxy_main' class='logout-user'>Logout</a> of all user sessions </li>";
             }
             else {
                 template = template + 
@@ -120,11 +151,15 @@ var UserPreferences = Backbone.View.extend({
                        "</ul>";
         }
         template = template + "</div></div>";
-        $( "#center-panel" ).html(template);
+        // adds this markup to the center section of the Galaxy
+        $( "#center-panel" ).html( template );
         $( ".manage-userinfo" ).on( "click", self.callManageInfo );
         $( ".change-password" ).on( "click", self.callChangePassword );
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
         $( ".manage-api-keys" ).on( "click", self.callApiKeys );
+        $( ".manage-toolbox-filters" ).on( "click", self.callManageToolboxFilter );
+        $( ".change-communication-setting" ).on( "click", self.callChangeCommunication );
+        $( ".logout-user" ).on( "click", self.callLogout );
     }
 });
 
