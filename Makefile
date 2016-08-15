@@ -83,6 +83,18 @@ grunt-docker: grunt-docker-image ## Run grunt inside docker
 clean-grunt-docker-image: ## Remove grunt docker image
 	docker rmi ${GRUNT_DOCKER_NAME}
 
+grunt-watch-style: npm-deps ## Execute watching style builder for dev purposes
+	cd client && $(GRUNT_EXEC) watch-style
+
+grunt-watch-develop: npm-deps ## Execute watching grunt builder for dev purposes (unpacked, allows debugger statements)
+	cd client && $(GRUNT_EXEC) watch --develop
+
+webpack-watch: npm-deps ## Execute watching webpack for dev purposes
+	cd client && ./node_modules/webpack/bin/webpack.js --watch	
+
+client-develop: grunt-watch-style grunt-watch-develop webpack-watch  ## A useful target for parallel development building.
+	@echo "Remember to rerun `make client` before committing!"
+
 
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch

@@ -100,7 +100,8 @@ define(['utils/utils',
                 error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
-                onchange    : input_def.onchange
+                onchange    : input_def.onchange,
+                searchable  : input_def.flavor !== 'workflow'
             });
         },
 
@@ -199,8 +200,7 @@ define(['utils/utils',
             });
         },
 
-        /** FTP file field
-        */
+        /** FTP file field */
         _fieldFtp: function( input_def ) {
             return new SelectFtp.View({
                 id          : 'field-' + input_def.id,
