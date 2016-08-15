@@ -171,7 +171,7 @@ class HDT( binary.Binary, Triples ):
 
     def sniff( self, filename ):
         with open(filename, "rb") as f:
-            if f.readline( 1024 ).startswith("$HDT"):
+            if f.read(4) == "$HDT":
                 return True
         return False
 
