@@ -161,11 +161,12 @@ class Jsonld( text.Json, Triples ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+
 class HDT( binary.Binary, Triples ):
     """
     The HDT triple data format
     """
-    edam_format = "format_3256"
+    edam_format = "format_2376"
     file_ext = "hdt"
 
     def sniff( self, filename ):
