@@ -23,8 +23,8 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.util.postfork import register_postfork_function
+from galaxy.web.formatting import expand_pretty_datetime_format
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
