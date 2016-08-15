@@ -7,13 +7,15 @@ Handle postfork functions under uWSGI
 # uwsgi-managed process.
 try:
     import uwsgi
-    from uwsgidecorators import postfork
     if uwsgi.numproc:
         process_is_uwsgi = True
 except ImportError:
     # This is not a uwsgi process, or something went horribly wrong.
     process_is_uwsgi = False
 
+try:
+    from uwsgidecorators import postfork
+except:
     def pf_dec(func):
         return func
     postfork = pf_dec

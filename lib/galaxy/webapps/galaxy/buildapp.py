@@ -4,6 +4,7 @@ Provides factory methods to assemble the Galaxy web application
 
 import os
 import sys
+import threading
 import atexit
 
 try:
@@ -128,6 +129,9 @@ def paste_app_factory( global_conf, **kwargs ):
 
     register_postfork_function(postfork_setup)
 
+    for th in threading.enumerate():
+        if th.is_alive():
+            log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
     return webapp
 
