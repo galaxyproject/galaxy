@@ -10,7 +10,7 @@ var UserPreferences = Backbone.View.extend({
 
     initialize: function ( ) {
         this.setElement( '<div/>' );
-        this.getUserPreferencesData()
+        this.getUserPreferencesData();
     },
 
     /** redirects to manage user information view */
@@ -29,9 +29,13 @@ var UserPreferences = Backbone.View.extend({
         $( '.user-pref' ).hide();
         var self = this;
         $.getJSON( Galaxy.root + 'api/user_preferences/change_password', function( data ) {
-            changePassword = new Password.ChangePassword( data );
-            window.console.log( self.$el );
+            changePassword = new Password.ChangePassword( self, data );
+            self.$( '.user-preferences-all' ).append( changePassword.$el );
         });
+    },
+
+    showPreferences: function() {
+        this.$( '.user-pref' ).show();
     },
 
     /** redirects to change permissions view */
@@ -156,7 +160,7 @@ var UserPreferences = Backbone.View.extend({
         // adds this markup to the center section of the Galaxy
         this.$el.empty().append( template );
         $( ".manage-userinfo" ).on( "click", self.callManageInfo );
-        $( ".change-password" ).on( "click", self.callChangePassword );
+        $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
         $( ".manage-api-keys" ).on( "click", self.callApiKeys );
         $( ".manage-toolbox-filters" ).on( "click", self.callManageToolboxFilter );

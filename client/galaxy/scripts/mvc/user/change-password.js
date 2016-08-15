@@ -1,7 +1,7 @@
 /** Change password view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     var ChangePassword = Backbone.View.extend({
-        initialize: function ( options ) {
+        initialize: function ( app, options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
@@ -16,9 +16,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon    : 'fa-caret-left',
                         tooltip : 'Return to user preferences',
                         title   : 'Preferences',
-                        onclick : function() {
-                            //Implement go back;
-                        }
+                        onclick : function() { self.remove(); app.showPreferences() }
                     })
                 },
                 buttons        : {
