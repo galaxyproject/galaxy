@@ -22,7 +22,7 @@ except:
     if process_is_uwsgi:
         print("WARNING: This is a uwsgi process but the uwsgidecorators library"
               " is unavailable.  This is likely due to using an external (not"
-              " in Galaxy's .venv) uwsgi and you may experience errors.")
+              " in Galaxy's virtualenv) uwsgi and you may experience errors.")
 
 
 postfork_functions = []
