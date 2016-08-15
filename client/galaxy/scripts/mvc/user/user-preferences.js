@@ -9,7 +9,8 @@ function( Manage, Password, Permissions, Keys, ToolboxFilter, ChangeCommunicatio
 var UserPreferences = Backbone.View.extend({
 
     initialize: function ( ) {
-        this.getUserPreferencesData()
+        this.setElement( '<div/>' );
+        this.getUserPreferencesData();
     },
 
     /** redirects to manage user information view */
@@ -26,10 +27,15 @@ var UserPreferences = Backbone.View.extend({
     /** redirects to change password view */
     callChangePassword: function( e ) {
         $( '.user-pref' ).hide();
-        var url = Galaxy.root + 'api/user_preferences/change_password';
-        $.getJSON( url, function( data ) {
-            changePassword = new Password.ChangePassword( data );     
+        var self = this;
+        $.getJSON( Galaxy.root + 'api/user_preferences/change_password', function( data ) {
+            changePassword = new Password.ChangePassword( self, data );
+            self.$( '.user-preferences-all' ).append( changePassword.$el );
         });
+    },
+
+    showPreferences: function() {
+        this.$( '.user-pref' ).show();
     },
 
     /** redirects to change permissions view */
@@ -152,9 +158,9 @@ var UserPreferences = Backbone.View.extend({
         }
         template = template + "</div></div>";
         // adds this markup to the center section of the Galaxy
-        $( "#center-panel" ).html( template );
+        this.$el.empty().append( template );
         $( ".manage-userinfo" ).on( "click", self.callManageInfo );
-        $( ".change-password" ).on( "click", self.callChangePassword );
+        $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
         $( ".manage-api-keys" ).on( "click", self.callApiKeys );
         $( ".manage-toolbox-filters" ).on( "click", self.callManageToolboxFilter );

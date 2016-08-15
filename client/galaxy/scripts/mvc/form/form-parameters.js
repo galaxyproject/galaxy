@@ -14,6 +14,7 @@ define(['utils/utils',
         /** Available parameter types */
         types: {
             'text'              : '_fieldText',
+            'password'          : '_fieldText',
             'select'            : '_fieldSelect',
             'data_column'       : '_fieldSelect',
             'genomebuild'       : '_fieldSelect',
@@ -145,6 +146,7 @@ define(['utils/utils',
             // create input element
             return new Ui.Input({
                 id          : 'field-' + input_def.id,
+                type        : input_def.type,
                 area        : input_def.area,
                 placeholder : input_def.placeholder,
                 onchange    : input_def.onchange
