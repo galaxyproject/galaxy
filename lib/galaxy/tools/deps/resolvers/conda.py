@@ -16,9 +16,7 @@ from ..resolvers import (
 from ..conda_util import (
     CondaContext,
     CondaTarget,
-    can_install_conda,
     install_conda,
-    is_conda_installed,
     is_conda_target_installed,
     cleanup_failed_install,
     install_conda_target,
@@ -90,9 +88,9 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         auto_install = _string_as_bool(get_option("auto_install"))
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
 
-        if not is_conda_installed(conda_context):
+        if not conda_context.is_conda_installed():
             if auto_init:
-                if can_install_conda(conda_context):
+                if conda_context.can_install_conda():
                     if install_conda(conda_context):
                         self.disabled = True
                         log.warning("Conda installation requested and failed.")
