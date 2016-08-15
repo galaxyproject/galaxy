@@ -544,18 +544,7 @@ function check_queue() {
             repository.tool_shed_url = tool_shed_url;
             queue.push(repository);
         }
-        if ($('#repository_installation_queue').length > 0) {
-            $('#repository_installation_queue').replaceWith(repository_queue_tab());
-        }
-        else {
-            $(repository_queue_tab()).insertAfter('#repository_contents');
-        }
-        if ($('#repository_queue').length > 0) {
-            $('#repository_queue').replaceWith(repository_queue_tab());
-        }
-        else {
-            $(repository_queue_template({'repositories': queue})).insertAfter('#repository_details');
-        }
+        $('#repository_queue').replaceWith(repository_queue_template({'repositories': queue}));
         $('.install_one').click(function() {
             var repository_metadata = get_repository_from_queue($(this).attr('data-repokey'));
             install_from_queue(repository_metadata, $(this).attr('data-repokey'));
@@ -569,14 +558,9 @@ function check_queue() {
             remove_from_queue(undefined, undefined, queue_key);
         });
         $('#clear_queue').click(function() {
-            $('#repository_installation_queue').remove();
             localStorage.removeItem('repositories');
         });
         $('#install_all').click(process_queue);
-    }
-    else {
-        $('#repository_installation_queue').remove();
-        $('#repository_queue').remove();
     }
 }
 function find_tool_by_guid(tool_guid, changeset) {
@@ -920,11 +904,15 @@ $(document).ready(function() {
         <li class="nav-tab tab_repository_details" role="presentation" id="repository_contents">
             <a id="repo_info_tab" href="#repository_details" data-toggle="tab">Repository</a>
         </li>
+        <li class="nav-tab" role="presentation" id="repository_installation_queue">
+            <a href="#repository_queue" data-toggle="tab">Repository Installation Queue</a>
+        </li>
     </ul>
     <div id="tab_contents" class="tab-content clearfix">
         <div class="tab-pane active" id="list_toolsheds">Loading...</div>
-        <div class="tab-pane" id="list_categories">Loading...</div>
-        <div class="tab-pane" id="list_repositories">Loading...</div>
-        <div class="tab-pane" id="repository_details">Loading...</div>
+        <div class="tab-pane" id="list_categories">Select a toolshed in the previous tab to see a list of its categories.</div>
+        <div class="tab-pane" id="list_repositories">Select a category in the previous tab to see a list of its repositories.</div>
+        <div class="tab-pane" id="repository_details">Select a repository in the previous tab.</div>
+        <div class="tab-pane" id="repository_queue">There are no repositories queued for installation.</div>
     </div>
 </div>
