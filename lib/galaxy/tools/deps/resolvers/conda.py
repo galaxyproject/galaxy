@@ -166,6 +166,11 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 version
             )
         else:
+            if len(conda_environment) > 79:
+                # TODO: remove this once conda_build version 2 is released and packages have been rebuilt.
+                raise Exception("Conda dependency failed to build job environment. "
+                                "This is most likely a limitation in conda. "
+                                "You can try to shorten the path to the job_working_directory.")
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")
 
     def list_dependencies(self):
