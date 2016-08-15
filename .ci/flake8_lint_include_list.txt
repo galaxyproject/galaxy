@@ -298,6 +298,7 @@ lib/galaxy/util/multi_byte.py
 lib/galaxy/util/odict.py
 lib/galaxy/util/pastescript/__init__.py
 lib/galaxy/util/plugin_config.py
+lib/galaxy/util/postfork.py
 lib/galaxy/util/simplegraph.py
 lib/galaxy_utils/__init__.py
 lib/galaxy/util/sleeper.py

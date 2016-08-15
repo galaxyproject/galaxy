@@ -402,6 +402,8 @@ class Bed( Interval ):
     data_sources = { "data": "tabix", "index": "bigwig", "feature_search": "fli" }
     track_type = Interval.track_type
 
+    column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'ThickStart', 'ThickEnd', 'ItemRGB', 'BlockCount', 'BlockSizes', 'BlockStarts' ]
+
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
