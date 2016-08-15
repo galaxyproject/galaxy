@@ -5,13 +5,6 @@ import sys
 import time
 import os
 
-try:
-    from uwsgidecorators import postfork
-except:
-    def pf_dec(func):
-        return func
-    postfork = pf_dec
-
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
@@ -31,6 +24,7 @@ from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.util import heartbeat
+from galaxy.util.postfork import register_postfork_function
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -154,12 +148,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                     fname=self.config.heartbeat_log
                 )
                 self.heartbeat.daemon = True
-
-                @postfork
-                def _start():
-                    self.heartbeat.start()
-                if not config.process_is_uwsgi:
-                    _start()
+                register_postfork_function(self.heartbeat.start)
         if self.config.sentry_dsn:
             import raven
             self.sentry_client = raven.Client(self.config.sentry_dsn)
