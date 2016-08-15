@@ -19,6 +19,10 @@ except:
     def pf_dec(func):
         return func
     postfork = pf_dec
+    if process_is_uwsgi:
+        print("WARNING: This is a uwsgi process but the uwsgidecorators library"
+              " is unavailable.  This is likely due to using an external (not"
+              " in Galaxy's virtualenv) uwsgi and you may experience errors.")
 
 
 postfork_functions = []
