@@ -1299,11 +1299,9 @@ class JobWrapper( object ):
                         else:
                             dataset.set_peek()
                     for context_key in ['name', 'info', 'dbkey']:
-                        try:
+                        if context_key in context:
                             context_value = context[context_key]
                             setattr(dataset, context_key, context_value)
-                        except Exception:
-                            pass
                 else:
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
