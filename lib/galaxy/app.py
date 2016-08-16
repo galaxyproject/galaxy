@@ -149,11 +149,15 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                 )
                 self.heartbeat.daemon = True
                 register_postfork_function(self.heartbeat.start)
+        self.sentry_client = None
         if self.config.sentry_dsn:
-            import raven
-            self.sentry_client = raven.Client(self.config.sentry_dsn)
-        else:
-            self.sentry_client = None
+
+            def postfork_sentry_client():
+                import raven
+                self.sentry_client = raven.Client(self.config.sentry_dsn)
+
+            register_postfork_function(postfork_sentry_client)
+
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager
