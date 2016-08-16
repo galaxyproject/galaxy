@@ -520,6 +520,7 @@ class Data( object ):
                 params[value.name] = deps[value.name]
             elif value.type == 'data':
                 input_name = key
+        # add potentially required/common internal tool parameters e.g. '__job_resource'
         if target_context:
             for key, value in target_context.items():
                 if key.startsWith( '__' ):
