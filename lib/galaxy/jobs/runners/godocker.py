@@ -1,8 +1,8 @@
-import logging
 import json
-import time
-import inspect
+import logging
 import requests
+import time
+
 from datetime import datetime
 
 from galaxy import model
@@ -38,12 +38,8 @@ class Godocker(object):
             url = self.server + query
             res = requests.post(url, data, headers=header, verify=verify_ssl)
 
-        except requests.exceptions.ConnectionError as e:
-            log.debug('A Connection error occurred:', e)
-            return False
-
-        except requests.exceptions.HTTPError as e:
-            log.debug('A HTTP error occurred:', e)
+        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+            log.error('A transport error occurred in the GoDocker job runner:', e)
             return False
 
         return self.test_status_code(res)
@@ -58,12 +54,8 @@ class Godocker(object):
             url = self.server + query
             res = requests.get(url, headers=header, verify=verify_ssl)
 
-        except requests.exceptions.ConnectionError as e:
-            log.debug('A Connection error occurred:', e)
-            return False
-
-        except requests.exceptions.HTTPError as e:
-            log.debug('A HTTP error occurred:', e)
+        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+            log.error('A communication error occurred in the GoDocker job runner:', e)
             return False
 
         return self.test_status_code(res)
@@ -78,12 +70,8 @@ class Godocker(object):
             url = self.server + query
             res = requests.delete(url, headers=header, verify=verify_ssl)
 
-        except requests.exceptions.ConnectionError as e:
-            log.debug('A Connection error occurred:', e)
-            return False
-
-        except requests.exceptions.HTTPError as e:
-            log.debug('A HTTP error occurred:', e)
+        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+            log.error('A communication error occurred in the GoDocker job runner:', e)
             return False
 
         return self.test_status_code(res)
@@ -98,12 +86,8 @@ class Godocker(object):
             url = self.server + query
             res = requests.put(url, data, headers=header, verify=verify_ssl)
 
-        except requests.exceptions.ConnectionError as e:
-            log.debug('A Connection error occurred:', e)
-            return False
-
-        except requests.exceptions.HTTPError as e:
-            log.debug('A HTTP error occurred:', e)
+        except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
+            log.error('A communication error occurred in the GoDocker job runner:', e)
             return False
 
         return self.test_status_code(res)
@@ -150,7 +134,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         self.auth = self.login(self.runner_params["key"], self.runner_params["user"], self.runner_params["godocker_master"])
 
         if not self.auth:
-            log.debug("Authentication failure!! Runner cannot be started")
+            log.error("Authentication failure, GoDocker runner cannot be started")
         else:
             """ Following methods starts threads.
                 These methods invoke threading.Thread(name,target)
@@ -168,7 +152,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """ Submit job to godocker """
         job_id = self.post_task(job_wrapper)
         if not job_id:
-            log.debug("Job creation faliure!! No Response from GoDocker")
+            log.error("Job creation faliure.  No Response from GoDocker")
             job_wrapper.fail("Not submitted")
         else:
             log.debug("Starting queue_job for job " + job_id)
@@ -317,7 +301,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 log.debug("CREATE EXIT CODE FILE: " + str(job_state.exit_code_file))
             except IOError as e:
                 log.error('Could not access task log file %s' % str(e))
-                log.debug("IO Error occurred when accessing the files!!")
+                log.debug("IO Error occurred when accessing the files.")
                 return False
         return True
 
@@ -334,9 +318,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
         g_auth = Godocker(server, login, apikey, noCert)
         auth = g_auth.http_post_request("/api/1.0/authenticate", data, {'Content-type': 'application/json', 'Accept': 'application/json'})
         if not auth:
-            log.debug("Authentication Error!!")
+            log.error("GoDocker authentication Error.")
         else:
-            log.debug("Authentication Successful!!")
+            log.debug("GoDocker authentication successful.")
             token = auth.json()['token']
             g_auth.setToken(token)
         # Return the object of Godocker class
@@ -359,10 +343,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 docker_ram = 1
             try:
                 docker_image = self._find_container(job_wrapper).container_id
-                log.debug("DOCKER IMAGE: \n")
-                log.debug(docker_image)
+                log.debug("GoDocker runner using container %s.", docker_image)
             except:
-                log.debug("Error: Docker_image not specified in Job config and Tool config!!")
+                log.error("Unable to find docker_image for job %s, failing." % job_wrapper.job_id)
                 return False
 
             volumes = []
@@ -374,25 +357,22 @@ class GodockerJobRunner(AsynchronousJobRunner):
             array = None
             project = None
             try:
-                log.debug(self.runner_params["godocker_project"])
                 project = str(self.runner_params["godocker_project"])
             except KeyError:
-                log.debug("godocker_project not defined, using defaults")
+                log.debug("godocker_project not defined, using default.")
             try:
-                log.debug(job_destination.params["godocker_volumes"])
                 volume = job_destination.params["godocker_volumes"]
                 volume = volume.split(",")
                 for i in volume:
                     temp = dict({"name": i})
                     volumes.append(temp)
             except:
-                log.debug("godocker_volumes not set. Getting default volume!!")
+                log.debug("godocker_volume not set, using default.")
 
             dt = datetime.now()
             # Enable galaxy venv in the docker containers
             try:
                 if(job_destination.params["virtualenv"] == "true"):
-                    log.debug("Virtual environment is set!!!")
                     GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
                     venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
                     command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + venv + "\n" + job_wrapper.runner_command_line
@@ -439,12 +419,10 @@ class GodockerJobRunner(AsynchronousJobRunner):
             if project is not None:
                 job['user'] = {"project": project}
 
-            log.debug("\n JOB POST TASK TO BE EXECUTED \n")
             result = self.auth.http_post_request(
                 "/api/1.0/task", json.dumps(job),
                 {'Authorization': 'Bearer ' + self.auth.token, 'Content-type': 'application/json', 'Accept': 'application/json'}
             )
-            log.debug("Response from godocker: " + str(result.json()['msg']) + " ID: " + str(result.json()['id']))
             # Return job_id
             return str(result.json()['id'])
 
@@ -491,14 +469,3 @@ class GodockerJobRunner(AsynchronousJobRunner):
             job = result.json()
         # Return the job
         return job
-
-    def get_structure(self, obj):
-        """ Get data and class structure of any object.
-            Meant for Debugging purpose.
-        """
-        log.debug("\n STRUCTURE \n")
-        memb = inspect.getmembers(obj)
-        for i in memb:
-            log.debug(i)
-        log.debug("\n END OF STRUCTURE \n")
-        return
