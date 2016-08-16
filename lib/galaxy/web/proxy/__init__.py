@@ -38,8 +38,16 @@ class ProxyManager(object):
                     return row[0].encode()
                 # No match for session found
                 return None
-        import uwsgi
-        uwsgi.register_rpc('galaxy_dynamic_proxy_mapper', dynamic_proxy_mapper)
+
+        try:
+            import uwsgi
+        except ImportError:
+            uwsgi = None
+
+        if hasattr( uwsgi, 'register_rpc' ):
+            uwsgi.register_rpc('galaxy_dynamic_proxy_mapper', dynamic_proxy_mapper)
+        else:
+            log.warn("Not in a uwsgi server, dynamic proxy will not work.")
 
     def shutdown( self ):
         pass
