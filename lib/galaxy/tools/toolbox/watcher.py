@@ -14,6 +14,8 @@ except ImportError:
     PollingObserver = None
     can_watch = False
 
+from galaxy.util.postfork import register_postfork_function
+
 log = logging.getLogger( __name__ )
 
 
@@ -151,7 +153,7 @@ class ToolWatcher(object):
         self.start()
 
     def start(self):
-        self.observer.start()
+        register_postfork_function(self.observer.start)
 
     def shutdown(self):
         self.observer.stop()
