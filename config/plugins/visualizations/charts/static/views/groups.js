@@ -1,6 +1,4 @@
-/**
- *  This class renders the chart configuration form.
- */
+/* This class renders the chart configuration form. */
 define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-repeat', 'utils/utils' ], function( Table, Ui, Form, Repeat, Utils ) {
     var GroupView = Backbone.View.extend({
         initialize: function( app, options ) {
