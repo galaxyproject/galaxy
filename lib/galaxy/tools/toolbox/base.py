@@ -15,6 +15,7 @@ from galaxy.util import listify
 from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
+from galaxy.util.postfork import register_postfork_function
 
 from .parser import get_toolbox_parser, ensure_tool_conf_item
 
@@ -103,6 +104,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 self._init_tools_from_config( config_filename )
             except:
                 log.exception( "Error loading tools defined in config %s", config_filename )
+        register_postfork_function(self._tool_conf_watcher.start)
 
     def _init_tools_from_config( self, config_filename ):
         """
@@ -539,9 +541,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         else:
             remove_from_dict( self._tool_panel, self._integrated_tool_panel )
 
+    def _path_template_kwds( self ):
+        return {}
+
     def _load_tool_tag_set( self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None, internal=False ):
         try:
-            path = item.get( "file" )
+            path_template = item.get( "file" )
+            template_kwds = self._path_template_kwds()
+            path = string.Template(path_template).safe_substitute(**template_kwds)
             repository_id = None
 
             tool_shed_repository = None

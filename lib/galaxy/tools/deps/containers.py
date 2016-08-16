@@ -102,7 +102,25 @@ class ContainerFinder(object):
     def __overridden_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
             return None
-        return destination_info.get("%s_container_id_override" % container_type)
+        if "%s_container_id_override" % container_type in destination_info:
+            return destination_info.get("%s_container_id_override" % container_type)
+        if "%s_image_override" % container_type in destination_info:
+            return self.__build_container_id_from_parts(container_type, destination_info, mode="override")
+
+    def __build_container_id_from_parts(self, container_type, destination_info, mode):
+        repo = ""
+        owner = ""
+        repo_key = "%s_repo_%s" % (container_type, mode)
+        owner_key = "%s_owner_%s" % (container_type, mode)
+        if repo_key in destination_info:
+            repo = destination_info[repo_key] + "/"
+        if owner_key in destination_info:
+            owner = destination_info[owner_key] + "/"
+        cont_id = repo + owner + destination_info["%s_image_%s" % (container_type, mode)]
+        tag_key = "%s_tag_%s" % (container_type, mode)
+        if tag_key in destination_info:
+            cont_id += ":" + destination_info[tag_key]
+        return cont_id
 
     def __default_container_id(self, container_type, destination_info):
         if not self.__container_type_enabled(container_type, destination_info):
@@ -111,7 +129,11 @@ class ContainerFinder(object):
         # Also allow docker_image...
         if key not in destination_info:
             key = "%s_image" % container_type
-        return destination_info.get(key)
+        if key in destination_info:
+            return destination_info.get(key)
+        elif "%s_image_default" in destination_info:
+            return self.__build_container_id_from_parts(container_type, destination_info, mode="default")
+        return None
 
     def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info):
         # TODO: ensure destination_info is dict-like
@@ -175,12 +197,13 @@ class ToolInfo(object):
 
 class JobInfo(object):
 
-    def __init__(self, working_directory, tool_directory, job_directory):
+    def __init__(self, working_directory, tool_directory, job_directory, job_directory_type):
         self.working_directory = working_directory
         self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
         # of the job not of the tool.
         self.tool_directory = tool_directory
+        self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
 class Container( object ):
@@ -299,16 +322,16 @@ class DockerContainer(Container):
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
 
-        if self.job_info.job_directory:
-            # We have a job directory, so everything needed (excluding index
+        if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
+            # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
             defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
         elif self.app_info.outputs_to_working_directory:
             # Should need default_file_path (which is a course estimate given
             # object stores anyway).
-            defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro"
+            defaults = "$galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro"
         else:
-            defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw"
+            defaults = "$galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw"
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:ro"

@@ -46,6 +46,17 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     burst_at = getattr( config, 'tool_submission_burst_at', 10 )
     burst_threads = getattr( config, 'tool_submission_burst_threads', 1 )
 
+    tool_action = tool.action
+    if hasattr( tool_action, "check_inputs_ready" ):
+        for params in execution_tracker.param_combinations:
+            # This will throw an exception if the tool is not ready.
+            tool_action.check_inputs_ready(
+                tool,
+                trans,
+                params,
+                history
+            )
+
     job_count = len(execution_tracker.param_combinations)
     if job_count < burst_at or burst_threads < 2:
         for params in execution_tracker.param_combinations:
@@ -72,6 +83,11 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     log.debug("Executed %d job(s) for tool %s request: %s" % (job_count, tool.id, all_jobs_timer))
     if collection_info:
         history = history or tool.get_default_history_by_trans( trans )
+        if len(param_combinations) == 0:
+            template = "Attempting to map over an empty collection, this is not yet implemented. colleciton_info is [%s]"
+            message = template % collection_info
+            log.warn(message)
+            raise Exception(message)
         params = param_combinations[0]
         execution_tracker.create_output_collections( trans, history, params )
 
@@ -181,6 +197,9 @@ class ToolExecutionTracker( object ):
                 job.add_output_dataset_collection( output_name, collection )
             collections[ output_name ] = collection
 
+        # Needed to flush the association created just above with
+        # job.add_output_dataset_collection.
+        trans.sa_session.flush()
         self.implicit_collections = collections
 
 __all__ = [ execute ]

@@ -5,31 +5,21 @@ import shutil
 import tarfile
 import tempfile
 import threading
-import urllib
-from time import gmtime
-from time import strftime
+from time import gmtime, strftime
 
+from six.moves.urllib.request import urlopen
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
-from galaxy.util import asbool
-from galaxy.util import CHUNK_SIZE
-from galaxy.util import safe_relpath
-from galaxy.util import build_url
+from galaxy.util import asbool, build_url, CHUNK_SIZE, safe_relpath
 from galaxy.util.odict import odict
-from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.dependencies import attribute_handlers
+from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
 from tool_shed.metadata import repository_metadata_manager
-from tool_shed.util import basic_util
-from tool_shed.util import commit_util
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import xml_util
+from tool_shed.util import (basic_util, commit_util, common_util, encoding_util,
+    hg_util, metadata_util, repository_util, shed_util_common as suc, xml_util)
 
 log = logging.getLogger( __name__ )
 
@@ -68,9 +58,9 @@ class ExportRepositoryManager( object ):
             ordered_changeset_revisions = []
             if self.repository:
                 repository_metadata = \
-                    suc.get_current_repository_metadata_for_changeset_revision( self.app,
-                                                                                self.repository,
-                                                                                self.changeset_revision )
+                    metadata_util.get_current_repository_metadata_for_changeset_revision( self.app,
+                                                                                          self.repository,
+                                                                                          self.changeset_revision )
                 if repository_metadata:
                     ordered_repository_ids = [ self.repository_id ]
                     ordered_repositories = [ self.repository ]
@@ -214,11 +204,11 @@ class ExportRepositoryManager( object ):
             # There should only be one entry in the received repo_info_dict.
             description, repository_clone_url, changeset_revision, ctx_rev, \
                 repository_owner, repository_dependencies, tool_dependencies = \
-                suc.get_repo_info_tuple_contents( repo_info_tup )
-            repository = suc.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
-            repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app,
-                                                                                              repository,
-                                                                                              changeset_revision )
+                repository_util.get_repo_info_tuple_contents( repo_info_tup )
+            repository = repository_util.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
+            repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app,
+                                                                                                        repository,
+                                                                                                        changeset_revision )
             if repository_metadata:
                 return repository, repository_metadata.changeset_revision
         return None, None
@@ -242,10 +232,10 @@ class ExportRepositoryManager( object ):
         associated with self.repository_id.
         """
         rdim = RepositoryDependencyInstallManager( self.app )
-        repository = suc.get_repository_in_tool_shed( self.app, self.repository_id )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                 self.repository_id,
-                                                                                 self.changeset_revision )
+        repository = repository_util.get_repository_in_tool_shed( self.app, self.repository_id )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                           self.repository_id,
+                                                                                           self.changeset_revision )
         # Get a dictionary of all repositories upon which the contents of the current
         # repository_metadata record depend.
         toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
@@ -305,8 +295,8 @@ class ExportRepositoryManager( object ):
                 description, repository_clone_url, changeset_revision, \
                     ctx_rev, repository_owner, repository_dependencies, \
                     tool_dependencies = \
-                    suc.get_repo_info_tuple_contents( repo_info_tup )
-                repository = suc.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
+                    repository_util.get_repo_info_tuple_contents( repo_info_tup )
+                repository = repository_util.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
                 repository_ids.append( self.app.security.encode_id( repository.id ) )
         return repository_ids
 
@@ -328,9 +318,9 @@ class ExportRepositoryManager( object ):
         # Create a dictionary whose keys are the received repository_ids and whose values are a list of
         # repository_ids, each of which is contained in the received list of repository_ids and whose associated
         # repository must be imported prior to the repository associated with the repository_id key.
-        prior_import_required_dict = suc.get_prior_import_or_install_required_dict( self.app,
-                                                                                    repository_ids,
-                                                                                    repo_info_dicts )
+        prior_import_required_dict = repository_util.get_prior_import_or_install_required_dict( self.app,
+                                                                                                repository_ids,
+                                                                                                repo_info_dicts )
         processed_repository_ids = []
         # Process the list of repository dependencies defined for the primary exported repository.
         while len( processed_repository_ids ) != len( prior_import_required_dict.keys() ):
@@ -403,13 +393,13 @@ class ImportRepositoryManager( object ):
             ok, name_owner, message = import_results_tup
             name, owner = name_owner
             if not ok:
-                repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+                repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
                 if repository is not None:
                     # Do not allow the repository to be automatically installed if population resulted in errors.
                     tip_changeset_revision = repository.tip( self.app )
-                    repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                             self.app.security.encode_id( repository.id ),
-                                                                                             tip_changeset_revision )
+                    repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                                       self.app.security.encode_id( repository.id ),
+                                                                                                       tip_changeset_revision )
                     if repository_metadata:
                         if repository_metadata.downloadable:
                             repository_metadata.downloadable = False
@@ -451,7 +441,7 @@ class ImportRepositoryManager( object ):
                 long_description = repository_archive_dict.get( 'long_description', '' )
                 # The owner entry in the repository_archive_dict is the public username of the user associated with
                 # the exported repository archive.
-                user = suc.get_user_by_username( self.app, username )
+                user = common_util.get_user_by_username( self.app, username )
                 if user is None:
                     ok = False
                     results_message += 'Import failed: repository owner <b>%s</b> does not have an account in this Tool Shed.' % \
@@ -595,15 +585,15 @@ class ImportRepositoryManager( object ):
                                         if defined_repository_metadata is None:
                                             # The defined changeset_revision is not associated with a repository_metadata
                                             # record, so updates must be necessary.
-                                            defined_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+                                            defined_repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
                                             defined_repo = hg_util.get_repo_for_repository( self.app,
                                                                                             repository=defined_repository,
                                                                                             repo_path=None,
                                                                                             create=False )
                                             updated_changeset_revision = \
-                                                suc.get_next_downloadable_changeset_revision( defined_repository,
-                                                                                              defined_repo,
-                                                                                              changeset_revision )
+                                                metadata_util.get_next_downloadable_changeset_revision( defined_repository,
+                                                                                                        defined_repo,
+                                                                                                        changeset_revision )
                                             if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append( downloadable_revision )
         return dependent_downloadable_revisions
@@ -691,9 +681,9 @@ class ImportRepositoryManager( object ):
         """
         repository_status_info_dicts = []
         for repository_info_dict in repository_info_dicts:
-            repository = suc.get_repository_by_name_and_owner( self.app,
-                                                               repository_info_dict[ 'name' ],
-                                                               repository_info_dict[ 'owner' ] )
+            repository = repository_util.get_repository_by_name_and_owner( self.app,
+                                                                           repository_info_dict[ 'name' ],
+                                                                           repository_info_dict[ 'owner' ] )
             if repository:
                 if repository.deleted:
                     repository_info_dict[ 'status' ] = 'Exists, deleted'
@@ -821,7 +811,7 @@ class ImportRepositoryManager( object ):
         if url:
             valid_url = True
             try:
-                stream = urllib.urlopen( url )
+                stream = urlopen( url )
             except Exception as e:
                 valid_url = False
                 return_dict['error_message'] = 'Error importing file via http: %s' % str( e )

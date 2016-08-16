@@ -22,7 +22,7 @@ log = logging.getLogger( __name__ )
 comptypes = []
 
 try:
-    import zlib  # noqa
+    import zlib  # noqa: F401
     comptypes.append( 'zip' )
 except ImportError:
     pass
@@ -181,8 +181,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         if not data or not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+        fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
 
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
@@ -232,11 +231,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.app.object_store.file_ready(data.dataset)
 
     @web.expose
-    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         data = self._check_dataset(trans, dataset_id)
         if not isinstance( data, trans.app.model.DatasetInstance ):
             return data
-        return data.datatype.display_data(trans, data, preview, filename, to_ext, chunk, **kwd)
+        # Ensure offset is an integer before passing through to datatypes.
+        if offset:
+            offset = int(offset)
+        # Ensure ck_size is an integer before passing through to datatypes.
+        if ck_size:
+            ck_size = int(ck_size)
+        return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
 
     @web.expose
     def edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
@@ -265,7 +270,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             data = history.datasets[ int( hid ) - 1 ]
             id = None
         elif dataset_id is not None:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         else:
             trans.log_event( "dataset_id and hid are both None, cannot load a dataset to edit" )
@@ -795,7 +800,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         status = 'done'
         id = None
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             assert hda, 'Invalid HDA: %s' % id
             # Walk up parent datasets to find the containing history
@@ -822,7 +827,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         status = 'done'
         id = None
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             history = trans.get_history()
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             assert hda and hda.undeletable, 'Invalid HDA: %s' % id
@@ -845,7 +850,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
 
     def _unhide( self, trans, dataset_id ):
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
         except:
             return False
         history = trans.get_history()
@@ -867,7 +872,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         message = None
         status = 'done'
         try:
-            id = trans.app.security.decode_id( dataset_id )
+            id = self.decode_id( dataset_id )
             user = trans.get_user()
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             # Invalid HDA
@@ -1043,8 +1048,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 source_content_ids = source_content_ids.split(",")
             encoded_dataset_collection_ids = [ s[ len("dataset_collection|"): ] for s in source_content_ids if s.startswith("dataset_collection|") ]
             encoded_dataset_ids = [ s[ len("dataset|"): ] for s in source_content_ids if s.startswith("dataset|") ]
-            decoded_dataset_collection_ids = set(map( trans.security.decode_id, encoded_dataset_collection_ids ))
-            decoded_dataset_ids = set(map( trans.security.decode_id, encoded_dataset_ids ))
+            decoded_dataset_collection_ids = set(map( self.decode_id, encoded_dataset_collection_ids ))
+            decoded_dataset_ids = set(map( self.decode_id, encoded_dataset_ids ))
         else:
             decoded_dataset_collection_ids = []
             decoded_dataset_ids = []

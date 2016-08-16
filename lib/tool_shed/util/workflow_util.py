@@ -18,7 +18,7 @@ from tool_shed.tools import tool_validator
 
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -95,7 +95,7 @@ class RepoToolModule( ToolModule ):
         data_outputs = []
         if self.tool:
             data_inputs = None
-            for name, tool_output in self.tool.outputs.iteritems():
+            for name, tool_output in self.tool.outputs.items():
                 if tool_output.format_source is not None:
                     # Default to special name "input" which remove restrictions on connections
                     formats = [ 'input' ]
@@ -164,7 +164,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         metadata = repository_metadata.metadata
     else:
         # We're in Galaxy.
-        repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
+        repository = repository_util.get_tool_shed_repository_by_id( trans.app, repository_id )
         changeset_revision = repository.changeset_revision
         metadata = repository.metadata
     # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
@@ -264,7 +264,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     # will be ( tool_id, tool_name, tool_version ).
     missing_tool_tups = []
     # First pass to build step objects and populate basic values
-    for step_dict in workflow_dict[ 'steps' ].itervalues():
+    for step_dict in workflow_dict[ 'steps' ].values():
         # Create the model class for the step
         step = trans.model.WorkflowStep()
         step.label = step_dict.get('label', None)
@@ -302,7 +302,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     # Second pass to deal with connections between steps.
     for step in steps:
         # Input connections.
-        for input_name, conn_dict in step.temp_input_connections.iteritems():
+        for input_name, conn_dict in step.temp_input_connections.items():
             if conn_dict:
                 output_step = steps_by_external_id[ conn_dict[ 'id' ] ]
                 conn = trans.model.WorkflowStepConnection()

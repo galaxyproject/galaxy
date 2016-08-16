@@ -2,8 +2,6 @@
 The Galaxy web application framework
 """
 
-# flake8: noqa
-
 from framework import url_for
 from framework.decorators import error
 from framework.decorators import expose
@@ -28,3 +26,12 @@ from framework.formbuilder import form
 from framework.formbuilder import FormBuilder
 
 from framework.base import httpexceptions
+
+__all__ = ['url_for', 'error', 'expose', 'json', 'json_pretty',
+           'require_admin', 'require_login', 'expose_api', 'expose_api_anonymous',
+           'expose_api_raw', 'expose_api_raw_anonymous', '_future_expose_api',
+           '_future_expose_api_anonymous', '_future_expose_api_raw',
+           '_future_expose_api_raw_anonymous',
+           '_future_expose_api_anonymous_and_sessionless',
+           '_future_expose_api_raw_anonymous_and_sessionless', 'form',
+           'FormBuilder', 'httpexceptions']

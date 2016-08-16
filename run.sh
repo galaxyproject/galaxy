@@ -16,7 +16,7 @@
 PID_FILE="${PID_FILE:-uwsgi.pid}"
 LOG_FILE="${LOG_FILE:-uwsgi.log}"
 
-cd `dirname $0`
+cd "$(dirname "$0")"
 
 # If there is a file that defines a shell environment specific to this
 # instance of Galaxy, source the file.
@@ -88,7 +88,7 @@ GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
 if [ -d "$GALAXY_VIRTUAL_ENV" -a -z "$skip_venv" ];
 then
     [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
-    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
+    echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 

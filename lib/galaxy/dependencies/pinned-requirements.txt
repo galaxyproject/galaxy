@@ -30,6 +30,7 @@ nose==1.3.7
 Parsley==1.3
 six==1.9.0
 Whoosh==2.7.4
+testfixtures==4.10.0
 
 # Cheetah and dependencies
 Cheetah==2.4.4
@@ -48,7 +49,7 @@ anyjson==0.3.3
 
 # Pulsar requirements
 psutil==4.1.0
-pulsar-galaxy-lib==0.7.0.dev4
+pulsar-galaxy-lib==0.7.0.dev5
 
 # sqlalchemy-migrate and dependencies
 sqlalchemy-migrate==0.10.0
@@ -68,3 +69,4 @@ ecdsa==0.13
 
 # Flexible BAM index naming
 pysam==0.8.4+gx1
+

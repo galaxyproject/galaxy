@@ -1,6 +1,8 @@
 """
 Migration script to add column for a history slug.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, Index, MetaData, Table, TEXT
@@ -12,7 +14,7 @@ metadata = MetaData()
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
 
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     History_table = Table( "history", metadata, autoload=True )

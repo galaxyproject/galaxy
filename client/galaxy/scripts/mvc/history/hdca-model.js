@@ -18,7 +18,8 @@ TODO:
 var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
     ListDC = DC_MODEL.ListDatasetCollection,
     PairDC = DC_MODEL.PairDatasetCollection,
-    ListPairedDC = DC_MODEL.ListPairedDatasetCollection;
+    ListPairedDC = DC_MODEL.ListPairedDatasetCollection,
+    ListOfListsDC = DC_MODEL.ListOfListsDatasetCollection;
 
 //==============================================================================
 /** Override to post to contents route w/o id. */
@@ -47,17 +48,12 @@ var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
         model_class         : 'HistoryDatasetCollectionAssociation'
     }),
 
-    initialize : function( model, options ){
-        ListDC.prototype.initialize.call( this, model, options );
-        hcontentMixin.initialize.call( this, model, options );
-    },
-
     /** Override to post to contents route w/o id. */
     save : buildHDCASave( ListDC.prototype.save ),
 
     /** String representation. */
     toString : function(){
-         return ([ 'HistoryListDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+        return 'History' + ListDC.prototype.toString.call( this );
     }
 });
 
@@ -75,27 +71,19 @@ var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
         model_class         : 'HistoryDatasetCollectionAssociation'
     }),
 
-    initialize : function( model, options ){
-        PairDC.prototype.initialize.call( this, model, options );
-        hcontentMixin.initialize.call( this, model, options );
-    },
-
     /** Override to post to contents route w/o id. */
     save : buildHDCASave( PairDC.prototype.save ),
 
     /** String representation. */
     toString : function(){
-         return ([ 'HistoryPairDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+        return 'History' + PairDC.prototype.toString.call( this );
     }
 });
 
 
 //==============================================================================
-/** @class Backbone model for List of Pairs Dataset Collection within a History.
- *  @constructs
- */
-var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend(
-/** @lends HistoryListPairedDatasetCollection.prototype */{
+/** @class Backbone model for List of Pairs Dataset Collection within a History. */
+var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend({
 
     defaults : _.extend( _.clone( ListPairedDC.prototype.defaults ), {
         history_content_type: 'dataset_collection',
@@ -103,17 +91,32 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).ex
         model_class         : 'HistoryDatasetCollectionAssociation'
     }),
 
-    initialize : function( model, options ){
-        ListPairedDC.prototype.initialize.call( this, model, options );
-        hcontentMixin.initialize.call( this, model, options );
-    },
-
     /** Override to post to contents route w/o id. */
     save : buildHDCASave( ListPairedDC.prototype.save ),
 
     /** String representation. */
     toString : function(){
-         return ([ 'HistoryListPairedDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+        return 'History' + ListPairedDC.prototype.toString.call( this );
+    }
+});
+
+
+//==============================================================================
+/** @class Backbone model for List of Lists Dataset Collection within a History. */
+var HistoryListOfListsDatasetCollection = ListOfListsDC.extend( hcontentMixin ).extend({
+
+    defaults : _.extend( _.clone( ListOfListsDC.prototype.defaults ), {
+        history_content_type: 'dataset_collection',
+        collection_type     : 'list:list',
+        model_class         : 'HistoryDatasetCollectionAssociation'
+    }),
+
+    /** Override to post to contents route w/o id. */
+    save : buildHDCASave( ListOfListsDC.prototype.save ),
+
+    /** String representation. */
+    toString : function(){
+         return ([ 'HistoryListOfListsDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
     }
 });
 
@@ -122,6 +125,7 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).ex
     return {
         HistoryListDatasetCollection        : HistoryListDatasetCollection,
         HistoryPairDatasetCollection        : HistoryPairDatasetCollection,
-        HistoryListPairedDatasetCollection  : HistoryListPairedDatasetCollection
+        HistoryListPairedDatasetCollection  : HistoryListPairedDatasetCollection,
+        HistoryListOfListsDatasetCollection : HistoryListOfListsDatasetCollection
     };
 });

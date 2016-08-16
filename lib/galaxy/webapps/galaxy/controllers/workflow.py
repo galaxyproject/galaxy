@@ -18,7 +18,7 @@ from galaxy import web
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
-from galaxy.util import unicodify
+from galaxy.util import unicodify, FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
@@ -29,9 +29,10 @@ from galaxy.workflow.extract import summarize
 from galaxy.workflow.modules import MissingToolException
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.modules import WorkflowModuleInjector
-from galaxy.workflow.render import WorkflowCanvas
+from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
+from galaxy.tools.parameters.basic import workflow_building_modes
 
 log = logging.getLogger( __name__ )
 
@@ -516,8 +517,15 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     @web.require_login( "use Galaxy workflows" )
     def gen_image( self, trans, id ):
         stored = self.get_stored_workflow( trans, id, check_ownership=True )
+        try:
+            svg = self._workflow_to_svg_canvas( trans, stored )
+        except Exception:
+            status = 'error'
+            message = 'Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools.'
+            return trans.fill_template( "/workflow/sharing.mako", use_panels=True, item=stored, status=status, message=message )
         trans.response.set_content_type("image/svg+xml")
-        return self._workflow_to_svg_canvas( trans, stored ).tostring()
+        s = STANDALONE_SVG_TEMPLATE % svg.tostring()
+        return s.encode('utf-8')
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -807,9 +815,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # This workflow has a tool that's missing from the distribution
             trans.response.status = 400
             return "Workflow cannot be exported due to missing tools."
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         sname = stored.name
-        sname = ''.join(c in valid_chars and c or '_' for c in sname)[0:150]
+        sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % ( sname )
         trans.response.set_content_type( 'application/galaxy-archive' )
         return stored_dict
@@ -1124,9 +1131,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             else:
                 # Prepare each step
                 missing_tools = []
+                trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
                 for step in workflow.steps:
                     try:
-                        module_injector.inject( step )
+                        module_injector.inject( step, steps=workflow.steps )
                     except MissingToolException:
                         if step.tool_id not in missing_tools:
                             missing_tools.append(step.tool_id)

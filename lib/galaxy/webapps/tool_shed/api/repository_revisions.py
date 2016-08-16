@@ -2,13 +2,13 @@ import logging
 
 from sqlalchemy import and_
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.capsule import capsule_manager
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -47,7 +47,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         # We'll currently support only gzip-compressed tar archives.
         export_repository_dependencies = util.asbool( export_repository_dependencies )
         # Get the repository information.
-        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        repository = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
         if repository is None:
             error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
             log.debug( error_message )
@@ -131,13 +131,13 @@ class RepositoryRevisionsController( BaseAPIController ):
             rd_tups = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision = rd_tup[ 0:4 ]
-                repository_dependency = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                repository_dependency = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
                 if repository_dependency is None:
                     log.dbug( 'Cannot locate repository dependency %s owned by %s.' % ( name, owner ) )
                     continue
                 repository_dependency_id = trans.security.encode_id( repository_dependency.id )
                 repository_dependency_repository_metadata = \
-                    suc.get_repository_metadata_by_changeset_revision( trans.app, repository_dependency_id, changeset_revision )
+                    metadata_util.get_repository_metadata_by_changeset_revision( trans.app, repository_dependency_id, changeset_revision )
                 if repository_dependency_repository_metadata is None:
                     # The changeset_revision column in the repository_metadata table has been updated with a new
                     # value value, so find the changeset_revision to which we need to update.
@@ -145,14 +145,14 @@ class RepositoryRevisionsController( BaseAPIController ):
                                                             repository=repository_dependency,
                                                             repo_path=None,
                                                             create=False )
-                    new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository_dependency,
-                                                                                           repo,
-                                                                                           changeset_revision )
+                    new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository_dependency,
+                                                                                                     repo,
+                                                                                                     changeset_revision )
                     if new_changeset_revision != changeset_revision:
                         repository_dependency_repository_metadata = \
-                            suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                               repository_dependency_id,
-                                                                               new_changeset_revision )
+                            metadata_util.get_repository_metadata_by_changeset_revision( trans.app,
+                                                                                         repository_dependency_id,
+                                                                                         new_changeset_revision )
                         changeset_revision = new_changeset_revision
                     else:
                         decoded_repository_dependency_id = trans.security.decode_id( repository_dependency_id )

@@ -4,6 +4,8 @@ a user can select from a list of his addresses to associate with the request.  T
 drops the request.submitted column which was boolean and replaces it with a request.state column
 which is a string, allowing for more flexibility with request states.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -26,12 +28,12 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script adds a new user_address table that is currently only used with sample requests, where"
-    print "a user can select from a list of his addresses to associate with the request.  This script also"
-    print "drops the request.submitted column which was boolean and replaces it with a request.state column"
-    print "which is a string, allowing for more flexibility with request states."
-    print "========================================"
+    print("========================================")
+    print("This script adds a new user_address table that is currently only used with sample requests, where")
+    print("a user can select from a list of his addresses to associate with the request.  This script also")
+    print("drops the request.submitted column which was boolean and replaces it with a request.state column")
+    print("which is a string, allowing for more flexibility with request states.")
+    print("========================================")
 
 UserAddress_table = Table( "user_address", metadata,
                            Column( "id", Integer, primary_key=True),

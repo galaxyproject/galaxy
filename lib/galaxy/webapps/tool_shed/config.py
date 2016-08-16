@@ -3,10 +3,10 @@ Universe configuration builder.
 """
 import os
 import re
-import sys
 import logging
 import logging.config
 import ConfigParser
+from datetime import timedelta
 from galaxy.util import string_as_bool
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
@@ -80,9 +80,7 @@ class Configuration( object ):
         # Galaxy flavor Docker Image
         self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
-        self.user_activation_on = kwargs.get( 'user_activation_on', None )
-        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
-        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.user_activation_on = None
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
         self.terms_url = kwargs.get( 'terms_url', None )
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
@@ -133,7 +131,6 @@ class Configuration( object ):
         self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
         self.hgweb_config_dir = resolve_path( kwargs.get( 'hgweb_config_dir', '' ), self.root )
-        self.disable_push = string_as_bool( kwargs.get( "disable_push", "True" ) )
         # Proxy features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
@@ -148,6 +145,7 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
+        self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
     @property
     def shed_tool_data_path( self ):
@@ -253,46 +251,3 @@ def get_database_engine_options( kwargs ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
-
-
-def configure_logging( config ):
-    """
-    Allow some basic logging configuration to be read from the cherrpy
-    config.
-    """
-    # PasteScript will have already configured the logger if the appropriate
-    # sections were found in the config file, so we do nothing if the
-    # config has a loggers section, otherwise we do some simple setup
-    # using the 'log_*' values from the config.
-    if config.global_conf_parser.has_section( "loggers" ):
-        return
-    format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
-    level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
-    destination = config.get( "log_destination", "stdout" )
-    log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
-    # Get root logger
-    root = logging.getLogger()
-    # Set level
-    root.setLevel( level )
-    # Turn down paste httpserver logging
-    if level <= logging.DEBUG:
-        logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
-    # Remove old handlers
-    for h in root.handlers[:]:
-        root.removeHandler(h)
-    # Create handler
-    if destination == "stdout":
-        handler = logging.StreamHandler( sys.stdout )
-    else:
-        handler = logging.FileHandler( destination )
-    # Create formatter
-    formatter = logging.Formatter( format )
-    # Hook everything up
-    handler.setFormatter( formatter )
-    root.addHandler( handler )
-    # If sentry is configured, also log to it
-    if config.sentry_dsn:
-        from raven.handlers.logging import SentryHandler
-        sentry_handler = SentryHandler( config.sentry_dsn )
-        sentry_handler.setLevel( logging.WARN )
-        root.addHandler( sentry_handler )

@@ -10,6 +10,7 @@ python example_watch_folder.py <api_key> <api_url> /tmp/g_inbox/ /tmp/g_inbox/do
 
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
+from __future__ import print_function
 import os
 import shutil
 import sys
@@ -35,10 +36,10 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
             library_folder_id = f['id']
     workflow = display(api_key, api_url + 'workflows/%s' % workflow, return_formatted=False)
     if not workflow:
-        print "Workflow %s not found, terminating."
+        print("Workflow %s not found, terminating.")
         sys.exit(1)
     if not library_id or not library_folder_id:
-        print "Failure to configure library destination."
+        print("Failure to configure library destination.")
         sys.exit(1)
     while 1:
         # Watch in_folder, upload anything that shows up there to data library and get ldda,
@@ -65,11 +66,11 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                         wf_data['workflow_id'] = workflow['id']
                         wf_data['history'] = "%s - %s" % (fname, workflow['name'])
                         wf_data['ds_map'] = {}
-                        for step_id, ds_in in workflow['inputs'].iteritems():
+                        for step_id, ds_in in workflow['inputs'].items():
                             wf_data['ds_map'][step_id] = {'src': 'ld', 'id': ds['id']}
                         res = submit( api_key, api_url + 'workflows', wf_data, return_formatted=False)
                         if res:
-                            print res
+                            print(res)
                             # Successful workflow execution, safe to move dataset.
                             shutil.move(fullpath, os.path.join(out_folder, fname))
         time.sleep(10)
@@ -83,6 +84,6 @@ if __name__ == '__main__':
         data_library = sys.argv[5]
         workflow = sys.argv[6]
     except IndexError:
-        print 'usage: %s key url in_folder out_folder data_library workflow' % os.path.basename( sys.argv[0] )
+        print('usage: %s key url in_folder out_folder data_library workflow' % os.path.basename( sys.argv[0] ))
         sys.exit( 1 )
     main(api_key, api_url, in_folder, out_folder, data_library, workflow )

@@ -65,7 +65,7 @@ class ToolConfWatcher(object):
         self.paths = {}
         self._active = False
         self._lock = threading.Lock()
-        self.thread = threading.Thread(target=self.check)
+        self.thread = threading.Thread(target=self.check, name="ToolConfWatcher.thread")
         self.thread.daemon = True
         self.event_handler = ToolConfFileEventHandler(reload_callback)
 
@@ -107,7 +107,6 @@ class ToolConfWatcher(object):
             mod_time = time.ctime(os.path.getmtime(path))
         with self._lock:
             self.paths[path] = mod_time
-        self.start()
 
     def watch_file(self, tool_conf_file):
         self.monitor(tool_conf_file)

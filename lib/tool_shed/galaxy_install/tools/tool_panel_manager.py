@@ -5,6 +5,7 @@ from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
 
@@ -220,7 +221,7 @@ class ToolPanelManager( object ):
         tool_elem = None
         cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
         if not owner:
-            owner = suc.get_repository_owner( cleaned_repository_clone_url )
+            owner = repository_util.get_repository_owner( cleaned_repository_clone_url )
         tool_shed = cleaned_repository_clone_url.split( '/repos/' )[ 0 ].rstrip( '/' )
         for guid, tool_section_dicts in tool_panel_dict.items():
             for tool_section_dict in tool_section_dicts:
@@ -355,7 +356,7 @@ class ToolPanelManager( object ):
                     tool_panel_dict = self.generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
                 if tool_panel_dict:
                     # The tool_panel_dict is empty when tools exist but are not installed into a tool panel section.
-                    tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                    tool_section_dicts = tool_panel_dict[ next(iter(tool_panel_dict)) ]
                     tool_section_dict = tool_section_dicts[ 0 ]
                     original_section_id = tool_section_dict[ 'id' ]
                     if original_section_id:
@@ -422,7 +423,7 @@ class ToolPanelManager( object ):
         self.app.install_model.context.flush()
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
-        guids_to_remove = [ k for k in tool_panel_dict.keys() ]
+        guids_to_remove = list(tool_panel_dict.keys())
         self.remove_guids( guids_to_remove, shed_tool_conf, uninstall )
 
     def remove_guids( self, guids_to_remove, shed_tool_conf, uninstall ):

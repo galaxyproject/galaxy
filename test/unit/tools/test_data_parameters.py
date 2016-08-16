@@ -97,21 +97,19 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         assert option[ 1 ] == "None"
         assert option[ 2 ] is True
 
-    def test_get_initial_value_prevents_repeats( self ):
+    def test_get_initial_value( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
         hda2 = MockHistoryDatasetAssociation( name="hda2", id=2 )
         self.stub_active_datasets( hda1, hda2 )
-        already_used = []
-        assert hda2 == self.param.get_initial_value_from_history_prevent_repeats( self.trans, {}, already_used )
-        assert hda1 == self.param.get_initial_value_from_history_prevent_repeats( self.trans, {}, already_used )
+        assert hda2 == self.param.get_initial_value( self.trans, {} )
 
-    def test_get_initial_value_is_empty_string_if_no_match( self ):
+    def test_get_initial_value_is_none_if_no_match( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
         hda1.visible = False
         hda2 = MockHistoryDatasetAssociation( name="hda2", id=2 )
         hda2.visible = False
         self.stub_active_datasets( hda1, hda2 )
-        assert '' == self.param.get_initial_value( self.trans, {} )
+        assert self.param.get_initial_value( self.trans, {} ) is None
 
     def test_get_initial_none_when_optional( self ):
         self.optional = True
@@ -193,6 +191,7 @@ class MockHistoryDatasetAssociation( object ):
     def __init__( self, test_dataset=None, name="Test Dataset", id=1 ):
         if not test_dataset:
             test_dataset = model.Dataset()
+            test_dataset.state = model.Dataset.states.OK
         self.states = model.HistoryDatasetAssociation.states
         self.deleted = False
         self.dataset = test_dataset

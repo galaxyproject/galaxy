@@ -7,8 +7,7 @@ define([ 'utils/utils' ], function( Utils ) {
             this.app = app;
         },
 
-        /** Creates a checksum.
-        */
+        /** Creates a checksum. */
         checksum: function() {
             var sum = '';
             var self = this;
@@ -22,8 +21,15 @@ define([ 'utils/utils' ], function( Utils ) {
             return sum;
         },
 
-        /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission.
-        */
+        /** Set parameter values from model */
+        set: function( model ) {
+            for ( var attr in model.attributes ) {
+                var index = this.match( attr );
+                index && this.app.field_list[ index ].value( model.get( attr ) );
+            }
+        },
+
+        /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission. */
         create: function() {
             var self = this;
 

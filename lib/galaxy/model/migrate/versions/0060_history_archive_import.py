@@ -2,6 +2,8 @@
 Migration script to create column and table for importing histories from
 file archives.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, MetaData, Table, TEXT
@@ -25,7 +27,7 @@ JobImportHistoryArchive_table = Table( "job_import_history_archive", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Add column to history table and initialize.
@@ -41,7 +43,7 @@ def upgrade(migrate_engine):
             default_false = "false"
         migrate_engine.execute( "UPDATE history SET importing=%s" % default_false )
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Adding column 'importing' to history table failed: %s" % str( e ) )
 
     # Create job_import_history_archive table.

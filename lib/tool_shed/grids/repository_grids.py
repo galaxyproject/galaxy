@@ -9,7 +9,7 @@ import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
 from galaxy.web.framework.helpers import grids
 from galaxy.webapps.tool_shed import model
-from tool_shed.util import hg_util, metadata_util
+from tool_shed.util import hg_util, metadata_util, repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -1007,7 +1007,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                         for rd_tup in sorted_rd_tups:
                             name, owner, changeset_revision = rd_tup[1:4]
                             rd_line = ''
-                            required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                            required_repository = repository_util.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
                                 required_repository_metadata = \
@@ -1020,9 +1020,9 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                             repo_path=None,
                                                                             create=False )
                                     updated_changeset_revision = \
-                                        suc.get_next_downloadable_changeset_revision( required_repository,
-                                                                                      repo,
-                                                                                      changeset_revision )
+                                        metadata_util.get_next_downloadable_changeset_revision( required_repository,
+                                                                                                repo,
+                                                                                                changeset_revision )
                                     required_repository_metadata = \
                                         metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                    required_repository_id,
@@ -1140,7 +1140,7 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
                     tds_dict = metadata.get( 'tool_dependencies', {} )
                     if tds_dict:
                         # Example: {"bwa/0.5.9": {"name": "bwa", "type": "package", "version": "0.5.9"}}
-                        sorted_keys = sorted( [ k for k in tds_dict.keys() ] )
+                        sorted_keys = sorted( tds_dict.keys() )
                         num_keys = len( sorted_keys )
                         # Handle environment settings first.
                         if 'set_environment' in sorted_keys:

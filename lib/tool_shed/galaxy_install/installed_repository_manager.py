@@ -8,17 +8,17 @@ import os
 from sqlalchemy import and_, false, true
 
 from galaxy import util
-from tool_shed.util import common_util
-from tool_shed.util import container_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
-from tool_shed.util import xml_util
-
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tools import data_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
+from tool_shed.util import common_util
+from tool_shed.util import container_util
+from tool_shed.util import repository_util
+from tool_shed.util import shed_util_common as suc
+from tool_shed.util import tool_dependency_util
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -241,10 +241,10 @@ class InstalledRepositoryManager( object ):
         installed_td = {}
         missing_rd = {}
         missing_td = {}
-        name = repo_info_dict.keys()[ 0 ]
+        name = next(iter(repo_info_dict))
         repo_info_tuple = repo_info_dict[ name ]
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-            suc.get_repo_info_tuple_contents( repo_info_tuple )
+            repository_util.get_repo_info_tuple_contents( repo_info_tuple )
         if tool_dependencies:
             if not includes_tool_dependencies:
                 includes_tool_dependencies = True
@@ -256,11 +256,11 @@ class InstalledRepositoryManager( object ):
         if repository_dependencies:
             # We have a repository with one or more defined repository dependencies.
             if not repository:
-                repository = suc.get_repository_for_dependency_relationship( self.app,
-                                                                             tool_shed_url,
-                                                                             name,
-                                                                             repository_owner,
-                                                                             changeset_revision )
+                repository = repository_util.get_repository_for_dependency_relationship( self.app,
+                                                                                         tool_shed_url,
+                                                                                         name,
+                                                                                         repository_owner,
+                                                                                         changeset_revision )
             if not updating and repository and repository.metadata:
                 installed_rd, missing_rd = self.get_installed_and_missing_repository_dependencies( repository )
             else:
@@ -282,7 +282,7 @@ class InstalledRepositoryManager( object ):
                     for name, repo_info_tuple in rid.items():
                         description, repository_clone_url, changeset_revision, ctx_rev, \
                             repository_owner, rid_repository_dependencies, rid_tool_dependencies = \
-                            suc.get_repo_info_tuple_contents( repo_info_tuple )
+                            repository_util.get_repo_info_tuple_contents( repo_info_tuple )
                         if rid_tool_dependencies:
                             for td_key, td_dict in rid_tool_dependencies.items():
                                 if td_key not in required_tool_dependencies:
@@ -403,7 +403,7 @@ class InstalledRepositoryManager( object ):
         missing_rd_tups = []
         installed_rd_tups = []
         ( description, repository_clone_url, changeset_revision, ctx_rev,
-          repository_owner, repository_dependencies, tool_dependencies ) = suc.get_repo_info_tuple_contents( repo_info_tuple )
+          repository_owner, repository_dependencies, tool_dependencies ) = repository_util.get_repo_info_tuple_contents( repo_info_tuple )
         if repository_dependencies:
             description = repository_dependencies[ 'description' ]
             root_key = repository_dependencies[ 'root_key' ]
@@ -422,11 +422,11 @@ class InstalledRepositoryManager( object ):
                     #                     repository_dependencies, installed_td )
                     tmp_clone_url = common_util.generate_clone_url_from_repo_info_tup( self.app, rd_tup )
                     tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
-                    repository, installed_changeset_revision = suc.repository_was_previously_installed( self.app,
-                                                                                                        tool_shed,
-                                                                                                        name,
-                                                                                                        tmp_repo_info_tuple,
-                                                                                                        from_tip=False )
+                    repository, installed_changeset_revision = repository_util.repository_was_previously_installed( self.app,
+                                                                                                                    tool_shed,
+                                                                                                                    name,
+                                                                                                                    tmp_repo_info_tuple,
+                                                                                                                    from_tip=False )
                     if repository:
                         new_rd_tup = [ tool_shed,
                                        name,

@@ -19,6 +19,7 @@ if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" \
      -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
+GALAXY_PYTHON=`which python`
 $instrument_pre_commands
 cd $working_directory
 $command

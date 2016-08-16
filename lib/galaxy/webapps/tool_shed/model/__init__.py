@@ -10,7 +10,7 @@ from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.dictifiable import Dictifiable
 import tool_shed.repository_types.util as rt_util
 from tool_shed.dependencies.repository import relation_builder
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import metadata_util
 
 from mercurial import hg
 from mercurial import ui
@@ -230,9 +230,9 @@ class Repository( object, Dictifiable ):
         # have repository dependencies. However, if a readme file is uploaded, or some other change
         # is made that does not create a new downloadable changeset revision but updates the existing
         # one, we still want to be able to get repository dependencies.
-        repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( app,
-                                                                                          self,
-                                                                                          changeset )
+        repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( app,
+                                                                                                    self,
+                                                                                                    changeset )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -252,9 +252,9 @@ class Repository( object, Dictifiable ):
         return []
 
     def installable_revisions( self, app, sort_revisions=True ):
-        return suc.get_metadata_revisions( self,
-                                           hg.repository( ui.ui(), self.repo_path( app ) ),
-                                           sort_revisions=sort_revisions )
+        return metadata_util.get_metadata_revisions( self,
+                                                     hg.repository( ui.ui(), self.repo_path( app ) ),
+                                                     sort_revisions=sort_revisions )
 
     def is_new( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
@@ -507,17 +507,3 @@ def sort_by_attr( seq, attr ):
     intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
     intermed.sort()
     return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
-
-
-def directory_hash_id( id ):
-    s = str( id )
-    l = len( s )
-    # Shortcut -- ids 0-999 go under ../000/
-    if l < 4:
-        return [ "000" ]
-    # Pad with zeros until a multiple of three
-    padded = ( ( ( 3 - len( s ) ) % 3 ) * "0" ) + s
-    # Drop the last three digits -- 1000 files per directory
-    padded = padded[:-3]
-    # Break into chunks of three
-    return [ padded[i * 3:(i + 1) * 3] for i in range( len( padded ) // 3 ) ]

@@ -2,6 +2,7 @@
 import unittest
 import galaxy.model.mapping as mapping
 import uuid
+from six import text_type
 
 
 class MappingTests( unittest.TestCase ):
@@ -16,7 +17,7 @@ class MappingTests( unittest.TestCase ):
             annotated_association = annotation_class()
             annotated_association.annotation = "Test Annotation"
             annotated_association.user = u
-            for key, value in kwds.iteritems():
+            for key, value in kwds.items():
                 setattr(annotated_association, key, value)
             self.persist( annotated_association )
             self.expunge()
@@ -75,7 +76,7 @@ class MappingTests( unittest.TestCase ):
             rating_association = rating_class()
             rating_association.rating = 5
             rating_association.user = u
-            for key, value in kwds.iteritems():
+            for key, value in kwds.items():
                 setattr(rating_association, key, value)
             self.persist( rating_association )
             self.expunge()
@@ -118,8 +119,8 @@ class MappingTests( unittest.TestCase ):
     def test_display_name( self ):
 
         def assert_display_name_converts_to_unicode( item, name ):
-            assert not isinstance( item.name, unicode )
-            assert isinstance( item.get_display_name(), unicode )
+            assert not isinstance( item.name, text_type )
+            assert isinstance( item.get_display_name(), text_type )
             assert item.get_display_name() == name
 
         ldda = self.model.LibraryDatasetDatasetAssociation( name='ldda_name' )
@@ -140,8 +141,9 @@ class MappingTests( unittest.TestCase ):
         history = self.model.History(
             name=u'Hello₩◎ґʟⅾ'
         )
-        assert isinstance( history.name, unicode )
-        assert isinstance( history.get_display_name(), unicode )
+
+        assert isinstance( history.name, text_type )
+        assert isinstance( history.get_display_name(), text_type )
         assert history.get_display_name() == u'Hello₩◎ґʟⅾ'
 
     def test_tags( self ):
@@ -203,7 +205,7 @@ class MappingTests( unittest.TestCase ):
         self.persist( u, h1, d1, d2, c1, hc1, dce1, dce2 )
 
         loaded_dataset_collection = self.query( model.HistoryDatasetCollectionAssociation ).filter( model.HistoryDatasetCollectionAssociation.name == "HistoryCollectionTest1" ).first().collection
-        self.assertEquals(len(loaded_dataset_collection.elements), 2)
+        self.assertEqual(len(loaded_dataset_collection.elements), 2)
         assert loaded_dataset_collection.collection_type == "pair"
         assert loaded_dataset_collection[ "left" ] == dce1
         assert loaded_dataset_collection[ "right" ] == dce2
@@ -356,7 +358,7 @@ class MappingTests( unittest.TestCase ):
             ).first()
             return list( map( lambda hda: hda.name, history.contents_iter( **kwds ) ) )
 
-        self.assertEquals(contents_iter_names(), [ "1", "2", "3", "4" ])
+        self.assertEqual(contents_iter_names(), [ "1", "2", "3", "4" ])
         assert contents_iter_names( deleted=False ) == [ "1", "2" ]
         assert contents_iter_names( visible=True ) == [ "1", "3" ]
         assert contents_iter_names( visible=False ) == [ "2", "4" ]

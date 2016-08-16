@@ -7,9 +7,11 @@ import threading
 from sqlalchemy import false
 
 import tool_shed.util.shed_util_common as suc
+from galaxy import util
+from galaxy.util.postfork import register_postfork_function
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
-from galaxy import util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -25,7 +27,7 @@ class UpdateRepositoryManager( object ):
             self.sleeper = Sleeper()
             self.restarter = threading.Thread( target=self.__restarter )
             self.restarter.daemon = True
-            self.restarter.start()
+            register_postfork_function(self.restarter.start)
             self.seconds_to_sleep = int( app.config.hours_between_check * 3600 )
 
     def get_update_to_changeset_revision_and_ctx_rev( self, repository ):
@@ -84,7 +86,7 @@ class UpdateRepositoryManager( object ):
             # has been deprecated in the Tool Shed.
             for repository in self.context.query( self.app.install_model.ToolShedRepository ) \
                                           .filter( self.app.install_model.ToolShedRepository.table.c.deleted == false() ):
-                tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, repository )
+                tool_shed_status_dict = repository_util.get_tool_shed_status_for_installed_repository( self.app, repository )
                 if tool_shed_status_dict:
                     if tool_shed_status_dict != repository.tool_shed_status:
                         repository.tool_shed_status = tool_shed_status_dict
@@ -115,7 +117,7 @@ class UpdateRepositoryManager( object ):
         repository.changeset_revision = updated_changeset_revision
         repository.ctx_rev = updated_ctx_rev
         # Update the repository.tool_shed_status column in the database.
-        tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, repository )
+        tool_shed_status_dict = repository_util.get_tool_shed_status_for_installed_repository( self.app, repository )
         if tool_shed_status_dict:
             repository.tool_shed_status = tool_shed_status_dict
         else:

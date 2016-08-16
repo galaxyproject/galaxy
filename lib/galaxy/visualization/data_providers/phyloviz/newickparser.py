@@ -1,5 +1,5 @@
-from __future__ import with_statement
-from baseparser import Base_Parser, PhyloTree
+
+from .baseparser import Base_Parser, PhyloTree
 import re
 
 
@@ -81,7 +81,7 @@ class Newick_Parser(Base_Parser):
         start = 0
         end = 0
 
-        for i in xrange(len(newickString)):
+        for i in range(len(newickString)):
             if newickString[i] == "(" or newickString[i] == ",":
                 if re.match(r"[,(]", newickString[i + 1:]):
                     continue
@@ -89,7 +89,7 @@ class Newick_Parser(Base_Parser):
                     end = i + 1
                     # i now refers to the starting position of the term to be replaced,
                     # we will next find j which is the ending pos of the term
-                    for j in xrange(i + 1, len(newickString)):
+                    for j in range(i + 1, len(newickString)):
                         enclosingSymbol = newickString[j]   # the immediate symbol after a common or left bracket which denotes the end of a term
                         if enclosingSymbol == ")" or enclosingSymbol == ":" or enclosingSymbol == ",":
                             termToReplace = newickString[end:j]
@@ -124,7 +124,7 @@ class Newick_Parser(Base_Parser):
         lenOfPreceedingInternalNodeString = 0
         bracketStack = []
 
-        for j in xrange(len(string)):
+        for j in range(len(string)):
             if string[j] == "(":    # finding the positions of all the open brackets
                 bracketStack.append(j)
                 continue

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 
 from .test_workflows import BaseWorkflowsApiTestCase
@@ -241,7 +243,7 @@ steps:
       input1:
         $link: the_pause
 """)
-        print self._get("workflows/%s/download" % workflow_id).json()
+        print(self._get("workflows/%s/download" % workflow_id).json())
 
     def test_implicit_connections( self ):
         workflow_id = self._upload_yaml_workflow("""
@@ -273,7 +275,7 @@ steps:
         $link: test_input
 """)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
-        print workflow
+        print(workflow)
 
     def _steps_by_label(self, workflow_as_dict):
         by_label = {}

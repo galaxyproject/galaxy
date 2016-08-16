@@ -8,7 +8,11 @@ from mako.template import Template
 import tool_shed.util.shed_util_common as suc
 from galaxy import web
 from galaxy.util import rst_to_html, unicodify, url_get
-from tool_shed.util import basic_util, common_util, hg_util
+from tool_shed.util import basic_util
+from tool_shed.util import common_util
+from tool_shed.util import hg_util
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -23,7 +27,7 @@ def build_readme_files_dict( app, repository, changeset_revision, metadata, tool
         can_use_disk_files = True
     else:
         repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-        latest_downloadable_changeset_revision = suc.get_latest_downloadable_changeset_revision( app, repository, repo )
+        latest_downloadable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision( app, repository, repo )
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
     readme_files_dict = {}
     if metadata:
@@ -89,10 +93,10 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
     Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section
     selection page.
     """
-    name = repo_info_dict.keys()[ 0 ]
+    name = next(iter(repo_info_dict))
     repo_info_tuple = repo_info_dict[ name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
-        suc.get_repo_info_tuple_contents( repo_info_tuple )
+        repository_util.get_repo_info_tuple_contents( repo_info_tuple )
     # Handle changing HTTP protocols over time.
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
     params = dict( name=name, owner=repository_owner, changeset_revision=changeset_revision )
@@ -105,8 +109,8 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
 def get_readme_file_names( repository_name ):
     """Return a list of file names that will be categorized as README files for the received repository_name."""
     readme_files = [ 'readme', 'read_me', 'install' ]
-    valid_filenames = map( lambda f: '%s.txt' % f, readme_files )
-    valid_filenames.extend( map( lambda f: '%s.rst' % f, readme_files ) )
+    valid_filenames = ['%s.txt' % f for f in readme_files]
+    valid_filenames.extend( ['%s.rst' % f for f in readme_files] )
     valid_filenames.extend( readme_files )
     valid_filenames.append( '%s.txt' % repository_name )
     valid_filenames.append( '%s.rst' % repository_name )

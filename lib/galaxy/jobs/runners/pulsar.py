@@ -18,6 +18,7 @@ from pulsar.client import ClientJobDescription
 from pulsar.client import PulsarOutputs
 from pulsar.client import ClientOutputs
 from pulsar.client import PathMapper
+from pulsar.client import PulsarClientTransportError
 
 import pulsar.core
 
@@ -62,6 +63,10 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         valid=specs.is_in("urllib", "curl", None),
         default=None
+    ),
+    transport_timeout=dict(
+        map=lambda val: None if val == "None" else int(val),
+        default=None,
     ),
     cache=dict(
         map=specs.to_bool_or_none,
@@ -191,7 +196,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             client_manager_kwargs[ "file_cache" ] = None
 
         for kwd in self.runner_params.keys():
-            if kwd.startswith( 'amqp_' ):
+            if kwd.startswith( 'amqp_' ) or kwd.startswith( 'transport_' ):
                 client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
         self.client_manager = build_client_manager(**client_manager_kwargs)
 
@@ -224,6 +229,9 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         try:
             client = self.get_client_from_state(job_state)
             status = client.get_status()
+        except PulsarClientTransportError as exc:
+            log.error("Communication error with Pulsar server on state check, will retry: %s", exc)
+            return job_state
         except Exception:
             # An orphaned job was put into the queue at app startup, so remote server went down
             # either way we are done I guess.
@@ -653,7 +661,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             # each work_dir output substitute the effective path on the Pulsar
             # server relative to the remote working directory as the
             # false_path to send the metadata command generation module.
-            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, job_working_directory=working_directory)
+            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
             outputs = [Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path) for path in self.get_output_files(job_wrapper)]
             for output in outputs:
                 for pulsar_workdir_path, real_path in work_dir_outputs:

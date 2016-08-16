@@ -10,8 +10,8 @@ from inspect import isclass
 
 from paste import httpexceptions
 
-from galaxy.config import process_is_uwsgi
 from galaxy.util import asbool
+from galaxy.util.postfork import process_is_uwsgi
 from galaxy.webapps.util import build_template_error_formatters
 
 import galaxy.model

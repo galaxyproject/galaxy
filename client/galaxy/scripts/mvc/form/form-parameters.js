@@ -31,17 +31,11 @@ define(['utils/utils',
             'ftpfile'           : '_fieldFtp'
         },
 
-        initialize: function( app, options ) {
-            this.app = app;
-        },
-
-        /** Returns an input field for a given field type
-        */
+        /** Returns an input field for a given field type */
         create: function( input_def ) {
             var fieldClass = this.types[ input_def.type ];
             var field = typeof( this[ fieldClass ] ) === 'function' ? this[ fieldClass ].call( this, input_def ) : null;
             if ( !field ) {
-                this.app.incompatible = true;
                 field = input_def.options ? this._fieldSelect( input_def ) : this._fieldText( input_def );
                 Galaxy.emit.debug('form-parameters::_addRow()', 'Auto matched field type (' + input_def.type + ').');
             }
@@ -50,10 +44,8 @@ define(['utils/utils',
             return field;
         },
 
-        /** Data input field
-        */
+        /** Data input field */
         _fieldData: function( input_def ) {
-            var self = this;
             return new SelectContent.View({
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
@@ -62,14 +54,11 @@ define(['utils/utils',
                 type        : input_def.type,
                 flavor      : input_def.flavor,
                 data        : input_def.options,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
-        /** Select/Checkbox/Radio options field
-        */
+        /** Select/Checkbox/Radio options field */
         _fieldSelect: function ( input_def ) {
             // show text field e.g. in workflow editor
             if( input_def.is_workflow ) {
@@ -81,11 +70,14 @@ define(['utils/utils',
                 input_def.error_text = 'Missing columns in referenced dataset.'
             }
 
-            // configure options fields
-            var options = [];
-            _.each( input_def.options, function( option ) {
-                options.push( { label: option[ 0 ], value: option[ 1 ] } );
-            });
+            // identify available options
+            var data = input_def.data;
+            if( !data ) {
+                data = [];
+                _.each( input_def.options, function( option ) {
+                    data.push( { label: option[ 0 ], value: option[ 1 ] } );
+                });
+            }
 
             // identify display type
             var SelectClass = Ui.Select;
@@ -96,24 +88,24 @@ define(['utils/utils',
                 case 'radio':
                     SelectClass = Ui.Radio;
                     break;
+                case 'radiobutton':
+                    SelectClass = Ui.RadioButton;
+                    break;
             }
 
             // create select field
-            var self = this;
             return new SelectClass.View({
                 id          : 'field-' + input_def.id,
-                data        : options,
+                data        : data,
                 error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange,
+                searchable  : input_def.flavor !== 'workflow'
             });
         },
 
-        /** Drill down options field
-        */
+        /** Drill down options field */
         _fieldDrilldown: function ( input_def ) {
             // show text field e.g. in workflow editor
             if( input_def.is_workflow ) {
@@ -121,23 +113,19 @@ define(['utils/utils',
             }
 
             // create drill down field
-            var self = this;
             return new Ui.Drilldown.View({
                 id          : 'field-' + input_def.id,
                 data        : input_def.options,
                 display     : input_def.display,
                 optional    : input_def.optional,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
-        /** Text input field
-        */
+        /** Text input field */
         _fieldText: function( input_def ) {
             // field replaces e.g. a select field
-            if ( input_def.options ) {
+            if ( input_def.options && input_def.data ) {
                 input_def.area = input_def.multiple;
                 if ( Utils.isEmpty( input_def.value ) ) {
                     input_def.value = null;
@@ -156,34 +144,27 @@ define(['utils/utils',
                 }
             }
             // create input element
-            var self = this;
             return new Ui.Input({
                 id          : 'field-' + input_def.id,
                 area        : input_def.area,
-                onchange    : function( new_value ) {
-                    input_def.onchange ? input_def.onchange( new_value ) : self.app.trigger( 'change' );
-                }
+                placeholder : input_def.placeholder,
+                onchange    : input_def.onchange
             });
         },
 
-        /** Slider field
-        */
+        /** Slider field */
         _fieldSlider: function( input_def ) {
-            var self = this;
             return new Ui.Slider.View({
                 id          : 'field-' + input_def.id,
                 precise     : input_def.type == 'float',
                 is_workflow : input_def.is_workflow,
                 min         : input_def.min,
                 max         : input_def.max,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
-        /** Hidden field
-        */
+        /** Hidden field */
         _fieldHidden: function( input_def ) {
             return new Ui.Hidden({
                 id          : 'field-' + input_def.id,
@@ -191,57 +172,41 @@ define(['utils/utils',
             });
         },
 
-        /** Boolean field
-        */
+        /** Boolean field */
         _fieldBoolean: function( input_def ) {
-            var self = this;
             return new Ui.RadioButton.View({
                 id          : 'field-' + input_def.id,
                 data        : [ { label : 'Yes', value : 'true'  },
                                 { label : 'No',  value : 'false' }],
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
-        /** Color picker field
-        */
+        /** Color picker field */
         _fieldColor: function( input_def ) {
-            var self = this;
             return new ColorPicker({
                 id          : 'field-' + input_def.id,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
-        /** Library dataset field
-        */
+        /** Library dataset field */
         _fieldLibrary: function( input_def ) {
-            var self = this;
             return new SelectLibrary.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         },
 
-        /** FTP file field
-        */
+        /** FTP file field */
         _fieldFtp: function( input_def ) {
-            var self = this;
             return new SelectFtp.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
-                onchange    : function() {
-                    self.app.trigger( 'change' );
-                }
+                onchange    : input_def.onchange
             });
         }
     });

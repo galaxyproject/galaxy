@@ -4,6 +4,7 @@ pgcleanup.py - A script for cleaning up datasets in Galaxy efficiently, by
     bypassing the Galaxy model and operating directly on the database.
     PostgreSQL 9.1 or greater is required.
 """
+from __future__ import print_function
 
 import datetime
 import inspect
@@ -11,8 +12,9 @@ import logging
 import os
 import shutil
 import sys
-from ConfigParser import ConfigParser
 from optparse import OptionParser
+
+from six.moves.configparser import ConfigParser
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
@@ -76,7 +78,7 @@ class Cleanup(object):
         self.options.sequence = [ x.strip() for x in self.options.sequence.split(',') ]
 
         if self.options.sequence == ['']:
-            print "Error: At least one action must be specified in the action sequence\n"
+            print("Error: At least one action must be specified in the action sequence\n")
             parser.print_help()
             sys.exit(0)
 
