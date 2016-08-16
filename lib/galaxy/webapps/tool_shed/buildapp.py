@@ -4,6 +4,7 @@ Provides factory methods to assemble the Galaxy web application
 import atexit
 import logging
 import os
+import routes
 
 from six.moves.urllib.parse import parse_qs
 from inspect import isclass
@@ -70,9 +71,7 @@ def app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="tool_shed" )
 
-    # Redirects go first because they are handled in Routes middleware
-    # before the app is reached.
-    webapp = _map_redirects( webapp )
+
     add_ui_controllers( webapp, app )
     webapp.add_route( '/view/{owner}', controller='repository', action='sharable_owner' )
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
@@ -210,14 +209,16 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     conf = global_conf.copy()
     conf.update( local_conf )
     debug = asbool( conf.get( 'debug', False ) )
-    routes_mapper = app.mapper
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
+    # Create a separate mapper for redirects to prevent conflicts.
+    redirect_mapper = routes.Mapper()
+    redirect_mapper = _map_redirects( redirect_mapper )
     # Load the Routes middleware which we use for redirecting
-    app = RoutesMiddleware( app, routes_mapper )
+    app = RoutesMiddleware( app, redirect_mapper )
     log.debug( "Enabling 'routes' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
@@ -298,7 +299,7 @@ def wrap_in_static( app, global_conf, **local_conf ):
     return urlmap
 
 
-def _map_redirects( app ):
+def _map_redirects( mapper ):
     """
     Add redirect to the Routes mapper and forward the received query string.
     Subsequently when the redirect is triggered in Routes middleware the request
@@ -310,5 +311,5 @@ def _map_redirects( app ):
             result[ qs ] = qs_dict[ qs ]
         return True
 
-    app.mapper.redirect( "/repository/status_for_installed_repository", "/api/repositories/updates/", _redirect_code="301 Moved Permanently", conditions=dict( function=forward_qs ) )
-    return app
+    mapper.redirect( "/repository/status_for_installed_repository", "/api/repositories/updates/", _redirect_code="301 Moved Permanently", conditions=dict( function=forward_qs ) )
+    return mapper
