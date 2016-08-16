@@ -21,4 +21,16 @@
             </actions>
         </data>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" dbkey="hg18" />
+            <param name="index" value="hg18"/>
+            <output name="mapped_reads">
+                <metadata name="dbkey" value="hg18" />
+                <assert_contents>
+                    <has_text text="foo" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
 </tool>
