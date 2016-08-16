@@ -50,15 +50,7 @@ lib/galaxy_ext/
 lib/galaxy_utils/
 lib/log_tempfile.py
 lib/psyco_full.py
-lib/tool_shed/capsule/
-lib/tool_shed/dependencies/
-lib/tool_shed/grids/
-lib/tool_shed/managers/
-lib/tool_shed/metadata/
-lib/tool_shed/repository_types/
-lib/tool_shed/tools/
-lib/tool_shed/util/
-lib/tool_shed/utility_containers/
+lib/tool_shed/
 scripts/api/
 scripts/auth/
 scripts/bootstrap_history.py

@@ -62,6 +62,7 @@ bz2_magic = 'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
+FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 def remove_protocol_from_url( url ):
@@ -707,9 +708,11 @@ class Params( object ):
                 # name. Anything relying on NEVER_SANITIZE should be
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
-                                                                    nonsanitize_parameter in self.NEVER_SANITIZE ]:
-                    self.__dict__[ key ] = sanitize_param( value )
+                if (value is not None and
+                    key not in self.NEVER_SANITIZE and
+                    True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
+                                  nonsanitize_parameter in self.NEVER_SANITIZE ]):
+                        self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
         else:

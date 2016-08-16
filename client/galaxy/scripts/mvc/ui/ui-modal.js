@@ -100,6 +100,8 @@ var View = Backbone.View.extend({
         this.$header[ !this.options.title_separator && 'addClass' || 'removeClass' ]( 'no-separator' );
 
         // fix dimensions
+        // note: because this is a singleton, we need to clear inline styles from any previous invocations
+        this.$body.removeAttr( 'style' );
         if ( this.options.height ) {
             this.$body.css( 'height', this.options.height );
             this.$body.css( 'overflow', 'hidden' );

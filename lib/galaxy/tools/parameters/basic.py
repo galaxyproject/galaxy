@@ -114,16 +114,6 @@ class ToolParameter( object, Dictifiable ):
         """
         return None
 
-    def get_initial_value_from_history_prevent_repeats( self, trans, other_values, already_used ):
-        """
-        Get the starting value for the parameter, but if fetching from the history, try
-        to find a value that has not yet been used. already_used is a list of objects that
-        tools must manipulate (by adding to it) to store a memento that they can use to detect
-        if a value has already been chosen from the history. This is to support the capability to
-        choose each dataset once
-        """
-        return self.get_initial_value( trans, other_values )
-
     def get_required_enctype( self ):
         """
         If this parameter needs the form to have a specific encoding
@@ -1202,10 +1192,12 @@ class ColumnListParameter( SelectToolParameter ):
             return []
         column_list = None
         for dataset in util.listify( dataset ):
+            # Use representative dataset if a dataset collection is parsed
+            if isinstance( dataset, trans.app.model.HistoryDatasetCollectionAssociation ):
+                dataset = dataset.to_hda_representative()
             # Columns can only be identified if metadata is available
             if not hasattr( dataset, 'metadata' ) or not hasattr( dataset.metadata, 'columns' ) or not dataset.metadata.columns:
                 return []
-
             # Build up possible columns for this dataset
             this_column_list = []
             if self.numerical:
@@ -1216,7 +1208,6 @@ class ColumnListParameter( SelectToolParameter ):
             else:
                 for i in range( 0, dataset.metadata.columns ):
                     this_column_list.append( str( i + 1 ) )
-
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
@@ -1668,6 +1659,25 @@ class BaseDataToolParameter( ToolParameter ):
             self.options_filter_attribute = options_elem.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
 
+    def get_initial_value( self, trans, other_values ):
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
+            return RuntimeValue()
+        if self.optional:
+            return None
+        history = trans.history
+        if history is not None:
+            dataset_matcher = DatasetMatcher( trans, self, None, other_values )
+            if isinstance( self, DataToolParameter ):
+                for hda in reversed( history.active_datasets_children_and_roles ):
+                    match = dataset_matcher.hda_match( hda, check_security=False )
+                    if match:
+                        return match.hda
+            else:
+                dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+                for hdca in reversed( history.active_dataset_collections ):
+                    if dataset_collection_matcher.hdca_match( hdca, reduction=self.multiple ):
+                        return hdca
+
     def to_json( self, value, app ):
         def single_to_json( value ):
             src = None
@@ -1681,7 +1691,6 @@ class BaseDataToolParameter( ToolParameter ):
                 src = 'hda'
             if src is not None:
                 return { 'id' : app.security.encode_id( value.id ), 'src' : src }
-
         if value not in [ None, '', 'None' ]:
             if isinstance( value, list ) and len( value ) > 0:
                 values = [ single_to_json( v ) for v in value ]
@@ -1829,44 +1838,6 @@ class DataToolParameter( BaseDataToolParameter ):
 
         for item in dataset_collector( history.active_datasets_children_and_roles, None ):
             yield item
-
-    def get_initial_value( self, trans, other_values ):
-        return self.get_initial_value_from_history_prevent_repeats(trans, other_values, None )
-
-    def get_initial_value_from_history_prevent_repeats( self, trans, other_values, already_used ):
-        """
-        NOTE: This is wasteful since dynamic options and dataset collection
-              happens twice (here and when generating HTML).
-        """
-        # Can't look at history in workflow mode. Tool shed has no histories.
-        if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
-            return RuntimeValue()
-        history = self._get_history( trans )
-        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        if self.optional:
-            return None
-        most_recent_dataset = []
-
-        def dataset_collector( datasets ):
-            for data in datasets:
-                if data.visible and dataset_matcher.hda_accessible( data, check_security=False ):
-                    match = dataset_matcher.valid_hda_match( data, check_security=False )
-                    if not match or dataset_matcher.filter( match.hda ):
-                        continue
-                    data = match.hda
-                    most_recent_dataset.append(data)
-                # Also collect children via association object
-                dataset_collector( data.children )
-        dataset_collector( history.active_datasets_children_and_roles )
-        most_recent_dataset.reverse()
-        if already_used is not None:
-            for val in most_recent_dataset:
-                if val is not None and val not in already_used:
-                    already_used.append(val)
-                    return val
-        if len(most_recent_dataset) > 0:
-            return most_recent_dataset[0]
-        return ''
 
     def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
@@ -2067,11 +2038,12 @@ class DataToolParameter( BaseDataToolParameter ):
         visible_hda = other_values.get( self.name )
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
+                m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
+                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name if m.visible else '(hidden) %s' % m_name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
             append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
 

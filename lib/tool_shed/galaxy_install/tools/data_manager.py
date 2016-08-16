@@ -124,7 +124,7 @@ class DataManagerHandler( object ):
             if tree:
                 root = tree.getroot()
                 assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )
-                guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'guid' in data_manager_dict ]
+                guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).values() if 'guid' in data_manager_dict ]
                 load_old_data_managers_by_guid = {}
                 data_manager_config_has_changes = False
                 config_elems = []
@@ -150,7 +150,7 @@ class DataManagerHandler( object ):
                 # Remove data managers from in memory
                 self.app.data_managers.remove_manager( guids )
                 # Load other versions of any now uninstalled data managers, if any
-                for elem in load_old_data_managers_by_guid.itervalues():
+                for elem in load_old_data_managers_by_guid.values():
                     self.app.data_managers.load_manager_from_elem( elem )
                 # Persist the altered shed_data_manager_config file.
                 if data_manager_config_has_changes:

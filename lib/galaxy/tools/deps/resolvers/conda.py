@@ -53,7 +53,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         # warning is related to conda problem discussed in https://github.com/galaxyproject/galaxy/issues/2537, remove when that is resolved
         conda_prefix_warning_length = 50
         if len(conda_prefix) >= conda_prefix_warning_length:
-            log.warning('Conda install prefix ({}) is long ({} characters), this can cause problems with package installation, consider setting a shorter prefix (conda_prefix in galaxy.ini)')
+            log.warning("Conda install prefix '%s' is %d characters long, this can cause problems with package installation, consider setting a shorter prefix (conda_prefix in galaxy.ini)" % (conda_prefix, len(conda_prefix)))
 
         condarc_override = get_option("condarc_override")
         if condarc_override is None:
@@ -88,11 +88,14 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         auto_install = _string_as_bool(get_option("auto_install"))
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
 
-        if not os.path.exists(conda_context.conda_prefix):
+        if not conda_context.is_conda_installed():
             if auto_init:
-                if install_conda(conda_context):
+                if conda_context.can_install_conda():
+                    if install_conda(conda_context):
+                        self.disabled = True
+                        log.warning("Conda installation requested and failed.")
+                else:
                     self.disabled = True
-                    log.warning("Conda installation requested and failed.")
             else:
                 self.disabled = True
                 log.warning("Conda not installed and auto-installation disabled.")
@@ -163,6 +166,11 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 version
             )
         else:
+            if len(conda_environment) > 79:
+                # TODO: remove this once conda_build version 2 is released and packages have been rebuilt.
+                raise Exception("Conda dependency failed to build job environment. "
+                                "This is most likely a limitation in conda. "
+                                "You can try to shorten the path to the job_working_directory.")
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")
 
     def list_dependencies(self):

@@ -7,32 +7,10 @@ import datetime
 import logging
 import socket
 from json import dumps
-
 from markupsafe import escape
-
 from galaxy.util import send_mail
 
 log = logging.getLogger( __name__ )
-
-
-def get_form_template(action_type, title, content, help, on_output=True ):
-    if on_output:
-        form = """
-            if (pja.action_type == "%s"){
-                p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + pja.output_name + "</span><div class='toolFormTitle'> %s <br/> on " + pja.output_name + "\
-                <div style='float: right;' class='buttons'><img src='/static/images/history-buttons/delete_icon.png'></div></div><div class='toolFormBody'>";
-                %s
-                p_str += "</div><div class='toolParamHelp'>%s</div></div>";
-            }""" % (action_type, title, content, help)
-    else:
-        form = """
-            if (pja.action_type == "%s"){
-                p_str = "<div class='pjaForm toolForm'><span class='action_tag' style='display:none'>"+ pja.action_type + "</span><div class='toolFormTitle'> %s \
-                <div style='float: right;' class='buttons'><img src='/static/images/history-buttons/delete_icon.png'></div></div><div class='toolFormBody'>";
-                %s
-                p_str += "</div><div class='toolParamHelp'>%s</div></div>";
-            }""" % (action_type, title, content, help)
-    return form
 
 
 class DefaultJobAction(object):
@@ -45,10 +23,6 @@ class DefaultJobAction(object):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None):
         pass
-
-    @classmethod
-    def get_config_form(cls, trans):
-        return "<p>Default Job Action Config Form</p>"
 
     @classmethod
     def get_short_str(cls, pja):
@@ -84,14 +58,6 @@ class EmailAction(DefaultJobAction):
             log.error("EmailAction PJA Failed, exception: %s" % e)
 
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            p_str += "<label for='pja__"+pja.output_name+"__EmailAction'>There are no additional options for this action.  You will be emailed upon job completion.</label>\
-                        <input type='hidden' value='%s' name='pja__"+pja.output_name+"__EmailAction__host'/><input type='hidden' name='pja__"+pja.output_name+"__EmailAction'/>";
-            """ % trans.request.host
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will send an email notifying you when the job is done.", on_output=False)
-
-    @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and 'host' in pja.action_arguments:
             return "Email the current user from server %s when this job is complete." % escape(pja.action_arguments['host'])
@@ -108,25 +74,6 @@ class ChangeDatatypeAction(DefaultJobAction):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 app.datatypes_registry.change_datatype( dataset_assoc.dataset, action.action_arguments['newtype'])
-
-    @classmethod
-    def get_config_form(cls, trans):
-        dt_list = ""
-        dtnames = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems()]
-        dtnames.sort()
-        for dt_name in dtnames:
-            dt_list += """<option id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype__%s' value='%s'>%s</option>""" % (dt_name, dt_name, dt_name)
-        ps = """
-            p_str += "<label for='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>New Datatype:</label>\
-                <select id='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype' name='pja__"+pja.output_name+"__ChangeDatatypeAction__newtype'>\
-                %s\
-                </select>";
-            if (pja.action_arguments !== undefined && pja.action_arguments.newtype !== undefined){
-                 p_str += "<scrip" + "t type='text/javascript'>$('#pja__" + pja.output_name + "__ChangeDatatypeAction__newtype').val('" + pja.action_arguments.newtype + "');</scrip" + "t>";
-            }
-            """ % dt_list
-        # Note the scrip + t hack above.  Is there a better way?
-        return get_form_template(cls.name, cls.verbose_name, ps, 'This action will change the datatype of the output to the indicated value.')
 
     @classmethod
     def get_short_str(cls, pja):
@@ -219,29 +166,6 @@ class RenameDatasetAction(DefaultJobAction):
                     dataset_assoc.dataset.name = new_name
 
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            if (pja.action_arguments && pja.action_arguments.newname){
-                p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=\\"" + pja.action_arguments.newname.replace(/"/g, "&quot;") + "\\"/>";
-            }
-            else{
-                p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=''/>";
-            }
-            inputlist = [];
-            $.each(node.input_terminals, function(i, v){
-                inputlist.push(v.name);
-            });
-            if (inputlist !== []){
-                p_str += "Available inputs are: <strong>" + inputlist.join(', ') + "</strong>";
-            }else{
-                p_str += "No inputs are available for templating into this action.";
-            }
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.  See <a href='https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables'>the wiki</a> for usage information.")
-
-    @classmethod
     def get_short_str(cls, pja):
         # Prevent renaming a dataset to the empty string.
         if pja.action_arguments and pja.action_arguments.get('newname', ''):
@@ -262,14 +186,6 @@ class HideDatasetAction(DefaultJobAction):
                 dataset_assoc.dataset.visible = False
 
     @classmethod
-    def get_config_form(cls, trans):
-        return """
-               if (pja.action_type == "HideDatasetAction"){
-                   p_str += "<input type='hidden' name='pja__"+pja.output_name+"__HideDatasetAction'/>";
-               }
-               """
-
-    @classmethod
     def get_short_str(cls, pja):
         return "Hide output '%s'." % escape(pja.output_name)
 
@@ -284,14 +200,6 @@ class DeleteDatasetAction(DefaultJobAction):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.deleted = True
-
-    @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            p_str += "<label for='pja__"+pja.output_name+"__DeleteDatasetAction'>There are no additional options for this action.  This dataset will be marked deleted.</label>\
-                        <input type='hidden' name='pja__"+pja.output_name+"__DeleteDatasetAction'/>";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
 
     @classmethod
     def get_short_str(cls, pja):
@@ -316,36 +224,6 @@ class ColumnSetAction(DefaultJobAction):
                             setattr(dataset_assoc.dataset.metadata, k, v)
 
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            if (pja.action_arguments !== undefined){
-                (pja.action_arguments.chromCol === undefined) ? chromCol = "" : chromCol=pja.action_arguments.chromCol;
-                (pja.action_arguments.startCol === undefined) ? startCol = "" : startCol=pja.action_arguments.startCol;
-                (pja.action_arguments.endCol === undefined) ? endCol = "" : endCol=pja.action_arguments.endCol;
-                (pja.action_arguments.strandCol === undefined) ? strandCol = "" : strandCol=pja.action_arguments.strandCol;
-                (pja.action_arguments.nameCol === undefined) ? nameCol = "" : nameCol=pja.action_arguments.nameCol;
-            }else{
-                chromCol = '';
-                startCol = '';
-                endCol = '';
-                strandCol = '';
-                nameCol = '';
-            }
-            p_str += "<p>Leave any of these fields blank if they do not need to be set.</p>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__chromCol'>Chrom Column</label>\
-                        <input type='text' value='" + chromCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__chromCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__startCol'>Start Column</label>\
-                        <input type='text' value='" + startCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__startCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__endCol'>End Column</label>\
-                        <input type='text' value='" + endCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__endCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__strandCol'>Strand Column</label>\
-                        <input type='text' value='" + strandCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__strandCol'/>\
-                    <label for='pja__"+pja.output_name+"__ColumnSetAction__nameCol'>Name Column</label>\
-                        <input type='text' value='" + nameCol + "' name='pja__"+pja.output_name+"__ColumnSetAction__nameCol'/>\";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will set column assignments in the output dataset.  Blank fields are ignored.")
-
-    @classmethod
     def get_short_str(cls, pja):
         return "Set the following metadata values:<br/>" + "<br/>".join(['%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.iteritems()])
 
@@ -358,33 +236,6 @@ class SetMetadataAction(DefaultJobAction):
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for data in job.output_datasets:
             data.set_metadata( action.action_arguments['newtype'] )
-
-    @classmethod
-    def get_config_form(cls, trans):
-        #         dt_list = ""
-        #         mdict = {}
-        #         for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems():
-        #             for mn, mt in dtype_value.metadata_spec.items():
-        #                 if mt.visible:
-        #                     mdict[mt.desc] = mt.param.get_html(value= mn).replace('"', "'").strip().replace('\n','')
-        #         for k, v in mdict.items():
-        #             dt_list += "<p><strong>" + k + ":</strong><br/>" + v + "</p>"
-        #         form = """
-        #           p_str += "%s";
-        #   """ % dt_list
-        # return get_form_template('SetMetadataAction', 'Set Metadata', form, "This action will change metadata for the dataset.")
-        form = """
-          p_str += "<p>Leave any of these fields blank if they do not need to be set.</p><label for='pja__"+pja.output_name+"__SetMetadataAction__chromCol'>Chrom Column</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__chromCol'/>\
-                    <label for='pja__"+pja.output_name+"__SetMetadataAction__startCol'>Start Column</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__startCol'/>\
-                    <label for='pja__"+pja.output_name+"__SetMetadataAction__endCol'>End Column</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__endCol'/>\
-                    <label for='pja__"+pja.output_name+"__SetMetadataAction__comment_lines'>Comment Lines</label>\
-                        <input type='text' name='pja__"+pja.output_name+"__SetMetadataAction__comment_lines'/>\
-                      ";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will set metadata in the output dataset.")
 
 
 class DeleteIntermediatesAction(DefaultJobAction):
@@ -455,14 +306,6 @@ class DeleteIntermediatesAction(DefaultJobAction):
             pass
 
     @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            p_str += "<label for='pja__"+pja.output_name+"__DeleteIntermediatesAction'>There are no additional options for this action.</label>\
-                        <input type='hidden' name='pja__"+pja.output_name+"__DeleteIntermediatesAction'/>";
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "All non-output steps of this workflow will have datasets deleted if they are no longer being used as job inputs when the job this PostJobAction is attached to is finished.  You *must* be using workflow outputs (the snowflake) in your workflow for this to have any effect.", on_output=False)
-
-    @classmethod
     def get_short_str(cls, pja):
         return "Delete parent datasets of this step created in this workflow that aren't flagged as outputs."
 
@@ -480,20 +323,6 @@ class TagDatasetAction(DefaultJobAction):
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
                         app.tag_handler.set_tags_from_list( job.user, dataset_assoc.dataset, tags)
             sa_session.flush()
-
-    @classmethod
-    def get_config_form(cls, trans):
-        form = """
-            if (pja.action_arguments && pja.action_arguments.tags){
-                p_str += "<label for='pja__"+pja.output_name+"__TagDatasetAction__tags'>Tags:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__TagDatasetAction__tags' value=\\"" + pja.action_arguments.tags.replace(/"/g, "&quot;") + "\\"/>";
-            }
-            else{
-                p_str += "<label for='pja__"+pja.output_name+"__TagDatasetAction__tags'>Tags:</label>\
-                          <input type='text' name='pja__"+pja.output_name+"__TagDatasetAction__tags' value=''/>";
-            }
-            """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will set tags for the dataset.")
 
     @classmethod
     def get_short_str(cls, pja):
@@ -548,21 +377,6 @@ class ActionBox(object):
                 # Not pja stuff.
                 pass
         return dumps(npd)
-
-    @classmethod
-    def get_add_list(cls):
-        addlist = "<select id='new_pja_list' name='new_pja_list'>"
-        for action in ActionBox.public_actions:
-            addlist += "<option value='%s'>%s</option>" % (ActionBox.actions[action].name, ActionBox.actions[action].verbose_name)
-        addlist += "</select>"
-        return addlist
-
-    @classmethod
-    def get_forms(cls, trans):
-        forms = ""
-        for action in ActionBox.actions:
-            forms += ActionBox.actions[action].get_config_form(trans)
-        return forms
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

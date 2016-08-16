@@ -15,6 +15,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import inflector
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
@@ -236,9 +237,8 @@ class Data( object ):
     def _archive_composite_dataset( self, trans, data=None, **kwd ):
         # save a composite object into a compressed archive for downloading
         params = util.Params( kwd )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         outfname = data.name[0:150]
-        outfname = ''.join(c in valid_chars and c or '_' for c in outfname)
+        outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
         if params.do_action is None:
             params.do_action = 'zip'  # default
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -308,8 +308,7 @@ class Data( object ):
 
     def _serve_raw(self, trans, dataset, to_ext):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
@@ -358,8 +357,7 @@ class Data( object ):
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
                 if not to_ext:
                     to_ext = data.extension
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+                fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
                 trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
                 return open( data.file_name )

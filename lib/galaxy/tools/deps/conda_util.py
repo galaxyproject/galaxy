@@ -1,6 +1,7 @@
 import functools
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -11,6 +12,8 @@ import six
 import yaml
 
 from ..deps import commands
+
+log = logging.getLogger(__name__)
 
 # Not sure there are security concerns, lets just fail fast if we are going
 # break shell commands we are building.
@@ -99,6 +102,40 @@ class CondaContext(object):
             return info
         else:
             return None
+
+    def is_conda_installed(self):
+        """
+        Check if conda_exec exists
+        """
+        if os.path.exists(self.conda_exec):
+            return True
+        else:
+            return False
+
+    def can_install_conda(self):
+        """
+        If conda_exec is set to a path outside of conda_prefix,
+        there is no use installing conda into conda_prefix, since it can't be used by galaxy.
+        If conda_exec equals conda_prefix/bin/conda, we can install conda if either conda_prefix
+        does not exist or is empty.
+        """
+        conda_exec = os.path.abspath(self.conda_exec)
+        conda_prefix_plus_exec = os.path.abspath(os.path.join(self.conda_prefix, 'bin/conda'))
+        if conda_exec == conda_prefix_plus_exec:
+            if not os.path.exists(self.conda_prefix):
+                return True
+            elif os.listdir(self.conda_prefix) == []:
+                os.rmdir(self.conda_prefix)  # Conda's install script fails if path exists (even if empty).
+                return True
+            else:
+                log.warning("Cannot install Conda because conda_prefix '%s' exists and is not empty.",
+                            self.conda_prefix)
+                return False
+        else:
+            log.warning("Skipping installation of Conda into conda_prefix '%s', "
+                        "since conda_exec '%s' is set to a path outside of conda_prefix.",
+                        self.conda_prefix, self.conda_exec)
+            return False
 
     def load_condarc(self):
         condarc = self.condarc
@@ -270,7 +307,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
 # these commands as Python
 def install_conda(conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    f, script_path = tempfile.mkstemp(suffix=".bash", prefix="conda_install")
+    f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
     download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
     install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)

@@ -4,6 +4,7 @@ Provides factory methods to assemble the Galaxy web application
 
 import os
 import sys
+import threading
 import atexit
 
 try:
@@ -13,7 +14,6 @@ except:
 
 
 import galaxy.app
-from galaxy.config import process_is_uwsgi
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
@@ -22,21 +22,13 @@ import galaxy.web.framework.webapp
 from galaxy.webapps.util import build_template_error_formatters
 from galaxy import util
 from galaxy.util import asbool
+from galaxy.util.postfork import process_is_uwsgi, register_postfork_function
 from galaxy.util.properties import load_app_properties
 
 from paste import httpexceptions
 
 import logging
 log = logging.getLogger( __name__ )
-
-try:
-    from uwsgidecorators import postfork
-except:
-    # TODO:  Make this function more like flask's @before_first_request w/
-    # registered methods etc.
-    def pf_dec(func):
-        return func
-    postfork = pf_dec
 
 
 class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
@@ -84,6 +76,7 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
     webapp.add_route( '/history', controller='history', action='view' )
+    webapp.add_route( '/history/view/{id}', controller='history', action='view' )
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
     webapp.add_route( '/login', controller='root', action='login' )
@@ -135,9 +128,11 @@ def paste_app_factory( global_conf, **kwargs ):
     except:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
-    if not process_is_uwsgi:
-        postfork_setup()
+    register_postfork_function(postfork_setup)
 
+    for th in threading.enumerate():
+        if th.is_alive():
+            log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
     return webapp
 
@@ -158,7 +153,6 @@ def uwsgi_app_factory():
     return app_factory(global_conf, **kwargs)
 
 
-@postfork
 def postfork_setup():
     from galaxy.app import app
     if process_is_uwsgi:
@@ -195,6 +189,11 @@ def populate_api_routes( webapp, app ):
                            "/api/histories/{history_id}/contents/{history_content_id}/display",
                            controller="datasets",
                            action="display",
+                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect( "history_contents_metadata_file",
+                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
+                           controller="datasets",
+                           action="get_metadata_file",
                            conditions=dict(method=["GET"]))
     webapp.mapper.resource( 'user',
                             'users',

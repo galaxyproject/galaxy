@@ -51,26 +51,35 @@ var View = Backbone.View.extend({
         this._changeDisabled();
     },
 
-    /** Renders the classic multiple selection box */
+    /** Renders the classic selection field */
     _renderClassic: function() {
         var self = this;
-        this.$el.addClass( 'ui-select-multiple' )
+        this.$el.addClass( this.model.get( 'multiple' ) ? 'ui-select-multiple' : 'ui-select' )
                 .append( this.$select      = $( '<select/>' ) )
+                .append( this.$dropdown    = $( '<div/>' ) )
                 .append( this.$resize      = $( '<div/>' )
                 .append( this.$resize_icon = $( '<i/>' ) ) );
-        this.$resize_icon.addClass( 'fa fa-angle-double-right fa-rotate-45' );
-        this.$resize.removeClass()
-                    .addClass( 'icon-resize' )
-                    .off( 'mousedown' ).on( 'mousedown', function( event ) {
-                        var currentY = event.pageY;
-                        var currentHeight = self.$select.height();
-                        self.minHeight = self.minHeight || currentHeight;
-                        $( '#dd-helper' ).show().on( 'mousemove', function( event ) {
-                            self.$select.height( Math.max( currentHeight + ( event.pageY - currentY ), self.minHeight ) );
-                        }).on( 'mouseup mouseleave', function() {
-                            $( '#dd-helper' ).hide().off();
+        if ( this.model.get( 'multiple' ) ) {
+            this.$dropdown.hide();
+            this.$resize_icon.addClass( 'fa fa-angle-double-right fa-rotate-45' ).show();
+            this.$resize.removeClass()
+                        .addClass( 'icon-resize' )
+                        .show()
+                        .off( 'mousedown' ).on( 'mousedown', function( event ) {
+                            var currentY = event.pageY;
+                            var currentHeight = self.$select.height();
+                            self.minHeight = self.minHeight || currentHeight;
+                            $( '#dd-helper' ).show().on( 'mousemove', function( event ) {
+                                self.$select.height( Math.max( currentHeight + ( event.pageY - currentY ), self.minHeight ) );
+                            }).on( 'mouseup mouseleave', function() {
+                                $( '#dd-helper' ).hide().off();
+                            });
                         });
-                    });
+        } else {
+            this.$dropdown.show();
+            this.$resize.hide();
+            this.$resize_icon.hide();
+        }
     },
 
     /** Renders the default select2 field */
@@ -156,11 +165,9 @@ var View = Backbone.View.extend({
 
     /** Searchable fields may display a spinner e.g. while waiting for a server response */
     _changeWait: function() {
-        if ( this.model.get( 'searchable' ) ) {
-            this.$dropdown.removeClass()
-                          .addClass( 'icon-dropdown fa' )
-                          .addClass( this.model.get( 'wait' ) ? 'fa-spinner fa-spin' : 'fa-caret-down' );
-        }
+        this.$dropdown.removeClass()
+                      .addClass( 'icon-dropdown fa' )
+                      .addClass( this.model.get( 'wait' ) ? 'fa-spinner fa-spin' : 'fa-caret-down' );
     },
 
     /** Handles field visibility */

@@ -215,6 +215,16 @@ class User( object, Dictifiable ):
                     roles.append( role )
         return roles
 
+    def all_roles_exploiting_cache( self ):
+        """
+        """
+        roles = [ ura.role for ura in self.roles ]
+        for group in [ uga.group for uga in self.groups ]:
+            for role in [ gra.role for gra in group.roles ]:
+                if role not in roles:
+                    roles.append( role )
+        return roles
+
     def get_disk_usage( self, nice_size=False ):
         """
         Return byte count of disk space used by user or a human-readable
@@ -3298,6 +3308,15 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
     def type_id( cls ):
         return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
                   type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
+
+    def to_hda_representative( self, multiple=False ):
+        rval = []
+        for dataset in self.collection.dataset_elements:
+            rval.append( dataset.dataset_instance )
+            if multiple is False:
+                break
+        if len( rval ) > 0:
+            return rval if multiple else rval[ 0 ]
 
     def to_dict( self, view='collection' ):
         dict_value = dict(

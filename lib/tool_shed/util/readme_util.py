@@ -93,7 +93,7 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
     Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section
     selection page.
     """
-    name = repo_info_dict.keys()[ 0 ]
+    name = next(iter(repo_info_dict))
     repo_info_tuple = repo_info_dict[ name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
         repository_util.get_repo_info_tuple_contents( repo_info_tuple )
@@ -109,8 +109,8 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
 def get_readme_file_names( repository_name ):
     """Return a list of file names that will be categorized as README files for the received repository_name."""
     readme_files = [ 'readme', 'read_me', 'install' ]
-    valid_filenames = map( lambda f: '%s.txt' % f, readme_files )
-    valid_filenames.extend( map( lambda f: '%s.rst' % f, readme_files ) )
+    valid_filenames = ['%s.txt' % f for f in readme_files]
+    valid_filenames.extend( ['%s.rst' % f for f in readme_files] )
     valid_filenames.extend( readme_files )
     valid_filenames.append( '%s.txt' % repository_name )
     valid_filenames.append( '%s.rst' % repository_name )
