@@ -1,13 +1,8 @@
 import logging
-import os
-import json
 
 from .filelock import FileLock
 from galaxy.util import sockets
 from galaxy.util import sqlite
-from galaxy.util import unique_id
-import urllib2
-import time
 
 log = logging.getLogger( __name__ )
 
@@ -23,11 +18,12 @@ SECURE_COOKIE = "galaxysession"
 class ProxyManager(object):
 
     def __init__( self, config ):
-        for option in [ "proxy_session_map" ]: 
+        for option in [ "proxy_session_map" ]:
             setattr( self, option, getattr( config, option ) )
-        # Register lookup function with uwsgi (defined here to capture 
+        # Register lookup function with uwsgi (defined here to capture
         # configuration)
         proxy_session_map = self.proxy_session_map
+
         def dynamic_proxy_mapper(hostname, galaxy_session):
             db_conn = sqlite.connect( proxy_session_map )
             if galaxy_session:
@@ -65,8 +61,6 @@ class ProxyManager(object):
         # TODO: These shouldn't need to be request.host and request.scheme -
         # though they are reasonable defaults.
         host = trans.request.host
-        ## if ':' in host:
-        ##     host = host[0:host.index(':')]
         scheme = trans.request.scheme
         proxy_url = '%s://%s%s' % (scheme, host, proxy_prefix)
         return {
