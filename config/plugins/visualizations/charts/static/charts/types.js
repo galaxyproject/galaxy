@@ -45,7 +45,7 @@ return Backbone.Model.extend(
     // types
     defaults: {
         'nvd3_bar'                          : nvd3_bar,
-        'nvd3_bar_stacked'                  : nvd3_bar_stacked,
+        /*'nvd3_bar_stacked'                  : nvd3_bar_stacked,
         'nvd3_bar_horizontal'               : nvd3_bar_horizontal,
         'nvd3_bar_horizontal_stacked'       : nvd3_bar_horizontal_stacked,
         'nvd3_line_focus'                   : nvd3_line_focus,
@@ -62,7 +62,7 @@ return Backbone.Model.extend(
         'jqplot_scatter'                    : jqplot_scatter,
         'jqplot_boxplot'                    : jqplot_boxplot,
         'others_heatmap'                    : others_heatmap,
-        'others_heatmap_cluster'            : others_heatmap_cluster
+        'others_heatmap_cluster'            : others_heatmap_cluster*/
     }
 });
 
