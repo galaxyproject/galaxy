@@ -121,7 +121,6 @@ class GodockerJobRunner(AsynchronousJobRunner):
             3: Login to godocker and store the token
             4: Start the worker and monitor threads
         """
-        log.debug("Loading app %s", app)
         runner_param_specs = dict(godocker_master=dict(map=str), user=dict(map=str), key=dict(map=str), godocker_project=dict(map=str))
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -138,7 +137,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         else:
             """ Following methods starts threads.
                 These methods invoke threading.Thread(name,target)
-                      which inturn invokes methods monitor() and run_next().
+                      which in turn invokes methods monitor() and run_next().
             """
             self._init_monitor_thread()
             self._init_worker_threads()
@@ -152,7 +151,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """ Submit job to godocker """
         job_id = self.post_task(job_wrapper)
         if not job_id:
-            log.error("Job creation faliure.  No Response from GoDocker")
+            log.error("Job creation failure.  No Response from GoDocker")
             job_wrapper.fail("Not submitted")
         else:
             log.debug("Starting queue_job for job " + job_id)
