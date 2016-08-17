@@ -70,8 +70,6 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="tool_shed" )
-
-
     add_ui_controllers( webapp, app )
     webapp.add_route( '/view/{owner}', controller='repository', action='sharable_owner' )
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
