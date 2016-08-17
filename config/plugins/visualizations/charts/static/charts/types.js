@@ -45,7 +45,7 @@ return Backbone.Model.extend(
     // types
     defaults: {
         'nvd3_bar'                          : nvd3_bar,
-        /*'nvd3_bar_stacked'                  : nvd3_bar_stacked,
+        'nvd3_bar_stacked'                  : nvd3_bar_stacked,
         'nvd3_bar_horizontal'               : nvd3_bar_horizontal,
         'nvd3_bar_horizontal_stacked'       : nvd3_bar_horizontal_stacked,
         'nvd3_line_focus'                   : nvd3_line_focus,
@@ -56,7 +56,7 @@ return Backbone.Model.extend(
         'nvd3_line'                         : nvd3_line,
         'nvd3_scatter'                      : nvd3_scatter,
         'nvd3_histogram'                    : nvd3_histogram,
-        'jqplot_bar'                        : jqplot_bar,
+        /*'jqplot_bar'                        : jqplot_bar,
         'jqplot_histogram_discrete'         : jqplot_histogram_discrete,
         'jqplot_line'                       : jqplot_line,
         'jqplot_scatter'                    : jqplot_scatter,

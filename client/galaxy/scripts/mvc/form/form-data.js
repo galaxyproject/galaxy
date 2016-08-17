@@ -2,7 +2,7 @@
     This class maps the form dom to an api compatible javascript dictionary.
 */
 define([ 'utils/utils' ], function( Utils ) {
-    var Manager = Backbone.Model.extend({
+    var Manager = Backbone.View.extend({
         initialize: function( app ) {
             this.app = app;
         },
@@ -19,14 +19,6 @@ define([ 'utils/utils' ], function( Utils ) {
                 }
             });
             return sum;
-        },
-
-        /** Set parameter values from model */
-        set: function( model ) {
-            for ( var attr in model.attributes ) {
-                var index = this.match( attr );
-                index && this.app.field_list[ index ].value( model.get( attr ) );
-            }
         },
 
         /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission. */

@@ -9,10 +9,22 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
                 icon            : null,
-                always_refresh  : true
+                always_refresh  : true,
+                values          : null,
+                inputs          : []
             });
             this.setElement( '<div/>' );
+            this.options.inputs = $.extend( {}, this.options.inputs, true );
+            this.options.values && this.set( this.options.values );
             this.render();
+        },
+
+        /** Set parameter values from value dictionary */
+        set: function( values ) {
+            var self = this;
+            FormData.visitInputs( this.options.inputs, function( input, name, prefix ) {
+                input.value = values[ name ] !== undefined ? values[ name ] : input.value;
+            });
         },
 
         /** Update available options */

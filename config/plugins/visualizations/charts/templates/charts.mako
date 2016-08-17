@@ -12,6 +12,7 @@
 
         ## install shared libraries
         ${h.js( 'libs/jquery/jquery',
+                'libs/jquery/jquery-ui',
                 'libs/jquery/select2',
                 'libs/bootstrap',
                 'libs/underscore',
@@ -20,7 +21,7 @@
                 'libs/require')}
 
         ## shared css
-        ${h.css( 'base' )}
+        ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui' )}
 
         ## crossfilter
         ${h.javascript_link( app_root + "plugins/crossfilter/crossfilter.js" )}

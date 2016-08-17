@@ -8,7 +8,7 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
             this.group = options.group;
             this.setElement( $( '<div/>' ) );
             this.chart.on( 'change:dataset_id change:type', function() { self.render() } );
-            this.group.on( 'change', function() { self.form && self.form.data.set( self.group ) } );
+            this.group.on( 'change', function() { self.form && self.form.set( self.group ) } );
             this.render();
         },
 
@@ -50,7 +50,7 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
                                 }
                             }
                             self.chart.state( 'ok', 'Metadata initialized...' );
-                            self.form.data.set( self.group );
+                            self.form.set( self.group );
                             self.form.setOnChange( function() {
                                 self.group.set( self.form.data.create() );
                                 self.chart.set( 'modified', true );
