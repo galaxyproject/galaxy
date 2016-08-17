@@ -789,7 +789,6 @@ class RepositoriesController( BaseAPIController ):
             return encoding_util.tool_shed_encode( tool_shed_status_dict ) if hexlify_this else json.dumps( tool_shed_status_dict )
         return encoding_util.tool_shed_encode({}) if hexlify_this else json.dumps({})
 
-
     @expose_api_anonymous_and_sessionless
     def show_tools( self, trans, id, changeset, **kwd ):
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
