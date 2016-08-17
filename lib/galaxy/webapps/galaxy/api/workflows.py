@@ -42,8 +42,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param  show_published:      if True, show also published workflows
         :type   show_published:      boolean
+        :param  missing_tools:  if True, include a list of missing tools per workflow
+        :type   missing_tools:  boolean
         """
         show_published = util.string_as_bool( kwd.get( 'show_published', 'False' ) )
+        missing_tools = util.string_as_bool( kwd.get( 'missing_tools', 'False' ) )
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
@@ -65,7 +68,34 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['url'] = url_for( 'workflow', id=encoded_id )
             item['owner'] = wf_sa.stored_workflow.user.username
             rval.append(item)
+        if missing_tools:
+            workflows_missing_tools = []
+            for key, value in enumerate(rval):
+                tool_ids = []
+                workflow_details = self.workflow_contents_manager.workflow_to_dict( trans, self.__get_stored_workflow( trans, value[ 'id' ] ), style='instance' )
+                if 'steps' in workflow_details:
+                    for step in workflow_details[ 'steps' ]:
+                        tool_id = workflow_details[ 'steps' ][ step ][ 'tool_id' ]
+                        if tool_id not in tool_ids and self.__is_missing( trans, tool_id ):
+                            tool_ids.append( tool_id )
+                if len( tool_ids ) > 0:
+                    value[ 'missing_tools' ] = tool_ids
+                    workflows_missing_tools.append( value )
+            return workflows_missing_tools
         return rval
+
+    def __is_missing( self, trans, tool_id ):
+        # First make sure the tool ID A) Is valid, and B) Corresponds to a
+        # toolshed tool.
+        if tool_id is None:
+            return False
+        if 'repos' not in tool_id:
+            return False
+        # It is a valid tool ID, and it is from a toolshed. Check if it's
+        # missing from the toolbox.
+        if trans.app.toolbox.get_tool( tool_id ) is None:
+            return True
+        return False
 
     @expose_api
     def show(self, trans, id, **kwd):
