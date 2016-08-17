@@ -10,7 +10,6 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
-import cProfile
 from json import dumps, loads
 
 from markupsafe import escape
