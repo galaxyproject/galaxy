@@ -13,9 +13,8 @@ import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
 from galaxy.webapps.util import build_template_error_formatters
-from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
-from galaxy.config import process_is_uwsgi
+from galaxy.util.postfork import process_is_uwsgi
 from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger( __name__ )
@@ -80,6 +79,7 @@ def app_factory( global_conf, **kwargs ):
                       image_file=None )
     webapp.add_route( '/{controller}/{action}', action='index' )
     webapp.add_route( '/{action}', controller='repository', action='index' )
+    # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
@@ -204,9 +204,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # other middleware):
     app = httpexceptions.make_middleware( app, conf )
     log.debug( "Enabling 'httpexceptions' middleware" )
-    # Then load the Hg middleware.
-    app = hg.Hg( app, conf )
-    log.debug( "Enabling 'hg' middleware" )
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server

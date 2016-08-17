@@ -22,6 +22,7 @@ module.exports = function( grunt ){
             'farbtastic':     [ 'src/farbtastic.js', 'farbtastic.js' ],
             'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
             'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],
+            'jquery.complexify':     [ 'jquery.complexify.js', 'jquery.complexify.js' ],
 
             'react':          [ 'react.js', 'react.js' ],
             // 'react-dom':      [ 'react-dom.js', 'react-dom.js' ],

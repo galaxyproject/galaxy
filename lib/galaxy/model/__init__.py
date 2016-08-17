@@ -215,6 +215,16 @@ class User( object, Dictifiable ):
                     roles.append( role )
         return roles
 
+    def all_roles_exploiting_cache( self ):
+        """
+        """
+        roles = [ ura.role for ura in self.roles ]
+        for group in [ uga.group for uga in self.groups ]:
+            for role in [ gra.role for gra in group.roles ]:
+                if role not in roles:
+                    roles.append( role )
+        return roles
+
     def get_disk_usage( self, nice_size=False ):
         """
         Return byte count of disk space used by user or a human-readable
@@ -3109,11 +3119,17 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
 
     @property
     def populated( self ):
-        return self.populated_state == DatasetCollection.populated_states.OK
+        top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
+        if top_level_populated and self.has_subcollections:
+            return all(map(lambda e: e.child_collection.populated, self.elements))
+        return top_level_populated
 
     @property
     def waiting_for_elements( self ):
-        return self.populated_state == DatasetCollection.populated_states.NEW
+        top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
+        if not top_level_waiting and self.has_subcollections:
+            return any(map(lambda e: e.child_collection.waiting_for_elements, self.elements))
+        return top_level_waiting
 
     def mark_as_populated( self ):
         self.populated_state = DatasetCollection.populated_states.OK
@@ -3177,6 +3193,10 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     def set_from_dict( self, new_data ):
         # Nothing currently editable in this class.
         return {}
+
+    @property
+    def has_subcollections(self):
+        return ":" in self.collection_type
 
 
 class DatasetCollectionInstance( object, HasName ):
@@ -3288,6 +3308,15 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
     def type_id( cls ):
         return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
                   type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
+
+    def to_hda_representative( self, multiple=False ):
+        rval = []
+        for dataset in self.collection.dataset_elements:
+            rval.append( dataset.dataset_instance )
+            if multiple is False:
+                break
+        if len( rval ) > 0:
+            return rval if multiple else rval[ 0 ]
 
     def to_dict( self, view='collection' ):
         dict_value = dict(

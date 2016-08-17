@@ -126,7 +126,7 @@ var View = Backbone.View.extend({
     /** Hide portlet */
     hide: function(){
         this.visible = false;
-        this.$el.fadeOut( 'fast' );
+        this.$el.hide();
     },
 
     /** Enable a particular button */

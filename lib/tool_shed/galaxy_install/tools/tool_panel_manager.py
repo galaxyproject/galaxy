@@ -356,7 +356,7 @@ class ToolPanelManager( object ):
                     tool_panel_dict = self.generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
                 if tool_panel_dict:
                     # The tool_panel_dict is empty when tools exist but are not installed into a tool panel section.
-                    tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                    tool_section_dicts = tool_panel_dict[ next(iter(tool_panel_dict)) ]
                     tool_section_dict = tool_section_dicts[ 0 ]
                     original_section_id = tool_section_dict[ 'id' ]
                     if original_section_id:
@@ -423,7 +423,7 @@ class ToolPanelManager( object ):
         self.app.install_model.context.flush()
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
-        guids_to_remove = [ k for k in tool_panel_dict.keys() ]
+        guids_to_remove = list(tool_panel_dict.keys())
         self.remove_guids( guids_to_remove, shed_tool_conf, uninstall )
 
     def remove_guids( self, guids_to_remove, shed_tool_conf, uninstall ):

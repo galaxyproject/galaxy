@@ -185,7 +185,8 @@ def build_docker_run_command(
 def command_list(command, command_args=[], **kwds):
     """Return Docker command as an argv list."""
     command_parts = _docker_prefix(**kwds)
-    command_parts.extend(command_parts)
+    command_parts.append(command)
+    command_parts.extend(command_args)
     return command_parts
 
 

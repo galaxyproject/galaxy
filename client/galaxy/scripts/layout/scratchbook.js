@@ -175,7 +175,7 @@ return Backbone.View.extend({
             var $galaxy_main = $( window.parent.document ).find( '#galaxy_main' );
             if ( options.target == 'galaxy_main' || options.target == 'center' ) {
                 if ( $galaxy_main.length === 0 ) {
-                    window.location = options.url + ( href.indexOf( '?' ) == -1 ? '?' : '&' ) + 'use_panels=True';
+                    window.location = options.url + ( options.url.indexOf( '?' ) == -1 ? '?' : '&' ) + 'use_panels=True';
                 } else {
                     $galaxy_main.attr( 'src', options.url );
                 }

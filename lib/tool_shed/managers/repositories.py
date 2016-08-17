@@ -1,13 +1,13 @@
 """
 Manager and Serializer for TS repositories.
 """
-from galaxy.exceptions import InconsistentDatabase
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import InternalServerError
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
-
 import logging
+
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
+from galaxy.exceptions import (InconsistentDatabase, InternalServerError,
+    RequestParameterInvalidException)
+
 log = logging.getLogger( __name__ )
 
 

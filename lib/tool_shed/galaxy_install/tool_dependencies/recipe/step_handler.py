@@ -1,26 +1,23 @@
+import hashlib
 import logging
 import os
 import re
 import shutil
 import stat
-from string import Template
 import tarfile
 import tempfile
 import time
 import urllib2
 import zipfile
-import hashlib
+from string import Template
+
+# TODO: eliminate the use of fabric here.
+from fabric.api import lcd, settings
 
 from galaxy.util import asbool
 from galaxy.util.template import fill_template
-
-from tool_shed.util import basic_util
-from tool_shed.util import tool_dependency_util
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
-
-# TODO: eliminate the use of fabric here.
-from fabric.api import settings
-from fabric.api import lcd
+from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger( __name__ )
 
@@ -650,7 +647,7 @@ class DownloadBinary( Download, RecipeStep ):
             url_template_elem = tool_dependency_util.get_download_url_for_platform( url_template_elems, platform_info_dict )
         else:
             url_template_elem = url_template_elems[ 0 ]
-        action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
+        action_dict[ 'url' ] = Template( url_template_elem.text.strip() ).safe_substitute( platform_info_dict )
         action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
         action_dict.update( self.get_elem_checksums( action_elem ) )
         return action_dict
@@ -1175,7 +1172,7 @@ class SetupPerlEnvironment( Download, RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
-        self.type = 'setup_purl_environment'
+        self.type = 'setup_perl_environment'
 
     def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, current_dir=None, initial_download=False ):

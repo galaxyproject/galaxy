@@ -24,25 +24,24 @@
 
 //============================================================================= collection panel
 .dataset-collection-panel {
-    margin: 0px;
-    padding: 0px;
+    .flex-vertical-container;
 
     .vertically-spaced {
         margin-top: 4px;
     }
 
-    .controls {
-        padding: 8px;
+    > .controls {
+        margin: 8px 8px 1px;
+        padding: 0px;
+        // padding: 8px;
 
         .navigation {
             margin-top: 4px;
             .back {
-//TODO: to more generic less class
-                .fa-icon {
+                span {
+                    .fa-lg;
                     margin-right: 4px;
-                    font-size: 120%;
                     font-weight: bold;
-                    text-decoration: none;
                 }
             }
         }
@@ -53,9 +52,20 @@
             }
         }
     }
-    .list-items {
-        .dataset-collection-element {
+
+    > .list-items {
+        .flex-column;
+        overflow-x: hidden;
+        overflow-y: auto;
+
+        &:not(:empty) {
+            border-top: 1px solid @border-default-color;
+        }
+        .list-item {
             border-width: 1px 0px 0px 0px;
+            &:first-child {
+                border-top-width: 0px;
+            }
             &:last-child {
                 border-bottom-width: 1px;
             }

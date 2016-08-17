@@ -86,7 +86,15 @@ def inherit(context):
     			$(".errormessage").html(message);
     		}
 
-    		$('#registration').bind('submit', function(e) {
+            $("[name='password']").complexify({'minimumChars':6}, function(valid, complexity){
+                var progressBar = $('.progress-bar');
+                var color = valid ? 'lightgreen' : 'red';
+
+                progressBar.css('background-color', color);
+                progressBar.css({'width': complexity + '%'});
+            });
+
+            $('#registration').bind('submit', function(e) {
     			$('#send').attr('disabled', 'disabled');
                 
                 // we need this value to detect submitting at backend
@@ -129,6 +137,11 @@ def inherit(context):
             <div class="form-row">
                 <label>Password:</label>
                 <input id="password_input" type="password" name="password" value="" size="40"/>
+            </div>
+            <div class="progress">
+                <div id="complexity-bar" class="progress-bar" role="progressbar">
+                    Strength
+                </div>
             </div>
             <div class="form-row">
                 <label>Confirm password:</label>

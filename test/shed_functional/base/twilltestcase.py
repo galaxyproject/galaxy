@@ -947,7 +947,7 @@ class ShedTwillTestCase( TwillTestCase ):
         repository_ids = self.initiate_installation_process()
         self.wait_for_repository_installation( repository_ids )
 
-    def install_repository( self, name, owner, category_name, install_tool_dependencies=False,
+    def install_repository( self, name, owner, category_name, install_resolver_dependencies=False, install_tool_dependencies=False,
                             install_repository_dependencies=True, changeset_revision=None,
                             strings_displayed=None, strings_not_displayed=None, preview_strings_displayed=None,
                             post_submit_strings_displayed=None, new_tool_panel_section_label=None, includes_tools_for_display_in_tool_panel=True,
@@ -971,6 +971,7 @@ class ShedTwillTestCase( TwillTestCase ):
         assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
         kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
         kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
+        kwd = self.set_form_value( form, kwd, 'install_resolver_dependencies', install_resolver_dependencies )
         kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
         if new_tool_panel_section_label is not None:
             kwd = self.set_form_value( form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label )

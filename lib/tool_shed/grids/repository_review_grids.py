@@ -1,14 +1,12 @@
 import logging
 
-from sqlalchemy import and_, false, null, or_, true
-
 from markupsafe import escape
+from sqlalchemy import and_, false, null, or_, true
 
 from galaxy.web.framework.helpers import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.grids.repository_grids import RepositoryGrid
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
+from tool_shed.util import hg_util, metadata_util
 
 log = logging.getLogger( __name__ )
 
