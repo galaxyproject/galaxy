@@ -42,7 +42,7 @@ steps:
         - ".upload-button"
 
     - title: "Insert URLs"
-      element: "textarea#text-content"
+      element: ".upload-text-content:first"
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       position: "top"
       textinsert: |

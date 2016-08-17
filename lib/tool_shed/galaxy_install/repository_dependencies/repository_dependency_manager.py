@@ -5,13 +5,12 @@ into Galaxy from the Tool Shed.
 import json
 import logging
 import os
-import urllib
-import urllib2
 
-from galaxy.util import asbool, url_get, build_url
+from six.moves.urllib.parse import urlencode
+from six.moves.urllib.request import Request, urlopen
 
+from galaxy.util import asbool, build_url, url_get
 from tool_shed.galaxy_install.tools import tool_panel_manager
-
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
@@ -380,10 +379,10 @@ class RepositoryDependencyInstallManager( object ):
                         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed_url )
                     pathspec = [ 'repository', 'get_required_repo_info_dict' ]
                     url = build_url( tool_shed_url, pathspec=pathspec )
-                    # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
-                    url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
-                    request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
-                    response = urllib2.urlopen( request ).read()
+                    # Fix for handling 307 redirect not being handled nicely by urlopen() when the Request() has data provided
+                    url = urlopen( Request( url ) ).geturl()
+                    request = Request( url, data=urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
+                    response = urlopen( request ).read()
                     if response:
                         try:
                             required_repo_info_dict = json.loads( response )
@@ -411,8 +410,8 @@ class RepositoryDependencyInstallManager( object ):
                                     # lists of discovered repository dependencies, but these lists will be empty in the
                                     # required_repo_info_dict since dependency discovery has not yet been performed for these
                                     # dictionaries.
-                                    required_repo_info_dict_key = required_repo_info_dict.keys()[ 0 ]
-                                    all_repo_info_dicts_keys = [ d.keys()[ 0 ] for d in all_repo_info_dicts ]
+                                    required_repo_info_dict_key = next(iter(required_repo_info_dict))
+                                    all_repo_info_dicts_keys = [ next(iter(d)) for d in all_repo_info_dicts ]
                                     if required_repo_info_dict_key not in all_repo_info_dicts_keys:
                                         all_repo_info_dicts.append( required_repo_info_dict )
                                     else:

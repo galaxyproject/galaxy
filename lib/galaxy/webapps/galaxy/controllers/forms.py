@@ -12,10 +12,6 @@ log = logging.getLogger( __name__ )
 
 VALID_FIELDNAME_RE = re.compile( "^[a-zA-Z0-9\_]+$" )
 
-# TODO: not used in this file
-from galaxy.tools.parameters.basic import parameter_types  # noqa
-from xml.etree.ElementTree import XML, Element  # noqa
-
 
 class FormsGrid( grids.Grid ):
     # Custom column types

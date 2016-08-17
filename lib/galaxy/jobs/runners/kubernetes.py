@@ -166,6 +166,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # to assemble the command.
             # TODO possibly shell needs to be set by job_wrapper
             "command": ["/bin/bash", "-c", job_wrapper.runner_command_line],
+            "workingDir": job_wrapper.working_directory,
             "volumeMounts": [{
                 "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
                 "name": self._galaxy_vol_name

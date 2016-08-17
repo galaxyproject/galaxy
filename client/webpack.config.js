@@ -20,6 +20,7 @@ var webpack = require( 'webpack' ),
         'libs/jquery/jquery-ui',
         'libs/bootstrap',
         'libs/bootstrap-tour',
+        'libs/jquery.complexify',
         // mvc
         'libs/underscore',
         'libs/backbone',

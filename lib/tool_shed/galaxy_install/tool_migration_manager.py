@@ -3,11 +3,11 @@ Manage automatic installation of tools configured in the xxx.xml files in ~/scri
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
 import json
+import logging
 import os
 import shutil
 import tempfile
 import threading
-import logging
 
 from galaxy import util
 from galaxy.tools.toolbox import ToolSection
@@ -248,7 +248,7 @@ class ToolMigrationManager( object ):
                 tree.write( tmp_filename, encoding='utf-8', xml_declaration=True )
                 fh.close()
                 shutil.move( tmp_filename, os.path.abspath( proprietary_tool_conf ) )
-                os.chmod( proprietary_tool_conf, 0644 )
+                os.chmod( proprietary_tool_conf, 0o644 )
 
     def get_containing_tool_sections( self, tool_config ):
         """

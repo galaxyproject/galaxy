@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+
+import abc
 import logging
 import mimetypes
 import os
@@ -7,11 +9,13 @@ import tempfile
 import zipfile
 from cgi import escape
 from inspect import isclass
-from six import string_types
 
-from . import metadata
+import paste
+import six
+
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import inflector
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
@@ -19,8 +23,7 @@ from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 
 from . import dataproviders
-
-import paste
+from . import metadata
 
 XSS_VULNERABLE_MIME_TYPES = [
     'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -35,7 +38,7 @@ col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vc
 valid_strand = ['+', '-', '.']
 
 
-class DataMeta( type ):
+class DataMeta( abc.ABCMeta ):
     """
     Metaclass for Data class.  Sets up metadata spec.
     """
@@ -47,6 +50,7 @@ class DataMeta( type ):
         metadata.Statement.process( cls )
 
 
+@six.add_metaclass(DataMeta)
 @dataproviders.decorators.has_dataproviders
 class Data( object ):
     """
@@ -72,7 +76,6 @@ class Data( object ):
     #: dictionary of metadata fields for this datatype::
     metadata_spec = None
 
-    __metaclass__ = DataMeta
     # Add metadata elements
     MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?" )
     # Stores the set of display applications, and viewing methods, supported by this datatype
@@ -158,7 +161,7 @@ class Data( object ):
         Specifying a list of 'skip' items will return True even when a named metadata value is missing
         """
         if check:
-            to_check = [ ( to_check, dataset.metadata.get( to_check ) ) for to_check in check ]
+            to_check = ( ( to_check, dataset.metadata.get( to_check ) ) for to_check in check )
         else:
             to_check = dataset.metadata.items()
         for key, value in to_check:
@@ -234,9 +237,8 @@ class Data( object ):
     def _archive_composite_dataset( self, trans, data=None, **kwd ):
         # save a composite object into a compressed archive for downloading
         params = util.Params( kwd )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         outfname = data.name[0:150]
-        outfname = ''.join(c in valid_chars and c or '_' for c in outfname)
+        outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
         if params.do_action is None:
             params.do_action = 'zip'  # default
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -306,8 +308,7 @@ class Data( object ):
 
     def _serve_raw(self, trans, dataset, to_ext):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
@@ -327,7 +328,7 @@ class Data( object ):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
-        if isinstance( data, string_types ):
+        if isinstance( data, six.string_types ):
             return data
         if filename and filename != "index":
             # For files in extra_files_path
@@ -356,8 +357,7 @@ class Data( object ):
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
                 if not to_ext:
                     to_ext = data.extension
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+                fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
                 trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
                 return open( data.file_name )
@@ -454,7 +454,7 @@ class Data( object ):
 
     def get_display_applications_by_dataset( self, dataset, trans ):
         rval = odict()
-        for key, value in self.display_applications.iteritems():
+        for key, value in self.display_applications.items():
             value = value.filter_by_dataset( dataset, trans )
             if value.links:
                 rval[key] = value
@@ -462,7 +462,7 @@ class Data( object ):
 
     def get_display_types(self):
         """Returns display types available"""
-        return self.supported_display_apps.keys()
+        return list(self.supported_display_apps.keys())
 
     def get_display_label(self, type):
         """Returns primary label for display app"""
@@ -525,7 +525,7 @@ class Data( object ):
         if len(params) > 0:
             trans.log_event( "Converter params: %s" % (str(params)), tool_id=converter.id )
         if not visible:
-            for value in converted_dataset.itervalues():
+            for value in converted_dataset.values():
                 value.visible = False
         if return_output:
             return converted_dataset
@@ -571,7 +571,7 @@ class Data( object ):
         files = odict()
         if self.composite_type != 'auto_primary_file':
             files[ self.primary_file_name ] = self.__new_composite_file( self.primary_file_name )
-        for key, value in self.get_composite_files( dataset=dataset ).iteritems():
+        for key, value in self.get_composite_files( dataset=dataset ).items():
             files[ key ] = value
         return files
 
@@ -585,7 +585,7 @@ class Data( object ):
                 return key % meta_value
             return key
         files = odict()
-        for key, value in self.composite_files.iteritems():
+        for key, value in self.composite_files.items():
             files[ substitute_composite_key( key, value ) ] = value
         return files
 
@@ -974,29 +974,24 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     file_type = None
     data_checked = False
     temp = open( file_name, "U" )
-    last_line = ''
-    while count <= LINE_COUNT:
-        line = last_line + temp.readline( WIDTH - len( last_line ) )
+    while count < LINE_COUNT:
+        line = temp.readline( WIDTH )
         if line and not is_multi_byte and not data_checked:
             # See if we have a compressed or binary file
             if line[0:2] == util.gzip_magic:
                 file_type = 'gzipped'
-                break
             else:
                 for char in line:
                     if ord( char ) > 128:
                         file_type = 'binary'
                         break
             data_checked = True
-        if file_type in [ 'gzipped', 'binary' ]:
-            break
+            if file_type in [ 'gzipped', 'binary' ]:
+                break
         if not line_wrap:
-            if '\n' in line:
-                i = line.index( '\n' )
-                last_line = line[i:]
-                line = line[:i]
+            if line.endswith('\n'):
+                line = line[:-1]
             else:
-                last_line = ''
                 while True:
                     i = temp.read(1)
                     if not i or i == '\n':

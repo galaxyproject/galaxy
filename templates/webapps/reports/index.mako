@@ -9,9 +9,9 @@
 </%def>
 
 <%def name="stylesheets()">
-    ${parent.stylesheets()}    
+    ${parent.stylesheets()}
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
+    ${h.css( "base", "autocomplete_tagging" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
@@ -63,12 +63,23 @@
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">
-                    <span>Sample Tracking</span>
+                    <span>Histories</span>
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_month_all' )}">Sequencing requests per month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_user' )}">Sequencing requests per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_per_user' )}">Histories and Datasets per User</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='history', action='history_and_dataset_type' )}">States of Datasets per History</a></div>
+                    </div>
+                </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
+                    <span>Tools</span>
+                </div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tools', action='tools_and_job_state' )}">States of Jobs per Tool</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='tools', action='tool_execution_time' )}">Execution Time per Tool</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -93,6 +104,7 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='registered_users' )}">Registered users</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='last_access_date', sort_id='default', order='default' )}">Date of last login</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='user_disk_usage', sort_id='default', order='default' )}">User disk usage</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='history_per_user', sort_id='default', order='default' )}">Number of History per user</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -105,8 +117,19 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='system', action='index' )}">Disk space maintenance</a></div>
                     </div>
                 </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">
+                    <span>Sample Tracking</span>
+                </div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_month_all' )}">Sequencing requests per month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_user' )}">Sequencing requests per user</a></div>
+                    </div>
+                </div>
             </div>
-        </div>    
+        </div>
     </div>
 </%def>
 

@@ -128,7 +128,7 @@ var NestedPairCollectionViewEdit = PairCollectionViewEdit.extend(
 
 
 // =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
+/** @class editable, View/Controller for a list of pairs dataset collection. */
 var ListOfPairsCollectionViewEdit = CollectionViewEdit.extend(
 /** @lends ListOfPairsCollectionView.prototype */{
 
@@ -146,11 +146,31 @@ var ListOfPairsCollectionViewEdit = CollectionViewEdit.extend(
 });
 
 
+// =============================================================================
+/** @class View/Controller for a list of lists dataset collection. */
+var ListOfListsCollectionViewEdit = CollectionViewEdit.extend(
+/** @lends ListOfListsCollectionView.prototype */{
+
+    //TODO: not strictly needed - due to switch in CollectionView._getContentClass
+    /** sub view class used for nested collections */
+    NestedDCDCEViewClass : DC_EDIT.NestedDCDCEListItemEdit.extend({
+        foldoutPanelClass : NestedPairCollectionViewEdit
+    }),
+
+    // ........................................................................ misc
+    /** string rep */
+    toString    : function(){
+        return 'ListOfListsCollectionViewEdit(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+    }
+});
+
+
 //==============================================================================
     return {
         CollectionViewEdit              : CollectionViewEdit,
         ListCollectionViewEdit          : ListCollectionViewEdit,
         PairCollectionViewEdit          : PairCollectionViewEdit,
-        ListOfPairsCollectionViewEdit   : ListOfPairsCollectionViewEdit
+        ListOfPairsCollectionViewEdit   : ListOfPairsCollectionViewEdit,
+        ListOfListsCollectionViewEdit   : ListOfListsCollectionViewEdit
     };
 });

@@ -22,7 +22,7 @@ log = logging.getLogger( __name__ )
 comptypes = []
 
 try:
-    import zlib  # noqa
+    import zlib  # noqa: F401
     comptypes.append( 'zip' )
 except ImportError:
     pass
@@ -181,8 +181,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         if not data or not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+        fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
 
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"

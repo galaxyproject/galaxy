@@ -16,13 +16,9 @@ var _super = DATASET_LI.DatasetListItemView;
 var DatasetListItemEdit = _super.extend(
 /** @lends DatasetListItemEdit.prototype */{
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** set up: options */
     initialize  : function( attributes ){
         _super.prototype.initialize.call( this, attributes );
-//TODO: shouldn't this err if false?
         this.hasUser = attributes.hasUser;
 
         /** allow user purge of dataset files? */
@@ -49,7 +45,7 @@ var DatasetListItemEdit = _super.extend(
         ]);
     },
 
-//TODO: move titleButtons into state renderers, remove state checks in the buttons
+    //TODO: move titleButtons into state renderers, remove state checks in the buttons
 
     /** Render icon-button to edit the attributes (format, permissions, etc.) this dataset. */
     _renderEditButton : function(){
@@ -122,7 +118,6 @@ var DatasetListItemEdit = _super.extend(
             this._makeDbkeyEditLink( $details );
         }
 
-//TODO: TRIPLE tap, ugh.
         this._setUpBehaviors( $details );
         return $details;
     },
@@ -219,7 +214,7 @@ var DatasetListItemEdit = _super.extend(
         });
     },
 
-//TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
+    //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
     /** Render the tags list/control */
     _renderTags : function( $where ){
         if( !this.hasUser ){ return; }
@@ -286,7 +281,6 @@ var DatasetListItemEdit = _super.extend(
         'click .dbkey a'        : function( ev ){ this.trigger( 'edit', this, ev ); }
     }),
 
-
     /** listener for item undelete (in the messages section) */
     _clickUndeleteLink : function( ev ){
         this.model.undelete();
@@ -295,8 +289,9 @@ var DatasetListItemEdit = _super.extend(
 
     /** listener for item purge (in the messages section) */
     _clickPurgeLink : function( ev ){
-//TODO: confirm dialog
-        this.model.purge();
+        if( confirm( _l( 'This will permanently remove the data in your dataset. Are you sure?' ) ) ){
+            this.model.purge();
+        }
         return false;
     },
 
@@ -312,7 +307,6 @@ var DatasetListItemEdit = _super.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 DatasetListItemEdit.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var warnings = _.extend( {}, _super.prototype.templates.warnings, {
         failed_metadata : BASE_MVC.wrapTemplate([

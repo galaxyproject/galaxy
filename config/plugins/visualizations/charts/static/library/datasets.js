@@ -1,11 +1,8 @@
-// dependencies
-define(['utils/utils'], function(Utils) {
-
 /**
  *  This class handles, formats and caches datasets.
  */
-return Backbone.Collection.extend(
-{
+define( [ 'utils/utils' ], function( Utils ) {
+return Backbone.Collection.extend({
     // list of datasets
     list: {},
     
@@ -14,10 +11,7 @@ return Backbone.Collection.extend(
     
     // initialize
     initialize: function(app, options){
-        // link app
         this.app = app;
-        
-        // configure options
         this.options = Utils.merge(options, this.optionsDefault);
     },
     

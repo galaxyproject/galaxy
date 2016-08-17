@@ -1,0 +1,7 @@
+galaxy_config: config/galaxy.ini
+#instance_id: blah
+#api_key: blah
+grt_url: https://radio-telescope.galaxyproject.org/api/v1/upload
+tool_blacklist:
+  - __SET_METADATA__
+  - upload1

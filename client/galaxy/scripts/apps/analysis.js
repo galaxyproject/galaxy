@@ -156,9 +156,8 @@ window.app = function app( options, bootstrapped ){
     // .................................................... when the page is ready
     // render and start the router
     $(function(){
-        analysisPage
-            .render()
-            .right.historyView.loadCurrentHistory();
+        analysisPage.render();
+        analysisPage.right.historyView.loadCurrentHistory();
 
         // use galaxy to listen to history size changes and then re-fetch the user's total size (to update the quota meter)
         // TODO: we have to do this here (and after every page.render()) because the masthead is re-created on each

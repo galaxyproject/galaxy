@@ -23,21 +23,11 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.postfork import register_postfork_function
 from galaxy.web.formatting import expand_pretty_datetime_format
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
-
-# The uwsgi module is automatically injected by the parent uwsgi
-# process and only exists that way.  If anything works, this is a
-# uwsgi-managed process.
-try:
-    import uwsgi
-    if uwsgi.numproc:
-        process_is_uwsgi = True
-except ImportError:
-    # This is not a uwsgi process, or something went horribly wrong.
-    process_is_uwsgi = False
 
 
 def resolve_path( path, root ):
@@ -197,8 +187,10 @@ class Configuration( object ):
         activation_email = kwargs.get( 'activation_email', None )
         self.email_from = kwargs.get( 'email_from', activation_email )
         self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
-        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
-        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.activation_grace_period = int( kwargs.get( 'activation_grace_period', 3 ) )
+        default_inactivity_box_content = ( "Your account has not been activated yet. Feel free to browse around and see what's available, but"
+                                           " you won't be able to upload data or run jobs until you have verified your email address." )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', default_inactivity_box_content )
         self.terms_url = kwargs.get( 'terms_url', None )
         self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
@@ -221,6 +213,10 @@ class Configuration( object ):
         self.track_jobs_in_database = string_as_bool( kwargs.get( 'track_jobs_in_database', 'True') )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
+        self.enable_communication_server = string_as_bool( kwargs.get( 'enable_communication_server', 'False' ) )
+        self.communication_server_host = kwargs.get( 'communication_server_host', 'http://localhost' )
+        self.communication_server_port = int( kwargs.get( 'communication_server_port', '7070' ) )
+        self.persistent_communication_rooms = listify( kwargs.get( "persistent_communication_rooms", [] ), do_strip=True )
         # External Service types used in sample tracking
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.
@@ -526,6 +522,7 @@ class Configuration( object ):
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
+            tool_destinations_config_file=[ 'config/tool_destinations.yml', 'config/tool_destinations.yml.sample' ],
             job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
@@ -768,9 +765,14 @@ def configure_logging( config ):
         log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
         # Set level
         root.setLevel( level )
-        # Turn down paste httpserver logging
-        if level <= logging.DEBUG:
-            logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
+
+        disable_chatty_loggers = string_as_bool( config.get( "auto_configure_logging_disable_chatty", "True" ) )
+        if disable_chatty_loggers:
+            # Turn down paste httpserver logging
+            if level <= logging.DEBUG:
+                for chatty_logger in ["paste.httpserver.ThreadPool"]:
+                    logging.getLogger( chatty_logger ).setLevel( logging.WARN )
+
         # Remove old handlers
         for h in root.handlers[:]:
             root.removeHandler(h)
@@ -789,7 +791,7 @@ def configure_logging( config ):
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
-        root.addHandler( sentry_handler )
+        register_postfork_function(root.addHandler, sentry_handler)
 
 
 class ConfiguresGalaxyMixin:

@@ -1,6 +1,7 @@
 import functools
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -11,6 +12,8 @@ import six
 import yaml
 
 from ..deps import commands
+
+log = logging.getLogger(__name__)
 
 # Not sure there are security concerns, lets just fail fast if we are going
 # break shell commands we are building.
@@ -100,6 +103,40 @@ class CondaContext(object):
         else:
             return None
 
+    def is_conda_installed(self):
+        """
+        Check if conda_exec exists
+        """
+        if os.path.exists(self.conda_exec):
+            return True
+        else:
+            return False
+
+    def can_install_conda(self):
+        """
+        If conda_exec is set to a path outside of conda_prefix,
+        there is no use installing conda into conda_prefix, since it can't be used by galaxy.
+        If conda_exec equals conda_prefix/bin/conda, we can install conda if either conda_prefix
+        does not exist or is empty.
+        """
+        conda_exec = os.path.abspath(self.conda_exec)
+        conda_prefix_plus_exec = os.path.abspath(os.path.join(self.conda_prefix, 'bin/conda'))
+        if conda_exec == conda_prefix_plus_exec:
+            if not os.path.exists(self.conda_prefix):
+                return True
+            elif os.listdir(self.conda_prefix) == []:
+                os.rmdir(self.conda_prefix)  # Conda's install script fails if path exists (even if empty).
+                return True
+            else:
+                log.warning("Cannot install Conda because conda_prefix '%s' exists and is not empty.",
+                            self.conda_prefix)
+                return False
+        else:
+            log.warning("Skipping installation of Conda into conda_prefix '%s', "
+                        "since conda_exec '%s' is set to a path outside of conda_prefix.",
+                        self.conda_prefix, self.conda_exec)
+            return False
+
     def load_condarc(self):
         condarc = self.condarc
         if os.path.exists(condarc):
@@ -142,7 +179,7 @@ class CondaContext(object):
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
-        self.shell_exec(command, env=env)
+        return self.shell_exec(command, env=env)
 
     def exec_create(self, args):
         create_base_args = [
@@ -150,6 +187,15 @@ class CondaContext(object):
         ]
         create_base_args.extend(args)
         return self.exec_command("create", create_base_args)
+
+    def exec_remove(self, args):
+        remove_base_args = [
+            "remove",
+            "-y",
+            "--name"
+        ]
+        remove_base_args.extend(args)
+        return self.exec_command("env", remove_base_args)
 
     def exec_install(self, args):
         install_base_args = [
@@ -261,7 +307,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
 # these commands as Python
 def install_conda(conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    f, script_path = tempfile.mkstemp(suffix=".bash", prefix="conda_install")
+    f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
     download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
     install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)
@@ -283,7 +329,13 @@ def install_conda_target(conda_target, conda_context=None):
         "--name", conda_target.install_environment,  # enviornment for package
         conda_target.package_specifier,
     ]
-    conda_context.exec_create(create_args)
+    return conda_context.exec_create(create_args)
+
+
+def cleanup_failed_install(conda_target, conda_context=None):
+    conda_context = _ensure_conda_context(conda_context)
+    if conda_context.has_env(conda_target.install_environment):
+        conda_context.exec_remove([conda_target.install_environment])
 
 
 def is_target_available(conda_target, conda_context=None):
@@ -307,15 +359,33 @@ def is_target_available(conda_target, conda_context=None):
         return False
 
 
-def is_conda_target_installed(conda_target, conda_context=None):
+def is_conda_target_installed(conda_target, conda_context=None, verbose_install_check=False):
     conda_context = _ensure_conda_context(conda_context)
-    return conda_context.has_env(conda_target.install_environment)
+    # fail by default
+    success = False
+    if conda_context.has_env(conda_target.install_environment):
+        if not verbose_install_check:
+            return True
+        # because export_list directs output to a file we
+        # need to make a temporary file, not use StringIO
+        f, package_list_file = tempfile.mkstemp(suffix='.env_packages')
+        os.close(f)
+        conda_context.export_list(conda_target.install_environment, package_list_file)
+        search_pattern = conda_target.package_specifier + '='
+        with open(package_list_file) as input_file:
+            for line in input_file:
+                if line.startswith(search_pattern):
+                    success = True
+                    break
+        os.remove(package_list_file)
+    return success
 
 
-def filter_installed_targets(conda_targets, conda_context=None):
+def filter_installed_targets(conda_targets, conda_context=None, verbose_install_check=False):
     conda_context = _ensure_conda_context(conda_context)
     installed = functools.partial(is_conda_target_installed,
-                                  conda_context=conda_context)
+                                  conda_context=conda_context,
+                                  verbose_install_check=verbose_install_check)
     return filter(installed, conda_targets)
 
 
