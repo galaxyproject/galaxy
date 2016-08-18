@@ -238,12 +238,20 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
         Get details about the specified repository from its shed.
 
-        :param tsr_id: the tool_shed_repository_id
+        :param tsr_id:          the tool_shed_repository_id
+        :param tsr_id:          str
+
+        :param tool_shed_url:   the URL of the toolshed whence to retrieve repository details
+        :param tool_shed_url:   str
+
+        :param tool_id:         (optional) search by tool ID instead of repository ID
+        :param tool_id:         str
         """
         tool_dependencies = dict()
         tools = dict()
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tsr_id = kwd.get( 'tsr_id', '' )
+        tool_id = kwd.get( 'tool_id', None )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
                                     'id': tool_panel_section_select_field.field_id,
@@ -251,8 +259,20 @@ class ToolShedRepositoriesController( BaseAPIController ):
         for name, id, _ in tool_panel_section_select_field.options:
             tool_panel_section_dict['sections'].append( dict( id=id, name=name ) )
         repository_data = dict()
-        repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
-        repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
+        if tool_id is not None and tool_id.count( '/' ) == 5:
+            if len(tool_shed_url) == 0:
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_id.split( '/' )[ 0 ] )
+            found_repository = json.loads( util.url_get( tool_shed_url, params=dict( tool_id=tool_id ), pathspec=[ 'api', 'repositories' ] ) )
+            fr_keys = found_repository.keys()
+            tsr_id = found_repository[ fr_keys[0] ][ 'repository_id' ]
+            repository_data[ 'current_changeset' ] = found_repository[ 'current_changeset' ]
+            repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+            del found_repository[ 'current_changeset' ]
+            repository_data[ 'repository' ][ 'metadata' ] = found_repository
+            repository_data[ 'tool_shed_url' ] = tool_shed_url
+        else:
+            repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+            repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
         repository_data[ 'shed_conf' ] = tool_util.build_shed_tool_conf_select_field( trans.app ).get_html().replace('\n', '')
         repository_data[ 'panel_section_html' ] = tool_panel_section_select_field.get_html( extra_attr={ 'style': 'width: 30em;' } ).replace( '\n', '' )
         repository_data[ 'panel_section_dict' ] = tool_panel_section_dict

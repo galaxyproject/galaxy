@@ -42,8 +42,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param  show_published:      if True, show also published workflows
         :type   show_published:      boolean
-        :param  missing_tools:  if True, include a list of missing tools per workflow
-        :type   missing_tools:  boolean
+        :param  missing_tools:       if True, include a list of missing tools per workflow
+        :type   missing_tools:       boolean
         """
         show_published = util.string_as_bool( kwd.get( 'show_published', 'False' ) )
         missing_tools = util.string_as_bool( kwd.get( 'missing_tools', 'False' ) )

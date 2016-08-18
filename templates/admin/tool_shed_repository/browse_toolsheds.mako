@@ -48,7 +48,40 @@ var has_repo_dependencies = false;
 var valid_tool_dependencies = Array();
 var valid_tools = Array();
 var repository_data = Object();
-var tool_sheds = JSON.parse('${tool_sheds}');
+var tool_sheds = ${tool_sheds};
+workflows_missing_tools = _.template([
+    '<table id="workflows_missing_tools" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
+        '<thead id="grid-table-header">',
+            '<tr>',
+                '<th class="datasetRow">Name</th>',
+                '<th class="datasetRow">Owner</th>',
+                '<th class="datasetRow">Tool IDs</th>',
+                '<th class="datasetRow">Actions</th>',
+            '</tr>',
+        '</thead>',
+        '<tbody>',
+            '<\% _.each(workflows, function(workflow) { \%>',
+                '<tr>',
+                    '<td class="datasetRow"><\%= workflow.name \%></td>',
+                    '<td class="datasetRow"><\%= workflow.owner \%></td>',
+                    '<td class="datasetRow">',
+                        '<ul>',
+                            '<\% _.each(workflow.missing_tools, function(tool) { \%>',
+                                '<li><\%= tool \%></li>',
+                            '<\% }); \%>',
+                        '</ul>',
+                    '</td>',
+                    '<td class="datasetRow">',
+                        '<ul>',
+                            '<li><input type="button" class="show_wf_repo" data-toolids="<\%= workflow.missing_tools.join(\'|\') \%>" value="Find and display" /></li>',
+                            '<li><input type="button" class="queue_wf_repo" data-toolids="<\%= workflow.missing_tools.join(\'|\') \%>" value="Find and queue" /></li>',
+                        '</ul>',
+                    '</td>',
+                '</tr>',
+            '<\% }); \%>',
+        '</ul>',
+    '</div>',
+].join(''));
 repository_queue_tab = _.template([
     '<li class="nav-tab" role="presentation" id="repository_installation_queue">',
         '<a href="#repository_queue" data-toggle="tab">Repository Installation Queue</a>',
@@ -87,7 +120,7 @@ repository_queue_template = _.template([
     '</div>',
 ].join(''));
 repository_details_template = _.template([
-    '<div class="tab-pane" id="repository_details">',
+    '<div class="tab-pane" id="repository_details" data-shedurl="<\%= tool_shed_url \%>" data-tsrid="<\%= current_metadata.repository.id \%>">',
         '<h2 style="font-weight: normal;">Repository information for <strong><\%= repository.name \%></strong> from <strong><\%= repository.owner \%></strong></h2>',
         '<form id="repository_installation" name="install_repository" method="post" action="${h.url_for(controller='/api/tool_shed_repositories', action='install', async=True)}">',
             '<input type="hidden" id="repositories" name="<\%= current_metadata.repository.id \%>" value="ID" />',
@@ -391,8 +424,8 @@ function bind_category_events() {
         $('#repository_details').replaceWith('<div class="tab-pane" id="repository_details"><p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p></div>');
         tsr_id = $(this).attr('data-tsrid');
         shed_url = $('#tab_contents').attr('data-shedurl');
-        api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_repository")}'
-        params = {"tool_shed_url": shed_url, "tsr_id": tsr_id}
+        api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_repository")}';
+        params = {"tool_shed_url": shed_url, "tsr_id": tsr_id};
         $.get(api_url, params, function(data) {
             var changesets = Object.keys(data.repository.metadata);
             data.tool_shed_url = shed_url;
@@ -439,6 +472,7 @@ function bind_repository_events() {
         repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val();
         repository_metadata.tool_panel_section = JSON.stringify(select_tps({}));
         repository_metadata.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
+        repository_metadata.tool_shed_url = $("#repository_details").attr('data-shedurl');
         var queue_key = get_queue_key(repository_metadata, changeset);
         var queued_repos = new Object();
         if (localStorage.repositories) {
@@ -457,7 +491,7 @@ function bind_repository_events() {
         var params = {};
         params.repositories = JSON.stringify([[$('#install_repository').attr('data-tsrid'), $('#changeset').find("option:selected").val()]]);
         params.tool_shed_repository_ids = JSON.stringify([$('#install_repository').attr('data-tsrid')]);
-        params.tool_shed_url = $('#tab_contents').attr('data-shedurl');
+        params.tool_shed_url = $('#repository_details').attr('data-shedurl');
         params.install_tool_dependencies = $("#install_tool_dependencies").val();
         params.install_repository_dependencies = $("#install_repository_dependencies").val();
         params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
@@ -481,6 +515,36 @@ function bind_shed_events() {
             $('#list_repositories').replaceWith(repositories_in_category(data));
             $('#repo_list_tab').click();
             bind_category_events();
+        });
+    });
+}
+function bind_workflow_events() {
+    /* show_wf_repo
+       queue_wf_repo */
+    $('.show_wf_repo').click(function() {
+        var tool_ids = $(this).attr('data-toolids').split('|');
+        var tool_id = tool_ids[0];
+        var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action='shed_repository')}';
+        var params = {'tool_id': tool_id};
+        $.get(api_url, params, function(data) {
+            data.current_metadata = data.repository.metadata[data.current_changeset];
+            data.repository_dependencies_template = repository_dependencies_template;
+            data.repository_dependency_template = repository_dependency_template;
+            data.tps_selection_template = tps_selection_template;
+            repository_data = data;
+            repository_data.shed_tool_conf = shed_tool_conf({'stc_html': repository_data.shed_conf});
+            repository_data.tool_panel_section = '';
+            if (repository_data.repository.metadata[data.current_changeset].includes_tools_for_display_in_tool_panel) {
+                repository_data.tool_panel_section = tps_selection_template(repository_data.panel_section_dict)
+            }
+            $('#repository_details').replaceWith(repository_details_template(data));
+            $('#repo_info_tab').click();
+            require(["libs/jquery/jstree"], function() {
+                $('#repository_deps').jstree();
+            });
+            $('#repository_installation').ready(function() {
+                bind_repository_events();
+            });
         });
     });
 }
@@ -577,7 +641,7 @@ function get_current_changeset() {
 }
 function get_queue_key(repository_metadata, changeset, shed_url = undefined) {
     if (shed_url === undefined) {
-        shed_url = $("#tab_contents").attr('data-shedurl');
+        shed_url = $("#repository_details").attr('data-shedurl');
     }
     return shed_url + '|' + repository_metadata.id + '|' + changeset;
 }
@@ -888,6 +952,14 @@ $(document).ready(function() {
             bind_shed_events();
         });
     });
+    $('#from_workflow').click(function() {
+        api_url = '${h.url_for(controller='api', action='workflows', missing_tools=True)}';
+        $.get(api_url, function(data) {
+            $('#workflows_missing_tools').remove();
+            $('#repository_queue').append(workflows_missing_tools({'workflows': data}));
+            bind_workflow_events();
+        });
+    });
 });
 </script>
 <div class="container" role="navigation">
@@ -910,9 +982,12 @@ $(document).ready(function() {
     </ul>
     <div id="tab_contents" class="tab-content clearfix">
         <div class="tab-pane active" id="list_toolsheds">Loading...</div>
-        <div class="tab-pane" id="list_categories">Select a toolshed in the previous tab to see a list of its categories.</div>
-        <div class="tab-pane" id="list_repositories">Select a category in the previous tab to see a list of its repositories.</div>
-        <div class="tab-pane" id="repository_details">Select a repository in the previous tab.</div>
-        <div class="tab-pane" id="repository_queue">There are no repositories queued for installation.</div>
+        <div class="tab-pane" id="list_categories"><p>Select a toolshed in the previous tab to see a list of its categories.</p></div>
+        <div class="tab-pane" id="list_repositories"><p>Select a category in the previous tab to see a list of its repositories.</p></div>
+        <div class="tab-pane" id="repository_details"><p>Select a repository in the previous tab.</p></div>
+        <div class="tab-pane" id="repository_queue">
+            <p>There are no repositories queued for installation.</p>
+            <input type="button" id="from_workflow" value="Add from workflow" />
+        </div>
     </div>
 </div>
