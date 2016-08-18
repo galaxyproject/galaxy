@@ -1,6 +1,4 @@
-/**
- *  This class renders the chart viewer which encapsulates the chart viewport.
- */
+/** This class renders the chart viewer which encapsulates the chart viewport. */
 define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
           'plugin/views/viewport', 'plugin/library/screenshot' ],
           function( Utils, Ui, Portlet, ViewportView, Screenshot ) {
