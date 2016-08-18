@@ -39,9 +39,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.types = new TypesView(app, {
                 onchange   : function(chart_type) {
                     var chart_definition = self.app.types.get( chart_type );
-                    if ( !chart_definition ) {
-                        console.debug('FAILED - Editor::onchange() - Chart type not supported.');
-                    }
+                    !chart_definition && console.debug( 'FAILED - Editor::onchange() - Chart type not supported.' );
                     self.chart.definition = chart_definition;
                     self.chart.set( { type : chart_type, modified : true } );
                     console.debug( 'Editor::onchange() - Switched chart type.' );
