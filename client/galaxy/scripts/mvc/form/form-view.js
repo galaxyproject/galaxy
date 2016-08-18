@@ -13,9 +13,9 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 values          : null,
                 inputs          : []
             });
-            this.options.inputs = $.extend( {}, this.options.inputs, true );
             this.setElement( '<div/>' );
-            this.render();
+            this.options.inputs = $.extend( {}, this.options.inputs, true );
+            this.options.values ? this.set( this.options.values ) : this.render();
         },
 
         /** Set parameter values from value dictionary, needs to be enhanced to support repeats */

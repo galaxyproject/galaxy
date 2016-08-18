@@ -39,12 +39,12 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
                             self.form = new Form( {
                                 inputs  : inputs,
                                 cls     : 'ui-portlet-plain',
+                                values  : self.group.attributes,
                                 onchange: function() {
                                     self.group.set( self.form.data.create() );
                                     self.chart.set( 'modified', true );
                                 }
                             } );
-                            self.form.set( self.group.attributes );
                             self.group.set( self.form.data.create() );
                             self.$el.empty().append( self.form.$el );
                             process.resolve();
