@@ -1,8 +1,8 @@
 /**
     This is the regular tool form.
 */
-define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base' ],
-    function( Utils, Ui, ToolFormBase ) {
+define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/tool/tool-webhooks' ],
+    function( Utils, Ui, ToolFormBase, ToolWebhooks ) {
     var View = ToolFormBase.extend({
         initialize: function( options ) {
             var self = this;
@@ -75,6 +75,13 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base' ],
                 success : function( response ) {
                     callback && callback();
                     self.$el.empty().append( self._templateSuccess( response ) );
+
+                    // Show Webhook if job is running
+                    if ( response.jobs && response.jobs.length > 0 ) {
+                        self.$el.append( $( '<div/>', { id: 'webhook-toolview' } ) );
+                        var WebhookApp = new ToolWebhooks.WebhookView;
+                    }
+
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
                 },
                 error   : function( response ) {
