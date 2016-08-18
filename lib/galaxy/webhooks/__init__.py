@@ -69,7 +69,6 @@ class WebhooksRegistry(object):
                            conf.endswith('.yaml')][0]
 
             if config_file:
-<<<<<<< HEAD
                 self.load_webhook_from_config(config_dir, config_file)
 
     def load_webhook_from_config(self, config_dir, config_file):
@@ -102,7 +101,6 @@ class WebhooksRegistry(object):
 
                 webhook.config = config
                 self.webhooks.append(webhook)
-=======
                 self.load_webhook_from_config(
                     os.path.join(config_dir, config_file))
 
@@ -110,11 +108,22 @@ class WebhooksRegistry(object):
         try:
             with open(config_file) as f:
                 config = yaml.load(f)
+
                 if config['type'] not in self.webhooks.keys():
                     self.webhooks[config['type']] = []
-                self.webhooks[config['type']].append({
-                    'name': config['name']
+
+                path = os.path.normpath(os.path.join(config_dir, '..'))
+
+                try:
+                    with open(os.path.join(path, 'static/style.css'), 'r') as f:
+                        css_styles = f.read().replace('\n', '')
+                except IOError:
+                    css_styles = ''
+
+                config.update({
+                    'path': path,
+                    'css_styles': css_styles
                 })
->>>>>>> add Webhooks draft
+                self.webhooks[config['type']].append(config)
         except Exception as e:
             log.exception(e)
