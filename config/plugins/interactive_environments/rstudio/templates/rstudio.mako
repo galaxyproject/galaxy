@@ -9,8 +9,8 @@ ie_request.load_deploy_config()
 ie_request.attr.docker_port = 80
 # Create tempdir in galaxy
 temp_dir = ie_request.temp_dir
-PASSWORD = ie_request.notebook_pw
-USERNAME = "galaxy"
+PASSWORD = "rstudio"
+USERNAME = "rstudio"
 
 # Did the user give us an RData file?
 if hda.datatype.__class__.__name__ == "RData":

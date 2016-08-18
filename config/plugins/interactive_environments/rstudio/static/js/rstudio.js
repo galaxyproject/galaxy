@@ -57,50 +57,29 @@ function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_
  * Must be implemented by IEs
  */
 function _handle_notebook_loading(password, notebook_login_url, notebook_access_url){
-    if ( ie_password_auth ) {
-        $.ajax({
-            type: "POST",
-            // to the Login URL
-            url: notebook_login_url,
-            // With our password
-            data: {
-                'v': password,
-                'persist': 1,
-                'clientPath': '/rstudio/auth-sign-in',
-                'appUri': '',
-            },
-            contentType: "application/x-www-form-urlencoded",
-            xhrFields: {
-                withCredentials: true
-            },
-            // If that is successful, load the notebook
-            success: function(){
-                append_notebook(notebook_access_url);
-            },
-            error: function(jqxhr, status, error){
-                if(ie_password_auth){
-                    // Failure now happens because the redirect that RStudio gives us includes the
-                    // port internal to nginx. (E.g. localhost:NNNN/rstudio/NNNN/)
-                    // so disabling the message here makes sense as long as it's working correctly
-                    //
-                    // Additionally:
-                    // XMLHttpRequest cannot load http://localhost:46725/rstudio/46725/. The
-                    // 'Access-Control-Allow-Origin' header has a value 'http://localhost:8081' that
-                    // is not equal to the supplied origin. Origin 'null' is therefore not allowed
-                    // access.
-                    // message_failed_auth(ie_password);
-                    append_notebook(notebook_access_url);
-                }else{
-                    message_failed_connection();
-                    // Do we want to try and load the notebook anyway? Just in case?
-                    append_notebook(notebook_access_url);
-                }
-            }
-        });
-    }
-    else {
-        // Not using password auth, just embed it to avoid content-origin issues.
-        message_no_auth();
-        append_notebook(notebook_access_url);
-    }
+    $.ajax({
+        type: "POST",
+        // to the Login URL
+        url: notebook_login_url,
+        // With our password
+        data: {
+            'v': password,
+            'persist': 1,
+            'clientPath': '/rstudio/auth-sign-in',
+            'appUri': '',
+        },
+        contentType: "application/x-www-form-urlencoded",
+        xhrFields: {
+            withCredentials: true
+        },
+        // If that is successful, load the notebook
+        success: function(){
+            append_notebook(notebook_access_url);
+        },
+        error: function(jqxhr, status, error){
+            message_failed_connection();
+            // Do we want to try and load the notebook anyway? Just in case?
+            append_notebook(notebook_access_url);
+        }
+    });
 }
