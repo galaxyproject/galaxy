@@ -61,7 +61,7 @@ define( [], function() {
                      help        : options.help,
                      type        : 'select',
                      display     : 'radiobutton',
-                     value       : options.value || 'true',
+                     value       : options.value || 'false',
                      data        : [ { label : 'Yes', value : 'true'  },
                                      { label : 'No',  value : 'false' } ] }
         }

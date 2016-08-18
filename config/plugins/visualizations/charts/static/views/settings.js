@@ -15,6 +15,7 @@ define( [ 'mvc/form/form-view' ], function( Form ) {
                 onchange : function() { self.chart.settings.set( self.form.data.create() ); }
             });
             this.form.set( this.chart.settings.attributes );
+            this.chart.settings.set( self.form.data.create() );
             this.$el.empty().append( this.form.$el );
         }
     });
