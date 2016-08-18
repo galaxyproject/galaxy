@@ -611,7 +611,7 @@ class DefaultToolAction( object ):
         """
         if output.actions:
             for action in output.actions.actions:
-                if action.tag == "metadata":
+                if action.tag == "metadata" and action.default:
                     metadata_new_value = fill_template( action.default, context=params ).split(",")
                     dataset.metadata.__setattr__(str(action.name), metadata_new_value)
 

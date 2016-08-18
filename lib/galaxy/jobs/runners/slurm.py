@@ -43,7 +43,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             cmd = [ 'scontrol', '-o' ]
             if '.' in ajs.job_id:
                 # custom slurm-drmaa-with-cluster-support job id syntax
-                job_id, cluster = ajs.job_id.split('.', maxsplit=1)
+                job_id, cluster = ajs.job_id.split('.', 1)
                 cmd.extend( [ '-M', cluster ] )
             else:
                 job_id = ajs.job_id
