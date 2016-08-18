@@ -34,7 +34,7 @@ do
             shift
             ;;
         --daemon|--restart|restart)
-            if [ "$1"=="--restart" ]
+            if [ "$1" == "--restart" ]
             then
                 paster_args="$paster_args restart"
             else
