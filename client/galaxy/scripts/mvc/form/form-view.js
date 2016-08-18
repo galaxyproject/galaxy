@@ -13,18 +13,17 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 values          : null,
                 inputs          : []
             });
-            this.setElement( '<div/>' );
             this.options.inputs = $.extend( {}, this.options.inputs, true );
-            this.options.values && this.set( this.options.values );
+            this.setElement( '<div/>' );
             this.render();
         },
 
-        /** Set parameter values from value dictionary */
+        /** Set parameter values from value dictionary, needs to be enhanced to support repeats */
         set: function( values ) {
-            var self = this;
-            FormData.visitInputs( this.options.inputs, function( input, name, prefix ) {
+            FormData.visitInputs( this.options.inputs, function( input, name ) {
                 input.value = values[ name ] !== undefined ? values[ name ] : input.value;
             });
+            this.render();
         },
 
         /** Update available options */
@@ -96,11 +95,6 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                     }
                 }
             }
-        },
-
-        /** Modify onchange event handler */
-        setOnChange: function( callback ) {
-            this.options.onchange = callback;
         },
 
         /** Render tool form */

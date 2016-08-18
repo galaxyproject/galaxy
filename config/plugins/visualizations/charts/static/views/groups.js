@@ -8,21 +8,12 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
             this.group = options.group;
             this.setElement( $( '<div/>' ) );
             this.chart.on( 'change:dataset_id change:type', function() { self.render() } );
-            this.group.on( 'change', function() { self.form && self.form.set( self.group ) } );
             this.render();
         },
 
         render: function() {
             var self = this;
             var inputs = this.chart.definition.series && this.chart.definition.series.slice() || [];
-            _.each( this.chart.definition.columns, function( column, name ) {
-                inputs.push( { name: name, label: column.title, type: 'select' } );
-            });
-            this.form = new Form( {
-                inputs  : inputs,
-                cls     : 'ui-portlet-plain'
-            } );
-            this.$el.empty().append( this.form.$el );
             var dataset_id = this.chart.get( 'dataset_id' );
             var chart_type = this.chart.get( 'type' );
             var chart_definition = this.chart.definition;
@@ -33,28 +24,29 @@ define( [ 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/f
                         id      : dataset_id,
                         success : function( dataset ) {
                             for ( var id in chart_definition.columns ) {
-                                var index = self.form.data.match( id );
-                                if ( index ) {
-                                    var columns = [];
-                                    var select = self.form.field_list[ index ];
-                                    var input_def = chart_definition.columns[ id ];
-                                    input_def.is_auto && columns.push( { 'label': 'Column: Row Number', 'value': 'auto' } );
-                                    input_def.is_zero && columns.push( { 'label' : 'Column: None', 'value' : 'zero' } );
-                                    var meta = dataset.metadata_column_types;
-                                    for ( var key in meta ) {
-                                        var valid = ( [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 && input_def.is_numeric ) || input_def.is_text || input_def.is_label;
-                                        valid && columns.push( { 'label' : 'Column: ' + ( parseInt( key ) + 1 ), 'value' : key } );
-                                    }
-                                    select.update( columns );
-                                    self.group.set( id, select.value( self.group.get( id ) ) );
+                                var columns = [];
+                                var input_def = chart_definition.columns[ id ];
+                                input_def.is_auto && columns.push( { 'label': 'Column: Row Number', 'value': 'auto' } );
+                                input_def.is_zero && columns.push( { 'label' : 'Column: None', 'value' : 'zero' } );
+                                var meta = dataset.metadata_column_types;
+                                for ( var key in meta ) {
+                                    var valid = ( [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 && input_def.is_numeric ) || input_def.is_text || input_def.is_label;
+                                    valid && columns.push( { 'label' : 'Column: ' + ( parseInt( key ) + 1 ), 'value' : key } );
                                 }
+                                inputs.push( { name: id, label: input_def.title, type: 'select', data: columns } );
                             }
                             self.chart.state( 'ok', 'Metadata initialized...' );
-                            self.form.set( self.group );
-                            self.form.setOnChange( function() {
-                                self.group.set( self.form.data.create() );
-                                self.chart.set( 'modified', true );
-                            });
+                            self.form = new Form( {
+                                inputs  : inputs,
+                                cls     : 'ui-portlet-plain',
+                                onchange: function() {
+                                    self.group.set( self.form.data.create() );
+                                    self.chart.set( 'modified', true );
+                                }
+                            } );
+                            self.form.set( self.group.attributes );
+                            self.group.set( self.form.data.create() );
+                            self.$el.empty().append( self.form.$el );
                             process.resolve();
                         }
                     });

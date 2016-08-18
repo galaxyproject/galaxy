@@ -3,7 +3,7 @@ define( [ 'plugin/charts/nvd3/common/config', 'plugin/charts/forms/inputs' ], fu
         title       : 'Stacked horizontal',
         category    : 'Bar diagrams',
         settings    : {
-            x_axis_type : Inputs.axisType( 'x', { value: 'hide' } )
+            x_axis_type : Inputs.axisType( 'x_axis_type', { value: 'hide' } )
         },
         columns     : {
             x : {

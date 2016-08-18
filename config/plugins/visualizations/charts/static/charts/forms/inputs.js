@@ -1,31 +1,35 @@
 define( [], function() {
     return {
-        axisLabel : function( prefix ) {
+        axisLabel : function( name, options ) {
+            options = options || {};
+            prefix  = name.substr( 0, 1 );
             return {
-                name        : 'label',
+                name        : name,
                 label       : prefix.toUpperCase() + '-Axis label',
                 help        : 'Provide a label for the axis.',
                 type        : 'text',
-                value       : prefix.toUpperCase() + '-axis',
+                value       : options.value || prefix.toUpperCase() + '-axis',
                 placeholder : 'Axis label'
             }
         },
-        axisPrecision : function() {
-            return { name    : 'precision',
-                     label   : 'Axis tick format',
-                     help    : 'Select the tick format for the axis.',
-                     type    : 'select',
-                     value   : '1',
-                     data    : [ { label : '0.00001', value : '5' },
-                                 { label : '0.0001',  value : '4' },
-                                 { label : '0.001',   value : '3' },
-                                 { label : '0.01',    value : '2' },
-                                 { label : '0.1',     value : '1' },
-                                 { label : '1',       value : '0' } ] }
-        },
-        axisType : function( prefix, options ) {
+        axisType : function( name, options ) {
             options = options || {};
+            prefix  = name.substr( 0, 1 );
+            var axisPrecision = function() {
+                return { name    : 'precision',
+                         label   : 'Axis tick format',
+                         help    : 'Select the tick format for the axis.',
+                         type    : 'select',
+                         value   : options.precision || 1,
+                         data    : [ { label : '0.00001', value : '5' },
+                                     { label : '0.0001',  value : '4' },
+                                     { label : '0.001',   value : '3' },
+                                     { label : '0.01',    value : '2' },
+                                     { label : '0.1',     value : '1' },
+                                     { label : '1',       value : '0' } ] }
+            }
             return {
+                name        : prefix + '_axis_type',
                 type        : 'conditional',
                 test_param  : {
                     name        : 'type',
@@ -43,19 +47,21 @@ define( [], function() {
                 },
                 cases       : [ { value   : 'hide' },
                                 { value   : 'auto' },
-                                { value   : 'f', inputs: [ this.axisPrecision() ] },
+                                { value   : 'f', inputs: [ axisPrecision() ] },
                                 { value   : 'd' },
-                                { value   : 'e', inputs: [ this.axisPrecision() ] },
-                                { value   : 'p', inputs: [ this.axisPrecision() ] },
+                                { value   : 'e', inputs: [ axisPrecision() ] },
+                                { value   : 'p', inputs: [ axisPrecision() ] },
                                 { value   : 's' } ]
             }
         },
-        boolean : function( label, help, value ) {
-            return { label       : label,
-                     help        : help,
+        boolean : function( name, options ) {
+            options = options || {};
+            return { name        : name,
+                     label       : options.label,
+                     help        : options.help,
                      type        : 'select',
                      display     : 'radiobutton',
-                     value       : value || 'true',
+                     value       : options.value || 'true',
                      data        : [ { label : 'Yes', value : 'true'  },
                                      { label : 'No',  value : 'false' } ] }
         }

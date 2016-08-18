@@ -2,7 +2,7 @@
     This class maps the form dom to an api compatible javascript dictionary.
 */
 define([ 'utils/utils' ], function( Utils ) {
-    var Manager = Backbone.View.extend({
+    var Manager = Backbone.Model.extend({
         initialize: function( app ) {
             this.app = app;
         },

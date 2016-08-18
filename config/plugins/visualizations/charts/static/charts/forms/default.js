@@ -6,12 +6,12 @@ define( [ 'plugin/charts/forms/inputs' ], function( Inputs ) {
         tag         : '',
         keywords    : '',
         settings    : {
-            x_axis_label : Inputs.axisLabel( 'x' ),
-            x_axis_type  : Inputs.axisType( 'x' ),
-            y_axis_label : Inputs.axisLabel( 'y' ),
-            y_axis_type  : Inputs.axisType( 'y' ),
-            show_legend  : Inputs.boolean( 'Show legend', 'Would you like to add a legend?' ),
-            use_panels   : Inputs.boolean( 'Use multi-panels', 'Would you like to separate your data into individual panels?' )
+            x_axis_label : Inputs.axisLabel( 'x_axis_label' ),
+            x_axis_type  : Inputs.axisType( 'x_axis_type' ),
+            y_axis_label : Inputs.axisLabel( 'y_axis_label' ),
+            y_axis_type  : Inputs.axisType( 'y_axis_type' ),
+            show_legend  : Inputs.boolean( 'show_legend', { label: 'Show legend', help: 'Would you like to add a legend?' } ),
+            use_panels   : Inputs.boolean( 'use_panels', { label: 'Use multi-panels', help: 'Would you like to separate your data into individual panels?' } )
         },
         series      : [{
             name        : 'key',

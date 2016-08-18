@@ -18,6 +18,7 @@ define( [ 'plugin/charts/nvd3/common/config', 'plugin/charts/forms/inputs' ], fu
         },
         settings : {
             donut_ratio : {
+                name        : 'donut_ratio',
                 label       : 'Donut ratio',
                 help        : 'Determine how large the donut hole will be.',
                 type        : 'float',
@@ -25,9 +26,10 @@ define( [ 'plugin/charts/nvd3/common/config', 'plugin/charts/forms/inputs' ], fu
                 max         : 1,
                 min         : 0.0
             },
-            show_legend : Inputs.boolean( 'Show legend', 'Would you like to add a legend?', 'false' ),
+            show_legend : Inputs.boolean( 'show_legend', { label: 'Show legend', help: 'Would you like to add a legend?', value: 'false' } ),
             label_type  : {
                 type        : 'conditional',
+                name        : 'label_type'
                 test_param  : {
                     name        : 'type',
                     label       : 'Donut label',
@@ -57,6 +59,7 @@ define( [ 'plugin/charts/nvd3/common/config', 'plugin/charts/forms/inputs' ], fu
                                                                                 { label : 'No',  value : 'false' } ] } ] } ]
             },
             use_panels : {
+                name        : 'use_panels',
                 value       : 'true',
                 hidden      : true
             }

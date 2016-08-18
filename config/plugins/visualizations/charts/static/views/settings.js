@@ -9,17 +9,12 @@ define( [ 'mvc/form/form-view' ], function( Form ) {
         },
         render: function() {
             var self = this;
-            var inputs = [];
-            _.each( this.chart.definition.settings, function( input, name ) {
-                input.name = name;
-                inputs.push( input );
-            });
             this.form = new Form({
                 inputs   : this.chart.definition.settings,
-                values   : this.chart.settings.attributes,
                 cls      : 'ui-portlet-plain',
                 onchange : function() { self.chart.settings.set( self.form.data.create() ); }
             });
+            this.form.set( this.chart.settings.attributes );
             this.$el.empty().append( this.form.$el );
         }
     });
