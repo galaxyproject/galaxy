@@ -43,7 +43,6 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                         console.debug('FAILED - Editor::onchange() - Chart type not supported.');
                     }
                     self.chart.definition = chart_definition;
-                    self.chart.settings.clear();
                     self.chart.set( { type : chart_type, modified : true } );
                     console.debug( 'Editor::onchange() - Switched chart type.' );
                 },

@@ -51,7 +51,6 @@ define(['utils/utils'], function( Utils ) {
         /** Get value from dom */
         _getValue: function() {
             var rgb = this.$value.css( 'background-color' );
-            window.console.log( rgb );
             rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
             if ( rgb ) {
                 function hex( x ) {

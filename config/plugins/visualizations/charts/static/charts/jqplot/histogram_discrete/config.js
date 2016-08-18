@@ -10,14 +10,6 @@ return $.extend(true, {}, default_config, {
             title       : 'Observations',
             is_label    : true
         }
-    },
-    settings    : {
-        x_axis_label : {
-            init : 'Breaks'
-        },
-        y_axis_label : {
-            init : 'Density'
-        }
     }
 });
 
