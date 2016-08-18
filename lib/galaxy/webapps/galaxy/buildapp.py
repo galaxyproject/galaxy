@@ -447,6 +447,22 @@ def populate_api_routes( webapp, app ):
                            action='update_tour',
                            conditions=dict( method=[ "POST" ] ) )
 
+    # ========================
+    # ===== WEBHOOKS API =====
+    # ========================
+
+    webapp.mapper.connect( 'get_all',
+                           '/api/webhooks',
+                           controller='webhooks',
+                           action='get_all',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'get_random',
+                           '/api/webhooks/{webhook_type}',
+                           controller='webhooks',
+                           action='get_random',
+                           conditions=dict( method=[ "GET" ] ) )
+
     # =======================
     # ===== LIBRARY API =====
     # =======================
