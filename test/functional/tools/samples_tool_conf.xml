@@ -18,6 +18,7 @@
   <tool file="inputs_as_json.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
+  <tool file="dbkey_output_action.xml" />
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
   <tool file="unicode_stream.xml" />
