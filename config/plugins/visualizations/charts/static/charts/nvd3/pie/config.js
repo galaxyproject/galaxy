@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/nvd3/common/config', 'plugin/charts/forms/inputs' ], function( nvd3_config, Inputs ) {
+define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
     return $.extend(true, {}, {
         title       : 'Pie chart',
         category    : 'Area charts',
@@ -26,10 +26,18 @@ define( [ 'plugin/charts/nvd3/common/config', 'plugin/charts/forms/inputs' ], fu
                 max         : 1,
                 min         : 0.0
             },
-            show_legend : Inputs.boolean( 'show_legend', { label: 'Show legend', help: 'Would you like to add a legend?', value: 'false' } ),
+            show_legend : {
+                name        : 'show_legend',
+                label       : 'Show legend',
+                help        : 'Would you like to add a legend?',
+                type        : 'select',
+                display     : 'radiobutton',
+                value       : 'false',
+                data        : [ { label : 'Yes', value : 'true'  }, { label : 'No',  value : 'false' } ]
+            },
             label_type  : {
                 type        : 'conditional',
-                name        : 'label_type'
+                name        : 'label_type',
                 test_param  : {
                     name        : 'type',
                     label       : 'Donut label',

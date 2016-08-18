@@ -1,4 +1,3 @@
-// dependencies
 define(['plugin/charts/nvd3/bar/config',
         'plugin/charts/nvd3/bar_stacked/config',
         'plugin/charts/nvd3/bar_horizontal/config',
@@ -39,31 +38,27 @@ define(['plugin/charts/nvd3/bar/config',
                     others_heatmap_cluster
             ) {
 
-// widget
-return Backbone.Model.extend(
-{
-    // types
-    defaults: {
-        'nvd3_bar'                          : nvd3_bar,
-        'nvd3_bar_stacked'                  : nvd3_bar_stacked,
-        'nvd3_bar_horizontal'               : nvd3_bar_horizontal,
-        'nvd3_bar_horizontal_stacked'       : nvd3_bar_horizontal_stacked,
-        'nvd3_line_focus'                   : nvd3_line_focus,
-        'nvd3_stackedarea'                  : nvd3_stackedarea,
-        'nvd3_stackedarea_full'             : nvd3_stackedarea_full,
-        'nvd3_stackedarea_stream'           : nvd3_stackedarea_stream,
-        'nvd3_pie'                          : nvd3_pie,
-        'nvd3_line'                         : nvd3_line,
-        'nvd3_scatter'                      : nvd3_scatter,
-        'nvd3_histogram'                    : nvd3_histogram,
-        /*'jqplot_bar'                        : jqplot_bar,
-        'jqplot_histogram_discrete'         : jqplot_histogram_discrete,
-        'jqplot_line'                       : jqplot_line,
-        'jqplot_scatter'                    : jqplot_scatter,
-        'jqplot_boxplot'                    : jqplot_boxplot,
-        'others_heatmap'                    : others_heatmap,
-        'others_heatmap_cluster'            : others_heatmap_cluster*/
-    }
-});
-
+    return Backbone.Model.extend({
+        defaults: {
+            'nvd3_bar'                          : nvd3_bar,
+            'nvd3_bar_stacked'                  : nvd3_bar_stacked,
+            'nvd3_bar_horizontal'               : nvd3_bar_horizontal,
+            'nvd3_bar_horizontal_stacked'       : nvd3_bar_horizontal_stacked,
+            'nvd3_line_focus'                   : nvd3_line_focus,
+            'nvd3_stackedarea'                  : nvd3_stackedarea,
+            'nvd3_stackedarea_full'             : nvd3_stackedarea_full,
+            'nvd3_stackedarea_stream'           : nvd3_stackedarea_stream,
+            'nvd3_pie'                          : nvd3_pie,
+            'nvd3_line'                         : nvd3_line,
+            'nvd3_scatter'                      : nvd3_scatter,
+            'nvd3_histogram'                    : nvd3_histogram,
+            /*'jqplot_bar'                        : jqplot_bar,
+            'jqplot_histogram_discrete'         : jqplot_histogram_discrete,
+            'jqplot_line'                       : jqplot_line,
+            'jqplot_scatter'                    : jqplot_scatter,
+            'jqplot_boxplot'                    : jqplot_boxplot,
+            'others_heatmap'                    : others_heatmap,
+            'others_heatmap_cluster'            : others_heatmap_cluster*/
+        }
+    });
 });
