@@ -25,6 +25,21 @@ function deepeach( dict, callback ) {
     }
 }
 
+/** Clone */
+function clone( obj ) {
+    if ( obj instanceof Array ) {
+        var copy = [];
+        for ( var i = 0, len = obj.length; i < len; i++ ) { copy[ i ] = clone( obj[ i ] ) }
+        return copy;
+    }
+    if ( obj instanceof Object ) {
+        var copy = {};
+        for ( var attr in obj ) { obj.hasOwnProperty( attr ) && ( copy[ attr ] = clone( obj[ attr ] ) ) }
+        return copy;
+    }
+    return obj;
+}
+
 /**
  * Check if a string is a json string
  * @param{String}   text - Content to be validated
@@ -275,7 +290,8 @@ return {
     textify: textify,
     isEmpty: isEmpty,
     deepeach: deepeach,
-    isJSON: isJSON
+    isJSON: isJSON,
+    clone: clone
 };
 
 });

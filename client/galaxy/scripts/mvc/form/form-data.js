@@ -1,6 +1,4 @@
-/*
-    This class maps the form dom to an api compatible javascript dictionary.
-*/
+/* This class maps the form dom to an api compatible javascript dictionary. */
 define([ 'utils/utils' ], function( Utils ) {
     var Manager = Backbone.Model.extend({
         initialize: function( app ) {
@@ -234,8 +232,17 @@ define([ 'utils/utils' ], function( Utils ) {
         }
     };
 
+    /** Populate input state */
+    var populate = function( inputs, state ) {
+        visitInputs( inputs, function( input, name ) {
+            state[ name ] !== undefined && ( input.value = state[ name ] );
+        });
+        return inputs;
+    };
+
     return {
         Manager         : Manager,
-        visitInputs     : visitInputs
+        visitInputs     : visitInputs,
+        populate        : populate
     }
 });

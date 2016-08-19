@@ -1,17 +1,4 @@
 define( [ 'utils/utils' ], function( Utils ) {
-    var Groups = Backbone.Collection.extend({
-        model: Backbone.Model.extend({
-            defaults : {
-                key     : 'Data label',
-                date    : ''
-            },
-
-            reset: function(){
-                this.clear( { silent: true } ).set( this.defaults );
-                this.trigger( 'reset', this );
-            }
-        })
-    });
     return Backbone.Model.extend({
         defaults : {
             id              : null,
@@ -26,8 +13,8 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         initialize: function( options ) {
-            this.groups = new Groups();
-            this.settings = new Backbone.Model();
+            this.groups     = new Backbone.Collection();
+            this.settings   = new Backbone.Model();
         },
 
         reset: function( options ) {

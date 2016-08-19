@@ -1,5 +1,5 @@
 /* This class renders the chart configuration form. */
-define( [ 'mvc/form/form-view', 'mvc/form/form-repeat', 'utils/utils' ], function( Form, Repeat, Utils ) {
+define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form/form-data' ], function( Utils, Form, Repeat, FormData ) {
     var GroupView = Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -13,7 +13,7 @@ define( [ 'mvc/form/form-view', 'mvc/form/form-repeat', 'utils/utils' ], functio
 
         render: function() {
             var self = this;
-            var inputs = this.chart.definition.series && this.chart.definition.series.slice() || [];
+            var inputs = this.chart.definition.series ? Utils.clone( this.chart.definition.series ) : [];
             var dataset_id = this.chart.get( 'dataset_id' );
             var chart_type = this.chart.get( 'type' );
             var chart_definition = this.chart.definition;
@@ -37,9 +37,8 @@ define( [ 'mvc/form/form-view', 'mvc/form/form-repeat', 'utils/utils' ], functio
                             }
                             self.chart.state( 'ok', 'Metadata initialized...' );
                             self.form = new Form( {
-                                inputs  : inputs,
+                                inputs  : FormData.populate( inputs, self.group.attributes ),
                                 cls     : 'ui-portlet-plain',
-                                values  : self.group.attributes,
                                 onchange: function() {
                                     self.group.set( self.form.data.create() );
                                     self.chart.set( 'modified', true );

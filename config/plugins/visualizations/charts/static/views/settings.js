@@ -1,5 +1,5 @@
 /* This class renders the chart configuration form. */
-define( [ 'mvc/form/form-view' ], function( Form ) {
+define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-data' ], function( Utils, Form, FormData ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -10,8 +10,7 @@ define( [ 'mvc/form/form-view' ], function( Form ) {
         render: function() {
             var self = this;
             this.form = new Form({
-                inputs   : this.chart.definition.settings,
-                values   : this.chart.settings.attributes,
+                inputs   : FormData.populate( Utils.clone( this.chart.definition.settings ), this.chart.settings.attributes ),
                 cls      : 'ui-portlet-plain',
                 onchange : function() { self.chart.settings.set( self.form.data.create() ); }
             });

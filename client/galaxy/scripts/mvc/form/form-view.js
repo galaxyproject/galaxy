@@ -10,19 +10,9 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 cls             : 'ui-portlet-limited',
                 icon            : null,
                 always_refresh  : true,
-                values          : null,
                 inputs          : []
             });
             this.setElement( '<div/>' );
-            this.options.inputs = $.extend( {}, this.options.inputs, true );
-            this.options.values ? this.set( this.options.values ) : this.render();
-        },
-
-        /** Set parameter values from value dictionary, needs to be enhanced to support repeats */
-        set: function( values ) {
-            FormData.visitInputs( this.options.inputs, function( input, name ) {
-                input.value = values[ name ] !== undefined ? values[ name ] : input.value;
-            });
             this.render();
         },
 
