@@ -1,5 +1,2 @@
 name: xkcd
-type:
-  - tool
-  - workflow
-activate: true
+type: toolview
