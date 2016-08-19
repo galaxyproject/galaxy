@@ -1,4 +1,4 @@
-/* This class renders the chart configuration form. */
+/** This class renders the chart configuration form. */
 define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-data' ], function( Utils, Form, FormData ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
