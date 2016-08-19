@@ -1,5 +1,5 @@
 define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
-    return $.extend(true, {}, {
+    return $.extend( true, {}, {
         title       : 'Pie chart',
         category    : 'Area charts',
         library     : 'NVD3',

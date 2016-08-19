@@ -1,5 +1,5 @@
-define( [ 'plugin/charts/forms/default', 'plugin/charts/forms/inputs' ], function( default_config, Inputs ) {
-    return $.extend( true, {}, default_config, {
+define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
+    return $.extend( true, {}, nvd3_config, {
         library     : 'NVD3',
         tag         : 'svg',
         title       : 'Histogram',
@@ -11,11 +11,6 @@ define( [ 'plugin/charts/forms/default', 'plugin/charts/forms/inputs' ], functio
                 title       : 'Observations',
                 is_numeric  : true
             }
-        },
-        settings    : {
-            x_axis_label : Inputs.axisLabel( 'x_axis_label', { value: 'Values' } ),
-            y_axis_label : Inputs.axisLabel( 'y_axis_label', { value: 'Density' } ),
-            y_axis_type  : Inputs.axisType( 'y_axis_type', { value: 'f', precision: '2' } )
         }
     });
 });
