@@ -52,13 +52,13 @@ define(['plugin/charts/nvd3/bar/config',
             'nvd3_line'                         : nvd3_line,
             'nvd3_scatter'                      : nvd3_scatter,
             'nvd3_histogram'                    : nvd3_histogram,
-            /*'jqplot_bar'                        : jqplot_bar,
+            'jqplot_bar'                        : jqplot_bar,
             'jqplot_histogram_discrete'         : jqplot_histogram_discrete,
             'jqplot_line'                       : jqplot_line,
             'jqplot_scatter'                    : jqplot_scatter,
             'jqplot_boxplot'                    : jqplot_boxplot,
             'others_heatmap'                    : others_heatmap,
-            'others_heatmap_cluster'            : others_heatmap_cluster*/
+            'others_heatmap_cluster'            : others_heatmap_cluster
         }
     });
 });
