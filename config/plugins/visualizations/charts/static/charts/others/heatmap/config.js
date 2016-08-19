@@ -26,8 +26,8 @@ define( [ 'plugin/charts/forms/default' ], function( default_config ) {
         },
         settings    : {
             use_panels : {
-                init        : 'true',
-                hide        : true
+                value       : 'true',
+                hidden      : true
             },
             color_set : {
                 name        : 'color_set',
