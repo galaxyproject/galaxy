@@ -20,11 +20,18 @@ div.container {
     max-width: 100%;
     width: 100%;
 }
+#queue_install {
+    margin: 5px;
+}
 .container-table {
     padding-top: 1em;
 }
 ul.jstree-container-ul {
     margin-top: 1em;
+}
+ul.workflow_tools {
+    padding-left: 0px;
+    list-style-type: none
 }
 </style>
 </%def>
@@ -65,16 +72,16 @@ workflows_missing_tools = _.template([
                     '<td class="datasetRow"><\%= workflow.name \%></td>',
                     '<td class="datasetRow"><\%= workflow.owner \%></td>',
                     '<td class="datasetRow">',
-                        '<ul>',
+                        '<ul class="workflow_tools">',
                             '<\% _.each(workflow.missing_tools, function(tool) { \%>',
-                                '<li><\%= tool \%></li>',
+                                '<li class="workflow_tools"><\%= tool \%></li>',
                             '<\% }); \%>',
                         '</ul>',
                     '</td>',
                     '<td class="datasetRow">',
-                        '<ul>',
-                            '<li><input type="button" class="show_wf_repo" data-toolids="<\%= workflow.missing_tools.join(\'|\') \%>" value="Find and display" /></li>',
-                            '<li><input type="button" class="queue_wf_repo" data-toolids="<\%= workflow.missing_tools.join(\'|\') \%>" value="Find and queue" /></li>',
+                        '<ul class="workflow_tools">',
+                            '<li class="workflow_tools"><input type="button" class="show_wf_repo btn btn-primary" data-toolids="<\%= workflow.missing_tools.join(\'|\') \%>" value="Preview" /></li>',
+                            '<li><input type="button" class="queue_wf_repo btn btn-primary" data-toolids="<\%= workflow.missing_tools.join(\'|\') \%>" value="Add to queue" /></li>',
                         '</ul>',
                     '</td>',
                 '</tr>',
@@ -117,6 +124,7 @@ repository_queue_template = _.template([
                 '<\% }); \%>',
             '</tbody>',
         '</table>',
+        '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',
     '</div>',
 ].join(''));
 repository_details_template = _.template([
@@ -128,14 +136,14 @@ repository_details_template = _.template([
             '<div class="toolForm">',
                 '<div class="toolFormTitle">Changeset</div>',
                 '<div class="toolFormBody changeset">',
-                    '<select id="changeset" name="changeset">',
+                    '<select id="changeset" name="changeset" style="margin: 5px;">',
                         '<\% _.each(Object.keys(repository.metadata), function(changeset) { \%>',
                             '<\% if (changeset == current_changeset) { var selected = "selected "; } else { var selected = ""; } \%>',
                             '<option <\%= selected \%>data-changeset="<\%= changeset \%>" value="<\%= changeset.split(":")[1] \%>"><\%= changeset \%></option>',
                         '<\% }); \%>',
                     '</select>',
-                    '<input class="btn btn-primary" data-tsrid="<\%= current_metadata.repository.id \%>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
-                    '<input class="btn btn-primary" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
+                    '<input class="btn btn-primary preview-button" data-tsrid="<\%= current_metadata.repository.id \%>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
+                    '<input class="btn btn-primary preview-button" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
                     '<div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>',
                 '</div>',
                 '<div class="toolParamHelp" style="clear: both;">',
@@ -405,20 +413,6 @@ var create_tps_template = _.template([
     '</div>',
 ].join(''));
 
-function array_contains_dict(array, dict) {
-    for (var i in array) {
-        needle = array[i];
-        var found = true;
-        for (var key in dict) {
-            if (needle[key] !== dict[key]) {
-                found = false;
-            }
-        }
-        if (found) { return true; }
-    }
-    return false;
-
-}
 function bind_category_events() {
     $('.repository-selector').click(function() {
         $('#repository_details').replaceWith('<div class="tab-pane" id="repository_details"><p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p></div>');
@@ -473,7 +467,7 @@ function bind_repository_events() {
         repository_metadata.tool_panel_section = JSON.stringify(select_tps({}));
         repository_metadata.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
         repository_metadata.tool_shed_url = $("#repository_details").attr('data-shedurl');
-        var queue_key = get_queue_key(repository_metadata, changeset);
+        var queue_key = get_queue_key(repository_metadata);
         var queued_repos = new Object();
         if (localStorage.repositories) {
             queued_repos = get_repository_queue();
@@ -482,7 +476,7 @@ function bind_repository_events() {
             queued_repos[queue_key] = repository_metadata;
         }
         save_repository_queue(queued_repos);
-        check_if_installed(repository_metadata.repository.name, repository_metadata.repository.owner, current_changeset.split(':')[1]);
+        check_if_installed(repository_metadata);
         check_queue();
     });
     $('#create_new').click(show_global_tps_create);
@@ -501,7 +495,7 @@ function bind_repository_events() {
         url = $('#repository_installation').attr('action');
         prepare_installation(params, url);
     });
-    check_if_installed(current_metadata.repository.name, current_metadata.repository.owner, current_changeset.split(':')[1]);
+    check_if_installed(repository_metadata);
 }
 function bind_shed_events() {
     $('.category-selector').click(function() {
@@ -519,8 +513,6 @@ function bind_shed_events() {
     });
 }
 function bind_workflow_events() {
-    /* show_wf_repo
-       queue_wf_repo */
     $('.show_wf_repo').click(function() {
         var tool_ids = $(this).attr('data-toolids').split('|');
         var tool_id = tool_ids[0];
@@ -547,45 +539,62 @@ function bind_workflow_events() {
             });
         });
     });
+    $('.queue_wf_repo').click(function() {
+        var tool_ids = $(this).attr('data-toolids').split('|');
+        var tool_id = tool_ids[0];
+        var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action='shed_repository')}';
+        var params = {'tool_id': tool_id};
+        $.get(api_url, params, function(data) {
+            var repository_metadata = data.repository.metadata[data.current_changeset];
+            $('#repository_details').attr('data-shedurl', data.tool_shed_url);
+            var queue_key = get_queue_key(repository_metadata);
+            var queued_repos = new Object();
+            if (localStorage.repositories) {
+                queued_repos = get_repository_queue();
+            }
+            if (!queued_repos.hasOwnProperty(queue_key)) {
+                queued_repos[queue_key] = repository_metadata;
+            }
+            save_repository_queue(queued_repos);
+            check_if_installed(repository_metadata);
+            check_queue();
+        });
+    });
 }
 function changeset_metadata() {
     repository_data.current_changeset = get_current_changeset();
     repository_data.current_metadata = repository_data.repository.metadata[changeset];
     repository_information = repository_data.repository;
     $('#repository_details').replaceWith(repository_details_template(repository_data));
-    check_if_installed(repository_information.name, repository_information.owner, changeset.split(':')[1]);
+    check_if_installed(repository_data.current_metadata);
     bind_repository_events();
 }
-function check_if_installed(name, owner, changeset) {
-    params = {name: name, owner: owner}
+function check_if_installed(repository_metadata) {
+    params = {name: repository_metadata.name, owner: repository_metadata.owner}
     var already_installed = false;
-    var queued = repository_in_queue();
+    var queued = repository_in_queue(repository_metadata);
     $.get('${h.url_for(controller='/api/tool_shed_repositories')}', params, function(data) {
         for (var index = 0; index < data.length; index++) {
             var repository = data[index];
             var installed = !repository.deleted && !repository.uninstalled;
-            var changeset_match = repository.changeset_revision == changeset ||
-                                  repository.installed_changeset_revision == changeset;
-            if (repository.name == name && repository.owner == owner && installed && changeset_match) {
+            var changeset_match = repository.changeset_revision == repository_metadata.changeset_revision ||
+                                  repository.installed_changeset_revision == repository_metadata.changeset_revision;
+            if (repository.name == repository_metadata.name && repository.owner == repository_metadata.owner && installed && changeset_match) {
                 already_installed = true;
             }
-            if (already_installed && !repository_in_queue()) {
+            if (already_installed) {
                 $('#install_repository').prop('disabled', true);
                 $('#install_repository').val('This revision is already installed');
-                $('#queue_install').prop('disabled', true);
-                $('#queue_install').val('This revision is already installed');
             }
             else {
                 $('#install_repository').prop('disabled', false);
                 $('#install_repository').val('Install this revision');
-                $('#queue_install').prop('disabled', false);
-                $('#queue_install').val('Install this revision later');
             }
         }
     });
-    if (repository_in_queue() && !already_installed) {
+    if (repository_in_queue(repository_metadata)) {
         $('#queue_install').prop('disabled', true);
-        $('#queue_install').val('This revision has been queued');
+        $('#queue_install').val('This revision is in the queue');
     }
     else {
         $('#queue_install').prop('disabled', false);
@@ -593,39 +602,43 @@ function check_if_installed(name, owner, changeset) {
     }
 }
 function check_queue() {
+    var was_active = $('#repository_queue').attr('class');
     if (localStorage.hasOwnProperty('repositories')) {
-        repository_queue = JSON.parse(localStorage.repositories);
-        queue_keys = Object.keys(repository_queue);
-        queue = Array();
+        var repository_queue = JSON.parse(localStorage.repositories);
+        var queue_keys = Object.keys(repository_queue);
+        var queue = Array();
         for (var i = 0; i < queue_keys.length; i++) {
-            queue_key = queue_keys[i];
-            repository_metadata = repository_queue[queue_key];
-            repository = repository_metadata.repository;
-            key_parts = queue_key.split('|');
-            tool_shed_url = key_parts[0];
+            var queue_key = queue_keys[i];
+            var repository_metadata = repository_queue[queue_key];
+            var repository = repository_metadata.repository;
+            var key_parts = queue_key.split('|');
+            var tool_shed_url = key_parts[0];
             repository.queue_key = queue_key;
             repository.changeset = repository_metadata.changeset_revision;
             repository.tool_shed_url = tool_shed_url;
             queue.push(repository);
         }
         $('#repository_queue').replaceWith(repository_queue_template({'repositories': queue}));
-        $('.install_one').click(function() {
-            var repository_metadata = get_repository_from_queue($(this).attr('data-repokey'));
-            install_from_queue(repository_metadata, $(this).attr('data-repokey'));
-        });
-        $('.remove_one').click(function(){
-            queue_key = $(this).attr('data-repokey');
-            repository_metadata = get_repository_from_queue(queue_key);
-            repository_id = repository_metadata.repository.id;
-            selector = "#queued_repository_" + repository_id;
-            $(selector).remove();
-            remove_from_queue(undefined, undefined, queue_key);
-        });
-        $('#clear_queue').click(function() {
-            localStorage.removeItem('repositories');
-        });
-        $('#install_all').click(process_queue);
+        $('#repository_queue').attr('class', was_active);
     }
+    $('.install_one').click(function() {
+        var repository_metadata = get_repository_from_queue($(this).attr('data-repokey'));
+        install_from_queue(repository_metadata, $(this).attr('data-repokey'));
+    });
+    $('.remove_one').click(function(){
+        var queue_key = $(this).attr('data-repokey');
+        var repository_metadata = get_repository_from_queue(queue_key);
+        var repository_id = repository_metadata.repository.id;
+        var selector = "#queued_repository_" + repository_id;
+        $(selector).remove();
+        remove_from_queue(undefined, undefined, queue_key);
+    });
+    $('#clear_queue').click(function() {
+        $('#repository_queue').replaceWith('<div class="tab-pane" id="repository_queue"><p>There are no repositories queued for installation.</p><input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" /></div>');
+        $('#repository_queue').attr('class', was_active);
+        localStorage.removeItem('repositories');
+    });
+    $('#install_all').click(process_queue);
 }
 function find_tool_by_guid(tool_guid, changeset) {
     var tools = repository_data.tools[changeset];
@@ -639,11 +652,15 @@ function find_tool_by_guid(tool_guid, changeset) {
 function get_current_changeset() {
     return $('#changeset').find("option:selected").text();
 }
-function get_queue_key(repository_metadata, changeset, shed_url = undefined) {
-    if (shed_url === undefined) {
-        shed_url = $("#repository_details").attr('data-shedurl');
+function get_queue_key(repository_metadata) {
+    if (repository_metadata.tool_shed_url === undefined) {
+        repository_metadata.tool_shed_url = $("#repository_details").attr('data-shedurl');
     }
-    return shed_url + '|' + repository_metadata.id + '|' + changeset;
+    // Make sure there is never a trailing slash on the shed URL.
+    if (repository_metadata.tool_shed_url.substr(-1) == '/') {
+        repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(0, repository_metadata.tool_shed_url.length - 1);
+    }
+    return repository_metadata.tool_shed_url + '|' + repository_metadata.repository_id + '|' + repository_metadata.changeset_revision;
 }
 function get_queued_repositories(current_ids = null, processed_ids = null, metadata = null) {
     if (processed_ids === null) {
@@ -717,68 +734,6 @@ function prepare_installation(params, api_url) {
         install_repository(iri_parameters);
     });
 }
-function process_dependencies(metadata, selector) {
-    has_repo_dependencies = false;
-    if (metadata.has_repository_dependencies) {
-        has_repo_dependencies = true;
-        for (var item in metadata.repository_dependencies) {
-            var dependency = metadata.repository_dependencies[item];
-            if (dependency.has_repository_dependencies) {
-                has_repo_dependencies = true;
-            }
-            var repository = dependency.repository;
-            if (repository !== null) {
-                template_values = {dependency_id: dependency.id,
-                                   name: repository.name,
-                                   revision: dependency.changeset_revision,
-                                   owner: repository.owner,
-                                   prior: ''};
-                if (dependency.prior_installation_required) {
-                    template_values.prior = ' (<b>Prior installation required</b>)';
-                }
-                var dependency_html = repository_dependency_template(template_values);
-                if (selector === undefined) {
-                    $("#repository_deps").append(dependency_html);
-                }
-                else {
-                    $(selector).append('<ul>' + dependency_html + '</ul>');
-                }
-                if (dependency.has_repository_dependencies) {
-                    process_dependencies(dependency, '#metadata_' + dependency.id);
-                }
-            }
-        }
-    }
-    if (metadata.includes_tool_dependencies) {
-        for (var item in metadata.tool_dependencies) {
-            var dependency = metadata.tool_dependencies[item];
-            if (item === 'set_environment') {
-                for (var i = 0; i < dependency.length; i++) {
-                    var tool_dependency = {name: dependency[i].name, version: 'N/A', type: dependency[i].type}
-                }
-            }
-            else {
-                var tool_dependency = {name: dependency.name, version: dependency.version, type: dependency.type};
-            }
-            if (!array_contains_dict(valid_tool_dependencies, tool_dependency)) {
-                valid_tool_dependencies.push(tool_dependency);
-            }
-        }
-    }
-    if (metadata.includes_tools_for_display_in_tool_panel) {
-        $('#tools_toggle').show();
-        for (var i = 0; i < metadata.tools.length; i++) {
-            var tool = metadata.tools[i];
-            valid_tool = {clean_name: tool.clean, name: tool.name, version: tool.version, description: tool.description, guid: tool.guid};
-            if (!array_contains_dict(valid_tools, valid_tool) && tool.add_to_tool_panel) {
-                valid_tools.push(valid_tool);
-            }
-        }
-    }
-    else {
-        $('#tools_toggle').hide();
-    }
-}
 function process_queue() {
     if (!localStorage.repositories) {
         return;
@@ -810,7 +765,7 @@ function remove_from_queue(repository_metadata, changeset, queue_key=undefined) 
         return;
     }
     if (queue_key === undefined) {
-        queue_key = get_queue_key(repository_metadata, changeset);
+        queue_key = get_queue_key(repository_metadata);
     }
     repository_queue = get_repository_queue();
     if (repository_queue.hasOwnProperty(queue_key)) {
@@ -818,14 +773,14 @@ function remove_from_queue(repository_metadata, changeset, queue_key=undefined) 
         save_repository_queue(repository_queue);
     }
 }
-function repository_in_queue() {
+function repository_in_queue(repository_metadata) {
     if (!localStorage.repositories) {
         return;
     }
-    repository_queue = get_repository_queue();
-    changeset = get_current_changeset();
-    var repository_metadata = repository_data.current_metadata;
-    var queue_key = get_queue_key(repository_metadata, changeset);
+    var repository_queue = get_repository_queue();
+    var changeset = repository_metadata.changeset_revision;
+    // changeset = get_current_changeset();
+    var queue_key = get_queue_key(repository_metadata);
     if (localStorage.repositories) {
         queued_repos = get_repository_queue();
     }
@@ -987,7 +942,7 @@ $(document).ready(function() {
         <div class="tab-pane" id="repository_details"><p>Select a repository in the previous tab.</p></div>
         <div class="tab-pane" id="repository_queue">
             <p>There are no repositories queued for installation.</p>
-            <input type="button" id="from_workflow" value="Add from workflow" />
+            <input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />
         </div>
     </div>
 </div>
