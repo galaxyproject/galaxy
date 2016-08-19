@@ -282,12 +282,12 @@
                                     name = 'files_0|to_posix_lines'
                                 else:
                                     name = 'to_posix_lines'
-                                uni2posix = '<input type="checkbox" name="%s" value="true"%s/>No' % ( name, checked )
+                                uni2posix = '<input type="checkbox" name="%s" value="true"%s/>Yes' % ( name, checked )
                             %>
                             ${uni2posix}
                         </div>
                         <div class="toolParamHelp" style="clear: both;">
-                            Use this option if you don't need your datasets to be converted from uni to posix line endings.
+                            Use this option if you need your datasets to be converted from uni to posix line endings.
                         </div>
                     </div>
                     <div class="form-row">

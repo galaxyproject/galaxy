@@ -310,9 +310,9 @@ def add_file( dataset, registry, json_file, output_path ):
                     if dataset.to_posix_lines:
                         tmpdir = output_adjacent_tmpdir( output_path )
                         tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
-                        if dataset.space_to_tab and not dataset.to_posix_lines:
+                        if dataset.space_to_tab:
                             line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
-                        elif(not dataset.to_posix_lines):
+                        else:
                             line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
                 if dataset.file_type == 'auto':
                     ext = sniff.guess_ext( dataset.path, registry.sniff_order )
