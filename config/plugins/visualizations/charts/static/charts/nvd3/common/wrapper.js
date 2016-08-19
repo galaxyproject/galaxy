@@ -1,6 +1,4 @@
-/**
- *  This is the common wrapper for nvd3 based visualizations.
- */
+/** This is the common wrapper for nvd3 based visualizations. */
 define( [ 'plugin/charts/tools' ], function( Tools ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
@@ -61,8 +59,8 @@ define( [ 'plugin/charts/tools' ], function( Tools ) {
             function makeTickFormat( id ) {
                 Tools.makeTickFormat({
                     categories  : categories.array[ id ],
-                    type        : settings.get( id + '_axis_type' ),
-                    precision   : settings.get( id + '_axis_precision' ),
+                    type        : settings.get( id + '_axis_type|type' ),
+                    precision   : settings.get( id + '_axis_type|precision' ),
                     formatter   : function( formatter ) {
                         formatter && d3chart[ id + 'Axis' ].tickFormat( function( value ) {
                             return formatter( value );

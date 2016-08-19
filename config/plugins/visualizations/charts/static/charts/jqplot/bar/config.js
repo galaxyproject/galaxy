@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/jqplot/common/config' ], function(  plot_config) {
+define( [ 'plugin/charts/jqplot/common/config' ], function( plot_config ) {
     return $.extend( true, {}, plot_config, {
         title       : 'Regular',
         category    : 'Bar diagrams',
