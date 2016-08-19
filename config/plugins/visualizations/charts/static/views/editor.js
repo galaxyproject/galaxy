@@ -87,15 +87,15 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             // set elements
             this.portlet.append( this.message.$el );
             this.portlet.append( this.tabs.$el.addClass( 'ui-margin-top-large' ) );
+            this.portlet.hideOperation( 'back' );
             this.setElement( this.portlet.$el );
             this.tabs.hideOperation( 'back' );
 
             // chart events
             this.chart.on( 'change:title', function( chart ) { self._refreshTitle() } );
             this.chart.on( 'change:type', function( chart ) { self.types.value( chart.get( 'type' ) ) } );
-            this.chart.on( 'reset', function( chart ) { self._resetChart() } );
-            this.app.chart.on( 'redraw', function( chart ) { self.portlet.showOperation( 'back' ) } );
-            this._resetChart();
+            this.chart.on( 'redraw', function( chart ) { self.portlet.showOperation( 'back' ) } );
+            this.chart.reset( this.app.options );
         },
 
         /** Show editor */
@@ -113,19 +113,6 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             var title = this.chart.get( 'title' );
             this.portlet.title( title );
             this.title.value( title );
-        },
-
-        /** Reset entire chart */
-        _resetChart: function() {
-            this.chart.set({
-                'id'            : Utils.uid(),
-                'type'          : 'nvd3_bar',
-                'dataset_id'    : this.app.options.config.dataset_id,
-                'title'         : 'New Chart'
-            });
-            this.chart.groups.reset();
-            this.chart.groups.add( { id : Utils.uid() } );
-            this.portlet.hideOperation( 'back' );
         },
 
         /** Save chart data */

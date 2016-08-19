@@ -1,4 +1,4 @@
-define( [], function() {
+define( [ 'utils/utils' ], function( Utils ) {
     var Groups = Backbone.Collection.extend({
         model: Backbone.Model.extend({
             defaults : {
@@ -30,23 +30,16 @@ define( [], function() {
             this.settings = new Backbone.Model();
         },
 
-        reset: function() {
-            this.clear( { silent: true } ).set( this.defaults );
-            this.groups.reset();
-            this.settings.clear();
-            this.trigger( 'reset', this );
-        },
-
-        copy: function( new_chart ) {
-            var current = this;
-            current.clear( { silent: true } ).set( this.defaults );
-            current.set( new_chart.attributes );
-            current.settings = new_chart.settings.clone();
-            current.groups.reset();
-            new_chart.groups.each( function( group ) {
-                current.groups.add( group.clone() );
+        reset: function( options ) {
+            this.set({
+                'id'            : Utils.uid(),
+                'type'          : 'nvd3_bar',
+                'dataset_id'    : options.config.dataset_id,
+                'title'         : 'New Chart'
             });
-            current.trigger( 'change', current );
+            this.settings.clear();
+            this.groups.reset();
+            this.groups.add( { id : Utils.uid() } );
         },
 
         state: function( value, info ) {
