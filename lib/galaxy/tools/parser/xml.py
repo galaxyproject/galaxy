@@ -391,15 +391,7 @@ def __parse_output_elem( output_elem ):
     if name is None:
         raise Exception( "Test output does not have a 'name'" )
 
-    file, attributes = __parse_test_attributes( output_elem, attrib )
-    primary_datasets = {}
-    for primary_elem in ( output_elem.findall( "discovered_dataset" ) or [] ):
-        primary_attrib = dict( primary_elem.attrib )
-        designation = primary_attrib.pop( 'designation', None )
-        if designation is None:
-            raise Exception( "Test primary dataset does not have a 'designation'" )
-        primary_datasets[ designation ] = __parse_test_attributes( primary_elem, primary_attrib )
-    attributes[ "primary_datasets" ] = primary_datasets
+    file, attributes = __parse_test_attributes( output_elem, attrib, parse_discovered_datasets=True )
     return name, file, attributes
 
 
@@ -436,7 +428,7 @@ def __parse_element_tests( parent_element ):
     return element_tests
 
 
-def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
+def __parse_test_attributes( output_elem, attrib, parse_elements=False, parse_discovered_datasets=False ):
     assert_list = __parse_assert_list( output_elem )
 
     # Allow either file or value to specify a target file to compare result with
@@ -466,8 +458,18 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     if parse_elements:
         element_tests = __parse_element_tests( output_elem )
 
+    primary_datasets = {}
+    if parse_discovered_datasets:
+        for primary_elem in ( output_elem.findall( "discovered_dataset" ) or [] ):
+            primary_attrib = dict( primary_elem.attrib )
+            designation = primary_attrib.pop( 'designation', None )
+            if designation is None:
+                raise Exception( "Test primary dataset does not have a 'designation'" )
+            primary_datasets[ designation ] = __parse_test_attributes( primary_elem, primary_attrib )
+
     has_checksum = md5sum or checksum
-    if not (assert_list or file or extra_files or metadata or has_checksum or element_tests):
+    has_nested_tests = extra_files or element_tests or primary_datasets
+    if not (assert_list or file or metadata or has_checksum or has_nested_tests):
         raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
@@ -475,6 +477,7 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     attributes['md5'] = md5sum
     attributes['checksum'] = checksum
     attributes['elements'] = element_tests
+    attributes['primary_datasets'] = primary_datasets
     return file, attributes
 
 

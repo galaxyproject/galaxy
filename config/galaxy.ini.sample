@@ -125,6 +125,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
+# Setting the following option to true will cause Galaxy to automatically
+# migrate the database forward after updates. This is not recommended for production
+# use.
+#database_auto_migrate = False
+
 # -- Files and directories
 
 # Dataset files are stored in this directory.
@@ -187,6 +192,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # all Conda resolvers, but multiple resolvers can be configured independently
 # in dependency_resolvers_config_file and these options overridden.
 # Location on the filesystem where Conda packages are installed
+
+# conda_prefix is the location on the filesystem where Conda packages and environments are installed
+# IMPORTANT: Due to a current limitation in conda, the total length of the
+# conda_prefix and the job_working_directory path should be less than 50 characters!
 #conda_prefix = <tool_dependency_dir>/_conda
 # Override the Conda executable to use, it will default to the one on the
 # PATH (if available) and then to <conda_prefix>/bin/conda
@@ -525,13 +534,13 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 #citation_url = https://wiki.galaxyproject.org/CitingGalaxy
 
-#The URL linked by the "Search" link in the "Help" menu.
+# The URL linked by the "Search" link in the "Help" menu.
 #search_url = http://galaxyproject.org/search/usegalaxy/
 
-#The URL linked by the "Mailing Lists" link in the "Help" menu.
+# The URL linked by the "Mailing Lists" link in the "Help" menu.
 #mailing_lists_url = https://wiki.galaxyproject.org/MailingLists
 
-#The URL linked by the "Videos" link in the "Help" menu.
+# The URL linked by the "Videos" link in the "Help" menu.
 #screencasts_url = https://vimeo.com/galaxyproject
 
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well

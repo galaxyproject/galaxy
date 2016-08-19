@@ -6,11 +6,12 @@ import data
 import logging
 import xml
 import text
+import binary
 
 log = logging.getLogger(__name__)
 
 
-class Triples( data.Text ):
+class Triples( data.Data ):
     """
     The abstract base class for the file format that can contain triples
     """
@@ -34,7 +35,7 @@ class Triples( data.Text ):
             dataset.blurb = 'file purged from disk'
 
 
-class NTriples( Triples ):
+class NTriples( data.Text, Triples ):
     """
     The N-Triples triple data format
     """
@@ -58,7 +59,7 @@ class NTriples( Triples ):
             dataset.blurb = 'file purged from disk'
 
 
-class N3( Triples ):
+class N3( data.Text, Triples ):
     """
     The N3 triple data format
     """
@@ -81,7 +82,7 @@ class N3( Triples ):
             dataset.blurb = 'file purged from disk'
 
 
-class Turtle( Triples ):
+class Turtle( data.Text, Triples ):
     """
     The Turtle triple data format
     """
@@ -91,7 +92,10 @@ class Turtle( Triples ):
     def sniff( self, filename ):
         with open(filename, "r") as f:
             # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-            if re.compile( r'@prefix\s+[^:]*:\s+<[^>]*>\s\.' ).search( f.readline( 1024 ) ):
+            line = f.readline( 1024 )
+            if re.compile( r'@prefix\s+[^:]*:\s+<[^>]*>\s\.' ).search( line ):
+                return True
+            if re.compile( r'@base\s+<[^>]*>\s\.' ).search( line ):
                 return True
         return False
 
@@ -156,3 +160,28 @@ class Jsonld( text.Json, Triples ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
+
+class HDT( binary.Binary, Triples ):
+    """
+    The HDT triple data format
+    """
+    edam_format = "format_2376"
+    file_ext = "hdt"
+
+    def sniff( self, filename ):
+        with open(filename, "rb") as f:
+            if f.read(4) == "$HDT":
+                return True
+        return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = 'HDT triple data'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+binary.Binary.register_sniffable_binary_format('HDT', 'HDT', HDT)

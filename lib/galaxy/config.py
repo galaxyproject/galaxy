@@ -23,21 +23,11 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.postfork import register_postfork_function
 from galaxy.web.formatting import expand_pretty_datetime_format
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
-
-# The uwsgi module is automatically injected by the parent uwsgi
-# process and only exists that way.  If anything works, this is a
-# uwsgi-managed process.
-try:
-    import uwsgi
-    if uwsgi.numproc:
-        process_is_uwsgi = True
-except ImportError:
-    # This is not a uwsgi process, or something went horribly wrong.
-    process_is_uwsgi = False
 
 
 def resolve_path( path, root ):
@@ -780,7 +770,7 @@ def configure_logging( config ):
         if disable_chatty_loggers:
             # Turn down paste httpserver logging
             if level <= logging.DEBUG:
-                for chatty_logger in ["paste.httpserver.ThreadPool"]:
+                for chatty_logger in ["paste.httpserver.ThreadPool", "routes.middleware"]:
                     logging.getLogger( chatty_logger ).setLevel( logging.WARN )
 
         # Remove old handlers
@@ -801,7 +791,7 @@ def configure_logging( config ):
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
-        root.addHandler( sentry_handler )
+        register_postfork_function(root.addHandler, sentry_handler)
 
 
 class ConfiguresGalaxyMixin:
