@@ -43,16 +43,9 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         /** Loads a view and makes sure that all others are hidden */
         go: function( view_id ) {
             $( '.tooltip' ).hide();
-            switch ( view_id ) {
-                case 'editor' :
-                    this.editor_view.show();
-                    this.viewer_view.hide();
-                    break;
-                case 'viewer' :
-                    this.editor_view.hide();
-                    this.viewer_view.show();
-                    break;
-            }
+            this.viewer_view.hide();
+            this.editor_view.hide();
+            this[ view_id + '_view' ].show();
         },
 
         /** Returns root path */
