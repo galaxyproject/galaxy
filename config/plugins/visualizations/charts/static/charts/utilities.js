@@ -1,9 +1,29 @@
 define( [ 'utils/utils' ], function( Utils ) {
+
+    /** Create default data request dictionary */
+    function tabularRequestDictionary( chart ) {
+        var request_dictionary = { groups : [] };
+        request_dictionary.id = chart.definition.execute ? chart.get( 'dataset_id_job' ) : chart.get( 'dataset_id' );
+        var group_index = 0;
+        chart.groups.each( function( group ) {
+            var columns = {};
+            for ( var column_key in chart.definition.columns ) {
+                var column_settings = chart.definition.columns[ column_key ];
+                columns[ column_key ] = Utils.merge( { index : group.get( column_key ) }, column_settings );
+            }
+            request_dictionary.groups.push( Utils.merge({
+                key     : ( ++group_index ) + ':' + group.get( 'key' ),
+                columns : columns
+            }, group.attributes ));
+        });
+        return request_dictionary;
+    };
+
     function panelHelper( app, options ) {
         var self = this;
         var process             = options.process;
         var chart               = options.chart;
-        var request_dictionary  = options.request_dictionary;
+        var request_dictionary  = options.request_dictionary || tabularRequestDictionary( options.chart );
         var render              = options.render;
         var canvas_list         = options.canvas_list;
         request_dictionary.query_limit = chart.definition.query_limit;
@@ -262,6 +282,7 @@ define( [ 'utils/utils' ], function( Utils ) {
 
     return {
         panelHelper             : panelHelper,
+        tabularRequestDictionary: tabularRequestDictionary,
         makeCategories          : makeCategories,
         makeUniqueCategories    : makeUniqueCategories,
         makeSeries              : makeSeries,

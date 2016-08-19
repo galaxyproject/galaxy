@@ -1,7 +1,7 @@
 define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/charts/utilities' ], function( Plot, Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
-            var request_dictionary = options.request_dictionary;
+            var request_dictionary = Utilities.tabularRequestDictionary( app.chart );
             var chart = options.chart;
             var index = 0;
             for ( var i in request_dictionary.groups ) {
@@ -16,7 +16,7 @@ define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/charts/utilities' ], fu
             var plot = new Plot( app, {
                 process             : options.process,
                 chart               : options.chart,
-                request_dictionary  : options.request_dictionary,
+                request_dictionary  : request_dictionary,
                 canvas_list         : options.canvas_list,
                 makeConfig          : function( groups, plot_config ){
                     var boundary = Utilities.getDomains( groups, 'x' );

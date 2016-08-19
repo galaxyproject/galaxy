@@ -7,11 +7,17 @@ define( [ 'utils/utils' ], function( Utils ) {
             this.app = app;
             this.options = Utils.merge( options, this.optionsDefault );
         },
-        
+
         /* Request job results */
-        request: function( chart, settings_string, columns_string, success, error ) {
+        request: function( chart, success, error ) {
             var self = this;
+            var settings_string = this._defaultSettingsString( chart );
+            var columns_string  = this._defaultRequestString( chart );
             chart.state( 'wait', 'Requesting job results...' );
+             if ( chart.get( 'modified' ) ) {
+                this._cleanup( chart );
+                chart.set( 'modified', false );
+            }
             var dataset_id_job = chart.get( 'dataset_id_job' );
             if (dataset_id_job != '') {
                 self._wait( chart, success, error );
@@ -19,9 +25,32 @@ define( [ 'utils/utils' ], function( Utils ) {
                 self._submit( chart, settings_string, columns_string, success, error );
             }
         },
-        
+
+        /** Creates default chart request */
+        _defaultRequestString: function ( chart ) {
+            var request_string = '';
+            var group_index = 0;
+            var self = this;
+            chart.groups.each( function( group ) {
+                group_index++;
+                for ( var key in chart.definition.columns ) {
+                    request_string += key + '_' + group_index + ':' + ( parseInt( group.get( key ) ) + 1 ) + ', ';
+                }
+            });
+            return request_string.substring( 0, request_string.length - 2 );
+        },
+
+        /** Creates default settings string for charts which require a job execution */
+        _defaultSettingsString: function( chart ) {
+            var settings_string = '';
+            for ( key in chart.settings.attributes ) {
+                settings_string += key + ':' + chart.settings.get( key ) + ', ';
+            };
+            return settings_string.substring( 0, settings_string.length - 2 );
+        },
+
         /* Remove previous data when re-running jobs */
-        cleanup: function( chart ) {
+        _cleanup: function( chart ) {
             var self = this;
             var previous =  chart.get( 'dataset_id_job' );
             if (previous != '') {
@@ -36,7 +65,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 chart.set( 'dataset_id_job', '' );
             }
         },
-        
+
         // create job
         _submit: function(chart, settings_string, columns_string, success, error) {
             // link this

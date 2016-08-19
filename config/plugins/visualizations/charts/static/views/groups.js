@@ -1,13 +1,11 @@
 /** This class renders the chart configuration form. */
 define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form/form-data' ], function( Utils, Form, Repeat, FormData ) {
-    var GroupView = Backbone.View.extend({
+    var TabularGroupView = Backbone.View.extend({
         initialize: function( app, options ) {
-            var self = this;
-            this.app = app;
-            this.chart = app.chart;
-            this.group = options.group;
+            this.app    = app;
+            this.chart  = app.chart;
+            this.group  = options.group;
             this.setElement( $( '<div/>' ) );
-            this.chart.on( 'change:dataset_id change:type', function() { self.render() } );
             this.render();
         },
 
@@ -54,26 +52,54 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
         }
     });
 
-    return Backbone.View.extend({
+    var TabularDataView = Backbone.View.extend({
         initialize: function( app ) {
-            var repeat = new Repeat.View({
+            var self    = this;
+            this.app    = app;
+            this.chart  = app.chart;
+            this.repeat = new Repeat.View({
                 title       : 'Data series',
                 title_new   : 'Data series',
                 min         : 1,
-                onnew       : function() { app.chart.groups.add( { id : Utils.uid() } ) }
+                onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
             });
-            this.setElement( repeat.$el );
-            app.chart.groups.on( 'add remove reset', function() { app.chart.set( 'modified', true ) } )
-                            .on( 'remove', function( group ) { repeat.del( group.id ) } )
-                            .on( 'reset', function() { repeat.delAll() } )
-                            .on( 'add', function( group ) {
-                                repeat.add({
-                                    id      : group.id,
-                                    cls     : 'ui-portlet-panel',
-                                    $el     : ( new GroupView( app, { group: group } ) ).$el,
-                                    ondel   : function() { app.chart.groups.remove( group ) }
-                                });
-                            });
+            this.setElement( this.repeat.$el );
+            this.chart.groups.each( function( group ) { self._add( group ) } );
+            this.listenTo( this.chart.groups, 'add remove reset', function() { self.chart.set( 'modified', true ) } );
+            this.listenTo( this.chart.groups, 'remove', function( group ) { self.repeat.del( group.id ) } );
+            this.listenTo( this.chart.groups, 'reset', function() { self.repeat.delAll() } );
+            this.listenTo( this.chart.groups, 'add', function( group ) { self._add( group ) } );
+        },
+
+        _add: function( group ) {
+            var self = this;
+            this.repeat.add({
+                 id      : group.id,
+                 cls     : 'ui-portlet-panel',
+                 $el     : ( new TabularGroupView( self.app, { group: group } ) ).$el,
+                 ondel   : function() { self.chart.groups.remove( group ) }
+             });
+        }
+    });
+
+    return Backbone.View.extend({
+        initialize: function( app ) {
+            var self    = this;
+            this.app    = app;
+            this.chart  = app.chart;
+            this.setElement( $( '<div/>' ) );
+            this.listenTo( this.chart, 'change:dataset_id change:type', function() { self.render() } );
+        },
+
+        render: function() {
+            this.$el.empty();
+            switch( this.chart.definition && this.chart.definition.datatype ) {
+                case 'tabular':
+                    this.$el.append( new TabularDataView( this.app ).$el );
+                    break;
+                default:
+                    this.$el.append( $( '<div/>' ).addClass( 'ui-form-info' ).html( 'No dataset options available.' ) );
+            }
         }
     });
 });

@@ -2,10 +2,10 @@
  *  Main application class.
  */
 define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils',
-          'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage', 'utils/deferred',
+          'plugin/library/datasets', 'plugin/library/storage', 'utils/deferred',
           'plugin/views/viewer', 'plugin/views/editor',
           'plugin/models/config', 'plugin/models/chart', 'plugin/charts/types' ],
-        function( Modal, Portlet, Ui, Utils, Jobs, Datasets, Storage, Deferred,
+        function( Modal, Portlet, Ui, Utils, Datasets, Storage, Deferred,
                   ViewerView, EditorView, Config, Chart, Types ) {
     return Backbone.View.extend({
         initialize: function(options){
@@ -18,7 +18,6 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             this.chart = new Chart();
 
             // libraries
-            this.jobs = new Jobs(this);
             this.datasets = new Datasets( this );
             this.storage = new Storage( this );
             this.deferred = new Deferred();

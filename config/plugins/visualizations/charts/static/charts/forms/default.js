@@ -5,6 +5,7 @@ define( [ 'plugin/charts/forms/inputs' ], function( Inputs ) {
         library     : '',
         tag         : '',
         keywords    : '',
+        datatype    : 'tabular',
         settings    : {
             x_axis_label : Inputs.axisLabel( 'x_axis_label' ),
             x_axis_type  : Inputs.axisType( 'x_axis_type' ),
