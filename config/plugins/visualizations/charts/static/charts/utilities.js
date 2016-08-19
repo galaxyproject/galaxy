@@ -236,8 +236,8 @@ define( [ 'utils/utils' ], function( Utils ) {
         xScale.nice();
         yScale.nice();
         function fixDomain( domain, boundary ) {
-            domain[0] = Math.min( Math.max( domain[ 0 ], boundary[ 0 ] ), boundary[ 1 ] - boundary[ 1 ]/scaleExtent );
-            domain[1] = Math.max( boundary[ 0 ] + boundary[ 1 ] / scaleExtent, Math.min( domain[ 1 ], boundary[ 1 ] ) );
+            domain[ 0 ] = Math.min( Math.max( domain[ 0 ], boundary[ 0 ] ), boundary[ 1 ] - boundary[ 1 ]/scaleExtent );
+            domain[ 1 ] = Math.max( boundary[ 0 ] + boundary[ 1 ] / scaleExtent, Math.min( domain[ 1 ], boundary[ 1 ] ) );
             return domain;
         };
         function zoomed() {
