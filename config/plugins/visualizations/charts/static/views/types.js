@@ -1,19 +1,10 @@
 /** This class renders the chart type selection grid. */
-define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc', 'plugin/charts/overview' ], function( Utils, Ui, Overview ) {
     return Backbone.View.extend({
         optionsDefault: {
             onchange    : null,
             ondblclick  : null
         },
-
-        data: [ { label: 'Default', value: 'default',
-                  help: 'The visualizations below were curated from different libraries. Its a representative set covering most use cases. Use this selection by default.' },
-                { label: 'NVD3',    value: 'nvd3',
-                  help: 'NVD3 is a popular d3-based library hosted at <a href="http://www.nvd3.org">www.nvd3.org<a/>. Most visualization types support intuitive drag-and-drop zooming and scaling. NVD3 generates high quality vector graphics. As with all vector based plugins, you may experience a slow down in browser responsiveness if visualizing thousands of data points.' },
-                { label: 'jqPlot',  value: 'jqplot',
-                  help: 'jqPlot is a canvas-based library hosted at <a href="http://www.jqplot.com">www.jqplot.com<a/>. It is a plotting and charting plugin for the jQuery Javascript framework. Since based on canvas it is capable of rendering many thousand data points without adverse effects.' },
-                { label: 'Others',  value: 'others',
-                  help: 'These visualizations were developed by the Galaxy team.' } ],
 
         events : {
             'click'     : '_onclick',
@@ -24,6 +15,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
             var self = this;
             this.app = app;
             this.options = Utils.merge( options, this.optionsDefault );
+            this.data = Overview;
             this.library = new Ui.RadioButton.View({
                 data    : this.data,
                 onchange: function( value ) {
