@@ -17,7 +17,8 @@ define( [ 'plugin/charts/forms/default', 'plugin/plugins/nvd3/nv.d3' ], function
             name        : 'key',
             label       : 'Provide a label',
             type        : 'text',
-            placeholder : 'Data label'
+            placeholder : 'Data label',
+            value       : 'Data label'
         },{
             name        : 'color',
             label       : 'Pick a series color',

@@ -17,7 +17,8 @@ define( [ 'plugin/charts/forms/inputs' ], function( Inputs ) {
             name        : 'key',
             label       : 'Provide a label',
             type        : 'text',
-            placeholder : 'Data label'
+            placeholder : 'Data label',
+            value       : 'Data label'
         }]
     }
 });

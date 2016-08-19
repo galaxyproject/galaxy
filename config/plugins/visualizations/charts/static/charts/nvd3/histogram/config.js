@@ -1,5 +1,5 @@
-define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
-    return $.extend( true, {}, nvd3_config, {
+define( [ 'plugin/charts/forms/default' ], function( default_config ) {
+    return $.extend( true, {}, default_config, {
         library     : 'NVD3',
         tag         : 'svg',
         title       : 'Histogram',
@@ -11,6 +11,17 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
                 title       : 'Observations',
                 is_numeric  : true
             }
-        }
+        },
+        series      : [{
+            name        : 'key',
+            label       : 'Provide a label',
+            type        : 'text',
+            placeholder : 'Data label',
+            value       : 'Data label'
+        },{
+            name        : 'color',
+            label       : 'Pick a series color',
+            type        : 'color'
+        }]
     });
 });
