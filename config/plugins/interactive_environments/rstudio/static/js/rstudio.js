@@ -1,15 +1,7 @@
-function message_failed_auth(password){
-    toastr.info(
-        "Automatic authorization failed. You can manually login with:<br>" + password + "<br> <a href='https://github.com/bgruening/galaxy-ipython/wiki/Automatic-Authorization-Failed' target='_blank'>More details ...</a>",
-        "Please login manually",
-        {'closeButton': true, 'timeOut': 100000, 'tapToDismiss': false}
-    );
-}
-
 function message_failed_connection(){
     toastr.error(
-        "Could not connect to IPython Notebook. Please contact your administrator. <a href='https://github.com/bgruening/galaxy-ipython/wiki/Could-not-connect-to-IPython-Notebook' target='_blank'>More details ...</a>",
-    "Security warning",
+        "Could not connect to RStudio. Please contact your administrator.",
+        "Security warning",
         {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': true}
     );
 }
@@ -45,41 +37,36 @@ function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_
                     var enc_hex = rsa.encrypt(payload);
                     var encrypted = hex2b64(enc_hex);
                     console.log("E: " + encrypted);
-                    _handle_notebook_loading(encrypted, notebook_login_url, notebook_access_url);
+
+                    // Now we can login
+                    $.ajax({
+                        type: "POST",
+                        // to the Login URL
+                        url: notebook_login_url,
+                        // With our password
+                        data: {
+                            'v': encrypted,
+                            'persist': 1,
+                            'clientPath': '/rstudio/auth-sign-in',
+                            'appUri': '',
+                        },
+                        contentType: "application/x-www-form-urlencoded",
+                        xhrFields: {
+                            withCredentials: true
+                        },
+                        // If that is successful, load the notebook
+                        success: function(){
+                            append_notebook(notebook_access_url);
+                        },
+                        error: function(jqxhr, status, error){
+                            message_failed_connection();
+                            // Do we want to try and load the notebook anyway? Just in case?
+                            append_notebook(notebook_access_url);
+                        }
+                    });
                 }
             });
 
         });
-    });
-}
-
-/**
- * Must be implemented by IEs
- */
-function _handle_notebook_loading(password, notebook_login_url, notebook_access_url){
-    $.ajax({
-        type: "POST",
-        // to the Login URL
-        url: notebook_login_url,
-        // With our password
-        data: {
-            'v': password,
-            'persist': 1,
-            'clientPath': '/rstudio/auth-sign-in',
-            'appUri': '',
-        },
-        contentType: "application/x-www-form-urlencoded",
-        xhrFields: {
-            withCredentials: true
-        },
-        // If that is successful, load the notebook
-        success: function(){
-            append_notebook(notebook_access_url);
-        },
-        error: function(jqxhr, status, error){
-            message_failed_connection();
-            // Do we want to try and load the notebook anyway? Just in case?
-            append_notebook(notebook_access_url);
-        }
     });
 }

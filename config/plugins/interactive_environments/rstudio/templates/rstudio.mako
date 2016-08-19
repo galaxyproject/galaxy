@@ -11,6 +11,8 @@ ie_request.attr.docker_port = 80
 temp_dir = ie_request.temp_dir
 PASSWORD = "rstudio"
 USERNAME = "rstudio"
+# Then override it again
+ie_request.notebook_pw = "rstudio"
 
 # Did the user give us an RData file?
 if hda.datatype.__class__.__name__ == "RData":
