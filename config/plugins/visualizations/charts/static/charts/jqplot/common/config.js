@@ -9,20 +9,20 @@ define( [ 'plugin/charts/forms/default' ], function( default_config ) {
         settings    : {
             x_axis_grid : {
                 name        : 'x_axis_grid',
-                title       : 'Axis grid',
-                info        : 'Would you like to show grid lines for the X axis?',
+                label       : 'Axis grid',
+                help        : 'Would you like to show grid lines for the X axis?',
                 type        : 'select',
                 display     : 'radiobutton',
-                init        : 'false',
+                value       : 'false',
                 data        : [ { label: 'On', value: 'true' }, { label: 'Off', value: 'false' } ]
             },
             y_axis_grid : {
                 name        : 'y_axis_grid',
-                title       : 'Axis grid',
-                info        : 'Would you like to show grid lines for the Y axis?',
+                label       : 'Axis grid',
+                help        : 'Would you like to show grid lines for the Y axis?',
                 type        : 'select',
                 display     : 'radiobutton',
-                init        : 'true',
+                value       : 'true',
                 data        : [ { label: 'On', value: 'true' }, { label: 'Off', value: 'false' } ]
             }
         }
