@@ -8,13 +8,13 @@ define([], function() {
         urlRoot:  galaxyRoot + 'api/webhooks/toolview',
         defaults: {
             name: '',
-            path: ''
+            styles: '',
+            script: ''
         }
     });
 
     var WebhookView = Backbone.View.extend({
         el: '#webhook-toolview',
-        webhookTemplate: _.template('<p>name: <%= name %><br>path: <%= path %></p>'),
 
         initialize: function() {
             var me = this;
@@ -27,9 +27,10 @@ define([], function() {
         },
 
         render: function() {
-            var webhookContent = this.model.toJSON();
-            if (webhookContent.css_styles) $('<style/>').text(webhookContent.css_styles).appendTo('head');
-            this.$el.html(this.webhookTemplate(webhookContent));
+            var webhook = this.model.toJSON();
+            this.$el.html('<div id="' + webhook.name + '"></div>');
+            if (webhook.styles) $('<style/>', {type: 'text/css'}).text(webhook.styles).appendTo('head');
+            if (webhook.script) $('<script/>', {type: 'text/javascript'}).text(webhook.script).appendTo('head');
             return this;
         }
     });
