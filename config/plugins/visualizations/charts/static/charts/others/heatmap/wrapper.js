@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/tools', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Tools, HeatMap ) {
+define( [ 'plugin/charts/utilities', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, HeatMap ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             options.render = function( canvas_id, groups ) {
@@ -9,7 +9,7 @@ define( [ 'plugin/charts/tools', 'plugin/charts/others/heatmap/heatmap-plugin' ]
                 });
                 return true;
             };
-            Tools.panelHelper( app, options );
+            Utilities.panelHelper( app, options );
         }
     });
 });

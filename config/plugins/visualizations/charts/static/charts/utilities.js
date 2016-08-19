@@ -44,7 +44,7 @@ function panelHelper (app, options) {
             process.resolve();
         } catch (err) {
             // log
-            console.debug('FAILED: Tools::panelHelper() - ' + err);
+            console.debug('FAILED: Utilities::panelHelper() - ' + err);
         
             // set chart state
             chart.state('failed', err);

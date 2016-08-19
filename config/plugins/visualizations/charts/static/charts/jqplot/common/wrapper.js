@@ -1,5 +1,5 @@
 /** This is the common wrapper for jqplot based visualizations. */
-define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/tools' ], function( configmaker, Tools ) {
+define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/utilities' ], function( configmaker, Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             this.options = options;
@@ -7,7 +7,7 @@ define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/tools' ], fu
             options.render = function( canvas_id, groups ) {
                 return self.render( canvas_id, groups )
             };
-            Tools.panelHelper( app, options );
+            Utilities.panelHelper( app, options );
         },
 
         /** Draw all data into a single canvas */
@@ -29,7 +29,7 @@ define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/tools' ], fu
                 if ( makeSeries ) {
                     plot_data = makeSeries( groups, plot_config );
                 } else {
-                    plot_data = Tools.makeSeries( groups );
+                    plot_data = Utilities.makeSeries( groups );
                 }
                 if ( makeConfig ) {
                     makeConfig( groups, plot_config );
@@ -75,12 +75,12 @@ define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/tools' ], fu
             if ( makeCategories ) {
                 categories = makeCategories( groups, plot_config );
             } else {
-                categories = Tools.makeCategories( groups );
+                categories = Utilities.makeCategories( groups );
             }
 
             // make axes
             function makeAxis (id) {
-                Tools.makeTickFormat({
+                Utilities.makeTickFormat({
                     categories  : categories.array[ id ],
                     type        : settings.get( id + '_axis_type|type' ),
                     precision   : settings.get( id + '_axis_type|precision' ),

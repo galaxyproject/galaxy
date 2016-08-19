@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/tools', 'utils/utils', 'plugin/charts/others/heatmap/heatmap-parameters' ], function( Tools, Utils, HeatmapParameters ) {
+define( [ 'plugin/charts/utilities', 'utils/utils', 'plugin/charts/others/heatmap/heatmap-parameters' ], function( Utilities, Utils, HeatmapParameters ) {
     return Backbone.View.extend({
         optionsDefault: {
             margin: {
@@ -39,7 +39,7 @@ define( [ 'plugin/charts/tools', 'utils/utils', 'plugin/charts/others/heatmap/he
             this.color_set = HeatmapParameters.colorSets[ this.chart.settings.get( 'color_set' ) ];
             
             // categories
-            this.categories = Tools.makeUniqueCategories( [ this.group ] );
+            this.categories = Utilities.makeUniqueCategories( [ this.group ] );
             
             // domains/scales
             this.xScale = d3.scale.linear().domain( [ 0, this.categories.array.x.length ] );
@@ -67,7 +67,7 @@ define( [ 'plugin/charts/tools', 'utils/utils', 'plugin/charts/others/heatmap/he
             // refresh on window resize
             $( window ).on( 'resize', function () { self.redraw() } );
             this.redraw();
-            Tools.addZoom({
+            Utilities.addZoom({
                 xAxis       : this.xAxis,
                 yAxis       : this.yAxis,
                 redraw      : function() { self.redraw() },
@@ -361,7 +361,7 @@ define( [ 'plugin/charts/tools', 'utils/utils', 'plugin/charts/others/heatmap/he
         _makeTickFormat: function( id ) {
             var settings = this.chart.settings;
             var self = this;
-            Tools.makeTickFormat({
+            Utilities.makeTickFormat({
                 categories  : self.categories.array[ id ],
                 type        : settings.get( id + '_axis_type|type' ),
                 precision   : settings.get( id + '_axis_type|precision' ),

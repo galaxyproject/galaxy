@@ -1,5 +1,5 @@
 /** This is the common wrapper for nvd3 based visualizations. */
-define( [ 'plugin/charts/tools' ], function( Tools ) {
+define( [ 'plugin/charts/utilities' ], function( Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -7,7 +7,7 @@ define( [ 'plugin/charts/tools' ], function( Tools ) {
             options.render = function( canvas_id, groups ) {
                 return self.render( canvas_id, groups )
             };
-            Tools.panelHelper( app, options );
+            Utilities.panelHelper( app, options );
         },
 
         render: function( canvas_id, groups ) {
@@ -35,7 +35,7 @@ define( [ 'plugin/charts/tools' ], function( Tools ) {
                         canvas.datum( groups ).call( d3chart );
                         if ( chart.definition.zoomable && chart.definition.zoomable != 'native' ) {
                             d3chart.clipEdge && d3chart.clipEdge( true );
-                            Tools.addZoom({
+                            Utilities.addZoom({
                                 xAxis  : d3chart.xAxis,
                                 yAxis  : d3chart.yAxis,
                                 yDomain: d3chart.yDomain,
@@ -55,9 +55,9 @@ define( [ 'plugin/charts/tools' ], function( Tools ) {
 
         /** Format axes ticks */
         _makeAxes: function( d3chart, groups, settings ) {
-            var categories = Tools.makeCategories( groups );
+            var categories = Utilities.makeCategories( groups );
             function makeTickFormat( id ) {
-                Tools.makeTickFormat({
+                Utilities.makeTickFormat({
                     categories  : categories.array[ id ],
                     type        : settings.get( id + '_axis_type|type' ),
                     precision   : settings.get( id + '_axis_type|precision' ),

@@ -9,8 +9,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
                 icon            : null,
-                always_refresh  : true,
-                inputs          : []
+                always_refresh  : true
             });
             this.setElement( '<div/>' );
             this.render();
