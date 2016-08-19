@@ -45,15 +45,25 @@ class WebhooksRegistry(object):
 
                 path = os.path.normpath(os.path.join(config_dir, '..'))
 
+                # Read styles into a string, assuming all styles are in a
+                # single file
                 try:
-                    with open(os.path.join(path, 'static/style.css'), 'r') as f:
-                        css_styles = f.read().replace('\n', '')
+                    with open(os.path.join(path, 'static/styles.css'), 'r') as f:
+                        styles = f.read().replace('\n', '')
                 except IOError:
-                    css_styles = ''
+                    styles = ''
+
+                # Read script into a string, assuming everything is in a
+                # single file
+                try:
+                    with open(os.path.join(path, 'static/script.js'), 'r') as f:
+                        script = f.read()
+                except IOError:
+                    script = ''
 
                 config.update({
-                    'path': path,
-                    'css_styles': css_styles
+                    'styles': styles,
+                    'script': script
                 })
                 self.webhooks[config['type']].append(config)
         except Exception as e:
