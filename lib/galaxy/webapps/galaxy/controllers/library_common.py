@@ -799,6 +799,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         replace_id = kwd.get( 'replace_id', None )
         replace_dataset = None
         upload_option = kwd.get( 'upload_option', 'upload_file' )
+        if kwd.get( 'files_0|uni_to_posix', False ):
+             to_posix_lines = kwd.get( 'files_0|to_posix_lines', '' )
+        else:
+             to_posix_lines = kwd.get( 'to_posix_lines', '' )
         if kwd.get( 'files_0|space_to_tab', False ):
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
@@ -1027,6 +1031,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     history=history,
                                     widgets=widgets,
                                     template_id=template_id,
+                                    to_posix_lines=to_posix_lines,
                                     space_to_tab=space_to_tab,
                                     link_data_only=link_data_only,
                                     show_deleted=show_deleted,
@@ -1143,6 +1148,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.ext = None
         uploaded_dataset.file_type = file_type
         uploaded_dataset.dbkey = params.get( 'dbkey', None )
+        uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
@@ -1269,6 +1275,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         replace_id = kwd.get( 'replace_id', None )
         replace_dataset = None
         upload_option = kwd.get( 'upload_option', 'import_from_history' )
+        if kwd.get( 'files_0|to_posix_lines', False ):
+            to_posix_lines = kwd.get( 'files_0|to_posix_lines', '' )
+        else:
+            to_posix_lines = kwd.get( 'to_posix_lines', '' )
         if kwd.get( 'files_0|space_to_tab', False ):
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
@@ -1442,6 +1452,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             history=history,
                                             widgets=[],
                                             template_id=template_id,
+                                            to_posix_lines=to_posix_lines,
                                             space_to_tab=space_to_tab,
                                             link_data_only=link_data_only,
                                             show_deleted=show_deleted,

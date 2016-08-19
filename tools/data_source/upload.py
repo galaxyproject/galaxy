@@ -12,6 +12,7 @@ import shutil
 import sys
 import tempfile
 import zipfile
+import cProfile
 from json import dumps, loads
 
 from six.moves.urllib.request import urlopen
@@ -79,7 +80,19 @@ def parse_outputs( args ):
         rval[int( id )] = ( path, files_path )
     return rval
 
+def do_cprofile(func):
+    def profiled_func(*args, **kwargs):
+        profile = cProfile.Profile()
+        try:
+            profile.enable()
+            result = func(*args, **kwargs)
+            profile.disable()
+            return result
+        finally:
+            profile.print_stats(sort='time')
+    return profiled_func
 
+@do_cprofile
 def add_file( dataset, registry, json_file, output_path ):
     data_type = None
     line_count = None
@@ -297,9 +310,9 @@ def add_file( dataset, registry, json_file, output_path ):
                     if dataset.to_posix_lines:
                         tmpdir = output_adjacent_tmpdir( output_path )
                         tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
-                        if dataset.space_to_tab:
+                        if dataset.space_to_tab and not dataset.to_posix_lines:
                             line_count, converted_path = sniff.convert_newlines_sep2tabs( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
-                        else:
+                        elif(not dataset.to_posix_lines):
                             line_count, converted_path = sniff.convert_newlines( dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix )
                 if dataset.file_type == 'auto':
                     ext = sniff.guess_ext( dataset.path, registry.sniff_order )
