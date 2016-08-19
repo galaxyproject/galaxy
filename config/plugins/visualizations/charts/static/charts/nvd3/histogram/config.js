@@ -5,7 +5,7 @@ define( [ 'plugin/charts/forms/default' ], function( default_config ) {
         title       : 'Histogram',
         category    : 'Data processing (requires \'charts\' tool from Toolshed)',
         execute     : 'histogram',
-        keywords    : 'small medium large',
+        keywords    : 'nvd3 default',
         columns     : {
             y : {
                 title       : 'Observations',

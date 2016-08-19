@@ -5,7 +5,7 @@ define( [ 'plugin/charts/forms/default' ], function( default_config ) {
         library     : 'jqPlot',
         tag         : 'div',
         zoomable    : true,
-        keywords    : 'medium',
+        keywords    : 'jqplot',
         settings    : {
             x_axis_grid : {
                 name        : 'x_axis_grid',

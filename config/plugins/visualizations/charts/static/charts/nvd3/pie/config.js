@@ -4,7 +4,7 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
         category    : 'Area charts',
         library     : 'NVD3',
         tag         : 'svg',
-        keywords    : 'small',
+        keywords    : 'nvd3 default',
         columns : {
             label : {
                 title       : 'Labels',

@@ -4,7 +4,7 @@ define( [ 'plugin/charts/forms/default' ], function( default_config ) {
         category    : 'Others',
         library     : 'Custom',
         tag         : 'svg',
-        keywords    : 'small',
+        keywords    : 'others default',
         zoomable    : true,
         columns     : {
             x : {

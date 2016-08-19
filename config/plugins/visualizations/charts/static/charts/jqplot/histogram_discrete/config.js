@@ -3,7 +3,7 @@ define( [ 'plugin/charts/jqplot/common/config' ], function( default_config ) {
         title       : 'Discrete Histogram',
         category    : 'Data processing (requires \'charts\' tool from Toolshed)',
         execute     : 'histogramdiscrete',
-        keywords    : 'small medium large',
+        keywords    : 'jqplot default',
         columns     : {
             x : {
                 title       : 'Observations',

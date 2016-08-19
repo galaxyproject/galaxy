@@ -3,7 +3,7 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
         title       : 'Stream',
         category    : 'Area charts',
         zoomable    : true,
-        keywords    : 'default small',
+        keywords    : 'nvd3 default',
         showmaxmin  : true,
         columns     : {
             x : {

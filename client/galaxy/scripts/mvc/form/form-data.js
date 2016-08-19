@@ -235,7 +235,7 @@ define([ 'utils/utils' ], function( Utils ) {
     /** Populate input state */
     var populate = function( inputs, state ) {
         visitInputs( inputs, function( input, name ) {
-            state[ name ] !== undefined && ( input.value = state[ name ] );
+            state[ name ] !== undefined && !input.hidden && ( input.value = state[ name ] );
         });
         return inputs;
     };

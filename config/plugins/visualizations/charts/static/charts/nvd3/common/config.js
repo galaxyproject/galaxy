@@ -4,7 +4,7 @@ define( [ 'plugin/charts/forms/default', 'plugin/plugins/nvd3/nv.d3' ], function
         category    : '',
         library     : 'NVD3',
         tag         : 'svg',
-        keywords    : 'small',
+        keywords    : 'nvd3 default',
         columns     : {
             tooltip : {
                 title       : 'Data point labels',

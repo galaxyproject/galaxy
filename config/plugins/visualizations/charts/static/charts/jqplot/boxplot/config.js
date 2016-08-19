@@ -5,7 +5,7 @@ define( [ 'plugin/charts/jqplot/common/config' ], function( plot_config ) {
         library     : 'jqPlot',
         tag         : 'div',
         execute     : 'boxplot',
-        keywords    : 'small medium large',
+        keywords    : 'jqplot default',
         columns     : {
             y : {
                 title       : 'Observations',
