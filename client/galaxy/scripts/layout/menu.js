@@ -18,7 +18,7 @@ var Collection = Backbone.Collection.extend({
         this.add(extendedNavItem.render());
 
         // Webhook
-        var webhook = new Webhooks.MenuWebhookView();
+        var webhook = new Webhooks.MastheadWebhookView();
 
         //
         // Analyze data tab.

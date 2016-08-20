@@ -83,7 +83,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
 
                     // Show Webhook if job is running
                     if ( response.jobs && response.jobs.length > 0 ) {
-                        self.$el.append( $( '<div/>', { id: 'webhook-toolview' } ) );
+                        self.$el.append( $( '<div/>', { id: 'webhook-tools' } ) );
                         var WebhookApp = new Webhooks.ToolWebhookView;
                     }
 
