@@ -33,62 +33,8 @@ define( [ 'utils/utils' ], function( Utils ) {
             }
         },
 
-        /** Multiple request handler */
-        request: function( options ) {
-            var self        = this;
-            var success     = options.success;
-            var progress    = options.progress;
-            var query_size  = this.app.config.get( 'query_limit' );
-            var query_start = options.start || 0;
-            var query_end   = query_start + options.query_limit || query_start + this.app.config.get( 'query_limit' );
-            var query_range = Math.abs( query_end - query_start );
-            if ( query_range <= 0 ) {
-                console.debug( 'FAILED - Datasets::request() - Invalid query range.' );
-                return;
-            }
-            var query_number = Math.ceil( query_range / query_size ) || 1;
-            var query_dictionary_template = $.extend( true, {}, options );
-            var query_counter = 0;
-
-
-            // recursive caller to fill blocks
-            function fetch_blocks ( query ) {
-                self._get(query, function() {
-                    var done = false;
-                    for ( var group_index in options.groups ) {
-                        destination_group = options.groups[ group_index ];
-                        source_group = query.groups[ group_index ];
-                        if ( !destination_group.values ) {
-                            destination_group.values = [];
-                        }
-                        destination_group.values = destination_group.values.concat( source_group.values );
-                        if ( source_group.values.length == 0 ) {
-                            done = true;
-                            break;
-                        }
-                    }
-                    if ( ++query_counter < query_number && !done ) {
-                        if ( progress ) {
-                            progress( parseInt( ( query_counter / query_number ) * 100 ) );
-                        }
-                        var start = query.start + query_size;
-                        query = $.extend( true, query_dictionary_template, { start: start } );
-                        fetch_blocks( query );
-                    } else {
-                        success();
-                    }
-                });
-            };
-            fetch_blocks( $.extend(true, query_dictionary_template, {start: query_start}) );
-        },
-
-        /** Get block id */
-        _block_id: function ( options, column ) {
-            return options.id + '_' + options.start + '_' + options.start + this.app.config.get( 'query_limit' ) + '_' + column;
-        },
-
         /** Fills request dictionary with data from cache/response */
-        _get: function( options, callback ) {
+        request: function( options ) {
             var self = this;
             var column_list = [];
             options.start = options.start || 0;
@@ -105,8 +51,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 }
             }
             if ( column_list.length == 0 ) {
-                this._fill_from_cache( options );
-                callback( options );
+                this._fillFromCache( options );
                 return;
             }
 
@@ -141,17 +86,16 @@ define( [ 'utils/utils' ], function( Utils ) {
                         var block_id = self._block_id( options, column );
                         self.cache[ block_id ] = results[ i ];
                     }
-                    self._fill_from_cache( options );
-                    callback( options );
+                    self._fillFromCache( options );
                 }
             });
 
         },
 
         /** Fill data from cache */
-        _fill_from_cache: function( options ) {
+        _fillFromCache: function( options ) {
             var start = options.start;
-            console.debug( 'Datasets::_fill_from_cache() - Filling request from cache at ' + start + '.' );
+            console.debug( 'Datasets::_fillFromCache() - Filling request from cache at ' + start + '.' );
             var limit = 0;
             for ( var i in options.groups ) {
                 var group = options.groups[ i ];
@@ -165,7 +109,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 }
             }
             if ( limit == 0 ) {
-                console.debug( 'Datasets::_fill_from_cache() - Reached data range limit.' );
+                console.debug( 'Datasets::_fillFromCache() - Reached data range limit.' );
             }
             for ( var i in options.groups ) {
                 var group = options.groups[ i ];
@@ -205,6 +149,12 @@ define( [ 'utils/utils' ], function( Utils ) {
                     }
                 }
             }
-        }
+            options.success( options );
+        },
+
+        /** Get block id */
+        _block_id: function ( options, column ) {
+            return options.id + '_' + options.start + '_' + column;
+        },
     });
 });

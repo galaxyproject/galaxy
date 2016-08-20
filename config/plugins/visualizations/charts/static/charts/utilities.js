@@ -27,7 +27,6 @@ define( [ 'utils/utils' ], function( Utils ) {
         var request_dictionary  = options.request_dictionary || buildRequestDictionary( app.chart );
         var render              = options.render;
         var canvas_list         = options.canvas_list;
-        request_dictionary.query_limit = chart.definition.query_limit;
         request_dictionary.success = function() {
             try {
                 if ( chart.settings.get( 'use_panels' ) === 'true' ) {
