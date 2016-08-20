@@ -4,18 +4,21 @@
 define([], function() {
     var galaxyRoot = typeof Galaxy != 'undefined' ? Galaxy.root : '/';
 
-    var MenuWebhookModel = Backbone.Model.extend({
-        urlRoot: galaxyRoot + 'api/webhooks/topbar'
+    var MastheadWebhookModel = Backbone.Model.extend({
+        urlRoot: galaxyRoot + 'api/webhooks/masthead',
+        defaults: {
+            visible: true
+        }
     });
 
     var ToolWebhookModel = Backbone.Model.extend({
-        urlRoot:  galaxyRoot + 'api/webhooks/toolview'
+        urlRoot:  galaxyRoot + 'api/webhooks/tools'
     });
 
-    var MenuWebhookView = Backbone.View.extend({
+    var MastheadWebhookView = Backbone.View.extend({
         initialize: function() {
             var me = this;
-            this.model = new MenuWebhookModel;
+            this.model = new MastheadWebhookModel;
             this.model.fetch({
                 success: function() {
                     me.render();
@@ -24,16 +27,16 @@ define([], function() {
         },
 
         render: function() {
-            var webhook = this.model.toJSON();;
+            var webhook = this.model.toJSON();
 
             // There must be a better way to make sure Galaxy is fully loaded
             $(document).ready(function() {
                 if (webhook.visible) {
                     Galaxy.page.masthead.collection.add({
                         id      : webhook.name,
-                        icon    : webhook.icon,
-                        url     : webhook.url,
-                        tooltip : webhook.tooltip,
+                        icon    : (typeof webhook.config.icon != 'undefined') ? webhook.config.icon : '',
+                        url     : (typeof webhook.config.url != 'undefined') ? webhook.config.url : '',
+                        tooltip : (typeof webhook.config.tooltip != 'undefined') ? webhook.config.tooltip : '',
                         // visible : webhook.visible
                     });
                 }
@@ -43,7 +46,7 @@ define([], function() {
     });
 
     var ToolWebhookView = Backbone.View.extend({
-        el: '#webhook-toolview',
+        el: '#webhook-tools',
 
         initialize: function() {
             var me = this;
@@ -65,7 +68,7 @@ define([], function() {
     });
 
     return {
-        MenuWebhookView: MenuWebhookView,
+        MastheadWebhookView: MastheadWebhookView,
         ToolWebhookView: ToolWebhookView
     };
 });
