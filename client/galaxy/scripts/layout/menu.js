@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['mvc/tours'], function( Tours ) {
+define(['mvc/tours', 'mvc/webhooks'], function( Tours, Webhooks ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -10,6 +10,9 @@ var Collection = Backbone.Collection.extend({
     fetch: function( options ){
         options = options || {};
         this.reset();
+
+        // Webhook
+        var webhook = new Webhooks.MenuWebhookView();
 
         //
         // Analyze data tab.
