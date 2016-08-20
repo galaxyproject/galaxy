@@ -175,7 +175,7 @@ class CondaContext(object):
 
     def exec_command(self, operation, args):
         command = self.command(operation, args)
-        env = {}
+        env = {'HOME': self.conda_prefix}  # We don't want to pollute ~/.conda, which may not even be writable
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
