@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/forms/default', 'plugin/plugins/nvd3/nv.d3' ], function( default_config ) {
+define( [ 'plugin/charts/utilities/tabular-form', 'plugin/plugins/nvd3/nv.d3' ], function( default_config ) {
     return $.extend( true, {}, default_config, {
         title       : '',
         category    : '',

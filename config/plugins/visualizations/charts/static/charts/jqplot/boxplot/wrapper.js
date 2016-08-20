@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/library/jobs', 'plugin/charts/utilities' ], function( Plot, Jobs, Utilities ) {
+define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/charts/utilities/tabular-jobs', 'plugin/charts/utilities/tabular-utilities' ], function( Plot, Jobs, Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             Jobs.request( app, 'boxplot', function( dataset ) {

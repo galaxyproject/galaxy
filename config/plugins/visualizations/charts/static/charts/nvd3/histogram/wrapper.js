@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/utilities', 'plugin/library/jobs', 'plugin/charts/nvd3/common/wrapper' ], function( Utilities, Jobs, NVD3 ) {
+define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-jobs', 'plugin/charts/nvd3/common/wrapper' ], function( Utilities, Jobs, NVD3 ) {
     return Backbone.Model.extend({
         initialize: function( app, options ) {
             Jobs.request( app, 'histogram', function( dataset ) {

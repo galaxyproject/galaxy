@@ -1,5 +1,5 @@
 /** Pie chart wrapper */
-define( [ 'utils/utils', 'plugin/charts/utilities' ], function( Utils, Utilities ) {
+define( [ 'utils/utils', 'plugin/charts/utilities/tabular-utilities' ], function( Utils, Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;

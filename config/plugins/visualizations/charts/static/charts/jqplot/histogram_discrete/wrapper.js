@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/utilities', 'plugin/library/jobs', 'plugin/charts/jqplot/common/wrapper' ], function( Utilities, Jobs, Plot ) {
+define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-jobs', 'plugin/charts/jqplot/common/wrapper' ], function( Utilities, Jobs, Plot ) {
     return Backbone.Model.extend({
         initialize: function( app, options ) {
             Jobs.request( app, 'histogramdiscrete', function( dataset ) {

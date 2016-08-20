@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/utilities', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, HeatMap ) {
+define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, HeatMap ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             options.render = function( canvas_id, groups ) {

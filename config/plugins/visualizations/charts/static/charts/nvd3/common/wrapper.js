@@ -1,5 +1,5 @@
 /** This is the common wrapper for nvd3 based visualizations. */
-define( [ 'plugin/charts/utilities' ], function( Utilities ) {
+define( [ 'plugin/charts/utilities/tabular-utilities' ], function( Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;

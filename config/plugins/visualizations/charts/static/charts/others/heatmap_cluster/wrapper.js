@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/utilities', 'plugin/library/jobs', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, Jobs, HeatMap ) {
+define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-jobs', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, Jobs, HeatMap ) {
     return Backbone.View.extend({
         initialize: function(app, options) {
             Jobs.request( app, 'heatmap', function( dataset ) {

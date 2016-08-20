@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/forms/default' ], function( default_config ) {
+define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
     return $.extend( true, {}, default_config, {
         title       : 'Heatmap',
         category    : 'Others',

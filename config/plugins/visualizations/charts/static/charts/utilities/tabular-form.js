@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/forms/inputs' ], function( Inputs ) {
+define( [ 'plugin/charts/utilities/tabular-inputs' ], function( Inputs ) {
     return {
         title       : '',
         category    : '',
