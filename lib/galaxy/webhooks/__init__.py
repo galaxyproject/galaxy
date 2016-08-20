@@ -24,7 +24,7 @@ class Webhook(object):
         self.config = {}
 
     def to_dict(self):
-        return {
+        res = {
             'name': self.name,
             'type': self.type,
             'activate': self.activate,
@@ -32,6 +32,16 @@ class Webhook(object):
             'script': self.script,
             'config': self.config
         }
+        if self.type == 'topbar':
+            res.update({
+                'icon': self.config['icon'],
+                'url': self.config['url'] if 'url' in
+                                             self.config.keys() else '',
+                'tooltip': self.config['tooltip'] if 'tooltip' in
+                                                     self.config.keys() else '',
+                'visible': self.config['visible']
+            })
+        return res
 
 
 class WebhooksRegistry(object):
