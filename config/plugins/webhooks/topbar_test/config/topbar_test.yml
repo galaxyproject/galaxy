@@ -1,0 +1,5 @@
+name: topbar_test
+icon: fa-repeat
+type: topbar
+tooltip: Topbar Plugin Test
+visible: true

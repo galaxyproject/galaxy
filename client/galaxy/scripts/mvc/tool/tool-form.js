@@ -80,6 +80,13 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     callback && callback();
                     self.$el.children().hide();
                     self.$el.append( self._templateSuccess( response ) );
+
+                    // Show Webhook if job is running
+                    if ( response.jobs && response.jobs.length > 0 ) {
+                        self.$el.append( $( '<div/>', { id: 'webhook-toolview' } ) );
+                        var WebhookApp = new Webhooks.ToolWebhookView;
+                    }
+
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
                 },
                 error   : function( response ) {

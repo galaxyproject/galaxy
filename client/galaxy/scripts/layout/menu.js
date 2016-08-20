@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['mvc/tours', 'layout/generic-nav-view'], function( Tours, GenericNav ) {
+define(['mvc/tours', 'layout/generic-nav-view', 'mvc/webhooks'], function( Tours, GenericNav, Webhooks ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -15,7 +15,10 @@ var Collection = Backbone.Collection.extend({
         // Chat server tab
         //
         var extendedNavItem = new GenericNav.GenericNavView();
-        this.add(extendedNavItem.render()); 
+        this.add(extendedNavItem.render());
+
+        // Webhook
+        var webhook = new Webhooks.MenuWebhookView();
 
         //
         // Analyze data tab.
