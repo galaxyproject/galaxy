@@ -5,31 +5,6 @@ define( [ 'utils/utils' ], function( Utils ) {
             this.app = app;
         },
 
-        /** Get dataset */
-        get: function( options ) {
-            var self = this;
-            this.dataset_list = this.dataset_list || [];
-            var dataset = this.dataset_list[ options.id ];
-            if ( dataset ) {
-                options.success( dataset );
-            } else {
-                Utils.request({
-                    type    : 'GET',
-                    url     : config.root + 'api/datasets/' + options.id,
-                    success : function( dataset ) {
-                        switch ( dataset.state ) {
-                            case 'error':
-                                options.error && options.error( dataset );
-                                break;
-                            default:
-                                self.dataset_list[ options.id ] = dataset;
-                                options.success( dataset );
-                        }
-                    }
-                });
-            }
-        },
-
         /** Fills request dictionary with data from cache/response */
         request: function( options ) {
             var self = this;

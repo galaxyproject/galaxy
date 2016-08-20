@@ -48,8 +48,9 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
             if ( dataset_id && chart_type ) {
                 this.chart.state( 'wait', 'Loading metadata...' );
                 this.app.deferred.execute( function( process ) {
-                    self.app.datasets.get({
-                        id      : dataset_id,
+                    Utils.get({
+                        url     : Galaxy.root + 'api/datasets/' + dataset_id,
+                        cache   : true,
                         success : function( dataset ) {
                             for ( var id in chart_definition.columns ) {
                                 var columns = [];
