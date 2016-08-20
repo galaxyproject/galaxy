@@ -49,3 +49,18 @@
     max-width: 100%;
     margin-bottom: -4px;
 }
+
+#xkcd-loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #96a8c8;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    animation: spin 1.5s linear infinite;
+    margin: 15px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
