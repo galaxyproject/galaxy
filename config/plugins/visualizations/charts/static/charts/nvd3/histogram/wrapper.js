@@ -5,8 +5,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/
                 options.request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
                 var index = 1;
                 _.each( options.request_dictionary.groups, function( group ) {
-                    group.columns = { x : { index : 0, is_numeric : true },
-                                      y : { index : index++ } }
+                    group.columns = { x : { index : 0, is_numeric : true }, y : { index : index++ } }
                 });
                 options.type = 'multiBarChart';
                 options.makeConfig = function( nvd3_model ) {
