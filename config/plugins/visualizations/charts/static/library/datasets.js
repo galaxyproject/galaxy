@@ -1,11 +1,11 @@
 /** This class handles, formats and caches datasets. */
 define( [ 'utils/utils' ], function( Utils ) {
-    return Backbone.Collection.extend({
+    return Backbone.View.extend({
         initialize: function( app, options ){
             this.app = app;
         },
 
-        /** Get dataset metadata */
+        /** Get dataset */
         get: function( options ) {
             var self = this;
             this.dataset_list = this.dataset_list || [];
@@ -92,14 +92,15 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         /** Fill data from cache */
         _fillFromCache: function( options ) {
+            var result = Utils.clone( options );
             var start = options.start;
             console.debug( 'datasets::_fillFromCache() - Filling request from cache at ' + start + '.' );
             var limit = 0;
-            for ( var i in options.groups ) {
-                var group = options.groups[ i ];
+            for ( var i in result.groups ) {
+                var group = result.groups[ i ];
                 for ( var key in group.columns ) {
                     var column = group.columns[ key ];
-                    var block_id = this._block_id( options, column.index );
+                    var block_id = this._block_id( result, column.index );
                     var column_data = this.cache[ block_id ];
                     if ( column_data ) {
                         limit = Math.max( limit, column_data.length );
@@ -109,15 +110,15 @@ define( [ 'utils/utils' ], function( Utils ) {
             if ( limit == 0 ) {
                 console.debug( 'datasets::_fillFromCache() - Reached data range limit.' );
             }
-            for ( var i in options.groups ) {
-                var group = options.groups[ i ];
+            for ( var i in result.groups ) {
+                var group = result.groups[ i ];
                 group.values = [];
                 for ( var j = 0; j < limit; j++ ) {
                     group.values[ j ] = { x : parseInt( j ) + start };
                 }
             }
-            for ( var i in options.groups ) {
-                var group = options.groups[ i ];
+            for ( var i in result.groups ) {
+                var group = result.groups[ i ];
                 for ( var key in group.columns ) {
                     var column = group.columns[ key ];
                     switch ( column.index ) {
@@ -134,7 +135,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                             }
                             break;
                         default:
-                            var block_id = this._block_id( options, column.index );
+                            var block_id = this._block_id( result, column.index );
                             var column_data = this.cache[ block_id ];
                             for ( var j = 0; j < limit; j++ ) {
                                 var value = group.values[ j ];
@@ -147,7 +148,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     }
                 }
             }
-            options.success( options );
+            options.success( result );
         },
 
         /** Get block id */

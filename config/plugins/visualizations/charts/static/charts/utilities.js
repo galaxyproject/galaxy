@@ -27,12 +27,12 @@ define( [ 'utils/utils' ], function( Utils ) {
         var request_dictionary  = options.request_dictionary || buildRequestDictionary( app.chart );
         var render              = options.render;
         var canvas_list         = options.canvas_list;
-        request_dictionary.success = function() {
+        request_dictionary.success = function( result ) {
             try {
                 if ( chart.settings.get( 'use_panels' ) === 'true' ) {
                     var valid = true;
-                    for ( var group_index in request_dictionary.groups ) {
-                        var group = request_dictionary.groups[ group_index ];
+                    for ( var group_index in result.groups ) {
+                        var group = result.groups[ group_index ];
                         if (!render( canvas_list[ group_index ], [ group ] ) ) {
                             valid = false;
                             break;
@@ -42,7 +42,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                         chart.state( 'ok', 'Multi-panel chart drawn.' );
                     }
                 } else {
-                    if ( render( canvas_list[ 0 ], request_dictionary.groups ) ) {
+                    if ( render( canvas_list[ 0 ], result.groups ) ) {
                         chart.state( 'ok', 'Chart drawn.' );
                     }
                 }
@@ -51,11 +51,6 @@ define( [ 'utils/utils' ], function( Utils ) {
                 console.debug( 'FAILED: Utilities::panelHelper() - ' + err );
                 chart.state( 'failed', err );
                 process.reject();
-            }
-        };
-        request_dictionary.progress = function( percentage ) {
-            if ( chart.get('state') == 'wait' ) {
-                chart.state( 'wait', 'Loading data...' + percentage + '%' );
             }
         };
         app.datasets.request( request_dictionary );
