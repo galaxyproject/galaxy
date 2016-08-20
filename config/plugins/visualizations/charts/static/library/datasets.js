@@ -8,17 +8,33 @@ define( [ 'utils/utils' ], function( Utils ) {
             this.options = options;
         },
 
-        /** Request handler */
-        request: function( request_dictionary ) {
-            if ( request_dictionary.groups ) {
-                this._get_blocks( request_dictionary );
+        /** Get dataset metadata */
+        get: function( options ) {
+            var self = this;
+            this.dataset_list = this.dataset_list || [];
+            var dataset = this.dataset_list[ options.id ];
+            if ( dataset ) {
+                options.success( dataset );
             } else {
-                this._get_dataset( request_dictionary.id, request_dictionary.success, request_dictionary.error )
+                Utils.request({
+                    type    : 'GET',
+                    url     : config.root + 'api/datasets/' + options.id,
+                    success : function( dataset ) {
+                        switch ( dataset.state ) {
+                            case 'error':
+                                options.error && options.error( dataset );
+                                break;
+                            default:
+                                self.dataset_list[ options.id ] = dataset;
+                                options.success( dataset );
+                        }
+                    }
+                });
             }
         },
 
         /** Multiple request handler */
-        _get_blocks: function( request_dictionary ) {
+        request: function( request_dictionary ) {
             var self        = this;
             var success     = request_dictionary.success;
             var progress    = request_dictionary.progress;
@@ -61,32 +77,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     }
                 });
             };
-            var query = $.extend(true, query_dictionary_template, {start: query_start});
-            this._get_dataset( request_dictionary.id, function() { fetch_blocks( query ) } );
-        },
-
-        /** Get dataset */
-        _get_dataset: function( id, success, error ) {
-            var self = this;
-            var dataset = this.list[ id ];
-            if ( dataset ) {
-                success( dataset );
-                return;
-            }
-            Utils.request({
-                type    : 'GET',
-                url     : config.root + 'api/datasets/' + id,
-                success : function( dataset ) {
-                    switch ( dataset.state ) {
-                        case 'error':
-                            error && error( dataset );
-                            break;
-                        default:
-                            self.list[ id ] = dataset;
-                            success( dataset );
-                    }
-                }
-            });
+            fetch_blocks( $.extend(true, query_dictionary_template, {start: query_start}) );
         },
 
         /** Get block id */
