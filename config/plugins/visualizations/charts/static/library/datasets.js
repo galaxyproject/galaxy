@@ -34,27 +34,29 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         /** Multiple request handler */
-        request: function( request_dictionary ) {
+        request: function( options ) {
             var self        = this;
-            var success     = request_dictionary.success;
-            var progress    = request_dictionary.progress;
+            var success     = options.success;
+            var progress    = options.progress;
             var query_size  = this.app.config.get( 'query_limit' );
-            var query_start = request_dictionary.start || 0;
-            var query_end   = query_start + request_dictionary.query_limit || query_start + this.app.config.get( 'query_limit' );
+            var query_start = options.start || 0;
+            var query_end   = query_start + options.query_limit || query_start + this.app.config.get( 'query_limit' );
             var query_range = Math.abs( query_end - query_start );
             if ( query_range <= 0 ) {
                 console.debug( 'FAILED - Datasets::request() - Invalid query range.' );
                 return;
             }
             var query_number = Math.ceil( query_range / query_size ) || 1;
-            var query_dictionary_template = $.extend( true, {}, request_dictionary );
+            var query_dictionary_template = $.extend( true, {}, options );
             var query_counter = 0;
 
+
+            // recursive caller to fill blocks
             function fetch_blocks ( query ) {
                 self._get(query, function() {
                     var done = false;
-                    for ( var group_index in request_dictionary.groups ) {
-                        destination_group = request_dictionary.groups[ group_index ];
+                    for ( var group_index in options.groups ) {
+                        destination_group = options.groups[ group_index ];
                         source_group = query.groups[ group_index ];
                         if ( !destination_group.values ) {
                             destination_group.values = [];
@@ -86,58 +88,76 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         /** Fills request dictionary with data from cache/response */
-        _get: function( request_dictionary, callback ) {
+        _get: function( options, callback ) {
             var self = this;
             var column_list = [];
-            var column_map  = {};
-            var column_count = 0;
-            request_dictionary.start = request_dictionary.start || 0;
-            for ( var i in request_dictionary.groups ) {
-                var group = request_dictionary.groups[ i ];
+            options.start = options.start || 0;
+
+            // identify columns needed to fulfill request
+            for ( var i in options.groups ) {
+                var group = options.groups[ i ];
                 for ( var key in group.columns ) {
                     var column = group.columns[ key ].index;
-                    var block_id = this._block_id( request_dictionary, column );
-                    if ( this.cache[ block_id ] || column === 'auto' || column === 'zero' ) {
-                        continue;
-                    }
-                    if ( !column_map[ column ] && column !== undefined ) {
-                        column_map[ column ] = column_count;
+                    var block_id = this._block_id( options, column );
+                    if ( column_list.indexOf( column ) === -1 && !this.cache[ block_id ] && column != 'auto' && column != 'zero' && column !== undefined ) {
                         column_list.push( column );
-                        column_count++;
                     }
                 }
             }
             if ( column_list.length == 0 ) {
-                this._fill_from_cache( request_dictionary );
-                callback( request_dictionary );
+                this._fill_from_cache( options );
+                callback( options );
                 return;
             }
-            var dataset_request = {
-                dataset_id  : request_dictionary.id,
-                start       : request_dictionary.start,
-                columns     : column_list
-            }
-            this._fetch(dataset_request, function( results ) {
-                for ( var i in results ) {
-                    var column = column_list[ i ];
-                    var block_id = self._block_id( request_dictionary, column );
-                    self.cache[ block_id ] = results[ i ];
+
+            // Fetch data columns into dataset object
+            Utils.request({
+                type    : 'GET',
+                url     : config.root + 'api/datasets/' + options.id,
+                data    : {
+                    data_type   : 'raw_data',
+                    provider    : 'dataset-column',
+                    limit       : self.app.config.get( 'query_limit' ),
+                    offset      : options.start,
+                    indeces     : column_list.toString()
+                },
+                success : function( response ) {
+                    var results = new Array( column_list.length );
+                    for ( var i = 0; i < results.length; i++ ) {
+                        results[ i ] = [];
+                    }
+                    for ( var i in response.data ) {
+                        var row = response.data[ i ];
+                        for ( var j in row ) {
+                            var v = row[ j ];
+                            if ( v !== undefined && v != 2147483647 ) {
+                                results[ j ].push( v );
+                            }
+                        }
+                    }
+                    console.debug( 'Datasets::_fetch() - Fetching complete.' );
+                    for ( var i in results ) {
+                        var column = column_list[ i ];
+                        var block_id = self._block_id( options, column );
+                        self.cache[ block_id ] = results[ i ];
+                    }
+                    self._fill_from_cache( options );
+                    callback( options );
                 }
-                self._fill_from_cache( request_dictionary );
-                callback( request_dictionary );
             });
+
         },
 
         /** Fill data from cache */
-        _fill_from_cache: function( request_dictionary ) {
-            var start = request_dictionary.start;
+        _fill_from_cache: function( options ) {
+            var start = options.start;
             console.debug( 'Datasets::_fill_from_cache() - Filling request from cache at ' + start + '.' );
             var limit = 0;
-            for ( var i in request_dictionary.groups ) {
-                var group = request_dictionary.groups[ i ];
+            for ( var i in options.groups ) {
+                var group = options.groups[ i ];
                 for ( var key in group.columns ) {
                     var column = group.columns[ key ];
-                    var block_id = this._block_id( request_dictionary, column.index );
+                    var block_id = this._block_id( options, column.index );
                     var column_data = this.cache[ block_id ];
                     if ( column_data ) {
                         limit = Math.max( limit, column_data.length );
@@ -147,15 +167,15 @@ define( [ 'utils/utils' ], function( Utils ) {
             if ( limit == 0 ) {
                 console.debug( 'Datasets::_fill_from_cache() - Reached data range limit.' );
             }
-            for ( var i in request_dictionary.groups ) {
-                var group = request_dictionary.groups[ i ];
+            for ( var i in options.groups ) {
+                var group = options.groups[ i ];
                 group.values = [];
                 for ( var j = 0; j < limit; j++ ) {
                     group.values[ j ] = { x : parseInt( j ) + start };
                 }
             }
-            for ( var i in request_dictionary.groups ) {
-                var group = request_dictionary.groups[ i ];
+            for ( var i in options.groups ) {
+                var group = options.groups[ i ];
                 for ( var key in group.columns ) {
                     var column = group.columns[ key ];
                     switch ( column.index ) {
@@ -172,7 +192,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                             }
                             break;
                         default:
-                            var block_id = this._block_id( request_dictionary, column.index );
+                            var block_id = this._block_id( options, column.index );
                             var column_data = this.cache[ block_id ];
                             for ( var j = 0; j < limit; j++ ) {
                                 var value = group.values[ j ];
@@ -185,54 +205,6 @@ define( [ 'utils/utils' ], function( Utils ) {
                     }
                 }
             }
-        },
-
-        /** Fetch data columns into dataset object */
-        _fetch: function(dataset_request, callback) {
-            var self        = this;
-            var offset      = dataset_request.start ? dataset_request.start : 0;
-            var limit       = this.app.config.get('query_limit');
-            var n_columns   = 0;
-            if ( dataset_request.columns ) {
-                n_columns = dataset_request.columns.length;
-                console.debug( 'Datasets::_fetch() - Fetching ' + n_columns + ' column(s) at ' + offset + '.' );
-            }
-            if (n_columns == 0) {
-                console.debug( 'Datasets::_fetch() - No columns requested' );
-            }
-            var column_string = '';
-            for ( var i in dataset_request.columns ) {
-                column_string += dataset_request.columns[ i ] + ',';
-            }
-            column_string = column_string.substring( 0, column_string.length - 1 );
-            Utils.request({
-                type    : 'GET',
-                url     : config.root + 'api/datasets/' + dataset_request.dataset_id,
-                data    : {
-                    data_type   : 'raw_data',
-                    provider    : 'dataset-column',
-                    limit       : limit,
-                    offset      : offset,
-                    indeces     : column_string
-                },
-                success : function( response ) {
-                    var result = new Array( n_columns );
-                    for ( var i = 0; i < n_columns; i++ ) {
-                        result[ i ] = [];
-                    }
-                    for ( var i in response.data ) {
-                        var row = response.data[ i ];
-                        for ( var j in row ) {
-                            var v = row[ j ];
-                            if ( v !== undefined && v != 2147483647 ) {
-                                result[ j ].push( v );
-                            }
-                        }
-                    }
-                    console.debug( 'Datasets::_fetch() - Fetching complete.' );
-                    callback( result );
-                }
-            });
         }
     });
 });
