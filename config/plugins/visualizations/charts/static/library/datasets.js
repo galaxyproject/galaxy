@@ -36,10 +36,10 @@ define( [ 'utils/utils' ], function( Utils ) {
         /** Fills request dictionary with data from cache/response */
         request: function( options ) {
             var self = this;
-            var column_list = [];
             options.start = options.start || 0;
 
             // identify columns needed to fulfill request
+            var column_list = [];
             for ( var i in options.groups ) {
                 var group = options.groups[ i ];
                 for ( var key in group.columns ) {
@@ -80,7 +80,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                             }
                         }
                     }
-                    console.debug( 'Datasets::_fetch() - Fetching complete.' );
+                    console.debug( 'datasets::_fetch() - Fetching complete.' );
                     for ( var i in results ) {
                         var column = column_list[ i ];
                         var block_id = self._block_id( options, column );
@@ -95,7 +95,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         /** Fill data from cache */
         _fillFromCache: function( options ) {
             var start = options.start;
-            console.debug( 'Datasets::_fillFromCache() - Filling request from cache at ' + start + '.' );
+            console.debug( 'datasets::_fillFromCache() - Filling request from cache at ' + start + '.' );
             var limit = 0;
             for ( var i in options.groups ) {
                 var group = options.groups[ i ];
@@ -109,7 +109,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 }
             }
             if ( limit == 0 ) {
-                console.debug( 'Datasets::_fillFromCache() - Reached data range limit.' );
+                console.debug( 'datasets::_fillFromCache() - Reached data range limit.' );
             }
             for ( var i in options.groups ) {
                 var group = options.groups[ i ];
