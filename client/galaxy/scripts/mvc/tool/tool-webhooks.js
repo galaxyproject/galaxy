@@ -8,6 +8,7 @@ define([], function() {
         urlRoot:  galaxyRoot + 'api/webhooks/toolview',
         defaults: {
             name: '',
+            type: '',
             styles: '',
             script: ''
         }
