@@ -1,5 +1,35 @@
 /** This class renders the chart configuration form. */
 define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form/form-data' ], function( Utils, Form, Repeat, FormData ) {
+    var TabularDataView = Backbone.View.extend({
+        initialize: function( app ) {
+            var self    = this;
+            this.app    = app;
+            this.chart  = app.chart;
+            this.repeat = new Repeat.View({
+                title       : 'Data series',
+                title_new   : 'Data series',
+                min         : 1,
+                onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
+            });
+            this.setElement( this.repeat.$el );
+            this.chart.groups.each( function( group ) { self._add( group ) } );
+            this.listenTo( this.chart.groups, 'add remove reset', function() { self.chart.set( 'modified', true ) } );
+            this.listenTo( this.chart.groups, 'remove', function( group ) { self.repeat.del( group.id ) } );
+            this.listenTo( this.chart.groups, 'reset', function() { self.repeat.delAll() } );
+            this.listenTo( this.chart.groups, 'add', function( group ) { self._add( group ) } );
+        },
+
+        _add: function( group ) {
+            var self = this;
+            this.repeat.add({
+                 id      : group.id,
+                 cls     : 'ui-portlet-panel',
+                 $el     : ( new TabularGroupView( self.app, { group: group } ) ).$el,
+                 ondel   : function() { self.chart.groups.remove( group ) }
+             });
+        }
+    });
+
     var TabularGroupView = Backbone.View.extend({
         initialize: function( app, options ) {
             this.app    = app;
@@ -49,36 +79,6 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
                     });
                 });
             }
-        }
-    });
-
-    var TabularDataView = Backbone.View.extend({
-        initialize: function( app ) {
-            var self    = this;
-            this.app    = app;
-            this.chart  = app.chart;
-            this.repeat = new Repeat.View({
-                title       : 'Data series',
-                title_new   : 'Data series',
-                min         : 1,
-                onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
-            });
-            this.setElement( this.repeat.$el );
-            this.chart.groups.each( function( group ) { self._add( group ) } );
-            this.listenTo( this.chart.groups, 'add remove reset', function() { self.chart.set( 'modified', true ) } );
-            this.listenTo( this.chart.groups, 'remove', function( group ) { self.repeat.del( group.id ) } );
-            this.listenTo( this.chart.groups, 'reset', function() { self.repeat.delAll() } );
-            this.listenTo( this.chart.groups, 'add', function( group ) { self._add( group ) } );
-        },
-
-        _add: function( group ) {
-            var self = this;
-            this.repeat.add({
-                 id      : group.id,
-                 cls     : 'ui-portlet-panel',
-                 $el     : ( new TabularGroupView( self.app, { group: group } ) ).$el,
-                 ondel   : function() { self.chart.groups.remove( group ) }
-             });
         }
     });
 
