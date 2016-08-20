@@ -39,6 +39,7 @@ $(document).ready(function() {
             var me = this,
                 randomId = Math.floor(Math.random() * this.latestXkcdId) + 1;
 
+            this.xkcdImg.html($('<div/>', {id: 'xkcd-loader'}));
             $.getJSON('http://dynamic.xkcd.com/api-0/jsonp/comic/' + randomId + '?callback=?', function(data) {
                 me.xkcd = {img: data.img, alt: data.alt, title: data.title};
                 me.renderImg();
