@@ -5,6 +5,7 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
         library     : 'NVD3',
         tag         : 'svg',
         keywords    : 'nvd3 default',
+        datatype    : 'tabular',
         columns : {
             label : {
                 title       : 'Labels',

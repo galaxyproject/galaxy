@@ -1,4 +1,4 @@
-define( [ 'utils/utils' ], function( Utils ) {
+define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function( Utils, Datasets ) {
 
     /** Create default data request dictionary */
     function buildRequestDictionary( chart, dataset_id ) {
@@ -53,7 +53,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 process.reject();
             }
         };
-        app.datasets.request( request_dictionary );
+        Datasets.request( request_dictionary );
     };
 
     /** Get domain boundaries value */

@@ -1,5 +1,5 @@
 /** Pie chart wrapper */
-define( [ 'utils/utils', 'plugin/charts/utilities/tabular-utilities' ], function( Utils, Utilities ) {
+define( [ 'utils/utils', 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-datasets' ], function( Utils, Utilities, Datasets ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -7,15 +7,15 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-utilities' ], function
             var request_dictionary = Utilities.buildRequestDictionary( app.chart );
             var canvas_list = options.canvas_list;
             var process = options.process;
-            request_dictionary.success = function() {
-                for ( var group_index in request_dictionary.groups ) {
-                    var group = request_dictionary.groups[ group_index ];
+            request_dictionary.success = function( result ) {
+                for ( var group_index in result.groups ) {
+                    var group = result.groups[ group_index ];
                     self._drawGroup( chart, group, canvas_list[ group_index ] );
                 }
                 chart.state('ok', 'Pie chart has been drawn.');
                 process.resolve();
             }
-            app.datasets.request(request_dictionary);
+            Datasets.request( request_dictionary );
         },
 
         /** Draw group */
