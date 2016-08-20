@@ -2,7 +2,7 @@
 define( [ 'utils/utils' ], function( Utils ) {
 
     /** Submit job request to charts tool */
-    var request = function( app, success, error ) {
+    var request = function( app, module, success, error ) {
         var chart = app.chart;
         var settings_string = '';
         var columns_string = '';
@@ -41,7 +41,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                             'id'    : chart.get('dataset_id'),
                             'src'   : 'hda'
                         },
-                        'module'    : chart_definition.execute,
+                        'module'    : module,
                         'columns'   : columns_string,
                         'settings'  : settings_string
                     }
