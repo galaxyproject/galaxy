@@ -46,9 +46,9 @@ define( [ 'utils/utils' ], function( Utils ) {
                         'settings'  : settings_string
                     }
                 },
-                success : function(response) {
-                    if (!response.outputs || response.outputs.length == 0) {
-                        chart.state('failed', 'Job submission failed. No response.');
+                success : function( response ) {
+                    if ( !response.outputs || response.outputs.length == 0 ) {
+                        chart.state( 'failed', 'Job submission failed. No response.' );
                         error && error();
                     } else {
                         refreshHdas();
@@ -111,9 +111,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                         chart.state( 'wait', 'Your job is running. You may close the browser window. The job will continue in the background.' );
                 }
                 if ( !ready ) {
-                    setTimeout( function() {
-                        wait( chart, success, error );
-                    }, self.app.config.get( 'query_timeout' ) );
+                    setTimeout( function() { wait( chart, success, error ) }, self.app.config.get( 'query_timeout' ) );
                 }
             }
         });

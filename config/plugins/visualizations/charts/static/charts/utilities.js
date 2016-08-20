@@ -1,9 +1,9 @@
 define( [ 'utils/utils' ], function( Utils ) {
 
     /** Create default data request dictionary */
-    function tabularRequestDictionary( chart ) {
+    function tabularRequestDictionary( chart, dataset_id ) {
         var request_dictionary = { groups : [] };
-        request_dictionary.id = chart.definition.execute ? chart.get( 'dataset_id_job' ) : chart.get( 'dataset_id' );
+        request_dictionary.id = dataset_id ? dataset_id : chart.get( 'dataset_id' );
         var group_index = 0;
         chart.groups.each( function( group ) {
             var columns = {};
