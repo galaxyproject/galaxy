@@ -3,9 +3,6 @@ define( [ 'utils/utils' ], function( Utils ) {
     return Backbone.Collection.extend({
         initialize: function( app, options ){
             this.app = app;
-            this.list = {};
-            this.cache = {};
-            this.options = options;
         },
 
         /** Get dataset metadata */
@@ -36,6 +33,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         /** Fills request dictionary with data from cache/response */
         request: function( options ) {
             var self = this;
+            this.cache = this.cache || {};
             options.start = options.start || 0;
 
             // identify columns needed to fulfill request
