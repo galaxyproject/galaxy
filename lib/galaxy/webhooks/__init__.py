@@ -11,9 +11,28 @@ from galaxy.util import galaxy_root_path
 log = logging.getLogger(__name__)
 
 
+class Webhook(object):
+    def __init__(self, w_name, w_type, w_path):
+        self.name = w_name
+        self.type = w_type
+        self.path = w_path
+        self.styles = ''
+        self.script = ''
+        self.helper = ''
+        self.config = {}
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'type': self.type,
+            'styles': self.styles,
+            'script': self.script
+        }
+
+
 class WebhooksRegistry(object):
     def __init__(self, webhooks_directories):
-        self.webhooks = {}
+        self.webhooks = []
         path = os.path.join(galaxy_root_path, webhooks_directories)
         self.webhooks_directories = \
             [os.path.join(path, name)
@@ -39,32 +58,31 @@ class WebhooksRegistry(object):
         try:
             with open(os.path.join(config_dir, config_file)) as f:
                 config = yaml.load(f)
-
-                if config['type'] not in self.webhooks.keys():
-                    self.webhooks[config['type']] = []
-
                 path = os.path.normpath(os.path.join(config_dir, '..'))
+                webhook = Webhook(config['name'], config['type'], path)
 
                 # Read styles into a string, assuming all styles are in a
                 # single file
                 try:
                     with open(os.path.join(path, 'static/styles.css'), 'r') as f:
-                        styles = f.read().replace('\n', '')
+                        webhook.styles = f.read().replace('\n', '')
                 except IOError:
-                    styles = ''
+                    pass
 
                 # Read script into a string, assuming everything is in a
                 # single file
                 try:
                     with open(os.path.join(path, 'static/script.js'), 'r') as f:
-                        script = f.read()
+                        webhook.script = f.read()
                 except IOError:
-                    script = ''
+                    pass
 
-                config.update({
-                    'styles': styles,
-                    'script': script
-                })
-                self.webhooks[config['type']].append(config)
+                # Save helper function path if it exists
+                helper_path = os.path.join(path, 'helper/__init__.py')
+                if os.path.isfile(helper_path):
+                    webhook.helper = helper_path
+
+                webhook.config = config
+                self.webhooks.append(webhook)
         except Exception as e:
             log.exception(e)
