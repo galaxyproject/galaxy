@@ -1,7 +1,7 @@
 define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/charts/utilities' ], function( Plot, Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
-            var request_dictionary = Utilities.tabularRequestDictionary( app.chart );
+            var request_dictionary = Utilities.buildRequestDictionary( app.chart );
             var chart = options.chart;
             var index = 0;
             for ( var i in request_dictionary.groups ) {

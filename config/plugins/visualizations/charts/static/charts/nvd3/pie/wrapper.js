@@ -3,8 +3,8 @@ define( [ 'utils/utils', 'plugin/charts/utilities' ], function( Utils, Utilities
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
-            var chart = options.chart;
-            var request_dictionary = Utilities.tabularRequestDictionary( chart );
+            var chart = app.chart;
+            var request_dictionary = Utilities.buildRequestDictionary( app.chart );
             var canvas_list = options.canvas_list;
             var process = options.process;
             request_dictionary.success = function() {

@@ -1,7 +1,7 @@
 define( [ 'plugin/charts/utilities', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, HeatMap ) {
     return Backbone.View.extend({
         initialize: function(app, options) {
-            var request_dictionary = Utilities.tabularRequestDictionary( options.chart );
+            var request_dictionary = Utilities.buildRequestDictionary( app.chart );
             var index = 0;
             var tmp_dict = { id : request_dictionary.id, groups : [] };
             for ( var group_index in request_dictionary.groups ) {

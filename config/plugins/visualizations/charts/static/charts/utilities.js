@@ -1,7 +1,7 @@
 define( [ 'utils/utils' ], function( Utils ) {
 
     /** Create default data request dictionary */
-    function tabularRequestDictionary( chart, dataset_id ) {
+    function buildRequestDictionary( chart, dataset_id ) {
         var request_dictionary = { groups : [] };
         request_dictionary.id = dataset_id ? dataset_id : chart.get( 'dataset_id' );
         var group_index = 0;
@@ -23,7 +23,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         var self = this;
         var process             = options.process;
         var chart               = options.chart;
-        var request_dictionary  = options.request_dictionary || tabularRequestDictionary( options.chart );
+        var request_dictionary  = options.request_dictionary || buildRequestDictionary( app.chart );
         var render              = options.render;
         var canvas_list         = options.canvas_list;
         request_dictionary.query_limit = chart.definition.query_limit;
@@ -281,8 +281,8 @@ define( [ 'utils/utils' ], function( Utils ) {
     };
 
     return {
+        buildRequestDictionary  : buildRequestDictionary,
         panelHelper             : panelHelper,
-        tabularRequestDictionary: tabularRequestDictionary,
         makeCategories          : makeCategories,
         makeUniqueCategories    : makeUniqueCategories,
         makeSeries              : makeSeries,
