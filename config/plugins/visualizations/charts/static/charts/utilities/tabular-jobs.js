@@ -1,6 +1,9 @@
 /** This class handles job submissions to the charts tool. */
 define( [ 'utils/utils' ], function( Utils ) {
 
+    /** Time to wait before refreshing to check if job has completed */
+    var WAITTIME = 1000;
+
     /** Submit job request to charts tool */
     var request = function( app, module, success, error ) {
         var chart = app.chart;
@@ -110,9 +113,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     case 'running':
                         chart.state( 'wait', 'Your job is running. You may close the browser window. The job will continue in the background.' );
                 }
-                if ( !ready ) {
-                    setTimeout( function() { wait( chart, success, error ) }, self.app.config.get( 'query_timeout' ) );
-                }
+                !ready && setTimeout( function() { wait( chart, success, error ) }, WAITTIME );
             }
         });
     };

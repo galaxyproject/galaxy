@@ -1,5 +1,5 @@
 /** This is the common wrapper for jqplot based visualizations. */
-define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/utilities' ], function( configmaker, Utilities ) {
+define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/utilities/tabular-utilities' ], function( configmaker, Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             this.options = options;
