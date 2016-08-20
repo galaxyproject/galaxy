@@ -4,7 +4,6 @@ define( [ 'plugin/charts/jqplot/common/config' ], function( plot_config ) {
         category    : 'Data processing (requires \'charts\' tool from Toolshed)',
         library     : 'jqPlot',
         tag         : 'div',
-        execute     : 'boxplot',
         keywords    : 'jqplot default',
         columns     : {
             y : {
