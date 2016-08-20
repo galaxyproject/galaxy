@@ -7,7 +7,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities' ], function( Utilities ) {
             options.render = function( canvas_id, groups ) {
                 return self.render( canvas_id, groups )
             };
-            Utilities.panelHelper( app, options );
+            Utilities.panelHelper( options );
         },
 
         render: function( canvas_id, groups ) {

@@ -20,11 +20,11 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function(
     };
 
     /** Assists in assigning the viewport panels */
-    function panelHelper( app, options ) {
+    function panelHelper( options ) {
         var self = this;
         var process             = options.process;
         var chart               = options.chart;
-        var request_dictionary  = options.request_dictionary || buildRequestDictionary( app.chart );
+        var request_dictionary  = options.request_dictionary || buildRequestDictionary( chart );
         var render              = options.render;
         var canvas_list         = options.canvas_list;
         request_dictionary.success = function( result ) {
@@ -48,7 +48,7 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function(
                 }
                 process.resolve();
             } catch ( err ) {
-                console.debug( 'FAILED: Utilities::panelHelper() - ' + err );
+                console.debug( 'FAILED: tabular-utilities::panelHelper() - ' + err );
                 chart.state( 'failed', err );
                 process.reject();
             }

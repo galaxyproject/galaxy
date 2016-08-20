@@ -7,7 +7,7 @@ define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/utilities' ]
             options.render = function( canvas_id, groups ) {
                 return self.render( canvas_id, groups )
             };
-            Utilities.panelHelper( app, options );
+            Utilities.panelHelper( options );
         },
 
         /** Draw all data into a single canvas */

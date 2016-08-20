@@ -9,7 +9,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/others/hea
                 });
                 return true;
             };
-            Utilities.panelHelper( app, options );
+            Utilities.panelHelper( options );
         }
     });
 });

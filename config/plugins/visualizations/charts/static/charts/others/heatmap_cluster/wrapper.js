@@ -33,7 +33,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/
                     });
                     return true;
                 };
-                Utilities.panelHelper( app, options );
+                Utilities.panelHelper( options );
             });
         }
     });
