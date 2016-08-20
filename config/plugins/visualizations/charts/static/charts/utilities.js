@@ -19,6 +19,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         return request_dictionary;
     };
 
+    /** Assists in assigning the viewport panels */
     function panelHelper( app, options ) {
         var self = this;
         var process             = options.process;
