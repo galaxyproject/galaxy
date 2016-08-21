@@ -80,7 +80,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 id      : 'groups',
                 title   : 'Select data',
                 icon    : 'fa-database',
-                tooltip : 'Specify your data columns.',
+                tooltip : 'Specify your data options.',
                 $el     : ( new GroupsView( this.app ) ).$el
             });
 
@@ -124,13 +124,13 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 date        : Utils.time()
             });
             if ( this.chart.groups.length == 0 ) {
-                this.message.update( { message: 'Please specify data columns before drawing the chart.' } );
+                this.message.update( { message: 'Please specify data options before drawing the chart.' } );
                 this.tabs.show( 'groups' );
                 return;
             }
             var valid = true;
             var chart_def = this.chart.definition;
-            this.chart.groups.each( function( group ) {
+            /*this.chart.groups.each( function( group ) {
                 if ( valid ) {
                     for ( var key in chart_def.columns ) {
                         if ( group.attributes[ key ] === null ) {
@@ -140,7 +140,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                         }
                     }
                 }
-            });
+            });*/
             if ( valid ) {
                 this.app.go( 'viewer' );
                 this.app.deferred.execute( function() {

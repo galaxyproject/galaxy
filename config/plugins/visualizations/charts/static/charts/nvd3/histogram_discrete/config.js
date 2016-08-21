@@ -6,9 +6,10 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
         category    : 'Data processing (requires \'charts\' tool from Toolshed)',
         keywords    : 'nvd3',
         datatype    : 'tabular',
-        columns     : {
+        groups      : {
             x : {
-                title       : 'Observations',
+                label       : 'Observations',
+                type        : 'data_column',
                 is_label    : true
             }
         }

@@ -5,9 +5,10 @@ define( [ 'plugin/charts/jqplot/common/config' ], function( plot_config ) {
         library     : 'jqPlot',
         tag         : 'div',
         keywords    : 'jqplot default',
-        columns     : {
+        groups      : {
             y : {
-                title       : 'Observations',
+                label       : 'Observations',
+                type        : 'data_column',
                 is_numeric  : true
             }
         }

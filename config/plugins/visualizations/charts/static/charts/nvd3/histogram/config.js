@@ -6,22 +6,22 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
         category    : 'Data processing (requires \'charts\' tool from Toolshed)',
         keywords    : 'nvd3 default',
         datatype    : 'tabular',
-        columns     : {
+        groups      : {
+            key : {
+                label       : 'Provide a label',
+                type        : 'text',
+                placeholder : 'Data label',
+                value       : 'Data label'
+            },
+            color : {
+                label       : 'Pick a series color',
+                type        : 'color'
+            },
             y : {
-                title       : 'Observations',
+                label       : 'Observations',
+                type        : 'data_column',
                 is_numeric  : true
             }
-        },
-        series      : [{
-            name        : 'key',
-            label       : 'Provide a label',
-            type        : 'text',
-            placeholder : 'Data label',
-            value       : 'Data label'
-        },{
-            name        : 'color',
-            label       : 'Pick a series color',
-            type        : 'color'
-        }]
+        }
     });
 });

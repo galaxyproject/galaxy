@@ -9,8 +9,13 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-data' ], function(
         },
         render: function() {
             var self = this;
+            var inputs = Utils.clone( this.chart.definition.settings );
+            FormData.visitInputs( inputs, function( input, name ) {
+                var model_value = self.chart.settings.get( name );
+                model_value !== undefined && !input.hidden && ( input.value = model_value );
+            });
             this.form = new Form({
-                inputs   : FormData.populate( Utils.clone( this.chart.definition.settings ), this.chart.settings.attributes ),
+                inputs   : inputs,
                 cls      : 'ui-portlet-plain',
                 onchange : function() { self.chart.settings.set( self.form.data.create() ); }
             });

@@ -201,8 +201,9 @@ define([ 'utils/utils' ], function( Utils ) {
                 context[ input.name ] = input;
             }
         });
-        for ( var i in inputs ) {
-            var node = inputs[ i ];
+        for ( var key in inputs ) {
+            var node = inputs[ key ];
+            node.name = node.name || key;
             var name = prefix ? prefix + '|' + node.name : node.name;
             switch ( node.type ) {
                 case 'repeat':
@@ -232,17 +233,8 @@ define([ 'utils/utils' ], function( Utils ) {
         }
     };
 
-    /** Populate input state */
-    var populate = function( inputs, state ) {
-        visitInputs( inputs, function( input, name ) {
-            state[ name ] !== undefined && !input.hidden && ( input.value = state[ name ] );
-        });
-        return inputs;
-    };
-
     return {
         Manager         : Manager,
-        visitInputs     : visitInputs,
-        populate        : populate
+        visitInputs     : visitInputs
     }
 });

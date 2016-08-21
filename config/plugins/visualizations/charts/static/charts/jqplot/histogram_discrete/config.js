@@ -3,9 +3,10 @@ define( [ 'plugin/charts/jqplot/common/config' ], function( default_config ) {
         title       : 'Discrete Histogram',
         category    : 'Data processing (requires \'charts\' tool from Toolshed)',
         keywords    : 'jqplot default',
-        columns     : {
+        groups      : {
             x : {
-                title       : 'Observations',
+                label       : 'Observations',
+                type        : 'data_column',
                 is_label    : true
             }
         }

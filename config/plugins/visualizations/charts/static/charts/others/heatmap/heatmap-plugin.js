@@ -1,4 +1,4 @@
-define( [ 'plugin/charts/utilities', 'utils/utils', 'plugin/charts/others/heatmap/heatmap-parameters' ], function( Utilities, Utils, HeatmapParameters ) {
+define( [ 'plugin/charts/utilities/tabular-utilities', 'utils/utils', 'plugin/charts/others/heatmap/heatmap-parameters' ], function( Utilities, Utils, HeatmapParameters ) {
     return Backbone.View.extend({
         optionsDefault: {
             margin: {

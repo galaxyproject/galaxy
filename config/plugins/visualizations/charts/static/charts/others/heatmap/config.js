@@ -6,21 +6,24 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
         tag         : 'svg',
         keywords    : 'others default',
         zoomable    : true,
-        columns     : {
+        groups      : {
             x : {
-                title       : 'Column labels',
+                label       : 'Column labels',
+                type        : 'data_column',
                 is_label    : true,
-                is_numeric  : true,
+                is_auto     : true,
                 is_unique   : true
             },
             y : {
-                title       : 'Row labels',
+                label       : 'Row labels',
+                type        : 'data_column',
                 is_label    : true,
-                is_numeric  : true,
+                is_auto     : true,
                 is_unique   : true
             },
             z : {
-                title       : 'Observation',
+                label       : 'Observation',
+                type        : 'data_column',
                 is_numeric  : true
             }
         },
@@ -30,7 +33,6 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
                 hidden      : true
             },
             color_set : {
-                name        : 'color_set',
                 label       : 'Color scheme',
                 help        : 'Select a color scheme for your heatmap',
                 type        : 'select',
@@ -52,7 +54,6 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
                                 { label : 'Wysiwyg',                    value : 'wysiwyg' } ]
             },
             url_template: {
-                name        : 'url_template',
                 label       : 'Url template',
                 help        : 'Enter a url to link the labels with external sources. Use __LABEL__ as placeholder.',
                 type        : 'text',

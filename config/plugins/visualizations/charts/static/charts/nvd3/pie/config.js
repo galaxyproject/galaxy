@@ -6,20 +6,21 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
         tag         : 'svg',
         keywords    : 'nvd3 default',
         datatype    : 'tabular',
-        columns : {
-            label : {
-                title       : 'Labels',
+        groups      : {
+            x : {
+                label       : 'Labels',
+                type        : 'data_column',
                 is_label    : true,
                 is_auto     : true
             },
             y : {
-                title       : 'Values',
+                label       : 'Values',
+                type        : 'data_column',
                 is_numeric  : true
             }
         },
         settings : {
             donut_ratio : {
-                name        : 'donut_ratio',
                 label       : 'Donut ratio',
                 help        : 'Determine how large the donut hole will be.',
                 type        : 'float',
@@ -28,7 +29,6 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
                 min         : 0.0
             },
             show_legend : {
-                name        : 'show_legend',
                 label       : 'Show legend',
                 help        : 'Would you like to add a legend?',
                 type        : 'select',
@@ -38,7 +38,6 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
             },
             label_type  : {
                 type        : 'conditional',
-                name        : 'label_type',
                 test_param  : {
                     name        : 'type',
                     label       : 'Donut label',
@@ -68,7 +67,6 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
                                                                                 { label : 'No',  value : 'false' } ] } ] } ]
             },
             use_panels : {
-                name        : 'use_panels',
                 value       : 'true',
                 hidden      : true
             }

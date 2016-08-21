@@ -5,24 +5,24 @@ define( [ 'plugin/charts/utilities/tabular-form', 'plugin/plugins/nvd3/nv.d3' ],
         library     : 'NVD3',
         tag         : 'svg',
         keywords    : 'nvd3 default',
-        columns     : {
+        groups      : {
+            key: {
+                label       : 'Provide a label',
+                type        : 'text',
+                placeholder : 'Data label',
+                value       : 'Data label'
+            },
+            color: {
+                label       : 'Pick a series color',
+                type        : 'color'
+            },
             tooltip : {
-                title       : 'Data point labels',
-                is_text     : true,
-                is_numeric  : true,
-                is_auto     : true
+                label       : 'Data point labels',
+                type        : 'data_column',
+                is_label    : true,
+                is_auto     : true,
+                is_unique   : true
             }
-        },
-        series      : [{
-            name        : 'key',
-            label       : 'Provide a label',
-            type        : 'text',
-            placeholder : 'Data label',
-            value       : 'Data label'
-        },{
-            name        : 'color',
-            label       : 'Pick a series color',
-            type        : 'color'
-        }]
+        }
     });
 });

@@ -1,47 +1,19 @@
 /** This class renders the chart configuration form. */
 define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form/form-data' ], function( Utils, Form, Repeat, FormData ) {
-    var TabularDataView = Backbone.View.extend({
-        initialize: function( app ) {
-            var self    = this;
-            this.app    = app;
-            this.chart  = app.chart;
-            this.repeat = new Repeat.View({
-                title       : 'Data series',
-                title_new   : 'Data series',
-                min         : 1,
-                onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
-            });
-            this.setElement( this.repeat.$el );
-            this.chart.groups.each( function( group ) { self._add( group ) } );
-            this.listenTo( this.chart.groups, 'add remove reset', function() { self.chart.set( 'modified', true ) } );
-            this.listenTo( this.chart.groups, 'remove', function( group ) { self.repeat.del( group.id ) } );
-            this.listenTo( this.chart.groups, 'reset', function() { self.repeat.delAll() } );
-            this.listenTo( this.chart.groups, 'add', function( group ) { self._add( group ) } );
-        },
-
-        _add: function( group ) {
-            var self = this;
-            this.repeat.add({
-                 id      : group.id,
-                 cls     : 'ui-portlet-panel',
-                 $el     : ( new TabularGroupView( self.app, { group: group } ) ).$el,
-                 ondel   : function() { self.chart.groups.remove( group ) }
-             });
-        }
-    });
-
-    var TabularGroupView = Backbone.View.extend({
+    var GroupView = Backbone.View.extend({
         initialize: function( app, options ) {
+            var self = this;
             this.app    = app;
             this.chart  = app.chart;
             this.group  = options.group;
             this.setElement( $( '<div/>' ) );
+            this.listenTo( this.chart, 'change:dataset_id change:type', function() { self.render() } );
             this.render();
         },
 
         render: function() {
             var self = this;
-            var inputs = this.chart.definition.series ? Utils.clone( this.chart.definition.series ) : [];
+            var inputs = this.chart.definition.groups ? Utils.clone( this.chart.definition.groups ) : [];
             var dataset_id = this.chart.get( 'dataset_id' );
             var chart_type = this.chart.get( 'type' );
             var chart_definition = this.chart.definition;
@@ -52,21 +24,27 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
                         url     : Galaxy.root + 'api/datasets/' + dataset_id,
                         cache   : true,
                         success : function( dataset ) {
-                            for ( var id in chart_definition.columns ) {
-                                var columns = [];
-                                var input_def = chart_definition.columns[ id ];
-                                input_def.is_auto && columns.push( { 'label': 'Column: Row Number', 'value': 'auto' } );
-                                input_def.is_zero && columns.push( { 'label' : 'Column: None', 'value' : 'zero' } );
-                                var meta = dataset.metadata_column_types;
-                                for ( var key in meta ) {
-                                    var valid = ( [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 && input_def.is_numeric ) || input_def.is_text || input_def.is_label;
-                                    valid && columns.push( { 'label' : 'Column: ' + ( parseInt( key ) + 1 ), 'value' : key } );
+                            var data_columns = {};
+                            FormData.visitInputs( inputs, function( input, prefix ) {
+                                if ( input.type == 'data_column' ) {
+                                    data_columns[ prefix ] = Utils.clone( input );
+                                    var columns = [];
+                                    input.is_auto && columns.push( { 'label': 'Column: Row Number', 'value': 'auto' } );
+                                    input.is_zero && columns.push( { 'label' : 'Column: None', 'value' : 'zero' } );
+                                    var meta = dataset.metadata_column_types;
+                                    for ( var key in meta ) {
+                                        var valid = ( [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 && input.is_numeric ) || input.is_text || input.is_label;
+                                        valid && columns.push( { 'label' : 'Column: ' + ( parseInt( key ) + 1 ), 'value' : key } );
+                                    }
+                                    input.data = columns;
                                 }
-                                inputs.push( { name: id, label: input_def.title, type: 'select', data: columns } );
-                            }
+                                var model_value = self.group.get( prefix );
+                                model_value !== undefined && !input.hidden && ( input.value = model_value );
+                            });
+                            inputs[ '__data_columns' ] = { name: '__data_columns', type: 'hidden', hidden: true, value: data_columns };
                             self.chart.state( 'ok', 'Metadata initialized...' );
                             self.form = new Form( {
-                                inputs  : FormData.populate( inputs, self.group.attributes ),
+                                inputs  : inputs,
                                 cls     : 'ui-portlet-plain',
                                 onchange: function() {
                                     self.group.set( self.form.data.create() );
@@ -88,19 +66,24 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
             var self    = this;
             this.app    = app;
             this.chart  = app.chart;
-            this.setElement( $( '<div/>' ) );
-            this.listenTo( this.chart, 'change:dataset_id change:type', function() { self.render() } );
-        },
-
-        render: function() {
-            this.$el.empty();
-            switch( this.chart.definition && this.chart.definition.datatype ) {
-                case 'tabular':
-                    this.$el.append( new TabularDataView( this.app ).$el );
-                    break;
-                default:
-                    this.$el.append( $( '<div/>' ).addClass( 'ui-form-info' ).html( 'No dataset options available.' ) );
-            }
+            this.repeat = new Repeat.View({
+                title       : 'Data series',
+                title_new   : 'Data series',
+                min         : 1,
+                onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
+            });
+            this.setElement( this.repeat.$el );
+            this.listenTo( this.chart.groups, 'add remove reset', function() { self.chart.set( 'modified', true ) } );
+            this.listenTo( this.chart.groups, 'remove', function( group ) { self.repeat.del( group.id ) } );
+            this.listenTo( this.chart.groups, 'reset', function() { self.repeat.delAll() } );
+            this.listenTo( this.chart.groups, 'add', function( group ) {
+                self.repeat.add({
+                     id      : group.id,
+                     cls     : 'ui-portlet-panel',
+                     $el     : ( new GroupView( self.app, { group: group } ) ).$el,
+                     ondel   : function() { self.chart.groups.remove( group ) }
+                });
+            });
         }
     });
 });

@@ -2,21 +2,20 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function(
 
     /** Create default data request dictionary */
     function buildRequestDictionary( chart, dataset_id ) {
-        var request_dictionary = { groups : [] };
-        request_dictionary.id = dataset_id ? dataset_id : chart.get( 'dataset_id' );
+        var result = { groups : [] };
+        result.id = dataset_id ? dataset_id : chart.get( 'dataset_id' );
         var group_index = 0;
         chart.groups.each( function( group ) {
             var columns = {};
-            for ( var column_key in chart.definition.columns ) {
-                var column_settings = chart.definition.columns[ column_key ];
-                columns[ column_key ] = Utils.merge( { index : group.get( column_key ) }, column_settings );
-            }
-            request_dictionary.groups.push( Utils.merge({
+            _.each( group.get( '__data_columns' ), function( data_columns, name ) {
+                columns[ name ] = Utils.merge( { index : group.get( name ) }, data_columns );
+            });
+            result.groups.push( Utils.merge({
                 key     : ( ++group_index ) + ':' + group.get( 'key' ),
                 columns : columns
             }, group.attributes ));
         });
-        return request_dictionary;
+        return result;
     };
 
     /** Assists in assigning the viewport panels */

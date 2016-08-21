@@ -6,16 +6,15 @@ define( [ 'utils/utils' ], function( Utils ) {
         // identify columns needed to fulfill request
         options.start = options.start || 0;
         var column_list = [];
-        for ( var i in options.groups ) {
-            var group = options.groups[ i ];
-            for ( var key in group.columns ) {
-                var column = group.columns[ key ].index;
+        _.each( options.groups, function( group ) {
+            _.each( group.columns, function( column ) {
+                var column = column.index;
                 var block_id = _block_id( options, column );
                 if ( column_list.indexOf( column ) === -1 && !_cache[ block_id ] && column != 'auto' && column != 'zero' && column !== undefined ) {
                     column_list.push( column );
                 }
-            }
-        }
+            });
+        });
         if ( column_list.length == 0 ) {
             _fillFromCache( options );
             return;

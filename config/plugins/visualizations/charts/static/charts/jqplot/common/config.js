@@ -8,7 +8,6 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
         keywords    : 'jqplot',
         settings    : {
             x_axis_grid : {
-                name        : 'x_axis_grid',
                 label       : 'Axis grid',
                 help        : 'Would you like to show grid lines for the X axis?',
                 type        : 'select',
@@ -17,7 +16,6 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
                 data        : [ { label: 'On', value: 'true' }, { label: 'Off', value: 'false' } ]
             },
             y_axis_grid : {
-                name        : 'y_axis_grid',
                 label       : 'Axis grid',
                 help        : 'Would you like to show grid lines for the Y axis?',
                 type        : 'select',
