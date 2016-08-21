@@ -34,7 +34,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/
                     return true;
                 };
                 Utilities.panelHelper( options );
-            });
+            }, function() { options.process.reject() } );
         }
     });
 });

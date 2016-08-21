@@ -1,4 +1,9 @@
-.charts-tooltip {   
+.charts-viewer .ui-message {
+  position: absolute;
+  width: calc(100% - 20px);
+}
+
+.charts-tooltip {
   position: absolute;           
   text-align: center;           
   padding: 3px 5px 3px 5px;            

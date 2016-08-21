@@ -85,6 +85,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             this.portlet = new Portlet.View({
                 icon : 'fa-bar-chart-o',
                 title: 'Viewport',
+                cls  : 'ui-portlet charts-viewer',
                 operations: {
                     edit_button: new Ui.ButtonIcon({
                         icon    : 'fa-edit',
@@ -101,7 +102,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             });
 
             // append elements
-            this.portlet.append( this.message.$el.addClass( 'ui-margin-top' ) );
+            this.portlet.append( this.message.$el );
             this.portlet.append( this.viewport_view.$el );
             this.setElement( this.portlet.$el );
 

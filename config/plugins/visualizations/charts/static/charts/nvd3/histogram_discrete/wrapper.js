@@ -17,7 +17,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/
                     nvd3_model.options( { showControls: true } );
                 };
                 new NVD3( app, options );
-            });
+            }, function() { options.process.reject() } );
         }
     });
 });

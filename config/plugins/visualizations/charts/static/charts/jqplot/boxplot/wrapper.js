@@ -92,7 +92,7 @@ define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/charts/utilities/tabula
                         return [ plot_data ];
                     }
                 });
-            });
+            }, function() { options.process.reject() } );
         }
     });
 });
