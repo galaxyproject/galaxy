@@ -25,9 +25,9 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
                         cache   : true,
                         success : function( dataset ) {
                             var data_columns = {};
-                            FormData.visitInputs( inputs, function( input, prefix ) {
+                            FormData.visitInputs( inputs, function( input, prefixed ) {
                                 if ( input.type == 'data_column' ) {
-                                    data_columns[ prefix ] = Utils.clone( input );
+                                    data_columns[ prefixed ] = Utils.clone( input );
                                     var columns = [];
                                     input.is_auto && columns.push( { 'label': 'Column: Row Number', 'value': 'auto' } );
                                     input.is_zero && columns.push( { 'label' : 'Column: None', 'value' : 'zero' } );
@@ -38,7 +38,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
                                     }
                                     input.data = columns;
                                 }
-                                var model_value = self.group.get( prefix );
+                                var model_value = self.group.get( prefixed );
                                 model_value !== undefined && !input.hidden && ( input.value = model_value );
                             });
                             inputs[ '__data_columns' ] = { name: '__data_columns', type: 'hidden', hidden: true, value: data_columns };
