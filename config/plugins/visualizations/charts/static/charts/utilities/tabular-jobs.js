@@ -16,9 +16,9 @@ define( [ 'utils/utils' ], function( Utils ) {
         settings_string = settings_string.substring( 0, settings_string.length - 2 )
         chart.groups.each( function( group ) {
             group_index++;
-            for ( var key in chart.definition.columns ) {
-                columns_string += key + '_' + group_index + ':' + ( parseInt( group.get( key ) ) + 1 ) + ', ';
-            }
+            _.each( group.get( '__data_columns' ), function( data_columns, name ) {
+                columns_string += name + '_' + group_index + ':' + ( parseInt( group.get( name ) ) + 1 ) + ', ';
+            });
         });
         columns_string = columns_string.substring( 0, columns_string.length - 2 );
         chart.state( 'wait', 'Requesting job results...' );
