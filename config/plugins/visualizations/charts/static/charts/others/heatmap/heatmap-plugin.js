@@ -345,7 +345,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'utils/utils', 'plugin/ch
                   .attr( 'x', legendWidth + 4 )
                   .attr( 'y', function() { return ( legendElementHeight + this.getBBox().height ) / 2 } )
                   .style( this.options.legend.style )
-                  .text( function( d ) { return String( d ).length > limit ? String( d ).substr( 0, limit - 2 ) + '..' : str } );
+                  .text( function( d ) { return String( d ).length > limit ? String( d ).substr( 0, limit - 2 ) + '..' : String( d ) } );
             this.svg.append( 'text' )
                 .style( this.options.legend.style )
                 .style( { 'font-size' : 9, 'font-weight': 'bold' } )
