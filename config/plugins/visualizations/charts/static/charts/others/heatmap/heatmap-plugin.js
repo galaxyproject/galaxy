@@ -259,7 +259,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'utils/utils', 'plugin/ch
             this.gxTickLabel = svg.append( 'text' )
                 .attr( 'class', 'title' )
                 .style( this.options.style )
-                .style({'font-size' : 1.5 * font_size } )
+                .style({'font-size' : 1.1 * font_size } )
                 .text( this.group.key )
                 .attr( 'transform', function( d ) {
                     var y = -margin.top / 2;
