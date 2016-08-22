@@ -5,79 +5,41 @@
 16.07
 -------------------------------
 
-Conda
--------------------------------
-
-* Galaxy can now install Conda dependencies in addition to tool shed
-  dependencies during repository installations
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__
-  and `@bwlang <https://github.com/bwlang>`__.)
-  `Pull Request 2554`_
-
-API
--------------------------------
-
-* Add a Tool Shed API endpoint method to check the current user.
-  `Pull Request 2243`_
-* Add a Galaxy API endpoint to update a user object. 
-  `Pull Request 2595`_
-
-Collections
--------------------------------
-
-* Implement collection operations - tool-like entities allowing users 
-  to zip, unzip, flatten, and filter failed datasets out of collections.
-  (You may need to sync your ``tool_conf.xml`` against sample.)
-  `Pull Request 2434`_
-* Allow history panel to display list of lists dataset collections.
-  `Pull Request 2613`_
-
-Datatypes
--------------------------------
-
-* Add support to PDBQT molecule datatype
-  (thanks to `@leobiscassi <https://github.com/leobiscassi>`__.)
-  `Pull Request 2452`_
-* Add the trackhub composite datatype
-  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
-  `Pull Request 2348`_, `Pull Request 2646`_, `Pull Request 2701`_
-* Add the Mothur datatypes
-  (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
-  `Pull Request 2038`_, `Pull Request 2429`_
-
 Highlighted Enhancements
 -------------------------------
 
-* Add a script to submit data to the
-  `Galactic Radio Telescope <https://github.com/erasche/galactic-radio-telescope>`__
-  (thanks to `@erasche <https://github.com/erasche>`__.)
-  `Pull Request 2455`_
-* Implement the Galaxy Communication Server (a simple in-Galaxy chat server)
-  (thanks to `@anuprulez <https://github.com/anuprulez>`__
-  and `@bgruening <https://github.com/bgruening>`__.)
-  `Pull Request 2515`_
-* Add the dynamic tool destination tool to Galaxy for defining finer grained 
-  tool destination rules.
-  (thanks to `@ericenns <https://github.com/ericenns>`__.)
-  `Pull Request 2579`_
 * Implement an Azure backend for the Galaxy objectstore
   (thanks to `@zfrenchee <https://github.com/zfrenchee>`__.)
   `Pull Request 2621`_
 * HTCondor Docker Integration
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2278`_
-* Impelement a Kubernetes job runner
+* Implement a Kubernetes job runner
   (thanks to `@pcm32 <https://github.com/pcm32>`__.)
   `Pull Request 2314`_
+* Implement collection operations - tool-like entities allowing users
+  to zip, unzip, flatten, and filter failed datasets out of collections.
+  (You may need to sync your ``tool_conf.xml`` against sample.)
+  `Pull Request 2434`_
+* Allow history panel to display list of lists dataset collections.
+  `Pull Request 2613`_
+* Add a script to submit data to the
+  `Galactic Radio Telescope <https://github.com/erasche/galactic-radio-telescope>`__
+  (thanks to `@erasche <https://github.com/erasche>`__.)
+  `Pull Request 2455`_
+* Add a Tool Shed API endpoint method to check the current user.
+  `Pull Request 2243`_
+* Add a Galaxy API endpoint to update a user object.
+  `Pull Request 2595`_
 * Improvements to toolbox search.
   `Pull Request 2273`_
-* New pages and general improvements to the reports application
+* New pages and general improvements to the Reports application
   (thanks to `@BalthazarPavot <https://github.com/BalthazarPavot>`__.)
   `Pull Request 2664`_
 * Nicer bug report emails
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2143`_
-* Tools with auto_format='true' connectable in workflow editor
+* Tools with auto_format='true' now connectable in workflow editor
   (thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__.)
   `Pull Request 2144`_
 * Drop "Galaxy pip" in favor of manylinux1 wheels (which are supported in pip
@@ -89,6 +51,28 @@ Highlighted Enhancements
 * Add `EDAM <http://edamontology.org/page>`__ operations to tools and expose in API
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__, `@nsoranzo <https://github.com/nsoranzo>`__ and `@odoppelt <https://github.com/odoppelt>`__.)
   `Pull Request 2379`_
+* Add support to PDBQT molecule datatype
+  (thanks to `@leobiscassi <https://github.com/leobiscassi>`__.)
+  `Pull Request 2452`_
+* Add the trackhub composite datatype
+  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
+  `Pull Request 2348`_, `Pull Request 2646`_, `Pull Request 2701`_
+* Add the Mothur datatypes
+  (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
+  `Pull Request 2038`_, `Pull Request 2429`_
+* Add the dynamic tool destination tool to Galaxy for defining finer grained
+  tool destination rules.
+  (thanks to `@ericenns <https://github.com/ericenns>`__.)
+  `Pull Request 2579`_
+* Galaxy can now install Conda dependencies in addition to tool shed
+  dependencies during repository installations
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__
+  and `@bwlang <https://github.com/bwlang>`__.)
+  `Pull Request 2554`_
+* Implement the Galaxy Communication Server (a simple in-Galaxy chat server)
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__
+  and `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2515`_
 
 Enhancements
 -------------------------------

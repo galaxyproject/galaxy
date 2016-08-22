@@ -18,8 +18,8 @@ Highlights
 
 **Dynamic tool destinations**
   Our friends from Canada National Microbiology Laboratory enhanced
-  Galaxy with features that allow mapping of tools to destinations
-  based on dynamic admin-specified rules.
+  Galaxy with feature that allows dynamic mapping of tools to destinations
+  based on finer grained admin-specified rules.
   See `PR #2579 <https://github.com/galaxyproject/galaxy/pull/2579>`__
 
 **Galaxy chat**
