@@ -104,6 +104,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         Make sure that conda is installed, and if conda can't be installed, mark resolver as disabled.
         We acquire a lock, so that multiple handlers do not attempt to install conda simultaneously.
         """
+        if not os.path.exists(self.dependency_manager.default_base_path):
+            os.mkdir(self.dependency_manager.default_base_path)
         try:
             with FileLock(os.path.join(self.dependency_manager.default_base_path, 'conda')):
                 if not self.conda_context.is_conda_installed():
