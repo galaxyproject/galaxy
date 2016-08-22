@@ -72,7 +72,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
                 min         : 1,
                 onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
             });
-            this.setElement( '<div/>' );
+            this.message = new Ui.Message( { message : 'There are no options for this chart type.', persistent : true, status : 'info' } );
+            this.setElement( $( '<div/>' ).append( this.repeat.$el.addClass( 'ui-margin-bottom' ) ).append( this.message.$el.addClass( 'ui-margin-bottom' ) ) );
             this.listenTo( this.chart, 'change', function() { self.render() } );
             this.listenTo( this.chart.groups, 'add remove reset', function() { self.chart.set( 'modified', true ) } );
             this.listenTo( this.chart.groups, 'remove', function( group ) { self.repeat.del( group.id ) } );
@@ -85,13 +86,16 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
                      ondel   : function() { self.chart.groups.remove( group ) }
                 });
             });
-            this.render();
         },
 
         render: function() {
-            var found = this.chart.definition && _.size( this.chart.definition.groups ) > 0;
-            var view  = found ? this.repeat : new Ui.Message( { message: 'There are no options for this chart type.', persistent: true, status: 'info' } );
-            this.$el.empty().append( view.$el.addClass( 'ui-margin-bottom' ) );
+            if ( this.chart.definition && _.size( this.chart.definition.groups ) > 0 ) {
+                this.repeat.$el.show();
+                this.message.$el.hide();
+            } else {
+                this.repeat.$el.hide();
+                this.message.$el.show();
+            }
         }
     });
 });
