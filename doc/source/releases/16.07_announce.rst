@@ -16,8 +16,11 @@ Highlights
   See `PR #2554 <https://github.com/galaxyproject/galaxy/pull/2554>`__
   and `PR #2759 <https://github.com/galaxyproject/galaxy/pull/2759>`__
 
-**Feature2**
-  Feature description.
+**Dynamic tool destinations**
+  Our friends from Canada National Microbiology Laboratory enhanced
+  Galaxy with features that allow mapping of tools to destinations
+  based on dynamic admin-specified rules.
+  See `PR #2579 <https://github.com/galaxyproject/galaxy/pull/2579>`__
 
 **Galaxy chat**
   Admins can now plug in the included communication server to enable
@@ -27,15 +30,15 @@ Highlights
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
 
-New installs
+New Galaxy repository
   .. code-block:: shell
 
-      % git clone -b release_16.07 https://github.com/galaxyproject/galaxy.git
+      $ git clone -b release_16.07 https://github.com/galaxyproject/galaxy.git
 
-Optionally update to latest stable release
+Update of existing Galaxy repository
   .. code-block:: shell
 
-      % git checkout master && pull --ff-only origin master
+      $ git checkout release_16.07 && git pull --ff-only origin release_16.07
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
