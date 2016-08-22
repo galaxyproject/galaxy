@@ -168,7 +168,7 @@ Enhancements
   `Pull Request 2387`_
 * Add a new workflow building mode variation which does access the history
   `Pull Request 2390`_
-* Add conda search function to conda_util library function
+* Add conda search function to ``conda_util`` library function
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2395`_
 * Add history navigation options for dataset frames to scratch book
@@ -297,18 +297,18 @@ Enhancements
   already passing
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2682`_
-* List resolver toolshed packages
+* List resolver Tool Shed packages
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 2750`_
 
 
 .. small_enhancement
 
-* remove buildbot remnants
+* Remove buildbot remnants
   `Pull Request 2125`_
-* Try pushing again when we get unexpected exception
+* Try pushing again when we get unexpected exception (test fix)
   `Pull Request 2130`_
-* Refactor checking tool files toward reuse with workflows in planemo.
+* Refactor checking tool files toward reuse with workflows in Planemo.
   `Pull Request 2183`_
 * Rename/refactor Utils.validate() to Utils.isEmpty()
   `Pull Request 2239`_
@@ -328,7 +328,7 @@ Enhancements
   `Pull Request 2355`_
 * Cleanup of E203 primarily, and some other misc formatting
   `Pull Request 2364`_
-* isolate the data libraries css to affect only the libraries app
+* Isolate the data libraries css to affect only the libraries app
   `Pull Request 2444`_
 * Re-add get_updated_changeset_revisions_from_tool_shed() method
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
@@ -363,7 +363,7 @@ Fixes
 
 .. major_bug
 
-* Do not encode dict items that start with 'metadata\_' in return value of
+* Do not encode dict items that start with ``metadata\_`` in return value of
   api/tools/create.
   `Pull Request 2459`_
 * Generate metadata in separate conda environment
@@ -502,8 +502,6 @@ Fixes
   `Pull Request 2625`_
 * Workflow SVG generation fix
   `Pull Request 2628`_
-* Smart string handling on the wsgi response -- this fixes uWSGI blanking out when handling endpoints that return Unicode
-  `Pull Request 2630`_
 * Properly initialize datasets when workflow is loaded for execution
   `Pull Request 2632`_
 * typo in summary statistics tool
@@ -517,7 +515,7 @@ Fixes
   `Pull Request 2678`_
 * Limit creation of multitudes of default, empty histories.
   `Pull Request 2684`_
-* Fix the sanitization of None values in utils
+* Fix the sanitization of ``None`` values in utils
   `Pull Request 2693`_
 * Fix metadata collection on workdir outputs for Pulsar.
   `Pull Request 2721`_
@@ -528,15 +526,17 @@ Fixes
 * Update common_startup.sh to require python2.7 in .venv
   (thanks to `@BenjaminHCCarr <https://github.com/BenjaminHCCarr>`__.)
   `Pull Request 2756`_
-* separate styles of new and old libraries fixing various ui bugs
+* Separate styles of new and old libraries fixing various ui bugs
   `Pull Request 2780`_
 * Make conda install and resolver status more robust
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 2789`_
+* Smart string handling on the wsgi response -- this fixes uWSGI blanking out when handling endpoints that return Unicode
+  `Pull Request 2630`_
 * Do not instantiate the raven (sentry) client or tool conf watchdog threads
   until uWSGI postfork
   `Pull Request 2792`_
-* API, history contents: allow 'source' in payload
+* API, history contents: allow ``source`` in payload
   `Pull Request 2809`_
 
 .. github_links
