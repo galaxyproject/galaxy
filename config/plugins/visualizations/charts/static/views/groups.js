@@ -1,5 +1,5 @@
 /** This class renders the chart configuration form. */
-define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form/form-data' ], function( Utils, Form, Repeat, FormData ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form/form-data' ], function( Utils, Ui, Form, Repeat, FormData ) {
     var GroupView = Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -72,7 +72,8 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
                 min         : 1,
                 onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
             });
-            this.setElement( this.repeat.$el );
+            this.setElement( '<div/>' );
+            this.listenTo( this.chart, 'change', function() { self.render() } );
             this.listenTo( this.chart.groups, 'add remove reset', function() { self.chart.set( 'modified', true ) } );
             this.listenTo( this.chart.groups, 'remove', function( group ) { self.repeat.del( group.id ) } );
             this.listenTo( this.chart.groups, 'reset', function() { self.repeat.delAll() } );
@@ -84,6 +85,13 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form
                      ondel   : function() { self.chart.groups.remove( group ) }
                 });
             });
+            this.render();
+        },
+
+        render: function() {
+            var found = this.chart.definition && _.size( this.chart.definition.groups ) > 0;
+            var view  = found ? this.repeat : new Ui.Message( { message: 'There are no options for this chart type.', persistent: true, status: 'info' } );
+            this.$el.empty().append( view.$el.addClass( 'ui-margin-bottom' ) );
         }
     });
 });

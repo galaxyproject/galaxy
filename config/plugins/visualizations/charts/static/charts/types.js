@@ -17,7 +17,8 @@ define(['plugin/charts/nvd3/bar/config',
         'plugin/charts/jqplot/boxplot/config',
         'plugin/charts/jqplot/histogram_discrete/config',
         'plugin/charts/others/heatmap/config',
-        'plugin/charts/others/heatmap_cluster/config'
+        'plugin/charts/others/heatmap_cluster/config',
+        'plugin/charts/others/example/config'
         ], function(nvd3_bar,
                     nvd3_bar_stacked,
                     nvd3_bar_horizontal,
@@ -37,7 +38,8 @@ define(['plugin/charts/nvd3/bar/config',
                     jqplot_boxplot,
                     jqplot_histogram_discrete,
                     others_heatmap,
-                    others_heatmap_cluster
+                    others_heatmap_cluster,
+                    others_example
             ) {
 
     return Backbone.Model.extend({
@@ -61,7 +63,8 @@ define(['plugin/charts/nvd3/bar/config',
             'jqplot_scatter'                    : jqplot_scatter,
             'jqplot_boxplot'                    : jqplot_boxplot,
             'others_heatmap'                    : others_heatmap,
-            'others_heatmap_cluster'            : others_heatmap_cluster
+            'others_heatmap_cluster'            : others_heatmap_cluster,
+            'others_example'                    : others_example
         }
     });
 });

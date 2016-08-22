@@ -19,7 +19,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this.$text = this.$( '.text' );
 
             // use full screen for viewer
-            this._fullscreen( this.$el, 50 );
+            this._fullscreen( this.$el, 55 );
 
             // prevent window scrolling
             var initial_overflow = $( 'body' ).css( 'overflow' );

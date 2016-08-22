@@ -135,6 +135,16 @@ var View = Backbone.View.extend({
         this.visible = false;
     },
 
+    /** Show tab */
+    showTab: function( id ) {
+        this.$( '#tab-' + id ).show();
+    },
+
+    /** hide tab */
+    hideTab: function( id ) {
+        this.$( '#tab-' + id ).hide();
+    },
+
     /** Hide operation by id */
     hideOperation: function( id ) {
         this.$nav.find( '#' + id ).hide();
