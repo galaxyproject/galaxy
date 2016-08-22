@@ -9,7 +9,7 @@ define( [], function() {
             this.$title = this.$( '.charts-description-title' );
             this.$image = this.$( '.charts-description-image' );
             this.$text  = this.$( '.charts-description-text' );
-            this.listenTo( this.chart, 'change:type', function() { self.render() } );
+            this.listenTo( this.chart, 'change', function() { self.render() } );
             this.render();
         },
         render: function() {
