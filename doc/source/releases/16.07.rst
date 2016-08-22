@@ -16,7 +16,8 @@ Highlighted Enhancements
   `Pull Request 2278`_
 * Implement a Kubernetes job runner
   (thanks to `@pcm32 <https://github.com/pcm32>`__.)
-  `Pull Request 2314`_
+  `Pull Request 2314`_, `Pull Request 2498`_, `Pull Request 2559`_, 
+  `Pull Request 2578`_, `Pull Request 2616`_, `Pull Request 2528`_
 * Implement collection operations - tool-like entities allowing users
   to zip, unzip, flatten, and filter failed datasets out of collections.
   (You may need to sync your ``tool_conf.xml`` against sample.)
@@ -79,53 +80,56 @@ Enhancements
 
 * Install Conda at startup; enable conda_auto_init in sample conf
   `Pull Request 2759`_
-* Add filter_failed_datasets_from_collection.py script
+* Add ``filter_failed_datasets_from_collection.py`` script ot ``scripts/``
   (thanks to `@chambm <https://github.com/chambm>`__.)
   `Pull Request 2358`_
-* Run workflow form revision
+* Enhanced workflow run form using newer client forms architecture.
   `Pull Request 2077`_
-* galaxy-lib tweaks
-  `Pull Request 2110`_
+* Tweaks to various library functions for galaxy-lib.
+  `Pull Request 2110`_, `Pull Request 2494`_, `Pull Request 2354`_,
+  `Pull Request 2414`_, `Pull Request 2436`_
 * Automate and clarify more of the release process.
-  `Pull Request 2117`_
-* API: add server_starttime to api/configuration
+  `Pull Request 2117`_,  `Pull Request 2366`_, `Pull Request 2372`_,
+  `Pull Request 2388`_
+* Update template to include the release of the Docker container
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
+  `Pull Request 2378`_
+* Add ``server_starttime`` to configuration API.
   `Pull Request 2124`_
 * Show line breaks in commit log in the Tool Shed
   (thanks to `@nturaga <https://github.com/nturaga>`__.)
   `Pull Request 2142`_
-* Use "$NCPUS" if defined to set GALAXY_SLOTS
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
-  `Pull Request 2145`_
-* Replacing the _getIndex method by UnderscoreJS method _.findIndex()
+* Replacing the ``_getIndex`` method by UnderscoreJS method ``_.findIndex()``
   (thanks to `@anuprulez <https://github.com/anuprulez>`__.)
   `Pull Request 2157`_
-* activation config touch
+* Small enhancements to user activation process.
   `Pull Request 2158`_
 * Implement ``single_user = <email>`` config option.
   `Pull Request 2165`_
 * More documentation and flexibility for FTP imports.
   `Pull Request 2168`_
-* Stats prefix configurability and conditional wheel req.
+* Mke stats prefix configurable and add a conditional wheel requirement.
   `Pull Request 2171`_
 * Fix running tool tests if remote user middleware is enabled.
   `Pull Request 2173`_
-* Improve handling of a missing R environment.
+* Improve handling of a missing R environment during Tool Shed dependency 
+   installations.
   `Pull Request 2215`_
-* Quote some parameters in Trim tool command
+* Quote some parameters in the trim tool command
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2248`_
-* Tool execution dependency resolution already contains the relevant
+* Remove overly chatty tool dependency resolution logging statement.
   `Pull Request 2254`_
-* Update list of contributors
+* Update the list of contributors.
   `Pull Request 2256`_, `Pull Request 2257`_, `Pull Request 2258`_
-* Add grunt watcher on the .less files
+* Add grunt watcher on .less files
   (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
   `Pull Request 2274`_
-* requirements updates (end of custom Whoosh)
+* Remove dependency on custom Whoosh (requirements update).
   `Pull Request 2276`_
-* Enhance library functions for tools.
+* Various enhancements for library functions related to tools.
   `Pull Request 2279`_
-* Shift asbool handling in datatypes API so that an appropriate error message is now returned
+* Shift ``asbool`` handling in datatypes API so that an appropriate error message is now returned.
   `Pull Request 2286`_
 * More small fixes from downstream projects.
   `Pull Request 2292`_
@@ -134,52 +138,41 @@ Enhancements
 * Bump sqlite3 version
   (thanks to `@matthdsm <https://github.com/matthdsm>`__.)
   `Pull Request 2307`_
-* Show DCE count in collection and HDCA views
+* Show collection counts in collection and history collection views.
   `Pull Request 2326`_
-* Client library updates
+* Various client library updates.
   `Pull Request 2328`_
-* Revise form data visitor
+* Revise form data visitor.
   `Pull Request 2330`_
-* UI, history: update using xhr date header
+* Update using xhr date header.
   `Pull Request 2335`_
-* History/Sharable model user sharing API
+* Implement and API for managing history/sharable model user sharing.
   `Pull Request 2340`_
-* Update to latest galaxy-lib.
-  `Pull Request 2354`_
-* Revise portlet view, integrate collapsible option
+* Revise portlet view, integrate collapsible option.
   `Pull Request 2360`_
 * Fix issue with lowercasing in datatypes/registry.py
   (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
   `Pull Request 2361`_
 * Improve composite output tool test.
   `Pull Request 2363`_
-* Fix release notes generator
-  `Pull Request 2366`_
 * Upgrade shared ui libraries, add test cases
   `Pull Request 2368`_
-* Python3: use open() instead of file()
+* Throughout backend use open() instead of file() for Python 3
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2370`_
-* More clarification of release process.
-  `Pull Request 2372`_
-* Update template to include the release of the Docker container
-  (thanks to `@bgruening <https://github.com/bgruening>`__.)
-  `Pull Request 2378`_
-* Remove backported importlib and ordereddict
+* Remove backported importlib and ordereddict.
   `Pull Request 2380`_
 * Note on updating tool testing
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2381`_
-* Docker swarm support for interactive environments
+* Docker swarm support for Galaxy Interactive Environments (GIEs)
   `Pull Request 2386`_, `Pull Request 2392`_
 * Add support for EDAM data annotations to datatypes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__, `@bgruening <https://github.com/bgruening>`__, `@hmenager <https://github.com/hmenager>`__ and `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 2387`_
-* Ever more informative, explicit, and complete release checklist.
-  `Pull Request 2388`_
 * Add a new workflow building mode variation which does access the history
   `Pull Request 2390`_
-* Add conda search function
+* Add conda search function to conda_util library function
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2395`_
 * Add history navigation options for dataset frames to scratch book
@@ -187,59 +180,54 @@ Enhancements
 * Add EDAM topics to tools and expose in API
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2397`_
-* SLURM: when scontrol fails, try to get job state with sacct
+* Update SLURM runner so when scontrol fails, Galaxy attempts to get job 
+  state with sacct
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2403`_
 * Enhancements to tool test output verification.
   `Pull Request 2409`_
-* UI, datasets: show hid in 'view details' page
+* Show history dataset id (hid) in dataset 'view details' page.
   `Pull Request 2411`_
-* Update galaxy-lib related modules to latest in that project.
-  `Pull Request 2414`_
-* Updates and fixes for the run workflow ui elements
+* Updates and fixes for the run workflow UI elements.
   `Pull Request 2416`_
-* Raise Exception if watch_tools has an unrecognized value
+* Raise ``Exception`` if ``watch_tools`` has an unrecognized value
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2418`_
-* Python3: use log.warning() instead of deprecated log.warn()
+* Use ``log.warning()`` instead of deprecated ``log.warn()`` (for Python 3)
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2420`_
-* minor docs touch
+* Minor updates to documentation.
   `Pull Request 2427`_
 * Correct various EDAM data/format annotations in datatypes
   (thanks to `@hmenager <https://github.com/hmenager>`__.)
   `Pull Request 2428`_
-* Update Galaxy testing to target latest galaxy-lib.
-  `Pull Request 2436`_
-* fixed $defaults according to `#2430
+* Fix ``$defaults`` according to `#2430
   <https://github.com/galaxyproject/galaxy/issues/2430>`__
   (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__.)
   `Pull Request 2438`_
-* Properly list subworkflows in run workflow form
+* Properly list subworkflows in run workflow form.
   `Pull Request 2440`_
-* Python3: Make some files compatible with Python3
+* Make some files compatible with Python3
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2453`_
 * Add parameter expansion caller and test cases as preparation for workflow
-  API extension
+  API extension.
   `Pull Request 2464`_
-* Set a default for tool_dependencies_dir.
+* Set a default for ``tool_dependencies_dir``.
   `Pull Request 2480`_
 * Add a password expiration config option (resolves `#2485
   <https://github.com/galaxyproject/galaxy/issues/2485>`__)
   (thanks to `@benfulton <https://github.com/benfulton>`__.)
   `Pull Request 2486`_
-* Update against latest galaxy-lib.
-  `Pull Request 2494`_
-* display TIFF in upload
+* Display TIFF format in upload
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2516`_
-* Use self.decode_id instead of trans.security.decode_id
+* Use ``self.decode_id`` instead of ``trans.security.decode_id``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2529`_
-* Charts revision
+* Charts revision.
   `Pull Request 2531`_
-* Add Makefile target for fetching updated bower dependencies.
+* Add ``Makefile`` target for fetching updated bower dependencies.
   `Pull Request 2534`_
 * Make conda autoinstall of packages safer:
   (thanks to `@pvanheus <https://github.com/pvanheus>`__.)
@@ -247,14 +235,11 @@ Enhancements
 * Updates to Interactive Environment docs
   (thanks to `@pvanheus <https://github.com/pvanheus>`__.)
   `Pull Request 2543`_
-* bigWig files displayed in IGV
+* Allow displaying bigWig files in IGV
   (thanks to `@dpryan79 <https://github.com/dpryan79>`__.)
   `Pull Request 2545`_
-* Allow users to purge datasets by default
+* Allow users to purge datasets by default.
   `Pull Request 2553`_
-* Kubernetes runner: improves handling of failed jobs
-  (thanks to `@phnmnl <https://github.com/phnmnl>`__.)
-  `Pull Request 2559`_
 * Add Jupyter IE to the allowed visualizations for BAM datasets
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2572`_
@@ -264,9 +249,7 @@ Enhancements
 * Add python-ldap module to conditional requirements
   (thanks to `@abretaud <https://github.com/abretaud>`__.)
   `Pull Request 2576`_
-* Kubernetes runner: authenticate through service account
-  (thanks to `@phnmnl <https://github.com/phnmnl>`__.)
-  `Pull Request 2578`_
+
 * Update gsummary.xml
   (thanks to `@lecorguille <https://github.com/lecorguille>`__.)
   `Pull Request 2590`_
@@ -390,6 +373,9 @@ Fixes
 * Generate metadata in separate conda environment
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 2253`_
+* Fix to use "$NCPUS" if defined to set GALAXY_SLOTS
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2145`_
 
 .. bug
 
@@ -480,10 +466,6 @@ Fixes
 * mothur datatypes: don't generate error for pairwise distance matrices
   (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
   `Pull Request 2489`_
-* Kubernetes runner: fixes result files from work directory not being
-  recovered issue
-  (thanks to `@phnmnl <https://github.com/phnmnl>`__.)
-  `Pull Request 2498`_
 * Toolbox filter fixes
   `Pull Request 2499`_
 * Fix Post Job Action problem
@@ -497,9 +479,6 @@ Fixes
   `Pull Request 2524`_
 * Fix tabular display chunking
   `Pull Request 2527`_
-* Writes Kubernetes logs files in UTF-8
-  (thanks to `@phnmnl <https://github.com/phnmnl>`__.)
-  `Pull Request 2528`_
 * Fix dataset matcher when no tool available.
   (thanks to `@zipho <https://github.com/zipho>`__.)
   `Pull Request 2540`_
@@ -523,9 +502,6 @@ Fixes
   `Pull Request 2594`_
 * Fix hex vs float parsing in request body
   `Pull Request 2597`_
-* Kubernetes runner corrects working directory not passed to container
-  (thanks to `@phnmnl <https://github.com/phnmnl>`__.)
-  `Pull Request 2616`_
 * Fixes for workflow extraction of mapping collection jobs.
   `Pull Request 2625`_
 * Workflow SVG generation fix
