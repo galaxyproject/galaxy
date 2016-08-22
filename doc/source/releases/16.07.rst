@@ -146,7 +146,7 @@ Enhancements
   `Pull Request 2330`_
 * Update using xhr date header.
   `Pull Request 2335`_
-* Implement and API for managing history/sharable model user sharing.
+* Implement an API for managing history/sharable model user sharing.
   `Pull Request 2340`_
 * Revise portlet view, integrate collapsible option.
   `Pull Request 2360`_
