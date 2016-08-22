@@ -11,15 +11,15 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
                 label       : 'Column labels',
                 type        : 'data_column',
                 is_label    : true,
-                is_auto     : true,
-                is_unique   : true
+                is_unique   : true,
+                is_numeric  : true
             },
             y : {
                 label       : 'Row labels',
                 type        : 'data_column',
                 is_label    : true,
-                is_auto     : true,
-                is_unique   : true
+                is_unique   : true,
+                is_numeric  : true
             },
             z : {
                 label       : 'Observation',
