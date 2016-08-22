@@ -103,7 +103,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
 
             // append elements
             this.portlet.append( this.message.$el );
-            this.portlet.append( this.viewport_view.$el );
+            this.portlet.append( this.viewport_view.$el.addClass( 'ui-margin-top' ) );
             this.setElement( this.portlet.$el );
 
             // events
