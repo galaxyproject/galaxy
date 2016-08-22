@@ -15,6 +15,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         initialize: function( options ) {
             this.groups     = new Backbone.Collection();
             this.settings   = new Backbone.Model();
+            this.definition = {};
         },
 
         reset: function( options ) {

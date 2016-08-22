@@ -110,7 +110,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             var n_panels = chart.settings.get( 'use_panels' ) === 'true' ? chart.groups.length : 1;
             this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
-            require( [ 'plugin/charts/' + this.app.chartPath( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
+            require( [ 'plugin/charts/' + this.app.split( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
                 new ChartView( self.app, { process : process, chart : chart, canvas_list : self.canvas_list } );
             });
         }

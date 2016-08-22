@@ -35,19 +35,20 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             this[ view_id ].show();
         },
 
-        /** Returns root path */
-        chartPath: function( chart_type ) {
-            var path = chart_type.split( /_(.+)/ );
-            if ( path.length >= 2 ) {
-                return path[ 0 ] + '/' + path[ 1 ];
-            }
-            console.debug( 'FAILED app:chartPath() - Invalid format: ' + chart_type );
-        },
-
         /** Message */
         showModal: function( title, body ) {
             var self = this;
             this.modal.show( { title: title, body: body, buttons: { 'Close': function() { self.modal.hide() } } } );
+        },
+
+        /** Split chart type into path components */
+        split: function( chart_type ) {
+            var path = chart_type.split( /_(.+)/ );
+            if ( path.length >= 2 ) {
+                return path[ 0 ] + '/' + path[ 1 ];
+            } else {
+                return chart_type;
+            }
         }
     });
 });
