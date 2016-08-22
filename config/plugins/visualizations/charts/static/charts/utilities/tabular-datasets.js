@@ -4,7 +4,6 @@ define( [ 'utils/utils' ], function( Utils ) {
     var _cache = {};
     var request = function( options ) {
         // identify columns needed to fulfill request
-        options.start = options.start || 0;
         var column_list = [];
         _.each( options.groups, function( group ) {
             _.each( group.columns, function( column ) {
@@ -26,8 +25,6 @@ define( [ 'utils/utils' ], function( Utils ) {
             data    : {
                 data_type   : 'raw_data',
                 provider    : 'dataset-column',
-                limit       : options.query_limit || 1000,
-                offset      : options.start,
                 indeces     : column_list.toString()
             },
             success : function( response ) {
@@ -59,8 +56,7 @@ define( [ 'utils/utils' ], function( Utils ) {
     /** Fill data from cache */
     var _fillFromCache = function( options ) {
         var result = Utils.clone( options );
-        var start = options.start;
-        console.debug( 'tabular-datasets::_fillFromCache() - Filling request from cache at ' + start + '.' );
+        console.debug( 'tabular-datasets::_fillFromCache() - Filling request from cache.' );
         var limit = 0;
         for ( var i in result.groups ) {
             var group = result.groups[ i ];
@@ -80,7 +76,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             var group = result.groups[ i ];
             group.values = [];
             for ( var j = 0; j < limit; j++ ) {
-                group.values[ j ] = { x : parseInt( j ) + start };
+                group.values[ j ] = { x : parseInt( j ) };
             }
         }
         for ( var i in result.groups ) {
@@ -91,7 +87,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                     case 'auto':
                         for ( var j = 0; j < limit; j++ ) {
                             var value = group.values[ j ];
-                            value[ key ] = parseInt( j ) + start;
+                            value[ key ] = parseInt( j );
                         }
                         break;
                     case 'zero':
@@ -119,7 +115,7 @@ define( [ 'utils/utils' ], function( Utils ) {
 
     /** Get block id */
     var _block_id = function ( options, column ) {
-        return options.id + '_' + options.start + '_' + column;
+        return options.id + '_' + '_' + column;
     };
 
     return { request: request };
