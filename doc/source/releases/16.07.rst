@@ -16,7 +16,7 @@ Highlighted Enhancements
   `Pull Request 2278`_
 * Implement a Kubernetes job runner
   (thanks to `@pcm32 <https://github.com/pcm32>`__.)
-  `Pull Request 2314`_, `Pull Request 2498`_, `Pull Request 2559`_, 
+  `Pull Request 2314`_, `Pull Request 2498`_, `Pull Request 2559`_,
   `Pull Request 2578`_, `Pull Request 2616`_, `Pull Request 2528`_
 * Implement collection operations - tool-like entities allowing users
   to zip, unzip, flatten, and filter failed datasets out of collections.
@@ -24,10 +24,6 @@ Highlighted Enhancements
   `Pull Request 2434`_
 * Allow history panel to display list of lists dataset collections.
   `Pull Request 2613`_
-* Add a script to submit data to the
-  `Galactic Radio Telescope <https://github.com/erasche/galactic-radio-telescope>`__
-  (thanks to `@erasche <https://github.com/erasche>`__.)
-  `Pull Request 2455`_
 * Add a Tool Shed API endpoint method to check the current user.
   `Pull Request 2243`_
 * Add a Galaxy API endpoint to update a user object.
@@ -112,7 +108,7 @@ Enhancements
   `Pull Request 2171`_
 * Fix running tool tests if remote user middleware is enabled.
   `Pull Request 2173`_
-* Improve handling of a missing R environment during Tool Shed dependency 
+* Improve handling of a missing R environment during Tool Shed dependency
    installations.
   `Pull Request 2215`_
 * Quote some parameters in the trim tool command
@@ -180,7 +176,7 @@ Enhancements
 * Add EDAM topics to tools and expose in API
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2397`_
-* Update SLURM runner so when scontrol fails, Galaxy attempts to get job 
+* Update SLURM runner so when scontrol fails, Galaxy attempts to get job
   state with sacct
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2403`_
