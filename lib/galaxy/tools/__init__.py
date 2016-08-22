@@ -2297,8 +2297,11 @@ class MergeCollectionTool( DatabaseOperationTool ):
     def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
         list_one = incoming[ "input" ]
         list_two = incoming[ "input2" ]
-        dupl_actions = incoming[ "duplicate_options" ]
+        dupl_actions = incoming["conflict"]['duplicate_options']
 
+        if dupl_actions == 'suffix':
+            suffix_iden = incoming['conflict']['prefix_suffix']
+            
         identifier_seen = {}
 
         # first attempt where we only want list
@@ -2320,7 +2323,7 @@ class MergeCollectionTool( DatabaseOperationTool ):
 
                 # apply new suffix if identifier already seen
                 if element_identifier in identifier_seen and dupl_actions == 'suffix':
-                    suffix = '__%i' % identifier_seen[element_identifier]
+                    suffix = '%s%i' % (suffix_iden ,identifier_seen[element_identifier])
                     identifier_seen[element_identifier] = identifier_seen[element_identifier] + 1
                     element_identifier = element_identifier + suffix
                     new_elements[element_identifier] = element.copy()

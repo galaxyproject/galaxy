@@ -9,11 +9,29 @@
   <inputs>
     <param type="data_collection" name="input" label="First Collection" />
     <param type="data_collection" name="input2" label="Second Collection" />
-    <param name="duplicate_options" type="select" label="When duplication dataset names encountered">
-      <option value="suffix">Append double underscore and number suffix</option>
-      <option value="first">Keep first instance</option>
-      <option value="second">Keep second instance</option>
-    </param>
+
+    <conditional name="conflict">
+      <param name="duplicate_options" type="select" label="When duplication dataset names encountered" help="">
+        <option value="suffix">Append suffix</option>
+        <option value="first">Keep first instance</option>
+        <option value="second">Keep second instance</option>
+      </param>      
+
+      <when value="suffix">
+        <param type="select" name="prefix_suffix" label="with following suffix:" help="Select the suffix used to join dataset name and copy number.
+                                                                                                    Default suffix is '__'. First item found will have no suffix and second will have suffix '__1',etc.. ">
+          <option value="__">__</option>
+          <option value=":">:</option>
+          <option value="-">-</option>
+        </param>
+      </when>
+      <when value="first"> </when>
+      <when value="second"> </when>
+      
+    </conditional>
+    
+
+    
   </inputs>
   <outputs>
     <collection name="output" format_source="input" type="list" label="${on_string} (merged)" >
@@ -56,6 +74,43 @@
         </element>                
       </output_collection>
     </test>
+    <test>
+      <param name="prefix_suffix" value=":"/>
+      <param name="input">
+        <collection type="list">
+          <element name='sample1' value ="simple_line.txt"/>
+          <element name='sample2' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>
+      <param name="input2">
+        <collection type="list">
+          <element name='sample1' value ="simple_line.txt"/>
+          <element name='sample2' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>      
+      <output_collection name="output" type="list">
+        <element name="sample1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample1:1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2:1">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>                
+      </output_collection>
+    </test>    
     <test>
       <param name="duplicate_options" value="first"/>
       <param name="input">
