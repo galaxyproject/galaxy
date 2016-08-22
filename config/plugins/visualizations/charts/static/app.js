@@ -2,7 +2,7 @@
  *  Main application class.
  */
 define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor', 'plugin/charts/types' ],
-    function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, ViewerView, EditorView, Types ) {
+    function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, Viewer, Editor, Types ) {
     return Backbone.View.extend({
         initialize: function(options){
             this.options = options;
@@ -13,10 +13,10 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             this.deferred = new Deferred();
 
             // views
-            this.viewer_view = new ViewerView( this );
-            this.editor_view = new EditorView( this );
-            this.$el.append( this.viewer_view.$el );
-            this.$el.append( this.editor_view.$el );
+            this.viewer = new Viewer( this );
+            this.editor = new Editor( this );
+            this.$el.append( this.viewer.$el );
+            this.$el.append( this.editor.$el );
 
             // pick start screen
             if ( !this.storage.load() ) {
@@ -30,9 +30,9 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         /** Loads a view and makes sure that all others are hidden */
         go: function( view_id ) {
             $( '.tooltip' ).hide();
-            this.viewer_view.hide();
-            this.editor_view.hide();
-            this[ view_id + '_view' ].show();
+            this.viewer.hide();
+            this.editor.hide();
+            this[ view_id ].show();
         },
 
         /** Returns root path */
