@@ -16,6 +16,7 @@
 
 .charts-description-text {
   font-weight: normal;
+  word-wrap:break-word;
 }
 
 .charts-tooltip {
