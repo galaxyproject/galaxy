@@ -93,7 +93,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
         },
 
         render: function() {
-            if ( this.chart.definition && _.size( this.chart.definition.groups ) > 0 ) {
+            if ( _.size( this.chart.definition.groups ) > 0 ) {
                 this.repeat.$el.show();
                 this.message.$el.hide();
             } else {
