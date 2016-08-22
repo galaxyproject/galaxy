@@ -36,7 +36,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             chart.state( 'wait', 'Sending job request...' );
             Utils.request({
                 type    : 'POST',
-                url     : config.root + 'api/tools',
+                url     : Galaxy.root + 'api/tools',
                 data    : {
                     'tool_id'       : 'charts',
                     'inputs'        : {
@@ -82,7 +82,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         if (previous != '') {
             Utils.request({
                 type    : 'PUT',
-                url     : config.root + 'api/histories/none/contents/' + previous,
+                url     : Galaxy.root + 'api/histories/none/contents/' + previous,
                 data    : { deleted: true },
                 success : function() { refreshHdas() }
             });
@@ -95,7 +95,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         var self = this;
         Utils.request({
             type    : 'GET',
-            url     : config.root + 'api/datasets/' + chart.get( 'dataset_id_job' ),
+            url     : Galaxy.root + 'api/datasets/' + chart.get( 'dataset_id_job' ),
             data    : {},
             success : function( dataset ) {
                 var ready = false;

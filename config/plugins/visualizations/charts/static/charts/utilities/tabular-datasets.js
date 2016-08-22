@@ -21,7 +21,7 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         // Fetch data columns into dataset object
         Utils.get({
-            url     : config.root + 'api/datasets/' + options.id,
+            url     : Galaxy.root + 'api/datasets/' + options.id,
             data    : {
                 data_type   : 'raw_data',
                 provider    : 'dataset-column',

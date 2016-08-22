@@ -98,7 +98,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'plugin/charts/overview' ], function(
                     $el.append( this._template_item({
                         id      : id,
                         title   : title,
-                        url     : config.app_root + 'charts/' + this.app.chartPath( id ) + '/logo.png'
+                        url     : app_root + 'charts/' + this.app.chartPath( id ) + '/logo.png'
                     }));
                 }
                 this.$el.append( $el );
