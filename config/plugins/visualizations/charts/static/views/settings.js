@@ -23,6 +23,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
                     cls      : 'ui-portlet-plain',
                     onchange : function() { self.chart.settings.set( self.form.data.create() ); }
                 });
+                this.chart.settings.set( this.form.data.create() );
                 this.$form.empty().append( this.form.$el );
                 this.message.$el.hide();
             } else {
