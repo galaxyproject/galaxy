@@ -1,6 +1,6 @@
 /** This class renders the chart viewer which encapsulates the chart viewport. */
 define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
-          'plugin/views/viewport', 'plugin/library/screenshot' ],
+          'plugin/views/viewport', 'plugin/components/screenshot' ],
           function( Utils, Ui, Portlet, ViewportView, Screenshot ) {
     return Backbone.View.extend({
         initialize: function(app, options){

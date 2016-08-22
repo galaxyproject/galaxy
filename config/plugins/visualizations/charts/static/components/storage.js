@@ -1,5 +1,5 @@
 /** This class saves and loads a chart through the api. */
-define( [ 'utils/utils', 'plugin/models/chart', 'mvc/visualization/visualization-model' ], function( Utils, Chart ) {
+define( [ 'utils/utils', 'plugin/components/model', 'mvc/visualization/visualization-model' ], function( Utils, Chart ) {
     return Backbone.Model.extend({
 
         initialize: function( app ) {

@@ -1,17 +1,12 @@
 /**
  *  Main application class.
  */
-define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils',
-          'plugin/library/storage', 'utils/deferred',
-          'plugin/views/viewer', 'plugin/views/editor',
-          'plugin/models/config', 'plugin/models/chart', 'plugin/charts/types' ],
-        function( Modal, Portlet, Ui, Utils, Storage, Deferred,
-                  ViewerView, EditorView, Config, Chart, Types ) {
+define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor', 'plugin/charts/types' ],
+    function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, ViewerView, EditorView, Types ) {
     return Backbone.View.extend({
         initialize: function(options){
             this.options = options;
             this.modal = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
-            this.config = new Config();
             this.types = new Types();
             this.chart = new Chart();
             this.storage = new Storage( this );

@@ -2,9 +2,8 @@
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
-define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
-          'plugin/models/chart', 'plugin/views/settings', 'plugin/views/groups', 'plugin/views/types' ],
-    function( Tabs, Ui, Portlet, Utils, Chart, SettingsView, GroupsView, TypesView ) {
+define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils', 'plugin/views/settings', 'plugin/views/groups', 'plugin/views/types' ],
+    function( Tabs, Ui, Portlet, Utils, SettingsView, GroupsView, TypesView ) {
     return Backbone.View.extend({
         initialize: function( app, options ){
             var self = this;
