@@ -10,18 +10,12 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
             x_axis_grid : {
                 label       : 'Axis grid',
                 help        : 'Would you like to show grid lines for the X axis?',
-                type        : 'select',
-                display     : 'radiobutton',
-                value       : 'false',
-                data        : [ { label: 'On', value: 'true' }, { label: 'Off', value: 'false' } ]
+                type        : 'boolean'
             },
             y_axis_grid : {
                 label       : 'Axis grid',
                 help        : 'Would you like to show grid lines for the Y axis?',
-                type        : 'select',
-                display     : 'radiobutton',
-                value       : 'true',
-                data        : [ { label: 'On', value: 'true' }, { label: 'Off', value: 'false' } ]
+                type        : 'boolean'
             }
         }
     });

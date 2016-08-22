@@ -59,11 +59,7 @@ define( [], function() {
             return { name        : name,
                      label       : options.label,
                      help        : options.help,
-                     type        : 'select',
-                     display     : 'radiobutton',
-                     value       : options.value || 'false',
-                     data        : [ { label : 'Yes', value : 'true'  },
-                                     { label : 'No',  value : 'false' } ] }
+                     type        : 'boolean' }
         }
     }
 });
