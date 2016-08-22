@@ -9,16 +9,21 @@
 # argument to this will cause Galaxy's database and path parameters
 # from galaxy.ini to be copied over into reports.ini.
 
-cd `dirname $0`
+cd "$(dirname "$0")"
 
-./scripts/common_startup.sh --skip-samples
+. ./scripts/common_startup_functions.sh
 
-: ${GALAXY_VIRTUAL_ENV:=.venv}
-
-if [ -d "$GALAXY_VIRTUAL_ENV" ];
+if [ "$1" = "--sync-config" ];
 then
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+    python ./scripts/sync_reports_config.py
+    shift
 fi
+
+parse_common_args $@
+
+run_common_start_up
+
+setup_python
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
@@ -40,11 +45,4 @@ if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_REPORTS_CONFIG_DIR" "$GALAXY_REPORTS_CONFIG"
 fi
 
-
-if [ "$1" = "--sync-config" ];
-then
-    python ./scripts/sync_reports_config.py
-    shift
-fi
-
-python ./scripts/paster.py serve "$GALAXY_REPORTS_CONFIG" --pid-file="$GALAXY_REPORTS_PID" --log-file="$GALAXY_REPORTS_LOG" $@
+python ./scripts/paster.py serve "$GALAXY_REPORTS_CONFIG" --pid-file="$GALAXY_REPORTS_PID" --log-file="$GALAXY_REPORTS_LOG"  $paster_args
