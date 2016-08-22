@@ -7,8 +7,10 @@ Handle postfork functions under uWSGI
 # uwsgi-managed process.
 try:
     import uwsgi
-    if uwsgi.numproc:
+    if hasattr(uwsgi, "numproc"):
         process_is_uwsgi = True
+    else:
+        process_is_uwsgi = False
 except ImportError:
     # This is not a uwsgi process, or something went horribly wrong.
     process_is_uwsgi = False
