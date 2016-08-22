@@ -39,10 +39,10 @@ Datatypes
   `Pull Request 2452`_
 * Add the trackhub composite datatype
   (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
-  `Pull Request 2348`_
-* Import mothur datatypes
+  `Pull Request 2348`_, `Pull Request 2646`_, `Pull Request 2701`_
+* Add the Mothur datatypes
   (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
-  `Pull Request 2038`_
+  `Pull Request 2038`_, `Pull Request 2429`_
 
 Highlighted Enhancements
 -------------------------------
@@ -87,7 +87,7 @@ Highlighted Enhancements
   (thanks to `@nturaga <https://github.com/nturaga>`__.)
   `Pull Request 2476`_
 * Add EDAM operations to tools and expose in API
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__, `@nsoranzo <https://github.com/nsoranzo>`__ and `@odoppelt <https://github.com/odoppelt>`__.)
   `Pull Request 2379`_
 
 Enhancements
@@ -104,8 +104,7 @@ Enhancements
   `Pull Request 2117`_
 * API: add server_starttime to api/configuration
   `Pull Request 2124`_
-* This should fix bug `#1892
-  <https://github.com/galaxyproject/galaxy/issues/1892>`__ in toolshed
+* Show line breaks in commit log in the Tool Shed
   (thanks to `@nturaga <https://github.com/nturaga>`__.)
   `Pull Request 2142`_
 * Use "$NCPUS" if defined to set GALAXY_SLOTS
@@ -131,12 +130,8 @@ Enhancements
   `Pull Request 2248`_
 * Tool execution dependency resolution already contains the relevant
   `Pull Request 2254`_
-* add Saskia to contributors
-  `Pull Request 2256`_
-* A pass adding new contributors from 15.10->16.04(ish).
-  `Pull Request 2257`_
-* Sort contributors by surname ASC.
-  `Pull Request 2258`_
+* Update list of contributors
+  `Pull Request 2256`_, `Pull Request 2257`_, `Pull Request 2258`_
 * Add grunt watcher on the .less files
   (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
   `Pull Request 2274`_
@@ -144,11 +139,11 @@ Enhancements
   `Pull Request 2276`_
 * Enhance library functions for tools.
   `Pull Request 2279`_
-* Shift asbool handling in datatypes api so that an appropriate error m…
+* Shift asbool handling in datatypes API so that an appropriate error message is now returned
   `Pull Request 2286`_
 * More small fixes from downstream projects.
   `Pull Request 2292`_
-* For published workflow display, Provide a better error when the workf…
+* For published workflow display, provide a better error when the workflow or user cannot be found
   `Pull Request 2302`_
 * Bump sqlite3 version
   (thanks to `@matthdsm <https://github.com/matthdsm>`__.)
@@ -182,7 +177,7 @@ Enhancements
 * More clarification of release process.
   `Pull Request 2372`_
 * Update template to include the release of the Docker container
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__.)
+  (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2378`_
 * Remove backported importlib and ordereddict
   `Pull Request 2380`_
@@ -190,18 +185,14 @@ Enhancements
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2381`_
 * Docker swarm support for interactive environments
-  `Pull Request 2386`_
+  `Pull Request 2386`_, `Pull Request 2392`_
 * Add support for EDAM data annotations to datatypes
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__, `@bgruening <https://github.com/bgruening>`__, `@hmenager <https://github.com/hmenager>`__ and `@mvdbeek <https://github.com/mvdbeek>`__.)
   `Pull Request 2387`_
 * Ever more informative, explicit, and complete release checklist.
   `Pull Request 2388`_
 * Add a new workflow building mode variation which does access the history
   `Pull Request 2390`_
-* Fixes pep8 issues from `#2386
-  <https://github.com/galaxyproject/galaxy/issues/2386>`__
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__.)
-  `Pull Request 2392`_
 * Add conda search function
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2395`_
@@ -232,9 +223,6 @@ Enhancements
 * Correct various EDAM data/format annotations in datatypes
   (thanks to `@hmenager <https://github.com/hmenager>`__.)
   `Pull Request 2428`_
-* small updates to Mothur datatypes
-  (thanks to `@shiltemann <https://github.com/shiltemann>`__.)
-  `Pull Request 2429`_
 * Update Galaxy testing to target latest galaxy-lib.
   `Pull Request 2436`_
 * fixed $defaults according to `#2430
@@ -247,7 +235,7 @@ Enhancements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2453`_
 * Add parameter expansion caller and test cases as preparation for workflow
-  api extension
+  API extension
   `Pull Request 2464`_
 * Set a default for tool_dependencies_dir.
   `Pull Request 2480`_
@@ -281,11 +269,11 @@ Enhancements
 * Kubernetes runner: improves handling of failed jobs
   (thanks to `@phnmnl <https://github.com/phnmnl>`__.)
   `Pull Request 2559`_
-* Fixes `#2442 <https://github.com/galaxyproject/galaxy/issues/2442>`__
+* Add Jupyter IE to the allowed visualizations for BAM datasets
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2572`_
 * Python3: port 215 files
-  (thanks to `@bxlab <https://github.com/bxlab>`__.)
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__, `@tshtatland <https://github.com/tshtatland>`__, `@xiaoqian1984 <https://github.com/xiaoqian1984>`__, `@alanryanwang <https://github.com/alanryanwang>`__ and `@ericenns <https://github.com/ericenns>`__.)
   `Pull Request 2574`_
 * Add python-ldap module to conditional requirements
   (thanks to `@abretaud <https://github.com/abretaud>`__.)
@@ -353,7 +341,7 @@ Enhancements
 
 * remove buildbot remnants
   `Pull Request 2125`_
-* try pushing again when we get unexpected exception...
+* Try pushing again when we get unexpected exception
   `Pull Request 2130`_
 * Refactor checking tool files toward reuse with workflows in planemo.
   `Pull Request 2183`_
@@ -362,7 +350,6 @@ Enhancements
 * Cleanup of the install and test framework.
   `Pull Request 2249`_
 * cleanup TS and Reports configs
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__.)
   `Pull Request 2267`_
 * Move specific methods from shed_util_common.py to specific_util.py
   `Pull Request 2269`_
@@ -374,7 +361,7 @@ Enhancements
   `Pull Request 2338`_
 * Build job success messages within tool form view
   `Pull Request 2355`_
-* Cleanup of E203 primarily, and some other misc formatting encountered…
+* Cleanup of E203 primarily, and some other misc formatting
   `Pull Request 2364`_
 * isolate the data libraries css to affect only the libraries app
   `Pull Request 2444`_
@@ -386,11 +373,11 @@ Enhancements
 * run_tests.sh: Clarify when/where the report file is created.
   (thanks to `@NickSto <https://github.com/NickSto>`__.)
   `Pull Request 2564`_
-* Reroute consistent workflow endpoint to internal api
+* Reroute consistent workflow endpoint to internal API
   `Pull Request 2622`_
 * Add tool test for what happens when output filter throws exception.
   `Pull Request 2631`_
-* Ignore .tox directory.  Used to be ignored by default w/ flake8 appar…
+* Ignore .tox and eggs directories for flake8
   `Pull Request 2650`_
 * Reorder base templates meta tags
   `Pull Request 2651`_
@@ -411,7 +398,7 @@ Fixes
 
 .. major_bug
 
-* Do not encode dict items that start with 'metadata_' in return value of
+* Do not encode dict items that start with 'metadata\_' in return value of
   api/tools/create.
   `Pull Request 2459`_
 
@@ -432,7 +419,7 @@ Fixes
 * Add pyparsing dependency of svgwrite. Unpin mercurial.
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)
   `Pull Request 2223`_
-* Fixes `#2230 <https://github.com/galaxyproject/galaxy/issues/2230>`__
+* Sanitize poorly escaped input value in run workflow form
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2231`_
 * Multi-data collection reductions in repeat blocks are broken.
@@ -442,7 +429,7 @@ Fixes
 * Cast everything to a string
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2252`_
-* Use standard model.orm.now for toolshed's password reset token dateti…
+* Use standard model.orm.now for toolshed's password reset token datetime math
   `Pull Request 2261`_
 * fixed ui bugs in tours
   (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__.)
@@ -460,7 +447,7 @@ Fixes
 * update check for Conda env.
   (thanks to `@matthdsm <https://github.com/matthdsm>`__.)
   `Pull Request 2295`_
-* Make grunt watch (for scripts) work again, settings were being overwr…
+* Make grunt watch (for scripts) work again, settings were being overwritten by the new watch-style command
   `Pull Request 2296`_
 * Monkeypatch Whoosh to use mkdtemp rather than a fixed temporary directory
   `Pull Request 2310`_
@@ -469,7 +456,7 @@ Fixes
 * Unicodify has different semantics to str, causing bug reporter bug
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2336`_
-* Wrap statsd timing middleware more closely around the core applicatio…
+* Wrap statsd timing middleware more closely around the core application
   `Pull Request 2342`_
 * UI & API: fix display of inaccessible datasets
   `Pull Request 2351`_
@@ -510,9 +497,7 @@ Fixes
   `Pull Request 2498`_
 * Toolbox filter fixes
   `Pull Request 2499`_
-* This is an extra hammer swing at `#1531
-  <https://github.com/galaxyproject/galaxy/issues/1531>`__ / `#1542
-  <https://github.com/galaxyproject/galaxy/issues/1542>`__
+* Fix Post Job Action problem
   `Pull Request 2505`_
 * Copy PJAs when importing a workflow.
   `Pull Request 2508`_
@@ -556,7 +541,7 @@ Fixes
   `Pull Request 2625`_
 * Workflow SVG generation fix
   `Pull Request 2628`_
-* Smart string handling on the wsgi response -- this fixes uwsgi blanki…
+* Smart string handling on the wsgi response -- this fixes uWSGI blanking out when handling endpoints that return Unicode
   `Pull Request 2630`_
 * Properly initialize datasets when workflow is loaded for execution
   `Pull Request 2632`_
@@ -567,15 +552,12 @@ Fixes
   `Pull Request 2644`_
 * Ensure Galaxy's python binary is used for metadata generation.
   `Pull Request 2660`_
-* Fix an error with getting the size of an object from Azure.  Attempte…
+* Fix an error with getting the size of an object from Azure
   `Pull Request 2678`_
 * Limit creation of multitudes of default, empty histories.
   `Pull Request 2684`_
-* Fix the sanitization of None values in utils.  This had previously no…
+* Fix the sanitization of None values in utils
   `Pull Request 2693`_
-* Fix: Remove the old HubAssembly class
-  (thanks to `@remimarenco <https://github.com/remimarenco>`__.)
-  `Pull Request 2701`_
 * Fix metadata collection on workdir outputs for Pulsar.
   `Pull Request 2721`_
 * Allow link buttons to trigger regular click events
