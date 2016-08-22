@@ -80,7 +80,7 @@ Enhancements
 
 * Install Conda at startup; enable conda_auto_init in sample conf
   `Pull Request 2759`_
-* Add ``filter_failed_datasets_from_collection.py`` script ot ``scripts/``
+* Add ``filter_failed_datasets_from_collection.py`` script to ``scripts/``
   (thanks to `@chambm <https://github.com/chambm>`__.)
   `Pull Request 2358`_
 * Enhanced workflow run form using newer client forms architecture.
