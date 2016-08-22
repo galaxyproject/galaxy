@@ -8,27 +8,28 @@
 Conda
 -------------------------------
 
-* Install via conda
+* Galaxy can now install Conda dependencies in addition to tool shed
+  dependencies during repository installations
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__
   and `@bwlang <https://github.com/bwlang>`__.)
   `Pull Request 2554`_
-* install Conda at startup; enable conda_auto_init in sample conf
-  `Pull Request 2759`_
 
 API
 -------------------------------
 
-* TS API: add endpoint to check current user
+* Add a Tool Shed API endpoint method to check the current user.
   `Pull Request 2243`_
-* Users API: add the update endpoint
+* Add a Galaxy API endpoint to update a user object. 
   `Pull Request 2595`_
 
 Collections
 -------------------------------
 
-* Collection Operations (Limited)
+* Implement collection operations - tool-like entities allowing users 
+  to zip, unzip, flatten, and filter failed datasets out of collections.
+  (You may need to sync your ``tool_conf.xml`` against sample.)
   `Pull Request 2434`_
-* Implement UI to display list of lists dataset collections
+* Allow history panel to display list of lists dataset collections.
   `Pull Request 2613`_
 
 Datatypes
@@ -47,31 +48,30 @@ Datatypes
 Highlighted Enhancements
 -------------------------------
 
-* Galactic Radio Telescope
+* Add a script to submit data to the
+  `Galactic Radio Telescope <https://github.com/erasche/galactic-radio-telescope>`__
   (thanks to `@erasche <https://github.com/erasche>`__.)
   `Pull Request 2455`_
-* Galaxy Communication Server
+* Implement the Galaxy Communication Server (a simple in-Galaxy chat server)
   (thanks to `@anuprulez <https://github.com/anuprulez>`__
   and `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2515`_
-* Add DTD to Galaxy
+* Add the dynamic tool destination tool to Galaxy for defining finer grained 
+  tool destination rules.
   (thanks to `@ericenns <https://github.com/ericenns>`__.)
   `Pull Request 2579`_
-* Azure blob objectstore
+* Implement an Azure backend for the Galaxy objectstore
   (thanks to `@zfrenchee <https://github.com/zfrenchee>`__.)
   `Pull Request 2621`_
 * HTCondor Docker Integration
   (thanks to `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 2278`_
-* Kubernetes job runner
+* Impelement a Kubernetes job runner
   (thanks to `@pcm32 <https://github.com/pcm32>`__.)
   `Pull Request 2314`_
-* improvements to toolbox search
+* Improvements to toolbox search.
   `Pull Request 2273`_
-* Generate metadata in separate conda environment
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
-  `Pull Request 2253`_
-* Reports: new pages and improvements
+* New pages and general improvements to the reports application
   (thanks to `@BalthazarPavot <https://github.com/BalthazarPavot>`__.)
   `Pull Request 2664`_
 * Nicer bug report emails
@@ -81,18 +81,20 @@ Highlighted Enhancements
   (thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__.)
   `Pull Request 2144`_
 * Drop "Galaxy pip" in favor of manylinux1 wheels (which are supported in pip
-  >= 8.1)
+  >= 8.1).
   `Pull Request 2383`_
 * Allow tool form to listen to history
   (thanks to `@nturaga <https://github.com/nturaga>`__.)
   `Pull Request 2476`_
-* Add EDAM operations to tools and expose in API
+* Add `EDAM <http://edamontology.org/page>`__ operations to tools and expose in API
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__, `@nsoranzo <https://github.com/nsoranzo>`__ and `@odoppelt <https://github.com/odoppelt>`__.)
   `Pull Request 2379`_
 
 Enhancements
 -------------------------------
 
+* Install Conda at startup; enable conda_auto_init in sample conf
+  `Pull Request 2759`_
 * Add filter_failed_datasets_from_collection.py script
   (thanks to `@chambm <https://github.com/chambm>`__.)
   `Pull Request 2358`_
@@ -401,6 +403,9 @@ Fixes
 * Do not encode dict items that start with 'metadata\_' in return value of
   api/tools/create.
   `Pull Request 2459`_
+* Generate metadata in separate conda environment
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__.)
+  `Pull Request 2253`_
 
 .. bug
 
