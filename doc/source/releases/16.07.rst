@@ -108,7 +108,7 @@ Enhancements
   `Pull Request 2165`_
 * More documentation and flexibility for FTP imports.
   `Pull Request 2168`_
-* Mke stats prefix configurable and add a conditional wheel requirement.
+* Make stats prefix configurable and add a conditional wheel requirement.
   `Pull Request 2171`_
 * Fix running tool tests if remote user middleware is enabled.
   `Pull Request 2173`_
