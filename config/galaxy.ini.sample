@@ -962,12 +962,6 @@ use_interactive = True
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
-# Separate tool command from rest of job script so tool dependencies
-# don't interfer with metadata generation.
-# Despite the name, this feature is enabled by default
-# in 16.01 and the option will go away in the future.
-#enable_beta_tool_command_isolation = True
-
 # Enable the new interface for installing tools from Tool Shed
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = False
