@@ -435,9 +435,23 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     def has_tool( self, tool_id, tool_version=None, exact=False ):
         return self.get_tool( tool_id, tool_version=tool_version, exact=exact ) is not None
 
+    def is_missing_shed_tool( self, tool_id ):
+        """Confirm that the tool ID does reference a shed tool and is not installed."""
+        if tool_id is None:
+            # This is not a tool ID.
+            return False
+        if 'repos' not in tool_id:
+            # This is not a shed tool.
+            return False
+        # This is a valid tool, and it is from a toolshed. Check if it's
+        # missing from the toolbox.
+        if tool_id not in self._tools_by_id:
+            return True
+        return False
+
     def get_tool_id( self, tool_id ):
-        """ Take a tool id (potentially from a different Galaxy instance or that
-        is no longer loaded  - and find the closest match to the currently loaded
+        """ Take a tool id - potentially from a different Galaxy instance or that
+        is no longer loaded - and find the closest match to the currently loaded
         tools (using get_tool for inexact matches which currently returns the oldest
         tool shed installed tool with the same short id).
         """

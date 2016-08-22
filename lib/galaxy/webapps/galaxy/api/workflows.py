@@ -76,26 +76,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 if 'steps' in workflow_details:
                     for step in workflow_details[ 'steps' ]:
                         tool_id = workflow_details[ 'steps' ][ step ][ 'tool_id' ]
-                        if tool_id not in tool_ids and self.__is_missing( trans, tool_id ):
+                        if tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool( tool_id ):
                             tool_ids.append( tool_id )
                 if len( tool_ids ) > 0:
                     value[ 'missing_tools' ] = tool_ids
                     workflows_missing_tools.append( value )
             return workflows_missing_tools
         return rval
-
-    def __is_missing( self, trans, tool_id ):
-        # First make sure the tool ID A) Is valid, and B) Corresponds to a
-        # toolshed tool.
-        if tool_id is None:
-            return False
-        if 'repos' not in tool_id:
-            return False
-        # It is a valid tool ID, and it is from a toolshed. Check if it's
-        # missing from the toolbox.
-        if trans.app.toolbox.get_tool( tool_id ) is None:
-            return True
-        return False
 
     @expose_api
     def show(self, trans, id, **kwd):

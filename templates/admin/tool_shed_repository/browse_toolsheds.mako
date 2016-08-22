@@ -705,8 +705,7 @@ function get_repository_from_queue(queue_key) {
     }
     return undefined;
 }
-function install_repository(data) {
-    var params = data;
+function install_repository(params) {
     $.post("${h.url_for( controller='admin_toolshed', action='manage_repositories' )}", params, function(data) {
         console.log( "Initializing repository installation succeeded" );
         window.location.assign('${h.url_for(controller='admin_toolshed', action='monitor_repository_installation')}');
