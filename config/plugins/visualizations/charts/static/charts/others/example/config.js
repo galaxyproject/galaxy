@@ -5,26 +5,8 @@ define([], function() {
         library     : 'Custom',
         tag         : 'svg',
         keywords    : 'others',
-        groups      : {
-            x : {
-                label       : 'Column labels',
-                type        : 'data_column',
-                is_label    : true,
-                is_auto     : true,
-                is_unique   : true
-            },
-            y : {
-                label       : 'Row labels',
-                type        : 'data_column',
-                is_label    : true,
-                is_auto     : true,
-                is_unique   : true
-            },
-            z : {
-                label       : 'Observation',
-                type        : 'data_column',
-                is_numeric  : true
-            }
-        }
+        groups      : { x : { type : 'data_column', is_numeric : true, label : 'Bubble x-position' },
+                        y : { type : 'data_column', is_numeric : true, label : 'Bubble y-position' },
+                        z : { type : 'data_column', is_numeric : true, label : 'Bubble size' } }
     }
 });
