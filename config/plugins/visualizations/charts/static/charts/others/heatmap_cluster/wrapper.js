@@ -1,7 +1,7 @@
-define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-jobs', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, Jobs, HeatMap ) {
+define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, Jobs, HeatMap ) {
     return Backbone.View.extend({
         initialize: function(app, options) {
-            Jobs.request( app, 'heatmap', function( dataset ) {
+            Jobs.request( app, Utilities.buildJobDictionary( 'heatmap', app.chart ), function( dataset ) {
                 var request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
                 var index = 0;
                 var tmp_dict = { id : request_dictionary.id, groups : [] };

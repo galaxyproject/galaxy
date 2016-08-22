@@ -1,7 +1,7 @@
-define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/charts/utilities/tabular-jobs', 'plugin/charts/utilities/tabular-utilities' ], function( Plot, Jobs, Utilities ) {
+define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/components/jobs', 'plugin/charts/utilities/tabular-utilities' ], function( Plot, Jobs, Utilities ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
-            Jobs.request( app, 'boxplot', function( dataset ) {
+            Jobs.request( app, Utilities.buildJobDictionary( 'boxplot', app.chart ), function( dataset ) {
                 var request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
                 var chart = options.chart;
                 var index = 0;

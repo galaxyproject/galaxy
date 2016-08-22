@@ -5,22 +5,8 @@ define( [ 'utils/utils' ], function( Utils ) {
     var WAITTIME = 1000;
 
     /** Submit job request to charts tool */
-    var request = function( app, module, success, error ) {
+    var request = function( app, parameters, success, error ) {
         var chart = app.chart;
-        var settings_string = '';
-        var columns_string = '';
-        var group_index = 0;
-        for ( key in chart.settings.attributes ) {
-            settings_string += key + ':' + chart.settings.get( key ) + ', ';
-        };
-        settings_string = settings_string.substring( 0, settings_string.length - 2 )
-        chart.groups.each( function( group ) {
-            group_index++;
-            _.each( group.get( '__data_columns' ), function( data_columns, name ) {
-                columns_string += name + '_' + group_index + ':' + ( parseInt( group.get( name ) ) + 1 ) + ', ';
-            });
-        });
-        columns_string = columns_string.substring( 0, columns_string.length - 2 );
         chart.state( 'wait', 'Requesting job results...' );
          if ( chart.get( 'modified' ) ) {
             cleanup( chart );
@@ -37,18 +23,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             Utils.request({
                 type    : 'POST',
                 url     : Galaxy.root + 'api/tools',
-                data    : {
-                    'tool_id'       : 'charts',
-                    'inputs'        : {
-                        'input'     : {
-                            'id'    : chart.get('dataset_id'),
-                            'src'   : 'hda'
-                        },
-                        'module'    : module,
-                        'columns'   : columns_string,
-                        'settings'  : settings_string
-                    }
-                },
+                data    : parameters,
                 success : function( response ) {
                     if ( !response.outputs || response.outputs.length == 0 ) {
                         chart.state( 'failed', 'Job submission failed. No response.' );

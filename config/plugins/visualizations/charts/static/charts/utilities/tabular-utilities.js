@@ -18,6 +18,36 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function(
         return result;
     };
 
+    /** build job dictionary */
+    function buildJobDictionary( module, chart ) {
+        var settings_string = '';
+        var columns_string = '';
+        var group_index = 0;
+        for ( key in chart.settings.attributes ) {
+            settings_string += key + ':' + chart.settings.get( key ) + ', ';
+        };
+        settings_string = settings_string.substring( 0, settings_string.length - 2 )
+        chart.groups.each( function( group ) {
+            group_index++;
+            _.each( group.get( '__data_columns' ), function( data_columns, name ) {
+                columns_string += name + '_' + group_index + ':' + ( parseInt( group.get( name ) ) + 1 ) + ', ';
+            });
+        });
+        columns_string = columns_string.substring( 0, columns_string.length - 2 );
+        return {
+                    'tool_id'       : 'charts',
+                    'inputs'        : {
+                        'input'     : {
+                            'id'    : chart.get( 'dataset_id' ),
+                            'src'   : 'hda'
+                        },
+                        'module'    : module,
+                        'columns'   : columns_string,
+                        'settings'  : settings_string
+                    }
+                }
+    };
+
     /** Assists in assigning the viewport panels */
     function panelHelper( options ) {
         var self = this;
@@ -276,6 +306,7 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function(
 
     return {
         buildRequestDictionary  : buildRequestDictionary,
+        buildJobDictionary      : buildJobDictionary,
         panelHelper             : panelHelper,
         makeCategories          : makeCategories,
         makeUniqueCategories    : makeUniqueCategories,

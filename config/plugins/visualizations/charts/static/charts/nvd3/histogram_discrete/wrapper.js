@@ -1,7 +1,7 @@
-define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-jobs', 'plugin/charts/nvd3/common/wrapper' ], function( Utilities, Jobs, NVD3 ) {
+define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs', 'plugin/charts/nvd3/common/wrapper' ], function( Utilities, Jobs, NVD3 ) {
     return Backbone.Model.extend({
         initialize: function( app, options ) {
-            Jobs.request( app, 'histogramdiscrete', function( dataset ) {
+            Jobs.request( app, Utilities.buildJobDictionary( 'histogramdiscrete', app.chart ), function( dataset ) {
                 var request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
                 var index = 1;
                 var tmp_dict = { id : request_dictionary.id, groups : [] };
