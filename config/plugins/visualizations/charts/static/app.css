@@ -7,6 +7,9 @@
 .charts-description {
     margin-bottom: 20px;
 }
+.charts-description-image-td {
+  vertical-align: top;
+}
 
 .charts-description-image {
   width: 50px;
@@ -14,8 +17,11 @@
   margin-right: 10px;
 }
 
+.charts-description-title {
+  font-weight: bold;
+}
+
 .charts-description-text {
-  font-weight: normal;
   word-wrap:break-word;
 }
 
