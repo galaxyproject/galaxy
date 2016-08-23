@@ -10,15 +10,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'plugin/charts/over
             var self = this;
             this.app = app;
             this.options = Utils.merge( options, this.optionsDefault );
-            this.data = Overview;
-            this.library = new Ui.RadioButton.View({
-                data    : this.data,
-                onchange: function( value ) {
-                    self._filter( value );
-                    var data = _.findWhere( self.data, { value: value } );
-                    self.$message.html( data.help );
-                }
-            });
             this.tabs = new Tabs.View( {} );
             this.setElement( this.tabs.$el.addClass( 'charts-types' ) );
             this.render();
