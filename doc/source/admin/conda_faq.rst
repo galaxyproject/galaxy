@@ -79,9 +79,9 @@ The most important configuration settings related to Conda are listed in Table 1
 |                          |                          | conda, the total length  |
 |                          |                          | of the                   |
 |                          |                          |                          |
-|                          |                          | conda\_prefix and the   |
+|                          |                          | conda\_prefix and the    |
 |                          |                          | job\_working\_directory  |
-|                          |                          | path should be less     |
+|                          |                          | path should be less      |
 |                          |                          | than 50 characters!      |
 +--------------------------+--------------------------+--------------------------+
 | ``conda_auto_install``   | False                    | Set to True to instruct  |
