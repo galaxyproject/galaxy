@@ -109,7 +109,7 @@ var View = Backbone.View.extend({
     },
 
     /** Delete all tabs */
-    delRemovable: function() {
+    delAll: function() {
         for ( var id in this.list ) {
             this.del( id );
         }

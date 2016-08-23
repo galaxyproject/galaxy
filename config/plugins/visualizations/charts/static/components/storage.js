@@ -60,7 +60,7 @@ define( [ 'utils/utils', 'plugin/components/model', 'mvc/visualization/visualiza
                 console.debug( 'Storage::load() - Chart type not provided. Invalid format.' );
                 return false;
             }
-            var chart_definition = this.app.types.get( chart_type );
+            var chart_definition = this.app.types[ chart_type ];
             if ( !chart_definition ) {
                 console.debug( 'Storage::load() - Chart type not supported. Please re-configure the chart.' );
                 return false;

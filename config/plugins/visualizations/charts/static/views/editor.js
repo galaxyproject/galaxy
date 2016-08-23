@@ -35,9 +35,9 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             });
 
             // grid with chart types
-            this.types = new TypesView(app, {
-                onchange   : function(chart_type) {
-                    var chart_definition = self.app.types.get( chart_type );
+            this.types = new TypesView( app, {
+                onchange   : function( chart_type ) {
+                    var chart_definition = self.app.types[ chart_type ];
                     !chart_definition && console.debug( 'FAILED - Editor::onchange() - Chart type not supported.' );
                     self.chart.definition = chart_definition;
                     self.chart.set( { type : chart_type, modified : true } );
@@ -65,8 +65,9 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 tooltip : 'Start by selecting a chart type.',
                 $el     : $( '<div/>' ).append( ( new Ui.Label( { title : 'Provide a chart title:' } ).$el ) )
                                        .append( this.title.$el )
-                                       .append( $( '<div/>' ).addClass( 'ui-form-info' ).html( 'This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.' ) )
-                                       .append( this.types.$el.addClass( 'ui-margin-top' ) )
+                                       .append( $( '<div/>' ).addClass( 'ui-form-info ui-margin-bottom' ).html( 'This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.' ) )
+                                       .append( ( new Ui.Label( { title : 'Select a chart type:' } ).$el.addClass( 'ui-margin-top' ) ) )
+                                       .append( this.types.$el )
             });
             this.tabs.add({
                 id      : 'settings',

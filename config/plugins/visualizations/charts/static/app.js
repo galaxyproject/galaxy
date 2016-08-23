@@ -7,7 +7,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         initialize: function(options){
             this.options = options;
             this.modal = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
-            this.types = new Types();
+            this.types = Types;
             this.chart = new Chart();
             this.storage = new Storage( this );
             this.deferred = new Deferred();
