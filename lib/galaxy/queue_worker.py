@@ -49,6 +49,21 @@ def reload_tool(app, **kwargs):
         log.error("Reload tool invoked without tool id.")
 
 
+def reload_toolbox(app, **kwargs):
+    log.debug("Executing tooblox reload")
+    tool_configs = app.config.tool_configs
+    if app.config.migrated_tools_config not in tool_configs:
+        tool_configs.append(self.config.migrated_tools_config)
+
+    from galaxy import tools
+    with app._toolbox_lock:
+        old_toolbox = app.toolbox
+        app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
+        app.reindex_tool_search()
+        if old_toolbox:
+            old_toolbox.shutdown()
+
+
 def reload_display_application(app, **kwargs):
     display_application_ids = kwargs.get('display_application_ids', None)
     log.debug("Executing display application reload task for %s" % display_application_ids)
@@ -76,6 +91,7 @@ def admin_job_lock(app, **kwargs):
              % (job_lock, "not" if job_lock else "now"))
 
 control_message_to_task = { 'reload_tool': reload_tool,
+                            'reload_toolbox': reload_toolbox,
                             'reload_display_application': reload_display_application,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock,

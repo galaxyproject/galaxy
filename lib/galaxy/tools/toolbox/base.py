@@ -35,6 +35,7 @@ from .watcher import get_tool_conf_watcher
 # BaseGalaxyToolBox
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.tools.deps import build_dependency_manager
+from galaxy.queue_worker import send_control_task
 
 
 log = logging.getLogger( __name__ )
@@ -74,7 +75,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         self._tool_root_dir = tool_root_dir
         self.app = app
         self._tool_watcher = get_tool_watcher( self, app.config )
-        self._tool_conf_watcher = get_tool_conf_watcher( lambda: app.reload_toolbox() )
+        self._tool_conf_watcher = get_tool_conf_watcher( lambda: send_control_task(app, 'reload_toolbox' ))
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
