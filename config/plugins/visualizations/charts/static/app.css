@@ -11,6 +11,10 @@
     vertical-align: top;
 }
 
+.charts-types .nav-tabs {
+    margin-bottom: 10px;
+}
+
 .charts-description-image {
     width: 50px;
     height: 43px;

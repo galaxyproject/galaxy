@@ -20,11 +20,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'plugin/charts/over
                 }
             });
             this.tabs = new Tabs.View( {} );
-            this.setElement( this.tabs.$el );
+            this.setElement( this.tabs.$el.addClass( 'charts-types' ) );
             this.render();
-            //this._render();
-            //this.library.value( 'default' );
-            //this.library.trigger( 'change' );
         },
 
         render: function() {
