@@ -100,7 +100,8 @@ The most important configuration settings related to Conda are listed in Table 1
 *Table 1: Important configuration options for Conda in Galaxy*
 
 
-2. How do Conda dependencies work? Where do things get installed?
+2. How do Conda dependencies work?
+Where do things get installed?
 
 In contrast to the old dependency system, which was used exclusively by
 Galaxy, Conda is a pre-existing, independent project. With Conda it
@@ -115,7 +116,7 @@ will install Conda (the package manager) and the required packages in
 the ``<tool_dependency_dir>/_conda/`` directory. In this directory,
 Galaxy will create an ``envs`` folder with all of the environments managed
 by Galaxy. Every environment contains a ``lib``, ``bin``, ``share``, and ``include``
-subdirectories, depending on the tool, and is sufficient to get a Galaxy
+subdirectory, depending on the tool, and is sufficient to get a Galaxy
 tool up and running. Galaxy simply sources this folder via Conda and
 makes everything available before the tool is executed on your cluster.
 
@@ -135,7 +136,7 @@ be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` fi
 
    .. code-block:: guess
 
-      $ conda create --name __package__samtools@__version__0.1.19   samtools==0.1.19 --channel bioconda
+      $ conda create --name __package__samtools@__version__0.1.19 samtools==0.1.19 --channel bioconda
 
    Tools that require samtools version 0.1.19 will then be able to find
    and use the installed Conda package.
@@ -167,7 +168,8 @@ includes CentOS 6). So all packages will run on all \*nix operating
 systems newer than 2007.
 
 
-4. How do I know what system is being used by a given tool?
+4. How do I know what system is being used
+by a given tool?
 
 The Galaxy log will tell you which dependency resolution system is used
 to satisfy each tool dependency and you can specify priorities using the
@@ -224,7 +226,8 @@ Galaxy. If you find your package your are ready to go. If not please
 `create a Conda package`_ and submit_ it to BioConda_ or get in `contact with the IUC`_.
 
 
-8. How can I create a new Conda package for a dependency?
+8. How can I create a new Conda package for a
+dependency?
 
 Adding a package to the BioConda or IUC Conda channels will make it
 available for Galaxy tools to use as a dependency. To learn how, get in
