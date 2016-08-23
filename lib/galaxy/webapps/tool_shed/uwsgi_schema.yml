@@ -1,0 +1,17 @@
+type: map
+required: false
+desc: |
+  uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html
+mapping:
+  http:
+    desc: Host and port to bind to.
+    type: str
+    required: true
+  offload-threads:
+    type: int
+    required: false
+    desc: |
+      http://uwsgi-docs.readthedocs.io/en/latest/Options.html#offload-threads
+  regex;(.*):
+    type: any
+    desc: Other potential uwsgi option.
