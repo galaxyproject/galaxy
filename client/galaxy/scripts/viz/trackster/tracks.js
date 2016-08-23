@@ -3614,6 +3614,8 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 var LineTrack = function (view, container, obj_dict) {
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
+    // Need left offset for drawing overlap near tile boundaries.
+    this.left_offset = 30;
 
     // var self = this;
     // $.when(supportsByteRanges(galaxy_config.root + 'datasets/' + this.dataset.id + '/display'))

@@ -807,7 +807,6 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
         // If no zooming needed or available (common in bigbed), use unzoomed view.
         if (range <= MAX_DATA_POINTS || this.zoomLevels.length === 0) {
             view = this.getUnzoomedView();
-            console.log("zoomLevel unzoomed");
         }
         else {
             // Find reasonable zoom level. Reduction is the # of bases represented
@@ -815,7 +814,6 @@ define(["libs/bbi/spans", "libs/bbi/jszlib", "libs/bbi/jquery-ajax-native"], fun
             for (var i = 0; i < this.zoomLevels.length; i++) {
                 if (range/this.zoomLevels[i].reduction < MAX_DATA_POINTS) {
                     view = this.getZoomedView(i);
-                    console.log("zoomLevel", i);
                     break;
                 }
             }
