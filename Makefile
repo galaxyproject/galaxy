@@ -32,6 +32,18 @@ open-project: ## open project on github
 lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
+uwsgi-rebuild-validation:
+	$(IN_VENV) python scripts/config_ini_to_yaml.py build_uwsgi_yaml
+
+tool-shed-config-validate:
+	$(IN_VENV) python scripts/config_ini_to_yaml.py validate tool_shed
+
+tool-shed-config-convert:
+	$(IN_VENV) python scripts/config_ini_to_yaml.py convert tool_shed
+
+tool-shed-config-rebuild-sample:
+	$(IN_VENV) python scripts/config_ini_to_yaml.py build_sample_yaml tool_shed --add_comments
+
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
 	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
