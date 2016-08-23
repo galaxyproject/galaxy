@@ -66,7 +66,7 @@ class Configuration( object ):
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
-        self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
+        self.id_secret = kwargs.get( "id_secret", "changethisinproductiontoo")
         # Tool stuff
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
