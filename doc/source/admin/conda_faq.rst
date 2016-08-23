@@ -3,7 +3,7 @@ Conda for Tool Dependencies
 =================================
 
 Galaxy tools (also called wrappers) traditionally use Tool Shed package
-recipes to install their dependencies. At the tool’s installation time
+recipes to install their dependencies. At the tool's installation time
 the recipe is downloaded and executed in order to provide the underlying
 software executables. Introduction of these Galaxy-specific recipes was
 a necessary step at the time, however nowadays there are other more
@@ -19,7 +19,7 @@ stable, they are also easier to test and faster to develop than the
 traditional Tool Shed package recipes.
 
 Conda is a package manager like apt-get, yum, pip, brew or guix. We
-don’t want to argue about the relative merits of various package
+don't want to argue about the relative merits of various package
 managers here, in fact Galaxy supports multiple package managers and we
 welcome community contributions (such as implementing a Guix package
 manager or enhancing the existing brew support to bring it on par with
@@ -51,7 +51,7 @@ installations ?
 
 Most Galaxy administrators have not set up a dependency resolvers
 configuration file ( ``dependency_resolvers_conf.xml`` ) which means they
-are using Galaxy’s default ( dependency\_resolvers\_conf.xml.sample ).
+are using Galaxy's default ( dependency\_resolvers\_conf.xml.sample ).
 Galaxy has enabled Conda dependency resolution by default since release
 16.04 (if Conda was installed already), so many existing installations
 can use Conda dependencies. Having Conda enabled in ``dependency_resolvers_conf.xml`` means that Galaxy will
@@ -235,7 +235,7 @@ touch with the awesome BioConda community. They have great documentation
 and assist with all development. You will also see a few of us at this
 project to get you started :)
 
-Don’t be scared! Conda recipes are really simple to write. Conda also
+Don't be scared! Conda recipes are really simple to write. Conda also
 offers you, so called \`skeleton\` generators, generating recipes from
 pypi, cran, cpan for you (mostly) automatically.
 
@@ -297,7 +297,7 @@ The order in which resolvers are tried is listed in the
 The first system that satisfies a requirement will be used.
 
 
-13. What can I do if Conda doesn’t work for me?
+13. What can I do if Conda doesn't work for me?
 
 There is currently a limitation in the way conda packages are being
 built. This limitation will be addressed shortly by the Conda community,
