@@ -30,8 +30,10 @@ if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
         TOOL_SHED_CONFIG_FILE=tool_shed_wsgi.ini
     elif [ -f config/tool_shed.ini ]; then
         TOOL_SHED_CONFIG_FILE=config/tool_shed.ini
+    elif [ -f config/tool_shed.yml ]; then
+        TOOL_SHED_CONFIG_FILE=config/tool_shed.yml
     else
-        TOOL_SHED_CONFIG_FILE=config/tool_shed.ini.sample
+        TOOL_SHED_CONFIG_FILE=config/tool_shed.yml.sample
     fi
     export TOOL_SHED_CONFIG_FILE
 fi
