@@ -1,5 +1,7 @@
 #!/bin/sh
 
+uwsgi_args="--master --pythonpath=lib"
+
 parse_common_args() {
     # Pop args meant for common_startup.sh
     while :
@@ -76,4 +78,47 @@ setup_python() {
     [ -n "$PYTHONPATH" ] && echo 'WARNING: $PYTHONPATH is set, this can cause problems importing Galaxy dependencies'
 
     python ./scripts/check_python.py || exit 1
+}
+
+find_uwsgi() {
+    # Look for uwsgi
+    if [ -z "$skip_venv" -a -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
+        UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
+    elif command -v uwsgi >/dev/null 2>&1; then
+        UWSGI=uwsgi
+    else
+        echo 'ERROR: Could not find uwsgi executable'
+        exit 1
+    fi
+}
+
+find_server() {
+    server_config="$1"
+    server_config_style="ini-paste"
+    default_webserver="paste"
+    case "$server_config" in
+        *.y*ml*)
+            server_config_style="yaml"
+            default_webserver="uwsgi"  # paste incapable of this
+            ;;
+    esac
+
+    APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
+    if [ "$APP_WEBSERVER" = "uwsgi" ];
+    then
+        # Look for uwsgi
+        if [ -z "$skip_venv" -a -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
+            UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
+        elif command -v uwsgi >/dev/null 2>&1; then
+            UWSGI=uwsgi
+        else
+            echo 'ERROR: Could not find uwsgi executable'
+            exit 1
+        fi
+        run_server="$UWSGI"
+        server_args="--$server_config_style $server_config $uwsgi_args"
+    else
+        run_server="python"
+        server_args="./scripts/paster.py serve $server_config $paster_args --pid-file $PID_FILE --log-file $LOG_FILE $paster_args"
+    fi
 }
