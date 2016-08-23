@@ -184,7 +184,7 @@ see which dependency will be used (“resolved”) in the admin panel.
 docs still seem to recommend (or exclusively discuss) the
 ``tool_dependencies.xml`` method.
 
-The simple answer is: you don‘t need to do much to make Conda work for a tool.
+The simple answer is: you don't need to do much to make Conda work for a tool.
 
 The ``<requirement>`` tag in the tool XML file is enough. The name and the
 version should correspond to a Conda package in the ``default``, ``r``,
