@@ -2,6 +2,12 @@
 
 cd "$(dirname "$0")"
 
+
+TOOL_SHED_PID=${TOOL_SHED_PID:-tool_shed_webapp.pid}
+TOOL_SHED_LOG=${TOOL_SHED_LOG:-tool_shed_webapp.log}
+PID_FILE=$TOOL_SHED_PID
+LOG_FILE=$TOOL_SHED_LOG
+
 . ./scripts/common_startup_functions.sh
 
 parse_common_args
@@ -30,4 +36,5 @@ if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
     export TOOL_SHED_CONFIG_FILE
 fi
 
-python ./scripts/paster.py serve $TOOL_SHED_CONFIG_FILE --pid-file=tool_shed_webapp.pid --log-file=tool_shed_webapp.log $args
+find_server $TOOL_SHED_CONFIG_FILE
+$RUN_SERVER $SERVER_ARGS
