@@ -55,13 +55,6 @@ log_level = DEBUG
 # used for the cache
 #template_cache_path = database/compiled_templates/reports
 
-# Session support (beaker)
-use_beaker_session = True
-session_type = memory
-session_data_dir = %(here)s/database/beaker_sessions
-session_key = galaxysessions
-session_secret = changethisinproduction
-
 # Configuration for debugging middleware
 #debug = False
 

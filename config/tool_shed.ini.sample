@@ -53,13 +53,6 @@ new_file_path = database/tmp
 #   standard).
 #pretty_datetime_format = $locale (UTC)
 
-# Session support (beaker)
-use_beaker_session = True
-session_type = memory
-session_data_dir = %(here)s/database/beaker_sessions
-session_key = galaxysessions
-session_secret = changethisinproduction
-
 # -- Repository and Tool search
 # Using the script located at scripts/build_ts_whoosh_index.py
 # you can generate search index and allow full text API searching over
