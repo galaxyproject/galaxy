@@ -707,6 +707,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     Based on the configuration wrap `app` in a set of common and useful
     middleware.
     """
+    webapp = app
+
     # Merge the global and local configurations
     conf = global_conf.copy()
     conf.update(local_conf)
@@ -794,6 +796,12 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
     app = RequestIDMiddleware( app )
     log.debug( "Enabling 'Request ID' middleware" )
+
+    # api batch call processing middleware
+    from galaxy.web.framework.middleware.batch import BatchMiddleware
+    app = BatchMiddleware( webapp, app, {})
+    log.debug( "Enabling 'Batch' middleware" )
+
     return app
 
 
