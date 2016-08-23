@@ -22,7 +22,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_debug': None,
     'conda_ensure_channels': 'r,bioconda,iuc',
     'conda_auto_install': False,
-    'conda_auto_init': True,
+    'conda_auto_init': False,
 }
 
 CONFIG_VAL_NOT_FOUND = object()
