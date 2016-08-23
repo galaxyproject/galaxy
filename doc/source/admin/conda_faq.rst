@@ -51,7 +51,7 @@ installations ?
 
 Most Galaxy administrators have not set up a dependency resolvers
 configuration file ( ``dependency_resolvers_conf.xml`` ) which means they
-are using Galaxy's default ( dependency\_resolvers\_conf.xml.sample ).
+are using Galaxy's default ( ``dependency_resolvers_conf.xml.sample`` ).
 Galaxy has enabled Conda dependency resolution by default since release
 16.04 (if Conda was installed already), so many existing installations
 can use Conda dependencies. Having Conda enabled in ``dependency_resolvers_conf.xml`` means that Galaxy will
@@ -64,38 +64,38 @@ Shed is available since the 16.07 version of Galaxy.
 
 The most important configuration settings related to Conda are listed in Table 1.
 
-+--------------------------+--------------------------+--------------------------+
-| Setting                  | Default setting          | Meaning                  |
-+--------------------------+--------------------------+--------------------------+
-| ``conda_prefix``         | <tool\_dependency\_dir>/ | the location             |
-|                          | \_conda                  | on the                   |
-|                          |                          | filesystem where Conda   |
-|                          |                          | packages and             |
-|                          |                          | environments are         |
-|                          |                          | installed                |
-|                          |                          |                          |
-|                          |                          | IMPORTANT : Due to a     |
-|                          |                          | current limitation in    |
-|                          |                          | conda, the total length  |
-|                          |                          | of the                   |
-|                          |                          |                          |
-|                          |                          | conda\_prefix and the    |
-|                          |                          | job\_working\_directory  |
-|                          |                          | path should be less      |
-|                          |                          | than 50 characters!      |
-+--------------------------+--------------------------+--------------------------+
-| ``conda_auto_install``   | False                    | Set to True to instruct  |
-|                          |                          | Galaxy to look for and   |
-|                          |                          | install Conda packages   |
-|                          |                          | for missing tool         |
-|                          |                          | dependencies before      |
-|                          |                          | running a job            |
-+--------------------------+--------------------------+--------------------------+
-| ``conda_auto_init``      | False                    | Set to True to instruct  |
-|                          |                          | Galaxy to install Conda  |
-|                          |                          | automatically if it      |
-|                          |                          | cannot find a local copy |
-+--------------------------+--------------------------+--------------------------+
++--------------------------+--------------------------+---------------------------+
+| Setting                  | Default setting          | Meaning                   |
++--------------------------+--------------------------+---------------------------+
+| ``conda_prefix``         | <tool\_dependency\_dir>/ | the location              |
+|                          | \_conda                  | on the                    |
+|                          |                          | filesystem where Conda    |
+|                          |                          | packages and              |
+|                          |                          | environments are          |
+|                          |                          | installed                 |
+|                          |                          |                           |
+|                          |                          | IMPORTANT : Due to a      |
+|                          |                          | current limitation in     |
+|                          |                          | conda, the total length   |
+|                          |                          | of the                    |
+|                          |                          |                           |
+|                          |                          | ``conda_prefix`` and the  |
+|                          |                          | ``job_working_directory`` |
+|                          |                          | path should be less       |
+|                          |                          | than 50 characters!       |
++--------------------------+--------------------------+---------------------------+
+| ``conda_auto_install``   | False                    | Set to True to instruct   |
+|                          |                          | Galaxy to look for and    |
+|                          |                          | install Conda packages    |
+|                          |                          | for missing tool          |
+|                          |                          | dependencies before       |
+|                          |                          | running a job             |
++--------------------------+--------------------------+---------------------------+
+| ``conda_auto_init``      | False                    | Set to True to instruct   |
+|                          |                          | Galaxy to install Conda   |
+|                          |                          | automatically if it       |
+|                          |                          | cannot find a local copy  |
++--------------------------+--------------------------+---------------------------+
 
 *Table 1: Important configuration options for Conda in Galaxy*
 
