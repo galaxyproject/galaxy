@@ -11,6 +11,11 @@
 
 cd "$(dirname "$0")"
 
+GALAXY_REPORTS_PID=${GALAXY_REPORTS_PID:-reports_webapp.pid}
+GALAXY_REPORTS_LOG=${GALAXY_REPORTS_LOG:-reports_webapp.log}
+PID_FILE=$GALAXY_REPORTS_PID
+LOG_FILE=$GALAXY_REPORTS_LOG
+
 . ./scripts/common_startup_functions.sh
 
 if [ "$1" = "--sync-config" ];
@@ -38,11 +43,9 @@ if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     export GALAXY_REPORTS_CONFIG
 fi
 
-GALAXY_REPORTS_PID=${GALAXY_REPORTS_PID:-reports_webapp.pid}
-GALAXY_REPORTS_LOG=${GALAXY_REPORTS_LOG:-reports_webapp.log}
-
 if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_REPORTS_CONFIG_DIR" "$GALAXY_REPORTS_CONFIG"
 fi
 
-python ./scripts/paster.py serve "$GALAXY_REPORTS_CONFIG" --pid-file="$GALAXY_REPORTS_PID" --log-file="$GALAXY_REPORTS_LOG"  $paster_args
+find_server $GALAXY_REPORTS_CONFIG
+$run_server $server_args
