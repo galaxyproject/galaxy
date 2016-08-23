@@ -33,7 +33,7 @@ ie_request.launch(
 # through proxy.
 notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/auth-public-key')
 notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/')
-notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/auth-do-sign-in')
+notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/auth-sign-in')
 
 %>
 <html>
