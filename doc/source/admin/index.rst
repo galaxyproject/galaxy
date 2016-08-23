@@ -17,3 +17,5 @@ documentation. These resources should be used together.
    useful_scripts.rst
 
    grt.rst
+
+   chat.rst
