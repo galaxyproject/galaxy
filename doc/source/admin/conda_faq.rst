@@ -134,7 +134,7 @@ be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` fi
    example, to install samtools in version 0.1.19, the administrator can
    run the command:
 
-   .. code-block:: guess
+   .. code-block:: bash
 
       $ conda create --name __package__samtools@__version__0.1.19 samtools==0.1.19 --channel bioconda
 
@@ -173,7 +173,7 @@ by a given tool?
 
 The Galaxy log will tell you which dependency resolution system is used
 to satisfy each tool dependency and you can specify priorities using the
-``config/dependency_resolution_conf.xml``file. If you put Conda on
+``config/dependency_resolution_conf.xml`` file. If you put Conda on
 top, Galaxy will at first try to use Conda to resolve a tool dependency;
 if this does not work, the following dependency resolvers is used, as
 specified. See `resolver docs`_ for detailed documentation. Starting from galaxy release 16.07, you can
@@ -217,7 +217,7 @@ to, so I don't have to reinvent the wheel for common dependencies?
 
 With Conda installed run:
 
-.. code-block:: guess
+.. code-block:: bash
 
    $ conda search <package_name> -c bioconda -c iuc
 
@@ -244,7 +244,7 @@ pypi, cran, cpan for you (mostly) automatically.
 are not yet in a Conda channel?
 
 First, you do not need to do anything to your wrapper as long as the
-package name in the requirement tag is matches the name of correct
+package name in the requirement tag matches the name of correct
 Conda package. (You may want to mention in the README or a comment the
 Conda channel that contains the package).
 
