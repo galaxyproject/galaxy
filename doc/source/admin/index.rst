@@ -8,9 +8,11 @@ documentation. These resources should be used together.
 .. toctree::
    :maxdepth: 3
 
-   interactive_environments.rst
-
    dependency_resolvers.rst
+
+   conda_faq.rst
+
+   interactive_environments.rst
 
    framework_dependencies.rst
 
