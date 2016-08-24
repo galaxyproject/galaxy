@@ -64,6 +64,12 @@ def reload_toolbox(app, **kwargs):
             old_toolbox.shutdown()
 
 
+def reload_data_managers(app, **kwargs):
+    from galaxy.tools.data_manager.manager import DataManagers
+    log.debug("Executing data managers reload")
+    app.data_managers = DataManagers(app)
+
+
 def reload_display_application(app, **kwargs):
     display_application_ids = kwargs.get('display_application_ids', None)
     log.debug("Executing display application reload task for %s" % display_application_ids)
@@ -92,6 +98,7 @@ def admin_job_lock(app, **kwargs):
 
 control_message_to_task = { 'reload_tool': reload_tool,
                             'reload_toolbox': reload_toolbox,
+                            'reload_data_managers': reload_data_managers,
                             'reload_display_application': reload_display_application,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock,
