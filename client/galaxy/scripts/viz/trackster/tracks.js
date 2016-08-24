@@ -193,8 +193,16 @@ function round(num, places) {
  */
 function supportsByteRanges(url) {
     var promise = $.Deferred();
-    $.get(url).success(function (result, status, xhr) {
-        promise.resolve(xhr.getResponseHeader("Accept-Ranges") === "bytes");
+    $.ajax({
+        type: 'HEAD',
+        url: url,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Range", "bytes=0-10");
+        },
+        success: function(result, status, xhr) {
+            console.log("BYTE RANGE SUPPORT", xhr.status === 206)
+            promise.resolve(xhr.status === 206);
+        }
     });
 
     return promise;
@@ -3617,18 +3625,18 @@ var LineTrack = function (view, container, obj_dict) {
     // Need left offset for drawing overlap near tile boundaries.
     this.left_offset = 30;
 
-    // var self = this;
-    // $.when(supportsByteRanges(galaxy_config.root + 'datasets/' + this.dataset.id + '/display'))
-    //  .then(function(supportsByteRanges) {
-    //      if (supportsByteRanges) {
-    //          self.data_manager = new bbi.BBIDataManager({
-    //              dataset: this.dataset
-    //          });
-    //      }
-    //
-    // });
-    this.data_manager = new bbi.BBIDataManager({
-        dataset: this.dataset
+    // If server has byte-range support, use BBI data manager to read directly from the BBI file.
+    // FIXME: there should be a flag to wait for this check to complete before loading the track.
+    var self = this;
+    $.when(supportsByteRanges(galaxy_config.root + 'datasets/' + this.dataset.id + '/display'))
+     .then(function(supportsByteRanges) {
+         if (supportsByteRanges) {
+             console.log("BBI DATA MANAGER");
+             self.data_manager = new bbi.BBIDataManager({
+                 dataset: self.dataset
+             });
+         }
+
     });
 };
 
