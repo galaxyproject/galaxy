@@ -53,7 +53,7 @@ def reload_toolbox(app, **kwargs):
     log.debug("Executing tooblox reload")
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
-        tool_configs.append(self.config.migrated_tools_config)
+        tool_configs.append(app.config.migrated_tools_config)
 
     from galaxy import tools
     with app._toolbox_lock:
