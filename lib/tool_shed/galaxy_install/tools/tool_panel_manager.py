@@ -31,7 +31,7 @@ class ToolPanelManager( object ):
             root = tree.getroot()
             for elem in root:
                 config_elems.append( elem )
-            # Add the elements to the in-memory list of config_elems.
+            # Add the new elements to the in-memory list of config_elems.
             for elem_entry in elem_list:
                 config_elems.append( elem_entry )
             # Persist the altered shed_tool_config file.
@@ -54,21 +54,6 @@ class ToolPanelManager( object ):
         if new_install:
             # Add the new elements to the shed_tool_conf file on disk.
             self.add_to_shed_tool_config( shed_tool_conf_dict, elem_list )
-            # Use the new elements to add entries to the
-        config_elems = shed_tool_conf_dict[ 'config_elems' ]
-        for config_elem in elem_list:
-            # Add the new elements to the in-memory list of config_elems.
-            config_elems.append( config_elem )
-            # Load the tools into the in-memory tool panel.
-            self.app.toolbox.load_item(
-                config_elem,
-                tool_path=tool_path,
-                load_panel_dict=True,
-                guid=config_elem.get( 'guid' ),
-            )
-        # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
-        shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.update_shed_config( shed_tool_conf_dict )
 
     def config_elems_to_xml_file( self, config_elems, config_filename, tool_path ):
         """
