@@ -417,9 +417,8 @@ class ToolPanelManager( object ):
             # remove_from_tool_panel to false, will handling that logic below.
             toolbox.remove_tool_by_id( guid_to_remove, remove_from_panel=False )
         shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
-        if uninstall:
-            # Remove from the shed_tool_conf file on disk.
-            self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
+        # Always remove from the shed_tool_conf file on disk. Used to test for uninstall, not sure there is a legitimate use for this?!
+        self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
 
     def update_tool_panel_dict( self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups ):
         for tool_guid in tool_panel_dict:

@@ -9,6 +9,7 @@ from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
+from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 import tools_support
 
 import routes
@@ -435,3 +436,8 @@ class SimplifiedToolBox( ToolBox ):
             tool_root_dir,
             app,
         )
+        self._tool_conf_watcher = get_tool_conf_watcher(dummy_callback)
+
+
+def dummy_callback():
+    pass
