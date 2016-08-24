@@ -69,6 +69,7 @@ lib/galaxy/jobs/actions/
 lib/galaxy/jobs/datasets.py
 lib/galaxy/jobs/deferred/
 lib/galaxy/jobs/error_level.py
+lib/galaxy/jobs/__init__.py
 lib/galaxy/jobs/manager.py
 lib/galaxy/jobs/metrics/collectl/__init__.py
 lib/galaxy/jobs/metrics/collectl/stats.py
