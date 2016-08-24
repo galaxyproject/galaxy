@@ -473,61 +473,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         for dynamic_tool_conf_dict in self.dynamic_confs( include_migrated_tool_conf=include_migrated_tool_conf ):
             yield dynamic_tool_conf_dict[ 'config_filename' ]
 
-    def remove_from_panel( self, tool_id, section_key='', remove_from_config=True ):
-
-        def remove_from_dict( has_elems, integrated_has_elems ):
-            tool_key = 'tool_%s' % str( tool_id )
-            available_tool_versions = self.get_loaded_tools_by_lineage( tool_id )
-            if tool_key in has_elems:
-                if available_tool_versions:
-                    available_tool_versions.reverse()
-                    replacement_tool_key = None
-                    replacement_tool_version = None
-                    # Since we are going to remove the tool from the section, replace it with
-                    # the newest loaded version of the tool.
-                    for available_tool_version in available_tool_versions:
-                        available_tool_section_id, available_tool_section_name = available_tool_version.get_panel_section()
-                        # I suspect "available_tool_version.id in has_elems.keys()" doesn't
-                        # belong in the following line or at least I don't understand what
-                        # purpose it might serve. -John
-                        if available_tool_version.id in has_elems.keys() or (available_tool_section_id == section_key):
-                            replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
-                            replacement_tool_version = available_tool_version
-                            break
-                    if replacement_tool_key and replacement_tool_version:
-                        # Get the index of the tool_key in the tool_section.
-                        for tool_panel_index, key in enumerate( has_elems.keys() ):
-                            if key == tool_key:
-                                break
-                        # Remove the tool from the tool panel.
-                        del has_elems[ tool_key ]
-                        # Add the replacement tool at the same location in the tool panel.
-                        has_elems.insert( tool_panel_index,
-                                          replacement_tool_key,
-                                          replacement_tool_version )
-                        self._integrated_section_by_tool[ tool_id ] = available_tool_section_id, available_tool_section_name
-                    else:
-                        del has_elems[ tool_key ]
-
-                        if tool_id in self._integrated_section_by_tool:
-                            del self._integrated_section_by_tool[ tool_id ]
-                else:
-                    del has_elems[ tool_key ]
-
-                    if tool_id in self._integrated_section_by_tool:
-                        del self._integrated_section_by_tool[ tool_id ]
-            if remove_from_config:
-                itegrated_items = integrated_has_elems.panel_items()
-                if tool_key in itegrated_items:
-                    del itegrated_items[ tool_key ]
-
-        if section_key:
-            _, tool_section = self.get_section( section_key )
-            if tool_section:
-                remove_from_dict( tool_section.elems, self._integrated_tool_panel.get( section_key, {} ) )
-        else:
-            remove_from_dict( self._tool_panel, self._integrated_tool_panel )
-
     def _path_template_kwds( self ):
         return {}
 
