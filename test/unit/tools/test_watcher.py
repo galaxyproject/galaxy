@@ -20,6 +20,7 @@ def test_watcher():
         tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(
             watch_tools=True
         ))
+        time.sleep(1)
         tool_watcher.watch_file(tool_path, "cool_tool")
         assert not toolbox.was_reloaded("cool_tool")
         open(tool_path, "w").write("b")
@@ -40,6 +41,7 @@ def test_tool_conf_watcher():
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
         conf_watcher.watch_file(tool_conf_path)
+        time.sleep(1)
         open(tool_conf_path, "w").write("b")
         wait_for_reload(lambda: callback.called)
         conf_watcher.shutdown()
