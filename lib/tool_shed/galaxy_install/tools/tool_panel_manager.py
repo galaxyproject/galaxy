@@ -42,7 +42,6 @@ class ToolPanelManager( object ):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
         shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
-        tool_path = shed_tool_conf_dict[ 'tool_path' ]
         tool_panel_dict = self.update_tool_panel_dict( tool_panel_dict, tool_panel_section_mapping, repository_tools_tups )
         # Generate the list of ElementTree Element objects for each section or tool.
         elem_list = self.generate_tool_panel_elem_list( repository_name,
