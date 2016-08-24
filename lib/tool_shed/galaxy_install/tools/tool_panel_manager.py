@@ -421,37 +421,6 @@ class ToolPanelManager( object ):
         if uninstall:
             # Remove from the shed_tool_conf file on disk.
             self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
-        config_elems = shed_tool_conf_dict[ 'config_elems' ]
-        config_elems_to_remove = []
-        for config_elem in config_elems:
-            if config_elem.tag == 'section':
-                # Get the section key for the in-memory tool panel.
-                section_key = str( config_elem.get( "id" ) )
-                # Generate the list of tool elements to remove.
-                tool_elems_to_remove = []
-                for tool_elem in config_elem:
-                    if tool_elem.get( 'guid' ) in guids_to_remove:
-                        tool_elems_to_remove.append( tool_elem )
-                for tool_elem in tool_elems_to_remove:
-                    if tool_elem in config_elem:
-                        # Remove the tool sub-element from the section element.
-                        config_elem.remove( tool_elem )
-                    # Remove the tool from the section in the in-memory tool panel.
-                    toolbox.remove_from_panel( tool_elem.get( "guid" ), section_key=section_key, remove_from_config=uninstall )
-                if len( config_elem ) < 1:
-                    # Keep a list of all empty section elements so they can be removed.
-                    config_elems_to_remove.append( config_elem )
-            elif config_elem.tag == 'tool':
-                guid = config_elem.get( 'guid' )
-                if guid in guids_to_remove:
-                    toolbox.remove_from_panel( guid, section_key='', remove_from_config=uninstall )
-                    config_elems_to_remove.append( config_elem )
-        for config_elem in config_elems_to_remove:
-            # Remove the element from the in-memory list of elements.
-            config_elems.remove( config_elem )
-        # Update the config_elems of the in-memory shed_tool_conf_dict.
-        shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        toolbox.update_shed_config( shed_tool_conf_dict, integrated_panel_changes=uninstall )
 
     def update_tool_panel_dict( self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups ):
         for tool_guid in tool_panel_dict:
