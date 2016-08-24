@@ -1,5 +1,4 @@
 import os
-import time
 
 from shed_functional.base.twilltestcase import common, ShedTwillTestCase
 
@@ -87,7 +86,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
     def test_0015_import_workflow_from_installed_repository( self ):
         '''Import the workflow from the installed repository and verify that it appears in the list of all workflows.'''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
-        time.sleep(2)  # Need to wait until background task reload_toolbox comes back
         self.display_installed_workflow_image( installed_repository,
                                                workflow_name,
                                                strings_displayed=[ '#EBD9B2' ],
