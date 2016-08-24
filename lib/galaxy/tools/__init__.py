@@ -2301,7 +2301,7 @@ class MergeCollectionTool( DatabaseOperationTool ):
 
         if dupl_actions == 'suffix':
             suffix_iden = incoming['conflict']['prefix_suffix']
-            
+
         identifier_seen = {}
 
         # first attempt where we only want list
@@ -2323,7 +2323,7 @@ class MergeCollectionTool( DatabaseOperationTool ):
 
                 # apply new suffix if identifier already seen
                 if element_identifier in identifier_seen and dupl_actions == 'suffix':
-                    suffix = '%s%i' % (suffix_iden ,identifier_seen[element_identifier])
+                    suffix = '%s%i' % (suffix_iden , identifier_seen[element_identifier])
                     identifier_seen[element_identifier] = identifier_seen[element_identifier] + 1
                     element_identifier = element_identifier + suffix
                     new_elements[element_identifier] = element.copy()
