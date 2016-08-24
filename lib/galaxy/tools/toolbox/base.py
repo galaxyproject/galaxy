@@ -153,7 +153,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self._dynamic_tool_confs.append( shed_tool_conf_dict )
-
+            # This explicitly monitors shed_tool_confs, otherwise need to add <toolbox monitor="true">>
+            self._tool_conf_watcher.watch_file(config_filename)
         if tool_conf_source.parse_monitor():
             self._tool_conf_watcher.watch_file(config_filename)
 
