@@ -6,7 +6,7 @@ Adds a single route to the installation that:
      dictionaries.
   2. Each dictionary describes a single API call within the batch and is routed
      back by the middleware to the application's `handle_request` as if it was
-     a seperate request.
+     a separate request.
   3. Each response generated is combined into a final JSON list that is
      returned from the POST call.
 
@@ -89,7 +89,7 @@ class BatchMiddleware( object ):
                 continue
 
             request_environ = self._build_request_environ( batch_environ, request )
-            response = self._proccess_batch_request( request, request_environ, start_response )
+            response = self._process_batch_request( request, request_environ, start_response )
             responses.append( response )
 
         batch_response_body = json.dumps( responses )
@@ -133,7 +133,8 @@ class BatchMiddleware( object ):
         request_environ[ 'CONTENT_TYPE' ] = request.get( 'contentType', 'application/json' )
         request_environ[ 'REQUEST_METHOD' ] = request.get( 'method', request.get( 'type', 'GET' ) )
         url = '{0}://{1}{2}'.format( request_environ.get( 'wsgi.url_scheme' ),
-            request_environ.get( 'HTTP_HOST' ), request[ 'url' ] )
+                                     request_environ.get( 'HTTP_HOST' ),
+                                     request[ 'url' ] )
         parsed = urlparse( url )
         request_environ[ 'PATH_INFO' ] = parsed.path
         request_environ[ 'QUERY_STRING' ] = parsed.query
@@ -149,7 +150,7 @@ class BatchMiddleware( object ):
 
         return request_environ
 
-    def _proccess_batch_request( self, request, environ, start_response ):
+    def _process_batch_request( self, request, environ, start_response ):
         # We may need to include middleware to record various reponses, but this way of doing that won't work:
         # status, headers, body = self.application( environ, start_response, body_renderer=self.body_renderer )
 
