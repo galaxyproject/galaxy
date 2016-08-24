@@ -14,12 +14,13 @@ define( [ 'plugin/charts/utilities/tabular-inputs' ], function( Inputs ) {
             show_legend  : Inputs.boolean( 'show_legend', { label: 'Show legend', help: 'Would you like to add a legend?' } ),
             use_panels   : Inputs.boolean( 'use_panels', { label: 'Use multi-panels', help: 'Would you like to separate your data into individual panels?' } )
         },
-        series      : [{
-            name        : 'key',
-            label       : 'Provide a label',
-            type        : 'text',
-            placeholder : 'Data label',
-            value       : 'Data label'
-        }]
+        groups      : {
+            key: {
+                label       : 'Provide a label',
+                type        : 'text',
+                placeholder : 'Data label',
+                value       : 'Data label'
+            }
+        }
     }
 });

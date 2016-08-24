@@ -1,5 +1,5 @@
-define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
-    return $.extend( true, {}, {
+define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
+    return $.extend( true, default_config, {
         title       : 'Pie chart',
         category    : 'Area charts',
         library     : 'NVD3',
@@ -7,7 +7,7 @@ define( [ 'plugin/charts/nvd3/common/config' ], function( nvd3_config ) {
         keywords    : 'nvd3 default',
         datatype    : 'tabular',
         groups      : {
-            x : {
+            label : {
                 label       : 'Labels',
                 type        : 'data_column',
                 is_label    : true,

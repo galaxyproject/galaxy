@@ -6,12 +6,6 @@ define( [ 'plugin/charts/utilities/tabular-form', 'plugin/plugins/nvd3/nv.d3' ],
         tag         : 'svg',
         keywords    : 'nvd3 default',
         groups      : {
-            key: {
-                label       : 'Provide a label',
-                type        : 'text',
-                placeholder : 'Data label',
-                value       : 'Data label'
-            },
             color: {
                 label       : 'Pick a series color',
                 type        : 'color'
