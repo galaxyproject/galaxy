@@ -76,7 +76,7 @@ The most important configuration settings related to Conda are listed in Table 1
 |                          |                          |                           |
 |                          |                          | IMPORTANT : Due to a      |
 |                          |                          | current limitation in     |
-|                          |                          | conda, the total length   |
+|                          |                          | Conda, the total length   |
 |                          |                          | of the                    |
 |                          |                          |                           |
 |                          |                          | ``conda_prefix`` and the  |
@@ -125,7 +125,7 @@ with Galaxy. For all of these options, Conda dependency management must
 be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` file.
 
 #. Manual Install - Conda dependencies may be installed by
-   administrators from the command line. Conda (and thus the conda
+   administrators from the command line. Conda (and thus the Conda
    environments) should be installed in the location specified by the
    ``conda_prefix`` path (defined in ``galaxy.ini`` and by default
    ``<tool_dependency_dir>/_conda/`` directory). Galaxy will search
@@ -143,7 +143,7 @@ be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` fi
 #. Galaxy Admin Interface (>= 16.07) - Galaxy will install Conda tool
    dependencies when tools are installed from the Tool Shed if the
    option “When available, install externally managed dependencies (e.g.
-   conda)? Beta” is checked. Admins may also view and manage Conda
+   Conda)? Beta” is checked. Admins may also view and manage Conda
    dependencies via the Admin interface.
 #. Automatically at tool run time - When a tool is run and a dependency
    is not found, Galaxy will attempt to install the dependency using
@@ -299,7 +299,7 @@ The first system that satisfies a requirement will be used.
 
 13. What can I do if Conda doesn't work for me?
 
-There is currently a limitation in the way conda packages are being
+There is currently a limitation in the way Conda packages are being
 built. This limitation will be addressed shortly by the Conda community,
 however this requires all packages to be rebuilt.
 
@@ -317,7 +317,7 @@ following in your galaxy log files:
 In rare cases Conda may not have been properly installed by Galaxy.
 A symptom for this is if there is no activate script in
 ``conda_prefix/bin`` folder. In that case you can delete the ``conda_prefix`` folder
-and restart Galaxy, which will again attempt to install conda.
+and restart Galaxy, which will again attempt to install Conda.
 
 If this does not solve your problem or you have any trouble following
 the instructions, please ask on the Galaxy mailing list or the Galaxy
