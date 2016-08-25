@@ -16,7 +16,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 operations      : {
                     'save'  : new Ui.ButtonIcon({
                         icon    : 'fa-save',
-                        tooltip : 'Draw Chart',
+                        tooltip : 'Save and Draw Chart',
                         title   : 'Save and Draw',
                         onclick : function() {
                             self._saveChart();
