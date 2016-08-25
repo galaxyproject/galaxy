@@ -104,7 +104,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 self._init_tools_from_config( config_filename )
             except:
                 log.exception( "Error loading tools defined in config %s", config_filename )
-        register_postfork_function(self._tool_conf_watcher.start)
 
     def _init_tools_from_config( self, config_filename ):
         """
