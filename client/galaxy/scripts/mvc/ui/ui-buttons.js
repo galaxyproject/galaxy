@@ -260,10 +260,9 @@ define( [ 'utils/utils' ], function( Utils ) {
             }
             this.collection.each( function( submodel ) {
                 var suboptions = submodel.attributes;
-                if ( suboptions.visible === true ) {
+                if ( suboptions.visible ) {
                     var $link = $( '<a/>' ).addClass( 'dropdown-item' )
-                                           .attr( { href    : suboptions.href,
-                                                    target  : suboptions.target } )
+                                           .attr( { href : suboptions.href, target : suboptions.target } )
                                            .append( $( '<i/>' ).addClass( 'fa' )
                                                                .addClass( suboptions.icon )
                                                                .css( 'display', suboptions.icon ? 'inline-block' : 'none' ) )
@@ -288,6 +287,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 href        : '',
                 onclick     : null,
                 divider     : false,
+                visible     : true,
                 icon        : null,
                 cls         : 'button-menu btn-group'
             }));
