@@ -3,6 +3,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-modal', 'plugin/components/model', 'mvc/visu
     return Backbone.Model.extend({
 
         initialize: function( chart, types, options ) {
+            var self        = this;
             this.chart      = chart;
             this.options    = options;
             this.id         = options.id;
@@ -20,6 +21,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-modal', 'plugin/components/model', 'mvc/visu
             if ( chart_dict ) {
                 this.vis.get( 'config' ).chart_dict = chart_dict;
             }
+            this.chart.on( 'change:dataset_id_job', function() { self.save() } );
         },
 
         /** Pack and save nested chart model */

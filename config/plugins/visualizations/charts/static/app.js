@@ -6,11 +6,6 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
     return Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
-            this.options = options;
-            this.chart = new Chart();
-            this.types = Types;
-            this.storage = new Storage( this.chart, this.types, options );
-            this.deferred = new Deferred();
             Utils.get({
                 url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
                 cache   : true,
@@ -22,6 +17,11 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         },
 
         _build: function( options ) {
+            this.options = options;
+            this.chart = new Chart();
+            this.types = Types;
+            this.storage = new Storage( this.chart, this.types, options );
+            this.deferred = new Deferred();
             this.viewer = new Viewer( this );
             this.editor = new Editor( this );
             this.$el.append( this.viewer.$el );
@@ -32,8 +32,6 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
                 this.go( 'viewer' );
                 this.chart.trigger( 'redraw' );
             }
-            var self = this;
-            this.chart.on( 'change:dataset_id_job', function() { self.storage.save() } );
         },
 
         /** Loads a view and makes sure that all others are hidden */
