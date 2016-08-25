@@ -106,7 +106,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
             this.setElement( this.portlet.$el );
 
             // events
-            this.chart.on( 'change:title', function() { self._refreshTitle() } );
+            this.listenTo( this.chart, 'change', function() { self.render() } );
         },
 
         /** Show and refresh viewer */
@@ -121,7 +121,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
         },
 
         /** Change title */
-        _refreshTitle: function() {
+        render: function() {
             var title = this.chart.get( 'title' );
             this.portlet.title( title );
         },

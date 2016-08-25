@@ -10,7 +10,7 @@ define( [], function() {
             help  : 'These visualizations were developed by the Galaxy team.'
         },
         {   label : 'BioJS',   value: 'biojs',
-            help  : 'BioJS plugins.'
+            help  : 'BioJS is hosted at <a href="http://biojs.net" target="_blank">http://biojs.net<a/>. It is a library of over hundred JavaScript components enabling you to visualize and process data using current web technologies.'
         }
     ];
 });
