@@ -15,7 +15,6 @@ from galaxy.util import listify
 from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
-from galaxy.util.postfork import register_postfork_function
 
 from .parser import get_toolbox_parser, ensure_tool_conf_item
 
