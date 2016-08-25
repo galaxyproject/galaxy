@@ -1,7 +1,7 @@
 define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-datasets' ], function( Utilities, Datasets ) {
     return Backbone.View.extend({
-        initialize: function( app, options ) {
-            var chart = app.chart;
+        initialize: function( options ) {
+            var chart = options.chart;
             var request_dictionary = Utilities.buildRequestDictionary( chart );
             var error = null;
             request_dictionary.success = function( result ) {
