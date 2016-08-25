@@ -25,7 +25,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
                 });
             });
             this.chart.on( 'set:state', function() {
-                var $container = self.$el.find( '.charts-viewport-container' );
+                var $container = self.$( '.charts-viewport-container' );
                 var $info = self.$info;
                 var $icon = self.$icon;
                 var $text = self.$text;
