@@ -40,7 +40,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-modal', 'plugin/components/model', 'mvc/visu
             this.vis.get( 'config' ).chart_dict = chart_dict;
             this.vis.save()
                     .fail(function( xhr, status, message ) {
-                        this.modal.show( { title: 'Saving failed.', body: 'An attempt to save this chart to the server failed. Please try again and contact the administrator.', buttons: { 'Close': function() { self.modal.hide() } } } );
+                        self.modal.show( { title: 'Saving failed.', body: 'An attempt to save this chart to the server failed. Please try again and contact the administrator.', buttons: { 'Close': function() { self.modal.hide() } } } );
                     })
                     .then( function( response ) {
                         if ( response && response.id ) {
