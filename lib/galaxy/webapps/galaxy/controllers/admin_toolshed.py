@@ -3,11 +3,11 @@ import logging
 import os
 import shutil
 
+from admin import AdminGalaxy
 from six import string_types
 from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
-from admin import AdminGalaxy
 from galaxy import util, web
 from galaxy.tools.deps import views
 from galaxy.web.form_builder import CheckboxField

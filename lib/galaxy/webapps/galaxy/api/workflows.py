@@ -4,22 +4,22 @@ API operations for Workflows
 
 from __future__ import absolute_import
 
+import json
 import logging
 import urllib
 from sqlalchemy import desc, false, or_, true
 from galaxy import exceptions, util
-from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers import histories
 from galaxy.managers import workflows
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
-from galaxy.web.base.controller import SharableMixin
-from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.run import invoke, queue_invoke, WorkflowRunConfig
-from galaxy.workflow.run_request import build_workflow_run_config
-from galaxy.workflow.modules import module_factory, WorkflowModuleInjector
+from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.tools.parameters.meta import expand_workflow_inputs
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import BaseAPIController, SharableMixin, url_for, UsesStoredWorkflowMixin
+from galaxy.workflow.extract import extract_workflow
+from galaxy.workflow.modules import module_factory, WorkflowModuleInjector
+from galaxy.workflow.run import invoke, queue_invoke, WorkflowRunConfig
+from galaxy.workflow.run_request import build_workflow_run_config
 
 
 log = logging.getLogger(__name__)
@@ -70,6 +70,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
+            workflows_by_toolshed = dict()
             for key, value in enumerate(rval):
                 tool_ids = []
                 workflow_details = self.workflow_contents_manager.workflow_to_dict( trans, self.__get_stored_workflow( trans, value[ 'id' ] ), style='instance' )
@@ -81,7 +82,18 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 if len( tool_ids ) > 0:
                     value[ 'missing_tools' ] = tool_ids
                     workflows_missing_tools.append( value )
-            return workflows_missing_tools
+            for workflow in workflows_missing_tools:
+                for tool_id in workflow[ 'missing_tools' ]:
+                    toolshed, _, owner, name, tool, version = tool_id.split( '/' )
+                    repo_identifier = '/'.join( [ toolshed, owner, name ] )
+                    if repo_identifier not in workflows_by_toolshed:
+                        workflows_by_toolshed[ repo_identifier ] = dict( tools=[ tool_id ], workflows=[ workflow[ 'name' ] ] )
+                    else:
+                        if tool_id not in workflows_by_toolshed[ repo_identifier ][ 'tools' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'tools' ].append( tool_id )
+                        if workflow[ 'name' ] not in workflows_by_toolshed[ repo_identifier ][ 'workflows' ]:
+                            workflows_by_toolshed[ repo_identifier ][ 'workflows' ].append( workflow[ 'name' ] )
+            return workflows_by_toolshed
         return rval
 
     @expose_api

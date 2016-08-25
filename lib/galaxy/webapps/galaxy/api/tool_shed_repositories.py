@@ -5,10 +5,12 @@ from time import strftime
 
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 
+from sqlalchemy import and_
 import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy import web
 from galaxy import exceptions
+
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
@@ -18,11 +20,10 @@ from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryM
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import workflow_util
-from tool_shed.util import tool_util
 from tool_shed.util import repository_util
+from tool_shed.util import tool_util
+from tool_shed.util import workflow_util
 
-from sqlalchemy import and_
 
 log = logging.getLogger( __name__ )
 
