@@ -15,7 +15,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
         render: function() {
             var self = this;
             var inputs = Utils.clone( this.chart.definition.settings ) || {};
-            if ( this.chart.definition.use_panels ) {
+            if ( this.chart.definition.use_panels && !inputs[ 'use_panels' ]) {
                 inputs[ 'use_panels' ] = {
                     type    : 'boolean',
                     label   : 'Use multi-panels',
