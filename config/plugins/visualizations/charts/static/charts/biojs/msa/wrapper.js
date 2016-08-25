@@ -5,7 +5,7 @@ define( [ 'utils/utils' ], function( Utils ) {
             var dataset = options.dataset;
             var settings = chart.settings;
             var m = new msa.msa({
-                el: $( '#'  + options.canvas_list[ 0 ] ),
+                el: $( '#'  + options.targets[ 0 ] ),
                 vis: {  conserv: settings.get( 'conserv' ) == 'true',
                         overviewbox: settings.get( 'overviewbox' ) == 'true' },
                 menu: 'small',

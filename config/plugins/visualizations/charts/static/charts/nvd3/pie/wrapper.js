@@ -5,12 +5,12 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-utilities', 'plugin/ch
             var self = this;
             var chart = options.chart;
             var request_dictionary = Utilities.buildRequestDictionary( chart );
-            var canvas_list = options.canvas_list;
+            var targets = options.targets;
             var process = options.process;
             request_dictionary.success = function( result ) {
                 for ( var group_index in result.groups ) {
                     var group = result.groups[ group_index ];
-                    self._drawGroup( chart, group, canvas_list[ group_index ] );
+                    self._drawGroup( chart, group, targets[ group_index ] );
                 }
                 chart.state('ok', 'Pie chart has been drawn.');
                 process.resolve();

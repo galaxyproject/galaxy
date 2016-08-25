@@ -12,7 +12,7 @@ define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/components/jobs', 'plug
                     process             : options.process,
                     chart               : options.chart,
                     request_dictionary  : request_dictionary,
-                    canvas_list         : options.canvas_list,
+                    targets             : options.targets,
                     makeConfig          : function( groups, plot_config ){
                         var boundary = Utilities.getDomains( groups, 'x' );
                         $.extend( true, plot_config, {

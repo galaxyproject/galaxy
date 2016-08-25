@@ -88,11 +88,8 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
         _createContainer: function( tag, n ) {
             tag = tag || 'div';
             n = n || 1;
-            for ( var i in this.container_list ) {
-                this.container_list[ i ].remove();
-            }
-            this.container_list = [];
-            this.canvas_list = [];
+            this.$( '.charts-viewport-container' ).remove();
+            this.targets = [];
             for ( var i = 0; i < n; i++ ) {
                 var container_id = Utils.uid();
                 var container_el = $( '<div/>' ).addClass( 'charts-viewport-container' )
@@ -100,8 +97,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
                                                 .append( $( '<div/>' ).attr( 'id', 'menu' ) )
                                                 .append( $( '<' + tag + ' class="charts-viewport-canvas" />' ).attr( 'id', container_id ) );
                 this.$el.append( container_el );
-                this.container_list[ i ] = container_el;
-                this.canvas_list[ i ] = container_id;
+                this.targets.push( container_id );
             }
         },
 
@@ -112,7 +108,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
             require( [ 'plugin/charts/' + this.app.split( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
-                new ChartView( { process: process, chart: chart, dataset: self.app.dataset, canvas_list: self.canvas_list } );
+                new ChartView( { process: process, chart: chart, dataset: self.app.dataset, targets: self.targets } );
             });
         }
     });

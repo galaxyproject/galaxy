@@ -8,7 +8,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/
                 var colors = d3.scale.category20();
                 _.each( result.groups, function( group, group_index ) {
                     try {
-                        var svg = d3.select( '#' + ( options.canvas_list[ group_index ] || options.canvas_list[ 0 ] ) );
+                        var svg = d3.select( '#' + ( options.targets[ group_index ] || options.targets[ 0 ] ) );
                         var height = parseInt( svg.style( 'height' ) );
                         var width  = parseInt( svg.style( 'width' ) );
                         var maxValue = d3.max( group.values, function( d ) { return Math.max( d.x, d.y ) } );
