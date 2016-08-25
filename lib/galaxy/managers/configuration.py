@@ -8,13 +8,13 @@ Used by both the API and bootstrapped data.
 #   but doesn't have a model like them. It might be better in config.py or a
 #   totally new area, but I'm leaving it in managers for now for class consistency.
 
+from galaxy.web.framework.base import server_starttime
 from galaxy.managers import base
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-# TODO: for lack of a manager file for the config. May well be better in config.py? Circ imports?
 class ConfigSerializer( base.ModelSerializer ):
     """Configuration (galaxy.ini) settings viewable by all users"""
 
@@ -53,6 +53,9 @@ class ConfigSerializer( base.ModelSerializer ):
             'biostar_url_redirect'      : lambda *a, **c: self.url_for( controller='biostar', action='biostar_redirect',
                                                                         qualified=True ),
 
+            'communication_server_host' : _defaults_to( None ),
+            'communication_server_port' : _defaults_to( None ),
+            'persistent_communication_rooms' : _defaults_to( None ),
             'allow_user_creation'       : _defaults_to( False ),
             'use_remote_user'           : _defaults_to( None ),
             'remote_user_logout_href'   : _defaults_to( '' ),
@@ -73,6 +76,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'message_box_content'       : _defaults_to( None ),
             'message_box_visible'       : _defaults_to( False ),
             'message_box_class'         : _defaults_to( 'info' ),
+            'server_startttime'         : lambda i, k, **c: server_starttime,
         }
 
 

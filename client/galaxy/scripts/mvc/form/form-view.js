@@ -8,9 +8,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             this.options = Utils.merge(options, {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
-                icon            : ''
+                icon            : null,
+                always_refresh  : true
             });
-            this.modal = ( parent.Galaxy && parent.Galaxy.modal ) || new Ui.Modal.View();
             this.setElement('<div/>');
             this.render();
         },
@@ -18,7 +18,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
         /** Update available options */
         update: function(new_model){
             var self = this;
-            this.data.matchModel(new_model, function(input_id, node) {
+            this.data.matchModel(new_model, function(node, input_id) {
                 var input = self.input_list[input_id];
                 if (input && input.options) {
                     if (!_.isEqual(input.options, node.options)) {
@@ -69,38 +69,23 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
         /** Highlight and scroll to input element (currently only used for error notifications)
         */
         highlight: function (input_id, message, silent) {
-            // get input field
             var input_element = this.element_list[input_id];
-
-            // check input element
             if (input_element) {
-                // mark error
                 input_element.error(message || 'Please verify this parameter.');
-
-                // trigger expand event for parent containers
+                this.portlet.expand();
                 this.trigger('expand', input_id);
-
-                // scroll to first input element
                 if (!silent) {
-                    if (self==top) {
-                        var $panel = this.$el.parents().filter(function() {
-                            return $(this).css('overflow') == 'auto';
-                        }).first();
-                        $panel.animate({ scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 50 }, 500);
-                    } else {
-                        $('html, body').animate({ scrollTop : input_element.$el.offset().top - 20 }, 500);
-                    }
+                    var $panel = this.$el.parents().filter(function() {
+                        return [ 'auto', 'scroll' ].indexOf( $( this ).css( 'overflow' ) ) != -1;
+                    }).first();
+                    $panel.animate( { scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 120 }, 500 );
                 }
             }
         },
 
-        /** Highlights errors
-        */
+        /** Highlights errors */
         errors: function(options) {
-            // hide previous error statements
             this.trigger('reset');
-
-            // highlight all errors
             if (options && options.errors) {
                 var error_messages = this.data.matchResponse(options.errors);
                 for (var input_id in this.element_list) {
@@ -112,8 +97,12 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             }
         },
 
-        /** Render tool form
-        */
+        /** Modify onchange event handler */
+        setOnChange: function( callback ) {
+            this.options.onchange = callback;
+        },
+
+        /** Render tool form */
         render: function() {
             // link this
             var self = this;
@@ -147,11 +136,14 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
 
             // add listener which triggers on checksum change
             var current_check = this.data.checksum();
-            this.on('change', function() {
-                var new_check = self.data.checksum();
-                if (new_check != current_check) {
-                    current_check = new_check;
-                    self.options.onchange && self.options.onchange();
+            this.on('change', function( input_id ) {
+                var input = self.input_list[ input_id ];
+                if ( !input || input.refresh_on_change || self.options.always_refresh ) {
+                    var new_check = self.data.checksum();
+                    if ( new_check != current_check ) {
+                        current_check = new_check;
+                        self.options.onchange && self.options.onchange();
+                    }
                 }
             });
 
@@ -164,8 +156,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-sec
             return this;
         },
 
-        /** Renders the UI elements required for the form
-        */
+        /** Renders the UI elements required for the form */
         _renderForm: function() {
             // create message view
             this.message = new Ui.Message();

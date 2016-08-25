@@ -1,6 +1,8 @@
 """
 Migration script to alter the type of the tool_dependency.version column from TrimmedString(40) to Text.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -20,7 +22,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     Table( "tool_dependency", metadata, autoload=True )
     # Change the tool_dependency table's version column from TrimmedString to Text.
@@ -41,7 +43,7 @@ def upgrade(migrate_engine):
     if cmd:
         try:
             migrate_engine.execute( cmd )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Altering tool_dependency.version column from TrimmedString(40) to Text failed: %s" % str( e ) )
 
 

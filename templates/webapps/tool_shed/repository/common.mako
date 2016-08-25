@@ -12,7 +12,7 @@
                 onPostInit: function(isReloading, isError) {
                     // Re-fire onActivate, so the text is updated
                     this.reactivate();
-                }, 
+                },
                 fx: { height: "toggle", duration: 200 },
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='repository', action='open_folder' )}",
@@ -142,7 +142,7 @@
                         }
                     } else {
                         no_parent.push(this);
-                    }                        
+                    }
                 });
                 $(no_parent).each( function() {
                     descendants = process_row( $(this), $([]) );
@@ -157,7 +157,7 @@
                     $('#clone_clipboard').on('click', function( event ) {
                         event.preventDefault();
                         window.prompt("Copy to clipboard: Ctrl+C, Enter", "hg clone ${ repository.clone_url }");
-                    });           
+                    });
                 %endif
                 %if hasattr( repository, 'share_url' ):
                     $('#share_clipboard').on('click', function( event ) {
@@ -215,11 +215,11 @@
         %endif
         <div style="clear: both"></div>
     </div>
-</%def>         
-            
+</%def>
+
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
-        from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
+        from tool_shed.util.repository_util import generate_sharable_link_for_repository_in_tool_shed
         sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
     %>
     <a href="${ sharable_link }" target="_blank">${ sharable_link }</a>
@@ -233,7 +233,7 @@
 <%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( folder.id )
-        
+
         if is_root_folder:
             pad = folder_pad
             expander = h.url_for("/static/images/silk/resultset_bottom.png")
@@ -321,7 +321,7 @@
         </tr>
         <%
             my_row = row_counter.count
-            row_counter.increment()  
+            row_counter.increment()
         %>
     %endif
     %for sub_folder in folder.folders:
@@ -377,54 +377,9 @@
             ${render_invalid_data_manager( data_manager, pad, my_row, row_counter, row_is_header, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
-    %if folder.test_environments:
-        %for test_environment in folder.test_environments:
-            ${render_test_environment( test_environment, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.failed_tests:
-        %for failed_test in folder.failed_tests:
-            ${render_failed_test( failed_test, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.not_tested:
-        %for not_tested in folder.not_tested:
-            ${render_not_tested( not_tested, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.passed_tests:
-        %for passed_test in folder.passed_tests:
-            ${render_passed_test( passed_test, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
     %if folder.missing_test_components:
         %for missing_test_component in folder.missing_test_components:
             ${render_missing_test_component( missing_test_component, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.tool_dependency_installation_errors:
-        %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
-            ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.tool_dependency_successful_installations:
-        %for tool_dependency_successful_installation in folder.tool_dependency_successful_installations:
-            ${render_tool_dependency_successful_installation( tool_dependency_successful_installation, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.repository_installation_errors:
-        %for repository_installation_error in folder.repository_installation_errors:
-            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=False, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.current_repository_installation_errors:
-        %for repository_installation_error in folder.current_repository_installation_errors:
-            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=True, render_repository_actions_for=render_repository_actions_for )}
-        %endfor
-    %endif
-    %if folder.repository_successful_installations:
-        %for repository_successful_installation in folder.repository_successful_installations:
-            ${render_repository_successful_installation( repository_successful_installation, pad, my_row, row_counter, render_repository_actions_for=render_repository_actions_for )}
         %endfor
     %endif
 </%def>
@@ -454,7 +409,7 @@
 </%def>
 
 <%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <% 
+    <%
         from tool_shed.util.basic_util import to_html_string
         encoded_id = trans.security.encode_id( failed_test.id )
     %>
@@ -552,7 +507,7 @@
                            width:100%;
                            overflow-wrap:normal;
                            overflow:hidden;
-                           border:0px; 
+                           border:0px;
                            word-break:keep-all;
                            word-wrap:break-word;
                            line-break:strict; }
@@ -602,7 +557,7 @@
     <% encoded_id = trans.security.encode_id( readme.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
-            parent="${parent}" 
+            parent="${parent}"
         %endif
         id="libraryItem-rr-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
@@ -620,7 +575,7 @@
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         from galaxy.util import asbool
-        from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
+        from tool_shed.util.repository_util import get_repository_by_name_and_owner
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:
@@ -661,7 +616,7 @@
                 %elif encoded_required_repository_id:
                     <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=encoded_required_repository_id )}">${repository_name | h}</a>
                 %else:
-                   ${repository_name | h} 
+                   ${repository_name | h}
                 %endif
             </${cell_type}>
             <${cell_type}>
@@ -695,7 +650,7 @@
                            width:100%;
                            overflow-wrap:normal;
                            overflow:hidden;
-                           border:0px; 
+                           border:0px;
                            word-break:keep-all;
                            word-wrap:break-word;
                            line-break:strict; }
@@ -1071,40 +1026,52 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency_resolver( resolver_dependencies )">
+<%def name="render_tool_dependency_resolver( requirements_status )">
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
-               %if resolver_dependencies['model_class'] == 'NullDependency':
-                   <tr>
-                        <td><b> Dependency was not resolved by any resolver module.</b></td>
-                   </tr>
-               %else:
-                   <tr>
-                       <td><b>Dependency Resolver </b></td>
-                       <td> ${resolver_dependencies['model_class'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Exact </b></td>
-                       <td> ${resolver_dependencies['exact'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Dependency Type</b></td>
-                      <td> ${resolver_dependencies['dependency_type'] | h}</td>
-                   </tr>
-               %endif
+                <head>
+                    <tr>
+                        <th>Dependency</th>
+                        <th>Version</th>
+                        <th>Resolver</th>
+                        <th>Exact version</th>
+                        <th>Status<th>
+                    </tr>
+                </head>
+                <body>
+                    %for dependency in requirements_status:
+                        <tr>
+                            <td>${dependency['name'] | h}</td>
+                            <td>${dependency['version'] | h}</td>
+                            <td>${dependency['dependency_type'] | h}</td>
+                            <td>${dependency['exact'] | h}</td>
+                        %if dependency['dependency_type'] == None:
+                            <td>
+                               <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
+                            </td>
+                        %elif not dependency['exact']:
+                            <td>
+                                <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
+                            </td>
+                        %else:
+                            <td><img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/></td>
+                        %endif
+                        </tr>
+                    %endfor
+                </body>
             </table>
         </td>
     </tr>
 </%def>
 
-<%def name="render_resolver_dependency_items( resolver_dependencies )">
-    %if resolver_dependencies:
+<%def name="render_resolver_dependencies( requirements_status )">
+    %if requirements_status:
         <div class="toolForm">
             <div class="toolFormTitle">Dependency Resolver Details</div>
             <div class="toolFormBody">
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="module_resolvers">
-                    ${render_tool_dependency_resolver( resolver_dependencies)}
+                    ${render_tool_dependency_resolver( requirements_status )}
                 </table>
             </div>
         </div>
@@ -1118,7 +1085,7 @@
         has_datatypes = metadata and 'datatypes' in metadata
         has_readme_files = metadata and 'readme_files' in metadata
         has_workflows = metadata and 'workflows' in metadata
-        
+
         datatypes_root_folder = containers_dict.get( 'datatypes', None )
         invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
         invalid_repository_dependencies_root_folder = containers_dict.get( 'invalid_repository_dependencies', None )
@@ -1134,7 +1101,7 @@
         valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', None )
         workflows_root_folder = containers_dict.get( 'workflows', None )
-        
+
         has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
         has_dependencies = \
             invalid_repository_dependencies_root_folder or \

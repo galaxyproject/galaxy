@@ -341,7 +341,7 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
     Tabix index data provider for the Galaxy track browser.
     """
 
-    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
+    col_name_data_attr_mapping = { 4: { 'index': 4, 'name': 'Score' } }
 
     def open_data_file( self ):
         return ctabix.Tabixfile(self.dependencies['bgzip'].file_name,
@@ -627,7 +627,7 @@ class VcfDataProvider( GenomeDataProvider ):
         8-end: allele counts for each alternative
     """
 
-    col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
+    col_name_data_attr_mapping = { 'Qual': { 'index': 6, 'name': 'Qual' } }
 
     dataset_type = 'variant'
 
@@ -881,7 +881,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     def open_data_file( self ):
         # Attempt to open the BAM file with index
         return pysam.AlignmentFile( self.original_dataset.file_name, mode='rb',
-                                  index_filename=self.converted_dataset.file_name )
+                                    index_filename=self.converted_dataset.file_name )
 
     def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         """
@@ -1157,7 +1157,7 @@ class BBIDataProvider( GenomeDataProvider ):
         # naming convention.
         def _summarize_bbi( bbi, chrom, start, end, num_points ):
             return bbi.summarize( chrom, start, end, num_points ) or \
-                bbi.summarize( _convert_between_ucsc_and_ensemble_naming( chrom ) , start, end, num_points )
+                bbi.summarize( _convert_between_ucsc_and_ensemble_naming( chrom ), start, end, num_points )
 
         # Bigwig can be a standalone bigwig file, in which case we use
         # original_dataset, or coming from wig->bigwig conversion in
@@ -1285,7 +1285,7 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
     """
     Interval index files used for GFF, Pileup files.
     """
-    col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
+    col_name_data_attr_mapping = { 4: { 'index': 4, 'name': 'Score' } }
 
     dataset_type = 'interval_index'
 

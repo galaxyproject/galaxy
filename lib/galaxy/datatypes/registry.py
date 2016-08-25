@@ -119,9 +119,7 @@ class Registry( object ):
             for elem in registration.findall( 'datatype' ):
                 # Keep a status of the process steps to enable stopping the process of handling the datatype if necessary.
                 ok = True
-                extension = elem.get( 'extension', None )
-                if extension:
-                    extension = extension.lower()
+                extension = self.get_extension( elem )
                 dtype = elem.get( 'type', None )
                 type_extension = elem.get( 'type_extension', None )
                 mimetype = elem.get( 'mimetype', None )
@@ -131,7 +129,11 @@ class Registry( object ):
                 make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                 edam_format = elem.get( 'edam_format', None )
                 if edam_format and not make_subclass:
-                    self.log.warn("Cannot specify edam_format without setting subclass to True, skipping datatype.")
+                    self.log.warning("Cannot specify edam_format without setting subclass to True, skipping datatype.")
+                    continue
+                edam_data = elem.get( 'edam_data', None )
+                if edam_data and not make_subclass:
+                    self.log.warning("Cannot specify edam_data without setting subclass to True, skipping datatype.")
                     continue
                 # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
@@ -232,6 +234,8 @@ class Registry( object ):
                                     datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
                                     if edam_format:
                                         datatype_class.edam_format = edam_format
+                                    if edam_data:
+                                        datatype_class.edam_data = edam_data
                                 self.datatypes_by_extension[ extension ] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
@@ -552,7 +556,7 @@ class Registry( object ):
             # Load display applications defined by local datatypes_conf.xml.
             datatype_elems = self.display_app_containers
         for elem in datatype_elems:
-            extension = elem.get( 'extension', None )
+            extension = self.get_extension( elem )
             for display_app in elem.findall( 'display' ):
                 display_file = display_app.get( 'file', None )
                 if installed_repository_dict:
@@ -818,9 +822,14 @@ class Registry( object ):
     def edam_formats( self ):
         """
         """
-        mapping = {}
-        for k, v in self.datatypes_by_extension.iteritems():
-            mapping[k] = v.edam_format
+        mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
+        return mapping
+
+    @property
+    def edam_data( self ):
+        """
+        """
+        mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
         return mapping
 
     @property
@@ -861,3 +870,17 @@ class Registry( object ):
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
         os.chmod( self.xml_filename, 0o644 )
+
+    def get_extension( self, elem ):
+        """
+        Function which returns the extension lowercased
+        :param elem:
+        :return extension:
+        """
+        extension = elem.get('extension', None)
+        # If extension is not None and is uppercase or mixed case, we need to lowercase it
+        if extension is not None and not extension.islower():
+            self.log.debug( "%s is not lower case, that could cause troubles in the future. \
+            Please change it to lower case" % extension )
+            extension = extension.lower()
+        return extension

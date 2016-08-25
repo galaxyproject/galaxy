@@ -216,7 +216,8 @@ return {
         show_legend : {
             title       : 'Show legend',
             info        : 'Would you like to add a legend?',
-            type        : 'radiobutton',
+            type        : 'select',
+            display     : 'radiobutton',
             init        : 'true',
             data        : [
                 {
@@ -232,7 +233,8 @@ return {
         use_panels : {
             title       : 'Use multi-panels',
             info        : 'Would you like to separate your data into individual panels?',
-            type        : 'radiobutton',
+            type        : 'select',
+            display     : 'radiobutton',
             init        : 'false',
             data        : [
                 {
@@ -245,7 +247,13 @@ return {
                 }
             ]
         }
-    }
+    },
+    series      : [{
+        name        : 'key',
+        label       : 'Provide a label',
+        type        : 'text',
+        placeholder : 'Data label'
+    }]
 };
 
 });

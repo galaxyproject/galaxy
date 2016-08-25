@@ -17,11 +17,13 @@ from sqlalchemy import and_, or_, true, func
 from galaxy import model
 from galaxy import util
 from galaxy import web
+from galaxy.util import string_as_bool
 from galaxy.exceptions import ObjectInvalid
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
                                                  validate_publicname)
+from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import biostar, hash_util, docstring_trim, listify
 from galaxy.web import url_for
 from galaxy.web.base.controller import (BaseUIController,
@@ -110,7 +112,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 request = consumer.begin( openid_provider_obj.op_endpoint_url )
                 if request is None:
                     message = 'No OpenID services are available at %s' % openid_provider_obj.op_endpoint_url
-            except Exception, e:
+            except Exception as e:
                 message = 'Failed to begin OpenID authentication: %s' % str( e )
             if request is not None:
                 trans.app.openid_manager.add_sreg( trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional )
@@ -562,7 +564,21 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
                 message, status = self.resend_verification_email( trans, user.email, user.username )
         else:  # activation is OFF
+            pw_expires = trans.app.config.password_expiration_period
+            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
+                # Password is expired, we don't log them in.
+                trans.response.send_redirect(web.url_for(controller='user',
+                                                         action='change_password',
+                                                         message='Your password has expired. Please change it to access Galaxy.',
+                                                         redirect_home=True,
+                                                         status='error'))
             message, success, status = self.proceed_login( trans, user, redirect )
+            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
+                # If password is about to expire, modify message to state that.
+                expiredate = datetime.today() - user.last_password_change + pw_expires
+                message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                          (expiredate.days, user.email, redirect, url_for('/'))
+                status = 'warning'
         return ( message, status, user, success )
 
     def proceed_login( self, trans, user, redirect ):
@@ -617,9 +633,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """
         #  Activation is forced and the user is not active yet. Check the grace period.
         activation_grace_period = trans.app.config.activation_grace_period
-        #  Default value is 3 hours.
-        if activation_grace_period is None:
-            activation_grace_period = 3
         delta = timedelta( hours=int( activation_grace_period ) )
         time_difference = datetime.utcnow() - create_time
         return ( time_difference > delta or activation_grace_period == 0 )
@@ -1118,7 +1131,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         provided, don't require current password.
         """
         status = None
-        message = None
+        message = kwd.get( 'message', '' )
         user = None
         if kwd.get( 'change_password_button', False ):
             password = kwd.get( 'password', '' )
@@ -1162,10 +1175,56 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
                     trans.log_event( "User change password" )
-                    return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
+                    if kwd.get('display_top', False) == 'True':
+                        return trans.response.send_redirect( url_for( '/', message='Password has been changed' ))
+                    else:
+                        return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
+
         return trans.fill_template( '/user/change_password.mako',
                                     token=token,
                                     status=status,
+                                    message=message,
+                                    display_top=kwd.get('redirect_home', False)
+                                    )
+
+    @web.expose
+    def change_communication( self, trans, cntrller, **kwd):
+        """
+            Provides a form with which the user can activate/deactivate
+            the commnication server.
+        """
+        params = util.Params( kwd )
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        user_id = params.get( 'user_id', None )
+        activated = ''
+
+        if user_id and is_admin:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
+
+        if user and params.get( 'change_communication_button', False ):
+            communication_enabled = kwd.get( 'enable_communication_server', False )
+            if communication_enabled:
+                activated = 'checked'
+                user.preferences['communication_server'] = True
+                message = 'Your communication settings has been updated and activated.'
+            else:
+                activated = ''
+                user.preferences['communication_server'] = False
+                message = 'Your communication settings has been updated and deactivated.'
+            trans.sa_session.add( user )
+            trans.sa_session.flush()
+        else:
+            if string_as_bool( user.preferences.get('communication_server', '0') ):
+                activated = 'checked'
+
+        return trans.fill_template( '/user/communication_settings.mako',
+                                    cntrller=cntrller,
+                                    status=status,
+                                    activated=activated,
                                     message=message )
 
     @web.expose
@@ -1269,7 +1328,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             The user can activate them and the choice is stored in user_preferences.
         """
 
-        def get_filter_mapping( db_filters, config_filters ):
+        def get_filter_mapping( db_filters, config_filters, factory ):
             """
                 Compare the allowed filters from the galaxy.ini config file with the previously saved or default filters from the database.
                 We need that to toogle the checkboxes for the formular in the right way.
@@ -1277,17 +1336,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             """
             filters = list()
             for filter_name in config_filters:
-                if ":" in filter_name:
-                    # Should be a submodule of filters (e.g. examples:restrict_development_tools)
-                    (module_name, function_name) = filter_name.rsplit(":", 1)
-                    module_name = 'galaxy.tools.filters.%s' % module_name.strip()
-                    module = __import__( module_name, globals(), fromlist=['temp_module'] )
-                    function = getattr( module, function_name.strip() )
-                else:
-                    # No module found it has to be explicitly imported.
-                    module = __import__( 'galaxy.tools.filters', globals(), fromlist=['temp_module'] )
-                    function = getattr( globals(), filter_name.strip() )
-
+                function = factory._build_filter_function(filter_name)
                 doc_string = docstring_trim( function.__doc__ )
                 split = doc_string.split('\n\n')
                 if split:
@@ -1328,9 +1377,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 elif name == 'toolbox_label_filters':
                     saved_user_label_filters = listify( value, do_strip=True )
 
-            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
-            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
-            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
+            ff = FilterFactory(trans.app.toolbox)
+            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters, ff )
+            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters, ff )
+            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters, ff )
 
             return trans.fill_template( 'user/toolbox_filters.mako',
                                         cntrller=cntrller,
@@ -1349,12 +1399,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def edit_toolbox_filters( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
-        user_id = params.get( 'user_id', False )
-        if not user_id:
-            # User must be logged in to create a new address
-            return trans.show_error_message( "You must be logged in to change the ToolBox filters." )
-
-        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
 
         if params.get( 'edit_toolbox_filter_button', False ):
             tool_filters = list()
@@ -1368,11 +1412,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         label_filters.append( name[2:] )
                     elif name.startswith('s_'):
                         section_filters.append( name[2:] )
-            user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
-            user.preferences['toolbox_section_filters'] = ','.join( section_filters )
-            user.preferences['toolbox_label_filters'] = ','.join( label_filters )
+            trans.user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
+            trans.user.preferences['toolbox_section_filters'] = ','.join( section_filters )
+            trans.user.preferences['toolbox_label_filters'] = ','.join( label_filters )
 
-            trans.sa_session.add( user )
+            trans.sa_session.add( trans.user )
             trans.sa_session.flush()
             message = 'ToolBox filters has been updated.'
             kwd = dict( message=message, status='done' )
@@ -1768,7 +1812,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
                     attributes[ 'count' ] = chrom_count
                     updated = True
-                except Exception, e:
+                except Exception as e:
                     log.error( "Failed to open chrom count dataset: %s", e )
 
         if updated:

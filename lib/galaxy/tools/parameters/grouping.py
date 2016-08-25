@@ -106,7 +106,7 @@ class Repeat( Group ):
                     else:
                         rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
                 rval.append( rval_dict )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval
@@ -161,7 +161,7 @@ class Section( Group ):
             for input in self.inputs.itervalues():
                 if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval
@@ -283,7 +283,7 @@ class UploadDataset( Group ):
         return rval
 
     def get_uploaded_datasets( self, trans, context, override_name=None, override_info=None ):
-        def get_data_file_filename( data_file, override_name=None, override_info=None ):
+        def get_data_file_filename( data_file, override_name=None, override_info=None, purge=True ):
             dataset_name = override_name
             dataset_info = override_info
 
@@ -297,7 +297,7 @@ class UploadDataset( Group ):
                     dataset_name = get_file_name( data_file['filename'] )
                 if not dataset_info:
                     dataset_info = 'uploaded file'
-                return Bunch( type='file', path=data_file['local_filename'], name=dataset_name )
+                return Bunch( type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge )
             except:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch( type=None, path=None, name=None )
@@ -364,7 +364,13 @@ class UploadDataset( Group ):
                                 if not os.path.islink( os.path.join( dirpath, filename ) ):
                                     ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, path ) ),
                                                       'filename' : os.path.basename( path ) }
-                                    file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info )
+                                    purge = getattr(trans.app.config, 'ftp_upload_purge', True)
+                                    file_bunch = get_data_file_filename(
+                                        ftp_data_file,
+                                        override_name=name,
+                                        override_info=info,
+                                        purge=purge,
+                                    )
                                     if file_bunch.path:
                                         break
                         if file_bunch.path:
@@ -432,7 +438,8 @@ class UploadDataset( Group ):
                     # TODO: warning to the user (could happen if file is already imported)
                 ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, ftp_file ) ),
                                   'filename' : os.path.basename( ftp_file ) }
-                file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info )
+                purge = getattr(trans.app.config, 'ftp_upload_purge', True)
+                file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info, purge=purge )
                 if file_bunch.path:
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
@@ -557,7 +564,7 @@ class Conditional( Group ):
                 # conditional's values dictionary.
                 if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval

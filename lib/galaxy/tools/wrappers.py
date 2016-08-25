@@ -368,7 +368,7 @@ class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
             if dataset_collection_element.is_collection:
                 element_wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection_element, dataset_paths, **kwargs )
             else:
-                element_wrapper = self._dataset_wrapper( element_object, dataset_paths, **kwargs)
+                element_wrapper = self._dataset_wrapper( element_object, dataset_paths, identifier=element_identifier, **kwargs)
 
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append( element_wrapper )

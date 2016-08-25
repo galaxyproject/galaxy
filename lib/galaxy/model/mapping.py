@@ -33,11 +33,12 @@ model.User.table = Table(
     Column( "email", TrimmedString( 255 ), index=True, nullable=False ),
     Column( "username", TrimmedString( 255 ), index=True, unique=True ),
     Column( "password", TrimmedString( 255 ), nullable=False ),
+    Column( "last_password_change", DateTime, default=now ),
     Column( "external", Boolean, default=False ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ),
-    Column( "disk_usage", Numeric( 15, 0 ), index=True ) ,
+    Column( "disk_usage", Numeric( 15, 0 ), index=True ),
     Column( "active", Boolean, index=True, default=True, nullable=False ),
     Column( "activation_token", TrimmedString( 64 ), nullable=True, index=True ) )
 
@@ -106,14 +107,14 @@ model.HistoryDatasetAssociation.table = Table(
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "state", TrimmedString( 64 ), index=True, key="_state" ),
     Column( "copied_from_history_dataset_association_id", Integer,
-        ForeignKey( "history_dataset_association.id" ), nullable=True ),
+            ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "copied_from_library_dataset_dataset_association_id", Integer,
-        ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
+            ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
-    Column( "tool_version" , TEXT ),
+    Column( "peek", TEXT ),
+    Column( "tool_version", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
@@ -124,7 +125,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column( "hid", Integer ),
     Column( "purged", Boolean, index=True, default=False ),
     Column( "hidden_beneath_collection_instance_id",
-        ForeignKey( "history_dataset_collection_association.id" ), nullable=True ) )
+            ForeignKey( "history_dataset_collection_association.id" ), nullable=True ) )
 
 model.Dataset.table = Table(
     "dataset", metadata,
@@ -136,7 +137,7 @@ model.Dataset.table = Table(
     Column( "purged", Boolean, index=True, default=False ),
     Column( "purgable", Boolean, default=True ),
     Column( "object_store_id", TrimmedString( 255 ), index=True ),
-    Column( "external_filename" , TEXT ),
+    Column( "external_filename", TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ),
     Column( 'total_size', Numeric( 15, 0 ) ),
@@ -354,8 +355,8 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
-    Column( "tool_version" , TEXT ),
+    Column( "peek", TEXT ),
+    Column( "tool_version", TEXT ),
     Column( "extension", TrimmedString( 64 ) ),
     Column( "metadata", MetadataType(), key="_metadata" ),
     Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
@@ -2545,7 +2546,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
 
     model_modules = [model]
     if map_install_models:
-        import galaxy.model.tool_shed_install.mapping  # noqa
+        import galaxy.model.tool_shed_install.mapping  # noqa: F401
         from galaxy.model import tool_shed_install
         model_modules.append(tool_shed_install)
 

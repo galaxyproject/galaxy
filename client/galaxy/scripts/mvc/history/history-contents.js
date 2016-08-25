@@ -285,10 +285,14 @@ var HistoryContents = Backbone.Collection
             type = ( contentType === 'hdca'? 'dataset_collection' : 'dataset' );
         }
         var collection = this,
-            xhr = jQuery.post( this.url(), {
-                content : id,
-                source  : contentType,
-                type    : type
+            xhr = jQuery.ajax( this.url(), {
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    content : id,
+                    source  : contentType,
+                    type    : type
+                })
             })
             .done( function( response ){
                 collection.add([ response ]);
@@ -309,17 +313,6 @@ var HistoryContents = Backbone.Collection
     },
 
     // ........................................................................ misc
-    /** override to ensure type id is set */
-    set : function( models, options ){
-        models = _.isArray( models )? models : [ models ];
-        _.each( models, function( model ){
-            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
-                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
-            }
-        });
-        Backbone.Collection.prototype.set.call( this, models, options );
-    },
-
     /** */
     createHDCA : function( elementIdentifiers, collectionType, name, options ){
         //precondition: elementIdentifiers is an array of plain js objects

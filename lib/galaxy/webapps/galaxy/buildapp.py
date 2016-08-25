@@ -4,6 +4,7 @@ Provides factory methods to assemble the Galaxy web application
 
 import os
 import sys
+import threading
 import atexit
 
 try:
@@ -13,7 +14,6 @@ except:
 
 
 import galaxy.app
-from galaxy.config import process_is_uwsgi
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
@@ -22,21 +22,13 @@ import galaxy.web.framework.webapp
 from galaxy.webapps.util import build_template_error_formatters
 from galaxy import util
 from galaxy.util import asbool
+from galaxy.util.postfork import process_is_uwsgi, register_postfork_function
 from galaxy.util.properties import load_app_properties
 
 from paste import httpexceptions
 
 import logging
 log = logging.getLogger( __name__ )
-
-try:
-    from uwsgidecorators import postfork
-except:
-    # TODO:  Make this function more like flask's @before_first_request w/
-    # registered methods etc.
-    def pf_dec(func):
-        return func
-    postfork = pf_dec
 
 
 class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
@@ -135,9 +127,11 @@ def paste_app_factory( global_conf, **kwargs ):
     except:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
-    if not process_is_uwsgi:
-        postfork_setup()
+    register_postfork_function(postfork_setup)
 
+    for th in threading.enumerate():
+        if th.is_alive():
+            log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
     return webapp
 
@@ -158,7 +152,6 @@ def uwsgi_app_factory():
     return app_factory(global_conf, **kwargs)
 
 
-@postfork
 def postfork_setup():
     from galaxy.app import app
     if process_is_uwsgi:
@@ -252,18 +245,21 @@ def populate_api_routes( webapp, app ):
     # ====== TOOLS API ======
     # =======================
 
+    webapp.mapper.connect( '/api/tools/all_requirements', action='all_requirements', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/build', action='build', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/reload', action='reload', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
 
-    webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies" )
+    webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict( method=[ "POST" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/requirements', action="manager_requirements", controller="tool_dependencies" )
-    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies", method=['GET'] )
-    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="install_dependency", controller="tool_dependencies", method=['POST'] )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies", conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict( method=[ "POST" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/{id}/requirements', action="resolver_requirements", controller="tool_dependencies" )
     webapp.mapper.resource( 'dependency_resolver', 'dependency_resolvers', controller="tool_dependencies", path_prefix='api' )
 
@@ -271,6 +267,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.connect( '/api/workflows/build_module', action='build_module', controller="workflows" )
+    webapp.mapper.connect( '/api_internal/workflows/{workflow_id}/run', action='run', controller="workflows", conditions=dict( method=['POST'] ) )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
@@ -299,7 +296,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_formats': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_data': 'GET', 'edam_formats': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
@@ -725,10 +722,13 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
-    if asbool(conf.get( 'use_remote_user', False )):
+    single_user = conf.get( 'single_user', None )
+    use_remote_user = asbool(conf.get( 'use_remote_user', False )) or single_user
+    if use_remote_user:
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
         app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
                           display_servers=util.listify( conf.get( 'display_servers', '' ) ),
+                          single_user=single_user,
                           admin_users=conf.get( 'admin_users', '' ).split( ',' ),
                           remote_user_header=conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ),
                           remote_user_secret_header=conf.get('remote_user_secret', None),

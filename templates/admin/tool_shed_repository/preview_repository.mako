@@ -307,6 +307,7 @@ function changeset_metadata() {
         }
         $("#tool_dependencies").show();
         $("#install_tool_dependencies").prop('disabled', false);
+        $("#install_resolver_dependencies_checkbox").show();
         $("#install_tool_dependencies_checkbox").show();
     }
     else {
@@ -359,6 +360,7 @@ $(function() {
         form.preventDefault();
         var params = {};
         params.tool_shed_url = $("#tool_shed_url").val();
+        params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
         params.install_tool_dependencies = $("#install_tool_dependencies").val();
         params.install_repository_dependencies = $("#install_repository_dependencies").val();
         params.tool_panel_section = JSON.stringify(select_tps(params));
@@ -423,6 +425,10 @@ $(function() {
         </div>
         <div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"></strong></div>
         <div class="toolFormBody">
+            <p id="install_resolver_dependencies_checkbox">
+                <input type="checkbox" checked id="install_resolver_dependencies" />
+                <label for="install_resolver_dependencies">Install resolver dependencies</label>
+            </p>
             <p id="install_repository_dependencies_checkbox">
                 <input type="checkbox" checked id="install_repository_dependencies" />
                 <label for="install_repository_dependencies">Install repository dependencies</label>

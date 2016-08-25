@@ -25,6 +25,11 @@ pytz==2015.4
 Babel==2.0
 Beaker==1.7.0
 dictobj==0.3.1
+nose==1.3.7
+Parsley==1.3
+six==1.9.0
+Whoosh==2.7.4
+testfixtures==4.10.0
 
 # Cheetah and dependencies
 Cheetah==2.4.4
@@ -51,22 +56,16 @@ decorator==4.0.2
 Tempita==0.5.3dev
 sqlparse==0.1.16
 pbr==1.8.0
-six==1.9.0
-Parsley==1.3
-nose==1.3.7
+
+# svgwrite and dependencies
 svgwrite==1.1.6
+pyparsing==2.1.1
 
 # Fabric and dependencies
 Fabric==1.10.2
 paramiko==1.15.2
 ecdsa==0.13
-# pycrypto, but it is a direct Galaxy dependency as well
-
-# Can't use Whoosh latest due to a bug but need to backport a bugfix from a
-# newer release.
-#
-# https://bitbucket.org/mchaput/whoosh/pull-requests/50/fix-lru-thread-safety/diff
-Whoosh==2.4.1+gx1
 
 # Flexible BAM index naming
 pysam==0.8.4+gx1
+

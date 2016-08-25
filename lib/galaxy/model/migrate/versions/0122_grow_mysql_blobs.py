@@ -1,6 +1,7 @@
 """
 Migration script to grow MySQL blobs.
 """
+from __future__ import print_function
 
 from sqlalchemy import MetaData
 
@@ -36,7 +37,7 @@ BLOB_COLUMNS = [
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     if migrate_engine.name != "mysql":
@@ -47,8 +48,8 @@ def upgrade(migrate_engine):
         try:
             migrate_engine.execute( cmd )
         except Exception as e:
-            print "Failed to grow column %s.%s" % (table, column)
-            print str( e )
+            print("Failed to grow column %s.%s" % (table, column))
+            print(str( e ))
 
 
 def downgrade(migrate_engine):

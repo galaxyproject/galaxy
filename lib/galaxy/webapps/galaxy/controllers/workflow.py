@@ -32,6 +32,7 @@ from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
+from galaxy.tools.parameters.basic import workflow_building_modes
 
 log = logging.getLogger( __name__ )
 
@@ -247,7 +248,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Get workflow by username and slug. Security is handled by the display methods below.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
+        if not user:
+            raise web.httpexceptions.HTTPNotFound()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
+        if not stored_workflow:
+            raise web.httpexceptions.HTTPNotFound()
         encoded_id = trans.security.encode_id( stored_workflow.id )
 
         # Display workflow in requested format.
@@ -1127,6 +1132,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             else:
                 # Prepare each step
                 missing_tools = []
+                trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
                 for step in workflow.steps:
                     try:
                         module_injector.inject( step )

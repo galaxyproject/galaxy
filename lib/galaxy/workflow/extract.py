@@ -97,7 +97,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     # Tool steps
     for job_id in job_ids:
         if job_id not in jobs_by_id:
-            log.warn( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
+            log.warning( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
             raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
@@ -141,7 +141,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
                 if hid is None:
                     template = "Failed to find matching implicit job - job is %s, jobs are %s, assoc_name is %s."
                     message = template % ( job.id, jobs, assoc.name )
-                    log.warn( message )
+                    log.warning( message )
                     raise Exception( "Failed to extract job." )
             else:
                 if hasattr( assoc, "dataset" ):
@@ -220,15 +220,17 @@ class WorkflowSummary( object ):
         dataset_collection = content
         hid = content.hid
         self.collection_types[ hid ] = content.collection.collection_type
-        if content.creating_job_associations:
-            for assoc in content.creating_job_associations:
-                job = assoc.job
-                if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
-                    self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
-                    if content.implicit_output_name:
-                        self.implicit_map_jobs.append( job )
-                else:
-                    self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
+        cja = content.creating_job_associations
+        if cja:
+            # Use the first job to represent all mapped jobs.
+            representive_job_assoc = content.creating_job_associations[0]
+            job = representive_job_assoc.job
+            if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
+                self.jobs[ job ] = [ ( representive_job_assoc.name, dataset_collection ) ]
+                if content.implicit_output_name:
+                    self.implicit_map_jobs.append( job )
+            else:
+                self.jobs[ job ].append( ( representive_job_assoc.name, dataset_collection ) )
         # This whole elif condition may no longer be needed do to additional
         # tracking with creating_job_associations. Will delete at some point.
         elif content.implicit_output_name:
@@ -241,7 +243,7 @@ class WorkflowSummary( object ):
 
             job_hda = self.__original_hda( dataset_instance )
             if not job_hda.creating_job_associations:
-                log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                log.warning( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
                 job = DatasetCollectionCreationJob( dataset_collection )
                 self.jobs[ job ] = [ ( None, dataset_collection ) ]
 

@@ -3,6 +3,8 @@ This script adds the filename_override_metadata column to the JobExternalOutputM
 allowing existing metadata files to be written when using external metadata and a cluster
 set up with read-only access to database/files
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -22,11 +24,11 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script adds the filename_override_metadata column to the JobExternalOutputMetadata table,"
-    print" allowing existing metadata files to be written when using external metadata and a cluster"
-    print "set up with read-only access to database/files"
-    print "========================================"
+    print("========================================")
+    print("This script adds the filename_override_metadata column to the JobExternalOutputMetadata table,")
+    print(" allowing existing metadata files to be written when using external metadata and a cluster")
+    print("set up with read-only access to database/files")
+    print("========================================")
 
 
 def upgrade(migrate_engine):
@@ -39,7 +41,7 @@ def upgrade(migrate_engine):
         col = Column( "filename_override_metadata", String( 255 ) )
         col.create( job_external_output_metadata )
         assert col is job_external_output_metadata.c.filename_override_metadata
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding column 'filename_override_metadata' to job_external_output_metadata table failed: %s" % ( str( e ) ) )
 
 

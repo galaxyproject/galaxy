@@ -99,7 +99,7 @@ def get_value(name, a_type, values_dict):
 
 # Read and filter input file, skipping invalid lines
 code = '''
-for i, line in enumerate( file( in_fname ) ):
+for i, line in enumerate( open( in_fname ) ):
     total_lines += 1
     line = line.rstrip( '\\r\\n' )
     if not line or line.startswith( '#' ):
@@ -126,7 +126,7 @@ for i, line in enumerate( file( in_fname ) ):
         if %s:
             lines_kept += 1
             print >> out, line
-    except Exception, e:
+    except Exception as e:
         print e
         skipped_lines += 1
         if not invalid_line:
@@ -137,7 +137,7 @@ for i, line in enumerate( file( in_fname ) ):
 valid_filter = True
 try:
     exec code
-except Exception, e:
+except Exception as e:
     out.close()
     if str( e ).startswith( 'invalid syntax' ):
         valid_filter = False

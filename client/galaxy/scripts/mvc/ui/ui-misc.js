@@ -67,7 +67,7 @@ define(['utils/utils',
                 if ( !this.model.get( 'persistent' ) ) {
                     var self = this;
                     this.timeout = window.setTimeout( function() {
-                        self.$el.fadeOut();
+                        self.model.set( 'message', '' );
                     }, 3000 );
                 }
             } else {
@@ -86,7 +86,9 @@ define(['utils/utils',
                 disabled        : false,
                 visible         : true,
                 cls             : '',
-                area            : false
+                area            : false,
+                color           : null,
+                style           : null
             }).set( options );
             this.tagName = this.model.get( 'area' ) ? 'textarea' : 'input';
             this.setElement( $( '<' + this.tagName + '/>' ) );
@@ -104,9 +106,12 @@ define(['utils/utils',
             this.$el.removeClass()
                     .addClass( 'ui-' + this.tagName )
                     .addClass( this.model.get( 'cls' ) )
+                    .addClass( this.model.get( 'style' ) )
                     .attr( 'id', this.model.id )
                     .attr( 'type', this.model.get( 'type' ) )
-                    .attr( 'placeholder', this.model.get( 'placeholder' ) );
+                    .attr( 'placeholder', this.model.get( 'placeholder' ) )
+                    .css( 'color', this.model.get( 'color' ) || '' )
+                    .css( 'border-color', this.model.get( 'color' ) || '' );
             if ( this.model.get( 'value' ) !== this.$el.val() ) {
                 this.$el.val( this.model.get( 'value' ) );
             }

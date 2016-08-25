@@ -156,7 +156,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 id=id,
             )
             return self.__collection_dict( trans, dataset_collection_instance, view="element" )
-        except Exception, e:
+        except Exception as e:
             log.exception( "Error in history API at listing dataset collection: %s", e )
             trans.response.status = 500
             return { 'error': str( e ) }
@@ -315,7 +315,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         return rval
 
     def __create_dataset_collection( self, trans, history, payload, **kwd ):
-        source = kwd.get("source", "new_collection")
+        source = kwd.get( "source", payload.get( "source", "new_collection" ) )
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params( payload )

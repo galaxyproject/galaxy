@@ -59,6 +59,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                             results.append( tool.id )
                     except exceptions.AuthenticationFailed:
                         pass
+                    except exceptions.ObjectNotFound:
+                        pass
             return results
 
         # Find whether to detect.
@@ -105,6 +107,27 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': id } )
         message, status = trans.app.toolbox.reload_tool_by_id( id )
         return { status: message }
+
+    @expose_api
+    @web.require_admin
+    def all_requirements(self, trans, **kwds):
+        """
+        GET /api/tools/all_requirements
+        Return list of unique requirements for all tools.
+        """
+
+        return trans.app.toolbox.all_requirements
+
+    @expose_api
+    @web.require_admin
+    def requirements(self, trans, id, **kwds):
+        """
+        GET /api/tools/{tool_id}/requirements
+        Return the resolver status for a specific tool id.
+        [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}]
+        """
+        tool = self._get_tool(id)
+        return tool.tool_requirements_status
 
     @expose_api
     @web.require_admin
@@ -175,6 +198,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool_name_boost = self.app.config.get( 'tool_name_boost', 9 )
         tool_section_boost = self.app.config.get( 'tool_section_boost', 3 )
         tool_description_boost = self.app.config.get( 'tool_description_boost', 2 )
+        tool_label_boost = self.app.config.get( 'tool_label_boost', 1 )
+        tool_stub_boost = self.app.config.get( 'tool_stub_boost', 5 )
         tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
         tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
 
@@ -182,6 +207,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                                                   tool_name_boost=tool_name_boost,
                                                   tool_section_boost=tool_section_boost,
                                                   tool_description_boost=tool_description_boost,
+                                                  tool_label_boost=tool_label_boost,
+                                                  tool_stub_boost=tool_stub_boost,
                                                   tool_help_boost=tool_help_boost,
                                                   tool_search_limit=tool_search_limit )
         return results
@@ -218,7 +245,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Get tool.
         tool_version = payload.get( 'tool_version', None )
-        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] , tool_version ) if 'tool_id' in payload else None
+        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ], tool_version ) if 'tool_id' in payload else None
         if not tool or not tool.allow_user_access( trans.user ):
             raise exceptions.MessageException( 'Tool not found or not accessible.' )
         if trans.app.config.user_activation_on:
@@ -525,7 +552,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                     # TODO: set meta internally if dataset is small enough?
                     trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool,
                                                                                                  trans, incoming={ 'input1': new_dataset },
-                                                                                                 overwrite=False, job_params={ "source" : "trackster" } )
+                                                                                                 overwrite=False, job_params={ "source": "trackster" } )
                     # Add HDA subset association.
                     subset_association = trans.app.model.HistoryDatasetAssociationSubset( hda=input_dataset, subset=new_dataset, location=regions_str )
                     trans.sa_session.add( subset_association )
@@ -536,7 +563,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
                 # Add dataset to tool's parameters.
                 if not set_param_value( tool_params, jida.name, subset_dataset ):
-                    return { "error" : True, "message" : "error setting parameter %s" % jida.name }
+                    return { "error": True, "message": "error setting parameter %s" % jida.name }
 
         #
         # Execute tool and handle outputs.
@@ -544,10 +571,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         try:
             subset_job, subset_job_outputs = tool.execute( trans, incoming=tool_params,
                                                            history=target_history,
-                                                           job_params={ "source" : "trackster" } )
-        except Exception, e:
+                                                           job_params={ "source": "trackster" } )
+        except Exception as e:
             # Lots of things can go wrong when trying to execute tool.
-            return { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) }
+            return { "error": True, "message": e.__class__.__name__ + ": " + str(e) }
         if run_on_regions:
             for output in subset_job_outputs.values():
                 output.visible = False

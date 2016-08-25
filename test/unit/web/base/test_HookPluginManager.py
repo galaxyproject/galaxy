@@ -74,11 +74,11 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_loading_point( self ):
         """should attempt load on dirs containing loading_point file"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    loading_point  : contents1
+            'plugins': {
+                'plugin1': {
+                    loading_point: contents1
                 },
-                'not_a_plugin'     : 'blerbler'
+                'not_a_plugin': 'blerbler'
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
@@ -87,8 +87,8 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
 
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
@@ -101,10 +101,10 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_bad_loading_points( self ):
         """should NOT attempt load on dirs NOT containing loading_point file"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {},
-                'plugin2'   : {
-                    'plogin.py' : 'wot'
+            'plugins': {
+                'plugin1': {},
+                'plugin2': {
+                    'plogin.py': 'wot'
                 }
             }
         })
@@ -114,7 +114,7 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertEqual( plugin_mgr.plugins.keys(), [] )
 
         mock_app_dir.remove()
@@ -122,9 +122,9 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_bad_import( self ):
         """should error gracefully (skip) on bad import"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    loading_point  : contents2
+            'plugins': {
+                'plugin1': {
+                    loading_point: contents2
                 }
             }
         })
@@ -134,7 +134,7 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertEqual( plugin_mgr.plugins.keys(), [] )
 
         mock_app_dir.remove()
@@ -142,10 +142,10 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_import_w_rel_import( self ):
         """should allow loading_point to rel. import other modules"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
+            'plugins': {
+                'plugin1': {
                     'contents1.py': contents1,
-                    loading_point : contents3
+                    loading_point: contents3
                 }
             }
         })
@@ -155,8 +155,8 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
 
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
@@ -169,9 +169,9 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_import_w_galaxy_import( self ):
         """should allow loading_point to rel. import GALAXY modules"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    loading_point : contents4
+            'plugins': {
+                'plugin1': {
+                    loading_point: contents4
                 }
             }
         })
@@ -181,8 +181,8 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
 
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
@@ -196,21 +196,21 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_run_hooks( self ):
         """should run hooks of loaded plugins"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    loading_point : contents5
+            'plugins': {
+                'plugin1': {
+                    loading_point: contents5
                 },
-                'plugin2'   : {
-                    loading_point : contents6
+                'plugin2': {
+                    loading_point: contents6
                 }
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = HookPluginManager( mock_app, directories_setting='plugins', skip_bad_plugins=False )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2' ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2' ] )
 
         return_val_dict = plugin_mgr.run_hook( 'blah', 'one two check' )
-        self.assertEqual( return_val_dict, { 'plugin1' : 'One Two Check', 'plugin2' : 'ONE TWO CHECK' } )
+        self.assertEqual( return_val_dict, { 'plugin1': 'One Two Check', 'plugin2': 'ONE TWO CHECK' } )
 
         result = plugin_mgr.filter_hook( 'filter_test', 'check' )
         self.assertEqual( result, 'check one two' )
@@ -220,24 +220,24 @@ class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_hook_errs( self ):
         """should fail gracefully if hook fails (and continue with other plugins)"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {
-                    loading_point : contents5
+            'plugins': {
+                'plugin1': {
+                    loading_point: contents5
                 },
-                'plugin2'   : {
-                    loading_point : contents6
+                'plugin2': {
+                    loading_point: contents6
                 },
-                'plugin3'   : {
-                    loading_point : contents7
+                'plugin3': {
+                    loading_point: contents7
                 }
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = HookPluginManager( mock_app, directories_setting='plugins', skip_bad_plugins=False )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2', 'plugin3' ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2', 'plugin3' ] )
 
         return_val_dict = plugin_mgr.run_hook( 'blah', 'one two check' )
-        self.assertEqual( return_val_dict, { 'plugin1' : 'One Two Check', 'plugin2' : 'ONE TWO CHECK' } )
+        self.assertEqual( return_val_dict, { 'plugin1': 'One Two Check', 'plugin2': 'ONE TWO CHECK' } )
 
         result = plugin_mgr.filter_hook( 'filter_test', 'check' )
         self.assertEqual( result, 'check one two' )

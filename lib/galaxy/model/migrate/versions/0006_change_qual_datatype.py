@@ -2,6 +2,8 @@
 This migration script changes certain values in the history_dataset_association.extension
 column, specifically 'qual' is chaged to be 'qual454'.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -20,10 +22,10 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script changes certain values in the history_dataset_association.extension"
-    print "column, specifically 'qual' is chaged to be 'qual454'."
-    print "========================================"
+    print("========================================")
+    print("This migration script changes certain values in the history_dataset_association.extension")
+    print("column, specifically 'qual' is chaged to be 'qual454'.")
+    print("========================================")
 
 
 def upgrade(migrate_engine):
@@ -37,24 +39,24 @@ def upgrade(migrate_engine):
     i = Index( 'ix_hda_extension', HistoryDatasetAssociation_table.c.extension )
     try:
         i.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Adding index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
 
     # Set the default data in the galaxy_user table, but only for null values
     cmd = "UPDATE history_dataset_association SET extension = 'qual454' WHERE extension = 'qual' and peek like \'>%%\'"
     try:
         db_session.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Resetting extension qual to qual454 in history_dataset_association failed: %s" % ( str( e ) ) )
     cmd = "UPDATE history_dataset_association SET extension = 'qualsolexa' WHERE extension = 'qual' and peek not like \'>%%\'"
     try:
         db_session.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Resetting extension qual to qualsolexa in history_dataset_association failed: %s" % ( str( e ) ) )
     # Add 1 index to the history_dataset_association table
     try:
         i.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
 
 

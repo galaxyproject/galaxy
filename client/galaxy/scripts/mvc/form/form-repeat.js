@@ -1,9 +1,6 @@
-// dependencies
+/** This class creates a ui component which enables the dynamic creation of portlets */
 define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc'],
         function(Utils, Table, Portlet, Ui) {
-
-/** This class creates a ui component which enables the dynamic creation of portlets
-*/
 var View = Backbone.View.extend({
     initialize : function(options) {
         var self = this;
@@ -41,14 +38,12 @@ var View = Backbone.View.extend({
         this.n = 0;
     },
 
-    /** Number of repeat blocks
-    */
+    /** Number of repeat blocks */
     size: function() {
         return this.n;
     },
 
-    /** Add new repeat block
-    */
+    /** Add new repeat block */
     add: function(options) {
         if (!options.id || this.list[options.id]) {
             Galaxy.emit.debug('form-repeat::add()', 'Duplicate repeat block id.');
@@ -68,7 +63,7 @@ var View = Backbone.View.extend({
         var portlet = new Portlet.View({
             id              : options.id,
             title           : 'placeholder',
-            cls             : 'ui-portlet-repeat',
+            cls             : options.cls || 'ui-portlet-repeat',
             operations      : {
                 button_delete : button_delete
             }
@@ -84,8 +79,7 @@ var View = Backbone.View.extend({
         this._refresh();
     },
 
-    /** Delete repeat block
-    */
+    /** Delete repeat block */
     del: function(id) {
         if (!this.list[id]) {
             Galaxy.emit.debug('form-repeat::del()', 'Invalid repeat block id.');
@@ -99,8 +93,14 @@ var View = Backbone.View.extend({
         this._refresh();
     },
 
-    /** Hides add/del options
-    */
+    /** Remove all */
+    delAll: function() {
+        for( var id in this.list ) {
+            this.del( id );
+        }
+    },
+
+    /** Hides add/del options */
     hideOptions: function() {
         this.button_new.$el.hide();
         _.each( this.list, function( portlet ) {
@@ -111,8 +111,7 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Refresh view
-    */
+    /** Refresh view */
     _refresh: function() {
         var index = 0;
         for (var id in this.list) {

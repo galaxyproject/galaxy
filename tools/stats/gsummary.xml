@@ -1,6 +1,15 @@
-<tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.0">
+<tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.1">
   <description>for any numerical column</description>
-  <command interpreter="python">gsummary.py $input $out_file1 "$cond"</command>
+  <edam_topics>
+    <edam_topic>topic_2269</edam_topic>
+  </edam_topics>
+  <requirements>
+    <requirement type="package" version="2.7.8">rpy2</requirement>
+  </requirements>
+  <stdio>
+    <exit_code range="1" level="fatal" />
+  </stdio>
+  <command>python $__tool_directory__/gsummary.py "$input" "$out_file1" "$cond"</command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Summary statistics on" help="Dataset missing? See TIP below"/>
     <param name="cond" size="30" type="text" value="c5" label="Column or expression" help="See syntax below">
@@ -10,10 +19,6 @@
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
-  <requirements>
-    <requirement type="package" version="2.15.1">R</requirement>
-    <requirement type="package">rpy</requirement>
-  </requirements>
   <tests>
     <test>
       <param name="input" value="1.bed"/>

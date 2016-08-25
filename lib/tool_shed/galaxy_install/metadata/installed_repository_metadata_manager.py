@@ -10,7 +10,6 @@ from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.metadata import metadata_generator
 from tool_shed.util import common_util
 from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
@@ -162,7 +161,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
         owner = self.repository.owner
         if not owner:
             cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url( clone_url )
-            owner = suc.get_repository_owner( cleaned_repository_clone_url )
+            owner = repository_util.get_repository_owner( cleaned_repository_clone_url )
         guid_to_tool_elem_dict = {}
         for tool_config_filename, guid, tool in repository_tools_tups:
             guid_to_tool_elem_dict[ guid ] = self.tpm.generate_tool_elem( tool_shed,

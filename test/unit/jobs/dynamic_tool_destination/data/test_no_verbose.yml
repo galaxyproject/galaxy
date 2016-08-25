@@ -1,0 +1,11 @@
+tools:
+  test_no_verbose:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 1 KB
+        upper_bound: Infinity
+        destination: Destination1
+    default_destination: waffles_default
+default_destination: waffles_default
+verbose: False

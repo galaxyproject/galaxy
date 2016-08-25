@@ -1,6 +1,8 @@
 """
 Migration script to create a table for page-user share association.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
@@ -16,14 +18,14 @@ PageUserShareAssociation_table = Table( "page_user_share_association", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Create stored_workflow_tag_association table.
     try:
         PageUserShareAssociation_table.create()
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Creating page_user_share_association table failed: %s" % str( e ) )
 
 
@@ -34,6 +36,6 @@ def downgrade(migrate_engine):
     # Drop workflow_tag_association table.
     try:
         PageUserShareAssociation_table.drop()
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.debug( "Dropping page_user_share_association table failed: %s" % str( e ) )

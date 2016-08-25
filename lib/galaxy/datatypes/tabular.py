@@ -13,6 +13,8 @@ import tempfile
 from cgi import escape
 from json import dumps
 
+from six import PY3
+
 from galaxy import util
 from galaxy.datatypes import data, metadata
 from galaxy.datatypes.metadata import MetadataElement
@@ -20,6 +22,9 @@ from galaxy.datatypes.sniff import get_headers
 from galaxy.util.checkers import is_gzip
 
 from . import dataproviders
+
+if PY3:
+    long = int
 
 log = logging.getLogger(__name__)
 
@@ -405,6 +410,7 @@ class Taxonomy( Tabular ):
 @dataproviders.decorators.has_dataproviders
 class Sam( Tabular ):
     edam_format = "format_2573"
+    edam_data = "data_0863"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = { "data": "bam", "index": "bigwig" }
@@ -849,10 +855,10 @@ class Eland( Tabular ):
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21
             dataset.metadata.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'str', 'int', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str']
-            dataset.metadata.lanes = lanes.keys()
+            dataset.metadata.lanes = list(lanes.keys())
             dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
-            dataset.metadata.barcodes = filter(lambda x: x != '0', barcodes.keys()) + ['NoIndex' for x in barcodes.keys() if x == '0']
-            dataset.metadata.reads = reads.keys()
+            dataset.metadata.barcodes = [_ for _ in barcodes.keys() if _ != '0'] + ['NoIndex' for _ in barcodes.keys() if _ == '0']
+            dataset.metadata.reads = list(reads.keys())
 
 
 class ElandMulti( Tabular ):
@@ -915,7 +921,7 @@ class BaseCSV( TabularData ):
             # check the dialect works
             reader = csv.reader(open(filename, 'r'), self.dialect)
             # Check we can read header and get columns
-            header_row = reader.next()
+            header_row = next(reader)
             if len(header_row) < 2:
                 # No columns so not separated by this dialect.
                 return False
@@ -933,7 +939,7 @@ class BaseCSV( TabularData ):
                 if not found_second_line:
                     return False
             else:
-                data_row = reader.next()
+                data_row = next(reader)
                 if len(data_row) < 2:
                     # No columns so not separated by this dialect.
                     return False
@@ -971,8 +977,8 @@ class BaseCSV( TabularData ):
             data_row = None
             header_row = None
             try:
-                header_row = reader.next()
-                data_row = reader.next()
+                header_row = next(reader)
+                data_row = next(reader)
                 for row in reader:
                     pass
             except csv.Error as e:
@@ -1044,7 +1050,7 @@ class ConnectivityTable( Tabular ):
     def set_meta( self, dataset, **kwd ):
         data_lines = 0
 
-        for line in file( dataset.file_name ):
+        for line in open( dataset.file_name ):
             data_lines += 1
 
         dataset.metadata.data_lines = data_lines

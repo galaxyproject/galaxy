@@ -7,8 +7,7 @@ define([ 'utils/utils' ], function( Utils ) {
             this.app = app;
         },
 
-        /** Creates a checksum.
-        */
+        /** Creates a checksum. */
         checksum: function() {
             var sum = '';
             var self = this;
@@ -22,8 +21,15 @@ define([ 'utils/utils' ], function( Utils ) {
             return sum;
         },
 
-        /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission.
-        */
+        /** Set parameter values from model */
+        set: function( model ) {
+            for ( var attr in model.attributes ) {
+                var index = this.match( attr );
+                index && this.app.field_list[ index ].value( model.get( attr ) );
+            }
+        },
+
+        /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission. */
         create: function() {
             var self = this;
 
@@ -122,7 +128,10 @@ define([ 'utils/utils' ], function( Utils ) {
         /** Matches a new tool model to the current input elements e.g. used to update dynamic options
         */
         matchModel: function( model, callback ) {
-            return matchIds( model.inputs, this.flat_dict, callback );
+            var self = this;
+            visitInputs( model.inputs, function( input, name ) {
+                self.flat_dict[ name ] && callback ( input, self.flat_dict[ name ] );
+            });
         },
 
         /** Matches identifier from api response to input elements e.g. used to display validation errors
@@ -191,66 +200,50 @@ define([ 'utils/utils' ], function( Utils ) {
         return -1;
     };
 
-    /** Match context
-     * @param{dict}   inputs    - Dictionary of input elements
-     * @param{dict}   key       - Reference key which is matched to an input name e.g. data_ref
-     * @param{dict}   callback  - Called with matched context i.e. callback( input, referenced_input )
-     */
-    var matchContext = function( inputs, key, callback, context ) {
-        context = $.extend( true, {}, context );
-        _.each( inputs, function ( input ) {
-            input && input.type && ( context[ input.name ] = input );
-        });
-        _.each( inputs, function ( input ) {
-            if ( _.isObject( input ) ) {
-                if ( input.type && context[ input[ key ] ] ) {
-                    callback ( input, context[ input[ key ] ] );
-                } else {
-                    matchContext( input, key, callback, context );
-                }
-            }
-        });
-    };
-
-    /** Matches a tool model to a dictionary, indexed with flat ids
-     * @param{dict}   inputs    - Dictionary of input elements
-     * @param{dict}   mapping   - Dictionary containing flat ids
+    /** Visits tool inputs
+     * @param{dict}   inputs    - Nested dictionary of input elements
      * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
      */
-    var matchIds = function( inputs, mapping, callback ) {
-        var result = {};
-        var self = this;
-        function search ( id, head ) {
-            for ( var i in head ) {
-                var node = head[ i ];
-                var index = node.name;
-                id != '' && ( index = id + '|' + index );
-                switch ( node.type ) {
-                    case 'repeat':
-                        for ( var j in node.cache ) {
-                            search ( index + '_' + j, node.cache[ j ] );
+    var visitInputs = function( inputs, callback, prefix, context ) {
+        context = $.extend( true, {}, context );
+        _.each( inputs, function ( input ) {
+            if ( input && input.type && input.name ) {
+                context[ input.name ] = input;
+            }
+        });
+        for ( var i in inputs ) {
+            var node = inputs[ i ];
+            var name = prefix ? prefix + '|' + node.name : node.name;
+            switch ( node.type ) {
+                case 'repeat':
+                    _.each( node.cache, function( cache, j ) {
+                        visitInputs( cache, callback, name + '_' + j, context );
+                    });
+                    break;
+                case 'conditional':
+                    if ( node.test_param ) {
+                        callback( node.test_param, name + '|' + node.test_param.name, context );
+                        var selectedCase = matchCase( node, node.test_param.value );
+                        if ( selectedCase != -1 ) {
+                            visitInputs( node.cases[ selectedCase ].inputs, callback, name, context );
+                        } else {
+                            Galaxy.emit.debug( 'form-data::visitInputs() - Invalid case for ' + name + '.' );
                         }
-                        break;
-                    case 'conditional':
-                        var selectedCase = matchCase( node, node.test_param && node.test_param.value );
-                        selectedCase != -1 && search ( index, node.cases[ selectedCase ].inputs );
-                        break;
-                    case 'section':
-                        search ( index, node.inputs );
-                        break;
-                    default:
-                        var mapped = mapping[ index ];
-                        mapped && callback( mapped, node );
-                }
+                    } else {
+                        Galaxy.emit.debug( 'form-data::visitInputs() - Conditional test parameter missing for ' + name  + '.' );
+                    }
+                    break;
+                case 'section':
+                    visitInputs( node.inputs, callback, name, context )
+                    break;
+                default:
+                    callback( node, name, context );
             }
         }
-        search( '', inputs );
-        return result;
     };
 
     return {
         Manager         : Manager,
-        matchIds        : matchIds,
-        matchContext    : matchContext
+        visitInputs     : visitInputs
     }
 });

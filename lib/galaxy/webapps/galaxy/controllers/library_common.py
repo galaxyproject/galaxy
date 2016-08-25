@@ -34,7 +34,7 @@ try:
     # The following must be defined exactly like the
     # schema in ~/scripts/data_libraries/build_whoosh_index.py
     schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
-except ImportError, e:
+except ImportError as e:
     whoosh_search_enabled = False
     schema = None
 
@@ -56,7 +56,7 @@ for comptype in ( 'gz', 'bz2' ):
     except OSError:
         pass
 try:
-    import zlib  # noqa
+    import zlib  # noqa: F401
     comptypes.append( 'zip' )
 except ImportError:
     pass
@@ -151,7 +151,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                 current_user_roles=current_user_roles,
                                                 message=escape( message ),
                                                 status=escape( status ) )
-            except Exception, e:
+            except Exception as e:
                 message = 'Error attempting to display contents of library (%s): %s.' % ( escape( str( library.name ) ), str( e ) )
                 status = 'error'
         default_action = kwd.get( 'default_action', None )
@@ -1196,7 +1196,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         path = os.path.abspath( os.path.join( os.path.dirname( path ), link_path ) )
                 if os.path.isfile( path ):
                     files.append( path )
-        except Exception, e:
+        except Exception as e:
             message = "Unable to get file list for configured %s, error: %s" % ( import_dir_desc, str( e ) )
             response_code = 500
             return None, response_code, message

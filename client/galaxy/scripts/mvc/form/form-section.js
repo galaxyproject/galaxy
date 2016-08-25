@@ -23,7 +23,7 @@ define(['utils/utils',
 
             // create/render views
             this.table = new Table.View(options);
-            this.parameters = new Parameters(app, options);
+            this.parameters = new Parameters();
             this.setElement(this.table.$el);
             this.render();
         },
@@ -73,7 +73,7 @@ define(['utils/utils',
             var field = this._addRow( input_def.test_param );
 
             // set onchange event for test parameter
-            field.options.onchange = function(value) {
+            field.model && field.model.set( 'onchange', function( value ) {
                 var selectedCase = self.app.data.matchCase(input_def, value);
                 for (var i in input_def.cases) {
                     var case_def = input_def.cases[i];
@@ -93,7 +93,7 @@ define(['utils/utils',
                     }
                 }
                 self.app.trigger('change');
-            };
+            });
 
             // add conditional sub sections
             for (var i in input_def.cases) {
@@ -168,75 +168,43 @@ define(['utils/utils',
         /** Add a customized section
         */
         _addSection: function(input_def) {
-            var self = this;
-
-            // create sub section
-            var sub_section = new View(self.app, {
-                inputs  : input_def.inputs
-            });
-
-            // delete button
-            var button_visible = new Ui.ButtonIcon({
-                icon    : 'fa-eye-slash',
-                tooltip : 'Show/hide section',
-                cls     : 'ui-button-icon-plain'
-            });
-
-            // create portlet for sub section
             var portlet = new Portlet.View({
-                title       : input_def.title || input_def.name,
-                cls         : 'ui-portlet-section',
-                collapsible : true,
-                collapsed   : true,
-                operations  : {
-                    button_visible: button_visible
-                }
+                title               : input_def.title || input_def.name,
+                cls                 : 'ui-portlet-section',
+                collapsible         : true,
+                collapsible_button  : true,
+                collapsed           : !input_def.expanded
             });
-            portlet.append( sub_section.$el );
+            portlet.append( new View( this.app, { inputs: input_def.inputs } ).$el );
             portlet.append( $( '<div/>' ).addClass( 'ui-form-info' ).html( input_def.help ) );
-            portlet.setOperation( 'button_visible', function() {
-                if( portlet.collapsed ) {
-                    portlet.expand();
-                } else {
-                    portlet.collapse();
-                }
-            });
-
-            // add expansion event handler
-            portlet.on( 'expanded', function() {
-                button_visible.setIcon( 'fa-eye' );
-            });
-            portlet.on( 'collapsed', function() {
-                button_visible.setIcon( 'fa-eye-slash' );
-            });
             this.app.on( 'expand', function( input_id ) {
                 ( portlet.$( '#' + input_id ).length > 0 ) && portlet.expand();
             });
-
-            // show sub section if requested
-            input_def.expanded && portlet.expand();
-
-            // create table row
-            this.table.add(portlet.$el);
-            this.table.append(input_def.id);
+            this.table.add( portlet.$el );
+            this.table.append( input_def.id );
         },
 
         /** Add a single input field element
         */
         _addRow: function(input_def) {
+            var self = this;
             var id = input_def.id;
+            input_def.onchange = function() { self.app.trigger( 'change', id ) };
             var field = this.parameters.create(input_def);
             this.app.field_list[id] = field;
             var input_element = new InputElement(this.app, {
                 name                : input_def.name,
                 label               : input_def.label || input_def.name,
                 value               : input_def.value,
-                text_value          : input_def.text_value || input_def.value,
+                text_value          : input_def.text_value,
                 collapsible_value   : input_def.collapsible_value,
                 collapsible_preview : input_def.collapsible_preview,
                 help                : input_def.help,
                 argument            : input_def.argument,
                 disabled            : input_def.disabled,
+                color               : input_def.color,
+                style               : input_def.style,
+                backdrop            : input_def.backdrop,
                 field               : field
             });
             this.app.element_list[id] = input_element;

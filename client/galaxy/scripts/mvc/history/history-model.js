@@ -214,7 +214,6 @@ var History = Backbone.Model
                     } else {
                         // otherwise, let listeners know that all updates have stopped
                         self.trigger( 'ready' );
-                        // self.lastUpdateTime = null;
                     }
                 });
         }
@@ -436,6 +435,7 @@ var ControlledFetchMixin = {
         _.each( filters, function( v, k ){
             if( v === true ){ v = 'True'; }
             if( v === false ){ v = 'False'; }
+            if( v === null ){ v = 'None'; }
             filterMap.q.push( k );
             filterMap.qv.push( v );
         });
@@ -522,6 +522,11 @@ var HistoryCollection = Backbone.Collection
             defaults.filters = {
                 deleted : false,
                 purged  : false,
+            };
+        } else {
+            defaults.filters = {
+                // TODO: for bypassing defaults on current API
+                deleted : null,
             };
         }
         return defaults;

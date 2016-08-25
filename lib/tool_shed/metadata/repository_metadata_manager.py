@@ -14,6 +14,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
@@ -340,7 +341,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
             repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
             has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
-                suc.get_repository_dependency_types( repository_dependencies )
+                repository_util.get_repository_dependency_types( repository_dependencies )
             if 'datatypes' in metadata_dict:
                 includes_datatypes = True
             if 'tools' in metadata_dict:
@@ -356,13 +357,10 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             downloadable = True
         else:
             downloadable = False
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                 self.app.security.encode_id( self.repository.id ),
-                                                                                 changeset_revision )
+        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                           self.app.security.encode_id( self.repository.id ),
+                                                                                           changeset_revision )
         if repository_metadata:
-            # A repository metadata record already exists with the received changeset_revision,
-            # so we don't need to check the skip_tool_test table.
-            check_skip_tool_test = False
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable
             repository_metadata.has_repository_dependencies = has_repository_dependencies
@@ -371,9 +369,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
             repository_metadata.includes_workflows = includes_workflows
         else:
-            # No repository_metadata record exists for the received changeset_revision, so we may
-            # need to update the skip_tool_test table.
-            check_skip_tool_test = True
             repository_metadata = \
                 self.app.model.RepositoryMetadata( repository_id=self.repository.id,
                                                    changeset_revision=changeset_revision,
@@ -386,47 +381,10 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                                                    includes_workflows=includes_workflows )
         # Always set the default values for the following columns.  When resetting all metadata
         # on a repository this will reset the values.
-        repository_metadata.tools_functionally_correct = False
         repository_metadata.missing_test_components = False
-        repository_metadata.test_install_error = False
-        repository_metadata.do_not_test = False
-        repository_metadata.time_last_tested = None
-        repository_metadata.tool_test_results = None
         self.sa_session.add( repository_metadata )
         self.sa_session.flush()
 
-        if check_skip_tool_test:
-            # Since we created a new repository_metadata record, we may need to update the
-            # skip_tool_test table to point to it.  Inspect each changeset revision in the
-            # received repository's changelog (up to the received changeset revision) to see
-            # if it is contained in the skip_tool_test table.  If it is, but is not associated
-            # with a repository_metadata record, reset that skip_tool_test record to the newly
-            # created repository_metadata record.
-            repo = hg_util.get_repo_for_repository( self.app, repository=self.repository, repo_path=None, create=False )
-            for changeset in repo.changelog:
-                changeset_hash = str( repo.changectx( changeset ) )
-                skip_tool_test = self.get_skip_tool_test_by_changeset_revision( changeset_hash )
-                if skip_tool_test:
-                    # We found a skip_tool_test record associated with the changeset_revision,
-                    # so see if it has a valid repository_revision.
-                    repository_revision = \
-                        metadata_util.get_repository_metadata_by_id( self.app,
-                                                                     self.app.security.encode_id( repository_metadata.id ) )
-                    if repository_revision:
-                        # The skip_tool_test record is associated with a valid repository_metadata
-                        # record, so proceed.
-                        continue
-                    # We found a skip_tool_test record that is associated with an invalid
-                    # repository_metadata record, so update it to point to the newly created
-                    # repository_metadata record.  In some special cases there may be multiple
-                    # skip_tool_test records that require updating, so we won't break here, we'll
-                    # continue to inspect the rest of the changelog up to the received changeset_revision.
-                    skip_tool_test.repository_metadata_id = repository_metadata.id
-                    self.sa_session.add( skip_tool_test )
-                    self.sa_session.flush()
-                if changeset_hash == changeset_revision:
-                    # Proceed no further than the received changeset_revision.
-                    break
         return repository_metadata
 
     def different_revision_defines_tip_only_repository_dependency( self, rd_tup, repository_dependencies ):
@@ -443,7 +401,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
             if cleaned_rd_tool_shed == cleaned_tool_shed and rd_name == name and rd_owner == owner:
                 # Determine if the repository represented by the dependency tuple is an instance of the repository type TipOnly.
-                required_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+                required_repository = repository_util.get_repository_by_name_and_owner( self.app, name, owner )
                 repository_type_class = self.app.repository_types_registry.get_class_by_label( required_repository.type )
                 return isinstance( repository_type_class, TipOnly )
         return False
@@ -453,7 +411,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # Compare from most recent to oldest.
         changeset_revisions.reverse()
         for changeset_revision in changeset_revisions:
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app, id, changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app, id, changeset_revision )
             metadata = repository_metadata.metadata
             tools_dicts = metadata.get( 'tools', [] )
             for tool_dict in tools_dicts:
@@ -514,16 +472,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             else:
                 return self.sa_session.query( self.app.model.Repository ) \
                                       .filter( self.app.model.Repository.table.c.deleted == false() )
-
-    def get_skip_tool_test_by_changeset_revision( self, changeset_revision ):
-        """
-        Return a skip_tool_test record whose initial_changeset_revision is the received
-        changeset_revision.
-        """
-        # There should only be one, but we'll use first() so callers won't have to handle exceptions.
-        return self.sa_session.query( self.app.model.SkipToolTest ) \
-                              .filter( self.app.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
-                              .first()
 
     def new_datatypes_metadata_required( self, repository_metadata ):
         """
@@ -876,9 +824,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         changeset_revisions_that_contain_tools = []
         for changeset in repo.changelog:
             changeset_revision = str( repo.changectx( changeset ) )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                     encoded_repository_id,
-                                                                                     changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                               encoded_repository_id,
+                                                                                               changeset_revision )
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -889,9 +837,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
         for index, changeset_revision in enumerate( changeset_revisions_that_contain_tools ):
             tool_versions_dict = {}
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
-                                                                                     encoded_repository_id,
-                                                                                     changeset_revision )
+            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision( self.app,
+                                                                                               encoded_repository_id,
+                                                                                               changeset_revision )
             metadata = repository_metadata.metadata
             tool_dicts = metadata[ 'tools' ]
             if index == 0:
@@ -926,7 +874,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    repository = suc.get_repository_in_tool_shed( self.app, repository_id )
+                    repository = repository_util.get_repository_in_tool_shed( self.app, repository_id )
                     self.set_repository( repository )
                     self.resetting_all_metadata_on_repository = True
                     self.reset_all_metadata_on_repository_in_tool_shed()
@@ -1006,7 +954,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                     repository_dependencies_dict = self.metadata_dict.get( 'repository_dependencies', {} )
                     repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
                     has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
-                        suc.get_repository_dependency_types( repository_dependencies )
+                        repository_util.get_repository_dependency_types( repository_dependencies )
                     repository_metadata.has_repository_dependencies = has_repository_dependencies
                     if 'tool_dependencies' in self.metadata_dict:
                         repository_metadata.includes_tool_dependencies = True
@@ -1020,11 +968,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                         repository_metadata.includes_workflows = True
                     else:
                         repository_metadata.includes_workflows = False
-                    repository_metadata.do_not_test = False
-                    repository_metadata.time_last_tested = None
-                    repository_metadata.tools_functionally_correct = False
                     repository_metadata.missing_test_components = False
-                    repository_metadata.tool_test_results = None
                     self.sa_session.add( repository_metadata )
                     self.sa_session.flush()
                 else:
@@ -1037,7 +981,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                 changeset_revisions = []
                 for changeset in repo.changelog:
                     changeset_revision = str( repo.changectx( changeset ) )
-                    if suc.get_repository_metadata_by_changeset_revision( self.app, encoded_id, changeset_revision ):
+                    if metadata_util.get_repository_metadata_by_changeset_revision( self.app, encoded_id, changeset_revision ):
                         changeset_revisions.append( changeset_revision )
                 self.add_tool_versions( encoded_id, repository_metadata, changeset_revisions )
         elif len( repo ) == 1 and not self.invalid_file_tups:

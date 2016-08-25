@@ -43,7 +43,7 @@ def main( options ):
             url = '%s/api/users' % to_tool_shed
             try:
                 response = submit( url, data, api_key )
-            except Exception, e:
+            except Exception as e:
                 response = str( e )
                 print "Error attempting to create user using URL: ", url, " exception: ", str( e )
             create_response_dict = dict( response=response )

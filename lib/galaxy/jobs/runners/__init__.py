@@ -145,7 +145,8 @@ class BaseJobRunner( object ):
         """
         raise NotImplementedError()
 
-    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                    modify_command_for_container=True):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
@@ -171,6 +172,7 @@ class BaseJobRunner( object ):
                 job_wrapper,
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
+                modify_command_for_container=modify_command_for_container
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
@@ -193,23 +195,30 @@ class BaseJobRunner( object ):
     def recover(self, job, job_wrapper):
         raise NotImplementedError()
 
-    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
+    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
+                            modify_command_for_container=True ):
         container = self._find_container( job_wrapper )
         return build_command(
             self,
             job_wrapper,
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
+            modify_command_for_container=modify_command_for_container,
             container=container
         )
 
-    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
+    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None, tool_working_directory=None ):
         """
         Returns list of pairs (source_file, destination) describing path
         to work_dir output file and ultimate destination.
         """
-        if not job_working_directory:
-            job_working_directory = os.path.abspath( job_wrapper.working_directory )
+        if tool_working_directory is not None and job_working_directory is not None:
+            raise Exception("get_work_dir_outputs called with both a job and tool working directory, only one may be specified")
+
+        if tool_working_directory is None:
+            if not job_working_directory:
+                job_working_directory = os.path.abspath( job_wrapper.working_directory )
+            tool_working_directory = os.path.join(job_working_directory, "working")
 
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
@@ -230,9 +239,9 @@ class BaseJobRunner( object ):
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
-                    source_file = os.path.join( job_working_directory, 'working', hda_tool_output.from_work_dir )
+                    source_file = os.path.join( tool_working_directory, hda_tool_output.from_work_dir )
                     destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
-                    if in_directory( source_file, job_working_directory ):
+                    if in_directory( source_file, tool_working_directory ):
                         output_pairs.append( ( source_file, destination ) )
                     else:
                         # Security violation.
@@ -313,10 +322,6 @@ class BaseJobRunner( object ):
 
     def write_executable_script( self, path, contents, mode=0o755 ):
         write_script( path, contents, self.app.config, mode=mode )
-
-    def _complete_terminal_job( self, ajs, **kwargs ):
-        if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
-            self.work_queue.put( ( self.finish_job, ajs ) )
 
     def _find_container(
         self,
@@ -569,8 +574,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
         which_try = 0
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
-                stdout = shrink_stream_by_size( file( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
-                stderr = shrink_stream_by_size( file( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                stdout = shrink_stream_by_size( open( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                stderr = shrink_stream_by_size( open( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 which_try = (self.app.config.retry_job_output_collection + 1)
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
@@ -583,7 +588,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
 
         try:
             # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = file( job_state.exit_code_file, "r" ).read(32)
+            exit_code_str = open( job_state.exit_code_file, "r" ).read(32)
         except:
             # By default, the exit code is 0, which typically indicates success.
             exit_code_str = "0"

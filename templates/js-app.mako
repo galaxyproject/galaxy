@@ -3,12 +3,13 @@
 <html>
     <!--js-app.mako-->
     <head>
-        <title>Galaxy</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ## For mobile browsers, don't scale up
         <meta name="viewport" content="maximum-scale=1.0">
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+
+        <title>Galaxy</title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ## TODO: use loaders to move everything but the essentials below the fold
@@ -57,7 +58,7 @@
 <%def name="page_setup()">
     ## Send js errors to Sentry server if configured
     %if app.config.sentry_dsn:
-    ${h.js( "libs/tracekit", "libs/raven" )}
+    ${h.js( "libs/raven" )}
     <script>
         Raven.config('${app.config.sentry_dsn_public}').install();
         %if trans.user:

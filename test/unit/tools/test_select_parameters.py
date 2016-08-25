@@ -11,7 +11,7 @@ class SelectToolParameterTestCase( BaseParameterTestCase ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
         try:
             self.param.from_json("42", self.trans, { "input_bam": model.HistoryDatasetAssociation() })
-        except ValueError, err:
+        except ValueError as err:
             assert str(err) == "An invalid option was selected for my_name, '42', please verify."
             return
         assert False
@@ -20,8 +20,8 @@ class SelectToolParameterTestCase( BaseParameterTestCase ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
         try:
             self.param.from_json("42", self.trans)
-        except AssertionError, err:
-            assert str(err) == "Required dependency 'input_bam' not found in incoming values"
+        except ValueError as err:
+            assert str(err) == "Parameter my_name requires a value, but has no legal values defined."
             return
         assert False
 
@@ -34,7 +34,7 @@ class SelectToolParameterTestCase( BaseParameterTestCase ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
         try:
             self.param.from_json( model.HistoryDatasetAssociation(), self.trans, { "input_bam": None } )
-        except ValueError, err:
+        except ValueError as err:
             assert str(err) == "Parameter my_name requires a value, but has no legal values defined."
             return
         assert False

@@ -18,7 +18,7 @@ from tool_shed.tools import tool_validator
 
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -164,7 +164,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         metadata = repository_metadata.metadata
     else:
         # We're in Galaxy.
-        repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
+        repository = repository_util.get_tool_shed_repository_by_id( trans.app, repository_id )
         changeset_revision = repository.changeset_revision
         metadata = repository.metadata
     # metadata[ 'workflows' ] is a list of tuples where each contained tuple is

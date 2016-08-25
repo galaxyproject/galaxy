@@ -214,7 +214,7 @@ out = open( out_fname, 'wt' )
 
 # Read and filter input file, skipping invalid lines
 code = '''
-for i, line in enumerate( file( in_fname ) ):
+for i, line in enumerate( open( in_fname ) ):
     total_lines += 1
     line = line.rstrip( '\\r\\n' )
 
@@ -241,7 +241,7 @@ for i, line in enumerate( file( in_fname ) ):
 valid_filter = True
 try:
     exec code
-except Exception, e:
+except Exception as e:
     out.close()
     if str( e ).startswith( 'invalid syntax' ):
         valid_filter = False

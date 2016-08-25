@@ -1,16 +1,17 @@
 #!/bin/bash
 set -e
 
-GXPIP_VERSION='8.0.2+gx2'
-
 SET_VENV=1
 for arg in "$@"; do
     [ "$arg" = "--skip-venv" ] && SET_VENV=0
 done
 
 # Conda Python is in use, do not use virtualenv
-if python -V 2>&1 | grep -q 'Continuum Analytics'; then
+if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' ; then
     SET_VENV=0
+    CONDA_ALREADY_INSTALLED=1
+else
+    CONDA_ALREADY_INSTALLED=0
 fi
 
 DEV_WHEELS=0
@@ -81,7 +82,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
         # Ensure Python is a supported version before creating .venv
         python ./scripts/check_python.py || exit 1
         if command -v virtualenv >/dev/null; then
-            virtualenv "$GALAXY_VIRTUAL_ENV"
+            virtualenv -p python2.7 "$GALAXY_VIRTUAL_ENV"
         else
             vvers=13.1.2
             vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
@@ -129,35 +130,13 @@ if [ $SET_VENV -eq 1 ]; then
         echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in $GALAXY_VIRTUAL_ENV, or activate one."
         exit 1
     fi
+elif [ $SET_VENV -eq 0 -a $CONDA_ALREADY_INSTALLED -eq 1 ]; then
+    echo -e "\e[33mWarning: You have Conda installed. Skipping virtualenv activation. This could cause missing dependencies.\e[0m"
 fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
 if [ $REPLACE_PIP -eq 1 ]; then
-    pip_version=`pip --version | awk '{print $2}'`
-    method=`python - << EOF
-from pkg_resources import parse_version
-from sys import stdout
-if parse_version('$pip_version') >= parse_version('6.0'):
-    stdout.write('req')
-elif parse_version('$pip_version') >= parse_version('1.5'):
-    stdout.write('wheel')
-else:
-    stdout.write('sdist')
-EOF`
-    case $method in
-        req)
-            pip install --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade "pip==${GXPIP_VERSION}"
-            ;;
-        wheel)
-            pip install --upgrade "https://wheels.galaxyproject.org/packages/pip-${GXPIP_VERSION}-py2.py3-none-any.whl"
-            ;;
-        sdist)
-            pip install --upgrade "https://wheels.galaxyproject.org/packages/pip-${GXPIP_VERSION}.tar.gz"
-            ;;
-    esac
-
-    # binary-compatibility.cfg may need to be created (e.g. on CentOS)
-    [ -n "$VIRTUAL_ENV" -a ! -f ${VIRTUAL_ENV}/binary-compatibility.cfg ] && python ./scripts/binary_compatibility.py -o ${VIRTUAL_ENV}/binary-compatibility.cfg
+    pip install 'pip>=8.1'
 fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then

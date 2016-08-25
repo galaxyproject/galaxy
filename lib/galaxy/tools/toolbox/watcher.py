@@ -14,6 +14,8 @@ except ImportError:
     PollingObserver = None
     can_watch = False
 
+from galaxy.util.postfork import register_postfork_function
+
 log = logging.getLogger( __name__ )
 
 
@@ -23,19 +25,23 @@ def get_observer_class(config_value, default, monitor_what_str):
     config_value = config_value or default
     config_value = str(config_value).lower()
     if config_value in ("true", "yes", "on", "auto"):
-        expect_observer = config_value != "auto"
+        expect_observer = True
         observer_class = Observer
     elif config_value == "polling":
         expect_observer = True
         observer_class = PollingObserver
-    else:
+    elif config_value in ('false', 'no', 'off'):
         expect_observer = False
         observer_class = None
+    else:
+        message = "Unrecognized value for watch_tools config option: %s" % config_value
+        raise Exception(message)
 
-    if observer_class is None:
-        message = "Watchdog library unavailble, cannot monitor %s." % monitor_what_str
-        log.info(message)
-        if expect_observer:
+    if expect_observer and observer_class is None:
+        message = "Watchdog library unavailable, cannot monitor %s." % monitor_what_str
+        if config_value == "auto":
+            log.info(message)
+        else:
             raise Exception(message)
 
     return observer_class
@@ -61,7 +67,7 @@ class ToolConfWatcher(object):
         self.paths = {}
         self._active = False
         self._lock = threading.Lock()
-        self.thread = threading.Thread(target=self.check)
+        self.thread = threading.Thread(target=self.check, name="ToolConfWatcher.thread")
         self.thread.daemon = True
         self.event_handler = ToolConfFileEventHandler(reload_callback)
 
@@ -103,7 +109,6 @@ class ToolConfWatcher(object):
             mod_time = time.ctime(os.path.getmtime(path))
         with self._lock:
             self.paths[path] = mod_time
-        self.start()
 
     def watch_file(self, tool_conf_file):
         self.monitor(tool_conf_file)
@@ -148,7 +153,7 @@ class ToolWatcher(object):
         self.start()
 
     def start(self):
-        self.observer.start()
+        register_postfork_function(self.observer.start)
 
     def shutdown(self):
         self.observer.stop()

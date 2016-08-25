@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 import bx.intervals.io
@@ -138,7 +140,7 @@ def __main__():
             except:
                 name = "region_%i" % count
             try:
-                fields = map( str, [ region.chrom, region.start, region.end, name, 0, region.strand ] )
+                fields = [str(item) for item in (region.chrom, region.start, region.end, name, 0, region.strand)]
                 if force_num_columns is not None and len( fields ) != force_num_columns:
                     fields = force_bed_field_count( fields, count, force_num_columns )
                 out.write( "%s\n" % '\t'.join( fields ) )
@@ -147,9 +149,9 @@ def __main__():
                 if first_skipped_line is None:
                     first_skipped_line = count + 1
         out.close()
-    print "%i regions converted to BED." % ( count + 1 - skipped_lines )
+    print("%i regions converted to BED." % ( count + 1 - skipped_lines ))
     if skipped_lines > 0:
-        print "Skipped %d blank or invalid lines starting with line # %d." % ( skipped_lines, first_skipped_line )
+        print("Skipped %d blank or invalid lines starting with line # %d." % ( skipped_lines, first_skipped_line ))
 
 if __name__ == "__main__":
     __main__()

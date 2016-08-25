@@ -3,7 +3,6 @@ Determine what optional dependencies are needed.
 """
 import pkg_resources
 
-from sys import version_info
 from os.path import dirname, join
 from xml.etree import ElementTree
 
@@ -16,6 +15,8 @@ class ConditionalDependencies( object ):
         self.config_file = config_file
         self.config = None
         self.job_runners = []
+        self.authenticators = []
+        self.object_stores = []
         self.conditional_reqs = []
         self.parse_configs()
         self.get_conditional_requirements()
@@ -29,6 +30,27 @@ class ConditionalDependencies( object ):
             for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ).findall( 'plugin' ):
                 if 'load' in plugin.attrib:
                     self.job_runners.append( plugin.attrib['load'] )
+        except (OSError, IOError):
+            pass
+        object_store_conf_xml = self.config.get(
+            "object_store_config_file",
+            join( dirname( self.config_file ), 'object_store_conf.xml' ) )
+        try:
+            for store in ElementTree.parse( object_store_conf_xml ).iter( 'object_store' ):
+                if 'type' in store.attrib:
+                    self.object_stores.append( store.attrib['type'] )
+        except (OSError, IOError):
+            pass
+
+        # Parse auth conf
+        auth_conf_xml = self.config.get(
+            "auth_config_file",
+            join( dirname( self.config_file ), 'auth_conf.xml' ) )
+        try:
+            for auth in ElementTree.parse( auth_conf_xml ).findall( 'authenticator' ):
+                auth_type = auth.find('type')
+                if auth_type is not None:
+                    self.authenticators.append( auth_type.text )
         except (OSError, IOError):
             pass
 
@@ -77,11 +99,12 @@ class ConditionalDependencies( object ):
         # pygments is a dependency of weberror and only weberror
         return self.check_weberror()
 
-    def check_importlib( self ):
-        return version_info < (2, 7)
+    def check_python_ldap( self ):
+        return ('ldap' in self.authenticators or
+                'activedirectory' in self.authenticators)
 
-    def check_ordereddict( self ):
-        return version_info < (2, 7)
+    def check_azure_storage( self ):
+        return 'azure_blob' in self.object_stores
 
 
 def optional( config_file ):

@@ -104,7 +104,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
             try:
                 # generate defaults - this will err if given a weird key?
                 visualization = self.create_visualization( trans, vis_type, **payload )
-            except ValueError, val_err:
+            except ValueError as val_err:
                 raise exceptions.RequestParameterMissingException( str( val_err ) )
 
         rval = { 'id' : trans.security.encode_id( visualization.id ) }

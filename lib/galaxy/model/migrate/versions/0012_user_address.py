@@ -4,6 +4,8 @@ a user can select from a list of his addresses to associate with the request.  T
 drops the request.submitted column which was boolean and replaces it with a request.state column
 which is a string, allowing for more flexibility with request states.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -26,12 +28,12 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script adds a new user_address table that is currently only used with sample requests, where"
-    print "a user can select from a list of his addresses to associate with the request.  This script also"
-    print "drops the request.submitted column which was boolean and replaces it with a request.state column"
-    print "which is a string, allowing for more flexibility with request states."
-    print "========================================"
+    print("========================================")
+    print("This script adds a new user_address table that is currently only used with sample requests, where")
+    print("a user can select from a list of his addresses to associate with the request.  This script also")
+    print("drops the request.submitted column which was boolean and replaces it with a request.state column")
+    print("which is a string, allowing for more flexibility with request states.")
+    print("========================================")
 
 UserAddress_table = Table( "user_address", metadata,
                            Column( "id", Integer, primary_key=True),
@@ -59,7 +61,7 @@ def upgrade(migrate_engine):
     # Add all of the new tables above
     try:
         UserAddress_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating user_address table failed: %s" % str( e ) )
     # Add 1 column to the request_type table
     try:
@@ -72,7 +74,7 @@ def upgrade(migrate_engine):
             col = Column( "deleted", Boolean, index=True, default=False )
             col.create( RequestType_table, index_name='ix_request_type_deleted')
             assert col is RequestType_table.c.deleted
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'deleted' to request_type table failed: %s" % ( str( e ) ) )
 
     # Delete the submitted column

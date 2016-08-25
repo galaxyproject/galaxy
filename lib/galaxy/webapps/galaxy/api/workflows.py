@@ -15,9 +15,12 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.run import invoke, queue_invoke
+from galaxy.workflow.run import invoke, queue_invoke, WorkflowRunConfig
 from galaxy.workflow.run_request import build_workflow_run_config
-from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import module_factory, WorkflowModuleInjector
+from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.tools.parameters.meta import expand_workflow_inputs
+
 
 log = logging.getLogger(__name__)
 
@@ -81,6 +84,68 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             style = "instance"
         return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
+
+    @expose_api
+    def run( self, trans, workflow_id, payload, **kwd ):
+        """
+        POST /api_internal/workflows/{encoded_workflow_id}/run
+
+        Run a workflow with a dictionary of prefixed_name/value pairs e.g.
+            payload = { inputs: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
+        """
+        workflow = self.__get_stored_accessible_workflow( trans, workflow_id ).latest_workflow
+        trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
+        module_injector = WorkflowModuleInjector( trans )
+        params, param_keys = expand_workflow_inputs( payload.get( 'inputs', [] ) )
+        errors = {}
+        for workflow_args in params:
+            for step in workflow.steps:
+                step_args = workflow_args.get( str( step.id ), {} )
+                step_errors = module_injector.inject( step, step_args )
+                if step_errors:
+                    errors[ step.id ] = step_errors
+        if errors:
+            log.exception( errors )
+            raise exceptions.MessageException( err_data=errors )
+        invocations = []
+        for index, workflow_args in enumerate( params ):
+            for step in workflow.steps:
+                step_args = workflow_args.get( str( step.id ), {} )
+                module_injector.inject( step, step_args )
+            new_history = None
+            if 'new_history_name' in payload:
+                if payload[ 'new_history_name' ]:
+                    nh_name = payload[ 'new_history_name' ]
+                else:
+                    nh_name = 'History from %s workflow' % workflow.name
+                if index in param_keys:
+                    ids = param_keys[ index ]
+                    nids = len( ids )
+                    if nids == 1:
+                        nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
+                    elif nids > 1:
+                        nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
+                new_history = trans.app.model.History( user=trans.user, name=nh_name )
+                new_history.copy_tags_from( trans.user, trans.history )
+                trans.sa_session.add( new_history )
+                target_history = new_history
+            elif 'history_id' in payload:
+                target_history = histories.HistoryManager( trans.app ).get_owned( trans.security.decode_id( payload.get( 'history_id' ), trans.user, current_history=trans.history ) )
+            else:
+                target_history = trans.history
+            run_config = WorkflowRunConfig(
+                target_history=target_history,
+                replacement_dict=payload.get( 'replacement_params', {} ),
+                copy_inputs_to_history=new_history is not None )
+            invocation = queue_invoke(
+                trans=trans,
+                workflow=workflow,
+                workflow_run_config=run_config,
+                populate_state=False )
+            invocations.append({ 'history'      : { 'id' : trans.app.security.encode_id( new_history.id ), 'name' : new_history.name } if new_history else None,
+                                 'scheduled'    : invocation.state == trans.app.model.WorkflowInvocation.states.SCHEDULED })
+            trans.sa_session.flush()
+        return invocations
 
     @expose_api
     def create(self, trans, payload, **kwd):
@@ -251,7 +316,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
-        except Exception, e:
+        except Exception as e:
             trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
 
@@ -334,7 +399,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         } )
 
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json( trans, tool_inputs, workflow_mode=True )
+        tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
         module.update_state( tool_model[ 'state_inputs' ] )
         return {
             'tool_model'        : tool_model,

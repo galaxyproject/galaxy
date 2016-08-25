@@ -2,11 +2,12 @@ import logging
 import os
 import tempfile
 
-from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.util import listify, url_get
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 
@@ -103,7 +104,7 @@ class SyncDatabase( object ):
         try:
             log.debug( "Returning from sync_database_with_file_system with tool_dependency %s, can_install_tool_dependency %s." %
                 ( str( tool_dependency.name ), str( can_install_tool_dependency ) ) )
-        except Exception, e:
+        except Exception as e:
             log.debug( str( e ) )
         return tool_dependency, can_install_tool_dependency
 
@@ -205,7 +206,8 @@ class Package( RecipeTag ):
                 log.debug( "Skipping installation of tool dependency package %s because tool shed dependency resolver not enabled." %
                     str( package_name ) )
                 # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
-                if self.app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package') != INDETERMINATE_DEPENDENCY:
+                dep = self.app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package')
+                if not isinstance( dep, NullDependency ):
                     # TODO: Do something here such as marking it installed or configured externally.
                     pass
                 tool_dependency = \
@@ -372,10 +374,10 @@ class Repository( RecipeTag, SyncDatabase ):
         required_repository_name = elem.attrib[ 'name' ]
         required_repository_owner = elem.attrib[ 'owner' ]
         default_required_repository_changeset_revision = elem.attrib[ 'changeset_revision' ]
-        required_repository = suc.get_repository_for_dependency_relationship( self.app, tool_shed_url,
-                                                                              required_repository_name,
-                                                                              required_repository_owner,
-                                                                              default_required_repository_changeset_revision )
+        required_repository = repository_util.get_repository_for_dependency_relationship( self.app, tool_shed_url,
+                                                                                          required_repository_name,
+                                                                                          required_repository_owner,
+                                                                                          default_required_repository_changeset_revision )
         tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed_url )
         tmp_filename = None
         if required_repository:
@@ -436,7 +438,7 @@ class Repository( RecipeTag, SyncDatabase ):
                         message = "Unable to locate the repository directory for revision %s of installed repository %s owned by %s." % \
                             ( str( required_repository.changeset_revision ), str( required_repository.name ), str( required_repository.owner ) )
                         raise Exception( message )
-                    tool_dependencies_config = suc.get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
+                    tool_dependencies_config = repository_util.get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
                     if tool_dependencies_config:
                         config_to_use = tool_dependencies_config
                     else:
@@ -446,11 +448,11 @@ class Repository( RecipeTag, SyncDatabase ):
                 else:
                     # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
                     # should be updated if it's not current.
-                    text = suc.get_updated_changeset_revisions_from_tool_shed( app=self.app,
-                                                                               tool_shed_url=tool_shed,
-                                                                               name=required_repository_name,
-                                                                               owner=required_repository_owner,
-                                                                               changeset_revision=required_repository_changeset_revision )
+                    text = metadata_util.get_updated_changeset_revisions_from_tool_shed( app=self.app,
+                                                                                         tool_shed_url=tool_shed,
+                                                                                         name=required_repository_name,
+                                                                                         owner=required_repository_owner,
+                                                                                         changeset_revision=required_repository_changeset_revision )
                     if text:
                         updated_changeset_revisions = listify( text )
                         # The list of changeset revisions is in reverse order, so the newest will be first.
@@ -523,7 +525,7 @@ class SetEnvironment( RecipeTag ):
             attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependency_db_records ]
         try:
             self.set_environment( package_elem, tool_shed_repository, attr_tups_of_dependencies_for_install )
-        except Exception, e:
+        except Exception as e:
             error_message = "Error setting environment for tool dependency: %s" % str( e )
             log.debug( error_message )
         return tool_dependency, proceed_with_install, action_elem_tuples

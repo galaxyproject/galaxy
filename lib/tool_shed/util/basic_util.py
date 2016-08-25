@@ -141,7 +141,7 @@ def to_html_string( text ):
     if text:
         try:
             text = unicodify( text )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError as e:
             return "Error decoding string: %s" % str( e )
         text = text_type( markupsafe.escape( text ) )
         text = text.replace( '\n', '<br/>' )

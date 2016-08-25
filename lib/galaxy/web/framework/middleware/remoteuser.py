@@ -40,12 +40,16 @@ errorpage = """
 
 
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_header=None, remote_user_secret_header=None, normalize_remote_user_email=False ):
+
+    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None,
+                  single_user=None, remote_user_header=None, remote_user_secret_header=None,
+                  normalize_remote_user_email=False ):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []
         self.admin_users = admin_users or []
         self.remote_user_header = remote_user_header or 'HTTP_REMOTE_USER'
+        self.single_user = single_user
         self.config_secret_header = remote_user_secret_header
         self.normalize_remote_user_email = normalize_remote_user_email
 
@@ -61,6 +65,13 @@ class RemoteUser( object ):
                 environ[ self.remote_user_header ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
                 return self.app( environ, start_response )
 
+        if self.single_user:
+            assert self.remote_user_header not in environ
+            environ[ self.remote_user_header ] = self.single_user
+
+        # Apache sets REMOTE_USER to the string '(null)' when using the
+        # Rewrite* method for passing REMOTE_USER and a user is
+        # un-authenticated.  Any other possible values need to go here as well.
         if self.remote_user_header in environ:
             # process remote user with configuration options.
             if self.normalize_remote_user_email:
@@ -141,6 +152,7 @@ class RemoteUser( object ):
                 '/user/dbkeys',
                 '/user/toolbox_filters',
                 '/user/set_default_permissions',
+                '/user/change_communication',
             )
 
             admin_accessible_paths = (
@@ -176,7 +188,7 @@ class RemoteUser( object ):
         else:
             log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
             for k, v in environ.iteritems():
-                log.debug("%s = %s" , k, v)
+                log.debug("%s = %s", k, v)
 
             title = "Access to Galaxy is denied"
             message = """

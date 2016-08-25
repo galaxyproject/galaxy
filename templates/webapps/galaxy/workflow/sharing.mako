@@ -19,6 +19,7 @@
 
 <%namespace file="/display_common.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/slug_editing_js.mako" import="*" />
 
 
 ##
@@ -45,6 +46,10 @@
 %>
 </%def>
 
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${slug_editing_js(item)}
+</%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}

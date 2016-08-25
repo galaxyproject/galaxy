@@ -20,7 +20,7 @@ class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
         if not os.path.exists( galaxy_config_file ):
             print "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % galaxy_config_file
             sys.exit( 1 )
-        config_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )
+        config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
         config_parser.read( galaxy_config_file )
         galaxy_config_dict = {}
         for key, value in config_parser.items( "app:main" ):

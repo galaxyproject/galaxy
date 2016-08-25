@@ -117,6 +117,94 @@
           -->
           <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
+        <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:kubernetes">
+            <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
+
+                 This requires installing pykube. Install pykube by activating Galaxy's virtual
+                 and then executing the following pip command:
+
+                 pip install -e git+https://github.com/pcm32/pykube.git@feature/allMergedFeatures#egg=pykube
+
+                 The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
+                 Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
+                 path are relevant) (persistent_volume.yaml):
+
+                    kind: PersistentVolume
+                    apiVersion: v1
+                    metadata:
+                      name: pv-galaxy-nfs
+                      labels:
+                        type: nfs
+                    spec:
+                      capacity:
+                        storage: 10Gi
+                      accessModes:
+                        - ReadWriteMany
+                      persistentVolumeReclaimPolicy: Retained
+                      nfs:
+                        path: /scratch1/galaxy_data
+                        server: 192.168.64.1
+
+                 The path (nfs:path: in the example) set needs to be a parent directory of the directories used for
+                 variables “file_path” and “new_file_path” on the galaxy.ini files. Clearly, for this particular example
+                 to work, there needs to be a NFS server serving that directory on that ip. Please make sure that you
+                 use reasonable storage size for your set up (possibly larger that the 10Gi written).
+                 An example of the volume claim should be (this needs to be followed more closely) (pv_claim.yaml):
+
+                    kind: PersistentVolumeClaim
+                    apiVersion: v1
+                    metadata:
+                      name: galaxy-pvc
+                    spec:
+                      accessModes:
+                        - ReadWriteMany
+                      volumeName: pv-galaxy-nfs
+                      resources:
+                        requests:
+                          storage: 2Gi
+
+                 The volume claim needs to reference the name of the volume in spec:volumeName. The name of the claim
+                 (metadat:name) is referenced in the plugin definition (see below), through param
+                 "k8s_persistent_volume_claim_name". These two k8s object need to be created before galaxy can use them:
+
+                 kubectl create -f <path/to/persistent_volume.yaml>
+                 kubectl create -f <path/to/pv_claim.yaml>
+
+                 pointing of course to the same Kubernetes cluster that you intend to use.
+            -->
+
+            <param id="k8s_config_path">/path/to/kubeconfig</param>
+            <!-- This is the path to the kube config file, which is normally on ~/.kube/config, but that will depend on
+                 your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
+                 etc. This parameter is not necessary and ignored if k8s_use_service_account is set to True -->
+
+            <param id="k8s_use_service_account">false</param>
+            <!-- For use when Kubernetes should be accessed from inside a Pod running Galaxy (that is,
+                 galaxy is running inside Kubernetes). If this variable is True, then the previous k8s_config_path is
+                 not required and actually ignored. It is not necessary to set this value if not setting it to true -->
+
+            <param id="k8s_persistent_volume_claim_name">galaxy_pvc</param>
+            <!-- The name of the Persisten Volume Claim (PVC) to be used, details above, needs to match the PVC's
+                 metadata:name -->
+
+            <param id="k8s_persistent_volume_claim_mount_path">/scratch1/galaxy_data</param>
+            <!-- The mount path needs to be parent directory of the "file_path" and "new_file_path" paths
+                 set in universe_wsgi.ini (or equivalent general galaxy config file). This is the mount path of the
+                 PVC within the docker container that will be actually running the tool -->
+
+            <param id="k8s_namespace">galaxy-instanceA</param>
+            <!-- The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set
+                 accordingly in the PV and PVC detailed above -->
+
+            <param id="k8s_pod_retrials">4</param>
+            <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
+                 setter essentially, so by default it will try to take a job submitted to successful completion. A job
+                 submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
+                 making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
+                 This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
+                 zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
+                 to failed) -->
+        </plugin>
 
     </plugins>
     <handlers default="handlers">
@@ -296,8 +384,19 @@
             <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->
         </destination>
         <destination id="dynamic" runner="dynamic">
-            <!-- A destination that represents a method in the dynamic runner. -->
+            <!-- A destination that represents a method in the dynamic runner.
+
+                 foo should be a Python function defined in any file in
+                 lib/galaxy/jobs/rules.
+            -->
             <param id="function">foo</param>
+        </destination>
+        <destination id="dtd_destination" runner="dynamic">
+            <!-- DTD is a special dynamic job destination type that builds up
+                 rules given a YAML-based DSL (see config/tool_destinations.yml.sample
+                 for the syntax).
+            -->
+            <param id="type">dtd</param>
         </destination>
         <destination id="load_balance" runner="dynamic">
             <param id="type">choose_one</param>
@@ -434,6 +533,26 @@
                  <param> tags.
             -->
             <param id="request_cpus">8</param>
+
+            <!-- Recent version of HTCondor do have a `docker` universe to handle containers.
+                 Activate this feature by explicitly specifying the `docker` universe.
+            -->
+            <!-- <param id="universe">docker</param> -->
+
+            <!-- If the tool has a container specified this one is used.
+
+                <requirements>
+                    <container type="docker">bgruening/galaxy-stable</container>
+                </requirements>
+
+            Unless the job destination specifies an override 
+            with docker_container_id_override. If neither of 
+            these is set a default container can be specified
+            with docker_default_container_id. The resolved
+            container ID will be passed along to condor as
+            the docker_image submission parameter.
+            -->
+            <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
         </destination>
 
         <!-- Jobs that hit the walltime on one destination can be automatically
@@ -475,6 +594,61 @@
             <param id="docker_enabled" from_config="use_docker">false</param>
         </destination>
 
+        <destination id="my-tool-container" runner="k8s">
+            <!-- For the kubernetes (k8s) runner, each container is a destination.
+
+                 Make sure that the container is able to execute the calls that will be passed by the galaxy built
+                 command. Most notably, containers that execute scripts through an interpreter in the form
+                 Rscript my-script.R <arguments>
+                 should have this wrapped as the container set working directory won't be the one actually used by
+                 galaxy (galaxy creates a new working director and moves to it). Recommendation is hence to wrap this
+                 type of calls on a shell script, and leave that script with execution privileges on the PATH of the
+                 container:
+
+                 RUN echo '#!/bin/bash' > /usr/local/bin/myScriptExec
+                 RUN echo 'Rscript /path/to/my-script.r "$@"' >> /usr/local/bin/myScriptExec
+                 RUN chmod a+x /usr/local/bin/myScriptExec
+
+            -->
+
+            <!-- The following four fields assemble the container's full name:
+                 docker pull <repo>/<owner>/<image>:tag
+            -->
+            <param id="docker_repo_override">my-docker-registry.org</param>
+            <param id="docker_owner_override">superbioinfo</param>
+            <param id="docker_image_override">my-tool</param>
+            <param id="docker_tag_override">latest</param>
+            <!-- Alternatively you could specify a different type of container, such as rkt (not tested with Kubernetes)
+                <param id="rkt_repo_override">my-docker-registry.org</param>
+                <param id="rkt_owner_override">superbioinfo</param>
+                <param id="rkt_image_override">my-tool</param>
+                <param id="rkt_tag_override">latest</param>
+            -->
+            <!-- You can also allow the destination to accept the docker container set in the tool, and only fall into
+                 the docker image set by this destination if the tool doesn't set a docker container, by using the
+                 "default" suffix instead of "override".
+                <param id="docker_repo_default">my-docker-registry.org</param>
+                <param id="docker_owner_default">superbioinfo</param>
+                <param id="docker_image_default">my-tool</param>
+                <param id="docker_tag_default">latest</param>
+            -->
+            <param id="max_pod_retrials">3</param>
+            <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
+                 setter essentially, so by default it will try to take a job submitted to successful completion. A job
+                 submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
+                 making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
+                 This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
+                 zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
+                 to failed).
+
+                 Overrides the runner config. (Not implemented yet)
+            -->
+            <!-- REQUIRED: To play nicely with the existing galaxy setup for containers. This could be set though
+                 internally by the runner. -->
+            <param id="docker_enabled">true</param>
+        </destination>
+
+
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
         -->
@@ -506,6 +680,11 @@
              and pass to dynamic destination (as resource_params argument). -->
         <tool id="longbar" destination="dynamic" resources="all" />
         <tool id="baz" handler="special_handlers" destination="bigmem"/>
+
+        <!-- Finally for Kubernetes runner, the following connects a particular tool to be executed with
+             the container of choice in Kubernetes.
+        -->
+        <tool id="my-tool" destination="my-tool-container"/>
     </tools>
     <limits>
         <!-- Certain limits can be defined. The 'concurrent_jobs' limits all

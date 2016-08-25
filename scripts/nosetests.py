@@ -5,6 +5,7 @@ import sys
 
 from pkg_resources import load_entry_point
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= ( 2, 7 )
 
-sys.exit( load_entry_point('nose', 'console_scripts', 'nosetests')() )
+nose_core_TestProgram = load_entry_point('nose', 'console_scripts', 'nosetests')
+nose_core_TestProgram()

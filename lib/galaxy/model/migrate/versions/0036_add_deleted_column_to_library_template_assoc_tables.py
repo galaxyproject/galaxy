@@ -2,6 +2,8 @@
 Migration script to add a deleted column to the following tables:
 library_info_association, library_folder_info_association, library_dataset_dataset_info_association.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table
@@ -19,7 +21,7 @@ def get_false_value(migrate_engine):
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     LibraryInfoAssociation_table = Table( "library_info_association", metadata, autoload=True )
@@ -29,7 +31,7 @@ def upgrade(migrate_engine):
     cmd = "UPDATE library_info_association SET deleted = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "deleted to false in library_info_association failed: %s" % ( str( e ) ) )
 
     LibraryFolderInfoAssociation_table = Table( "library_folder_info_association", metadata, autoload=True )
@@ -39,7 +41,7 @@ def upgrade(migrate_engine):
     cmd = "UPDATE library_folder_info_association SET deleted = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "deleted to false in library_folder_info_association failed: %s" % ( str( e ) ) )
 
     LibraryDatasetDatasetInfoAssociation_table = Table( "library_dataset_dataset_info_association", metadata, autoload=True )
@@ -49,7 +51,7 @@ def upgrade(migrate_engine):
     cmd = "UPDATE library_dataset_dataset_info_association SET deleted = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "deleted to false in library_dataset_dataset_info_association failed: %s" % ( str( e ) ) )
 
 

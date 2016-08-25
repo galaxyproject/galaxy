@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -10,9 +12,9 @@ metadata = MetaData()
 
 def display_migration_details():
     print
-    print "========================================"
-    print "This script drops tables that were associated with the old Galaxy Cloud functionality."
-    print "========================================"
+    print("========================================")
+    print("This script drops tables that were associated with the old Galaxy Cloud functionality.")
+    print("========================================")
 
 CloudImage_table = Table( "cloud_image", metadata,
                           Column( "id", Integer, primary_key=True ),
@@ -137,7 +139,7 @@ def upgrade(migrate_engine):
         UCI_table.drop()
         CloudUserCredentials_table.drop()
         CloudProvider_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping cloud tables failed: %s" % str( e ) )
 
 

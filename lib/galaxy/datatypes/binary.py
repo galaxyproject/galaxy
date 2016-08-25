@@ -1,4 +1,5 @@
 """Binary classes"""
+from __future__ import print_function
 
 import binascii
 import gzip
@@ -87,6 +88,8 @@ class Binary( data.Data ):
 class Ab1( Binary ):
     """Class describing an ab1 binary sequence file"""
     file_ext = "ab1"
+    edam_format = "format_3000"
+    edam_data = "data_0924"
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
@@ -108,6 +111,8 @@ Binary.register_unsniffable_binary_ext("ab1")
 class Idat( Binary ):
     """Binary data in idat format"""
     file_ext = "idat"
+    edam_format = "format_2058"
+    edam_data = "data_2603"
 
     def sniff( self, filename ):
         try:
@@ -174,6 +179,8 @@ Binary.register_unsniffable_binary_ext("zip")
 class GenericAsn1Binary( Binary ):
     """Class for generic ASN.1 binary format"""
     file_ext = "asn1-binary"
+    edam_format = "format_1966"
+    edam_data = "data_0849"
 
 Binary.register_unsniffable_binary_ext("asn1-binary")
 
@@ -182,6 +189,7 @@ Binary.register_unsniffable_binary_ext("asn1-binary")
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     edam_format = "format_2572"
+    edam_data = "data_0863"
     file_ext = "bam"
     track_type = "ReadTrack"
     data_sources = { "data": "bai", "index": "bigwig" }
@@ -227,7 +235,7 @@ class Bam( Binary ):
                 shutil.rmtree(tmp_dir)  # clean up
                 raise Exception( "Error merging BAM files: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         os.unlink(stderr_name)
         os.rmdir(tmp_dir)
 
@@ -315,7 +323,7 @@ class Bam( Binary ):
                 shutil.rmtree( tmp_dir)  # clean up
                 raise Exception( "Error Grooming BAM file contents: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         # Move samtools_created_sorted_file_name to our output dataset location
         shutil.move( samtools_created_sorted_file_name, file_name )
         # Remove temp file and empty temporary directory
@@ -358,7 +366,7 @@ class Bam( Binary ):
                 os.unlink( stderr_name )  # clean up
                 raise Exception( "Error Setting BAM Metadata: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
@@ -489,6 +497,7 @@ Binary.register_sniffable_binary_format("bam", "bam", Bam)
 class CRAM( Binary ):
     file_ext = "cram"
     edam_format = "format_3462"
+    edam_data = "format_0863"
 
     MetadataElement( name="cram_version", default=None, desc="CRAM Version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None )
     MetadataElement( name="cram_index", desc="CRAM Index File", param=metadata.FileParameter, file_ext="crai", readonly=True, no_value=None, visible=False, optional=True )
@@ -505,11 +514,11 @@ class CRAM( Binary ):
 
     def get_cram_version( self, filename):
         try:
-            with open( filename , "r") as fh:
+            with open( filename, "r") as fh:
                 header = fh.read(6)
                 return ord( header[4] ), ord( header[5] )
         except Exception as exc:
-            log.warn( '%s, get_cram_version Exception: %s', self, exc )
+            log.warning( '%s, get_cram_version Exception: %s', self, exc )
             return -1, -1
 
     def set_index_file(self, dataset, index_file):
@@ -530,10 +539,10 @@ class CRAM( Binary ):
                 return index_file.file_name
             else:
                 os.unlink( dataset_symlink )
-                log.warn( '%s, expected crai index not created for: %s', self, dataset.file_name )
+                log.warning( '%s, expected crai index not created for: %s', self, dataset.file_name )
                 return False
         except Exception as exc:
-            log.warn( '%s, set_index_file Exception: %s', self, exc )
+            log.warning( '%s, set_index_file Exception: %s', self, exc )
             return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -559,6 +568,7 @@ Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
 class Bcf( Binary):
     """Class describing a BCF file"""
     edam_format = "format_3020"
+    edam_data = "data_3498"
     file_ext = "bcf"
 
     MetadataElement( name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True )
@@ -618,6 +628,7 @@ class H5( Binary ):
     False
     """
     file_ext = "h5"
+    edam_format = "format_3590"
 
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
@@ -653,6 +664,7 @@ Binary.register_sniffable_binary_format("h5", "h5", H5)
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
     edam_format = "format_1632"
+    edam_data = "data_0924"
     file_ext = "scf"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -675,6 +687,7 @@ Binary.register_unsniffable_binary_ext("scf")
 class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
     edam_format = "format_3284"
+    edam_data = "data_0924"
     file_ext = "sff"
 
     def sniff( self, filename ):
@@ -712,6 +725,7 @@ class BigWig(Binary):
     http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
     """
     edam_format = "format_3006"
+    edam_data = "data_3002"
     track_type = "LineTrack"
     data_sources = { "data_standalone": "bigwig" }
 
@@ -750,6 +764,7 @@ Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 class BigBed(BigWig):
     """BigBed support from UCSC."""
     edam_format = "format_3004"
+    edam_data = "data_3002"
     data_sources = { "data_standalone": "bigbed" }
 
     def __init__( self, **kwd ):
@@ -763,6 +778,7 @@ Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 class TwoBit (Binary):
     """Class describing a TwoBit format nucleotide file"""
     edam_format = "format_3009"
+    edam_data = "data_0848"
     file_ext = "twobit"
 
     def sniff(self, filename):
@@ -770,7 +786,7 @@ class TwoBit (Binary):
             # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
             if os.path.getsize(filename) < 16:
                 return False
-            input = file(filename)
+            input = open(filename)
             magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
                 return True
@@ -800,6 +816,7 @@ class SQlite ( Binary ):
     MetadataElement( name="table_columns", default={}, param=DictParameter, desc="Database Table Columns", readonly=True, visible=True, no_value={} )
     MetadataElement( name="table_row_count", default={}, param=DictParameter, desc="Database Table Row Count", readonly=True, visible=True, no_value={} )
     file_ext = "sqlite"
+    edam_format = "format_3621"
 
     def init_meta( self, dataset, copy_from=None ):
         Binary.init_meta( self, dataset, copy_from=copy_from )
@@ -821,18 +838,18 @@ class SQlite ( Binary ):
                     cols = [col[0] for col in cur.description]
                     columns[table] = cols
                 except Exception as exc:
-                    log.warn( '%s, set_meta Exception: %s', self, exc )
+                    log.warning( '%s, set_meta Exception: %s', self, exc )
             for table in tables:
                 try:
                     row_query = "SELECT count(*) FROM %s" % table
                     rowcounts[table] = c.execute(row_query).fetchone()[0]
                 except Exception as exc:
-                    log.warn( '%s, set_meta Exception: %s', self, exc )
+                    log.warning( '%s, set_meta Exception: %s', self, exc )
             dataset.metadata.tables = tables
             dataset.metadata.table_columns = columns
             dataset.metadata.table_row_count = rowcounts
         except Exception as exc:
-            log.warn( '%s, set_meta Exception: %s', self, exc )
+            log.warning( '%s, set_meta Exception: %s', self, exc )
 
     def sniff( self, filename ):
         # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
@@ -888,9 +905,11 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
+    MetadataElement( name="gemini_version", default='0.10.0', param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
+    edam_format = "format_3622"
+    edam_data = "data_3498"
 
     def set_meta( self, dataset, overwrite=True, **kwd ):
         super( GeminiSQLite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
@@ -903,7 +922,7 @@ class GeminiSQLite( SQlite ):
                 dataset.metadata.gemini_version = version
             # TODO: Can/should we detect even more attributes, such as use of PED file, what was input annotation type, etc.
         except Exception as e:
-            log.warn( '%s, set_meta Exception: %s', self, e )
+            log.warning( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
@@ -914,13 +933,13 @@ class GeminiSQLite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in gemini_table_names:
                     if table_name not in result:
                         return False
                 return True
             except Exception as e:
-                log.warn( '%s, sniff Exception: %s', self, e )
+                log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -953,13 +972,13 @@ class MzSQlite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
-                log.warn( '%s, sniff Exception: %s', self, e )
+            except Exception as e:
+                log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
 
@@ -988,13 +1007,13 @@ class IdpDB( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
-                log.warn( '%s, sniff Exception: %s', self, e )
+            except Exception as e:
+                log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -1253,9 +1272,9 @@ Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
 
 class SearchGuiArchive ( CompressedArchive ):
     """Class describing a SearchGUI archive """
-    MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
+    MetadataElement( name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
                      readonly=True, visible=True, no_value=None )
-    MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
+    MetadataElement( name="searchgui_major_version", default='1', param=MetadataParameter, desc="SearchGui Major Version",
                      readonly=True, visible=True, no_value=None )
     file_ext = "searchgui_archive"
 
@@ -1274,7 +1293,7 @@ class SearchGuiArchive ( CompressedArchive ):
                     fh.close()
                 tempzip.close()
         except Exception as e:
-            log.warn( '%s, set_meta Exception: %s', self, e )
+            log.warning( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
         try:
@@ -1284,7 +1303,7 @@ class SearchGuiArchive ( CompressedArchive ):
                 tempzip.close()
                 return is_searchgui
         except Exception as e:
-            log.warn( '%s, sniff Exception: %s', self, e )
+            log.warning( '%s, sniff Exception: %s', self, e )
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):

@@ -385,7 +385,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         for key, value in self.destination_defaults.iteritems():
             if key in params:
                 if value is PARAMETER_SPECIFICATION_IGNORED:
-                    log.warn( "Pulsar runner in selected configuration ignores parameter %s" % key )
+                    log.warning( "Pulsar runner in selected configuration ignores parameter %s" % key )
                 continue
             # if self.runner_params.get( key, None ):
             #    # Let plugin define defaults for some parameters -
@@ -661,7 +661,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             # each work_dir output substitute the effective path on the Pulsar
             # server relative to the remote working directory as the
             # false_path to send the metadata command generation module.
-            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, job_working_directory=working_directory)
+            work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
             outputs = [Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path) for path in self.get_output_files(job_wrapper)]
             for output in outputs:
                 for pulsar_workdir_path, real_path in work_dir_outputs:
@@ -676,7 +676,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             if PulsarJobRunner.__use_remote_datatypes_conf( client ):
                 remote_datatypes_config = remote_system_properties.get('galaxy_datatypes_config_file', None)
                 if not remote_datatypes_config:
-                    log.warn(NO_REMOTE_DATATYPES_CONFIG)
+                    log.warning(NO_REMOTE_DATATYPES_CONFIG)
                     remote_datatypes_config = os.path.join(remote_galaxy_home, 'datatypes_conf.xml')
                 metadata_kwds['datatypes_config'] = remote_datatypes_config
             else:

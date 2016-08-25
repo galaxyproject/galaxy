@@ -39,8 +39,8 @@ def __main__():
         max_blocks = int(options.blocks)
     else:
         max_blocks = -1
-    fin = file(options.input, 'r')
-    fout = file(options.output, 'w')
+    fin = open(options.input, 'r')
+    fout = open(options.output, 'w')
     range_min = 1000
     range_max = -5
     block_num = 0

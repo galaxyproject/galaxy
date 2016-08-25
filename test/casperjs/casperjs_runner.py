@@ -1,6 +1,6 @@
 """Test runner for casperjs headless browser tests with the Galaxy distribution.
 
-Allows integration of casperjs tests with buildbot, run_functional_tests.sh
+Allows integration of casperjs tests with run_functional_tests.sh
 
 Tests can be run in any of the following ways:
 * casperjs test mytests.js --url='http://localhost:8080'
@@ -54,7 +54,7 @@ if minor < 6:
         # if nose is installed do a skip test
         from nose.plugins.skip import SkipTest
         raise SkipTest( msg )
-    except ImportError, i_err:
+    except ImportError as i_err:
         raise AssertionError( msg )
 
 # --------------------------------------------------------------------
@@ -145,7 +145,7 @@ class CasperJSTestCase( unittest.TestCase ):
 
         # couldn't find the headless browser,
         #   provide information (as it won't be included by default with galaxy)
-        except OSError, os_err:
+        except OSError as os_err:
             if os_err.errno == errno.ENOENT:
                 log.error( 'No path to headless browser executable: %s\n' +
                            'These tests were designed to use the following headless browser:\n%s',
@@ -208,7 +208,7 @@ class CasperJSTestCase( unittest.TestCase ):
                            self.browser_backtrace_to_string( last_error['backtrace'] ) ) )
 
         # if we couldn't parse json from what's returned on the error, dump stdout
-        except ValueError, val_err:
+        except ValueError as val_err:
             if str( val_err ) == 'No JSON object could be decoded':
                 log.debug( '(error parsing returned JSON from casperjs, dumping stdout...)\n:%s', stdout_output )
                 return HeadlessJSJavascriptError( 'see log for details' )
@@ -216,7 +216,7 @@ class CasperJSTestCase( unittest.TestCase ):
                 raise
 
         # otherwise, raise a vanilla exc
-        except Exception, exc:
+        except Exception as exc:
             log.debug( '(failed to parse error returned from %s: %s)', _PATH_TO_HEADLESS, str( exc ) )
             return HeadlessJSJavascriptError(
                 "ERROR in headless browser script %s" % ( script_path ) )

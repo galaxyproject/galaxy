@@ -75,7 +75,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Since exported workflows are dictionaries with very few attributes that differentiate them from each
         # other, we'll build the list based on the following dictionary of those few attributes.
         exported_workflows = []
-        repository = suc.get_tool_shed_repository_by_id( self.app, id )
+        repository = repository_util.get_tool_shed_repository_by_id( self.app, id )
         metadata = repository.metadata
         if metadata:
             exported_workflow_tups = metadata.get( 'workflows', [] )
@@ -117,7 +117,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         pathspec = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
         try:
             raw_text = util.url_get( tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
-        except Exception, e:
+        except Exception as e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
             log.debug( message )
@@ -172,7 +172,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         index = payload.get( 'index', None )
         if index is None:
             raise HTTPBadRequest( detail="Missing required parameter 'index'." )
-        repository = suc.get_tool_shed_repository_by_id( self.app, tool_shed_repository_id )
+        repository = repository_util.get_tool_shed_repository_by_id( self.app, tool_shed_repository_id )
         exported_workflows = json.loads( self.exported_workflows( trans, tool_shed_repository_id ) )
         # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
@@ -199,7 +199,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tool_shed_repository_id = kwd.get( 'id', '' )
         if not tool_shed_repository_id:
             raise HTTPBadRequest( detail="Missing required parameter 'id'." )
-        repository = suc.get_tool_shed_repository_by_id( self.app, tool_shed_repository_id )
+        repository = repository_util.get_tool_shed_repository_by_id( self.app, tool_shed_repository_id )
         exported_workflows = json.loads( self.exported_workflows( trans, tool_shed_repository_id ) )
         imported_workflow_dicts = []
         for exported_workflow_dict in exported_workflows:
@@ -246,6 +246,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/install
         Initiate the installation of a repository.
 
+        :param install_resolver_dependencies: True to install resolvable dependencies.
         :param install_tool_dependencies: True to install tool dependencies.
         :param install_repository_dependencies: True to install repository dependencies.
         :param tool_panel_section_id: The unique identifier for an existing tool panel section
@@ -263,6 +264,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         params[ 'tool_panel_section_id' ] = kwd.get( 'tool_panel_section_id', None )
         params[ 'new_tool_panel_section_label' ] = kwd.get( 'new_tool_panel_section', None )
         params[ 'tool_panel_section_mapping' ] = json.loads( kwd.get( 'tool_panel_section', '{}' ) )
+        params[ 'install_resolver_dependencies' ] = util.asbool( kwd.get( 'install_resolver_dependencies', False ) )
         params[ 'install_tool_dependencies' ] = util.asbool( kwd.get( 'install_tool_dependencies', False ) )
         params[ 'install_repository_dependencies' ] = util.asbool( kwd.get( 'install_repository_dependencies', False ) )
         params[ 'shed_tool_conf' ] = kwd.get( 'shed_tool_conf', None )
@@ -394,6 +396,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # TODO: we may want to enhance this method to allow for each of the following to be associated with each repository instead of
         # forcing all repositories to use the same settings.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
+        install_resolver_dependencies = payload.get( 'install_resolver_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
         new_tool_panel_section_label = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
@@ -407,6 +410,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                     new_tool_panel_section_label=new_tool_panel_section_label,
                                     tool_panel_section_id=tool_panel_section_id,
                                     install_repository_dependencies=install_repository_dependencies,
+                                    install_resolver_dependencies=install_resolver_dependencies,
                                     install_tool_dependencies=install_tool_dependencies,
                                     shed_tool_conf=shed_tool_conf )
             installed_tool_shed_repositories = self.install_repository_revision( trans, **current_payload )
@@ -434,11 +438,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         tool_shed_repositories = []
-        tool_shed_repository = suc.get_installed_repository( self.app,
-                                                             tool_shed=tool_shed_url,
-                                                             name=name,
-                                                             owner=owner,
-                                                             changeset_revision=changeset_revision )
+        tool_shed_repository = repository_util.get_installed_repository( self.app,
+                                                                         tool_shed=tool_shed_url,
+                                                                         name=name,
+                                                                         owner=owner,
+                                                                         changeset_revision=changeset_revision )
         rrm = RepairRepositoryManager( self.app )
         repair_dict = rrm.get_repair_dict( tool_shed_repository )
         ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
@@ -517,7 +521,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     message = "Successfully reset metadata on repository %s owned by %s" % \
                         ( str( repository.name ), str( repository.owner ) )
                     results[ 'successful_count' ] += 1
-            except Exception, e:
+            except Exception as e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     ( str( repository.name ), str( repository.owner ), str( e ) )
                 results[ 'unsuccessful_count' ] += 1
@@ -535,7 +539,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param id: the encoded id of the ToolShedRepository object
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
-        tool_shed_repository = suc.get_tool_shed_repository_by_id( self.app, id )
+        tool_shed_repository = repository_util.get_tool_shed_repository_by_id( self.app, id )
         if tool_shed_repository is None:
             log.debug( "Unable to locate tool_shed_repository record for id %s." % ( str( id ) ) )
             return {}
@@ -555,7 +559,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
         :param id: the repository's encoded id
         """
-        tool_shed_repository = suc.get_tool_shed_repository_by_id( self.app, id )
+        tool_shed_repository = repository_util.get_tool_shed_repository_by_id( self.app, id )
         if tool_shed_repository is None:
             log.debug( "Unable to locate tool_shed_repository record for id %s." % ( str( id ) ) )
             return {}

@@ -2,8 +2,8 @@
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
 define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
-        'mvc/tool/tool-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
-    function(Utils, Deferred, Ui, FormBase, ToolTemplate, CitationModel, CitationView) {
+        'mvc/citation/citation-model', 'mvc/citation/citation-view'],
+    function(Utils, Deferred, Ui, FormBase, CitationModel, CitationView) {
     return FormBase.extend({
         initialize: function(options) {
             var self = this;
@@ -11,14 +11,26 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.deferred = new Deferred();
             if (options.inputs) {
                 this._buildForm(options);
-                options.needs_update && this.deferred.execute( function( process ) {
-                    self._updateModel( process );
-                });
             } else {
                 this.deferred.execute(function(process) {
                     self._buildModel(process, options, true);
                 });
             }
+            // Listen to history panel
+            if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
+                this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
+                    this.refresh();
+                });
+            }
+        },
+
+        /** Listen to history panel changes and update the tool form */
+        refresh: function() {
+            var self = this;
+            self.deferred.reset();
+            this.deferred.execute( function (process){
+                self._updateModel( process)
+            });
         },
 
         /** Wait for deferred build processes before removal */
@@ -36,14 +48,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             var self = this;
             this.options = Utils.merge(options, this.options);
             this.options = Utils.merge({
-                icon            : ( (options.icon === undefined) && 'fa-wrench' ) || '',
+                icon            : options.icon,
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations      : this._operations(),
+                operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
-                    self.deferred.reset();
-                    self.deferred.execute(function(process) {
-                        self._updateModel(process);
-                    });
+                    self.refresh();
                 }
             }, this.options);
             this.options.customize && this.options.customize( this.options );
@@ -74,8 +83,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             }
 
             // get initial model
-            Utils.request({
-                type    : 'GET',
+            Utils.get({
                 url     : build_url,
                 data    : build_data,
                 success : function(new_model) {
@@ -105,7 +113,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             large       : true
                         })).$el);
                     } else {
-                        Galaxy.modal.show({
+                        Galaxy.modal && Galaxy.modal.show({
                             title   : 'Tool request failed',
                             body    : error_message,
                             buttons : {
@@ -245,11 +253,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     title   : 'Requirements',
                     tooltip : 'Display tool requirements',
                     onclick : function() {
-                        if (!this.visible) {
+                        if (!this.visible || self.portlet.collapsed ) {
                             this.visible = true;
+                            self.portlet.expand();
                             self.message.update({
                                 persistent  : true,
-                                message     : ToolTemplate.requirements(options),
+                                message     : self._templateRequirements(options),
                                 status      : 'info'
                             });
                         } else {
@@ -284,7 +293,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         */
         _footer: function() {
             var options = this.options;
-            var $el = $( '<div/>' ).append( ToolTemplate.help( options ) );
+            var $el = $( '<div/>' ).append( this._templateHelp( options ) );
             if ( options.citations ) {
                 var $citations = $( '<div/>' );
                 var citations = new CitationModel.ToolCitationCollection();
@@ -295,6 +304,27 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 $el.append( $citations );
             }
             return $el;
+        },
+
+        /** Templates
+        */
+        _templateHelp: function( options ) {
+            var $tmpl = $( '<div/>' ).addClass( 'ui-form-help' ).append( options.help );
+            $tmpl.find( 'a' ).attr( 'target', '_blank' );
+            return $tmpl;
+        },
+
+        _templateRequirements: function( options ) {
+            var nreq = options.requirements.length;
+            if ( nreq > 0 ) {
+                var requirements_message = 'This tool requires ';
+                _.each( options.requirements, function( req, i ) {
+                    requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
+                });
+                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://wiki.galaxyproject.org/Tools/Requirements' ).text( 'here' );
+                return $( '<span/>' ).append( requirements_message + '. Click ' ).append( requirements_link ).append( ' for more information.' );
+            }
+            return 'No requirements found.';
         }
     });
 });

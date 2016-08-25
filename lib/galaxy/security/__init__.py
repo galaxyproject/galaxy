@@ -3,7 +3,6 @@ Galaxy Security
 
 """
 import logging
-import operator
 import socket
 from datetime import datetime, timedelta
 
@@ -45,7 +44,7 @@ class RBACAgent:
 
     def get_actions( self ):
         """Get all permitted actions as a list of Action objects"""
-        return self.permitted_actions.__dict__.values()
+        return list(self.permitted_actions.__dict__.values())
 
     def get_item_actions( self, action, item ):
         raise Exception( 'No valid method of retrieving action (%s) for item %s.' % ( action, item ) )
@@ -148,7 +147,7 @@ class RBACAgent:
         When getting permitted actions from an untrusted source like a
         form, ensure that they match our actual permitted actions.
         """
-        return filter( lambda x: x is not None, [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] )
+        return [_ for _ in [ self.permitted_actions.get( action_string ) for action_string in permitted_action_strings ] if _ is not None]
 
 
 class GalaxyRBACAgent( RBACAgent ):
@@ -180,9 +179,9 @@ class GalaxyRBACAgent( RBACAgent ):
         # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
         # only to provide stable sorting, but mainly to eliminate comparison of objects
         # (which can be expensive or prohibited) in case of equal attribute values.
-        intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
+        intermed = map( None, (getattr(_, attr) for _ in seq), range( len( seq ) ), seq )
         intermed.sort()
-        return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+        return [_[-1] for _ in intermed]
 
     def _get_npns_roles( self, trans ):
         """
@@ -496,7 +495,7 @@ class GalaxyRBACAgent( RBACAgent ):
                                    % ( item.library_dataset_id, len( base_result ),
                                        len( new_result ) ) )
                 log.debug( "get_actions_for_items: Test end" )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Exception in test code: %s" % e )
 
         return ret_permissions
@@ -718,10 +717,10 @@ class GalaxyRBACAgent( RBACAgent ):
                 else:
                     if action.model == 'grant':
                         # intersect existing roles with new roles
-                        perms[ action ] = filter( lambda x: x in perms[ action ], roles )
+                        perms[ action ] = [_ for _ in roles if _ in perms[ action ]]
                     elif action.model == 'restrict':
                         # join existing roles with new roles
-                        perms[ action ].extend( filter( lambda x: x not in perms[ action ], roles ) )
+                        perms[ action ].extend( [_ for _ in roles if _ not in perms[ action ]] )
         return perms
 
     def associate_components( self, **kwd ):
@@ -795,10 +794,10 @@ class GalaxyRBACAgent( RBACAgent ):
             return None
         if not permissions:
             # default permissions
-            permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS : [ self.get_private_user_role( user, auto_create=True ) ] }
+            permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS: [ self.get_private_user_role( user, auto_create=True ) ] }
             # new_user_dataset_access_role_default_private is set as True in config file
             if default_access_private:
-                permissions[ self.permitted_actions.DATASET_ACCESS ] = permissions.values()[ 0 ]
+                permissions[ self.permitted_actions.DATASET_ACCESS ] = next(iter(permissions.values()))
         # Delete all of the current default permissions for the user
         for dup in user.default_permissions:
             self.sa_session.delete( dup )
@@ -987,7 +986,7 @@ class GalaxyRBACAgent( RBACAgent ):
         sharing_role = None
         if intersect:
             for role in intersect:
-                if not filter( lambda x: x not in users, [ ura.user for ura in role.users ] ):
+                if not [_ for _ in [ ura.user for ura in role.users ] if _ not in users]:
                     # only use a role if it contains ONLY the users we're sharing with
                     sharing_role = role
                     break
@@ -998,7 +997,7 @@ class GalaxyRBACAgent( RBACAgent ):
             self.sa_session.flush()
             for user in users:
                 self.associate_components( user=user, role=sharing_role )
-        self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS : [ sharing_role ] } )
+        self.set_dataset_permission( dataset, { self.permitted_actions.DATASET_ACCESS: [ sharing_role ] } )
 
     def set_all_library_permissions( self, trans, library_item, permissions={} ):
         # Set new permissions on library_item, eliminating all current permissions

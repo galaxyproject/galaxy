@@ -20,10 +20,10 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_rel_path_search( self ):
         """should be able to search given rel. path"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {},
-                'plugin2'   : {},
-                'file1'     : 'blerbler'
+            'plugins': {
+                'plugin1': {},
+                'plugin2': {},
+                'file1': 'blerbler'
             }
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
@@ -32,8 +32,8 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2' ] )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].name, 'plugin1' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )
@@ -45,16 +45,16 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
         """should be able to search given abs. path"""
         mock_app_dir = galaxy_mock.MockDir({})
         mock_plugin_dir = galaxy_mock.MockDir({
-            'plugin1'   : {},
-            'plugin2'   : {},
-            'file1'     : 'blerbler'
+            'plugin1': {},
+            'plugin2': {},
+            'file1': 'blerbler'
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PluginManager( mock_app, directories_setting=mock_plugin_dir.root_path )
         expected_plugins_path = mock_plugin_dir.root_path
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2' ] )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].name, 'plugin1' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )
@@ -63,16 +63,16 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
     def test_multiple_dirs( self ):
         """should search in multiple directories"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'plugin1'   : {},
-                'plugin2'   : {},
-                'file1'     : 'blerbler'
+            'plugins': {
+                'plugin1': {},
+                'plugin2': {},
+                'file1': 'blerbler'
             }
         })
         mock_abs_plugin_dir = galaxy_mock.MockDir({
-            'plugin3'   : {},
-            'plugin4'   : {},
-            'file2'     : 'blerbler'
+            'plugin3': {},
+            'plugin4': {},
+            'file2': 'blerbler'
         })
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         directories_setting = ','.join([ 'plugins', mock_abs_plugin_dir.root_path ])
@@ -82,8 +82,8 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
         expected_plugins_rel_path = os.path.join( app_path, 'plugins' )
         expected_plugins_abs_path = mock_abs_plugin_dir.root_path
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_rel_path, expected_plugins_abs_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2', 'plugin3', 'plugin4' ] )
+        self.assertEqual( sorted(plugin_mgr.directories), sorted([ expected_plugins_rel_path, expected_plugins_abs_path ]) )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2', 'plugin3', 'plugin4' ] )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].name, 'plugin1' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_rel_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )

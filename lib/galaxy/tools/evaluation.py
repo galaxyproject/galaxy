@@ -170,8 +170,8 @@ class ToolEvaluator( object ):
     def __populate_wrappers(self, param_dict, input_datasets, input_dataset_paths, job_working_directory):
 
         def wrap_input( input_values, input ):
+            value = input_values[ input.name ]
             if isinstance( input, DataToolParameter ) and input.multiple:
-                value = input_values[ input.name ]
                 dataset_instances = DatasetListWrapper.to_dataset_instances( value )
                 input_values[ input.name ] = \
                     DatasetListWrapper( job_working_directory,
@@ -232,7 +232,7 @@ class ToolEvaluator( object ):
                 input_values[ input.name ] = \
                     DatasetFilenameWrapper( dataset, **wrapper_kwds )
             elif isinstance( input, DataCollectionToolParameter ):
-                dataset_collection = input_values[ input.name ]
+                dataset_collection = value
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     dataset_paths=input_dataset_paths,
@@ -247,10 +247,10 @@ class ToolEvaluator( object ):
                 input_values[ input.name ] = wrapper
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
-                    input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
+                    input, value, self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
             else:
                 input_values[ input.name ] = InputValueWrapper(
-                    input, input_values[ input.name ], param_dict )
+                    input, value, param_dict )
 
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
@@ -427,25 +427,25 @@ class ToolEvaluator( object ):
 
         try:
             self.__build_config_files( )
-        except Exception, e:
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(self.tool.config_file, "Building Config Files", e)
             raise e
         try:
             self.__build_param_file( )
-        except Exception, e:
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(self.tool.config_file, "Building Param File", e)
             raise e
         try:
             self.__build_command_line( )
-        except Exception, e:
+        except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
             raise e
         try:
             self.__build_environment_variables()
-        except Exception, e:
+        except Exception as e:
             global_tool_errors.add_error(self.tool.config_file, "Building Environment Variables", e)
             raise e
 

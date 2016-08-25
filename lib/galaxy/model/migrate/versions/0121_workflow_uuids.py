@@ -1,6 +1,8 @@
 """
 Add UUIDs to workflows
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, MetaData, Table
@@ -20,11 +22,11 @@ workflow_uuid_column = Column( "uuid", UUIDType, nullable=True )
 
 
 def display_migration_details():
-    print "This migration script adds a UUID column to workflows"
+    print("This migration script adds a UUID column to workflows")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
@@ -33,8 +35,8 @@ def upgrade(migrate_engine):
         workflow_table = Table( "workflow", metadata, autoload=True )
         workflow_uuid_column.create( workflow_table )
         assert workflow_uuid_column is workflow_table.c.uuid
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.error( "Adding column 'uuid' to workflow table failed: %s" % str( e ) )
         return
 
@@ -48,5 +50,5 @@ def downgrade(migrate_engine):
         workflow_table = Table( "workflow", metadata, autoload=True )
         workflow_uuid = workflow_table.c.uuid
         workflow_uuid.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'uuid' column from workflow table failed: %s" % ( str( e ) ) )

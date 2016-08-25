@@ -4,10 +4,12 @@
 # eg lped/eigen/fbat/snpmatrix all to pbed
 # and pbed to lped/eigen/fbat/snpmatrix ?
 # that's a lot of converters
-import sys
+from __future__ import print_function
+
 import os
-import time
 import subprocess
+import sys
+import time
 
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'
@@ -39,7 +41,7 @@ def getMissval(inped=''):
     """
     commonmissvals = {'N': 'N', '0': '0', 'n': 'n', '9': '9', '-': '-', '.': '.'}
     try:
-        f = file(inped, 'r')
+        f = open(inped, 'r')
     except:
         return None  # signal no in file
     missval = None
@@ -68,7 +70,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     outroot = os.path.join(outfilepath, basename)
     missval = getMissval(inped=pedf)
     if not missval:
-        print '### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf
+        print('### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf)
         missval = '0'
     cl = '%s --noweb --file %s --make-bed --out %s --missing-genotype %s' % (plink, inpedfilepath, outroot, missval)
     p = subprocess.Popen(cl, shell=True, cwd=outfilepath)
@@ -96,16 +98,15 @@ def main():
         pass
     plink = sys.argv[4]
     rgConv(inpedfilepath, outhtmlname, outfilepath, plink)
-    f = file(outhtmlname, 'w')
-    f.write(galhtmlprefix % prog)
     flist = os.listdir(outfilepath)
-    s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
-    print s
-    f.write('<div>%s\n<ol>' % (s))
-    for i, data in enumerate( flist ):
-        f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
-    f.write("</ol></div></div></body></html>")
-    f.close()
+    with open(outhtmlname, 'w') as f:
+        f.write(galhtmlprefix % prog)
+        s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
+        print(s)
+        f.write('<div>%s\n<ol>' % (s))
+        for i, data in enumerate( flist ):
+            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+        f.write("</ol></div></div></body></html>")
 
 
 if __name__ == "__main__":

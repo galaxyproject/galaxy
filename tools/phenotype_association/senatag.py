@@ -225,7 +225,7 @@ if __name__ == "__main__":
     try:
         opts, args = getopt(argv[1:], "hdr:e:",
                             ["help", "debug", "required=", "excluded="])
-    except GetoptError, err:
+    except GetoptError as err:
         print str(err)
         usage()
         exit(2)

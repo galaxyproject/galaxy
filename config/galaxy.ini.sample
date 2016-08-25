@@ -164,28 +164,35 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # <toolbox> tag.
 #tool_path = tools
 
+# -- Tool dependencies
+
 # Path to the directory in which tool dependencies are placed.  This is used by
-# the tool shed to install dependencies and can also be used by administrators
+# the Tool Shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
 #   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
-# If this option is not set to a valid path, installing tools with dependencies
+# Set to the string none to explicitly disable tool dependency handling.
+# If this option is set to none or an invalid path, installing tools with dependencies
 # from the Tool Shed will fail.
-#tool_dependency_dir = None
+#tool_dependency_dir = database/dependencies
 
-# The dependency resolves config file specifies an ordering and options for how
+# The dependency resolvers config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
-# ordering is to the use the tool shed for tools installed that way, use local
-# Galaxy packages, and then use conda if available.
+# ordering is to the use the Tool Shed for tools installed that way, use local
+# Galaxy packages, and then use Conda if available.
 # See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
 # for more information on these options.
 #dependency_resolvers_config_file = config/dependency_resolvers_conf.xml
 
-# Following conda dependeny resolution options are experimental as of early
-# 2016. These will change the defaults for each conda resolver, but multiple
-# resolvers can be configured independently and these options overridden in
-# dependency_resolvers_config_file.
+# The following Conda dependency resolution options will change the defaults for
+# all Conda resolvers, but multiple resolvers can be configured independently
+# in dependency_resolvers_config_file and these options overridden.
+# Location on the filesystem where Conda packages are installed
+
+# conda_prefix is the location on the filesystem where Conda packages and environments are installed
+# IMPORTANT: Due to a current limitation in conda, the total length of the
+# conda_prefix and the job_working_directory path should be less than 50 characters!
 #conda_prefix = <tool_dependency_dir>/_conda
-# Override the conda executable to use, it will default to the one on the
+# Override the Conda executable to use, it will default to the one on the
 # PATH (if available) and then to <conda_prefix>/bin/conda
 #conda_exec =
 # Pass debug flag to conda commands.
@@ -195,9 +202,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
-# Set to True to instruct Galaxy to install conda from the web automatically
+# Set to True to perform additional checking of installed Conda environment
+#conda_verbose_install_check=False
+# Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
-#conda_auto_init = False
+#conda_auto_init = True
 
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
@@ -408,16 +417,19 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Activation grace period (in hours).  Activation is not forced (login is not
 # disabled) until grace period has passed.  Users under grace period can't run
-# jobs (see inactivity_box_content).  Default is 3.  Enter 0 to disable grace
-# period.
+# jobs. Enter 0 to disable grace period.
 # Users with OpenID logins have grace period forever.
-#activation_grace_period = 0
+#activation_grace_period = 3
 
-# Used for warning box for inactive accounts (unable to run jobs).
+# Shown in warning box to users that were not activated yet.
 # In use only if activation_grace_period is set.
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
-
+# Password expiration period (in days). Users are required to change their
+# password every x days. Users will be redirected to the change password
+# screen when they log in after their password expires. Enter 0 to disable
+# password expiration.
+#password_expiration_period = 0
 
 # Galaxy Session Timeout
 # This provides a timeout (in minutes) after which a user will have to log back in.
@@ -833,6 +845,8 @@ use_interactive = True
 # tool_name_boost = 9
 # tool_section_boost = 3
 # tool_description_boost = 2
+# tool_label_boost = 1
+# tool_stub_boost = 5
 # tool_help_boost = 0.5
 
 # Limits the number of results in toolbox search.  Can be used to tweak how many
@@ -885,6 +899,13 @@ use_interactive = True
 # to True to force these to lower case.
 #normalize_remote_user_email = False
 
+# If an e-mail address is specified here, it will hijack remote user mechanics
+# (``use_remote_user``) and have the webapp inject a single fixed user. This
+# has the effect of turning Galaxy into a single user application with no
+# login or external proxy required. Such applications should not be exposed to
+# the world.
+#single_user =
+
 # Administrative users - set this to a comma-separated list of valid Galaxy
 # users (email addresses).  These users will have access to the Admin section
 # of the server, and will have access to create users, groups, roles,
@@ -912,7 +933,7 @@ use_interactive = True
 # Allow users to remove their datasets from disk immediately (otherwise,
 # datasets will be removed after a time period specified by an administrator in
 # the cleanup scripts run via cron)
-#allow_user_dataset_purge = False
+#allow_user_dataset_purge = True
 
 # By default, users' data will be public, but setting this to True will cause
 # it to be private.  Does not affect existing users and data, only ones created
@@ -1017,12 +1038,26 @@ use_interactive = True
 # database for authentication) and set the following two options.
 
 # This should point to a directory containing subdirectories matching users'
-# email addresses, where Galaxy will look for files.
+# identifier (defaults to e-mail), where Galaxy will look for files.
 #ftp_upload_dir = None
 
 # This should be the hostname of your FTP server, which will be provided to
 # users in the help text.
 #ftp_upload_site = None
+
+# User attribute to use as subdirectory in calculating default ftp_upload_dir
+# pattern. By default this will be email so a user's FTP upload directory will be
+# ${ftp_upload_dir}/${user.email}. Can set this to other attributes such as id or
+# username though.
+#ftp_upload_dir_identifier = email
+
+# Python string template used to determine an FTP upload directory for a
+# particular user.
+#ftp_upload_dir_template = ${ftp_upload_dir}/${ftp_upload_dir_identifier}
+
+# This should be set to False to prevent Galaxy from deleting uploaded FTP files
+# as it imports them.
+#ftp_upload_purge = True
 
 # Enable enforcement of quotas.  Quotas can be set from the Admin interface.
 #enable_quotas = False
@@ -1178,6 +1213,12 @@ use_interactive = True
 
 #amqp_internal_connection = sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
+# Galaxy real time communication server settings
+#enable_communication_server = False
+#communication_server_host = http://localhost
+#communication_server_port = 7070
+# persistent_communication_rooms is a comma-separated list of rooms that should be always available.
+#persistent_communication_rooms =
 
 
 # ---- Galaxy External Message Queue -------------------------------------------------

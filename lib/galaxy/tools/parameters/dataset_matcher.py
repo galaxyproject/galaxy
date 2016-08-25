@@ -35,7 +35,12 @@ class DatasetMatcher( object ):
         accessible to user.
         """
         dataset = hda.dataset
-        state_valid = dataset.state not in INVALID_STATES
+        has_tool = self.tool
+        if has_tool:
+            valid_input_states = self.tool.valid_input_states
+        else:
+            valid_input_states = galaxy.model.Dataset.valid_input_states
+        state_valid = dataset.state in valid_input_states
         return state_valid and ( not check_security or self.__can_access_dataset( dataset ) )
 
     def valid_hda_match( self, hda, check_implicit_conversions=True, check_security=False ):

@@ -1,6 +1,8 @@
 """
 Migration script to add the tool_shed_repository table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -28,7 +30,7 @@ ToolShedRepository_table = Table( "tool_shed_repository", metadata,
                                   Column( "update_time", DateTime, default=now, onupdate=now ),
                                   Column( "tool_shed", TrimmedString( 255 ), index=True ),
                                   Column( "name", TrimmedString( 255 ), index=True ),
-                                  Column( "description" , TEXT ),
+                                  Column( "description", TEXT ),
                                   Column( "owner", TrimmedString( 255 ), index=True ),
                                   Column( "changeset_revision", TrimmedString( 255 ), index=True ),
                                   Column( "deleted", Boolean, index=True, default=False ) )
@@ -36,11 +38,11 @@ ToolShedRepository_table = Table( "tool_shed_repository", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         ToolShedRepository_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating tool_shed_repository table failed: %s" % str( e ) )
 
 
@@ -49,5 +51,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         ToolShedRepository_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping tool_shed_repository table failed: %s" % str( e ) )

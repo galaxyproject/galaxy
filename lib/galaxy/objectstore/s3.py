@@ -13,8 +13,7 @@ import time
 from datetime import datetime
 
 from galaxy.exceptions import ObjectNotFound, ObjectInvalid
-from galaxy.util import string_as_bool, umask_fix_perms, safe_relpath
-from galaxy.util.directory_hash import directory_hash_id
+from galaxy.util import string_as_bool, umask_fix_perms, safe_relpath, directory_hash_id
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
 from ..objectstore import ObjectStore, convert_bytes

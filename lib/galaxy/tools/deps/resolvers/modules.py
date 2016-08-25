@@ -11,7 +11,7 @@ from os.path import exists, isdir, join
 from six import StringIO
 from subprocess import Popen, PIPE
 
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
+from ..resolvers import DependencyResolver, NullDependency, Dependency
 
 import logging
 log = logging.getLogger( __name__ )
@@ -52,14 +52,14 @@ class ModuleDependencyResolver(DependencyResolver):
 
     def resolve( self, name, version, type, **kwds ):
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version, exact=True)
         elif self.versionless and self.__has_module(name, None):
             return ModuleDependency(self, name, None, exact=False)
 
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
     def __has_module(self, name, version):
         return self.module_checker.has_module(name, version)
@@ -74,7 +74,7 @@ class DirectoryModuleChecker(object):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
         if prefetch:
-            log.warn("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
+            log.warning("Created module dependency resolver with prefetch enabled, but directory module checker does not support this.")
 
     def has_module(self, module, version):
         has_module = False

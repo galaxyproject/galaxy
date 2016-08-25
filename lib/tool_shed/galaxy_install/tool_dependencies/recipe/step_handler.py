@@ -82,7 +82,7 @@ class CompressedFile( object ):
                     if os.path.exists( absolute_filepath ):
                         os.chmod( absolute_filepath, unix_permissions )
                     else:
-                        log.warn("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
+                        log.warning("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):
@@ -179,7 +179,7 @@ class Download( object ):
                     err_msg = 'Downloading from URL %s took longer than the defined timeout period of %.1f seconds.' % \
                         ( str( download_url ), basic_util.NO_OUTPUT_TIMEOUT )
                     raise Exception( err_msg )
-        except Exception, e:
+        except Exception as e:
             err_msg = err_msg = 'Error downloading from URL\n%s:\n%s' % ( str( download_url ), str( e ) )
             raise Exception( err_msg )
         finally:
@@ -605,7 +605,7 @@ class DownloadBinary( Download, RecipeStep ):
                 # Set actions to the same, so that the current download_binary doesn't get re-run in the
                 # next stage.  TODO: this may no longer be necessary...
                 actions = [ item for item in filtered_actions ]
-        except Exception, e:
+        except Exception as e:
             log.exception( str( e ) )
             if initial_download:
                 # No binary exists, or there was an error downloading the binary from the generated URL.
@@ -1333,7 +1333,7 @@ class SetupREnvironment( Download, RecipeStep ):
         #       <repository name="package_r_3_0_1" owner="bgruening">
         #           <package name="R" version="3.0.1" />
         #       </repository>
-        #       <!-- allow installing an R packages -->
+        #       <!-- allow installing one or more R packages -->
         #       <package sha256sum="7056b06041fd96ebea9c74f445906f1a5cd784b2b1573c02fcaee86a40f3034d">https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
         # </action>
         dir = None
@@ -1341,10 +1341,14 @@ class SetupREnvironment( Download, RecipeStep ):
             filtered_actions = actions[ 1: ]
         env_shell_file_paths = action_dict.get( 'env_shell_file_paths', None )
         if env_shell_file_paths is None:
-            log.debug( 'Missing R environment. Please check your specified R installation exists.' )
-            if initial_download:
-                return tool_dependency, filtered_actions, dir
-            return tool_dependency, None, None
+            error_message = 'Missing R environment. Please check your specified R installation exists.'
+            log.error( error_message )
+            status = self.app.install_model.ToolDependency.installation_status.ERROR
+            tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
+                                                                                   tool_dependency,
+                                                                                   status=status,
+                                                                                   error_message=error_message )
+            return tool_dependency, [], None
         else:
             install_environment.add_env_shell_file_paths( env_shell_file_paths )
         log.debug( 'Handling setup_r_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' %

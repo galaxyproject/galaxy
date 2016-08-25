@@ -22,14 +22,14 @@ class ProxyManager(object):
 
     def __init__( self, config ):
         for option in ["manage_dynamic_proxy", "dynamic_proxy_bind_port",
-                "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
-                "dynamic_proxy_external_proxy", "dynamic_proxy_prefix",
-                "proxy_session_map",
-                "dynamic_proxy", "cookie_path",
-                "dynamic_proxy_golang_noaccess",
-                "dynamic_proxy_golang_clean_interval",
-                "dynamic_proxy_golang_docker_address",
-                "dynamic_proxy_golang_api_key"]:
+                       "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
+                       "dynamic_proxy_external_proxy", "dynamic_proxy_prefix",
+                       "proxy_session_map",
+                       "dynamic_proxy", "cookie_path",
+                       "dynamic_proxy_golang_noaccess",
+                       "dynamic_proxy_golang_clean_interval",
+                       "dynamic_proxy_golang_docker_address",
+                       "dynamic_proxy_golang_api_key"]:
 
             setattr( self, option, getattr( config, option ) )
 
@@ -250,7 +250,7 @@ class RestGolangProxyIpc(object):
         # going, so if this fails, re-call ourselves with an increased timeout.
         try:
             urllib2.urlopen(req, json.dumps(values))
-        except urllib2.URLError, err:
+        except urllib2.URLError as err:
             log.debug(err)
             if sleep > 5:
                 excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))

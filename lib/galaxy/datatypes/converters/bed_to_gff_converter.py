@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # This code exists in 2 places: ~/datatypes/converters and ~/tools/filters
+from __future__ import print_function
+
 import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
@@ -14,7 +16,7 @@ def __main__():
     out.write( "##gff-version 2\n" )
     out.write( "##bed_to_gff_converter.py\n\n" )
     i = 0
-    for i, line in enumerate( file( input_name ) ):
+    for i, line in enumerate( open( input_name ) ):
         complete_bed = False
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( '#' ) and not line.startswith( 'track' ) and not line.startswith( 'browser' ):
@@ -69,7 +71,7 @@ def __main__():
     info_msg = "%i lines converted to GFF version 2.  " % ( i + 1 - skipped_lines )
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
-    print info_msg
+    print(info_msg)
 
 if __name__ == "__main__":
     __main__()

@@ -20,6 +20,8 @@ from .cwltool_deps import (
     workflow,
 )
 
+from .schema import schema_loader
+
 log = logging.getLogger(__name__)
 
 JOB_JSON_FILE = ".cwl_job.json"
@@ -67,9 +69,7 @@ def load_job_proxy(job_directory):
 
 def to_cwl_tool_object(tool_path):
     proxy_class = None
-    cwl_tool = None
-    make_tool = workflow.defaultMakeTool
-    cwl_tool = main.load_tool(tool_path, False, False, make_tool, False)
+    cwl_tool = schema_loader.tool(path=tool_path)
     if isinstance(cwl_tool, int):
         raise Exception("Failed to load tool.")
 
@@ -86,10 +86,6 @@ def to_cwl_tool_object(tool_path):
         raise Exception("File not a CWL CommandLineTool.")
     if "cwlVersion" not in raw_tool:
         raise Exception("File does not declare a CWL version, pre-draft 3 CWL tools are not supported.")
-
-    cwl_version = raw_tool["cwlVersion"]
-    if cwl_version != "https://w3id.org/cwl/cwl#draft-3":
-        raise Exception("Only draft 3 CWL tools are supported by Galaxy.")
 
     proxy = proxy_class(cwl_tool, tool_path)
     return proxy
@@ -153,13 +149,18 @@ class ToolProxy( object ):
     def description(self):
         """ Return description to tool. """
 
+    @abstractmethod
+    def label(self):
+        """ Return label for tool. """
+
 
 class CommandLineToolProxy(ToolProxy):
 
     def description(self):
-        # Feels like I should be getting some abstract namespaced thing
-        # not actually description, is this correct?
         return self._tool.tool.get('description')
+
+    def label(self):
+        return self._tool.tool.get('label')
 
     def input_instances(self):
         return self._find_inputs(self._tool.inputs_record_schema)
@@ -230,13 +231,14 @@ class JobProxy(object):
     def is_command_line_job(self):
         self._ensure_cwl_job_initialized()
         assert self._is_command_line_job is not None
+        return self._is_command_line_job
 
     def _ensure_cwl_job_initialized(self):
         if self._cwl_job is None:
             self._cwl_job = self._tool_proxy._tool.job(
                 self._input_dict,
-                self._job_directory,
                 self._output_callback,
+                basedir=self._job_directory,
                 use_container=False
             ).next()
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
