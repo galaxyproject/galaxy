@@ -8,17 +8,13 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
             this.chart = this.app.chart;
             this.viewport = new Viewport( app );
             this.message = new Ui.Message();
-
-            // button menu
-            var picture_button_menu = new Ui.ButtonMenu({
+            this.export_button = new Ui.ButtonMenu({
                 icon    : 'fa-camera',
-                title   : 'Screenshot',
+                title   : 'Export',
                 tooltip : 'Download as PNG, SVG or PDF file'
             });
-
-            // add png option
-            picture_button_menu.addMenu({
-                id          : 'button-png',
+            this.export_button.addMenu({
+                key         : 'png',
                 title       : 'Save as PNG',
                 icon        : 'fa-file',
                 onclick     : function() {
@@ -33,10 +29,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                     });
                 }
             });
-
-            // add svg option
-            picture_button_menu.addMenu({
-                id          : 'button-svg',
+            this.export_button.addMenu({
+                key         : 'svg',
                 title       : 'Save as SVG',
                 icon        : 'fa-file-text-o',
                 onclick     : function() {
@@ -51,10 +45,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                     });
                 }
             });
-
-            // add pdf option
-            picture_button_menu.addMenu({
-                id          : 'button-png',
+            this.export_button.addMenu({
+                key         : 'pdf',
                 title       : 'Save as PDF',
                 icon        : 'fa-file-o',
                 onclick     : function() {
@@ -79,8 +71,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                     });
                 }
             });
-
-            // create portlet
             this.portlet = new Portlet.View({
                 icon : 'fa-bar-chart-o',
                 title: 'Viewport',
@@ -96,16 +86,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                             });
                         }
                     }),
-                    picture_button_menu: picture_button_menu
+                    export_button: this.export_button
                 }
             });
-
-            // append elements
             this.portlet.append( this.message.$el );
             this.portlet.append( this.viewport.$el.addClass( 'ui-margin-top' ) );
             this.setElement( this.portlet.$el );
-
-            // events
             this.listenTo( this.chart, 'change', function() { self.render() } );
         },
 
@@ -124,6 +110,10 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
         render: function() {
             var title = this.chart.get( 'title' );
             this.portlet.title( title );
+            var exports = this.chart.definition && this.chart.definition.exports || [];
+            this.export_button.collection.each( function( model ) {
+                model.set( 'visible', exports.indexOf( model.get( 'key' ) ) !== -1 );
+            });
         },
 
         /** Check if chart is ready for export */

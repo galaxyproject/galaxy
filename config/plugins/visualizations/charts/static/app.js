@@ -17,13 +17,14 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         },
 
         _build: function( options ) {
-            this.options = options;
-            this.chart = new Chart();
-            this.types = Types;
-            this.storage = new Storage( this.chart, this.types, options );
-            this.deferred = new Deferred();
-            this.viewer = new Viewer( this );
-            this.editor = new Editor( this );
+            this.options    = options;
+            this.types      = Types;
+            this.chart      = new Chart();
+            this.modal      = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
+            this.storage    = new Storage( this.chart, this.types, options );
+            this.deferred   = new Deferred();
+            this.viewer     = new Viewer( this );
+            this.editor     = new Editor( this );
             this.$el.append( this.viewer.$el );
             this.$el.append( this.editor.$el );
             if ( !this.storage.load() ) {
