@@ -212,10 +212,9 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-check-blocking-prs RELEASE_CURR=${version}
       - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
-      - [ ] Create release tag:
+      - [ ] Create and push release tag:
 
             make release-create RELEASE_CURR=${version}
-      - [ ] Push branches and tags as commented out in Makefile target for ``release-create``.
 
 - [ ] **Do Docker Release**
 
