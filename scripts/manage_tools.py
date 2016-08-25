@@ -18,7 +18,7 @@ if not os.path.exists( config_file ):
     sys.exit( 1 )
 repo = 'lib/tool_shed/galaxy_install/migrate'
 
-properties = load_app_properties( ini_file=config_file )
+properties = load_app_properties( config_file=config_file )
 cp = SafeConfigParser()
 cp.read( config_file )
 

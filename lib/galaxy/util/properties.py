@@ -6,6 +6,8 @@ import os
 import os.path
 import sys
 
+import yaml
+
 from six import iteritems
 from six.moves.configparser import ConfigParser
 
@@ -13,21 +15,37 @@ from six.moves.configparser import ConfigParser
 def load_app_properties(
     kwds={},
     ini_file=None,
-    ini_section="app:main",
+    ini_section=None,
+    config_file=None,
+    config_section=None,
     config_prefix="GALAXY_CONFIG_"
 ):
     properties = kwds.copy() if kwds else {}
-    if ini_file:
-        defaults = {
-            'here': os.path.dirname(os.path.abspath(ini_file)),
-            '__file__': os.path.abspath(ini_file)
-        }
-        parser = NicerConfigParser(ini_file, defaults=defaults)
-        parser.optionxform = str  # Don't lower-case keys
-        with open(ini_file) as f:
-            parser.read_file(f)
+    if config_file is None:
+        config_file = ini_file
+        config_section = ini_section
 
-        properties.update( dict( parser.items( ini_section ) ) )
+    if config_file:
+        if not config_file.endswith(".yml") and not config_file.endswith(".yml.sample"):
+            if config_section is None:
+                config_section = "app:main"
+            defaults = {
+                'here': os.path.dirname(os.path.abspath(config_file)),
+                '__file__': os.path.abspath(config_file)
+            }
+            parser = NicerConfigParser(config_file, defaults=defaults)
+            parser.optionxform = str  # Don't lower-case keys
+            with open(config_file) as f:
+                parser.read_file(f)
+
+            properties.update( dict( parser.items( config_section ) ) )
+        else:
+            if config_section is None:
+                config_section = "galaxy"
+
+            with open(config_file, "r") as f:
+                raw_properties = yaml.load(f)
+            properties = raw_properties[config_section] or {}
 
     override_prefix = "%sOVERRIDE_" % config_prefix
     for key in os.environ:
