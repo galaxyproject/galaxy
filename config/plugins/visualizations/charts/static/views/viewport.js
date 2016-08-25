@@ -77,7 +77,6 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
                 var container_id = Utils.uid();
                 var container_el = $( '<div/>' ).addClass( 'charts-viewport-container' )
                                                 .width( parseInt( 100 / n ) + '%' )
-                                                .append( $( '<div/>' ).attr( 'id', 'menu' ) )
                                                 .append( $( '<' + tag + ' class="charts-viewport-canvas" />' ).attr( 'id', container_id ) );
                 this.$el.append( container_el );
                 this.targets.push( container_id );
