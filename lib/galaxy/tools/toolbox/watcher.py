@@ -2,6 +2,7 @@ import logging
 import os.path
 import threading
 import time
+from galaxy.util.hash_util import md5_hash_file
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -82,6 +83,7 @@ class ToolConfWatcher(object):
             self.thread.join()
 
     def check(self):
+        hashes = { key: None for key in self.paths.keys() }
         while self._active:
             do_reload = False
             with self._lock:
@@ -90,12 +92,15 @@ class ToolConfWatcher(object):
                 if not os.path.exists(path):
                     continue
                 mod_time = self.paths[path]
+                if not hashes.get(path, None):
+                    hashes[path] = md5_hash_file(path)
                 new_mod_time = None
                 if os.path.exists(path):
                     new_mod_time = time.ctime(os.path.getmtime(path))
                 if new_mod_time != mod_time:
-                    self.paths[path] = new_mod_time
-                    do_reload = True
+                    if hashes[path] != md5_hash_file(path):
+                        self.paths[path] = new_mod_time
+                        do_reload = True
 
             if do_reload:
                 t = threading.Thread(target=lambda: self.event_handler.on_any_event(None))
