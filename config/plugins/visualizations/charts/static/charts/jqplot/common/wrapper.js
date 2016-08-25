@@ -1,7 +1,7 @@
 /** This is the common wrapper for jqplot based visualizations. */
 define( [ 'plugin/charts/jqplot/common/plot-config', 'plugin/charts/utilities/tabular-utilities' ], function( configmaker, Utilities ) {
     return Backbone.View.extend({
-        initialize: function( app, options ) {
+        initialize: function( options ) {
             this.options = options;
             var self = this;
             options.render = function( canvas_id, groups ) {

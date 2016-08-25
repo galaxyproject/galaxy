@@ -4,7 +4,19 @@
 define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor', 'plugin/charts/types' ],
     function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, Viewer, Editor, Types ) {
     return Backbone.View.extend({
-        initialize: function(options){
+        initialize: function( options ){
+            var self = this;
+            Utils.get({
+                url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
+                cache   : true,
+                success : function( dataset ) {
+                    self.dataset = dataset;
+                    self._build( options );
+                }
+            });
+        },
+
+        _build: function( options ){
             this.options = options;
             this.modal = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
             this.types = Types;
@@ -18,13 +30,15 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             this.$el.append( this.viewer.$el );
             this.$el.append( this.editor.$el );
 
-            // pick start screen
+            // load dataset and pick start screen
             if ( !this.storage.load() ) {
                 this.go( 'editor' );
             } else {
                 this.go( 'viewer' );
                 this.chart.trigger( 'redraw' );
             }
+            var self = this;
+            this.chart.on( 'change:dataset_id_job', function() { self.storage.save() } );
         },
 
         /** Loads a view and makes sure that all others are hidden */

@@ -5,8 +5,7 @@ define( [ 'utils/utils' ], function( Utils ) {
     var WAITTIME = 1000;
 
     /** Submit job request to charts tool */
-    var request = function( app, parameters, success, error ) {
-        var chart = app.chart;
+    var request = function( chart, parameters, success, error ) {
         chart.state( 'wait', 'Requesting job results...' );
          if ( chart.get( 'modified' ) ) {
             cleanup( chart );
@@ -33,7 +32,6 @@ define( [ 'utils/utils' ], function( Utils ) {
                         var job = response.outputs[0];
                         chart.state( 'wait', 'Your job has been queued. You may close the browser window. The job will run in the background.' );
                         chart.set( 'dataset_id_job', job.id );
-                        self.app.storage.save();
                         wait( chart, success, error );
                     }
                 },

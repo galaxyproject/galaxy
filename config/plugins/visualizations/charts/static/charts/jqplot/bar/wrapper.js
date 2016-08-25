@@ -1,6 +1,6 @@
 define( [ 'plugin/charts/jqplot/common/wrapper' ], function( Plot ) {
     return Backbone.Model.extend({
-        initialize: function( app, options ) {
+        initialize: function( options ) {
             options.makeConfig = function( groups, plot_config ){
                 $.extend( true, plot_config, {
                     seriesDefaults: {
@@ -16,7 +16,7 @@ define( [ 'plugin/charts/jqplot/common/wrapper' ], function( Plot ) {
                     }
                 });
             };
-            new Plot( app, options );
+            new Plot( options );
         }
     });
 });

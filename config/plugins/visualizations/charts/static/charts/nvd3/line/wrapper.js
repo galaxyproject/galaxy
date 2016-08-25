@@ -1,8 +1,8 @@
 define( [ 'plugin/charts/nvd3/common/wrapper' ], function( NVD3 ) {
     return Backbone.Model.extend({
-        initialize: function( app, options ) {
+        initialize: function( options ) {
             options.type = 'lineChart';
-            new NVD3( app, options );
+            new NVD3( options );
         }
     });
 });

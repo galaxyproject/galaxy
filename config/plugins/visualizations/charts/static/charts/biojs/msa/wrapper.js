@@ -1,7 +1,8 @@
 define( [ 'utils/utils' ], function( Utils ) {
     return Backbone.Model.extend({
-        initialize: function( app, options ) {
-            var chart = app.chart;
+        initialize: function( options ) {
+            var chart = options.chart;
+            var dataset = options.dataset;
             var settings = chart.settings;
             var m = new msa.msa({
                 el: $( '#'  + options.canvas_list[ 0 ] ),
@@ -10,9 +11,9 @@ define( [ 'utils/utils' ], function( Utils ) {
                 menu: 'small',
                 bootstrapMenu: settings.get( 'menu' ) == 'true'
             });
-            m.u.file.importURL( options.dataset.download_url, function() {
+            m.u.file.importURL( dataset.download_url, function() {
                 m.render();
-                app.chart.state( 'ok', 'Chart drawn.' );
+                chart.state( 'ok', 'Chart drawn.' );
                 options.process.resolve();
             });
         }

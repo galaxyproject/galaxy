@@ -112,13 +112,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
             require( [ 'plugin/charts/' + this.app.split( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
-                Utils.get({
-                    url     : Galaxy.root + 'api/datasets/' + chart.get( 'dataset_id' ),
-                    cache   : true,
-                    success : function( dataset ) {
-                        new ChartView( self.app, { process: process, canvas_list: self.canvas_list, dataset: dataset } );
-                    }
-                });
+                new ChartView( { process: process, chart: chart, dataset: self.app.dataset, canvas_list: self.canvas_list } );
             });
         }
     });

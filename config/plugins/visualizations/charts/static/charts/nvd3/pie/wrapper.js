@@ -1,10 +1,10 @@
 /** Pie chart wrapper */
 define( [ 'utils/utils', 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-datasets' ], function( Utils, Utilities, Datasets ) {
     return Backbone.View.extend({
-        initialize: function( app, options ) {
+        initialize: function( options ) {
             var self = this;
-            var chart = app.chart;
-            var request_dictionary = Utilities.buildRequestDictionary( app.chart );
+            var chart = options.chart;
+            var request_dictionary = Utilities.buildRequestDictionary( chart );
             var canvas_list = options.canvas_list;
             var process = options.process;
             request_dictionary.success = function( result ) {
