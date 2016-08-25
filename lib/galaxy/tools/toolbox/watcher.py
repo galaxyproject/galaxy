@@ -100,6 +100,7 @@ class ToolConfWatcher(object):
                 if new_mod_time != mod_time:
                     if hashes[path] != md5_hash_file(path):
                         self.paths[path] = new_mod_time
+                        log.debug("The file '%s' has changes", path)
                         do_reload = True
 
             if do_reload:
