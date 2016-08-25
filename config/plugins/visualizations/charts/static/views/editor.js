@@ -73,7 +73,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 id      : 'settings',
                 title   : 'Customize',
                 icon    : 'fa-gear',
-                tooltip : 'Customize charts options.',
+                tooltip : 'Customize chart options.',
                 $el     : ( new SettingsView( this.app ) ).$el
             });
             this.tabs.add({

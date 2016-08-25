@@ -8,6 +8,9 @@ define( [], function() {
             help  : 'jqPlot is a canvas-based library hosted at <a href="http://www.jqplot.com" target="_blank">www.jqplot.com<a/>. It is a plotting and charting plugin for the jQuery Javascript framework. Since based on canvas it is capable of rendering many thousand data points without adverse effects.' },
         {   label : 'Others',  value: 'others',
             help  : 'These visualizations were developed by the Galaxy team.'
+        },
+        {   label : 'BioJS',   value: 'biojs',
+            help  : 'BioJS plugins.'
         }
     ];
 });

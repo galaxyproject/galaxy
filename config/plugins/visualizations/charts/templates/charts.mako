@@ -30,6 +30,9 @@
         ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
         ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
 
+        ## biojs
+        ${h.javascript_link( app_root + "plugins/biojs/biojs.msa.js" )}
+
         ## nvd3
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
 

@@ -86,6 +86,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
 
         /** A chart may contain multiple sub charts/containers which are created here */
         _createContainer: function( tag, n ) {
+            tag = tag || 'div';
             n = n || 1;
             for ( var i in this.container_list ) {
                 this.container_list[ i ].remove();
@@ -111,7 +112,13 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
             require( [ 'plugin/charts/' + this.app.split( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
-                new ChartView( self.app, { process : process, chart : chart, canvas_list : self.canvas_list } );
+                Utils.get({
+                    url     : Galaxy.root + 'api/datasets/' + chart.get( 'dataset_id' ),
+                    cache   : true,
+                    success : function( dataset ) {
+                        new ChartView( self.app, { process: process, canvas_list: self.canvas_list, dataset: dataset } );
+                    }
+                });
             });
         }
     });

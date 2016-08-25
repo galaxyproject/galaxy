@@ -7,7 +7,9 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
             this.chart = app.chart;
             this.description = new Description( this.app );
             this.message = new Ui.Message( { message: 'There are no options for this chart type.', persistent: true, status: 'info' } );
-            this.setElement( $( '<div/>' ).append( this.description.$el ).append( this.message.$el ).append( this.$form = $( '<div/>' ) ) );
+            this.setElement( $( '<div/>' ).append( this.description.$el )
+                                          .append( this.message.$el.addClass( 'ui-margin-bottom' ) )
+                                          .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-bottom' ) ) );
             this.listenTo( this.chart, 'change', function() { self.render() } );
         },
         render: function() {
