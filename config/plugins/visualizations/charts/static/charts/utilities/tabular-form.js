@@ -60,7 +60,7 @@ define( [], function() {
         library     : '',
         tag         : '',
         keywords    : '',
-        datatype    : 'tabular',
+        datatypes   : [ 'tabular', 'csv' ],
         use_panels  : true,
         settings    : {
             x_axis_label : axisLabel( 'x_axis_label' ),

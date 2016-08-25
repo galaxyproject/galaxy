@@ -20,7 +20,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'plugin/charts/over
             this.index = {};
             this.first = null;
             _.each( this.app.types, function( type, type_id ) {
-                if ( self.app.dataset.file_ext === type.datatype ) {
+                if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
                     _.each( type.keywords.split( ' ' ), function( keyword ) {
                         self.index[ keyword ] = self.index[ keyword ] || {};
                         self.index[ keyword ][ type.category ] = self.index[ keyword ][ type.category ] || {};
