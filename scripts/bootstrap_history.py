@@ -103,31 +103,15 @@ Highlights
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
 
-New
+New Galaxy repository
   .. code-block:: shell
 
-      % git clone -b master https://github.com/galaxyproject/galaxy.git
+      $ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
-Update to latest stable release
+Update of existing Galaxy repository
   .. code-block:: shell
 
-      % git checkout master && pull --ff-only origin master
-
-Update to exact version
-  .. code-block:: shell
-
-      % git checkout v${release}
-
-
-`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
-===========================================================
-
-Upgrade
-  .. code-block:: shell
-
-      % hg pull
-      % hg update latest_${release}
-
+      $ git checkout release_${release} && git pull --ff-only origin release_${release}
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
