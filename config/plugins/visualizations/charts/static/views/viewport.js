@@ -17,30 +17,13 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this.$info = this.$( '.info' );
             this.$icon = this.$( '.icon' );
             this.$text = this.$( '.text' );
-
-            // use full screen for viewer
             this._fullscreen( this.$el, 55 );
-
-            // prevent window scrolling
-            var initial_overflow = $( 'body' ).css( 'overflow' );
-            this.$el.on( 'mouseover', function() {
-                $( 'body' ).css( 'overflow', 'hidden' );
-            }).on('mouseout', function() {
-                $( 'body' ).css( 'overflow', initial_overflow );
-            });
-
-            // create container element
             this._createContainer( 'div' );
-
-            // link redraw trigger
-            var self = this;
             this.chart.on( 'redraw', function() {
                 self.app.deferred.execute( function( process ) {
                     self._draw( process, self.chart );
                 });
             });
-
-            // link status handler
             this.chart.on( 'set:state', function() {
                 var $container = self.$el.find( '.charts-viewport-container' );
                 var $info = self.$info;
