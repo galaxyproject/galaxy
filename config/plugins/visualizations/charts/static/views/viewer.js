@@ -11,7 +11,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
             this.export_button = new Ui.ButtonMenu({
                 icon    : 'fa-camera',
                 title   : 'Export',
-                tooltip : 'Download as PNG, SVG or PDF file'
+                tooltip : 'Export/Download visualization'
             });
             this.export_button.addMenu({
                 key         : 'png',
