@@ -3,7 +3,6 @@
     app_root    = root + "plugins/visualizations/charts/static/"
 %>
 
-
 <!DOCTYPE HTML>
 <html>
     <head>
@@ -81,18 +80,16 @@
             window.onbeforeunload = function() {
                 return 'You are leaving Charts.';
             };
-            var app = null;
             $(function() {
                 require( [ 'plugin/app' ], function( App ) {
                     var options = {
                         id      : ${h.dumps( visualization_id )} || undefined,
                         config  : ${h.dumps( config )}
                     }
-                    app = new App( options );
+                    var app = new App( options );
                     $( 'body' ).append( app.$el );
                 });
             });
-
         </script>
     </body>
 </html>
