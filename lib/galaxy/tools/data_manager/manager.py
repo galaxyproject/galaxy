@@ -45,6 +45,9 @@ class DataManagers( object ):
         [watcher.watch_file(filename) for watcher, filename in conf_watchers]
         return conf_watchers
 
+    def shutdown(self):
+        [watcher.shutdown() for watcher, filename in self.conf_watchers]
+
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
         try:
             tree = util.parse_xml( xml_filename )
