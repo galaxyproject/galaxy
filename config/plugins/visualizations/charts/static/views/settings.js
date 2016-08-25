@@ -16,7 +16,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
             var self = this;
             var inputs = Utils.clone( this.chart.definition.settings ) || {};
             if ( this.chart.definition.use_panels ) {
-                inputs[ 'use_panels' ] = { type: 'boolean', label: 'Use multi-panels', help: 'Would you like to separate your data into individual panels?' };
+                inputs[ 'use_panels' ] = {
+                    type    : 'boolean',
+                    label   : 'Use multi-panels',
+                    help    : 'Would you like to separate your data into individual panels?'
+                };
             }
             if ( _.size( inputs ) > 0 ) {
                 FormData.visitInputs( inputs, function( input, name ) {
