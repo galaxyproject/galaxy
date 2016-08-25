@@ -309,3 +309,7 @@ def _map_redirects( mapper ):
 
     mapper.redirect( "/repository/status_for_installed_repository", "/api/repositories/updates/", _redirect_code="301 Moved Permanently", conditions=dict( function=forward_qs ) )
     return mapper
+
+
+def uwsgi_app():
+    return galaxy.web.framework.webapp.build_native_uwsgi_app( app_factory, "tool_shed" )
