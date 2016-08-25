@@ -187,6 +187,16 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 return shed_config_dict
         return default
 
+    def update_shed_config(self, shed_conf):
+        """" Update the in-memory descriptions of tools and write out the changes
+             to integrated tool panel unless we are just deactivating a tool (since
+             that doesn't affect that file).
+        """
+        for index, my_shed_tool_conf in enumerate(self._dynamic_tool_confs):
+            if shed_conf['config_filename'] == my_shed_tool_conf['config_filename']:
+                self._dynamic_tool_confs[index] = shed_conf
+        self._save_integrated_tool_panel()
+
     def get_section( self, section_id, new_label=None, create_if_needed=False ):
         tool_panel_section_key = str( section_id )
         if tool_panel_section_key in self._tool_panel:
