@@ -2339,6 +2339,58 @@ class MergeCollectionTool( DatabaseOperationTool ):
         )
 
 
+class AppendCollectionTool( DatabaseOperationTool ):
+    tool_type = 'append_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        current_collection = incoming[ "input" ]
+        datasets = incoming[ "single_files" ]
+
+        dupl_actions = incoming["conflict"]['duplicate_options']
+
+        if dupl_actions == 'suffix':
+            suffix_iden = incoming['conflict']['prefix_suffix']
+
+        # first attempt where we only want list
+        assert current_collection.collection.collection_type == "list"
+
+        identifier_seen = {}
+
+        # create new collection that contain everything from the collection
+        new_elements = odict()
+        for dce in current_collection.collection.elements:
+            element = dce.element_object
+            if element.is_ok:
+                element_identifier = dce.element_identifier
+                identifier_seen[element_identifier] = 1
+                new_elements[element_identifier] = element.copy()
+
+        # iterate over one or more dataset to append to the new collection list
+        # if dataset name already exist in the collection, perform actions given by user
+        # either keep both instances but append suffix,
+        # Keep instance found in the collection or keep single dataset from outside the colletion
+        for dataset in datasets:
+            element = dataset['single_file']
+            if element.is_ok:
+                element_identifier = element.name
+                # apply new suffix if identifier already seen
+                if element_identifier in identifier_seen and dupl_actions == 'suffix':
+                    suffix = '%s%i' % (suffix_iden , identifier_seen[element_identifier])
+                    identifier_seen[element_identifier] = identifier_seen[element_identifier] + 1
+                    element_identifier = element_identifier + suffix
+                    new_elements[element_identifier] = element.copy()
+                # ignore element if  identifier already seen and user want to keep first instance
+                elif element_identifier in identifier_seen and dupl_actions == 'keep_collection':
+                    continue
+                # add  element as is, if the identifier is unique or user wants to keep this one
+                elif element_identifier not in identifier_seen or dupl_actions == 'single_dataset':
+                    new_elements[element_identifier] = element.copy()
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 class FilterFailedDatasetsTool( DatabaseOperationTool ):
     tool_type = 'filter_failed_datasets_collection'
     require_dataset_ok = False

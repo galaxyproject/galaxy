@@ -1,0 +1,151 @@
+<tool id="__APPEND_COLLECTION__"
+      name="Append Dataset(s) to Collection"
+      version="1.0.0"
+      tool_type="append_collection">
+  <description>Append one or more dataset to an existing list</description>
+  <type class="AppendCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <inputs>
+    <param type="data_collection" name="input" label="Collection" required="True"/>
+    <repeat name='single_files' title='Single dataset(s)'>
+      <param name="single_file" label="Dataset to add the collection" type="data" format='data' optional='False'/>
+    </repeat>  
+    <conditional name="conflict">
+      <param name="duplicate_options" type="select" label="When duplication dataset names encountered" help="">
+        <option value="suffix">Append suffix</option>
+        <option value="keep_collection">Keep instance in collection</option>
+        <option value="single_dataset">Keep single dataset</option>
+      </param>      
+
+      <when value="suffix">
+        <param type="select" name="prefix_suffix" label="with following suffix:" help="Select the suffix used to join dataset name and copy number.
+                                                                                                    Default suffix is '__'. First item found will have no suffix and second will have suffix '__1',etc.. ">
+          <option value="__">__</option>
+          <option value=":">:</option>
+          <option value="-">-</option>
+        </param>
+      </when>
+      <when value="first"> </when>
+      <when value="second"> </when>
+      
+    </conditional>
+  </inputs>
+  <outputs>
+    <collection name="output" format_source="input" type="list" label="${on_string} (appended)" >
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input">
+        <collection type="list">
+          <element name='simple_line.txt' value ="simple_line.txt"/>
+          <element name='simple_line_alternative.txt' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>
+      <param name="single_file" value="simple_line.txt"/>
+      <output_collection name="output" type="list">
+        <element name="simple_line.txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="simple_line_alternative.txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="simple_line.txt__1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+    <param name="prefix_suffix" value=":"/>
+    <param name="input">
+      <collection type="list">
+        <element name='simple_line.txt' value ="simple_line.txt"/>
+        <element name='simple_line_alternative.txt' value ="simple_line_alternative.txt"/>
+      </collection>
+    </param>
+    <param name="single_file" value="simple_line.txt"/>
+    <param name="single_file" value="simple_line_alternative.txt"/>
+    <output_collection name="output" type="list">
+      <element name="simple_line.txt">
+        <assert_contents>
+          <has_text_matching expression="^This is a line of text.\n$"/>
+        </assert_contents>
+      </element>
+      <element name="simple_line_alternative.txt">
+        <assert_contents>
+          <has_text_matching expression="^This is a different line of text.\n$"/>
+        </assert_contents>
+      </element>
+      <element name="simple_line.txt:1">
+        <assert_contents>
+          <has_text_matching expression="^This is a line of text.\n$"/>
+        </assert_contents>
+      </element>
+      <element name="simple_line_alternative.txt:1">
+        <assert_contents>
+          <has_text_matching expression="^This is a different line of text.\n$"/>
+        </assert_contents>
+      </element>                
+    </output_collection>
+    </test>    
+    <test>
+      <param name="duplicate_options" value="keep_collection"/>
+      <param name="input">
+        <collection type="list">
+        <element name='simple_line.txt' value ="simple_line.txt"/>
+        <element name='simple_line_alternative.txt' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>
+      <param name="single_file" value="simple_line.txt"/>
+      <param name="single_file" value="simple_line_alternative.txt"/>
+      <output_collection name="output" type="list">
+        <element name="simple_line.txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="simple_line_alternative.txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>    
+    <test>
+      <param name="duplicate_options" value="single_dataset"/>
+      <param name="input">
+        <collection type="list">
+        <element name='simple_line.txt' value ="simple_line.txt"/>
+        <element name='simple_line_alternative.txt' value ="simple_line_alternative.txt"/>
+        </collection>
+      </param>
+      <param name="single_file" value="simple_line.txt"/>
+      <param name="single_file" value="simple_line_alternative.txt"/>
+      <output_collection name="output" type="list">
+        <element name="simple_line.txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="simple_line_alternative.txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>    
+  </tests>
+  <help>
+    This tool appends one or more single datasets and append to the end of an already existing collection list
+    
+    This tool will create new history datasets for your collection
+    but your quota usage will not increase.
+  </help>
+</tool>
