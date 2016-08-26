@@ -12,7 +12,6 @@ import shutil
 import sys
 import tempfile
 import zipfile
-import cProfile
 from json import dumps, loads
 
 from six.moves.urllib.request import urlopen
@@ -80,19 +79,6 @@ def parse_outputs( args ):
         rval[int( id )] = ( path, files_path )
     return rval
 
-def do_cprofile(func):
-    def profiled_func(*args, **kwargs):
-        profile = cProfile.Profile()
-        try:
-            profile.enable()
-            result = func(*args, **kwargs)
-            profile.disable()
-            return result
-        finally:
-            profile.print_stats(sort='time')
-    return profiled_func
-
-@do_cprofile
 def add_file( dataset, registry, json_file, output_path ):
     data_type = None
     line_count = None
