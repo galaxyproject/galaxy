@@ -319,7 +319,12 @@ def _run_conversion(args, app_desc):
 
     uwsgi_dict = _server_paste_to_uwsgi(app_desc, server_config)
 
-    app_items = OrderedDict(p.items("app:main"))
+    if not app_main_found:
+        _warn("No app:main section found, using application defaults throughout.")
+        app_items = OrderedDict()
+    else:
+        app_items = OrderedDict(p.items("app:main"))
+
     app_dict = OrderedDict({})
     schema = app_desc.schema
     for key, value in app_items.items():
