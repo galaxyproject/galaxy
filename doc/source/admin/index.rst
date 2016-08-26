@@ -8,6 +8,8 @@ documentation. These resources should be used together.
 .. toctree::
    :maxdepth: 3
 
+   reports.rst
+
    dependency_resolvers.rst
 
    conda_faq.rst
