@@ -48,11 +48,12 @@ def add_ui_controllers( webapp, app ):
                     webapp.add_ui_controller( name, T( app ) )
 
 
-def app_factory( global_conf, **kwargs ):
+def app_factory( global_conf, load_app_kwds={}, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy application unless passed in
     kwargs = load_app_properties(
-        kwds=kwargs
+        kwds=kwargs,
+        **load_app_kwds
     )
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
@@ -149,3 +150,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
 def wrap_in_static( app, global_conf, **local_conf ):
     urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
+
+
+def uwsgi_app():
+    return galaxy.web.framework.webapp.build_native_uwsgi_app( app_factory, "reports" )
