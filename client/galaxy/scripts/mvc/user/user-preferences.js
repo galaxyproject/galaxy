@@ -62,20 +62,22 @@ var UserPreferences = Backbone.View.extend({
 
     /** redirects to manage toolbox filters */
     callManageToolboxFilter: function( e ) {
-        $( '.user-pref' ).hide(); 
+        $( '.user-pref' ).hide();
         var url = Galaxy.root + 'api/user_preferences/toolbox_filters',
             data = {};
         $.getJSON( url, function( response ) {
-            toolbox = new ToolboxFilter.ToolboxFilter( response );     
+            toolbox = new ToolboxFilter.ToolboxFilter( response );  
         });
     },
 
     /** redirects to change communication setting view */
     callChangeCommunication: function( e ) {
         $( '.user-pref' ).hide();
+        var self = this;
         var url = Galaxy.root + 'api/user_preferences/change_communication';
         $.getJSON( url, function( response ) {
-            changeCommunication = new ChangeCommunication.ChangeCommunication( response );     
+            changeCommunication = new ChangeCommunication.ChangeCommunication( self, response );
+            self.$( '.user-preferences-all' ).append( changeCommunication.$el );
         });
     },
 
@@ -164,7 +166,7 @@ var UserPreferences = Backbone.View.extend({
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
         $( ".manage-api-keys" ).on( "click", self.callApiKeys );
         $( ".manage-toolbox-filters" ).on( "click", self.callManageToolboxFilter );
-        $( ".change-communication-setting" ).on( "click", self.callChangeCommunication );
+        $( ".change-communication-setting" ).on( "click", function() { self.callChangeCommunication() } );
         $( ".logout-user" ).on( "click", self.callLogout );
     }
 });

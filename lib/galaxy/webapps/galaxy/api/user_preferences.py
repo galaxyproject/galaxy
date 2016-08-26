@@ -849,8 +849,9 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             user = trans.user
 
         if user and kwd.get('button_comm_server', False):
-            enabled_comm = params.get( 'enable_communication_server', 'disable' )
-            if enabled_comm == 'enable':
+            enabled_comm = params.get( 'enable_communication_server', 'false' )
+            print(enabled_comm)
+            if enabled_comm == 'true':
                 message = 'Your communication settings has been updated and activated.'
             else:
                 message = 'Your communication settings has been updated and deactivated.'
@@ -861,7 +862,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             trans.sa_session.add( user )
             trans.sa_session.flush()
         else:
-            activated = user.preferences.get('communication_server', 'disable')
+            activated = user.preferences.get( 'communication_server', 'false' )
 
         return {
             'message': message,
