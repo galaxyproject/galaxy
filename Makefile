@@ -32,6 +32,30 @@ open-project: ## open project on github
 lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
+uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against latest uwsgi master.
+	$(IN_VENV) python scripts/config_manage.py build_uwsgi_yaml
+
+tool-shed-config-validate: ## validate tool shed YAML configuration file
+	$(IN_VENV) python scripts/config_manage.py validate tool_shed
+
+tool-shed-config-convert: ## convert old style tool shed ini to yaml
+	$(IN_VENV) python scripts/config_manage.py convert tool_shed
+
+tool-shed-config-rebuild-sample: ## Rebuild sample tool shed yaml file from schema
+	$(IN_VENV) python scripts/config_manage.py build_sample_yaml tool_shed --add_comments
+
+reports-config-validate: ## validate reports YAML configuration file
+	$(IN_VENV) python scripts/config_manage.py validate reports
+
+reports-config-convert: ## convert old style reports ini to yaml
+	$(IN_VENV) python scripts/config_manage.py convert reports
+
+reports-config-rebuild-sample: ## Rebuild sample reports yaml file from schema
+	$(IN_VENV) python scripts/config_manage.py build_sample_yaml reports --add_comments
+
+reports-config-rebuild-rst: ## Rebuild sample reports RST docs
+	$(IN_VENV) python scripts/config_manage.py build_rst reports > doc/source/admin/reports_options.rst
+
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
 	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
