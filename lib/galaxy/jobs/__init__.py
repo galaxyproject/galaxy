@@ -16,6 +16,8 @@ from abc import ABCMeta, abstractmethod
 from json import loads
 from xml.etree import ElementTree
 
+import six
+
 import galaxy
 from galaxy import model, util
 from galaxy.datatypes import metadata, sniff
@@ -28,11 +30,9 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
 
+from .datasets import (DatasetPath, NullDatasetPathRewriter,
+    OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
 from .output_checker import check_output
-from .datasets import TaskPathRewriter
-from .datasets import OutputsToWorkingDirectoryPathRewriter
-from .datasets import NullDatasetPathRewriter
-from .datasets import DatasetPath
 
 log = logging.getLogger( __name__ )
 
@@ -207,7 +207,7 @@ class JobConfiguration( object ):
         if not self.handlers:
             raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
-        self.default_handler_id = self.__get_default(handlers, self.handlers.keys())
+        self.default_handler_id = self.__get_default(handlers, list(self.handlers.keys()))
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -238,7 +238,7 @@ class JobConfiguration( object ):
                     self.destinations[tag].append(job_destination)
 
         # Determine the default destination
-        self.default_destination_id = self.__get_default(destinations, self.destinations.keys())
+        self.default_destination_id = self.__get_default(destinations, list(self.destinations.keys()))
 
         # Parse resources...
         resources = root.find('resources')
@@ -777,7 +777,7 @@ class JobWrapper( object ):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
-        self.__commands_in_new_shell = self.app.config.commands_in_new_shell
+        self.__commands_in_new_shell = True
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
@@ -1298,11 +1298,10 @@ class JobWrapper( object ):
                             dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
-                    try:
-                        # set the name if provided by the tool
-                        dataset.name = context['name']
-                    except:
-                        pass
+                    for context_key in ['name', 'info', 'dbkey']:
+                        if context_key in context:
+                            context_value = context[context_key]
+                            setattr(dataset, context_key, context_value)
                 else:
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
@@ -1470,8 +1469,8 @@ class JobWrapper( object ):
         per_plugin_properties = self.app.job_metrics.collect_properties( job.destination_id, self.job_id, self.working_directory )
         if per_plugin_properties:
             log.info( "Collecting metrics for %s %s" % ( type(has_metrics).__name__, getattr( has_metrics, 'id', None ) ) )
-        for plugin, properties in per_plugin_properties.iteritems():
-            for metric_name, metric_value in properties.iteritems():
+        for plugin, properties in per_plugin_properties.items():
+            for metric_name, metric_value in properties.items():
                 if metric_value is not None:
                     has_metrics.add_metric( plugin, metric_name, metric_value )
 
@@ -1555,7 +1554,7 @@ class JobWrapper( object ):
     def get_mutable_output_fnames( self ):
         if self.output_paths is None:
             self.compute_outputs()
-        return filter( lambda dsp: dsp.mutable, self.output_paths )
+        return [dsp for dsp in self.output_paths if dsp.mutable]
 
     def get_output_hdas_and_fnames( self ):
         if self.output_hdas_and_paths is None:
@@ -1986,11 +1985,11 @@ class TaskWrapper(JobWrapper):
         return os.path.join( self.working_directory, os.path.basename( output_path ) )
 
 
+@six.add_metaclass(ABCMeta)
 class ComputeEnvironment( object ):
     """ Definition of the job as it will be run on the (potentially) remote
     compute server.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def output_paths( self ):
@@ -2098,7 +2097,7 @@ class ParallelismInfo(object):
     def __init__(self, tag):
         self.method = tag.get('method')
         if isinstance(tag, dict):
-            items = tag.iteritems()
+            items = tag.items()
         else:
             items = tag.attrib.items()
         self.attributes = dict( [ item for item in items if item[ 0 ] != 'method' ])

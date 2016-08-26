@@ -1,0 +1,38 @@
+<tool id="tool_provided_metadata_2" name="tool_provided_metadata_2">
+  <command>
+    echo "1" > sample1.report.tsv;
+    echo "2" > sample2.report.tsv;
+    cp $c1 galaxy.json;
+  </command>
+  <configfiles>
+      <configfile name="c1">{"type": "new_primary_dataset", "filename": "sample1.report.tsv", "name": "cool name 1", "ext": "txt", "info": "cool 1 info", "dbkey": "hg19"}
+{"type": "new_primary_dataset", "filename": "sample2.report.tsv", "name": "cool name 2", "ext": "txt", "info": "cool 2 info", "dbkey": "hg19"}
+</configfile>
+  </configfiles>
+  <inputs>
+    <param name="input" type="data" />
+  </inputs>
+  <outputs>
+    <data name="sample">
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" visible="true" />
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" ftype="txt" value="simple_line.txt"/>
+      <output name="sample">
+        <discovered_dataset designation="sample1" ftype="txt">
+          <assert_contents><has_line line="1" /></assert_contents>
+          <metadata name="name" value="cool name 1" />
+          <metadata name="dbkey" value="hg19" />
+          <metadata name="info" value="cool 1 info" />
+        </discovered_dataset>
+        <discovered_dataset designation="sample2" ftype="txt">
+          <assert_contents><has_line line="2" /></assert_contents>
+          <metadata name="name" value="cool name 2" />
+          <metadata name="info" value="cool 2 info" />
+        </discovered_dataset>
+      </output>
+    </test>
+  </tests>
+</tool>

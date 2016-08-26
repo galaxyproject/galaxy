@@ -17,7 +17,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
-from galaxy.util import nice_size, sqlite, which
+from galaxy.util import nice_size, sqlite, which, FILENAME_VALID_CHARS
 from . import data, dataproviders
 
 
@@ -78,8 +78,7 @@ class Binary( data.Data ):
         trans.log_event( "Display dataset id: %s" % str( dataset.id ) )
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
         to_ext = dataset.extension
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )

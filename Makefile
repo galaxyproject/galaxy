@@ -157,10 +157,10 @@ release-create: release-ensure-upstream ## Create a release branch
 	git commit -m "Merge branch 'release_$(RELEASE_CURR)' into dev"
 	git checkout master
 	git merge release_$(RELEASE_CURR)
-	#git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR):release_$(RELEASE_CURR)
-	#git push $(RELEASE_UPSTREAM) dev:dev
-	#git push $(RELEASE_UPSTREAM) master:master
-	#git push $(RELEASE_UPSTREAM) --tags
+	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR):release_$(RELEASE_CURR)
+	git push $(RELEASE_UPSTREAM) dev:dev
+	git push $(RELEASE_UPSTREAM) master:master
+	git push $(RELEASE_UPSTREAM) --tags
 
 release-create-point: ## Create a point release
 	git pull --ff-only $(RELEASE_UPSTREAM) master

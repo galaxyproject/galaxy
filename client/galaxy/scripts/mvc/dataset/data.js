@@ -251,16 +251,20 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             }, this);
             row.append(this._renderCell(cells.slice(num_columns - 1).join('\t'), num_columns - 1));
         }
-        else if (num_columns > 5 && cells.length === num_columns - 1 ) {
-            // SAM file or like format with optional metadata missing.
+        else if (cells.length === 1){
+            // Comment line, just return the one cell.
+            row.append(this._renderCell(line, 0, num_columns));
+        }
+        else {
+            // cells.length is greater than one, but less than num_columns.  Render cells and pad tds.
+            // Possibly a SAM file or like format with optional metadata missing.
+            // Could also be a tabular file with a line with missing columns.
             _.each(cells, function(cell_contents, index) {
                 row.append(this._renderCell(cell_contents, index));
             }, this);
-            row.append($('<td>'));
-        }
-        else {
-            // Comment line, just return the one cell.
-            row.append(this._renderCell(line, 0, num_columns));
+            _.each(_.range(num_columns - cells.length), function(){
+                row.append($('<td>'));
+            });
         }
 
         this.row_count++;

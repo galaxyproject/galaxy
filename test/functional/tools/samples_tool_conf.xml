@@ -15,9 +15,13 @@
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
   <tool file="multi_output_assign_primary.xml" />
+  <tool file="tool_provided_metadata_1.xml" />
+  <tool file="tool_provided_metadata_2.xml" />
+  <tool file="tool_provided_metadata_3.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
+  <tool file="dbkey_output_action.xml" />
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
   <tool file="unicode_stream.xml" />

@@ -312,7 +312,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         return rval
 
     def __create_dataset_collection( self, trans, history, payload, **kwd ):
-        source = kwd.get("source", "new_collection")
+        source = kwd.get( "source", payload.get( "source", "new_collection" ) )
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params( payload )

@@ -6,11 +6,11 @@ import galaxy.quota
 import galaxy.tools.data
 import galaxy.webapps.tool_shed.model
 from galaxy import tools
+from galaxy.config import configure_logging
 from galaxy.managers.tags import CommunityTagManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
-from galaxy.config import configure_logging
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager

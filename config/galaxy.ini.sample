@@ -125,6 +125,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
+# Setting the following option to true will cause Galaxy to automatically
+# migrate the database forward after updates. This is not recommended for production
+# use.
+#database_auto_migrate = False
+
 # -- Files and directories
 
 # Dataset files are stored in this directory.
@@ -164,29 +169,35 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # <toolbox> tag.
 #tool_path = tools
 
+# -- Tool dependencies
+
 # Path to the directory in which tool dependencies are placed.  This is used by
-# the tool shed to install dependencies and can also be used by administrators
+# the Tool Shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
 #   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
-# Set to the string none to explicitly disable tool dependency handling.
+# Set the string to None to explicitly disable tool dependency handling.
 # If this option is set to none or an invalid path, installing tools with dependencies
-# from the Tool Shed will fail. 
+# from the Tool Shed will fail.
 #tool_dependency_dir = database/dependencies
 
-# The dependency resolves config file specifies an ordering and options for how
+# The dependency resolvers config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
-# ordering is to the use the tool shed for tools installed that way, use local
-# Galaxy packages, and then use conda if available.
+# ordering is to the use the Tool Shed for tools installed that way, use local
+# Galaxy packages, and then use Conda if available.
 # See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
 # for more information on these options.
 #dependency_resolvers_config_file = config/dependency_resolvers_conf.xml
 
-# Following conda dependeny resolution options are experimental as of early
-# 2016. These will change the defaults for each conda resolver, but multiple
-# resolvers can be configured independently and these options overridden in
-# dependency_resolvers_config_file.
+# The following Conda dependency resolution options will change the defaults for
+# all Conda resolvers, but multiple resolvers can be configured independently
+# in dependency_resolvers_config_file and these options overridden.
+# Location on the filesystem where Conda packages are installed
+
+# conda_prefix is the location on the filesystem where Conda packages and environments are installed
+# IMPORTANT: Due to a current limitation in conda, the total length of the
+# conda_prefix and the job_working_directory path should be less than 50 characters!
 #conda_prefix = <tool_dependency_dir>/_conda
-# Override the conda executable to use, it will default to the one on the
+# Override the Conda executable to use, it will default to the one on the
 # PATH (if available) and then to <conda_prefix>/bin/conda
 #conda_exec =
 # Pass debug flag to conda commands.
@@ -196,9 +207,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
-# Set to True to perform additional checking of installed conda environment
+# Set to True to perform additional checking of installed Conda environment
 #conda_verbose_install_check=False
-# Set to True to instruct Galaxy to install conda from the web automatically
+# Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
 #conda_auto_init = False
 
@@ -308,7 +319,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #check_job_script_integrity_count = 35
 # Time to sleep between checks if check_job_script_integrity is enabled (in seconds).
 #check_job_script_integrity_sleep = .25
-
 
 # Set the default shell used by non-containerized jobs Galaxy-wide. This
 # defaults to bash for all jobs and can be overidden at the destination
@@ -523,13 +533,13 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 #citation_url = https://wiki.galaxyproject.org/CitingGalaxy
 
-#The URL linked by the "Search" link in the "Help" menu.
+# The URL linked by the "Search" link in the "Help" menu.
 #search_url = http://galaxyproject.org/search/usegalaxy/
 
-#The URL linked by the "Mailing Lists" link in the "Help" menu.
+# The URL linked by the "Mailing Lists" link in the "Help" menu.
 #mailing_lists_url = https://wiki.galaxyproject.org/MailingLists
 
-#The URL linked by the "Videos" link in the "Help" menu.
+# The URL linked by the "Videos" link in the "Help" menu.
 #screencasts_url = https://vimeo.com/galaxyproject
 
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
@@ -621,7 +631,7 @@ nglims_config_file = tool-data/nglims.yaml
 # implementation, alongside a new Golang single-binary-no-dependencies
 # version. Valid values are (node, golang)
 #dynamic_proxy=node
-#
+
 # The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
 # set that here.
 #dynamic_proxy_session_map=database/session_map.sqlite
@@ -690,7 +700,6 @@ nglims_config_file = tool-data/nglims.yaml
 # are grid views, tool searches, and use of "recently" used tools menu.  The
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
-
 
 # Fluentd configuration.  Various events can be logged to the fluentd instance
 # configured below by enabling fluent_log.
@@ -945,22 +954,16 @@ use_interactive = True
 #expose_user_email = False
 
 # -- Beta features
+
 # Enable new run workflow form
 #run_workflow_toolform_upgrade = False
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
-# Separate tool command from rest of job script so tool dependencies
-# don't interfer with metadata generation.
-# Despite the name, this feature is enabled by default
-# in 16.01 and the option will go away in the future.
-#enable_beta_tool_command_isolation = True
-
 # Enable the new interface for installing tools from Tool Shed
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = False
-
 
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
@@ -1173,14 +1176,14 @@ use_interactive = True
 # if running many handlers.
 #cache_user_job_count = False
 
-# ToolBox filtering
+# -- ToolBox filtering
 
 # Modules from lib/galaxy/tools/toolbox/filters/ can be specified in
 # the following lines.  tool_* filters will be applied for all users
 # and can not be changed by them.  user_tool_* filters will be shown
-# under user preferences and can be toogled on and off by
+# under user preferences and can be toggled on and off at
 # runtime.  Example shown below are not real defaults (no custom
-# filters applied by defualt) but can be enabled with by renaming the
+# filters are applied by default), but can be enabled by renaming the
 # example.py.sample in the filters directory to example.py.
 
 #tool_filters =
@@ -1195,7 +1198,7 @@ use_interactive = True
 # modifying the following option.
 #toolbox_filter_base_modules = galaxy.tools.toolbox.filters,galaxy.tools.filters
 
-# Galaxy Application Internal Message Queue
+# -- Galaxy Application Internal Message Queue
 
 # Galaxy uses AMQP internally TODO more documentation on what for.
 # For examples, see http://ask.github.io/kombu/userguide/connections.html
@@ -1212,7 +1215,7 @@ use_interactive = True
 #communication_server_host = http://localhost
 #communication_server_port = 7070
 # persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-#persistent_communication_rooms = 
+#persistent_communication_rooms =
 
 
 # ---- Galaxy External Message Queue -------------------------------------------------

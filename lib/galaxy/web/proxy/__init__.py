@@ -106,6 +106,7 @@ class NodeProxyLauncher(object):
             "--sessions", config.proxy_session_map,
             "--ip", config.dynamic_proxy_bind_ip,
             "--port", str(config.dynamic_proxy_bind_port),
+            "--reverseProxy",
         ]
         if config.dynamic_proxy_debug:
             args.append("--verbose")

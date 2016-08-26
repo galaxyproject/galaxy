@@ -15,6 +15,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import inflector
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
@@ -236,9 +237,8 @@ class Data( object ):
     def _archive_composite_dataset( self, trans, data=None, **kwd ):
         # save a composite object into a compressed archive for downloading
         params = util.Params( kwd )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         outfname = data.name[0:150]
-        outfname = ''.join(c in valid_chars and c or '_' for c in outfname)
+        outfname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in outfname)
         if params.do_action is None:
             params.do_action = 'zip'  # default
         msg = util.restore_text( params.get( 'msg', ''  ) )
@@ -308,8 +308,7 @@ class Data( object ):
 
     def _serve_raw(self, trans, dataset, to_ext):
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
@@ -358,8 +357,7 @@ class Data( object ):
                 trans.response.headers['Content-Length'] = int( os.stat( data.file_name ).st_size )
                 if not to_ext:
                     to_ext = data.extension
-                valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-                fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+                fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
                 trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, to_ext)
                 return open( data.file_name )
@@ -505,7 +503,7 @@ class Data( object ):
         """Returns ( target_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions( dataset, accepted_formats, **kwd )
 
-    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, set_output_history=True):
+    def convert_dataset(self, trans, original_dataset, target_type, return_output=False, visible=True, deps=None, set_output_history=True, target_context=None):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
         converter = trans.app.datatypes_registry.get_converter_by_target_type( original_dataset.ext, target_type )
 
@@ -520,8 +518,13 @@ class Data( object ):
                 params[value.name] = deps[value.name]
             elif value.type == 'data':
                 input_name = key
-
+        # add potentially required/common internal tool parameters e.g. '__job_resource'
+        if target_context:
+            for key, value in target_context.items():
+                if key.startsWith( '__' ):
+                    params[ key ] = value
         params[input_name] = original_dataset
+
         # Run converter, job is dispatched through Queue
         converted_dataset = converter.execute( trans, incoming=params, set_output_hid=visible, set_output_history=set_output_history)[1]
         if len(params) > 0:

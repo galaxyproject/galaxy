@@ -25,6 +25,11 @@ function deepeach( dict, callback ) {
     }
 }
 
+/** Clone */
+function clone( obj ) {
+    return JSON.parse( JSON.stringify( obj ) || null );
+}
+
 /**
  * Check if a string is a json string
  * @param{String}   text - Content to be validated
@@ -275,7 +280,8 @@ return {
     textify: textify,
     isEmpty: isEmpty,
     deepeach: deepeach,
-    isJSON: isJSON
+    isJSON: isJSON,
+    clone: clone
 };
 
 });

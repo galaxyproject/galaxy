@@ -1,6 +1,7 @@
 import functools
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -12,6 +13,8 @@ import yaml
 
 from ..deps import commands
 
+log = logging.getLogger(__name__)
+
 # Not sure there are security concerns, lets just fail fast if we are going
 # break shell commands we are building.
 SHELL_UNSAFE_PATTERN = re.compile(r"[\s\"']")
@@ -20,8 +23,8 @@ IS_OS_X = _platform == "darwin"
 
 # BSD 3-clause
 CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
-VERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__version__(.*)")
-UNVERSIONED_ENV_DIR_NAME = re.compile(r"__package__(.*)@__unversioned__")
+VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
+UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
 CONDA_VERSION = "3.19.3"
 
@@ -100,6 +103,40 @@ class CondaContext(object):
         else:
             return None
 
+    def is_conda_installed(self):
+        """
+        Check if conda_exec exists
+        """
+        if os.path.exists(self.conda_exec):
+            return True
+        else:
+            return False
+
+    def can_install_conda(self):
+        """
+        If conda_exec is set to a path outside of conda_prefix,
+        there is no use installing conda into conda_prefix, since it can't be used by galaxy.
+        If conda_exec equals conda_prefix/bin/conda, we can install conda if either conda_prefix
+        does not exist or is empty.
+        """
+        conda_exec = os.path.abspath(self.conda_exec)
+        conda_prefix_plus_exec = os.path.abspath(os.path.join(self.conda_prefix, 'bin/conda'))
+        if conda_exec == conda_prefix_plus_exec:
+            if not os.path.exists(self.conda_prefix):
+                return True
+            elif os.listdir(self.conda_prefix) == []:
+                os.rmdir(self.conda_prefix)  # Conda's install script fails if path exists (even if empty).
+                return True
+            else:
+                log.warning("Cannot install Conda because conda_prefix '%s' exists and is not empty.",
+                            self.conda_prefix)
+                return False
+        else:
+            log.warning("Skipping installation of Conda into conda_prefix '%s', "
+                        "since conda_exec '%s' is set to a path outside of conda_prefix.",
+                        self.conda_prefix, self.conda_exec)
+            return False
+
     def load_condarc(self):
         condarc = self.condarc
         if os.path.exists(condarc):
@@ -138,7 +175,7 @@ class CondaContext(object):
 
     def exec_command(self, operation, args):
         command = self.command(operation, args)
-        env = {}
+        env = {'HOME': self.conda_prefix}  # We don't want to pollute ~/.conda, which may not even be writable
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
@@ -251,9 +288,9 @@ class CondaTarget(object):
         a fixed and predictable name given package and version.
         """
         if self.version:
-            return "__package__%s@__version__%s" % (self.package, self.version)
+            return "__%s@%s" % (self.package, self.version)
         else:
-            return "__package__%s@__unversioned__" % (self.package)
+            return "__%s@_uv_" % (self.package)
 
 
 def hash_conda_packages(conda_packages, conda_target=None):
@@ -270,7 +307,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
 # these commands as Python
 def install_conda(conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    f, script_path = tempfile.mkstemp(suffix=".bash", prefix="conda_install")
+    f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
     download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
     install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)
