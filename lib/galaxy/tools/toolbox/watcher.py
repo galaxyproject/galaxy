@@ -74,7 +74,7 @@ class ToolConfWatcher(object):
     def start(self):
         if not self._active:
             self._active = True
-            self.thread.start()
+            register_postfork_function(self.thread.start)
 
     def shutdown(self):
         if self._active:
@@ -109,6 +109,7 @@ class ToolConfWatcher(object):
             mod_time = time.ctime(os.path.getmtime(path))
         with self._lock:
             self.paths[path] = mod_time
+        self.start()
 
     def watch_file(self, tool_conf_file):
         self.monitor(tool_conf_file)
