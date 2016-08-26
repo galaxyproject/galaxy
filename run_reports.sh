@@ -37,8 +37,10 @@ if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
         GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini
     elif [ -f config/reports.ini ]; then
         GALAXY_REPORTS_CONFIG=config/reports.ini
+    elif [ -f config/reports.yml ]; then
+        GALAXY_REPORTS_CONFIG=config/reports.yml
     else
-        GALAXY_REPORTS_CONFIG=config/reports.ini.sample
+        GALAXY_REPORTS_CONFIG=config/reports.yml.sample
     fi
     export GALAXY_REPORTS_CONFIG
 fi
