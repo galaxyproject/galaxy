@@ -1,8 +1,8 @@
 <tool id="__APPEND_COLLECTION__"
-      name="Append Dataset(s) to Collection"
+      name="Append Collection"
       version="1.0.0"
       tool_type="append_collection">
-  <description>Append one or more dataset to an existing list</description>
+  <description>Append dataset(s) to an existing list</description>
   <type class="AppendCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
