@@ -399,6 +399,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     return self._tool_versions_by_id[ tool_id ][ tool_version ]
                 # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
                 return self._tools_by_id[ tool_id ]
+            elif exact:
+                return None
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )
