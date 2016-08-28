@@ -369,7 +369,7 @@ class MetadataGenerator( object ):
             if filename == 'tool_data_table_conf.xml.sample':
                 new_table_elems, error_message = \
                     self.app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
-                                                                                tool_data_path=self.app.config.tool_data_path,
+                                                                                tool_data_path=self.app.tool_data_tables.tool_data_path,
                                                                                 shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
                                                                                 persist=False )
                 if error_message:
