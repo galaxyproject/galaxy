@@ -10,6 +10,7 @@ from galaxy.tools.data import TabularToolDataTable
 from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 from tool_shed.util import common_util
 from tool_shed.util import repository_util
+from galaxy.queue_worker import reload_data_managers
 from galaxy.queue_worker import send_control_task
 
 # set up logger
@@ -38,9 +39,9 @@ class DataManagers( object ):
 
     def get_conf_watchers(self):
         conf_watchers = []
-        conf_watchers.extend([(get_tool_conf_watcher(lambda: send_control_task(self.app, 'reload_data_managers')), filename) for filename in util.listify(self.filename) if filename])
+        conf_watchers.extend([(get_tool_conf_watcher(lambda: reload_data_managers(self.app)), filename) for filename in util.listify(self.filename) if filename])
         if self.app.config.shed_data_manager_config_file:
-            conf_watchers.append((get_tool_conf_watcher(lambda: send_control_task(self.app, 'reload_data_managers')), self.app.config.shed_data_manager_config_file))
+            conf_watchers.append((get_tool_conf_watcher(lambda: reload_data_managers(self.app)), self.app.config.shed_data_manager_config_file))
         [watcher.start() for watcher, filename in conf_watchers]
         [watcher.watch_file(filename) for watcher, filename in conf_watchers]
         return conf_watchers
