@@ -1,78 +1,62 @@
-/** Generate API keys view */
-define(['mvc/user/manage-user-information'], function( Manage ) {
-var APIKeys = Backbone.View.extend({
+/** Get API Keys view */
+define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
+    var APIKeys = Backbone.View.extend({
+        initialize: function ( app, options ) {
+            var self = this;
+            this.model = options && options.model || new Backbone.Model( options );
+            this.help_text = ' An API key will allow you to access ' + ( options["app_name"] === 'galaxy' ? 'Galaxy' : 'the Tool Shed' ) +   
+                             ' via its web API. Please note that this key acts as an alternate means to access your account and should be' +   
+                             ' treated with the same care as your login password.';
+            this.key = options["has_api_key"] ? options["user_api_key"] : 'none set';
+            this.form = new Form({
+                title   : 'Web API Key',
+                inputs  : [ { name: 'api-key', type: 'text', label: 'Current API key:', value: self.key },
+                            { name: 'API Key Information', type: 'section', label: 'API Key Information', help: self.help_text,
+                              inputs: { }, expanded: true }
+                          ],
+                operations      : {
+                    'back'  : new Ui.ButtonIcon({
+                        icon    : 'fa-caret-left',
+                        tooltip : 'Return to user preferences',
+                        title   : 'Preferences',
+                        onclick : function() { self.remove(); app.showPreferences() }
+                    })
+                },
+                buttons        : {
+                    'generatenewkey'  : new Ui.Button({
+                        tooltip : 'Generate new key ' + ( options["has_api_key"] ? '(invalidates old key) ' : '' ),
+                        title   : 'Generate a new key now',
+                        cls     : 'ui-button btn btn-primary',
+                        floating: 'clear',
+                        onclick : function() { self._getNewApiKey() }
+                    })
+                }
+            });
+            this.setElement( this.form.$el );
+            setTimeout( function(){ $('div[tour_id="api-key"] .ui-input').attr( 'readonly', 'readonly'); $('tmessage').remove(); });
+        },
 
-    initialize: function ( data ) {
-        this.render( data );
-    },
-
-    /** renders the error message when view is rebuilt */
-    renderMessage: function( msg, status ) {
-        return '<div class="'+ ( status === "" ? 'done': status ) +'message'+ ( status === "error" ? " validate" : "" ) + '">'+ msg +'</div>';
-    },
-
-    /** builds the html for get API key view */
-    render: function( data ) {
-        var template = "",
-            self = this,
-            app_name = ( data["app_name"] === 'galaxy' ? 'Galaxy' : 'the Tool Shed' );
-        Manage.ManageUserInformation.prototype.hideErrorDoneMessage();
-        if( data["message"] && data["message"].length > 0 ) {
-            template = this.renderMessage( data["message"], data['status'] );
+        /** generates new API key */
+        _getNewApiKey: function() {
+            var url = Galaxy.root + 'api/user_preferences/api_keys',
+                data = {},
+                self = this;
+            data = { 'message': "", 'status': "", 'new_api_key_button': true };
+            $.getJSON( url, data, function( response ) {
+                var $key_input = $( 'div[tour_id="api-key"] .ui-input' );
+                if( response["has_api_key"] ) {
+                    $key_input.val( response["user_api_key"] );
+                    self.form.message.update({
+                        message     : response.message,
+                        status      : response.status === 'error' ? 'danger' : 'success',
+                    });
+                }
+            });
         }
-        template = template + '<div class="api-key-section"> <h2>Web API Key</h2>';
-        template = template + '<ul class="manage-table-actions">' +
-                              '<li>' +
-                              '<a class="action-button back-user-info" target="galaxy_main">User preferences</a>' +
-                              '</li></ul>';
-        template = template + '<div class="toolForm">' +
-                              '<div class="toolFormTitle">Web API Key</div>' +
-                              '<div class="toolFormBody">' +
-                              '<form name="user_api_keys" id="user_api_keys">' +
-                              '<div class="form-row">' +
-                              '<label>Current API key:</label>' +
-                              '<span class="new-api-key">' + ( data["has_api_key"] ? data["user_api_key"] : 'none set' ) + '</span>' +
-                              '</div>';
-        template = template + '<div class="form-row">' +
-                              '<input type="button" class="get-new-key action-button" name="new_api_key_button"' +
-                                      'value="Generate a new key now"/>' +
-                               ( data["has_api_key"] ? ' (invalidates old key) ' : '' ) +
-                               '<div class="toolParamHelp" style="clear: both; margin-top: 1%;">' +
-                                   'An API key will allow you to access ' + app_name + ' via its web API. ' +
-                                   'Please note that <strong>this key acts as an alternate means ' +
-                                   'to access your account and should be treated with the same care as your login password</strong>.' +
-                               '</div>' +
-                               '</div></form></div></div>';
-        // end of outermost div section
-        template = template + "</div>";
-        $('.user-preferences-all').append( template );
-        $('.back-user-info').on( 'click', function( e ) {
-            e.preventDefault();
-            $( ".user-pref" ).show();
-            $( ".api-key-section" ).remove();
-            Manage.ManageUserInformation.prototype.hideErrorDoneMessage();
-        });
-        $('.get-new-key').on( 'click', function( e ){ self.getNewApiKey( self, e ); });
-    },
+    });
 
-    /** generates new API key */
-    getNewApiKey: function( self, e ) {
-        var url = Galaxy.root + 'api/user_preferences/api_keys',
-            data = {},
-            messageBar = Manage.ManageUserInformation.prototype;
-        data = { 'message': "", 'status': "", 'new_api_key_button': true };
-        $.getJSON( url, data, function( response ) {
-            if( response["has_api_key"] ) {
-                $(".new-api-key").text( response["user_api_key"] );
-                messageBar.renderDone( response["message"] );
-            }
-        });
-    }
-});
-
-return {
-    APIKeys  : APIKeys
-};
-
+    return {
+        APIKeys: APIKeys
+    };
 });
 

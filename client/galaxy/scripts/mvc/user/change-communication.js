@@ -6,7 +6,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
                 title   : 'Enable real-time communication with other Galaxy users',
-                icon    : 'fa-comment-o',
                 inputs  : [ { name: 'change-communication', type: 'boolean', label: 'Enable communication' } ],
                 operations      : {
                     'back'  : new Ui.ButtonIcon({
@@ -22,8 +21,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 self.setValue( options );
                 $( 'label.ui-option' ).on( 'click', function( e ) { 
                     self.saveCommunicationChanges( self, e );
-                }); 
-            }, 1 );
+                });
+            });
         },
 
         /** sets the saved value to the switch button */
@@ -33,12 +32,12 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 noboxparent = $( radioboxes[1] ).parent();
 
             if( options.activated === "true" ) {
-                yesboxparent.addClass('active');
-                noboxparent.removeClass('active');
+                yesboxparent.addClass( 'active' );
+                noboxparent.removeClass( 'active' );
             }
             else {
-                yesboxparent.removeClass('active');
-                noboxparent.addClass('active');
+                yesboxparent.removeClass( 'active' );
+                noboxparent.addClass( 'active' );
             }
         },
 
@@ -55,6 +54,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     activated = elementValue.nodeValue;
                     data = { 'button_comm_server': true, 'enable_communication_server': activated };
                     $.getJSON( Galaxy.root + 'api/user_preferences/change_communication', data, function( response ) {
+                        self.setValue( response )
                         self.form.message.update({
                            message     : response.message,
                            status      : response.status === 'error' ? 'danger' : 'success'

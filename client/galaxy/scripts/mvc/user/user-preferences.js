@@ -53,10 +53,12 @@ var UserPreferences = Backbone.View.extend({
     callApiKeys: function( e ) {
         $( '.user-pref' ).hide();
         var url = Galaxy.root + 'api/user_preferences/api_keys',
-            data = {};
+            data = {},
+            self = this;
         data = { 'message': "", 'status': "" };
         $.getJSON( url, data, function( response ) {
-            apiKey = new Keys.APIKeys( response );     
+            apiKey = new Keys.APIKeys( self, response );   
+            self.$( '.user-preferences-all' ).append( apiKey.$el );
         });
     },
 
@@ -164,7 +166,7 @@ var UserPreferences = Backbone.View.extend({
         $( ".manage-userinfo" ).on( "click", self.callManageInfo );
         $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
-        $( ".manage-api-keys" ).on( "click", self.callApiKeys );
+        $( ".manage-api-keys" ).on( "click", function() { self.callApiKeys() } );
         $( ".manage-toolbox-filters" ).on( "click", self.callManageToolboxFilter );
         $( ".change-communication-setting" ).on( "click", function() { self.callChangeCommunication() } );
         $( ".logout-user" ).on( "click", self.callLogout );
