@@ -245,14 +245,14 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param tool_shed_url:   the URL of the toolshed whence to retrieve repository details
         :param tool_shed_url:   str
 
-        :param tool_id:         (optional) search by tool ID instead of repository ID
-        :param tool_id:         str
+        :param tool_ids:         (optional) comma-separated list of tool IDs
+        :param tool_ids:         str
         """
         tool_dependencies = dict()
         tools = dict()
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tsr_id = kwd.get( 'tsr_id', '' )
-        tool_id = kwd.get( 'tool_id', None )
+        tool_ids = util.listify( kwd.get( 'tool_ids', None ) )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
                                     'id': tool_panel_section_select_field.field_id,
@@ -260,10 +260,12 @@ class ToolShedRepositoriesController( BaseAPIController ):
         for name, id, _ in tool_panel_section_select_field.options:
             tool_panel_section_dict['sections'].append( dict( id=id, name=name ) )
         repository_data = dict()
-        if tool_id is not None and tool_id.count( '/' ) == 5:
-            if len(tool_shed_url) == 0:
-                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_id.split( '/' )[ 0 ] )
-            found_repository = json.loads( util.url_get( tool_shed_url, params=dict( tool_id=tool_id ), pathspec=[ 'api', 'repositories' ] ) )
+        if tool_ids is not None:
+            if len( tool_shed_url ) == 0:
+                # By design, this list should always be from the same toolshed. If
+                # this is ever not the case, this code will need to be updated.
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_ids[ 0 ].split( '/' )[ 0 ] )
+            found_repository = json.loads( util.url_get( tool_shed_url, params=dict( tool_ids=','.join( tool_ids ) ), pathspec=[ 'api', 'repositories' ] ) )
             fr_keys = found_repository.keys()
             tsr_id = found_repository[ fr_keys[0] ][ 'repository_id' ]
             repository_data[ 'current_changeset' ] = found_repository[ 'current_changeset' ]
@@ -300,7 +302,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     del( dependency_dict[ 'readme' ] )
                 if dependency_dict not in tool_dependencies[ changeset ]:
                     tool_dependencies[ changeset ].append( dependency_dict )
-                    # log.debug(tool_dependencies)
             if metadata[ 'has_repository_dependencies' ]:
                 for repository_dependency in metadata[ 'repository_dependencies' ]:
                     tool_dependencies[ changeset ] = self.__get_tool_dependencies( repository_dependency, tool_dependencies[ changeset ] )

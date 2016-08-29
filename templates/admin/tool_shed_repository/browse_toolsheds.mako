@@ -70,7 +70,6 @@ workflows_missing_tools = _.template([
         '</thead>',
         '<tbody>',
             '<\% _.each(Object.keys(workflows), function(workflow_key) { \%>',
-                '<\% console.log(workflow_key); \%>',
                 '<\% var workflow_details = workflow_key.split("/"); \%>',
                 '<\% var workflow = workflows[workflow_key]; \%>',
                 '<tr>',
@@ -93,8 +92,8 @@ workflows_missing_tools = _.template([
                     '<td class="datasetRow"><\%= workflow_details[1] \%></td>',
                     '<td class="datasetRow">',
                         '<ul class="workflow_tools">',
-                            '<li class="workflow_tools"><input type="button" class="show_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-sampleguid="<\%= workflow.tools[0] \%>" value="Preview" /></li>',
-                            '<li><input type="button" class="queue_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-sampleguid="<\%= workflow.tools[0] \%>" value="Add to queue" /></li>',
+                            '<li class="workflow_tools"><input type="button" class="show_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-toolids="<\%= workflow.tools.join(",") \%>" value="Preview" /></li>',
+                            '<li><input type="button" class="queue_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-toolids="<\%= workflow.tools.join(",") \%>" value="Add to queue" /></li>',
                         '</ul>',
                     '</td>',
                 '</tr>',
@@ -473,7 +472,7 @@ function bind_repository_events() {
     });
     $('#queue_install').click(function() {
         var changeset = get_current_changeset();
-        var repository_metadata = repository_data.current_metadata;
+        var repository_metadata = current_metadata;
         repository_metadata.install_tool_dependencies = $("#install_tool_dependencies").val();
         repository_metadata.install_repository_dependencies = $("#install_repository_dependencies").val();
         repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val();
@@ -508,7 +507,7 @@ function bind_repository_events() {
         url = $('#repository_installation').attr('action');
         prepare_installation(params, url);
     });
-    check_if_installed(repository_metadata);
+    check_if_installed(current_metadata);
 }
 function bind_shed_events() {
     $('.category-selector').click(function() {
@@ -527,10 +526,9 @@ function bind_shed_events() {
 }
 function bind_workflow_events() {
     $('.show_wf_repo').click(function() {
-        var tool_ids = $(this).attr('data-toolids').split('|');
-        var tool_id = tool_ids[0];
+        var tool_ids = $(this).attr('data-toolids');
         var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action='shed_repository')}';
-        var params = {'tool_id': tool_id};
+        var params = {'tool_ids': tool_ids};
         $.get(api_url, params, function(data) {
             data.current_metadata = data.repository.metadata[data.current_changeset];
             data.repository_dependencies_template = repository_dependencies_template;
@@ -553,10 +551,9 @@ function bind_workflow_events() {
         });
     });
     $('.queue_wf_repo').click(function() {
-        var tool_ids = $(this).attr('data-toolids').split('|');
-        var tool_id = tool_ids[0];
+        var tool_ids = $(this).attr('data-toolids');
         var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action='shed_repository')}';
-        var params = {'tool_id': tool_id};
+        var params = {'tool_ids': tool_ids};
         $.get(api_url, params, function(data) {
             var repository_metadata = data.repository.metadata[data.current_changeset];
             $('#repository_details').attr('data-shedurl', data.tool_shed_url);
@@ -573,6 +570,9 @@ function bind_workflow_events() {
             check_queue();
         });
     });
+}
+function bind_wf_button() {
+    $('#from_workflow').click(load_from_workflow);
 }
 function changeset_metadata() {
     repository_data.current_changeset = get_current_changeset();
@@ -739,6 +739,14 @@ function install_from_queue(repository_metadata, queue_key) {
     $('#queued_repository_' + repository_metadata.repository.id).remove();
     remove_from_queue(undefined, undefined, queue_key);
     prepare_installation(params, url);
+}
+function load_from_workflow() {
+    api_url = '${h.url_for(controller='api', action='workflows', missing_tools=True)}';
+    $.get(api_url, function(data) {
+        $('#workflows_missing_tools').remove();
+        $('#repository_queue').append(workflows_missing_tools({'workflows': data}));
+        bind_workflow_events();
+    });
 }
 function prepare_installation(params, api_url) {
     $.post(api_url, params, function(data) {
@@ -919,14 +927,7 @@ $(document).ready(function() {
             bind_shed_events();
         });
     });
-    $('#from_workflow').click(function() {
-        api_url = '${h.url_for(controller='api', action='workflows', missing_tools=True)}';
-        $.get(api_url, function(data) {
-            $('#workflows_missing_tools').remove();
-            $('#repository_queue').append(workflows_missing_tools({'workflows': data}));
-            bind_workflow_events();
-        });
-    });
+    $('#repository_installation_queue').click(bind_wf_button);
 });
 </script>
 <div class="container" role="navigation">
