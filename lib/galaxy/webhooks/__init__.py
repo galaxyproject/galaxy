@@ -35,9 +35,10 @@ class WebhooksRegistry(object):
     def __init__(self, webhooks_directories):
         self.webhooks = []
         path = os.path.join(galaxy_root_path, webhooks_directories)
-        self.webhooks_directories = \
-            [os.path.join(path, name)
-             for name in os.listdir(webhooks_directories)]
+        self.webhooks_directories = [
+            os.path.join(path, name)
+            for name in os.listdir(webhooks_directories)
+        ]
         self.load_webhooks()
 
     def load_webhooks(self):
@@ -48,33 +49,37 @@ class WebhooksRegistry(object):
                 log.warning('directory not found: %s', config_dir)
                 continue
 
-            config_file = [conf for conf in os.listdir(config_dir)
-                           if conf.endswith('.yml') or
-                           conf.endswith('.yaml')][0]
+            config_file = os.listdir(config_dir)[0]
+            config_file = config_file \
+                if config_file.endswith('.yml') \
+                or config_file.endswith('.yaml') \
+                else ''
 
             if config_file:
                 self.load_webhook_from_config(config_dir, config_file)
 
     def load_webhook_from_config(self, config_dir, config_file):
         try:
-            with open(os.path.join(config_dir, config_file)) as f:
-                config = yaml.load(f)
+            with open(os.path.join(config_dir, config_file)) as file:
+                config = yaml.load(file)
                 path = os.path.normpath(os.path.join(config_dir, '..'))
                 webhook = Webhook(config['name'], config['type'], path)
 
                 # Read styles into a string, assuming all styles are in a
                 # single file
                 try:
-                    with open(os.path.join(path, 'static/styles.css'), 'r') as f:
-                        webhook.styles = f.read().replace('\n', '')
+                    styles_file = os.path.join(path, 'static/styles.css')
+                    with open(styles_file, 'r') as file:
+                        webhook.styles = file.read().replace('\n', '')
                 except IOError:
                     pass
 
                 # Read script into a string, assuming everything is in a
                 # single file
                 try:
-                    with open(os.path.join(path, 'static/script.js'), 'r') as f:
-                        webhook.script = f.read()
+                    script_file = os.path.join(path, 'static/script.js')
+                    with open(script_file, 'r') as file:
+                        webhook.script = file.read()
                 except IOError:
                     pass
 
@@ -85,5 +90,6 @@ class WebhooksRegistry(object):
 
                 webhook.config = config
                 self.webhooks.append(webhook)
+
         except Exception as e:
             log.exception(e)
