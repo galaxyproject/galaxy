@@ -1,5 +1,6 @@
 name: masthead_test
 icon: fa-repeat
-type: masthead
+type: 
+  - masthead
 tooltip: Masthead Plugin Test
 activate: true

@@ -4,7 +4,7 @@
 define([], function() {
 
     var WebhookView = Backbone.View.extend({
-        el: '#webhook-tools',
+        el: '#webhook-view',
 
         initialize: function(options) {
             var me = this;
@@ -30,15 +30,15 @@ define([], function() {
             if (webhook.activate) {
                 if (webhook.type == 'masthead') {
                     // There must be a better way to make sure Galaxy is fully loaded
-                    $(document).ready(function() {
-                        Galaxy.page.masthead.collection.add({
-                            id      : webhook.name,
-                            icon    : (typeof webhook.config.icon != 'undefined') ? webhook.config.icon : '',
-                            url     : (typeof webhook.config.url != 'undefined') ? webhook.config.url : '',
-                            tooltip : (typeof webhook.config.tooltip != 'undefined') ? webhook.config.tooltip : '',
-                            // visible : webhook.activate
-                        });
-                    });
+                    // $(document).ready(function() {
+                    //     Galaxy.page.masthead.collection.add({
+                    //         id      : webhook.name,
+                    //         icon    : (typeof webhook.config.icon != 'undefined') ? webhook.config.icon : '',
+                    //         url     : (typeof webhook.config.url != 'undefined') ? webhook.config.url : '',
+                    //         tooltip : (typeof webhook.config.tooltip != 'undefined') ? webhook.config.tooltip : '',
+                    //         // visible : webhook.activate
+                    //     });
+                    // });
                 }
 
                 this.$el.html('<div id="' + webhook.name + '"></div>');
@@ -50,7 +50,6 @@ define([], function() {
     });
 
     return {
-        // MastheadWebhookView: MastheadWebhookView,
         WebhookView: WebhookView
     };
 });

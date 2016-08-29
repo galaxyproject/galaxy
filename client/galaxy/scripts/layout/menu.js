@@ -11,7 +11,7 @@ var Collection = Backbone.Collection.extend({
         options = options || {};
         this.reset();
 
-        // Webhook
+        // Show Webhook
         var webhook = new Webhooks.WebhookView({
             urlRoot: Galaxy.root + 'api/webhooks/masthead'
         });
