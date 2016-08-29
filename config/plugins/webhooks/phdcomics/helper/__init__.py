@@ -10,8 +10,10 @@ def get_latest_id():
     content = urllib.urlopen(url).read()
     soap = BeautifulSoup(content, 'html.parser')
     pattern = '(?:http://www\.phdcomics\.com/comics\.php\?f=)(\d+)'
-    return max([int(re.search(pattern, link.text).group(1))
-             for link in soap.find_all('link', text=re.compile(pattern))])
+    return max([
+        int(re.search(pattern, link.text).group(1))
+        for link in soap.find_all('link', text=re.compile(pattern))
+    ])
 
 
 def main(webhook):
@@ -23,7 +25,8 @@ def main(webhook):
             webhook.config['latest_id'] = get_latest_id()
 
         random_id = random.randint(1, webhook.config['latest_id'])
-        url = 'http://www.phdcomics.com/comics/archive.php?comicid=%d' % random_id
+        url = 'http://www.phdcomics.com/comics/archive.php?comicid=%d' % \
+            random_id
         content = urllib.urlopen(url).read()
         soap = BeautifulSoup(content, 'html.parser')
         comics_src = soap.find_all('img', id='comic')[0].attrs.get('src')

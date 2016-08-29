@@ -79,7 +79,9 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/webhoo
                     // Show Webhook if job is running
                     if ( response.jobs && response.jobs.length > 0 ) {
                         self.$el.append( $( '<div/>', { id: 'webhook-tools' } ) );
-                        var WebhookApp = new Webhooks.ToolWebhookView;
+                        var WebhookApp = new Webhooks.WebhookView({
+                            urlRoot: Galaxy.root + 'api/webhooks/tools'
+                        });
                     }
 
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
