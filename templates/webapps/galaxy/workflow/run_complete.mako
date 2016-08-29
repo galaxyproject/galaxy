@@ -33,6 +33,8 @@
 %endif
 </div>
 
+<div id="webhook-view"></div>
+
 <script type="text/javascript">
     if(parent.Galaxy && parent.Galaxy.currHistoryPanel){
         parent.Galaxy.currHistoryPanel.refreshContents();
@@ -42,5 +44,12 @@
             event.preventDefault();
             parent.Galaxy.currHistoryPanel.switchToHistory($(this).data('history-id'));
         }
+    });
+
+    // Show Webhook
+    require(['mvc/webhooks'], function(Webhooks) {
+        var WebhookApp = new Webhooks.WebhookView({
+            urlRoot: Galaxy.root + 'api/webhooks/workflow'
+        });
     });
 </script>

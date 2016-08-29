@@ -1,2 +1,4 @@
 name: phdcomics
-type: tools
+type:
+  - tools
+  - workflow
