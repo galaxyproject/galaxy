@@ -2455,7 +2455,7 @@ tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                     UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool,
-                    DataDestinationTool ]:
+                    AppendCollectionTool, DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 
