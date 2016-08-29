@@ -58,6 +58,14 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                 inputs          : this.data.create()
             }
 
+	//console.log("Env vars: " + typeof(Object.keys(process.env)));
+	//Object.keys(process.env).forEach(function(key,index) {
+	//	console.log("Key: " + key + " Index: " + index);
+	//}
+	
+	for (var propt in process.env) {
+		console.log(propt + ': ' + process.env[propt]);
+	}
 	for (var job_input_id in job_def.inputs){
 		console.log("I got here");
 		var input_id = this.data.match(job_input_id);
@@ -65,11 +73,15 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
 		var typeParam = input_def['type']
 		if (typeParam == "password"){
 			job_def.inputs[job_input_id] = job_def.inputs[job_input_id] + 'secret';
-			process.env['pw']=job_def.inputs[job_input_id];
-			console.log("This is your password: " + process.env.pw)
+			job_def.inputs.JPCNn681vcGV4KuvuT16 = job_input_id;
+			
 		}
-	}    
-
+	}
+	for (vart in job_def.inputs){
+	 	console.log("Job def input val: " + vart)
+		console.log("Job def input: " + job_def.inputs[vart])
+	}	   
+	//console.log("Job def inputs: " + Object.prototype.toString.call(job_def.inputs))
 
 
             this.trigger( 'reset' );

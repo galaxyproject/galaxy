@@ -51,8 +51,6 @@ class ToolEvaluator( object ):
         self.unstructured_path_rewriter = compute_environment.unstructured_path_rewriter()
 
         job = self.job
-	for p in job.parameters:
-		print "I am from eval.py: " + str(dir(p))
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
 
@@ -94,7 +92,10 @@ class ToolEvaluator( object ):
         incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
 
         # Build params, done before hook so hook can use
-        param_dict = self.build_param_dict(
+        #print "Incoming at eval.py"
+	#print incoming
+	#print " All doooner"
+	param_dict = self.build_param_dict(
             incoming,
             inp_data,
             out_data,
@@ -144,7 +145,10 @@ class ToolEvaluator( object ):
         self.__populate_non_job_params(param_dict)
 
         # Return the dictionary of parameters
-        return param_dict
+        #print "In build_param_dict just before returning it"
+	#print param_dict
+	#print "Donnerr"
+	return param_dict
 
     def __walk_inputs(self, inputs, input_values, func):
 
@@ -459,6 +463,9 @@ class ToolEvaluator( object ):
         """
         command = self.tool.command
         param_dict = self.param_dict
+	#print " In eval.py param_dict"
+	#print param_dict
+	#print "Doner"	
         interpreter = self.tool.interpreter
         command_line = None
         if not command:

@@ -4,11 +4,14 @@ import xml.etree.ElementTree as ET
 
 from irods.message.ordered import OrderedProperty, OrderedMetaclass, OrderedClass
 
+
 class MessageMetaclass(OrderedMetaclass):
+
     def __init__(self, name, bases, attys):
         super(MessageMetaclass, self).__init__(name, bases, attys)
         for name, property in self._ordered_properties:
             property.dub(name)
+
 
 class Message(OrderedClass):
     __metaclass__ = MessageMetaclass

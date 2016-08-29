@@ -64,8 +64,6 @@ class TestPool(unittest.TestCase):
         self.assertEqual(0, len(self.sess.pool.idle))
 
 
-
-
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))

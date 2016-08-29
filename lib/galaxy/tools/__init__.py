@@ -1098,7 +1098,11 @@ class Tool( object, Dictifiable ):
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
         """
-        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history or trans.history )
+        #print "I'm from __init__.py of tools"
+	#for i in incoming:
+#		print i, incoming[i]
+#	print "I'm done now"
+	request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history or trans.history )
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1122,6 +1126,9 @@ class Tool( object, Dictifiable ):
         validation_timer = ExecutionTimer()
         all_errors = []
         all_params = []
+	#print "From tools/__init__ printing expanded_incomings:"
+	#print expanded_incomings
+	#print " ALL DONE"
         for expanded_incoming in expanded_incomings:
             params = {}
             errors = {}
@@ -1135,20 +1142,34 @@ class Tool( object, Dictifiable ):
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
+		#print "params before self.populate_state"
+		#print params
+		#print "Doner"
                 self.populate_state( request_context, self.inputs, expanded_incoming, params, errors )
 
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
+		    "Print I validated input..."
                     validate_input( request_context, errors, params, self.inputs )
             all_errors.append( errors )
             all_params.append( params )
+	#print "From tools/__init__ print all paramsL " 
+	#print all_params
+	if 'JPCNn681vcGV4KuvuT16' in expanded_incomings[0].keys():
+		all_params[0]['JPCNn681vcGV4KuvuT16'] = expanded_incomings[0]['JPCNn681vcGV4KuvuT16']
+	#print "All param after addition: "
+	#print all_params
+	#print " All doney"
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
             raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
+	    #print "Again from tools/__init__: "
+            #print all_params
+	    #print " All done " 
             if execution_tracker.successful_jobs:
                 return dict( out_data=execution_tracker.output_datasets,
                              num_jobs=len( execution_tracker.successful_jobs ),

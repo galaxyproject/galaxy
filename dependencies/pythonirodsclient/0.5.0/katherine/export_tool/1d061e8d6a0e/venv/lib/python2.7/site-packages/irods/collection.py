@@ -6,7 +6,9 @@ from irods.models import Collection, DataObject
 from irods.data_object import iRODSDataObject
 from irods.meta import iRODSMetaCollection
 
+
 class iRODSCollection(object):
+
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:
@@ -18,8 +20,8 @@ class iRODSCollection(object):
     @property
     def metadata(self):
         if not self._meta:
-            self._meta = iRODSMetaCollection(self.manager.sess.metadata, 
-                Collection, self.path)
+            self._meta = iRODSMetaCollection(self.manager.sess.metadata,
+                                             Collection, self.path)
         return self._meta
 
     @property
@@ -34,22 +36,24 @@ class iRODSCollection(object):
         query = self.manager.sess.query(DataObject)\
             .filter(DataObject.collection_id == self.id)
         results = query.get_results()
-        grouped = itertools.groupby(results, operator.itemgetter(DataObject.id))
+        grouped = itertools.groupby(
+            results, operator.itemgetter(DataObject.id))
         return [
-            iRODSDataObject(self.manager.sess.data_objects, self, list(replicas))
+            iRODSDataObject(
+                self.manager.sess.data_objects, self, list(replicas))
             for _, replicas in grouped
         ]
 
     def remove(self, recurse=True, force=False, additional_flags={}):
         self.manager.remove(self.path, recurse, force, additional_flags)
-        
+
     def move(self, path):
         self.manager.move(self.path, path)
 
     def walk(self, topdown=True):
         """
         Collection tree generator.
-        
+
         For each subcollection in the directory tree, starting at the
         collection, yield a 3-tuple
         """

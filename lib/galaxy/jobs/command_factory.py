@@ -1,4 +1,5 @@
 from os import getcwd
+import re
 from os.path import join
 from os.path import abspath
 
@@ -114,14 +115,52 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
-    script_contents = u"#!%s\n%s%s%s" % (
+    tool_commands = str(tool_commands)
+    envVar = ''
+    if ' JPCNn681vcGV4KuvuT16 ' in tool_commands:
+	start = tool_commands.find(' JPCNn681vcGV4KuvuT16 ')
+	end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
+        index = end + 1 
+        passVar = ''
+	#print "Type: " + str(type(tool_commands))
+ 	#print "Should be a blank space: " + tool_commands[end]
+	#print "Before while loop: " + tool_commands[index]	
+        while (index < len(tool_commands)) and (tool_commands[index] is not ' '):  
+	#	print "Index: " + str(index)
+	#	print "Letter: " + tool_commands[index]
+		
+		passVar = passVar + tool_commands[index]
+                index = index + 1
+	
+        envVar = "PASS=" + '"'+passVar + '"'
+        #print "PASSL " + passVar
+	#to delete the JCBN
+        #tool_commands = tool_commands[:m.start()] + tool_commands[m.end()+1:]
+        #to replace the password val
+        indexSoFar = end +1
+	tool_commands = tool_commands.replace(passVar, '$PASS')
+	#print "After replacement: " + tool_commands
+        tool_commands = tool_commands.replace('JPCNn681vcGV4KuvuT16 ', '')
+	#print "At the end: " + tool_commands
+	#while tool_commands[indexSoFar] is not ' ':
+        #        tool_commands = tool_commands[:indexSoFar] + tool_commands[indexSoFar+1:]
+        #tool_commands = tool_commands[:indexSoFar] + " $PASS" + tool_commands[indexSoFar + 1:]
+        #tool_commands = tool_commands[:m.start()] + tool_commands[m.end() +1:]
+    #print "This is tool commands from command_factory.py: " + tool_commands
+
+
+
+    script_contents = u"#!%s\n%s%s%s\n%s" % (
         shell,
         integrity_injection,
         set_e,
+	envVar,
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
+    #print local_container_script
     commands = local_container_script
+    #print "From command factory, commands: " + commands
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
     log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))

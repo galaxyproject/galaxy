@@ -56,8 +56,8 @@ class TestConnections(unittest.TestCase):
             # try sending reply
             with self.assertRaises(NetworkException):
                 conn.reply(0)
-        
-        
+
+
 if __name__ == '__main__':
     # let the tests find the parent irods lib
     sys.path.insert(0, os.path.abspath('../..'))

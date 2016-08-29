@@ -8,6 +8,7 @@ from irods.constants import SYS_SVR_TO_CLI_COLL_STAT, SYS_CLI_TO_SVR_COLL_STAT_R
 
 
 class CollectionManager(Manager):
+
     def get(self, path):
         query = self.sess.query(Collection).filter(Collection.name == path)
         try:
@@ -15,14 +16,14 @@ class CollectionManager(Manager):
         except NoResultFound:
             raise CollectionDoesNotExist()
         return iRODSCollection(self, result)
-            
+
     def create(self, path):
         message_body = CollectionRequest(
             collName=path,
             KeyValPair_PI=StringStringMap()
         )
-        message = iRODSMessage('RODS_API_REQ', msg=message_body, 
-            int_info=api_number['COLL_CREATE_AN'])
+        message = iRODSMessage('RODS_API_REQ', msg=message_body,
+                               int_info=api_number['COLL_CREATE_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
@@ -40,11 +41,11 @@ class CollectionManager(Manager):
             KeyValPair_PI=StringStringMap(options)
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-            int_info=api_number['RM_COLL_AN'])
+                               int_info=api_number['RM_COLL_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
-            
+
             while response.int_info == SYS_SVR_TO_CLI_COLL_STAT:
                 conn.reply(SYS_CLI_TO_SVR_COLL_STAT_REPLY)
                 response = conn.recv()
@@ -60,7 +61,7 @@ class CollectionManager(Manager):
         # check if dest is an existing collection
         # if so append collection name to it
         if self.sess.collections.exists(dest_path):
-            coll_name = src_path.rsplit('/',1)[1]
+            coll_name = src_path.rsplit('/', 1)[1]
             target_path = dest_path + '/' + coll_name
         else:
             target_path = dest_path
@@ -86,15 +87,12 @@ class CollectionManager(Manager):
             KeyValPair_PI=StringStringMap(),
         )
         message_body = ObjCopyRequest(
-            srcDataObjInp_PI = src,
-            destDataObjInp_PI = dest
+            srcDataObjInp_PI=src,
+            destDataObjInp_PI=dest
         )
         message = iRODSMessage('RODS_API_REQ', msg=message_body,
-            int_info=api_number['DATA_OBJ_RENAME_AN'])
+                               int_info=api_number['DATA_OBJ_RENAME_AN'])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(message)
             response = conn.recv()
-
-
-

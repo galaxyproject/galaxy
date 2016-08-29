@@ -1838,6 +1838,9 @@ class TaskWrapper(JobWrapper):
         Restore the dictionary of parameters from the database.
         """
         job = self.sa_session.query( model.Job ).get( self.job_id )
+	#BY Katherine, removing the value of the password parameter.
+	flag = self.sa_session.query(model.JobParameter).get( "JPCNn681vcGV4KuvuT16")
+	print "I am in __init__ print the result of query: " + str(flag)
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         return param_dict

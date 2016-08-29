@@ -452,7 +452,10 @@ class DefaultToolAction( object ):
             job.params = dumps( job_params )
         job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
-        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        #print "In actions/__init__.py: " + str(vars(job )['parameters'])
+ 	#for obj in vars(job)['parameters']:
+	#	print "My attributes: " + str(vars(obj))	
+	# Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
             try:

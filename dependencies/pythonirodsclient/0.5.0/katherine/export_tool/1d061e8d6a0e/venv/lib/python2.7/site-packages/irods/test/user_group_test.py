@@ -1,5 +1,6 @@
 #! /usr/bin/env python
-import os, sys
+import os
+import sys
 import unittest
 from irods.models import User
 from irods.session import iRODSSession
@@ -20,7 +21,6 @@ class TestUserGroup(unittest.TestCase):
         '''Close connections
         '''
         self.sess.cleanup()
-
 
     def test_create_group(self):
         group_name = "test_group"
@@ -81,10 +81,10 @@ class TestUserGroup(unittest.TestCase):
             user = self.sess.users.get(test_user_name)
             group.removemember(user.name)
             user.remove()
- 
+
         # delete group
         group.remove()
- 
+
         # group should be gone
         with self.assertRaises(UserGroupDoesNotExist):
             self.sess.user_groups.get(group_name)

@@ -1,6 +1,7 @@
 class iRODSAccount(object):
-    def __init__(self, host, port, user, zone, password, client_user=None, 
-        client_zone=None):
+
+    def __init__(self, host, port, user, zone, password, client_user=None,
+                 client_zone=None):
 
         self.host = host
         self.port = port

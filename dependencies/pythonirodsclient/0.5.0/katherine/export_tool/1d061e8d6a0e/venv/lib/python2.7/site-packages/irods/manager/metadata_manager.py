@@ -4,13 +4,16 @@ from os.path import dirname, basename
 from irods.manager import Manager
 from irods.message import MetadataRequest, iRODSMessage
 from irods.api_number import api_number
-from irods.models import (DataObject, Collection, Resource, User, DataObjectMeta,
-    CollectionMeta, ResourceMeta, UserMeta)
+from irods.models import (
+    DataObject, Collection, Resource, User, DataObjectMeta,
+                         CollectionMeta, ResourceMeta, UserMeta)
 from irods.meta import iRODSMeta
 
 logger = logging.getLogger(__name__)
 
+
 class MetadataManager(Manager):
+
     @staticmethod
     def _model_class_to_resource_type(model_cls):
         return {
@@ -57,7 +60,7 @@ class MetadataManager(Manager):
             meta.units
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
-            int_info=api_number['MOD_AVU_METADATA_AN'])
+                               int_info=api_number['MOD_AVU_METADATA_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -74,7 +77,7 @@ class MetadataManager(Manager):
             meta.units
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
-            int_info=api_number['MOD_AVU_METADATA_AN'])
+                               int_info=api_number['MOD_AVU_METADATA_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
@@ -91,7 +94,7 @@ class MetadataManager(Manager):
             dest
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
-            int_info=api_number['MOD_AVU_METADATA_AN'])
+                               int_info=api_number['MOD_AVU_METADATA_AN'])
 
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
@@ -109,7 +112,7 @@ class MetadataManager(Manager):
             meta.units
         )
         request = iRODSMessage("RODS_API_REQ", msg=message_body,
-            int_info=api_number['MOD_AVU_METADATA_AN'])
+                               int_info=api_number['MOD_AVU_METADATA_AN'])
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()

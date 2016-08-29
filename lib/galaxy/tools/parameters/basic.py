@@ -274,6 +274,7 @@ class TextToolParameter( ToolParameter ):
 class PasswordToolParameter(TextToolParameter):
 
 	def get_html_field(self,trans=None, value=None, other_values={}):
+		
 		if value is None:
 			value = self.value
 		return form_builder.PasswordField(self.name,self.size,value)
@@ -2367,7 +2368,6 @@ parameter_types = dict(
     library_data=LibraryDatasetToolParameter,
     drill_down=DrillDownSelectToolParameter
 )
-
 
 class RuntimeValue( object ):
     """

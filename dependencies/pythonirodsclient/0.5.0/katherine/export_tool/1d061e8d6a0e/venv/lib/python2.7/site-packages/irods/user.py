@@ -1,6 +1,8 @@
 from irods.models import User, UserGroup
 
+
 class iRODSUser(object):
+
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:
@@ -18,6 +20,7 @@ class iRODSUser(object):
 
 
 class iRODSUserGroup(object):
+
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:

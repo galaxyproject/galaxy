@@ -39,7 +39,8 @@ class TestContinueQuery(unittest.TestCase):
             # check object names
             counter = 0
             for object in objects:
-                self.assertEqual(object.name, "dummy" + str(counter).zfill(6) + ".txt")
+                self.assertEqual(
+                    object.name, "dummy" + str(counter).zfill(6) + ".txt")
                 counter += 1
 
     def test_files_generator(self):
