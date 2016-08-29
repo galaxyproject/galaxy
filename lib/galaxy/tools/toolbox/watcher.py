@@ -100,11 +100,16 @@ class ToolConfWatcher(object):
                 if new_mod_time != mod_time:
                     if hashes[path] != md5_hash_file(path):
                         self.paths[path] = new_mod_time
-                        log.debug("The file '%s' has changes", path)
+                        log.debug("The file '%s' has changes.", path)
+                        try:
+                            import uwsgi
+                            log.warning("Changed files found in worker '%s'", uwsgi.worker_id())
+                        except Exception:
+                            pass
                         do_reload = True
 
             if do_reload:
-                t = threading.Thread(target=lambda: self.event_handler.on_any_event(None))
+                t = threading.Thread(target=self.event_handler.on_any_event)
                 t.daemon = True
                 t.start()
             time.sleep(1)
@@ -119,6 +124,7 @@ class ToolConfWatcher(object):
 
     def watch_file(self, tool_conf_file):
         self.monitor(tool_conf_file)
+        self.start()
 
 
 class NullToolConfWatcher(object):
@@ -141,7 +147,7 @@ class ToolConfFileEventHandler(FileSystemEventHandler):
     def __init__(self, reload_callback):
         self.reload_callback = reload_callback
 
-    def on_any_event(self, event):
+    def on_any_event(self, event=None):
         self._handle(event)
 
     def _handle(self, event):

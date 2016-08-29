@@ -50,7 +50,7 @@ def reload_tool(app, **kwargs):
 
 
 def reload_toolbox(app, **kwargs):
-    log.debug("Executing tooblox reload")
+    log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
@@ -66,7 +66,7 @@ def reload_toolbox(app, **kwargs):
 
 def reload_data_managers(app, **kwargs):
     from galaxy.tools.data_manager.manager import DataManagers
-    log.debug("Executing data managers reload")
+    log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app.data_managers.shutdown()
     app.data_managers = DataManagers(app)
 

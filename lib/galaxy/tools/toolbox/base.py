@@ -188,7 +188,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         return default
 
     def update_shed_config(self, shed_conf):
-        """" Update the in-memory descriptions of tools and write out the changes
+        """  Update the in-memory descriptions of tools and write out the changes
              to integrated tool panel unless we are just deactivating a tool (since
              that doesn't affect that file).
         """
