@@ -83,7 +83,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
 
                     // Show Webhook if job is running
                     if ( response.jobs && response.jobs.length > 0 ) {
-                        self.$el.append( $( '<div/>', { id: 'webhook-tools' } ) );
+                        self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
                         var WebhookApp = new Webhooks.WebhookView({
                             urlRoot: Galaxy.root + 'api/webhooks/tools'
                         });

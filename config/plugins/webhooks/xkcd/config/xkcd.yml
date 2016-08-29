@@ -1,2 +1,4 @@
 name: xkcd
-type: tools
+type:
+  - tools
+  - workflow
