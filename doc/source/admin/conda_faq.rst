@@ -274,7 +274,7 @@ install new tools, even if ``conda_auto_install`` is disabled.
 
 More improvements to the UI will be coming in future releases. To see if Galaxy
 has created a Trinity environment for you have a look at folder under
-``<tool_dependency_dir>/_conda/envs/``.
+``<tool_dependency_dir>/_conda/envs/``(or ``<conda_prefix>/envs`` if you bring your own Conda environment).
 
 
 12. Can I mix traditional Galaxy packages and Conda packages?
@@ -314,7 +314,7 @@ following in your galaxy log files:
 
 In rare cases Conda may not have been properly installed by Galaxy.
 A symptom for this is if there is no activate script in
-``conda_prefix/bin`` folder. In that case you can delete the ``conda_prefix`` folder
+``<conda_prefix>/bin`` folder. In that case you can delete the ``conda_prefix`` folder
 and restart Galaxy, which will again attempt to install Conda.
 
 If this does not solve your problem or you have any trouble following
