@@ -109,7 +109,7 @@ var View = Backbone.View.extend({
     },
 
     /** Delete all tabs */
-    delRemovable: function() {
+    delAll: function() {
         for ( var id in this.list ) {
             this.del( id );
         }
@@ -133,6 +133,16 @@ var View = Backbone.View.extend({
     hide: function(){
         this.$el.fadeOut( 'fast' );
         this.visible = false;
+    },
+
+    /** Show tab */
+    showTab: function( id ) {
+        this.$( '#tab-' + id ).show();
+    },
+
+    /** hide tab */
+    hideTab: function( id ) {
+        this.$( '#tab-' + id ).hide();
     },
 
     /** Hide operation by id */

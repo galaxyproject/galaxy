@@ -56,6 +56,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
 
+        self.conda_prefix_parent = os.path.dirname(conda_prefix)
+
         # warning is related to conda problem discussed in https://github.com/galaxyproject/galaxy/issues/2537, remove when that is resolved
         conda_prefix_warning_length = 50
         if len(conda_prefix) >= conda_prefix_warning_length:
@@ -104,21 +106,31 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         Make sure that conda is installed, and if conda can't be installed, mark resolver as disabled.
         We acquire a lock, so that multiple handlers do not attempt to install conda simultaneously.
         """
-        if not os.path.exists(self.dependency_manager.default_base_path):
-            os.mkdir(self.dependency_manager.default_base_path)
-        try:
-            with FileLock(os.path.join(self.dependency_manager.default_base_path, 'conda')):
-                if not self.conda_context.is_conda_installed():
-                    if self.auto_init:
-                        if self.conda_context.can_install_conda():
-                            if install_conda(self.conda_context):
-                                self.disabled = True
-                                log.warning("Conda installation requested and failed.")
-                        else:
+        target_path = self.conda_prefix_parent
+
+        def _check():
+            if not self.conda_context.is_conda_installed():
+                if self.auto_init:
+                    if self.conda_context.can_install_conda():
+                        if install_conda(self.conda_context):
                             self.disabled = True
+                            log.warning("Conda installation requested and failed.")
                     else:
                         self.disabled = True
-                        log.warning("Conda not installed and auto-installation disabled.")
+                else:
+                    self.disabled = True
+                    log.warning("Conda not installed and auto-installation disabled.")
+            else:
+                self.disabled = False
+
+        if not os.path.exists(target_path):
+            os.mkdir(target_path)
+        try:
+            if self.auto_init and os.access(target_path, os.W_OK):
+                with FileLock(os.path.join(target_path, 'conda')):
+                    _check()
+            else:
+                _check()
         except FileLockException:
             self.ensure_conda_installed()
 
