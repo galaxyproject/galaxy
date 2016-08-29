@@ -2411,7 +2411,7 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
             if hasattr(element, "is_ok"):
                 if element.is_ok:
                     valid = True
-            elif hasattr(element,"dataset_instances"):
+            elif hasattr(element, "dataset_instances"):
                 # we are probably a list:paired dataset, both need to be in non error state
                 forward_o, reverse_o = element.dataset_instances
                 if forward_o.is_ok and reverse_o.is_ok:
