@@ -2,4 +2,4 @@ name: masthead_test
 icon: fa-repeat
 type: masthead
 tooltip: Masthead Plugin Test
-visible: true
+activate: true
