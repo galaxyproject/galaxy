@@ -2397,11 +2397,27 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
 
     def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
         hdca = incoming[ "input" ]
-        assert hdca.collection.collection_type == "list"
+
+        assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
+
         new_elements = odict()
+
         for dce in hdca.collection.elements:
             element = dce.element_object
-            if element.is_ok:
+
+            valid = False
+
+            # dealing with a single element
+            if hasattr(element, "is_ok"):
+                if element.is_ok:
+                    valid = True
+            elif hasattr(element,"dataset_instances"):
+                # we are probably a list:paired dataset, both need to be in non error state
+                forward_o, reverse_o = element.dataset_instances
+                if forward_o.is_ok and reverse_o.is_ok:
+                    valid = True
+
+            if valid:
                 element_identifier = dce.element_identifier
                 new_elements[element_identifier] = element.copy()
 
