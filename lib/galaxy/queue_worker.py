@@ -66,6 +66,8 @@ def reload_toolbox(app, **kwargs):
 def reload_data_managers(app, **kwargs):
     from galaxy.tools.data_manager.manager import DataManagers
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
+    app._configure_tool_data_tables(from_shed_config=False)
+    reload_tool_data_tables(app)
     app.data_managers = DataManagers(app, conf_watchers=app.data_managers.conf_watchers)
 
 
@@ -83,7 +85,7 @@ def reload_sanitize_whitelist(app):
 def reload_tool_data_tables(app, **kwargs):
     params = util.Params(kwargs)
     log.debug("Executing tool data table reload for %s" % params.get('table_names', 'all tables'))
-    table_names = app.tool_data_tables.reload_tables( table_names=params.get('table_name', None))
+    table_names = app.tool_data_tables.reload_tables(table_names=params.get('table_name', None))
     log.debug("Finished data table reload for %s" % table_names)
 
 

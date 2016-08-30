@@ -101,11 +101,6 @@ class ToolConfWatcher(object):
                     if hashes[path] != md5_hash_file(path):
                         self.paths[path] = new_mod_time
                         log.debug("The file '%s' has changes.", path)
-                        try:
-                            import uwsgi
-                            log.warning("Changed files found in worker '%s'", uwsgi.worker_id())
-                        except Exception:
-                            pass
                         do_reload = True
 
             if do_reload:
@@ -149,12 +144,6 @@ class ToolConfFileEventHandler(FileSystemEventHandler):
         self.reload_callback = reload_callback
 
     def on_any_event(self, event=None):
-        try:
-            import uwsgi
-            log.warning("Reload event triggered on worker '%s'", uwsgi.worker_id())
-        except Exception:
-            log.warning("Reload event triggered")
-            pass
         self._handle(event)
 
     def _handle(self, event):
