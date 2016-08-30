@@ -16,7 +16,6 @@
         <option value="first">Keep first instance</option>
         <option value="second">Keep second instance</option>
       </param>      
-
       <when value="suffix">
         <param type="select" name="prefix_suffix" label="with following suffix:" help="Select the suffix used to join dataset name and copy number.
                                                                                                     Default suffix is '__'. First item found will have no suffix and second will have suffix '__1',etc.. ">
@@ -27,17 +26,61 @@
       </when>
       <when value="first"> </when>
       <when value="second"> </when>
-      
     </conditional>
-    
-
-    
   </inputs>
   <outputs>
-    <collection name="output" format_source="input" type="list" label="${on_string} (merged)" >
+    <collection name="output" format_source="input" type_source="input" label="${on_string} (merged)" >
     </collection>
   </outputs>
   <tests>
+    <test>
+      <param name="input">
+        <collection type="list:paired">
+          <element name="i1">
+            <collection type="paired">
+              <element name="forward" value="simple_line.txt" />
+              <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>          
+        </collection>
+      </param>
+      <param name="input2">
+        <collection type="list:paired">
+          <element name="i2">
+            <collection type="paired">
+              <element name="forward" value="simple_line.txt" />
+              <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>           
+        </collection>
+      </param>      
+      <output_collection name="output" type="list:paired">
+        <element name="i1">
+          <element name="forward">
+            <assert_contents>
+              <has_text_matching expression="^This is a line of text.\n$" />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_text_matching expression="^This is a different line of text.\n$" />
+            </assert_contents>
+          </element>
+        </element>
+        <element name="i2">
+          <element name="forward">
+            <assert_contents>
+              <has_text_matching expression="^This is a line of text.\n$" />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_text_matching expression="^This is a different line of text.\n$" />
+            </assert_contents>
+          </element>
+        </element>        
+      </output_collection>
+    </test>
     <test>
       <param name="input">
         <collection type="list">
@@ -164,7 +207,7 @@
           </assert_contents>
         </element>
       </output_collection>
-    </test>    
+    </test>
   </tests>
   <help>
     This tool takes two list and creates a single unified list.
