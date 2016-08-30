@@ -109,9 +109,10 @@ class ToolConfWatcher(object):
                         do_reload = True
 
             if do_reload:
-                t = threading.Thread(target=self.event_handler.on_any_event)
-                t.daemon = True
-                t.start()
+                with self._lock:
+                    t = threading.Thread(target=self.event_handler.on_any_event)
+                    t.daemon = True
+                    t.start()
             time.sleep(1)
 
     def monitor(self, path):
