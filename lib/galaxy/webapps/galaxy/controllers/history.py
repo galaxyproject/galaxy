@@ -487,7 +487,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
                 current_history=trans.history )
         else:
-            history = trans.get_history( create=True )
+            history = trans.get_history( most_recent=True, create=True )
 
         trans.response.set_content_type( 'text/xml' )
         return trans.fill_template_mako(
@@ -1351,7 +1351,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """Return the current user's current history in a serialized, dictionary form."""
         # Prevent IE11 from caching this
         trans.response.headers[ 'Cache-Control' ] = ["max-age=0", "no-cache", "no-store"]
-        history = trans.get_history( create=True )
+        history = trans.get_history( most_recent=True, create=True )
         return self.history_data( trans, history )
 
     @web.json
