@@ -65,8 +65,7 @@ def reload_toolbox(app, **kwargs):
 def reload_data_managers(app, **kwargs):
     from galaxy.tools.data_manager.manager import DataManagers
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
-    app.data_managers.shutdown()
-    app.data_managers = DataManagers(app)
+    app.data_managers = DataManagers(app, conf_watchers=app.data_managers.conf_watchers)
 
 
 def reload_display_application(app, **kwargs):

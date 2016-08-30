@@ -23,7 +23,7 @@ DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 
 class DataManagers( object ):
-    def __init__( self, app, xml_filename=None ):
+    def __init__( self, app, xml_filename=None, conf_watchers=None ):
         self.app = app
         self.data_managers = odict()
         self.managed_data_tables = odict()
@@ -35,7 +35,10 @@ class DataManagers( object ):
             self.load_from_xml( filename )
         if self.app.config.shed_data_manager_config_file:
             self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
-        self.conf_watchers = self.get_conf_watchers()
+        if conf_watchers:
+            self.conf_watchers = conf_watchers
+        else:
+            self.conf_watchers = self.get_conf_watchers()
 
     def get_conf_watchers(self):
         conf_watchers = []
@@ -43,10 +46,10 @@ class DataManagers( object ):
         if self.app.config.shed_data_manager_config_file:
             conf_watchers.append((get_tool_conf_watcher(lambda: reload_data_managers(self.app)), self.app.config.shed_data_manager_config_file))
         [watcher.watch_file(filename) for watcher, filename in conf_watchers]
-        return conf_watchers
+        return [watcher for watcher, filename in conf_watchers]
 
     def shutdown(self):
-        [watcher.shutdown() for watcher, filename in self.conf_watchers]
+        [watcher.shutdown() for watcher in self.conf_watchers]
 
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
         try:
