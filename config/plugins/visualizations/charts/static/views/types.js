@@ -17,9 +17,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
 
         render: function() {
             this.tabs.delAll();
-            this.tabs.add({ id: Utils.uid(), title: 'Subset', $el: this._renderDefault() } );
-            this.tabs.add({ id: Utils.uid(), title: 'Full List', $el: this._renderList() } );
             this._renderDefault();
+            this._renderList();
         },
 
         _renderDefault: function() {
@@ -31,12 +30,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     if ( type.keywords.indexOf( 'default' ) !== -1 ) {
                         index[ type.category ] = index[ type.category ] || {};
                         index[ type.category ][ type_id ] = type;
-                        self.first = self.first || type_id;
                     }
                 }
             });
-            var filtered = [];
             if ( _.size( index ) > 0 ) {
+                var filtered = [];
                 _.each( index, function( category, category_header ) {
                     var subset = { title: category_header, list:[] };
                     _.each( category, function( type, type_id ) {
@@ -50,22 +48,21 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     filtered.push( subset );
                 });
                 filtered.sort( function( a, b ) { return a.title < b.title ? -1 : 1; } );
-            }
-            var $el = $( '<div/>' ).addClass( 'charts-grid' );
-            _.each( filtered, function( category, j ) {
-                $el.append( $( '<div/>' ).addClass( 'header ui-margin-top' ).html( '&bull;&nbsp;' + category.title ) );
-                _.each( category.list, function( type ) {
-                    $el.append( self._templateThumbnailItem( type ) );
+                var $el = $( '<div/>' ).addClass( 'charts-grid' );
+                _.each( filtered, function( category ) {
+                    $el.append( $( '<div/>' ).addClass( 'header ui-margin-top' ).html( '&bull;&nbsp;' + category.title ) );
+                    _.each( category.list, function( type ) {
+                        self.first = self.first || type.id;
+                        $el.append( self._templateThumbnailItem( type ) );
+                    });
                 });
-            });
-            $el.append( $el );
-            return $el;
+                this.tabs.add( { id: Utils.uid(), title: 'Default', $el: $el } );
+            }
         },
 
         _renderList: function() {
             var self = this;
             var index = [];
-            this.first = null;
             _.each( this.app.types, function( type, type_id ) {
                 if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
                     index.push( {
@@ -76,13 +73,15 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     });
                 }
             });
-            index.sort( function( a, b ) { return a.id < b.id ? -1 : 1 } );
-            this.first = this.first || index[ 0 ].id;
-            var $el = $( '<div/>' ).addClass( 'charts-grid' );
-            _.each( index, function( d, i ) {
-                $el.append( self._templateRegularItem( d ) );
-            });
-            return $el;
+            if ( index.length > 0 ) {
+                index.sort( function( a, b ) { return a.id < b.id ? -1 : 1 } );
+                this.first = this.first || index[ 0 ].id;
+                var $el = $( '<div/>' ).addClass( 'charts-grid' );
+                _.each( index, function( d, i ) {
+                    $el.append( self._templateRegularItem( d ) );
+                });
+                this.tabs.add({ id: Utils.uid(), title: 'List', $el: $el } );
+            }
         },
 
         /** Set/Get selected chart type */
