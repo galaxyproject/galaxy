@@ -53,7 +53,6 @@
 .charts-grid .item {
     padding: 5px;
     margin: 5px;
-    float: left;
     cursor: pointer;
     border-radius:5px
 }
@@ -70,21 +69,6 @@
     padding: 10px;
 	width: 100px;
 	height: 86px;
-}
-
-.charts-grid .title {
-	text-align: center;
-	font-size: 0.9em;
-	word-wrap: break-work;
-	font-weight: bold;
-	width: 100px;
-}
-
-.charts-grid .header {
-	font-size: 0.9em;
-	font-weight: bold;
-	padding-bottom: 10px;
-    clear: both;
 }
 
 .charts-viewport {
