@@ -13,11 +13,12 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
 
+from galaxy.util.bunch import Bunch
+from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.odict import odict
 from galaxy.util import listify
 from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
-
-from galaxy.util.bunch import Bunch
 
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
