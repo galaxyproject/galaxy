@@ -5,6 +5,7 @@ define([], function() {
         library     : 'Custom',
         tag         : 'svg',
         keywords    : 'others',
+        datatypes   : [ 'tabular', 'csv' ],
         description : 'This is a developer example which demonstrates how to implement and configure a basic d3-based plugin for charts.',
         groups      : {
             x : { type : 'data_column', is_numeric : true, label : 'Bubble x-position' },

@@ -7,12 +7,21 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
             this.chart = app.chart;
             this.description = new Description( this.app );
             this.message = new Ui.Message( { message: 'There are no options for this chart type.', persistent: true, status: 'info' } );
-            this.setElement( $( '<div/>' ).append( this.description.$el ).append( this.message.$el ).append( this.$form = $( '<div/>' ) ) );
+            this.setElement( $( '<div/>' ).append( this.description.$el )
+                                          .append( this.message.$el.addClass( 'ui-margin-bottom' ) )
+                                          .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-bottom' ) ) );
             this.listenTo( this.chart, 'change', function() { self.render() } );
         },
         render: function() {
             var self = this;
-            var inputs = Utils.clone( this.chart.definition.settings );
+            var inputs = Utils.clone( this.chart.definition.settings ) || {};
+            if ( this.chart.definition.use_panels && !inputs[ 'use_panels' ]) {
+                inputs[ 'use_panels' ] = {
+                    type    : 'boolean',
+                    label   : 'Use multi-panels',
+                    help    : 'Would you like to separate your data into individual panels?'
+                };
+            }
             if ( _.size( inputs ) > 0 ) {
                 FormData.visitInputs( inputs, function( input, name ) {
                     var model_value = self.chart.settings.get( name );

@@ -14,7 +14,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
 
         render: function() {
             var self = this;
-            var inputs = this.chart.definition.groups ? Utils.clone( this.chart.definition.groups ) : [];
+            var inputs = this.chart.definition.groups ? Utils.clone( this.chart.definition.groups ) : {};
             var dataset_id = this.chart.get( 'dataset_id' );
             var chart_type = this.chart.get( 'type' );
             var chart_definition = this.chart.definition;

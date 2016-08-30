@@ -26,9 +26,8 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'utils/utils', 'plugin/ch
             debug_color             : '#FFFFFF'
         },
         
-        initialize: function( app, options ) {
+        initialize: function( options ) {
             var self = this;
-            this.app            = app;
             this.chart          = options.chart;
             this.canvas_id      = options.canvas_id;
             this.group          = options.groups[ 0 ];

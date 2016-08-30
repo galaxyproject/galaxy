@@ -1,3 +1,7 @@
+.charts-viewer {
+    overflow: auto;
+}
+
 .charts-viewer .ui-message {
     position: absolute;
     width: calc(100% - 20px);

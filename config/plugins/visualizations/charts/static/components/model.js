@@ -20,10 +20,10 @@ define( [ 'utils/utils' ], function( Utils ) {
 
         reset: function( options ) {
             this.set({
-                'id'            : Utils.uid(),
-                'type'          : 'nvd3_bar',
-                'dataset_id'    : options.config.dataset_id,
-                'title'         : 'New Chart'
+                id            : Utils.uid(),
+                type          : '__first',
+                dataset_id    : options.config.dataset_id,
+                title         : 'New Chart'
             });
             this.settings.clear();
             this.groups.reset();
@@ -31,7 +31,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
 
         state: function( value, info ) {
-            this.set( { 'state': value, 'state_info': info } );
+            this.set( { state : value, state_info : info } );
             this.trigger( 'set:state' );
             console.debug( 'Chart:state() - ' + info + ' (' + value + ')' );
         }

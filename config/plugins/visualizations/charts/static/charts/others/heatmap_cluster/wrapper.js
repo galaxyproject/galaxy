@@ -1,8 +1,8 @@
 define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, Jobs, HeatMap ) {
     return Backbone.View.extend({
-        initialize: function(app, options) {
-            Jobs.request( app, Utilities.buildJobDictionary( 'heatmap', app.chart ), function( dataset ) {
-                var request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
+        initialize: function( options ) {
+            Jobs.request( options.chart, Utilities.buildJobDictionary( 'heatmap', options.chart ), function( dataset ) {
+                var request_dictionary = Utilities.buildRequestDictionary( options.chart, dataset.id );
                 var index = 0;
                 var tmp_dict = { id : request_dictionary.id, groups : [] };
                 for ( var group_index in request_dictionary.groups ) {
@@ -26,7 +26,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs',
                 }
                 options.request_dictionary = tmp_dict;
                 options.render = function( canvas_id, groups ) {
-                    new HeatMap( app, {
+                    new HeatMap({
                         chart       : options.chart,
                         canvas_id   : canvas_id,
                         groups      : groups

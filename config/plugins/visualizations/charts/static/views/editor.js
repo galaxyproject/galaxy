@@ -16,8 +16,8 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 operations      : {
                     'save'  : new Ui.ButtonIcon({
                         icon    : 'fa-save',
-                        tooltip : 'Draw Chart',
-                        title   : 'Draw',
+                        tooltip : 'Save and Draw Chart',
+                        title   : 'Save and Draw',
                         onclick : function() {
                             self._saveChart();
                         }
@@ -73,7 +73,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 id      : 'settings',
                 title   : 'Customize',
                 icon    : 'fa-gear',
-                tooltip : 'Customize charts options.',
+                tooltip : 'Customize chart options.',
                 $el     : ( new SettingsView( this.app ) ).$el
             });
             this.tabs.add({

@@ -4,21 +4,29 @@
 define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor', 'plugin/charts/types' ],
     function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, Viewer, Editor, Types ) {
     return Backbone.View.extend({
-        initialize: function(options){
-            this.options = options;
-            this.modal = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
-            this.types = Types;
-            this.chart = new Chart();
-            this.storage = new Storage( this );
-            this.deferred = new Deferred();
+        initialize: function( options ) {
+            var self = this;
+            Utils.get({
+                url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
+                cache   : true,
+                success : function( dataset ) {
+                    self.dataset = dataset;
+                    self._build( options );
+                }
+            });
+        },
 
-            // views
-            this.viewer = new Viewer( this );
-            this.editor = new Editor( this );
+        _build: function( options ) {
+            this.options    = options;
+            this.types      = Types;
+            this.chart      = new Chart();
+            this.modal      = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
+            this.storage    = new Storage( this.chart, this.types, options );
+            this.deferred   = new Deferred();
+            this.viewer     = new Viewer( this );
+            this.editor     = new Editor( this );
             this.$el.append( this.viewer.$el );
             this.$el.append( this.editor.$el );
-
-            // pick start screen
             if ( !this.storage.load() ) {
                 this.go( 'editor' );
             } else {
@@ -33,12 +41,6 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             this.viewer.hide();
             this.editor.hide();
             this[ view_id ].show();
-        },
-
-        /** Message */
-        showModal: function( title, body ) {
-            var self = this;
-            this.modal.show( { title: title, body: body, buttons: { 'Close': function() { self.modal.hide() } } } );
         },
 
         /** Split chart type into path components */

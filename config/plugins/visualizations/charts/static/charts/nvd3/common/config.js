@@ -5,6 +5,7 @@ define( [ 'plugin/charts/utilities/tabular-form', 'plugin/plugins/nvd3/nv.d3' ],
         library     : 'NVD3',
         tag         : 'svg',
         keywords    : 'nvd3 default',
+        exports     : [ 'svg', 'pdf' ],
         groups      : {
             color: {
                 label       : 'Pick a series color',

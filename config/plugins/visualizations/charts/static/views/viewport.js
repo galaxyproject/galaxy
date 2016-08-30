@@ -17,32 +17,15 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this.$info = this.$( '.info' );
             this.$icon = this.$( '.icon' );
             this.$text = this.$( '.text' );
-
-            // use full screen for viewer
             this._fullscreen( this.$el, 55 );
-
-            // prevent window scrolling
-            var initial_overflow = $( 'body' ).css( 'overflow' );
-            this.$el.on( 'mouseover', function() {
-                $( 'body' ).css( 'overflow', 'hidden' );
-            }).on('mouseout', function() {
-                $( 'body' ).css( 'overflow', initial_overflow );
-            });
-
-            // create container element
             this._createContainer( 'div' );
-
-            // link redraw trigger
-            var self = this;
             this.chart.on( 'redraw', function() {
                 self.app.deferred.execute( function( process ) {
                     self._draw( process, self.chart );
                 });
             });
-
-            // link status handler
             this.chart.on( 'set:state', function() {
-                var $container = self.$el.find( '.charts-viewport-container' );
+                var $container = self.$( '.charts-viewport-container' );
                 var $info = self.$info;
                 var $icon = self.$icon;
                 var $text = self.$text;
@@ -86,21 +69,17 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
 
         /** A chart may contain multiple sub charts/containers which are created here */
         _createContainer: function( tag, n ) {
+            tag = tag || 'div';
             n = n || 1;
-            for ( var i in this.container_list ) {
-                this.container_list[ i ].remove();
-            }
-            this.container_list = [];
-            this.canvas_list = [];
+            this.$( '.charts-viewport-container' ).remove();
+            this.targets = [];
             for ( var i = 0; i < n; i++ ) {
                 var container_id = Utils.uid();
                 var container_el = $( '<div/>' ).addClass( 'charts-viewport-container' )
                                                 .width( parseInt( 100 / n ) + '%' )
-                                                .append( $( '<div/>' ).attr( 'id', 'menu' ) )
                                                 .append( $( '<' + tag + ' class="charts-viewport-canvas" />' ).attr( 'id', container_id ) );
                 this.$el.append( container_el );
-                this.container_list[ i ] = container_el;
-                this.canvas_list[ i ] = container_id;
+                this.targets.push( container_id );
             }
         },
 
@@ -111,7 +90,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
             require( [ 'plugin/charts/' + this.app.split( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
-                new ChartView( self.app, { process : process, chart : chart, canvas_list : self.canvas_list } );
+                new ChartView( { process: process, chart: chart, dataset: self.app.dataset, targets: self.targets } );
             });
         }
     });

@@ -1,8 +1,8 @@
 define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs', 'plugin/charts/jqplot/common/wrapper' ], function( Utilities, Jobs, Plot ) {
     return Backbone.Model.extend({
-        initialize: function( app, options ) {
-            Jobs.request( app, Utilities.buildJobDictionary( 'histogramdiscrete', app.chart ), function( dataset ) {
-                var request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
+        initialize: function( options ) {
+            Jobs.request( options.chart, Utilities.buildJobDictionary( 'histogramdiscrete', options.chart ), function( dataset ) {
+                var request_dictionary = Utilities.buildRequestDictionary( options.chart, dataset.id );
                 var index = 1;
                 var tmp_dict = { id : request_dictionary.id, groups : [] };
                 _.each( request_dictionary.groups, function( group ) {
@@ -18,7 +18,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs',
                         axes: { xaxis: { min : -1 }, yaxis: { pad : 1.2 } }
                     });
                 };
-                new Plot( app, options );
+                new Plot( options );
             });
         }
     });

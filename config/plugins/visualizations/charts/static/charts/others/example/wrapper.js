@@ -1,14 +1,14 @@
 define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/utilities/tabular-datasets' ], function( Utilities, Datasets ) {
     return Backbone.View.extend({
-        initialize: function( app, options ) {
-            var chart = app.chart;
+        initialize: function( options ) {
+            var chart = options.chart;
             var request_dictionary = Utilities.buildRequestDictionary( chart );
             var error = null;
             request_dictionary.success = function( result ) {
                 var colors = d3.scale.category20();
                 _.each( result.groups, function( group, group_index ) {
                     try {
-                        var svg = d3.select( '#' + ( options.canvas_list[ group_index ] || options.canvas_list[ 0 ] ) );
+                        var svg = d3.select( '#' + ( options.targets[ group_index ] || options.targets[ 0 ] ) );
                         var height = parseInt( svg.style( 'height' ) );
                         var width  = parseInt( svg.style( 'width' ) );
                         var maxValue = d3.max( group.values, function( d ) { return Math.max( d.x, d.y ) } );

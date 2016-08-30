@@ -253,19 +253,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     title   : 'Requirements',
                     tooltip : 'Display tool requirements',
                     onclick : function() {
-                        if (!this.visible || self.portlet.collapsed ) {
-                            this.visible = true;
+                        if ( !this.requirements_visible || self.portlet.collapsed ) {
+                            this.requirements_visible = true;
                             self.portlet.expand();
-                            self.message.update({
-                                persistent  : true,
-                                message     : self._templateRequirements(options),
-                                status      : 'info'
-                            });
+                            self.message.update( { persistent : true, message : self._templateRequirements( options ), status : 'info' } );
                         } else {
-                            this.visible = false;
-                            self.message.update({
-                                message     : ''
-                            });
+                            this.requirements_visible = false;
+                            self.message.update( { message : '' } );
                         }
                     }
                 });

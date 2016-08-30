@@ -1,8 +1,8 @@
 define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs', 'plugin/charts/nvd3/common/wrapper' ], function( Utilities, Jobs, NVD3 ) {
     return Backbone.Model.extend({
-        initialize: function( app, options ) {
-            Jobs.request( app, Utilities.buildJobDictionary( 'histogramdiscrete', app.chart ), function( dataset ) {
-                var request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
+        initialize: function( options ) {
+            Jobs.request( options.chart, Utilities.buildJobDictionary( 'histogramdiscrete', options.chart ), function( dataset ) {
+                var request_dictionary = Utilities.buildRequestDictionary( options.chart, dataset.id );
                 var index = 1;
                 var tmp_dict = { id : request_dictionary.id, groups : [] };
                 _.each( request_dictionary.groups, function( group ) {
@@ -16,7 +16,7 @@ define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/components/jobs',
                 options.makeConfig = function( nvd3_model ) {
                     nvd3_model.options( { showControls: true } );
                 };
-                new NVD3( app, options );
+                new NVD3( options );
             }, function() { options.process.reject() } );
         }
     });

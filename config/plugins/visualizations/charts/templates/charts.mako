@@ -3,7 +3,6 @@
     app_root    = root + "plugins/visualizations/charts/static/"
 %>
 
-
 <!DOCTYPE HTML>
 <html>
     <head>
@@ -29,6 +28,9 @@
         ## canvg
         ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
         ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
+
+        ## biojs
+        ${h.javascript_link( app_root + "plugins/biojs/biojs.msa.js" )}
 
         ## nvd3
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
@@ -78,18 +80,16 @@
             window.onbeforeunload = function() {
                 return 'You are leaving Charts.';
             };
-            var app = null;
             $(function() {
                 require( [ 'plugin/app' ], function( App ) {
                     var options = {
                         id      : ${h.dumps( visualization_id )} || undefined,
                         config  : ${h.dumps( config )}
                     }
-                    app = new App( options );
+                    var app = new App( options );
                     $( 'body' ).append( app.$el );
                 });
             });
-
         </script>
     </body>
 </html>

@@ -5,7 +5,7 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
         library     : 'NVD3',
         tag         : 'svg',
         keywords    : 'nvd3 default',
-        datatype    : 'tabular',
+        datatypes   : [ 'tabular', 'csv' ],
         groups      : {
             label : {
                 label       : 'Labels',

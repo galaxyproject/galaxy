@@ -1,12 +1,14 @@
 /** This class saves and loads a chart through the api. */
-define( [ 'utils/utils', 'plugin/components/model', 'mvc/visualization/visualization-model' ], function( Utils, Chart ) {
+define( [ 'utils/utils', 'mvc/ui/ui-modal', 'plugin/components/model', 'mvc/visualization/visualization-model' ], function( Utils, Modal, Chart ) {
     return Backbone.Model.extend({
 
-        initialize: function( app ) {
-            this.app = app;
-            this.chart = this.app.chart;
-            this.options = this.app.options;
-            this.id = this.options.id;
+        initialize: function( chart, types, options ) {
+            var self        = this;
+            this.chart      = chart;
+            this.options    = options;
+            this.id         = options.id;
+            this.types      = types;
+            this.modal      = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
             this.vis = new Visualization({
                 id      : this.id,
                 type    : 'charts',
@@ -19,12 +21,13 @@ define( [ 'utils/utils', 'plugin/components/model', 'mvc/visualization/visualiza
             if ( chart_dict ) {
                 this.vis.get( 'config' ).chart_dict = chart_dict;
             }
+            this.chart.on( 'change:dataset_id_job', function() { self.save() } );
         },
 
         /** Pack and save nested chart model */
         save: function() {
             var self = this;
-            var chart = this.app.chart;
+            var chart = this.chart;
             var chart_dict = {
                 attributes : chart.attributes,
                 settings   : chart.settings.attributes,
@@ -37,7 +40,7 @@ define( [ 'utils/utils', 'plugin/components/model', 'mvc/visualization/visualiza
             this.vis.get( 'config' ).chart_dict = chart_dict;
             this.vis.save()
                     .fail(function( xhr, status, message ) {
-                        self.app.showModal( 'Saving failed.', 'An attempt to save this chart to the server failed. Please try again and contact the administrator.' );
+                        self.modal.show( { title: 'Saving failed.', body: 'An attempt to save this chart to the server failed. Please try again and contact the administrator.', buttons: { 'Close': function() { self.modal.hide() } } } );
                     })
                     .then( function( response ) {
                         if ( response && response.id ) {
@@ -60,7 +63,7 @@ define( [ 'utils/utils', 'plugin/components/model', 'mvc/visualization/visualiza
                 console.debug( 'Storage::load() - Chart type not provided. Invalid format.' );
                 return false;
             }
-            var chart_definition = this.app.types[ chart_type ];
+            var chart_definition = this.types[ chart_type ];
             if ( !chart_definition ) {
                 console.debug( 'Storage::load() - Chart type not supported. Please re-configure the chart.' );
                 return false;

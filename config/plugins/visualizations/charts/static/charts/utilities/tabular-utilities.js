@@ -55,14 +55,14 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function(
         var chart               = options.chart;
         var request_dictionary  = options.request_dictionary || buildRequestDictionary( chart );
         var render              = options.render;
-        var canvas_list         = options.canvas_list;
+        var targets             = options.targets;
         request_dictionary.success = function( result ) {
             try {
                 if ( chart.settings.get( 'use_panels' ) === 'true' ) {
                     var valid = true;
                     for ( var group_index in result.groups ) {
                         var group = result.groups[ group_index ];
-                        if (!render( canvas_list[ group_index ], [ group ] ) ) {
+                        if (!render( targets[ group_index ], [ group ] ) ) {
                             valid = false;
                             break;
                         }
@@ -71,7 +71,7 @@ define( [ 'utils/utils', 'plugin/charts/utilities/tabular-datasets' ], function(
                         chart.state( 'ok', 'Multi-panel chart drawn.' );
                     }
                 } else {
-                    if ( render( canvas_list[ 0 ], result.groups ) ) {
+                    if ( render( targets[ 0 ], result.groups ) ) {
                         chart.state( 'ok', 'Chart drawn.' );
                     }
                 }

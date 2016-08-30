@@ -6,6 +6,7 @@ define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
         tag         : 'div',
         zoomable    : true,
         keywords    : 'jqplot',
+        exports     : [ 'png' ],
         settings    : {
             x_axis_grid : {
                 label       : 'Axis grid',

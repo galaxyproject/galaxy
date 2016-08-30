@@ -1,8 +1,8 @@
 define( [ 'plugin/charts/utilities/tabular-utilities', 'plugin/charts/others/heatmap/heatmap-plugin' ], function( Utilities, HeatMap ) {
     return Backbone.View.extend({
-        initialize: function( app, options ) {
+        initialize: function( options ) {
             options.render = function( canvas_id, groups ) {
-                new HeatMap( app, {
+                new HeatMap({
                     chart       : options.chart,
                     canvas_id   : canvas_id,
                     groups      : groups

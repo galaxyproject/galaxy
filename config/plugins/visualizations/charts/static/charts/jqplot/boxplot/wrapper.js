@@ -1,18 +1,18 @@
 define( [ 'plugin/charts/jqplot/common/wrapper', 'plugin/components/jobs', 'plugin/charts/utilities/tabular-utilities' ], function( Plot, Jobs, Utilities ) {
     return Backbone.View.extend({
-        initialize: function( app, options ) {
-            Jobs.request( app, Utilities.buildJobDictionary( 'boxplot', app.chart ), function( dataset ) {
-                var request_dictionary = Utilities.buildRequestDictionary( app.chart, dataset.id );
+        initialize: function( options ) {
+            Jobs.request( options.chart, Utilities.buildJobDictionary( 'boxplot', options.chart ), function( dataset ) {
+                var request_dictionary = Utilities.buildRequestDictionary( options.chart, dataset.id );
                 var chart = options.chart;
                 var index = 0;
                 _.each( request_dictionary.groups, function( group ) {
                     group.columns = { x: { index : index++ } };
                 });
-                var plot = new Plot( app, {
+                var plot = new Plot( {
                     process             : options.process,
                     chart               : options.chart,
                     request_dictionary  : request_dictionary,
-                    canvas_list         : options.canvas_list,
+                    targets             : options.targets,
                     makeConfig          : function( groups, plot_config ){
                         var boundary = Utilities.getDomains( groups, 'x' );
                         $.extend( true, plot_config, {
