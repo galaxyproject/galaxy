@@ -1,7 +1,7 @@
 <%
     root        = h.url_for( "/" )
     app_root    = root + "plugins/visualizations/charts/static/"
-    remote_root = "https://raw.githubusercontent.com/guerler/galaxy-charts/master/"
+    remote_root = app.config.get( "charts_plugins_url", "https://raw.githubusercontent.com/guerler/galaxy-charts/master/" )
 %>
 
 <!DOCTYPE HTML>

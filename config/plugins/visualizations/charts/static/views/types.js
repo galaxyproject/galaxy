@@ -1,5 +1,5 @@
 /** This class renders the chart type selection grid. */
-define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'remote/build/keywords' ], function( Utils, Ui, Tabs, Keywords ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, Ui, Tabs ) {
     return Backbone.View.extend({
         events : {
             'click .item'    : '_onclick',
@@ -30,7 +30,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'remote/build/keywo
                 }
             });
             this.tabs.delAll();
-            _.each( Keywords, function( d, i ) {
+            _.each( this.app.keywords, function( d, i ) {
                 var keyword = d.value;
                 var categories = self.index[ keyword ];
                 if ( _.size( categories ) > 0 ) {

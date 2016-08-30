@@ -1,26 +1,34 @@
 /**
  *  Main application class.
  */
-define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor', 'remote/build/types' ],
-    function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, Viewer, Editor, Types ) {
+define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor' ],
+    function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, Viewer, Editor ) {
     return Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
-            Utils.get({
-                url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
-                cache   : true,
-                success : function( dataset ) {
-                    self.dataset = dataset;
-                    self._build( options );
-                }
+            require( [ 'remote/build/types', 'remote/build/keywords' ], function( Types, Keywords ) {
+                self.types = Types;
+                self.keywords = Keywords;
+                Utils.get({
+                    url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
+                    cache   : true,
+                    success : function( dataset ) {
+                        self.dataset = dataset;
+                        self._build( options );
+                    }
+                });
+            }, function( err ) {
+                self.$el.append( $( '<div/>' ).addClass( 'errormessagelarge' )
+                        .append( $( '<p/>' ).text( 'Unable to access the Charts plugin repository:' ) )
+                        .append( $( '<pre/>' ).text( 'charts_plugin_url = ' + remote_root + 'package.json' ) )
+                        .append( $( '<p/>' ).html( 'Please verify that your internet connection works properly and that the above base url is correct. Contact your admin if this error persists.' ) ) );
             });
         },
 
         _build: function( options ) {
             this.options    = options;
-            this.types      = Types;
-            this.chart      = new Chart();
             this.modal      = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
+            this.chart      = new Chart();
             this.storage    = new Storage( this.chart, this.types, options );
             this.deferred   = new Deferred();
             this.viewer     = new Viewer( this );
