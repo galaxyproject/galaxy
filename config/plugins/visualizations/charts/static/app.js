@@ -6,9 +6,8 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
     return Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
-            require( [ 'remote/build/types', 'remote/build/keywords' ], function( Types, Keywords ) {
+            require( [ 'remote/build/types' ], function( Types ) {
                 self.types = Types;
-                self.keywords = Keywords;
                 Utils.get({
                     url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
                     cache   : true,

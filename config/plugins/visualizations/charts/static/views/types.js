@@ -1,5 +1,5 @@
 /** This class renders the chart type selection grid. */
-define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, Ui, Tabs ) {
     return Backbone.View.extend({
         events : {
             'click .item'    : '_onclick',
@@ -10,17 +10,65 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
             var self = this;
             this.app = app;
             this.options = Utils.merge( options, this.optionsDefault );
-            this.setElement( $( '<div/>' ) );
+            this.tabs = new Tabs.View( {} );
+            this.setElement( this.tabs.$el.addClass( 'charts-types' ) );
             this.render();
         },
 
         render: function() {
+            this.tabs.delAll();
+            this.tabs.add({ id: Utils.uid(), title: 'Subset', $el: this._renderDefault() } );
+            this.tabs.add({ id: Utils.uid(), title: 'Full List', $el: this._renderList() } );
+            this._renderDefault();
+        },
+
+        _renderDefault: function() {
             var self = this;
-            this.index = [];
+            var index = {};
             this.first = null;
             _.each( this.app.types, function( type, type_id ) {
                 if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
-                    self.index.push( {
+                    if ( type.keywords.indexOf( 'default' ) !== -1 ) {
+                        index[ type.category ] = index[ type.category ] || {};
+                        index[ type.category ][ type_id ] = type;
+                        self.first = self.first || type_id;
+                    }
+                }
+            });
+            var filtered = [];
+            if ( _.size( index ) > 0 ) {
+                _.each( index, function( category, category_header ) {
+                    var subset = { title: category_header, list:[] };
+                    _.each( category, function( type, type_id ) {
+                        subset.list.push({
+                            id      : type_id,
+                            title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
+                            url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
+                        });
+                    });
+                    subset.list.sort( function( a, b ) { return a.id < b.id ? -1 : 1; } );
+                    filtered.push( subset );
+                });
+                filtered.sort( function( a, b ) { return a.title < b.title ? -1 : 1; } );
+            }
+            var $el = $( '<div/>' ).addClass( 'charts-grid' );
+            _.each( filtered, function( category, j ) {
+                $el.append( $( '<div/>' ).addClass( 'header ui-margin-top' ).html( '&bull;&nbsp;' + category.title ) );
+                _.each( category.list, function( type ) {
+                    $el.append( self._templateThumbnailItem( type ) );
+                });
+            });
+            $el.append( $el );
+            return $el;
+        },
+
+        _renderList: function() {
+            var self = this;
+            var index = [];
+            this.first = null;
+            _.each( this.app.types, function( type, type_id ) {
+                if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
+                    index.push( {
                         id          : type_id,
                         title       : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
                         description : type.description || type.category,
@@ -28,13 +76,13 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
                     });
                 }
             });
-            this.index.sort( function( a, b ) { return a.id < b.id ? -1 : 1 } );
-            this.first = this.index[ 0 ].id;
+            index.sort( function( a, b ) { return a.id < b.id ? -1 : 1 } );
+            this.first = this.first || index[ 0 ].id;
             var $el = $( '<div/>' ).addClass( 'charts-grid' );
-            _.each( this.index, function( d, i ) {
-                $el.append( self._templateType( d ) );
+            _.each( index, function( d, i ) {
+                $el.append( self._templateRegularItem( d ) );
             });
-            this.$el.empty().append( $el );
+            return $el;
         },
 
         /** Set/Get selected chart type */
@@ -66,15 +114,16 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc' ], function( Utils, Ui ) {
             this.options.ondblclick && this.options.ondblclick( this.value() );
         },
 
-        /** Header template */
-        _templateHeader: function( options ) {
-            return  '<div class="header ui-margin-top">' +
-                        '&bull; ' + options.title +
+        /* Chart type template with image */
+        _templateThumbnailItem: function( options ) {
+            return  '<div class="item item-float" chart_id="' + options.id + '">' +
+                        '<img class="image" src="' + options.url + '">' +
+                        '<div class="title ui-form-info">' + options.title + '</div>' +
                     '<div>';
         },
 
         /* Chart type template with image */
-        _templateType: function( options ) {
+        _templateRegularItem: function( options ) {
             return  '<div class="item" chart_id="' + options.id + '">' +
                         '<table>' +
                             '<tr>' +

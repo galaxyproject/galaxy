@@ -54,7 +54,25 @@
     padding: 5px;
     margin: 5px;
     cursor: pointer;
-    border-radius:5px
+    border-radius:5px;
+}
+.charts-grid .item-float {
+    float: left;
+}
+
+.charts-grid .title {
+	text-align: center;
+	font-size: 0.9em;
+	word-wrap: break-work;
+	font-weight: bold;
+	width: 100px;
+}
+
+.charts-grid .header {
+	font-size: 0.9em;
+	font-weight: bold;
+	padding-bottom: 10px;
+    clear: both;
 }
 
 .charts-grid .current {
