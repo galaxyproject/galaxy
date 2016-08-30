@@ -41,13 +41,14 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                         subset.list.push({
                             id      : type_id,
                             title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
+                            sortby  : type.title,
                             url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
                         });
                     });
                     subset.list.sort( function( a, b ) { return a.id < b.id ? -1 : 1; } );
                     filtered.push( subset );
                 });
-                filtered.sort( function( a, b ) { return a.title < b.title ? -1 : 1; } );
+                filtered.sort( function( a, b ) { return a.sortby < b.sortby ? -1 : 1; } );
                 var $el = $( '<div/>' ).addClass( 'charts-grid' );
                 _.each( filtered, function( category ) {
                     $el.append( $( '<div/>' ).addClass( 'header ui-margin-top' ).html( '&bull;&nbsp;' + category.title ) );
@@ -68,13 +69,14 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     index.push( {
                         id          : type_id,
                         title       : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
+                        sortby      : type.title,
                         description : type.description || type.category,
                         url         : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
                     });
                 }
             });
             if ( index.length > 0 ) {
-                index.sort( function( a, b ) { return a.id < b.id ? -1 : 1 } );
+                index.sort( function( a, b ) { return a.sortby < b.sortby ? -1 : 1 } );
                 this.first = this.first || index[ 0 ].id;
                 var $el = $( '<div/>' ).addClass( 'charts-grid' );
                 _.each( index, function( d, i ) {
