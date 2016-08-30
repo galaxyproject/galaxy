@@ -803,20 +803,21 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         """
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
-        checked_filters = kwd.get('checked_filters', [])
-        checked_filters = json.loads(checked_filters)
+        checked_filters = kwd.get( 'checked_filters', {} )
+        checked_filters = json.loads( checked_filters )
         if params.get( 'edit_toolbox_filter_button', False ):
             tool_filters = list()
             section_filters = list()
             label_filters = list()
-            
             for name in checked_filters:
-                if name.startswith('t_'):
-                    tool_filters.append( name[2:] )
-                elif name.startswith('l_'):
-                    label_filters.append( name[2:] )
-                elif name.startswith('s_'):
-                    section_filters.append( name[2:] )
+                if( checked_filters[name] == True or checked_filters[name] == 'true'  ): 
+                    name = name.split( "|" )[1]
+                    if name.startswith( 't_' ):
+                        tool_filters.append( name[2:] )
+                    elif name.startswith( 'l_' ):
+                        label_filters.append( name[2:] )
+                    elif name.startswith( 's_' ):
+                        section_filters.append( name[2:] )
 
             trans.user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
             trans.user.preferences['toolbox_section_filters'] = ','.join( section_filters )
@@ -824,11 +825,10 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
 
             trans.sa_session.add( trans.user )
             trans.sa_session.flush()
-            message = 'ToolBox filters has been updated.'
+            message = 'ToolBox filters have been updated.'
             kwd = dict( message=message, status='done' )
 
         # Display the ToolBox filters form with the current values filled in
-        #return self.toolbox_filters( trans, cntrller, **kwd )
         return self.tool_filters( trans, **kwd )
 
     @expose_api

@@ -34,7 +34,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** Saves the changed password */
-        _savePassword: function( self ) {
+        _savePassword: function() {
             var self = this;
             $.getJSON( Galaxy.root + 'api/user_preferences/change_password', this.form.data.create(), function( response ) {
                 self.form.message.update({

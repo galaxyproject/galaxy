@@ -66,9 +66,11 @@ var UserPreferences = Backbone.View.extend({
     callManageToolboxFilter: function( e ) {
         $( '.user-pref' ).hide();
         var url = Galaxy.root + 'api/user_preferences/toolbox_filters',
-            data = {};
+            data = {},
+            self = this;
         $.getJSON( url, function( response ) {
-            toolbox = new ToolboxFilter.ToolboxFilter( response );  
+            toolbox = new ToolboxFilter.ToolboxFilter( self, response );
+            self.$( '.user-preferences-all' ).append( toolbox.$el );
         });
     },
 
@@ -167,7 +169,7 @@ var UserPreferences = Backbone.View.extend({
         $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
         $( ".manage-api-keys" ).on( "click", function() { self.callApiKeys() } );
-        $( ".manage-toolbox-filters" ).on( "click", self.callManageToolboxFilter );
+        $( ".manage-toolbox-filters" ).on( "click", function() { self.callManageToolboxFilter() } );
         $( ".change-communication-setting" ).on( "click", function() { self.callChangeCommunication() } );
         $( ".logout-user" ).on( "click", self.callLogout );
     }
