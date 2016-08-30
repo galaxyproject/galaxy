@@ -111,7 +111,7 @@ class ToolConfWatcher(object):
             if do_reload:
                 t = threading.Thread(target=self.event_handler.on_any_event)
                 t.daemon = True
-                t.start()
+                register_postfork_function(t.start)
             time.sleep(1)
 
     def monitor(self, path):
