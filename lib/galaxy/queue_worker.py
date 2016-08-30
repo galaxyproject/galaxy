@@ -59,6 +59,7 @@ def reload_toolbox(app, **kwargs):
     with app._toolbox_lock:
         old_toolbox = app.toolbox
         app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, old_toolbox._tool_conf_watcher)
+        reload_data_managers(app)
         app.reindex_tool_search()
 
 
