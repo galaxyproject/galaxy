@@ -29,31 +29,49 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     });
                 }
             });
-            this.tabs.delAll();
+            var filtered = [];
             _.each( this.app.keywords, function( d, i ) {
                 var keyword = d.value;
                 var categories = self.index[ keyword ];
                 if ( _.size( categories ) > 0 ) {
-                    var $help = $( '<p/>' ).addClass( 'ui-form-info' ).html( d.help ) ;
-                    var $el = $( '<div/>' ).addClass( 'charts-grid' ).append( $help );
+                    var catset = { id: Utils.uid(), help: d.help, title: d.label, value: d.value, list: [] };
                     _.each( categories, function( category, category_header ) {
-                        var $category = self._templateHeader( { title: category_header } );
-                        $el.append( $category );
+                        var subset = { title: category_header, list:[] };
                         _.each( category, function( type, type_id ) {
-                            $el.append( self._templateType({
+                            subset.list.push({
                                 id      : type_id,
                                 title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
                                 url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
-                            }));
+                            });
                         });
+                        subset.list.sort( function( a, b ) { return a.id < b.id ? -1 : 1; } );
+                        catset.list.push( subset );
                     });
-                    self.tabs.add({
-                        id      : Utils.uid(),
-                        title   : d.label,
-                        $el     :  $el
-                    });
+                    catset.list.sort( function( a, b ) { return a.title < b.title ? -1 : 1; } );
+                    filtered.push( catset );
                 }
             });
+            var $base_set = $( '<div/>' );
+            var $full_set = $( '<div/>' );
+            _.each( filtered, function( d, i ) {
+                var $el = $( '<div/>' ).addClass( 'charts-grid' );
+                                       //.append( $( '<p/>' ).addClass( 'ui-form-info' ).html( '<b>' + d.title + ': </b>' + d.help ) );
+                _.each( d.list, function( category, j ) {
+                    var $category = self._templateHeader( { title: category.title } );
+                    $el.append( $category );
+                    _.each( category.list, function( type ) {
+                        $el.append( self._templateType( type ) );
+                    });
+                });
+                if ( d.value === 'default' ) {
+                    $base_set.append( $el );
+                } else {
+                    $full_set.append( $el );
+                }
+            });
+            this.tabs.delAll();
+            $base_set.length > 0 && this.tabs.add( { id: Utils.uid(), $el: $base_set, title: 'Selected' } );
+            $full_set.length > 0 && this.tabs.add( { id: Utils.uid(), $el: $full_set, title: 'Full set' } );
         },
 
         /** Set/Get selected chart type */
