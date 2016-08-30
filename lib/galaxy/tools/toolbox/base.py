@@ -47,7 +47,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     workflows optionally in labelled sections.
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app ):
+    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
         """
         Create a toolbox from the config files named by `config_filenames`, using
         `tool_root_dir` as the base directory for finding individual tool config files.
@@ -75,7 +75,12 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         self._tool_root_dir = tool_root_dir
         self.app = app
         self._tool_watcher = get_tool_watcher( self, app.config )
-        self._tool_conf_watcher = get_tool_conf_watcher( lambda: reload_toolbox(app))
+        if tool_conf_watcher:
+            log.debug("Using old toolconf watcher")
+            self._tool_conf_watcher = tool_conf_watcher
+        else:
+            "Initialize new toolconf watcher"
+            self._tool_conf_watcher = get_tool_conf_watcher( lambda: reload_toolbox(app))
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
@@ -998,8 +1003,8 @@ class BaseGalaxyToolBox(AbstractToolBox):
     shouldn't really depend on.
     """
 
-    def __init__(self, config_filenames, tool_root_dir, app):
-        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app)
+    def __init__(self, config_filenames, tool_root_dir, app, tool_conf_watcher=None):
+        super(BaseGalaxyToolBox, self).__init__(config_filenames, tool_root_dir, app, tool_conf_watcher=tool_conf_watcher)
         self._init_dependency_manager()
 
     @property

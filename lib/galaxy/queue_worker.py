@@ -58,10 +58,8 @@ def reload_toolbox(app, **kwargs):
     from galaxy import tools
     with app._toolbox_lock:
         old_toolbox = app.toolbox
-        app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
+        app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, old_toolbox._tool_conf_watcher)
         app.reindex_tool_search()
-        if old_toolbox:
-            old_toolbox.shutdown()
 
 
 def reload_data_managers(app, **kwargs):
