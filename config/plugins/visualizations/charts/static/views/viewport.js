@@ -89,7 +89,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             var n_panels = chart.settings.get( 'use_panels' ) === 'true' ? chart.groups.length : 1;
             this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
-            require( [ 'plugin/charts/' + this.app.split( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
+            require( [ 'remote/build/' + chart.get( 'type' ) ], function( ChartView ) {
                 new ChartView( { process: process, chart: chart, dataset: self.app.dataset, targets: self.targets } );
             });
         }

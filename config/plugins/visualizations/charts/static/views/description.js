@@ -13,7 +13,7 @@ define( [], function() {
             this.render();
         },
         render: function() {
-            this.$image.attr( 'src', app_root + 'charts/' + this.app.split( this.chart.get( 'type' ) ) + '/logo.png' );
+            this.$image.attr( 'src', remote_root + 'src/visualizations/' + this.app.split( this.chart.get( 'type' ) ) + '/logo.png' );
             this.$title.html( this.chart.definition.title + ' (' + this.chart.definition.library + ')' );
             this.$text.html( this.chart.definition.description || this.chart.definition.category );
         },

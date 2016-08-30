@@ -1,5 +1,5 @@
 /** This class renders the chart type selection grid. */
-define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'plugin/charts/overview' ], function( Utils, Ui, Tabs, Overview ) {
+define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'remote/build/keywords' ], function( Utils, Ui, Tabs, Keywords ) {
     return Backbone.View.extend({
         events : {
             'click .item'    : '_onclick',
@@ -30,7 +30,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'plugin/charts/over
                 }
             });
             this.tabs.delAll();
-            _.each( Overview, function( d, i ) {
+            _.each( Keywords, function( d, i ) {
                 var keyword = d.value;
                 var categories = self.index[ keyword ];
                 if ( _.size( categories ) > 0 ) {
@@ -43,7 +43,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'plugin/charts/over
                             $el.append( self._templateType({
                                 id      : type_id,
                                 title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
-                                url     : app_root + 'charts/' + self.app.split( type_id ) + '/logo.png'
+                                url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
                             }));
                         });
                     });

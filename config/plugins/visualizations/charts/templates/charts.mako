@@ -1,6 +1,7 @@
 <%
     root        = h.url_for( "/" )
     app_root    = root + "plugins/visualizations/charts/static/"
+    remote_root = "https://raw.githubusercontent.com/guerler/galaxy-charts/master/"
 %>
 
 <!DOCTYPE HTML>
@@ -22,23 +23,9 @@
         ## shared css
         ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui' )}
 
-        ## crossfilter
-        ${h.javascript_link( app_root + "plugins/crossfilter/crossfilter.js" )}
-
         ## canvg
         ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
         ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
-
-        ## biojs
-        ${h.javascript_link( app_root + "plugins/biojs/biojs.msa.js" )}
-
-        ## nvd3
-        ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
-
-        ## jqplot
-        ${h.stylesheet_link( app_root + "plugins/jqplot/jquery.jqplot.css" )}
-        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.js" )}
-        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.plugins.js" )}
 
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
@@ -50,6 +37,7 @@
     <body>
         <script type="text/javascript">
             var app_root = '${app_root}';
+            var remote_root = '${remote_root}';
             var Galaxy = Galaxy || parent.Galaxy || {
                 root    : '${root}',
                 emit    : {
@@ -68,7 +56,8 @@
                 baseUrl: Galaxy.root + "static/scripts/",
                 paths: {
                     "plugin"        : "${app_root}",
-                    "d3"            : "libs/d3"
+                    "d3"            : "libs/d3",
+                    "remote"        : "${remote_root}"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
@@ -82,11 +71,10 @@
             };
             $(function() {
                 require( [ 'plugin/app' ], function( App ) {
-                    var options = {
+                    var app = new App({
                         id      : ${h.dumps( visualization_id )} || undefined,
                         config  : ${h.dumps( config )}
-                    }
-                    var app = new App( options );
+                    });
                     $( 'body' ).append( app.$el );
                 });
             });

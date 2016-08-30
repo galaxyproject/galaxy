@@ -1,7 +1,7 @@
 /**
  *  Main application class.
  */
-define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor', 'plugin/charts/types' ],
+define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor', 'remote/build/types' ],
     function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, Viewer, Editor, Types ) {
     return Backbone.View.extend({
         initialize: function( options ) {
