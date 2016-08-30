@@ -148,6 +148,12 @@ class ToolConfFileEventHandler(FileSystemEventHandler):
         self.reload_callback = reload_callback
 
     def on_any_event(self, event=None):
+        try:
+            import uwsgi
+            log.warning("Reload event triggered on worker '%s'", uwsgi.worker_id())
+        except Exception:
+            log.warning("Reload event triggered")
+            pass
         self._handle(event)
 
     def _handle(self, event):

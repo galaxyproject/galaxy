@@ -42,7 +42,6 @@ class DataManagers( object ):
         conf_watchers.extend([(get_tool_conf_watcher(lambda: reload_data_managers(self.app)), filename) for filename in util.listify(self.filename) if filename])
         if self.app.config.shed_data_manager_config_file:
             conf_watchers.append((get_tool_conf_watcher(lambda: reload_data_managers(self.app)), self.app.config.shed_data_manager_config_file))
-        [watcher.start() for watcher, filename in conf_watchers]
         [watcher.watch_file(filename) for watcher, filename in conf_watchers]
         return conf_watchers
 
