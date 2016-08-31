@@ -252,6 +252,10 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             row.append(this._renderCell(cells.slice(num_columns - 1).join('\t'), num_columns - 1));
         }
         else if (cells.length === 1){
+            // Note intentionally blank line
+            if (line == ''){
+                line = 'Blank line'
+            }
             // Comment line, just return the one cell.
             row.append(this._renderCell(line, 0, num_columns));
         }
@@ -274,9 +278,9 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     _renderChunk: function(chunk) {
         var data_table = this.$el.find('table');
         _.each(chunk.ck_data.split('\n'), function(line, index) {
-            if (line !== ''){
-                data_table.append(this._renderRow(line));
-            }
+//            if (line !== ''){
+            data_table.append(this._renderRow(line));
+//            }
         }, this);
     }
 });
