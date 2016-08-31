@@ -397,6 +397,11 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     return self._tool_versions_by_id[ tool_id ][ tool_version ]
                 # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
                 return self._tools_by_id[ tool_id ]
+            elif exact:
+                # We're looking for an exact match, so we skip lineage and
+                # versionless mapping, though we may want to check duplicate
+                # toolsheds
+                continue
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )
@@ -539,9 +544,14 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         else:
             remove_from_dict( self._tool_panel, self._integrated_tool_panel )
 
+    def _path_template_kwds( self ):
+        return {}
+
     def _load_tool_tag_set( self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None, internal=False ):
         try:
-            path = item.get( "file" )
+            path_template = item.get( "file" )
+            template_kwds = self._path_template_kwds()
+            path = string.Template(path_template).safe_substitute(**template_kwds)
             repository_id = None
 
             tool_shed_repository = None
