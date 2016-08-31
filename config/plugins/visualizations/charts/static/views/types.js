@@ -50,20 +50,18 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     index.push( {
                         id          : type_id,
                         title       : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
-                        sortby      : type.title,
-                        description : type.description || type.category,
+                        description : type.description,
                         url         : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
                     });
                 }
             });
             if ( index.length > 0 ) {
-                index.sort( function( a, b ) { return a.sortby < b.sortby ? -1 : 1 } );
                 this.first = this.first || index[ 0 ].id;
                 var $el = $( '<div/>' ).addClass( 'charts-grid' );
                 _.each( index, function( d, i ) {
                     $el.append( self._templateRegularItem( d ) );
                 });
-                this.tabs.add({ id: Utils.uid(), title: 'List of all visualizations', $el: $el } );
+                this.tabs.add({ id: Utils.uid(), title: 'List of available visualizations', $el: $el } );
             }
         },
 
