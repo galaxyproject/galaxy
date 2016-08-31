@@ -58,6 +58,7 @@
 }
 .charts-grid .item-float {
     float: left;
+    height: 140px;
 }
 
 .charts-grid .title {

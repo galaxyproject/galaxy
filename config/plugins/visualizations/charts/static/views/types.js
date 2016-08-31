@@ -23,37 +23,21 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
 
         _renderDefault: function() {
             var self = this;
-            var index = {};
+            var index = [];
             this.first = null;
+            var $el = $( '<div/>' ).addClass( 'charts-grid' );
             _.each( this.app.types, function( type, type_id ) {
                 if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
                     if ( type.keywords.indexOf( 'default' ) !== -1 ) {
-                        index[ type.category ] = index[ type.category ] || {};
-                        index[ type.category ][ type_id ] = type;
-                    }
-                }
-            });
-            if ( _.size( index ) > 0 ) {
-                var filtered = [];
-                _.each( index, function( category, category_header ) {
-                    var subset = { title: category_header, list:[] };
-                    _.each( category, function( type, type_id ) {
-                        subset.list.push({
+                        $el.append( self._templateThumbnailItem( {
                             id      : type_id,
                             title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
                             url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
-                        });
-                    });
-                    filtered.push( subset );
-                });
-                var $el = $( '<div/>' ).addClass( 'charts-grid' );
-                _.each( filtered, function( category ) {
-                    $el.append( $( '<div/>' ).addClass( 'header ui-margin-top' ).html( '&bull;&nbsp;' + category.title ) );
-                    _.each( category.list, function( type ) {
-                        self.first = self.first || type.id;
-                        $el.append( self._templateThumbnailItem( type ) );
-                    });
-                });
+                        }));
+                    }
+                }
+            });
+            if ( $el.children().length > 0 ) {
                 this.tabs.add( { id: Utils.uid(), title: 'Suggested visualizations', $el: $el } );
             }
         },
