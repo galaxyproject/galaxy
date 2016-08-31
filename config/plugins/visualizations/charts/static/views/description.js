@@ -1,5 +1,5 @@
 /** This class renders the chart configuration form. */
-define( [], function() {
+define( [ 'utils/utils' ], function( Utils ) {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             var self = this;
@@ -15,7 +15,7 @@ define( [], function() {
         render: function() {
             this.$image.attr( 'src', remote_root + 'src/visualizations/' + this.app.split( this.chart.get( 'type' ) ) + '/logo.png' );
             this.$title.html( this.chart.definition.title + ' (' + this.chart.definition.library + ')' );
-            this.$text.html( this.chart.definition.description || this.chart.definition.category );
+            this.$text.html( Utils.linkify( this.chart.definition.description || '' ) );
         },
         _template: function() {
             return  '<div class="charts-description">' +
