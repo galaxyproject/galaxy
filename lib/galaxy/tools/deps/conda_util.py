@@ -31,9 +31,9 @@ CONDA_VERSION = "3.19.3"
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-MacOSX-x86_64.sh"
     else:
-        url = "https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-Linux-x86_64.sh"
     return url
 
 
@@ -175,7 +175,7 @@ class CondaContext(object):
 
     def exec_command(self, operation, args):
         command = self.command(operation, args)
-        env = {}
+        env = {'HOME': self.conda_prefix}  # We don't want to pollute ~/.conda, which may not even be writable
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override

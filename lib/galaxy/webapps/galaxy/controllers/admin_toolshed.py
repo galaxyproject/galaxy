@@ -196,50 +196,9 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def browse_toolsheds( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        return trans.fill_template( '/webapps/galaxy/admin/toolsheds.mako',
+        return trans.fill_template( '/admin/tool_shed_repository/browse_toolsheds.mako',
                                     message=message,
                                     status='error' )
-
-    @web.expose
-    @web.require_admin
-    def browse_toolshed( self, trans, **kwd ):
-        tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories' ] )
-        categories = json.loads( util.url_get( url ) )
-        repositories = []
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
-        for repo in json.loads( util.url_get( url ) ):
-            repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
-        return trans.fill_template( '/admin/tool_shed_repository/browse_categories.mako',
-                                    tool_shed_url=tool_shed_url,
-                                    categories=categories,
-                                    repositories=json.dumps( repositories ) )
-
-    @web.expose
-    @web.require_admin
-    def browse_tool_shed_category( self, trans, **kwd ):
-        tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        category_id = kwd.get( 'category_id', '' )
-        url = util.build_url( tool_shed_url )
-        json_data = json.loads( util.url_get( url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] ) )
-        for idx, repository in enumerate( json_data[ 'repositories' ] ):
-            try:
-                metadata = json.loads( util.url_get( url,
-                                                     pathspec=[ 'api', 'repositories', repository[ 'id' ], 'metadata' ],
-                                                     params=dict( recursive=False ) ) )
-                json_data[ 'repositories' ][ idx ][ 'metadata' ] = metadata
-            except:
-                json_data[ 'repositories' ][ idx ][ 'metadata' ] = { 'tools_functionally_correct': True }
-
-        repositories = []
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
-        for repo in json.loads( util.url_get( url ) ):
-            repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
-        return trans.fill_template( '/admin/tool_shed_repository/browse_category.mako',
-                                    tool_shed_url=tool_shed_url,
-                                    category=json_data,
-                                    repositories=json.dumps( repositories ) )
 
     @web.expose
     @web.require_admin
@@ -702,7 +661,13 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def manage_repositories( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
+        api_installation = util.asbool( kwd.get( 'api', 'false' ) )
+        if api_installation:
+            tsr_ids = json.loads( kwd.get( 'tool_shed_repository_ids', '[]' ) )
+            kwd[ 'tool_shed_repository_ids' ] = tsr_ids
+            tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
+        else:
+            tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if not tsridslist:
@@ -750,9 +715,12 @@ class AdminToolshed( AdminGalaxy ):
                         reinstalling=reinstalling,
                     )
                     tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
-                    trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                               action='monitor_repository_installation',
-                                                               tool_shed_repository_ids=tsr_ids_for_monitoring ) )
+                    if api_installation:
+                        return json.dumps( tsr_ids_for_monitoring )
+                    else:
+                        trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                   action='monitor_repository_installation',
+                                                                   tool_shed_repository_ids=tsr_ids_for_monitoring ) )
                 except install_manager.RepositoriesInstalledException as e:
                     kwd[ 'message' ] = e.message
                     kwd[ 'status' ] = 'error'
@@ -1294,21 +1262,6 @@ class AdminToolshed( AdminGalaxy ):
                                         tool_shed_url=tool_shed_url,
                                         message=message,
                                         status=status )
-
-    @web.expose
-    @web.require_admin
-    def preview_repository( self, trans, **kwd ):
-        tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        tsr_id = kwd.get( 'tsr_id', '' )
-        toolshed_data = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
-        toolshed_data[ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
-        shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
-        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
-        return trans.fill_template( '/admin/tool_shed_repository/preview_repository.mako',
-                                    tool_shed_url=tool_shed_url,
-                                    toolshed_data=toolshed_data,
-                                    tool_panel_section_select_field=tool_panel_section_select_field,
-                                    shed_tool_conf_select_field=shed_tool_conf_select_field )
 
     @web.expose
     @web.require_admin
