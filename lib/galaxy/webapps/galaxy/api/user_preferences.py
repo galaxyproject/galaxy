@@ -48,11 +48,11 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                }
 
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
-        params = util.Params( kwd )
+        #params = util.Params( kwd )
         if user and user.values:
             user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
         else:
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
+            user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
         if user_type_fd_id not in [ 'none' ]:
             user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
         else:
@@ -89,29 +89,29 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
 
     def user_info(self, cntrller, trans, kwd):
         '''Manage a user's login, password, public username, type, addresses, etc.'''
-        params = util.Params( kwd )
-        user_id = params.get( 'id', None )
+        #params = util.Params( kwd )
+        user_id = kwd.get( 'id', None )
         if user_id:
             user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
         else:
             user = trans.user
         if not user:
             raise AssertionError("The user id (%s) is not valid" % str( user_id ))
-        email = util.restore_text( params.get( 'email', user.email ) )
-        username = util.restore_text( params.get( 'username', '' ) )
+        email = util.restore_text( kwd.get( 'email', user.email ) )
+        username = util.restore_text( kwd.get( 'username', '' ) )
         if not username:
             username = user.username
-        message = escape( util.restore_text( params.get( 'message', '' ) ) )
-        status = params.get( 'status', 'done' )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
+            user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
                 user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
             user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
             widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
             # user's addresses
-            show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
+            show_filter = util.restore_text( kwd.get( 'show_filter', 'Active'  ) )
             if show_filter == 'All':
                 addresses = [address for address in user.addresses]
             elif show_filter == 'Deleted':
@@ -271,7 +271,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             kwd[ 'message' ] = util.sanitize_text( message )
         if status:
             kwd[ 'status' ] = status
-
+        print(kwd)
         # makes a call to manage user info method
         return self.user_info(cntrller, trans, kwd)
 

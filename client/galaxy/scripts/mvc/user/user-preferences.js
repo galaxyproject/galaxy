@@ -16,18 +16,19 @@ var UserPreferences = Backbone.View.extend({
     /** redirects to manage user information view */
     callManageInfo: function( e ) {
         var userInfo = null,
-            url = Galaxy.root + 'api/user_preferences/manage_user_info';
-        e.preventDefault();
+            url = Galaxy.root + 'api/user_preferences/manage_user_info',
+            self = this;
         $( '.user-pref' ).hide();
         $.getJSON( url, function( data ) {
-              userInfo = new Manage.ManageUserInformation( data );  
+              userInfo = new Manage.ManageUserInformation( self, data );
+              self.$( '.user-preferences-all' ).append( userInfo.$el );
         });
     },
   
     /** redirects to change password view */
     callChangePassword: function( e ) {
-        $( '.user-pref' ).hide();
         var self = this;
+        $( '.user-pref' ).hide();
         $.getJSON( Galaxy.root + 'api/user_preferences/change_password', function( data ) {
             changePassword = new Password.ChangePassword( self, data );
             self.$( '.user-preferences-all' ).append( changePassword.$el );
@@ -40,9 +41,9 @@ var UserPreferences = Backbone.View.extend({
 
     /** redirects to change permissions view */
     callChangePermissions: function( e ) {
-        $( '.user-pref' ).hide();
         var url = Galaxy.root + 'api/user_preferences/set_default_permissions',
             data = {};
+        $( '.user-pref' ).hide();
         data = { 'message': "", 'status': "" };
         $.getJSON( url, data, function( response ) {
             changePermissions = new Permissions.ChangePermissions( response );     
@@ -51,10 +52,10 @@ var UserPreferences = Backbone.View.extend({
 
     /** redirects to API keys view */
     callApiKeys: function( e ) {
-        $( '.user-pref' ).hide();
         var url = Galaxy.root + 'api/user_preferences/api_keys',
             data = {},
             self = this;
+        $( '.user-pref' ).hide();
         data = { 'message': "", 'status': "" };
         $.getJSON( url, data, function( response ) {
             apiKey = new Keys.APIKeys( self, response );   
@@ -64,10 +65,10 @@ var UserPreferences = Backbone.View.extend({
 
     /** redirects to manage toolbox filters */
     callManageToolboxFilter: function( e ) {
-        $( '.user-pref' ).hide();
         var url = Galaxy.root + 'api/user_preferences/toolbox_filters',
             data = {},
             self = this;
+        $( '.user-pref' ).hide();
         $.getJSON( url, function( response ) {
             toolbox = new ToolboxFilter.ToolboxFilter( self, response );
             self.$( '.user-preferences-all' ).append( toolbox.$el );
@@ -165,7 +166,7 @@ var UserPreferences = Backbone.View.extend({
         template = template + "</div></div>";
         // adds this markup to the center section of the Galaxy
         this.$el.empty().append( template );
-        $( ".manage-userinfo" ).on( "click", self.callManageInfo );
+        $( ".manage-userinfo" ).on( "click", function() { self.callManageInfo() } );
         $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
         $( ".change-permissions" ).on( "click", self.callChangePermissions );
         $( ".manage-api-keys" ).on( "click", function() { self.callApiKeys() } );
