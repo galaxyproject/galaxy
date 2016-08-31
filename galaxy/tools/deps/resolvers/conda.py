@@ -6,7 +6,7 @@ incompatible changes coming.
 
 import os
 
-from galaxy.web.proxy.filelock import (
+from galaxy.util.filelock import (
     FileLock,
     FileLockException
 )
