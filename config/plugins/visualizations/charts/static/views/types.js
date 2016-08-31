@@ -29,11 +29,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
             _.each( this.app.types, function( type, type_id ) {
                 if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
                     if ( type.keywords.indexOf( 'default' ) !== -1 ) {
-                        $el.append( self._templateThumbnailItem( {
+                        $el.append( $( self._templateThumbnailItem( {
                             id      : type_id,
                             title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
                             url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
-                        }));
+                        })).tooltip( { title: type.description, placement: 'bottom' } ) );
                     }
                 }
             });
