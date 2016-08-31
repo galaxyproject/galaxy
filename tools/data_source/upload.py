@@ -79,6 +79,7 @@ def parse_outputs( args ):
         rval[int( id )] = ( path, files_path )
     return rval
 
+
 def add_file( dataset, registry, json_file, output_path ):
     data_type = None
     line_count = None
