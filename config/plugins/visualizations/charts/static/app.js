@@ -20,7 +20,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
                         });
                         if ( _.size( self.types ) === 0 ) {
                             self.$el.append( $( '<div/>' ).addClass( 'errormessagelarge' )
-                                    .append( $( '<p/>' ).text( 'Unfortunately we could not identify a suitable plugin. Please let us know if you are aware of js-based visualizations for this datatype.' )  ) );
+                                    .append( $( '<p/>' ).text( 'Unfortunately we could not identify a suitable plugin. Feel free to contact us if you are aware of visualizations for this datatype.' )  ) );
                         } else {
                             self._build( options );
                         }
@@ -30,7 +30,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
                 self.$el.append( $( '<div/>' ).addClass( 'errormessagelarge' )
                         .append( $( '<p/>' ).text( 'Unable to access the plugin repository:' ) )
                         .append( $( '<pre/>' ).text( 'charts_plugin_url = ' + remote_root + 'package.json' ) )
-                        .append( $( '<p/>' ).html( 'Please verify that your internet connection works properly and that the above base url is correct. Contact your admin if this error persists.' ) ) );
+                        .append( $( '<p/>' ).html( 'Please verify that your internet connection works properly and that the above url is correct. Contact your admin if this error persists.' ) ) );
             });
         },
 
