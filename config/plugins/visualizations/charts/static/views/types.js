@@ -61,7 +61,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                 _.each( index, function( d, i ) {
                     $el.append( self._templateRegularItem( d ) );
                 });
-                this.tabs.add({ id: Utils.uid(), title: 'List of available visualizations', $el: $el } );
+                this.tabs.add( { id: Utils.uid(), title: 'List of available visualizations', $el: $el } );
             }
         },
 
