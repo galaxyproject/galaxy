@@ -5,9 +5,6 @@
  */
 define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Portlet, Ui, Utils ) {
     return Backbone.View.extend({
-        // list of container/canvas elements
-        container_list: [],
-        canvas_list: [],
         initialize: function( app, options ) {
             var self = this;
             this.app = app;
@@ -22,7 +19,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
             this.$text = this.$( '.text' );
 
             // use full screen for viewer
-            this._fullscreen( this.$el, 50 );
+            this._fullscreen( this.$el, 55 );
 
             // prevent window scrolling
             var initial_overflow = $( 'body' ).css( 'overflow' );
@@ -110,85 +107,12 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
         /** Draws a new chart by loading and executing the corresponding chart wrapper */
         _draw: function( process, chart ) {
             var self = this;
-            var chart_type = chart.get( 'type' );
-            this.chart_definition = chart.definition;
-            var n_panels = 1;
-            if ( chart.settings.get( 'use_panels' ) === 'true' ) {
-                n_panels = chart.groups.length;
-            }
-            this._createContainer( this.chart_definition.tag, n_panels );
+            var n_panels = chart.settings.get( 'use_panels' ) === 'true' ? chart.groups.length : 1;
+            this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
-            if ( !this.chart_definition.execute || ( this.chart_definition.execute && chart.get( 'modified' ) ) ) {
-                this.app.jobs.cleanup( chart );
-                chart.set( 'modified', false );
-            }
-            require( [ 'plugin/charts/' + this.app.chartPath( chart_type ) + '/wrapper' ], function( ChartView ) {
-                if ( self.chart_definition.execute ) {
-                    self.app.jobs.request( chart, self._defaultSettingsString( chart ), self._defaultRequestString( chart ),
-                        function() {
-                            var view = new ChartView( self.app, {
-                                process             : process,
-                                chart               : chart,
-                                request_dictionary  : self._defaultRequestDictionary( chart ),
-                                canvas_list         : self.canvas_list
-                            });
-                        },
-                        function() {
-                            process.reject();
-                        }
-                    );
-                } else {
-                    var view = new ChartView( self.app, {
-                        process             : process,
-                        chart               : chart,
-                        request_dictionary  : self._defaultRequestDictionary( chart ),
-                        canvas_list         : self.canvas_list
-                    });
-                }
+            require( [ 'plugin/charts/' + this.app.split( chart.get( 'type' ) ) + '/wrapper' ], function( ChartView ) {
+                new ChartView( self.app, { process : process, chart : chart, canvas_list : self.canvas_list } );
             });
-        },
-
-        /** Creates default chart request */
-        _defaultRequestString: function( chart ) {
-            var request_string = '';
-            var group_index = 0;
-            var self = this;
-            chart.groups.each( function( group ) {
-                group_index++;
-                for ( var key in self.chart_definition.columns ) {
-                    request_string += key + '_' + group_index + ':' + ( parseInt( group.get( key ) ) + 1 ) + ', ';
-                }
-            });
-            return request_string.substring( 0, request_string.length - 2 );
-        },
-
-        /** Creates default settings string for charts which require a job execution */
-        _defaultSettingsString: function( chart ) {
-            var settings_string = '';
-            for ( key in chart.settings.attributes ) {
-                settings_string += key + ':' + chart.settings.get( key ) + ', ';
-            };
-            return settings_string.substring( 0, settings_string.length - 2 );
-        },
-
-        /** Create default data request dictionary */
-        _defaultRequestDictionary: function( chart ) {
-            var request_dictionary = { groups : [] };
-            request_dictionary.id = this.chart_definition.execute ? chart.get( 'dataset_id_job' ) : chart.get( 'dataset_id' );
-            var group_index = 0;
-            var self = this;
-            chart.groups.each( function( group ) {
-                var columns = {};
-                for ( var column_key in self.chart_definition.columns ) {
-                    var column_settings = self.chart_definition.columns[ column_key ];
-                    columns[ column_key ] = Utils.merge( { index : group.get( column_key ) }, column_settings );
-                }
-                request_dictionary.groups.push( Utils.merge({
-                    key     : ( ++group_index ) + ':' + group.get( 'key' ),
-                    columns : columns
-                }, group.attributes ));
-            });
-            return request_dictionary;
         }
     });
 });

@@ -6,6 +6,10 @@ incompatible changes coming.
 
 import os
 
+from galaxy.web.proxy.filelock import (
+    FileLock,
+    FileLockException
+)
 from ..resolvers import (
     DependencyResolver,
     NullDependency,
@@ -25,6 +29,7 @@ from ..conda_util import (
     USE_PATH_EXEC_DEFAULT,
 )
 
+
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 DEFAULT_ENSURE_CHANNELS = "r,bioconda,iuc"
@@ -39,6 +44,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
     def __init__(self, dependency_manager, **kwds):
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
+        self.dependency_manager = dependency_manager
 
         def get_option(name):
             return self._get_config_option(name, dependency_manager, config_prefix="conda", **kwds)
@@ -49,6 +55,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_prefix = os.path.join(
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
+
+        self.conda_prefix_parent = os.path.dirname(conda_prefix)
 
         # warning is related to conda problem discussed in https://github.com/galaxyproject/galaxy/issues/2537, remove when that is resolved
         conda_prefix_warning_length = 50
@@ -84,26 +92,47 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.ensure_channels = ensure_channels
 
         # Conda operations options (these define how resolution will occur)
-        auto_init = _string_as_bool(get_option("auto_init"))
         auto_install = _string_as_bool(get_option("auto_install"))
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
-
-        if not conda_context.is_conda_installed():
-            if auto_init:
-                if conda_context.can_install_conda():
-                    if install_conda(conda_context):
-                        self.disabled = True
-                        log.warning("Conda installation requested and failed.")
-                else:
-                    self.disabled = True
-            else:
-                self.disabled = True
-                log.warning("Conda not installed and auto-installation disabled.")
-
+        self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
+        self.ensure_conda_installed()
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
         self.verbose_install_check = verbose_install_check
+
+    def ensure_conda_installed(self):
+        """
+        Make sure that conda is installed, and if conda can't be installed, mark resolver as disabled.
+        We acquire a lock, so that multiple handlers do not attempt to install conda simultaneously.
+        """
+        target_path = self.conda_prefix_parent
+
+        def _check():
+            if not self.conda_context.is_conda_installed():
+                if self.auto_init:
+                    if self.conda_context.can_install_conda():
+                        if install_conda(self.conda_context):
+                            self.disabled = True
+                            log.warning("Conda installation requested and failed.")
+                    else:
+                        self.disabled = True
+                else:
+                    self.disabled = True
+                    log.warning("Conda not installed and auto-installation disabled.")
+            else:
+                self.disabled = False
+
+        if not os.path.exists(target_path):
+            os.mkdir(target_path)
+        try:
+            if self.auto_init and os.access(target_path, os.W_OK):
+                with FileLock(os.path.join(target_path, 'conda')):
+                    _check()
+            else:
+                _check()
+        except FileLockException:
+            self.ensure_conda_installed()
 
     def resolve(self, name, version, type, **kwds):
         # Check for conda just not being there, this way we can enable

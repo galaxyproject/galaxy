@@ -2,9 +2,8 @@
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
-define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
-          'plugin/models/chart', 'plugin/views/settings', 'plugin/views/groups', 'plugin/views/types' ],
-    function( Tabs, Ui, Portlet, Utils, Chart, SettingsView, GroupsView, TypesView ) {
+define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils', 'plugin/views/settings', 'plugin/views/groups', 'plugin/views/types' ],
+    function( Tabs, Ui, Portlet, Utils, SettingsView, GroupsView, TypesView ) {
     return Backbone.View.extend({
         initialize: function( app, options ){
             var self = this;
@@ -36,14 +35,11 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             });
 
             // grid with chart types
-            this.types = new TypesView(app, {
-                onchange   : function(chart_type) {
-                    var chart_definition = self.app.types.get( chart_type );
-                    if ( !chart_definition ) {
-                        console.debug('FAILED - Editor::onchange() - Chart type not supported.');
-                    }
+            this.types = new TypesView( app, {
+                onchange   : function( chart_type ) {
+                    var chart_definition = self.app.types[ chart_type ];
+                    !chart_definition && console.debug( 'FAILED - Editor::onchange() - Chart type not supported.' );
                     self.chart.definition = chart_definition;
-                    self.chart.settings.clear();
                     self.chart.set( { type : chart_type, modified : true } );
                     console.debug( 'Editor::onchange() - Switched chart type.' );
                 },
@@ -69,8 +65,9 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 tooltip : 'Start by selecting a chart type.',
                 $el     : $( '<div/>' ).append( ( new Ui.Label( { title : 'Provide a chart title:' } ).$el ) )
                                        .append( this.title.$el )
-                                       .append( $( '<div/>' ).addClass( 'ui-form-info' ).html( 'This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.' ) )
-                                       .append( this.types.$el.addClass( 'ui-margin-top' ) )
+                                       .append( $( '<div/>' ).addClass( 'ui-form-info ui-margin-bottom' ).html( 'This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.' ) )
+                                       .append( ( new Ui.Label( { title : 'Select a chart type:' } ).$el.addClass( 'ui-margin-top' ) ) )
+                                       .append( this.types.$el )
             });
             this.tabs.add({
                 id      : 'settings',
@@ -83,22 +80,22 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 id      : 'groups',
                 title   : 'Select data',
                 icon    : 'fa-database',
-                tooltip : 'Specify your data columns.',
+                tooltip : 'Specify your data options.',
                 $el     : ( new GroupsView( this.app ) ).$el
             });
 
             // set elements
             this.portlet.append( this.message.$el );
             this.portlet.append( this.tabs.$el.addClass( 'ui-margin-top-large' ) );
+            this.portlet.hideOperation( 'back' );
             this.setElement( this.portlet.$el );
             this.tabs.hideOperation( 'back' );
 
             // chart events
             this.chart.on( 'change:title', function( chart ) { self._refreshTitle() } );
             this.chart.on( 'change:type', function( chart ) { self.types.value( chart.get( 'type' ) ) } );
-            this.chart.on( 'reset', function( chart ) { self._resetChart() } );
-            this.app.chart.on( 'redraw', function( chart ) { self.portlet.showOperation( 'back' ) } );
-            this._resetChart();
+            this.chart.on( 'redraw', function( chart ) { self.portlet.showOperation( 'back' ) } );
+            this.chart.reset( this.app.options );
         },
 
         /** Show editor */
@@ -118,19 +115,6 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.title.value( title );
         },
 
-        /** Reset entire chart */
-        _resetChart: function() {
-            this.chart.set({
-                'id'            : Utils.uid(),
-                'type'          : 'nvd3_bar',
-                'dataset_id'    : this.app.options.config.dataset_id,
-                'title'         : 'New Chart'
-            });
-            this.chart.groups.reset();
-            this.chart.groups.add( { id : Utils.uid() } );
-            this.portlet.hideOperation( 'back' );
-        },
-
         /** Save chart data */
         _saveChart: function() {
             var self = this;
@@ -140,7 +124,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 date        : Utils.time()
             });
             if ( this.chart.groups.length == 0 ) {
-                this.message.update( { message: 'Please specify data columns before drawing the chart.' } );
+                this.message.update( { message: 'Please specify data options before drawing the chart.' } );
                 this.tabs.show( 'groups' );
                 return;
             }
@@ -148,13 +132,13 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             var chart_def = this.chart.definition;
             this.chart.groups.each( function( group ) {
                 if ( valid ) {
-                    for ( var key in chart_def.columns ) {
-                        if ( group.attributes[ key ] === null ) {
+                    _.each( group.get( '__data_columns' ), function( data_columns, name ) {
+                        if ( group.attributes[ name ] === null ) {
                             self.message.update( { status: 'danger', message: 'This chart type requires column types not found in your tabular file.' } );
                             self.tabs.show( 'groups' );
                             valid = false;
                         }
-                    }
+                    });
                 }
             });
             if ( valid ) {
