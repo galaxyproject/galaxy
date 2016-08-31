@@ -15,7 +15,6 @@ from galaxy.util import listify
 from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
-from galaxy.util.postfork import register_postfork_function
 
 from .parser import get_toolbox_parser, ensure_tool_conf_item
 
@@ -104,7 +103,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 self._init_tools_from_config( config_filename )
             except:
                 log.exception( "Error loading tools defined in config %s", config_filename )
-        register_postfork_function(self._tool_conf_watcher.start)
 
     def _init_tools_from_config( self, config_filename ):
         """
@@ -399,6 +397,11 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     return self._tool_versions_by_id[ tool_id ][ tool_version ]
                 # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
                 return self._tools_by_id[ tool_id ]
+            elif exact:
+                # We're looking for an exact match, so we skip lineage and
+                # versionless mapping, though we may want to check duplicate
+                # toolsheds
+                continue
             # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
             rval = []
             tool_lineage = self._lineage_map.get( tool_id )

@@ -1,27 +1,22 @@
-define( [ 'plugin/charts/forms/default', 'plugin/plugins/nvd3/nv.d3' ], function( config_default ) {
-    return $.extend( true, {}, config_default, {
+define( [ 'plugin/charts/utilities/tabular-form', 'plugin/plugins/nvd3/nv.d3' ], function( default_config ) {
+    return $.extend( true, {}, default_config, {
         title       : '',
         category    : '',
         library     : 'NVD3',
         tag         : 'svg',
-        keywords    : 'small',
-        columns     : {
+        keywords    : 'nvd3 default',
+        groups      : {
+            color: {
+                label       : 'Pick a series color',
+                type        : 'color'
+            },
             tooltip : {
-                title       : 'Data point labels',
-                is_text     : true,
-                is_numeric  : true,
-                is_auto     : true
+                label       : 'Data point labels',
+                type        : 'data_column',
+                is_label    : true,
+                is_auto     : true,
+                is_unique   : true
             }
-        },
-        series      : [{
-            name        : 'key',
-            label       : 'Provide a label',
-            type        : 'text',
-            placeholder : 'Data label'
-        },{
-            name        : 'color',
-            label       : 'Pick a series color',
-            type        : 'color'
-        }]
+        }
     });
 });

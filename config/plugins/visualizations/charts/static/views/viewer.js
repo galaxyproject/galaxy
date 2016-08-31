@@ -1,15 +1,12 @@
-/**
- *  This class renders the chart viewer which encapsulates the chart viewport.
- */
-define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
-          'plugin/views/viewport', 'plugin/library/screenshot' ],
-          function( Utils, Ui, Portlet, ViewportView, Screenshot ) {
+/** This class renders the chart viewer which encapsulates the chart viewport. */
+define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/viewport', 'plugin/components/screenshot' ],
+    function( Utils, Ui, Portlet, Viewport, Screenshot ) {
     return Backbone.View.extend({
         initialize: function(app, options){
             var self = this;
             this.app = app;
             this.chart = this.app.chart;
-            this.viewport_view = new ViewportView( app );
+            this.viewport = new Viewport( app );
             this.message = new Ui.Message();
 
             // button menu
@@ -27,7 +24,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 onclick     : function() {
                     self._wait( self.chart, function() {
                         Screenshot.createPNG({
-                            $el     : self.viewport_view.$el,
+                            $el     : self.viewport.$el,
                             title   : self.chart.get( 'title' ),
                             error   : function( err ) {
                                 self.message.update( { message: err, status: 'danger' } );
@@ -45,7 +42,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 onclick     : function() {
                     self._wait( self.chart, function() {
                         Screenshot.createSVG({
-                            $el     : self.viewport_view.$el,
+                            $el     : self.viewport.$el,
                             title   : self.chart.get( 'title' ),
                             error   : function( err ) {
                                 self.message.update( { message: err, status: 'danger' } );
@@ -70,7 +67,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                                 self.app.modal.hide();
                                 self._wait( self.chart, function() {
                                     Screenshot.createPDF({
-                                        $el     : self.viewport_view.$el,
+                                        $el     : self.viewport.$el,
                                         title   : self.chart.get( 'title' ),
                                         error   : function( err ) {
                                             self.message.update( { message: err, status: 'danger' } );
@@ -87,6 +84,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             this.portlet = new Portlet.View({
                 icon : 'fa-bar-chart-o',
                 title: 'Viewport',
+                cls  : 'ui-portlet charts-viewer',
                 operations: {
                     edit_button: new Ui.ButtonIcon({
                         icon    : 'fa-edit',
@@ -103,8 +101,8 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             });
 
             // append elements
-            this.portlet.append( this.message.$el.addClass( 'ui-margin-top' ) );
-            this.portlet.append( this.viewport_view.$el );
+            this.portlet.append( this.message.$el );
+            this.portlet.append( this.viewport.$el.addClass( 'ui-margin-top' ) );
             this.setElement( this.portlet.$el );
 
             // events
@@ -129,7 +127,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         },
 
         /** Check if chart is ready for export */
-        _wait: function(chart, callback) {
+        _wait: function( chart, callback ) {
             if ( this.app.deferred.ready() ) {
                 callback();
             } else {

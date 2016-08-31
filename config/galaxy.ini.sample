@@ -175,7 +175,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # the Tool Shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
 #   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
-# Set to the string none to explicitly disable tool dependency handling.
+# Set the string to None to explicitly disable tool dependency handling.
 # If this option is set to none or an invalid path, installing tools with dependencies
 # from the Tool Shed will fail.
 #tool_dependency_dir = database/dependencies
@@ -211,7 +211,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #conda_verbose_install_check=False
 # Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
-#conda_auto_init = True
+#conda_auto_init = False
 
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
@@ -319,7 +319,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #check_job_script_integrity_count = 35
 # Time to sleep between checks if check_job_script_integrity is enabled (in seconds).
 #check_job_script_integrity_sleep = .25
-
 
 # Set the default shell used by non-containerized jobs Galaxy-wide. This
 # defaults to bash for all jobs and can be overidden at the destination
@@ -632,7 +631,7 @@ nglims_config_file = tool-data/nglims.yaml
 # implementation, alongside a new Golang single-binary-no-dependencies
 # version. Valid values are (node, golang)
 #dynamic_proxy=node
-#
+
 # The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
 # set that here.
 #dynamic_proxy_session_map=database/session_map.sqlite
@@ -701,7 +700,6 @@ nglims_config_file = tool-data/nglims.yaml
 # are grid views, tool searches, and use of "recently" used tools menu.  The
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
-
 
 # Fluentd configuration.  Various events can be logged to the fluentd instance
 # configured below by enabling fluent_log.
@@ -956,22 +954,16 @@ use_interactive = True
 #expose_user_email = False
 
 # -- Beta features
+
 # Enable new run workflow form
 #run_workflow_toolform_upgrade = False
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
-# Separate tool command from rest of job script so tool dependencies
-# don't interfer with metadata generation.
-# Despite the name, this feature is enabled by default
-# in 16.01 and the option will go away in the future.
-#enable_beta_tool_command_isolation = True
-
 # Enable the new interface for installing tools from Tool Shed
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = False
-
 
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
@@ -1184,14 +1176,14 @@ use_interactive = True
 # if running many handlers.
 #cache_user_job_count = False
 
-# ToolBox filtering
+# -- ToolBox filtering
 
 # Modules from lib/galaxy/tools/toolbox/filters/ can be specified in
 # the following lines.  tool_* filters will be applied for all users
 # and can not be changed by them.  user_tool_* filters will be shown
-# under user preferences and can be toogled on and off by
+# under user preferences and can be toggled on and off at
 # runtime.  Example shown below are not real defaults (no custom
-# filters applied by defualt) but can be enabled with by renaming the
+# filters are applied by default), but can be enabled by renaming the
 # example.py.sample in the filters directory to example.py.
 
 #tool_filters =
@@ -1206,7 +1198,7 @@ use_interactive = True
 # modifying the following option.
 #toolbox_filter_base_modules = galaxy.tools.toolbox.filters,galaxy.tools.filters
 
-# Galaxy Application Internal Message Queue
+# -- Galaxy Application Internal Message Queue
 
 # Galaxy uses AMQP internally TODO more documentation on what for.
 # For examples, see http://ask.github.io/kombu/userguide/connections.html

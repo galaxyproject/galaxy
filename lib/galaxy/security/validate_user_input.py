@@ -34,7 +34,10 @@ def validate_email( trans, email, user=None, check_dup=True ):
         message = "User with that email already exists."
     #  If the blacklist is not empty filter out the disposable domains.
     elif trans.app.config.blacklist_content is not None:
-        if email.split('@')[1] in trans.app.config.blacklist_content:
+        domain = email.split('@')[1]
+        if len( domain.split('.') ) > 2:
+            domain = ('.').join( domain.split('.')[-2:] )
+        if domain in trans.app.config.blacklist_content:
             message = "Please enter your permanent email address."
     return message
 
