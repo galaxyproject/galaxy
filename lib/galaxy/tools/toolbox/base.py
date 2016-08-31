@@ -51,6 +51,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """
         Create a toolbox from the config files named by `config_filenames`, using
         `tool_root_dir` as the base directory for finding individual tool config files.
+        When reloading the toolbox, tool_conf_watcher will be provided.
         """
         # The _dynamic_tool_confs list contains dictionaries storing
         # information about the tools defined in each shed-related
@@ -76,10 +77,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         self.app = app
         self._tool_watcher = get_tool_watcher( self, app.config )
         if tool_conf_watcher:
-            log.debug("Using old toolconf watcher")
-            self._tool_conf_watcher = tool_conf_watcher
+            self._tool_conf_watcher = tool_conf_watcher  # Avoids (re-)starting threads in uwsgi
         else:
-            "Initialize new toolconf watcher"
             self._tool_conf_watcher = get_tool_conf_watcher( lambda: reload_toolbox(app))
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
