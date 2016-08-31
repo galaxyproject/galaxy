@@ -23,13 +23,6 @@
         ## shared css
         ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui' )}
 
-        ## canvg
-        ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
-        ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
-
-        ## load merged/minified code
-        ${h.javascript_link( app_root + "build-app.js" )}
-
         ## install default css
         ${h.stylesheet_link( app_root + "app.css" )}
     </head>

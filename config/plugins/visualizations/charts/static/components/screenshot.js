@@ -28,7 +28,7 @@ define(["libs/underscore"], function(_) {
             }
         }
     };
-    
+
     // from svg
     function _fromSVGtoPNG (options) {
        
