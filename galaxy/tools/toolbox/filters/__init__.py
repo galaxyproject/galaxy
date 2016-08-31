@@ -55,13 +55,13 @@ class FilterFactory( object ):
     def __init_filters( self, key, filters, toolbox_filters, validate=None ):
         for filter in filters:
             if validate is None or filter in validate or filter in self.default_filters:
-                filter_function = self.__build_filter_function( filter )
+                filter_function = self._build_filter_function( filter )
                 toolbox_filters[ key ].append( filter_function )
             else:
                 log.warning( "Refusing to load %s filter '%s' which is not defined in config", key, filter )
         return toolbox_filters
 
-    def __build_filter_function( self, filter_name ):
+    def _build_filter_function( self, filter_name ):
         """Obtain python function (importing a submodule if needed)
         corresponding to filter_name.
         """

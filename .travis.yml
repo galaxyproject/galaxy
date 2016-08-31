@@ -5,7 +5,6 @@ env:
   - TOX_ENV=py27-lint
   - TOX_ENV=py34-lint
   - TOX_ENV=py27-lint-readme
-  - TOX_ENV=py26
   - TOX_ENV=py27
   - TOX_ENV=py34
 

@@ -14,6 +14,8 @@ except ImportError:
     PollingObserver = None
     can_watch = False
 
+from galaxy.util.postfork import register_postfork_function
+
 log = logging.getLogger( __name__ )
 
 
@@ -65,14 +67,14 @@ class ToolConfWatcher(object):
         self.paths = {}
         self._active = False
         self._lock = threading.Lock()
-        self.thread = threading.Thread(target=self.check)
+        self.thread = threading.Thread(target=self.check, name="ToolConfWatcher.thread")
         self.thread.daemon = True
         self.event_handler = ToolConfFileEventHandler(reload_callback)
 
     def start(self):
         if not self._active:
             self._active = True
-            self.thread.start()
+            register_postfork_function(self.thread.start)
 
     def shutdown(self):
         if self._active:
@@ -152,7 +154,7 @@ class ToolWatcher(object):
         self.start()
 
     def start(self):
-        self.observer.start()
+        register_postfork_function(self.observer.start)
 
     def shutdown(self):
         self.observer.stop()
