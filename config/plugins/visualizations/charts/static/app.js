@@ -7,18 +7,28 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         initialize: function( options ) {
             var self = this;
             require( [ 'remote/build/types' ], function( Types ) {
-                self.types = Types;
                 Utils.get({
                     url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
                     cache   : true,
                     success : function( dataset ) {
                         self.dataset = dataset;
-                        self._build( options );
+                        self.types = {};
+                        _.each( Types, function( type, type_id ) {
+                            if ( !type.datatypes || type.datatypes.indexOf( dataset.file_ext ) != -1  ) {
+                                self.types[ type_id ] = type;
+                            }
+                        });
+                        if ( _.size( self.types ) === 0 ) {
+                            self.$el.append( $( '<div/>' ).addClass( 'errormessagelarge' )
+                                    .append( $( '<p/>' ).text( 'Unfortunately we could not identify a suitable plugin. Please let us know if you are aware of js-based visualizations for this datatype.' )  ) );
+                        } else {
+                            self._build( options );
+                        }
                     }
                 });
             }, function( err ) {
                 self.$el.append( $( '<div/>' ).addClass( 'errormessagelarge' )
-                        .append( $( '<p/>' ).text( 'Unable to access the Charts plugin repository:' ) )
+                        .append( $( '<p/>' ).text( 'Unable to access the plugin repository:' ) )
                         .append( $( '<pre/>' ).text( 'charts_plugin_url = ' + remote_root + 'package.json' ) )
                         .append( $( '<p/>' ).html( 'Please verify that your internet connection works properly and that the above base url is correct. Contact your admin if this error persists.' ) ) );
             });

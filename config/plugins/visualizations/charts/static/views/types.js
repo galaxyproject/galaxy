@@ -28,15 +28,13 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
             var title_length = 20;
             var $el = $( '<div/>' ).addClass( 'charts-grid' );
             _.each( this.app.types, function( type, type_id ) {
-                if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
-                    if ( type.keywords.indexOf( 'default' ) !== -1 ) {
-                        var title = type.title.length < title_length ? type.title : type.title.substr( 0, title_length ) + '...';
-                        $el.append( $( self._templateThumbnailItem( {
-                            id      : type_id,
-                            title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + title + ' (' + type.library + ')',
-                            url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
-                        })).tooltip( { title: type.description, placement: 'bottom' } ) );
-                    }
+                if ( type.keywords.indexOf( 'default' ) !== -1 ) {
+                    var title = type.title.length < title_length ? type.title : type.title.substr( 0, title_length ) + '...';
+                    $el.append( $( self._templateThumbnailItem( {
+                        id      : type_id,
+                        title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + title + ' (' + type.library + ')',
+                        url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
+                    })).tooltip( { title: type.description, placement: 'bottom' } ) );
                 }
             });
             if ( $el.children().length > 0 ) {
@@ -48,14 +46,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
             var self = this;
             var index = [];
             _.each( this.app.types, function( type, type_id ) {
-                if ( !type.datatypes || type.datatypes.indexOf( self.app.dataset.file_ext ) != -1  ) {
-                    index.push( {
-                        id          : type_id,
-                        title       : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
-                        description : type.description,
-                        url         : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
-                    });
-                }
+                index.push( {
+                    id          : type_id,
+                    title       : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
+                    description : type.description,
+                    url         : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
+                });
             });
             if ( index.length > 0 ) {
                 this.first = this.first || index[ 0 ].id;
