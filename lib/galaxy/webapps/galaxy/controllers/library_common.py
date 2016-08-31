@@ -800,9 +800,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         replace_dataset = None
         upload_option = kwd.get( 'upload_option', 'upload_file' )
         if kwd.get( 'files_0|uni_to_posix', False ):
-             to_posix_lines = kwd.get( 'files_0|to_posix_lines', '' )
+            to_posix_lines = kwd.get( 'files_0|to_posix_lines', '' )
         else:
-             to_posix_lines = kwd.get( 'to_posix_lines', '' )
+            to_posix_lines = kwd.get( 'to_posix_lines', '' )
         if kwd.get( 'files_0|space_to_tab', False ):
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
