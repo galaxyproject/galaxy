@@ -223,7 +223,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         top_overflow = bot_overflow = false;
         delta_x_px = delta_x_pxs[i];
 
-        x_scaled = Math.ceil((data[i][0] - view_start - 0.5) * w_scale);
+        x_scaled = Math.floor((data[i][0] - view_start - 0.5) * w_scale);
         y = data[i][1];
 
         // Process Y (scaler) value.
