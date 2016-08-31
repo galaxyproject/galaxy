@@ -14,7 +14,7 @@ def lint_cwl_validation(tool_source, lint_ctx):
     except Exception as e:
         validation_exception = e
     if validation_exception:
-        lint_ctx.error("Failed to valdiate CWL artifact [%s]", e)
+        lint_ctx.error("Failed to valdiate CWL artifact [%s]", validation_exception)
     else:
         lint_ctx.info("CWL appears to be valid.")
 
