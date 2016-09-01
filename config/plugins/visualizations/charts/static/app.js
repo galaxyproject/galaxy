@@ -6,14 +6,14 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
     return Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
-            require( [ 'remote/build/types' ], function( Types ) {
+            require( [ 'remote/build/registry' ], function( Registry ) {
                 Utils.get({
                     url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
                     cache   : true,
                     success : function( dataset ) {
                         self.dataset = dataset;
                         self.types = {};
-                        _.each( Types, function( type, type_id ) {
+                        _.each( Registry, function( type, type_id ) {
                             if ( !type.datatypes || type.datatypes.indexOf( dataset.file_ext ) != -1  ) {
                                 self.types[ type_id ] = type;
                             }
