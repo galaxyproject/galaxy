@@ -1,14 +1,15 @@
 """Abstraction around cwltool and related libraries for loading a CWL artifact."""
-from collections import namedtuple
 import os
+
+from collections import namedtuple
 
 from six.moves.urllib.parse import urldefrag
 
 from .cwltool_deps import (
     ensure_cwltool_available,
+    load_tool,
     schema_salad,
     workflow,
-    load_tool,
 )
 
 RawProcessReference = namedtuple("RawProcessReference", ["process_object", "uri"])

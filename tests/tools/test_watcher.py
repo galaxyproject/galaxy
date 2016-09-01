@@ -1,8 +1,9 @@
+import tempfile
+import time
+
 from contextlib import contextmanager
 from os import path
 from shutil import rmtree
-import tempfile
-import time
 
 from galaxy.tools.toolbox import watcher
 from galaxy.util import bunch

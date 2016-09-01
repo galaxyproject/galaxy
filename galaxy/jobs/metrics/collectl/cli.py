@@ -1,7 +1,9 @@
-from string import Template
+import logging
 import subprocess
 
-import logging
+from string import Template
+
+
 log = logging.getLogger( __name__ )
 
 COMMAND_LINE_TEMPLATE = Template(

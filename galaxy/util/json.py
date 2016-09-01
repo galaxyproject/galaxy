@@ -2,15 +2,15 @@ from __future__ import absolute_import
 
 __all__ = [ "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
 
-import copy
 import collections
+import copy
 import json
 import logging
 import math
 import random
 import string
 
-from six import text_type, string_types, iteritems
+from six import iteritems, string_types, text_type
 
 log = logging.getLogger( __name__ )
 

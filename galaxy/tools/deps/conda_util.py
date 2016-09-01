@@ -5,8 +5,9 @@ import logging
 import os
 import re
 import shutil
-from sys import platform as _platform
 import tempfile
+
+from sys import platform as _platform
 
 import six
 import yaml

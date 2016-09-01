@@ -1,6 +1,6 @@
+import subprocess
 import threading
 import time
-import subprocess
 
 
 class LazyProcess( object ):

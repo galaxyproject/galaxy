@@ -3,38 +3,32 @@ import os
 import string
 
 from markupsafe import escape
-from six.moves.urllib.parse import urlparse
 from six import iteritems
+from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import ObjectNotFound
-
-from galaxy.util.dictifiable import Dictifiable
-
-from galaxy.util.odict import odict
+# Next two are extra tool dependency not used by AbstractToolBox but by
+# BaseGalaxyToolBox.
+from galaxy.tools.deps import build_dependency_manager
+from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.util import listify
 from galaxy.util import parse_xml
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
-
-from .parser import get_toolbox_parser, ensure_tool_conf_item
-
-from .panel import ToolPanelElements
-from .panel import ToolSectionLabel
-from .panel import ToolSection
-from .panel import panel_item_types
-from .integrated_panel import ManagesIntegratedToolPanelMixin
-
-from .lineages import LineageMap
-from .tags import tool_tag_manager
+from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.odict import odict
 
 from .filters import FilterFactory
+from .integrated_panel import ManagesIntegratedToolPanelMixin
+from .lineages import LineageMap
+from .panel import panel_item_types
+from .panel import ToolPanelElements
+from .panel import ToolSection
+from .panel import ToolSectionLabel
+from .parser import ensure_tool_conf_item, get_toolbox_parser
+from .tags import tool_tag_manager
 from .watcher import get_tool_watcher
 from .watcher import get_tool_conf_watcher
-
-# Extra tool dependency not used by AbstractToolBox but by
-# BaseGalaxyToolBox
-from galaxy.tools.loader_directory import looks_like_a_tool
-from galaxy.tools.deps import build_dependency_manager
 
 
 log = logging.getLogger( __name__ )
