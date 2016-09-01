@@ -1,13 +1,12 @@
-from math import isinf
-
 import os
 import os.path
-import tempfile
 import shutil
+import tempfile
+import unittest
+
+from math import isinf
 
 from galaxy.tools.parser.factory import get_tool_source
-
-import unittest
 
 
 TOOL_XML_1 = """

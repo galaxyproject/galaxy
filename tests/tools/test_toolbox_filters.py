@@ -1,6 +1,6 @@
-from galaxy.util.bunch import Bunch
-
 from galaxy.tools.toolbox.filters import FilterFactory
+
+from galaxy.util.bunch import Bunch
 
 
 def test_stock_filtering_requires_login_tools( ):

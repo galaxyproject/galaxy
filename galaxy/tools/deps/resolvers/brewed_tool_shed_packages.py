@@ -5,12 +5,13 @@ via shed2tap (e.g. https://github.com/jmchilton/homebrew-toolshed).
 """
 import logging
 import os
+
 from xml.etree import ElementTree as ET
 
 from .resolver_mixins import (
     UsesHomebrewMixin,
-    UsesToolDependencyDirMixin,
     UsesInstalledRepositoriesMixin,
+    UsesToolDependencyDirMixin,
 )
 from ..resolvers import DependencyResolver, NullDependency
 

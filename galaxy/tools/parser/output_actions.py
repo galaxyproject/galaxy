@@ -4,8 +4,9 @@ Support for dynamically modifying output attributes.
 
 import logging
 import os.path
-import string
 import re
+import string
+
 from galaxy import util
 
 log = logging.getLogger( __name__ )

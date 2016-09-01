@@ -1,5 +1,5 @@
-from .tool_shed import ToolShedLineage
 from .stock import StockLineage
+from .tool_shed import ToolShedLineage
 
 
 def remove_version_from_guid( guid ):
