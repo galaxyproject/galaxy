@@ -157,7 +157,8 @@ class MockApp( object ):
 class MockLock( object ):
     def __enter__(self):
         pass
-    def __exit__(self, type, value, traceback):
+
+def __exit__(self, type, value, traceback):
         pass
 
 
