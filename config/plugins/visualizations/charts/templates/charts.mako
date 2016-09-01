@@ -9,8 +9,6 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>${hda.name} | ${visualization_name}</title>
-
-        ## install shared libraries
         ${h.js( 'libs/jquery/jquery',
                 'libs/jquery/jquery-ui',
                 'libs/jquery/select2',
@@ -19,11 +17,7 @@
                 'libs/backbone',
                 'libs/d3',
                 'libs/require')}
-
-        ## shared css
         ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui' )}
-
-        ## install default css
         ${h.stylesheet_link( app_root + "app.css" )}
     </head>
 
@@ -55,13 +49,9 @@
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/backbone": { exports: "Backbone" },
-                    "d3": { exports: "d3"}
-
+                    "d3": { exports: "d3" }
                 }
             });
-            window.onbeforeunload = function() {
-                return 'You are leaving Charts.';
-            };
             $(function() {
                 require( [ 'plugin/app' ], function( App ) {
                     var config = ${ h.dumps( config ) };
