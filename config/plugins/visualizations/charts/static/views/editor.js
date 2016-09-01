@@ -135,7 +135,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 date        : Utils.time()
             });
             if ( this.chart.groups.length == 0 ) {
-                this.message.update( { message: 'Please specify data options before drawing the chart.' } );
+                this.message.update( { message: 'Please specify data options before drawing the chart.', persistent: false } );
                 this.tabs.show( 'groups' );
                 return;
             }
