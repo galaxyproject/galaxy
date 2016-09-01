@@ -237,8 +237,8 @@ class JobProxy(object):
         if self._cwl_job is None:
             self._cwl_job = self._tool_proxy._tool.job(
                 self._input_dict,
-                self._job_directory,
                 self._output_callback,
+                basedir=self._job_directory,
                 use_container=False
             ).next()
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")

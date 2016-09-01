@@ -1,14 +1,11 @@
-/*
-    This class maps the form dom to an api compatible javascript dictionary.
-*/
+/* This class maps the form dom to an api compatible javascript dictionary. */
 define([ 'utils/utils' ], function( Utils ) {
     var Manager = Backbone.Model.extend({
         initialize: function( app ) {
             this.app = app;
         },
 
-        /** Creates a checksum.
-        */
+        /** Creates a checksum. */
         checksum: function() {
             var sum = '';
             var self = this;
@@ -22,8 +19,7 @@ define([ 'utils/utils' ], function( Utils ) {
             return sum;
         },
 
-        /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission.
-        */
+        /** Convert dom into a dictionary of flat id/value pairs used e.g. on job submission. */
         create: function() {
             var self = this;
 
@@ -205,8 +201,9 @@ define([ 'utils/utils' ], function( Utils ) {
                 context[ input.name ] = input;
             }
         });
-        for ( var i in inputs ) {
-            var node = inputs[ i ];
+        for ( var key in inputs ) {
+            var node = inputs[ key ];
+            node.name = node.name || key;
             var name = prefix ? prefix + '|' + node.name : node.name;
             switch ( node.type ) {
                 case 'repeat':

@@ -1,6 +1,8 @@
 """
 Migration script to add the data_manager_history_association table and data_manager_job_association.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -27,7 +29,7 @@ DataManagerJobAssociation_table = Table( "data_manager_job_association", metadat
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     try:

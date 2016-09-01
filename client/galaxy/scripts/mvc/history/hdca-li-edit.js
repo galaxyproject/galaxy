@@ -26,6 +26,8 @@ var HDCAListItemEdit = _super.extend(
                 return DC_VIEW_EDIT.PairCollectionViewEdit;
             case 'list:paired':
                 return DC_VIEW_EDIT.ListOfPairsCollectionViewEdit;
+            case 'list:list':
+                return DC_VIEW_EDIT.ListOfListsCollectionViewEdit;
         }
         throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
     },

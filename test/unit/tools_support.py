@@ -151,6 +151,15 @@ class MockApp( object ):
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self.name = "galaxy"
+        self._toolbox_lock = MockLock()
+
+
+class MockLock( object ):
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        pass
 
 
 class MockContext(object):

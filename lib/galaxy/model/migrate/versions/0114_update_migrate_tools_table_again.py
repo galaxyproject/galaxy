@@ -1,6 +1,8 @@
 """
 Migration script to update the migrate_tools.repository_path column to point to the new location lib/tool_shed/galaxy_install/migrate.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -16,7 +18,7 @@ log.addHandler( handler )
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     # Create the table.
     try:
         cmd = "UPDATE migrate_tools set repository_path='lib/tool_shed/galaxy_install/migrate';"

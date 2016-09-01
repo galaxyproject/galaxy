@@ -12,6 +12,10 @@ import zipfile
 from json import loads
 from xml.etree import ElementTree
 
+# Be sure to use Galaxy's vanilla pyparsing instead of the older version
+# imported by twill.
+import pyparsing  # noqa: F401
+
 import twill
 import twill.commands as tc
 from markupsafe import escape
@@ -2304,6 +2308,7 @@ class TwillTestCase( unittest.TestCase ):
         return temp_local, temp_temp
 
     def _format_stream( self, output, stream, format ):
+        output = output or ''
         if format:
             msg = "---------------------- >> begin tool %s << -----------------------\n" % stream
             msg += output + "\n"

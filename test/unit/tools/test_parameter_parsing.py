@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from galaxy import model
 from galaxy.tools.parameters import basic
 from galaxy.util import bunch
 from xml.etree.ElementTree import XML
@@ -14,6 +15,7 @@ class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
         self.mock_tool = bunch.Bunch(
             app=self.app,
             tool_type="default",
+            valid_input_states=model.Dataset.valid_input_states,
         )
 
     def _parameter_for(self, **kwds):

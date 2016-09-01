@@ -61,7 +61,6 @@ class SchemaLoader(object):
         tool = load_tool.make_tool(
             process_definition.document_loader,
             process_definition.avsc_names,
-            process_definition.process_object,
             process_definition.metadata,
             process_definition.raw_process_reference.uri,
             make_tool,

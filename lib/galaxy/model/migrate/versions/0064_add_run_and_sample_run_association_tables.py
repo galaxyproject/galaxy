@@ -1,6 +1,8 @@
 """
 Migration script to add the run and sample_run_association tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -31,7 +33,7 @@ SampleRunAssociation_table = Table( "sample_run_association", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Run_table.create()

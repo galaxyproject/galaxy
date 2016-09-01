@@ -110,6 +110,27 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
     @expose_api
     @web.require_admin
+    def all_requirements(self, trans, **kwds):
+        """
+        GET /api/tools/all_requirements
+        Return list of unique requirements for all tools.
+        """
+
+        return trans.app.toolbox.all_requirements
+
+    @expose_api
+    @web.require_admin
+    def requirements(self, trans, id, **kwds):
+        """
+        GET /api/tools/{tool_id}/requirements
+        Return the resolver status for a specific tool id.
+        [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}]
+        """
+        tool = self._get_tool(id)
+        return tool.tool_requirements_status
+
+    @expose_api
+    @web.require_admin
     def diagnostics( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/diagnostics

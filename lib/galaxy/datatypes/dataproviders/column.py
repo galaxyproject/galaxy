@@ -3,10 +3,10 @@ Providers that provide lists of lists generally where each line of a source
 is further subdivided into multiple data (e.g. columns from a line).
 """
 
-import urllib
+from six.moves.urllib.parse import unquote_plus
 import re
 
-import line
+from . import line
 
 _TODO = """
 move ColumnarDataProvider parsers to more sensible location
@@ -96,7 +96,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
                 self.column_count = len( self.column_types )
         # if no indeces given, infer from column_count
         if not self.selected_column_indeces and self.column_count:
-            self.selected_column_indeces = list( xrange( self.column_count ) )
+            self.selected_column_indeces = list( range( self.column_count ) )
 
         self.deliminator = deliminator
 
@@ -182,7 +182,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         elif 'has' == op:
             return lambda d: val in d[column]
         elif 're' == op:
-            val = urllib.unquote_plus( val )
+            val = unquote_plus( val )
             val = re.compile( val )
             return lambda d: val.match( d[column] ) is not None
         return None
@@ -258,7 +258,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         # TODO: too much going on in this loop - the above should all be precomputed AMAP...
         all_columns = line.split( self.deliminator )
         # if no indeces were passed to init, return all columns
-        selected_indeces = self.selected_column_indeces or list( xrange( len( all_columns ) ) )
+        selected_indeces = self.selected_column_indeces or list( range( len( all_columns ) ) )
         parsed_columns = []
         for parser_index, column_index in enumerate( selected_indeces ):
             parsed_columns.append( self.parse_column_at_index( all_columns, parser_index, column_index ) )

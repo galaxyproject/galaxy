@@ -19,7 +19,7 @@ from sqlalchemy.orm import eagerload_all
 from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
-from galaxy.util import inflector, unicodify
+from galaxy.util import inflector, unicodify, FILENAME_VALID_CHARS
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
@@ -56,7 +56,7 @@ for comptype in ( 'gz', 'bz2' ):
     except OSError:
         pass
 try:
-    import zlib  # noqa
+    import zlib  # noqa: F401
     comptypes.append( 'zip' )
 except ImportError:
     pass
@@ -1519,9 +1519,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             trans.response.set_content_type( ldda.get_mime() )
             fStat = os.stat( ldda.file_name )
             trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
-            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
             fname = ldda.name
-            fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
+            fname = ''.join( c in FILENAME_VALID_CHARS and c or '_' for c in fname )[ 0:150 ]
             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % fname
             try:
                 return open( ldda.file_name )
@@ -2751,7 +2750,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     status = kwd.get( 'status', 'done' )
     full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
     response = urllib2.urlopen( full_url )
-    ldda_ids = util.json.loads( response.read() )[ "ids" ]
+    ldda_ids = loads( response.read() )[ "ids" ]
     response.close()
     lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )

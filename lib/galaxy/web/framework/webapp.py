@@ -482,9 +482,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             if prev_galaxy_session:
                 self.sa_session.add( prev_galaxy_session )
             self.sa_session.flush()
-        # If the old session was invalid, get a new history with our new session
+        # If the old session was invalid, get a new (or existing default,
+        # unused) history with our new session
         if invalidate_existing_session:
-            self.new_history()
+            self.get_or_create_default_history()
 
     def _ensure_logged_in_user( self, environ, session_cookie ):
         # The value of session_cookie can be one of
@@ -659,7 +660,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                     users_last_session.current_history.deleted):
                 history = users_last_session.current_history
             elif not history:
-                history = self.get_history( create=True )
+                history = self.get_history( create=True, most_recent=True )
             if history not in self.galaxy_session.histories:
                 self.galaxy_session.add_history( history )
             if history.user is None:
@@ -707,10 +708,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         """
         return self.galaxy_session
 
-    def get_history( self, create=False ):
+    def get_history( self, create=False, most_recent=False ):
         """
-        Load the current history, creating a new one only if there is not
-        current history and we're told to create.
+        Load the current history.
+            - If that isn't available, we find the most recently updated history.
+            - If *that* isn't available, we get or create the default history.
         Transactions will not always have an active history (API requests), so
         None is a valid response.
         """
@@ -718,8 +720,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         if self.galaxy_session:
             if hasattr( self.galaxy_session, 'current_history' ):
                 history = self.galaxy_session.current_history
+        if not history and most_recent:
+            history = self.get_most_recent_history()
         if not history and util.string_as_bool( create ):
-            history = self.new_history()
+            history = self.get_or_create_default_history()
         return history
 
     def set_history( self, history ):
@@ -762,6 +766,23 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             history = self.new_history()
 
         return history
+
+    def get_most_recent_history( self ):
+        """
+        Gets the most recently updated history.
+        """
+        # There must be a user to fetch histories, and without a user we have
+        # no recent history.
+        if not self.galaxy_session.user:
+            return None
+        try:
+            recent_history = self.sa_session.query( self.app.model.History ).filter_by(
+                user=self.galaxy_session.user,
+                deleted=False ).order_by(self.app.model.History.update_time.desc()).first()
+        except NoResultFound:
+            return None
+        self.set_history(recent_history)
+        return recent_history
 
     def new_history( self, name=None ):
         """

@@ -1140,7 +1140,7 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
                     tds_dict = metadata.get( 'tool_dependencies', {} )
                     if tds_dict:
                         # Example: {"bwa/0.5.9": {"name": "bwa", "type": "package", "version": "0.5.9"}}
-                        sorted_keys = sorted( [ k for k in tds_dict.keys() ] )
+                        sorted_keys = sorted( tds_dict.keys() )
                         num_keys = len( sorted_keys )
                         # Handle environment settings first.
                         if 'set_environment' in sorted_keys:

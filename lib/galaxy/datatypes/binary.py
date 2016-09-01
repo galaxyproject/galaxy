@@ -1,4 +1,5 @@
 """Binary classes"""
+from __future__ import print_function
 
 import binascii
 import gzip
@@ -16,7 +17,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
-from galaxy.util import nice_size, sqlite, which
+from galaxy.util import nice_size, sqlite, which, FILENAME_VALID_CHARS
 from . import data, dataproviders
 
 
@@ -72,13 +73,12 @@ class Binary( data.Data ):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         trans.response.set_content_type(dataset.get_mime())
         trans.log_event( "Display dataset id: %s" % str( dataset.id ) )
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
         to_ext = dataset.extension
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
@@ -202,13 +202,23 @@ class Bam( Binary ):
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def _get_samtools_version( self ):
-        # Determine the version of samtools being used.  Wouldn't it be nice if
-        # samtools provided a version flag to make this much simpler?
         version = '0.0.0'
         samtools_exec = which('samtools')
         if not samtools_exec:
             message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
             raise Exception(message)
+
+        # Get the version of samtools via --version-only, if available
+        p = subprocess.Popen( ['samtools', '--version-only'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        output, error = p.communicate()
+
+        # --version-only is available
+        # Format is <version x.y.z>+htslib-<a.b.c>
+        if p.returncode == 0:
+            version = output.split('+')[0]
+            return version
 
         output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
         lines = output.split( '\n' )
@@ -234,7 +244,7 @@ class Bam( Binary ):
                 shutil.rmtree(tmp_dir)  # clean up
                 raise Exception( "Error merging BAM files: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         os.unlink(stderr_name)
         os.rmdir(tmp_dir)
 
@@ -322,7 +332,7 @@ class Bam( Binary ):
                 shutil.rmtree( tmp_dir)  # clean up
                 raise Exception( "Error Grooming BAM file contents: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         # Move samtools_created_sorted_file_name to our output dataset location
         shutil.move( samtools_created_sorted_file_name, file_name )
         # Remove temp file and empty temporary directory
@@ -365,7 +375,7 @@ class Bam( Binary ):
                 os.unlink( stderr_name )  # clean up
                 raise Exception( "Error Setting BAM Metadata: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
@@ -932,7 +942,7 @@ class GeminiSQLite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in gemini_table_names:
                     if table_name not in result:
                         return False
@@ -971,7 +981,7 @@ class MzSQlite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
@@ -1006,7 +1016,7 @@ class IdpDB( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
@@ -1320,3 +1330,36 @@ class SearchGuiArchive ( CompressedArchive ):
             return "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
 
 Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
+
+
+class NetCDF( Binary ):
+    """Binary data in netCDF format"""
+    file_ext = "netcdf"
+    edam_format = "format_3650"
+    edam_data = "data_0943"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary netCDF file (%s)" % ( nice_size( dataset.get_size() ) )
+
+    def sniff( self, filename ):
+        try:
+            with open( filename, 'r' ) as f:
+                header = f.read(3)
+            if binascii.b2a_hex( header ) == binascii.hexlify( 'CDF' ):
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)

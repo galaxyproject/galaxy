@@ -7,8 +7,13 @@
     <!--base.mako-->
     ${self.init()}
     <head>
-        <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        ## For mobile browsers, don't scale up
+        <meta name = "viewport" content = "maximum-scale=1.0">
+        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+
+        <title>${self.title()}</title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.metas()}

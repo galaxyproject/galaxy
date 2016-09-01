@@ -14,6 +14,17 @@ import hmac
 log = logging.getLogger( __name__ )
 
 
+def md5_hash_file(path):
+    """
+    Return a md5 hashdigest for a file.
+    """
+    hasher = hashlib.md5()
+    with open(path, 'rb') as afile:
+        buf = afile.read()
+        hasher.update(buf)
+        return hasher.hexdigest()
+
+
 def new_secure_hash( text_type=None ):
     """
     Returns either a sha1 hash object (if called with no arguments), or a

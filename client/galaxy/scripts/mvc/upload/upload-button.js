@@ -1,93 +1,49 @@
-// dependencies
-define([], function() {
+/** View for upload/progress bar button */
+define( [], function() {
+    var View = Backbone.View.extend({
+        initialize: function( options ) {
+            var self = this;
+            this.model = options && options.model || new Backbone.Model({
+                icon        : 'fa-upload',
+                tooltip     : 'Download from URL or upload files from disk',
+                label       : 'Load Data',
+                percentage  : 0,
+                status      : '',
+                onunload    : function(){},
+                onclick     : function(){}
+            }).set( options );
+            this.setElement( this._template() );
+            this.$progress = this.$( '.progress-bar' );
+            this.listenTo( this.model, 'change', this.render, this );
+            this.render();
+            $( window ).on( 'beforeunload', function() {
+                return self.model.get( 'onunload' )();
+            });
+        },
 
-// model for upload/progress bar button
-var Model = Backbone.Model.extend({
-    defaults: {
-        icon        : 'fa-upload',
-        tooltip     : 'Download from URL or upload files from disk',
-        label       : 'Load Data',
-        percentage  : 0,
-        status      : ''
-    }
-});
+        render: function() {
+            var self = this;
+            var options = this.model.attributes;
+            this.$el.off( 'click' ).on( 'click', function( e ) { options.onclick( e ) } )
+                    .tooltip( { title: this.model.get('tooltip'), placement: 'bottom' } );
+            this.$progress.removeClass()
+                          .addClass( 'progress-bar' )
+                          .addClass( 'progress-bar-notransition' )
+                          .addClass( options.status != '' && 'progress-bar-' + options.status )
+                          .css( { width : options.percentage + '%' } );
+        },
 
-// view for upload/progress bar button
-var View = Backbone.View.extend({
-    // model
-    model : null,
-
-    // initialize
-    initialize : function( options ) {
-        // link this
-        var self = this;
-
-        // create model
-        var model = options.model;
-
-        // create new element
-        this.setElement( this._template() );
-
-        // add event
-        this.$el.on( 'click', function( e ) { options.onclick( e ); });
-
-        // add tooltip
-        this.$el.tooltip( { title: model.get('tooltip'), placement: 'bottom' } );
-
-        // events
-        model.on( 'change:percentage', function() {
-            self._percentage( model.get( 'percentage' ) );
-        });
-        model.on( 'change:status', function() {
-            self._status( model.get( 'status' ) );
-        });
-
-        // unload event
-        var self = this;
-        $( window ).on( 'beforeunload', function() {
-            var text = "";
-            if ( options.onunload ) {
-                text = options.onunload();
-            }
-            if ( text != "" ) {
-                return text;
-            }
-        });
-    },
-
-    // set status
-    _status: function( value ) {
-        var $el = this.$el.find( '.progress-bar' );
-        $el.removeClass();
-        $el.addClass( 'progress-bar' );
-        $el.addClass( 'progress-bar-notransition' );
-        if ( value != '' ) {
-            $el.addClass( 'progress-bar-' + value );
+        /** Template */
+        _template: function() {
+            return  '<div class="upload-button">' +
+                        '<div class="progress">' +
+                            '<div class="progress-bar"/>' +
+                            '<a class="panel-header-button" href="javascript:void(0)" id="tool-panel-upload-button">' +
+                                '<span class="fa fa-upload"/>' +
+                            '</a>' +
+                        '</div>' +
+                    '</div>';
         }
-    },
-
-    // set percentage
-    _percentage: function( value ) {
-        var $el = this.$el.find( '.progress-bar' );
-        $el.css( { width : value + '%' } );
-    },
-
-    // template
-    _template: function() {
-        return  '<div class="upload-button">' +
-                    '<div class="progress">' +
-                        '<div class="progress-bar"/>' +
-                        '<a class="panel-header-button" href="javascript:void(0)" id="tool-panel-upload-button">' +
-                            '<span class="fa fa-upload"/>' +
-                        '</a>' +
-                    '</div>' +
-                '</div>';
-    }
-});
-
-return {
-    Model   : Model,
-    View    : View
-};
-
+    });
+    return { View : View };
 });

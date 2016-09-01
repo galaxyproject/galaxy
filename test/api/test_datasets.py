@@ -1,3 +1,4 @@
+from __future__ import print_function
 import textwrap
 
 from base import api
@@ -12,8 +13,8 @@ class DatasetsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
     def test_index( self ):
         index_response = self._get( "datasets" )
-        print index_response
-        print dir( index_response )
+        print(index_response)
+        print(dir( index_response ))
         self._assert_status_code_is( index_response, 501 )
 
     def test_show( self ):

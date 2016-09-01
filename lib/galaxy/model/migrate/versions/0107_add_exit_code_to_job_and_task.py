@@ -1,6 +1,8 @@
 """
 Add the exit_code column to the Job and Task tables.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, Integer, MetaData, Table
@@ -15,12 +17,12 @@ exit_code_task_col = Column( "exit_code", Integer, nullable=True )
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds a 'handler' column to the Job table."
+    print("")
+    print("This migration script adds a 'handler' column to the Job table.")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
@@ -30,7 +32,7 @@ def upgrade(migrate_engine):
         exit_code_job_col.create( job_table )
         assert exit_code_job_col is job_table.c.exit_code
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.error( "Adding column 'exit_code' to job table failed: %s" % str( e ) )
         return
 
@@ -40,7 +42,7 @@ def upgrade(migrate_engine):
         exit_code_task_col.create( task_table )
         assert exit_code_task_col is task_table.c.exit_code
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.error( "Adding column 'exit_code' to task table failed: %s" % str( e ) )
         return
 

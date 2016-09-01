@@ -15,9 +15,13 @@
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
   <tool file="multi_output_assign_primary.xml" />
+  <tool file="tool_provided_metadata_1.xml" />
+  <tool file="tool_provided_metadata_2.xml" />
+  <tool file="tool_provided_metadata_3.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
+  <tool file="dbkey_output_action.xml" />
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
   <tool file="unicode_stream.xml" />
@@ -35,11 +39,13 @@
   <tool file="maxseconds.xml" />
   -->
   <tool file="job_properties.xml" />
+  <tool file="exit_code_from_file.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
   <tool file="create_10.xml" />
@@ -63,6 +69,7 @@
   <tool file="validation_empty_dataset.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
+  <tool file="identifier_collection.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="collection_paired_test.xml" />
@@ -104,5 +111,13 @@
   <tool file="for_workflows/create_input_collection.xml" />
 
   <tool file="simple_constructs.yml" />
+
+  <!-- Load collection operation tools - I consider these part of the
+       "framework" and they are used to in API tests to test the underlying
+       ToolActions. -->
+  <tool file="${model_tools_path}/unzip_collection.xml" />
+  <tool file="${model_tools_path}/zip_collection.xml" />
+  <tool file="${model_tools_path}/filter_failed_collection.xml" />
+  <tool file="${model_tools_path}/flatten_collection.xml" />
 
 </toolbox>

@@ -1,4 +1,6 @@
 .venv/
+.tox/
+eggs/
 client/
 database/
 doc/patch.py
