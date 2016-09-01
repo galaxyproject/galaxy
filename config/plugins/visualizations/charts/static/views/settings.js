@@ -15,12 +15,15 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
         render: function() {
             var self = this;
             var inputs = Utils.clone( this.chart.definition.settings ) || {};
-            if ( this.chart.definition.use_panels && !inputs[ 'use_panels' ]) {
-                inputs[ 'use_panels' ] = {
+            var panel_option = this.chart.definition.use_panels;
+            if ( panel_option == 'both' ) {
+                inputs[ '__use_panels' ] = {
                     type    : 'boolean',
                     label   : 'Use multi-panels',
                     help    : 'Would you like to separate your data into individual panels?'
                 };
+            } else {
+                this.chart.settings.set( '__use_panels', panel_option == 'yes' ? 'true' : 'false' );
             }
             if ( _.size( inputs ) > 0 ) {
                 FormData.visitInputs( inputs, function( input, name ) {

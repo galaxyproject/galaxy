@@ -86,7 +86,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
         /** Draws a new chart by loading and executing the corresponding chart wrapper */
         _draw: function( process, chart ) {
             var self = this;
-            var n_panels = chart.settings.get( 'use_panels' ) === 'true' ? chart.groups.length : 1;
+            var n_panels = chart.settings.get( '__use_panels' ) == 'true' ? chart.groups.length : 1;
             this._createContainer( chart.definition.tag, n_panels );
             chart.state( 'wait', 'Please wait...' );
             require( [ 'remote/build/' + chart.get( 'type' ) ], function( ChartView ) {
