@@ -75,6 +75,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
             console.debug( this.viz_options );
             var chart_dict = this.viz_options.chart_dict;
             if ( chart_dict && chart_dict.attributes ) {
+                chart_dict.attributes.type = "dsdsd";
                 this.set( chart_dict.attributes );
                 this.state( 'ok', 'Loading saved visualization...' );
                 this.settings.set( chart_dict.settings );
@@ -82,6 +83,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
                 this.groups.add( chart_dict.groups );
                 this.set( 'modified', false );
                 console.debug( 'model::load() - Loading chart model ' + chart_dict.attributes.type + '.' );
+                this.trigger( 'redraw' );
                 return true;
             }
             console.debug( 'model::load() - Chart attributes unavailable.' );

@@ -43,12 +43,14 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                         self.tabs.hideTab( 'groups' );
                         self.portlet.hideOperation( 'save' );
                         console.debug( 'editor::onchange() - Chart type not found.' );
+                        self.message.update( { message: 'The requested chart type could not be found. Please select a new type from below or contact us.', status: 'danger', persistent: true } );
                     } else {
                         self.tabs.showTab( 'settings' );
                         self.tabs.showTab( 'groups' );
                         self.portlet.showOperation( 'save' );
                         self.chart.definition = chart_definition;
                         self.chart.set( { type : chart_type, modified : true } );
+                        self.message.model.set( 'message', '' );
                         console.debug( 'editor::onchange() - Switched chart type.' );
                     }
                 },

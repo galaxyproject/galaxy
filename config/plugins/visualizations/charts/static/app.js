@@ -43,12 +43,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             this.editor     = new Editor( this );
             this.$el.append( this.viewer.$el );
             this.$el.append( this.editor.$el );
-            if ( !this.chart.load() ) {
-                this.go( 'editor' );
-            } else {
-                this.go( 'viewer' );
-                this.chart.trigger( 'redraw' );
-            }
+            this.go( this.chart.load() ? 'viewer' : 'editor' );
         },
 
         /** Loads a view and makes sure that all others are hidden */
