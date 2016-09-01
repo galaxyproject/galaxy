@@ -163,27 +163,28 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             self._tool_conf_watcher.watch_file(config_filename)
 
     def load_item( self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False ):
-        item = ensure_tool_conf_item(item)
-        item_type = item.type
-        if item_type not in ['tool', 'section'] and not internal:
-            # External calls from tool shed code cannot load labels or tool
-            # directories.
-            return
+        with self.app._toolbox_lock:
+            item = ensure_tool_conf_item(item)
+            item_type = item.type
+            if item_type not in ['tool', 'section'] and not internal:
+                # External calls from tool shed code cannot load labels or tool
+                # directories.
+                return
 
-        if panel_dict is None:
-            panel_dict = self._tool_panel
-        if integrated_panel_dict is None:
-            integrated_panel_dict = self._integrated_tool_panel
-        if item_type == 'tool':
-            self._load_tool_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index, internal=internal )
-        elif item_type == 'workflow':
-            self._load_workflow_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
-        elif item_type == 'section':
-            self._load_section_tag_set( item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index, internal=internal )
-        elif item_type == 'label':
-            self._load_label_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
-        elif item_type == 'tool_dir':
-            self._load_tooldir_tag_set( item, panel_dict, tool_path, integrated_panel_dict, load_panel_dict=load_panel_dict )
+            if panel_dict is None:
+                panel_dict = self._tool_panel
+            if integrated_panel_dict is None:
+                integrated_panel_dict = self._integrated_tool_panel
+            if item_type == 'tool':
+                self._load_tool_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index, internal=internal )
+            elif item_type == 'workflow':
+                self._load_workflow_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
+            elif item_type == 'section':
+                self._load_section_tag_set( item, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index, internal=internal )
+            elif item_type == 'label':
+                self._load_label_tag_set( item, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
+            elif item_type == 'tool_dir':
+                self._load_tooldir_tag_set( item, panel_dict, tool_path, integrated_panel_dict, load_panel_dict=load_panel_dict )
 
     def get_shed_config_dict_by_filename( self, filename, default=None ):
         for shed_config_dict in self._dynamic_tool_confs:
