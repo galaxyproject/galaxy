@@ -28,6 +28,7 @@ class DataManagers( object ):
         self.data_managers = odict()
         self.managed_data_tables = odict()
         self.tool_path = None
+        self._reload_count = 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
         for filename in util.listify( self.filename ):
             if not filename:

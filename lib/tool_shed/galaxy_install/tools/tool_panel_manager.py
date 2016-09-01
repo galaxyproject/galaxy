@@ -39,9 +39,7 @@ class ToolPanelManager( object ):
             reload_count = self.app.toolbox._reload_count
             self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
             # Wait till toolbox reload has been triggered
-            # (watcher runs every second, wait 2 secs)
             # and make sure toolbox has finished reloading)
-            time.sleep(2)
             while self.app.toolbox._reload_count <= reload_count:
                 time.sleep(1)
 
