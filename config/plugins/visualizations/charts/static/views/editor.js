@@ -103,9 +103,9 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.tabs.hideOperation( 'back' );
 
             // chart events
-            this.chart.on( 'change:title', function( chart ) { self._refreshTitle() } );
-            this.chart.on( 'change:type', function( chart ) { self.types.value( chart.get( 'type' ) ) } );
-            this.chart.on( 'redraw', function( chart ) { self.portlet.showOperation( 'back' ) } );
+            this.listenTo( this.chart, 'change:title', function( chart ) { self._refreshTitle() } );
+            this.listenTo( this.chart, 'change:type', function( chart ) { self.types.value( chart.get( 'type' ) ) } );
+            this.listenTo( this.chart, 'redraw', function( chart ) { self.portlet.showOperation( 'back' ) } );
             this.chart.reset();
         },
 
