@@ -1,8 +1,8 @@
 /**
  *  Main application class.
  */
-define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/storage', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor' ],
-    function( Modal, Portlet, Ui, Utils, Storage, Chart, Deferred, Viewer, Editor ) {
+define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils', 'plugin/components/model', 'utils/deferred', 'plugin/views/viewer', 'plugin/views/editor' ],
+    function( Modal, Portlet, Ui, Utils, Chart, Deferred, Viewer, Editor ) {
     return Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -37,14 +37,13 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         _build: function( options ) {
             this.options    = options;
             this.modal      = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
-            this.chart      = new Chart();
-            this.storage    = new Storage( this.chart, this.types, options );
+            this.chart      = new Chart( options );
             this.deferred   = new Deferred();
             this.viewer     = new Viewer( this );
             this.editor     = new Editor( this );
             this.$el.append( this.viewer.$el );
             this.$el.append( this.editor.$el );
-            if ( !this.storage.load() ) {
+            if ( !this.chart.load() ) {
                 this.go( 'editor' );
             } else {
                 this.go( 'viewer' );

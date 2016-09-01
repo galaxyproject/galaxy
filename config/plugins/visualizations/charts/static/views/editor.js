@@ -28,7 +28,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                         title   : 'Cancel',
                         onclick : function() {
                             self.app.go( 'viewer' );
-                            self.app.storage.load();
+                            self.chart.load();
                         }
                     })
                 }
@@ -95,7 +95,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.chart.on( 'change:title', function( chart ) { self._refreshTitle() } );
             this.chart.on( 'change:type', function( chart ) { self.types.value( chart.get( 'type' ) ) } );
             this.chart.on( 'redraw', function( chart ) { self.portlet.showOperation( 'back' ) } );
-            this.chart.reset( this.app.options );
+            this.chart.reset();
         },
 
         /** Show editor */
@@ -144,7 +144,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             if ( valid ) {
                 this.app.go( 'viewer' );
                 this.app.deferred.execute( function() {
-                    self.app.storage.save();
+                    self.chart.save();
                     self.chart.trigger( 'redraw' );
                 });
             }
