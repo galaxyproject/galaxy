@@ -89,6 +89,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             self._load_tool_panel()
         self._save_integrated_tool_panel()
 
+    def has_reloaded(self, other_toolbox):
+        return self._reload_count != other_toolbox._reload_count
+
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         raise NotImplementedError()
 

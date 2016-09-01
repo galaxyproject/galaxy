@@ -154,6 +154,11 @@ class MockApp( object ):
         self.name = "galaxy"
         self._toolbox_lock = MockLock()
 
+    def wait_for_toolbox_reload(self, toolbox):
+        # TODO: If the tpm test case passes, does the operation really
+        # need to wait.
+        return True
+
 
 class MockLock( object ):
     def __enter__(self):

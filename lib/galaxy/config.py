@@ -13,7 +13,9 @@ import socket
 import string
 import sys
 import tempfile
+import time
 import threading
+
 from datetime import timedelta
 
 from six import string_types
@@ -799,6 +801,13 @@ class ConfiguresGalaxyMixin:
 
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
+
+    def wait_for_toolbox_reload(self, old_toolbox):
+        while True:
+            # Wait till toolbox reload has been triggered
+            # and make sure toolbox has finished reloading)
+            if not self.toolbox.has_reloaded(old_toolbox):
+                time.sleep(1)
 
     def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
