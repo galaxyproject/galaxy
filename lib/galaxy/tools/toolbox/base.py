@@ -67,6 +67,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
+        self._reload_count = 0
         self.data_manager_tools = odict()
         self._lineage_map = LineageMap( app )
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents

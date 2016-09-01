@@ -36,9 +36,14 @@ class ToolPanelManager( object ):
             for elem_entry in elem_list:
                 config_elems.append( elem_entry )
             # Persist the altered shed_tool_config file.
+            reload_count = self.app.toolbox._reload_count
             self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
-            # Wait till toolbox reload has been triggered (watcher runs every second, so sleep 2 seconds)
+            # Wait till toolbox reload has been triggered
+            # (watcher runs every second, wait 2 secs)
+            # and make sure toolbox has finished reloading)
             time.sleep(2)
+            while self.app.toolbox._reload_count <= reload_count:
+                time.sleep(1)
 
     def add_to_tool_panel( self, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
                            shed_tool_conf, tool_panel_dict, new_install=True, tool_panel_section_mapping={} ):

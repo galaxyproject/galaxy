@@ -57,9 +57,11 @@ def reload_toolbox(app, **kwargs):
 
     from galaxy import tools
     old_toolbox = app.toolbox
+    reload_count = old_toolbox._reload_count
     app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, old_toolbox._tool_conf_watcher)
     reload_data_managers(app)
     app.reindex_tool_search()
+    app.toolbox._reload_count = reload_count + 1
 
 
 def reload_data_managers(app, **kwargs):
