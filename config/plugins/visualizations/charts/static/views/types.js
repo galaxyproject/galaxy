@@ -13,7 +13,6 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
             this.tabs = new Tabs.View( {} );
             this.setElement( this.tabs.$el.addClass( 'charts-types' ) );
             this.render();
-            //this.listenTo( app.chart, 'change', function() { self.value( app.chart.get( 'type' ) ) } );
         },
 
         render: function() {
