@@ -1,15 +1,23 @@
-import tempfile
 import os.path
-from stat import S_IXUSR
-from os import makedirs, stat, symlink, chmod, environ
+import tempfile
+
+from contextlib import contextmanager
+from os import (
+    chmod,
+    environ,
+    makedirs,
+    stat,
+    symlink,
+)
 from shutil import rmtree
+from stat import S_IXUSR
+from subprocess import PIPE, Popen
+
 from galaxy.tools.deps import DependencyManager
 from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
-from galaxy.tools.deps.resolvers.modules import ModuleDependencyResolver, ModuleDependency
+from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
-from contextlib import contextmanager
-from subprocess import Popen, PIPE
 
 
 def test_tool_dependencies():

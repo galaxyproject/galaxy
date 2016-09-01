@@ -1,8 +1,9 @@
 """
 Objects with No values
 """
-from galaxy.model.metadata import MetadataCollection
+
 from galaxy.datatypes.registry import Registry
+from galaxy.model.metadata import MetadataCollection
 
 
 class RecursiveNone:

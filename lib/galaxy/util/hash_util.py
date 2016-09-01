@@ -3,13 +3,12 @@ Utility functions for bi-directional Python version compatibility.  Python 2.5
 introduced hashlib which replaced sha in Python 2.4 and previous versions.
 """
 
-import logging
-
 import hashlib
 sha1 = hashlib.sha1
 sha = sha1
 md5 = hashlib.md5
 import hmac
+import logging
 
 log = logging.getLogger( __name__ )
 

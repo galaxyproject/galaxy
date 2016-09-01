@@ -1,5 +1,6 @@
 import re
 import sys
+
 from galaxy import util
 
 from ..instrumenters import InstrumentPlugin
