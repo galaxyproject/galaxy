@@ -22,9 +22,9 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
 
         reset: function() {
             this.clear().set({
-                title               : 'New Chart',
-                type                : '__first',
-                dataset_id          : this.viz_options.dataset_id
+                title       : 'New Chart',
+                type        : '__first',
+                dataset_id  : this.viz_options.dataset_id
             });
             this.settings.clear();
             this.groups.reset();
