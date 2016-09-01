@@ -736,14 +736,12 @@ class Text( Data ):
 
     def count_data_lines(self, dataset):
         """
-        Count the number of lines of data in dataset,
-        skipping all blank lines and comments.
+        Count the number of lines of data in dataset.
+        Elmination of blank lines and comments removed per issue 2694.
         """
         data_lines = 0
         for line in open( dataset.file_name ):
-            line = line.strip()
-            if line and not line.startswith( '#' ):
-                data_lines += 1
+            data_lines += 1
         return data_lines
 
     def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True ):
