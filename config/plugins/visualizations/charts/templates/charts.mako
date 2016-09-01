@@ -64,9 +64,11 @@
             };
             $(function() {
                 require( [ 'plugin/app' ], function( App ) {
+                    var config = ${ h.dumps( config ) };
                     var app = new App({
-                        id      : ${h.dumps( visualization_id )} || undefined,
-                        config  : ${h.dumps( config )}
+                        visualization_id : ${ h.dumps( visualization_id ) } || undefined,
+                        dataset_id       : config.dataset_id,
+                        chart_dict       : config.chart_dict
                     });
                     $( 'body' ).append( app.$el );
                 });

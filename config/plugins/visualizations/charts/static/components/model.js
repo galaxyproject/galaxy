@@ -1,7 +1,6 @@
 define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Utils ) {
     return Backbone.Model.extend({
         defaults : {
-            id              : null,
             title           : '',
             type            : '',
             date            : null,
@@ -12,18 +11,20 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
             dataset_id_job  : ''
         },
 
-        initialize: function( options ) {
-            this.vis_id      = options.id;
-            this.groups      = new Backbone.Collection();
-            this.settings    = new Backbone.Model();
-            this.definition  = {};
+        initialize: function( options, viz_options ) {
+            this.groups         = new Backbone.Collection();
+            this.settings       = new Backbone.Model();
+            this.definition     = {};
+            this.viz_options    = viz_options;
+            console.debug( 'Model:initialize() - Initialized with configuration:' );
+            console.debug( viz_options );
         },
 
         reset: function() {
-            this.set({
-                title         : 'New Chart',
-                type          : '__first',
-                dataset_id    : this.get( 'config' ).dataset_id
+            this.clear().set({
+                title               : 'New Chart',
+                type                : '__first',
+                dataset_id          : this.viz_options.dataset_id
             });
             this.settings.clear();
             this.groups.reset();
@@ -33,11 +34,12 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
         state: function( value, info ) {
             this.set( { state : value, state_info : info } );
             this.trigger( 'set:state' );
-            console.debug( 'Chart:state() - ' + info + ' (' + value + ')' );
+            console.debug( 'Model:state() - ' + info + ' (' + value + ')' );
         },
 
         /** Pack and save nested chart model */
         save: function() {
+            var self = this;
             var chart_dict = {
                 attributes : this.attributes,
                 settings   : this.settings.attributes,
@@ -46,22 +48,32 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
             this.groups.each( function( group ) {
                 chart_dict.groups.push( group.attributes );
             });
-            var vis = new Visualization({
-                id      : this.vis_id,
+            var viz = new Visualization({
                 type    : 'charts',
                 title   : this.get( 'title' ) || '',
                 config  : {
-                    dataset_id  : this.get( 'dataset_id' ),
-                    chart_dict  : chart_dict
+                    dataset_id  : this.viz_options.dataset_id,
+                    chart_dict  : this.viz_options.chart_dict = chart_dict
                 }
             });
-            vis.save();
+            viz.save().then( function( response ) {
+                if ( response && response.id ) {
+                    self.viz_options.visualization_id = response.id;
+                    console.debug( 'Model::save() - Received visualization id: ' + response.id );
+                } else {
+                    console.debug( 'Model::save() - Unrecognized response. Saving may have failed.' );
+                }
+            });
+            console.debug( 'Model:save() - Saved with configuration:' );
+            console.debug( this.viz_options );
         },
 
         /** Load nested models/collections from packed dictionary */
         load: function() {
-            var chart_dict = this.get( 'config' ).chart_dict;
-            if ( chart_dict.attributes ) {
+            console.debug( 'Model:load() - Attempting to load with configuration:' );
+            console.debug( this.viz_options );
+            var chart_dict = this.viz_options.chart_dict;
+            if ( chart_dict && chart_dict.attributes ) {
                 this.set( chart_dict.attributes );
                 this.state( 'ok', 'Loading saved visualization...' );
                 this.settings.set( chart_dict.settings );

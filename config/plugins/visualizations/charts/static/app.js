@@ -8,7 +8,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             var self = this;
             require( [ 'remote/build/registry' ], function( Registry ) {
                 Utils.get({
-                    url     : Galaxy.root + 'api/datasets/' + options.config.dataset_id,
+                    url     : Galaxy.root + 'api/datasets/' + options.dataset_id,
                     cache   : true,
                     success : function( dataset ) {
                         self.dataset = dataset;
@@ -37,7 +37,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         _build: function( options ) {
             this.options    = options;
             this.modal      = parent.Galaxy && parent.Galaxy.modal || new Modal.View();
-            this.chart      = new Chart( options );
+            this.chart      = new Chart( {}, options );
             this.deferred   = new Deferred();
             this.viewer     = new Viewer( this );
             this.editor     = new Editor( this );
