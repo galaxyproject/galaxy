@@ -24,8 +24,8 @@ managers here, in fact Galaxy supports multiple package managers and we welcome
 community contributions (such as implementing a Guix package manager or
 enhancing the existing brew support to bring it on par with Conda).
 
-As a community, we have decided that Conda is the one that best fulfills the
-project's needs. The following are some of the crucial Conda features that led
+As a community, we have decided that Conda is the one that best fulfills
+community's needs. The following are some of the crucial Conda features that led
 to this decision:
 
 -  Installation of packages does not require *root* privileges
@@ -167,14 +167,17 @@ systems newer than 2007.
 4. If I have Conda enabled, what do I need to do to install tools using it? For example, how can I install the latest Trinity? And how will I know the dependencies are installed?
 *********************************************************************************
 
-This depends on your ``galaxy.ini`` setting. Galaxy will install the Conda
-package manager for you if you have enabled ``conda_auto_init``. If
+This depends on your ``galaxy.ini`` setting. Starting with release 16.07, Galaxy
+can automatically install the Conda package manager for you if you have enabled
+``conda_auto_init``. Galaxy can then install Trinity along with its dependencies
+using one of the methods  listed in question 2 above. Further, if
 ``conda_auto_install`` is enabled, Galaxy will install Trinity via Conda only
-when a Trinity job is launched and Trinity is not yet installed. With release
-16.07 you can see which dependencies are being used in the “Manage installed
-tools” section of the Admin panel and you can select whether or not to install
-Conda packages or Tool Shed package recipes when you install new tools there,
-even if ``conda_auto_install`` is disabled.
+when a Trinity job is launched and Trinity is not yet installed.
+
+With release 16.07 you can see which dependencies are being used
+in the “Manage installed tools” section of the Admin panel and you can select
+whether or not to install Conda packages or Tool Shed package recipes when you
+install new tools there, even if ``conda_auto_install`` is disabled.
 
 More improvements to the UI will be coming in future releases. To see if Galaxy
 has created a Trinity environment for you have a look at folder under
@@ -282,7 +285,7 @@ give you a hand. We are trying to get all new versions under Conda and
 leave the old versions as they are – simply because of time.
 
 
-10. What is the recommendation for existing installations? Will I continue to maintain both systems or migrate to the new Conda system eventually?
+12. What is the recommendation for existing installations? Will I continue to maintain both systems or migrate to the new Conda system eventually?
 *********************************************************************************
 
 Old tools will use the traditional installation system; this system will
@@ -290,7 +293,7 @@ stay and will be supported for installing old tools to guarantee sustainability
 and reproducibility. New tools from the IUC, may be Conda only.
 
 
-12. What can I do if Conda doesn't work for me?
+13. What can I do if Conda doesn't work for me?
 *********************************************************************************
 
 There is currently a limitation in the way Conda packages are being
