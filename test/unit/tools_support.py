@@ -119,6 +119,7 @@ class MockApp( object ):
             len_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' ),
             builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
             migrated_tools_config=os.path.join(test_directory, "migrated_tools_conf.xml"),
+            server_name="test_server",
         )
 
         # Setup some attributes for downstream extension by specific tests.
