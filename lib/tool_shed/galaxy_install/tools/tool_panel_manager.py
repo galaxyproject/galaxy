@@ -1,6 +1,5 @@
 import logging
 import threading
-import time
 
 from xml.etree import ElementTree as XmlET
 
