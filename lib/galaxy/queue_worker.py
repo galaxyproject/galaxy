@@ -74,7 +74,6 @@ def reload_data_managers(app, **kwargs):
     app.data_managers._reload_count = reload_count + 1
 
 
-
 def reload_display_application(app, **kwargs):
     display_application_ids = kwargs.get('display_application_ids', None)
     log.debug("Executing display application reload task for %s" % display_application_ids)
