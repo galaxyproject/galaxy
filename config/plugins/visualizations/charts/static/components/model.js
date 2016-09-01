@@ -19,7 +19,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
             this.definition  = {};
         },
 
-        reset: function( options ) {
+        reset: function() {
             this.set({
                 title         : 'New Chart',
                 type          : '__first',
@@ -51,7 +51,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
                 type    : 'charts',
                 title   : this.get( 'title' ) || '',
                 config  : {
-                    dataset_id  : this.get( 'config' ).dataset_id,
+                    dataset_id  : this.get( 'dataset_id' ),
                     chart_dict  : chart_dict
                 }
             });
