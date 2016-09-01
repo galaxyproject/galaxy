@@ -13,6 +13,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
             this.tabs = new Tabs.View( {} );
             this.setElement( this.tabs.$el.addClass( 'charts-types' ) );
             this.render();
+            //this.listenTo( app.chart, 'change', function() { self.value( app.chart.get( 'type' ) ) } );
         },
 
         render: function() {
@@ -65,21 +66,17 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
 
         /** Set/Get selected chart type */
         value: function( new_value ) {
-            if ( new_value == '__first' ) {
-                new_value = this.first;
-            }
-            var before = this.$( '.current' ).attr( 'chart_id' );
             if ( new_value !== undefined ) {
+                new_value = new_value == '__first' ? this.first : new_value;
+                var before = this.$( '.current' ).attr( 'chart_id' );
                 this.$( '.current' ).removeClass( 'current' );
                 this.$( '[chart_id="' + new_value + '"]' ).addClass( 'current' );
-            }
-            var after = this.$( '.current' ).attr( 'chart_id' );
-            if( after !== undefined ) {
+                var after = this.$( '.current' ).attr( 'chart_id' );
                 if ( after != before && this.options.onchange ) {
                     this.options.onchange( after );
                 }
-                return after;
             }
+            return this.$( '.current' ).attr( 'chart_id' );
         },
 
         /** Add click handler */

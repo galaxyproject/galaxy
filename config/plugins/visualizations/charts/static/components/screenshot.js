@@ -43,7 +43,7 @@ define( [ 'libs/underscore' ], function( _ ) {
                 }
             }
         } catch ( err ) {
-            console.debug( 'FAILED - Screenshot::_canvas2png() - ' + err );
+            console.debug( 'FAILED - screenshot::_canvas2png() - ' + err );
             if (options.error) {
                 options.error( 'Please reduce your chart to a single panel and try again.' );
             }

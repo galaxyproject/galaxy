@@ -16,7 +16,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
             this.settings       = new Backbone.Model();
             this.definition     = {};
             this.viz_options    = viz_options;
-            console.debug( 'Model:initialize() - Initialized with configuration:' );
+            console.debug( 'model::initialize() - Initialized with configuration:' );
             console.debug( viz_options );
         },
 
@@ -34,7 +34,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
         state: function( value, info ) {
             this.set( { state : value, state_info : info } );
             this.trigger( 'set:state' );
-            console.debug( 'Model:state() - ' + info + ' (' + value + ')' );
+            console.debug( 'model::state() - ' + info + ' (' + value + ')' );
         },
 
         /** Pack and save nested chart model */
@@ -60,18 +60,18 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
             viz.save().then( function( response ) {
                 if ( response && response.id ) {
                     self.viz_options.visualization_id = response.id;
-                    console.debug( 'Model::save() - Received visualization id: ' + response.id );
+                    console.debug( 'model::save() - Received visualization id: ' + response.id );
                 } else {
-                    console.debug( 'Model::save() - Unrecognized response. Saving may have failed.' );
+                    console.debug( 'model::save() - Unrecognized response. Saving may have failed.' );
                 }
             });
-            console.debug( 'Model:save() - Saved with configuration:' );
+            console.debug( 'model::save() - Saved with configuration:' );
             console.debug( this.viz_options );
         },
 
         /** Load nested models/collections from packed dictionary */
         load: function() {
-            console.debug( 'Model:load() - Attempting to load with configuration:' );
+            console.debug( 'model::load() - Attempting to load with configuration:' );
             console.debug( this.viz_options );
             var chart_dict = this.viz_options.chart_dict;
             if ( chart_dict && chart_dict.attributes ) {
@@ -81,10 +81,10 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
                 this.groups.reset();
                 this.groups.add( chart_dict.groups );
                 this.set( 'modified', false );
-                console.debug( 'Model::load() - Loading chart model ' + chart_dict.attributes.type + '.' );
+                console.debug( 'model::load() - Loading chart model ' + chart_dict.attributes.type + '.' );
                 return true;
             }
-            console.debug( 'Model::load() - Chart attributes unavailable.' );
+            console.debug( 'model::load() - Chart attributes unavailable.' );
             return false;
         }
     });

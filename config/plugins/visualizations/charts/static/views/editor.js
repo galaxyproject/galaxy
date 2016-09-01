@@ -38,10 +38,19 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.types = new TypesView( app, {
                 onchange   : function( chart_type ) {
                     var chart_definition = self.app.types[ chart_type ];
-                    !chart_definition && console.debug( 'FAILED - Editor::onchange() - Chart type not supported.' );
-                    self.chart.definition = chart_definition;
-                    self.chart.set( { type : chart_type, modified : true } );
-                    console.debug( 'Editor::onchange() - Switched chart type.' );
+                    if ( !chart_definition ) {
+                        self.tabs.hideTab( 'settings' );
+                        self.tabs.hideTab( 'groups' );
+                        self.portlet.hideOperation( 'save' );
+                        console.debug( 'editor::onchange() - Chart type not found.' );
+                    } else {
+                        self.tabs.showTab( 'settings' );
+                        self.tabs.showTab( 'groups' );
+                        self.portlet.showOperation( 'save' );
+                        self.chart.definition = chart_definition;
+                        self.chart.set( { type : chart_type, modified : true } );
+                        console.debug( 'editor::onchange() - Switched chart type.' );
+                    }
                 },
                 ondblclick  : function( chart_id ) {
                     self._saveChart();
