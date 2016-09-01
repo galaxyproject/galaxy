@@ -33,7 +33,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     $el.append( $( self._templateThumbnailItem( {
                         id      : type_id,
                         title   : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + title + ' (' + type.library + ')',
-                        url     : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
+                        url     : repository_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
                     })).tooltip( { title: type.description, placement: 'bottom' } ) );
                 }
             });
@@ -50,7 +50,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                     id          : type_id,
                     title       : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
                     description : type.description,
-                    url         : remote_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
+                    url         : repository_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
                 });
             });
             if ( index.length > 0 ) {

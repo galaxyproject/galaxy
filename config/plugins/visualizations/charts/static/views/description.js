@@ -14,7 +14,7 @@ define( [ 'utils/utils' ], function( Utils ) {
         },
         render: function() {
             if ( this.chart.get( 'type' ) ) {
-                this.$image.attr( 'src', remote_root + 'src/visualizations/' + this.app.split( this.chart.get( 'type' ) ) + '/logo.png' );
+                this.$image.attr( 'src', repository_root + 'src/visualizations/' + this.app.split( this.chart.get( 'type' ) ) + '/logo.png' );
                 this.$title.html( this.chart.definition.title + ' (' + this.chart.definition.library + ')' );
                 this.$text.html( Utils.linkify( this.chart.definition.description || '' ) );
                 this.$el.show();

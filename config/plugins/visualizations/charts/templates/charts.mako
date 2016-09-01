@@ -1,7 +1,7 @@
 <%
-    root        = h.url_for( "/" )
-    app_root    = root + "plugins/visualizations/charts/static/"
-    remote_root = app.config.get( "charts_plugins_url", "https://raw.githubusercontent.com/guerler/galaxy-charts/master/" )
+    root            = h.url_for( "/" )
+    app_root        = root + "plugins/visualizations/charts/static/"
+    repository_root = app.config.get( "charts_plugins_url", "https://raw.githubusercontent.com/guerler/galaxy-charts/master/" )
 %>
 
 <!DOCTYPE HTML>
@@ -24,7 +24,7 @@
     <body>
         <script type="text/javascript">
             var app_root = '${app_root}';
-            var remote_root = '${remote_root}';
+            var repository_root = '${repository_root}';
             var Galaxy = Galaxy || parent.Galaxy || {
                 root    : '${root}',
                 emit    : {
@@ -44,7 +44,7 @@
                 paths: {
                     "plugin"        : "${app_root}",
                     "d3"            : "libs/d3",
-                    "remote"        : "${remote_root}"
+                    "repository"    : "${repository_root}"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
