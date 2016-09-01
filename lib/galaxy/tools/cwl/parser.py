@@ -157,7 +157,7 @@ class ToolProxy( object ):
 class CommandLineToolProxy(ToolProxy):
 
     def description(self):
-        return self._tool.tool.get('description')
+        return self._tool.tool.get('doc')
 
     def label(self):
         return self._tool.tool.get('label')
@@ -493,7 +493,7 @@ def _field_to_field_type(field):
 def _field_metadata(field):
     name = field["name"]
     label = field.get("label", None)
-    description = field.get("description", None)
+    description = field.get("doc", None)
     return name, label, description
 
 
