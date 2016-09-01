@@ -145,7 +145,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 if ( valid ) {
                     _.each( group.get( '__data_columns' ), function( data_columns, name ) {
                         if ( group.attributes[ name ] === null ) {
-                            self.message.update( { status: 'danger', message: 'This chart type requires column types not found in your tabular file.' } );
+                            self.message.update( { status: 'danger', message: 'This chart type requires column types not found in your tabular file.', persistent: false } );
                             self.tabs.show( 'groups' );
                             valid = false;
                         }
