@@ -171,7 +171,7 @@ return Backbone.View.extend({
             window.open( options.url );
         } else if ( options.target == '_top' || options.target == '_parent' || options.target == '_self' ) {
             window.location = options.url;
-        } else if ( !this.active ) {
+        } else if ( !this.active || options.noscratchbook ) {
             var $galaxy_main = $( window.parent.document ).find( '#galaxy_main' );
             if ( options.target == 'galaxy_main' || options.target == 'center' ) {
                 if ( $galaxy_main.length === 0 ) {
