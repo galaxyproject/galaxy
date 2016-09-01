@@ -49,6 +49,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
                 chart_dict.groups.push( group.attributes );
             });
             var viz = new Visualization({
+                id      : this.viz_options.visualization_id || undefined,
                 type    : 'charts',
                 title   : this.get( 'title' ) || '',
                 config  : {
