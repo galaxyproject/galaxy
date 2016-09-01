@@ -737,7 +737,7 @@ class Text( Data ):
     def count_data_lines(self, dataset):
         """
         Count the number of lines of data in dataset.
-        Elmination of blank lines and comments removed per issue 2694.
+        Elimination of blank lines and comments removed per issue 2694.
         """
         data_lines = 0
         for line in open( dataset.file_name ):
