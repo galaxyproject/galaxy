@@ -192,14 +192,14 @@ var Collection = Backbone.Collection.extend({
                     title       : 'Login',
                     url         : 'user/login',
                     target      : 'galaxy_main',
-                    noscratchbook   : true
+                    noscratch   : true
                 }]
             };
             options.allow_user_creation && userTab.menu.push({
-                title   : 'Register',
-                url     : 'user/create',
-                target  : 'galaxy_main',
-                noscratchbook   : true
+                title       : 'Register',
+                url         : 'user/create',
+                target      : 'galaxy_main',
+                noscratch   : true
             });
             this.add( userTab );
         } else {
@@ -322,7 +322,7 @@ var Tab = Backbone.View.extend({
             title       : '',
             url         : '',
             target      : '_parent',
-	    noscratchbook   : false
+            noscratch   : false
         });
         options.url = self._formatUrl( options.url );
         return $( '<li/>' ).append(
