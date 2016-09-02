@@ -2,7 +2,7 @@
     root            = h.url_for( "/" )
     app_root        = root + "plugins/visualizations/charts/static/"
     ##repository_root = app.config.get( "charts_repository_url", root + "plugins/visualizations/charts/static/repository" )
-    repository_root = app.config.get( "charts_repository_url", "https://raw.githubusercontent.com/guerler/galaxy-charts/master/" )
+    repository_root = app.config.get( "charts_repository_url", "http://cdn.rawgit.com/guerler/galaxy-charts/master/" )
 %>
 
 <!DOCTYPE HTML>
