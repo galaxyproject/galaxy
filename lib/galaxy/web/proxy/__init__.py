@@ -2,7 +2,7 @@ import logging
 import os
 import json
 
-from .filelock import FileLock
+from galaxy.util.filelock import FileLock
 from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
 from galaxy.util import sqlite
