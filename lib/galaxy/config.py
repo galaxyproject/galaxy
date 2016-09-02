@@ -13,8 +13,8 @@ import socket
 import string
 import sys
 import tempfile
-import time
 import threading
+import time
 
 from datetime import timedelta
 
