@@ -7,6 +7,8 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
         initialize: function( options ) {
             var self = this;
             require( [ 'repository/build/registry' ], function( Registry ) {
+                console.debug( 'app::initialize() - Loaded Registry:' );
+                console.debug( Registry );
                 Utils.get({
                     url     : Galaxy.root + 'api/datasets/' + options.dataset_id,
                     cache   : true,
@@ -29,7 +31,7 @@ define( [ 'mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils
             }, function( err ) {
                 self.$el.append( $( '<div/>' ).addClass( 'errormessagelarge' )
                         .append( $( '<p/>' ).text( 'Unable to access the plugin repository:' ) )
-                        .append( $( '<pre/>' ).text( 'charts_plugin_url = ' + repository_root + 'package.json' ) )
+                        .append( $( '<pre/>' ).text( 'charts_repository_url = ' + repository_root + 'package.json' ) )
                         .append( $( '<p/>' ).html( 'Please verify that your internet connection works properly and that the above url is correct. Contact your admin if this error persists.' ) ) );
             });
         },
