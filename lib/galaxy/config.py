@@ -806,8 +806,10 @@ class ConfiguresGalaxyMixin:
         while True:
             # Wait till toolbox reload has been triggered
             # and make sure toolbox has finished reloading)
-            if not self.toolbox.has_reloaded(old_toolbox):
-                time.sleep(1)
+            if self.toolbox.has_reloaded(old_toolbox):
+                break
+
+            time.sleep(1)
 
     def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
