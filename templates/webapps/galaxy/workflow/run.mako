@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 
 ## TEMPORARY SWITCH FOR THE NEW TOOL FORM
-%if util.string_as_bool(trans.app.config.get('run_workflow_toolform_upgrade', False)):
+%if util.string_as_bool(trans.app.config.get('run_workflow_toolform_upgrade', True)):
     ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
     ${h.css('jquery-ui/smoothness/jquery-ui')}
     <%
