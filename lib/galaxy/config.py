@@ -14,6 +14,8 @@ import string
 import sys
 import tempfile
 import threading
+import time
+
 from datetime import timedelta
 
 from six import string_types
@@ -800,6 +802,15 @@ class ConfiguresGalaxyMixin:
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
+    def wait_for_toolbox_reload(self, old_toolbox):
+        while True:
+            # Wait till toolbox reload has been triggered
+            # and make sure toolbox has finished reloading)
+            if self.toolbox.has_reloaded(old_toolbox):
+                break
+
+            time.sleep(1)
+
     def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
 
@@ -808,12 +819,11 @@ class ConfiguresGalaxyMixin:
             tool_configs.append( self.config.migrated_tools_config )
 
         from galaxy import tools
-        with self._toolbox_lock:
-            old_toolbox = self.toolbox
-            self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-            self.reindex_tool_search()
-            if old_toolbox:
-                old_toolbox.shutdown()
+        old_toolbox = self.toolbox
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        self.reindex_tool_search()
+        if old_toolbox:
+            old_toolbox.shutdown()
 
     def _configure_toolbox( self ):
         from galaxy.managers.citations import CitationsManager
@@ -822,7 +832,7 @@ class ConfiguresGalaxyMixin:
         from galaxy.tools.toolbox.cache import ToolCache
         self.tool_cache = ToolCache()
 
-        self._toolbox_lock = threading.Lock()
+        self._toolbox_lock = threading.RLock()
         self.toolbox = None
         self.reload_toolbox()
 

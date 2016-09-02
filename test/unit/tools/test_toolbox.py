@@ -9,6 +9,7 @@ from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
+from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 import tools_support
 
 import routes
@@ -252,19 +253,6 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         # Assert tools merged in tool panel.
         assert len( self.toolbox._tool_panel ) == 1
 
-    def test_update_shed_conf(self):
-        self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config( { "config_filename": "tool_conf.xml" } )
-        assert self.reindexed
-        self.assert_integerated_tool_panel(exists=True)
-
-    def test_update_shed_conf_deactivate_only(self):
-        self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config(  { "config_filename": "tool_conf.xml" }, integrated_panel_changes=False )
-        assert self.reindexed
-        # No changes, should be regenerated
-        self.assert_integerated_tool_panel(exists=False)
-
     def test_get_tool_id( self ):
         self._init_tool()
         self._setup_two_versions_in_config( )
@@ -448,3 +436,8 @@ class SimplifiedToolBox( ToolBox ):
             tool_root_dir,
             app,
         )
+        self._tool_conf_watcher = get_tool_conf_watcher(dummy_callback)
+
+
+def dummy_callback():
+    pass

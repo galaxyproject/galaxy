@@ -102,11 +102,12 @@ class ToolBox( BaseGalaxyToolBox ):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app ):
+    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            tool_conf_watcher=tool_conf_watcher
         )
 
     @property
