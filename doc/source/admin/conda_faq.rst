@@ -133,7 +133,7 @@ be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` fi
 
    .. code-block:: bash
 
-      $ conda create --name __package__samtools@__version__0.1.19 samtools==0.1.19 --channel bioconda
+      $ conda create --name __samtools@0.1.19 samtools==0.1.19 --channel bioconda
 
    Tools that require samtools version 0.1.19 will then be able to find
    and use the installed Conda package.
