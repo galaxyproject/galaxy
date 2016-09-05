@@ -23,6 +23,10 @@ class ToolPanelManager( object ):
         config file to generate the entire list of config_elems instead of using the in-memory list
         since it will be a subset of the entire list if one or more repositories have been deactivated.
         """
+        if not elem_list:
+            # We may have an empty elem_list in case a data manager is being installed.
+            # In that case we don't want to wait for a toolbox reload that will never happen.
+            return
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
