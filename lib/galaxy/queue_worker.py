@@ -51,17 +51,25 @@ def reload_tool(app, **kwargs):
 
 def reload_toolbox(app, **kwargs):
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
+    reload_count = app.toolbox._reload_count
+    app.toolbox = _get_new_toolbox(app)
+    app.reindex_tool_search()
+    app.toolbox._reload_count = reload_count + 1
+
+
+def _get_new_toolbox(app):
+    """
+    Generate a new toolbox, by constructing a toolbox from the config files,
+    and then adding pre-existing data managers from the old toolbox to the new toolbox.
+    """
+    from galaxy import tools
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
-
-    from galaxy import tools
-    old_toolbox = app.toolbox
-    reload_count = old_toolbox._reload_count
-    app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, old_toolbox._tool_conf_watcher)
-    reload_data_managers(app)
-    app.reindex_tool_search()
-    app.toolbox._reload_count = reload_count + 1
+    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
+    new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
+    [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
+    return new_toolbox
 
 
 def reload_data_managers(app, **kwargs):
