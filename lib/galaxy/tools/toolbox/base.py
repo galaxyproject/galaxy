@@ -512,55 +512,36 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             path = string.Template(path_template).safe_substitute(**template_kwds)
             repository_id = None
 
-            tool_shed_repository = None
+            tool = self.load_tool_from_cache(os.path.join(tool_path, path))
+            if tool and guid:
+                # tool was in cache, so let's short-circuit and return
+                log.debug("Loading tool %s from cache", str(tool.id))
+                key = 'tool_%s' % str(tool.id)
+                self.__add_tool(tool, load_panel_dict, panel_dict)
+                integrated_panel_dict.update_or_append(index, key, tool)
+                return
+            else:
+                tool_shed_repository = None
             can_load_into_panel_dict = True
-            if guid is not None:
-                # The tool is contained in an installed tool shed repository, so load
-                # the tool only if the repository has not been marked deleted.
-                tool_shed = item.elem.find( "tool_shed" ).text
-                repository_name = item.elem.find( "repository_name" ).text
-                repository_owner = item.elem.find( "repository_owner" ).text
-                installed_changeset_revision_elem = item.elem.find( "installed_changeset_revision" )
-                if installed_changeset_revision_elem is None:
-                    # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-                    installed_changeset_revision_elem = item.elem.find( "changeset_revision" )
-                installed_changeset_revision = installed_changeset_revision_elem.text
-                if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
-                    try:
-                        tool_shed_path, reduced_path = path.split('/repos/', 1)
-                        splitted_path = reduced_path.split('/')
-                        assert tool_shed_path == tool_shed
-                        assert splitted_path[0] == repository_owner
-                        assert splitted_path[1] == repository_name
-                        if splitted_path[2] != installed_changeset_revision:
-                            # This can happen if the Tool Shed repository has been
-                            # updated to a new revision and the installed_changeset_revision
-                            # element in shed_tool_conf.xml file has been updated too
-                            log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path, installed_changeset_revision, splitted_path[2])
-                            installed_changeset_revision = splitted_path[2]
-                    except AssertionError:
-                        log.debug("Error while loading tool %s", path)
-                        pass
-                tool_shed_repository = self._get_tool_shed_repository( tool_shed,
-                                                                       repository_name,
-                                                                       repository_owner,
-                                                                       installed_changeset_revision )
+            if guid is not None and not tool_shed_repository:
+                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id( tool_shed_repository.id )
-                # Else there is not yet a tool_shed_repository record, we're in the process of installing
-                # a new repository, so any included tools can be loaded into the tool panel.
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=internal )
+                    tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=internal )
+            if not tool:
+                tool = self.load_tool(os.path.join(tool_path, path), guid=guid, repository_id=repository_id,
+                                      use_cached=internal)
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
-            key = 'tool_%s' % str( tool.id )
+            key = 'tool_%s' % str(tool.id)
             if can_load_into_panel_dict:
                 if guid is not None:
-                    tool.tool_shed = tool_shed
-                    tool.repository_name = repository_name
-                    tool.repository_owner = repository_owner
-                    tool.installed_changeset_revision = installed_changeset_revision
+                    tool.tool_shed = tool_shed_repository.tool_shed
+                    tool.repository_name = tool_shed_repository.name
+                    tool.repository_owner = tool_shed_repository.owner
+                    tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
@@ -581,6 +562,37 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:
             log.exception( "Error reading tool from path: %s" % path )
+
+    def get_tool_repository_from_xml_item(self, item, path):
+        tool_shed = item.elem.find("tool_shed").text
+        repository_name = item.elem.find("repository_name").text
+        repository_owner = item.elem.find("repository_owner").text
+        installed_changeset_revision_elem = item.elem.find("installed_changeset_revision")
+        if installed_changeset_revision_elem is None:
+            # Backward compatibility issue - the tag used to be named 'changeset_revision'.
+            installed_changeset_revision_elem = item.elem.find("changeset_revision")
+        installed_changeset_revision = installed_changeset_revision_elem.text
+        if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
+            try:
+                tool_shed_path, reduced_path = path.split('/repos/', 1)
+                splitted_path = reduced_path.split('/')
+                assert tool_shed_path == tool_shed
+                assert splitted_path[0] == repository_owner
+                assert splitted_path[1] == repository_name
+                if splitted_path[2] != installed_changeset_revision:
+                    # This can happen if the Tool Shed repository has been
+                    # updated to a new revision and the installed_changeset_revision
+                    # element in shed_tool_conf.xml file has been updated too
+                    log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path,
+                              installed_changeset_revision, splitted_path[2])
+                    installed_changeset_revision = splitted_path[2]
+            except AssertionError:
+                log.debug("Error while loading tool %s", path)
+                pass
+        return self._get_tool_shed_repository(tool_shed,
+                                              repository_name,
+                                              repository_owner,
+                                              installed_changeset_revision)
 
     def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         # Abstract class doesn't have a dependency on the database, for full Tool Shed
@@ -696,17 +708,26 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     def load_tool( self, config_file, guid=None, repository_id=None, use_cached=False, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
-        tool_cache = getattr( self.app, 'tool_cache', None )
-        tool = use_cached and tool_cache and tool_cache.get_tool( config_file )
+        tool = None
+        if use_cached:
+            tool = self.load_tool_from_cache(config_file)
         if not tool:
             tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
-            if tool_cache:
-                self.app.tool_cache.cache_tool(config_file, tool)
-        tool_id = tool.id
-        if not tool_id.startswith("__"):
+            self.add_tool_to_cache(tool, config_file)
+        if not tool.id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
+        return tool
+
+    def add_tool_to_cache(self, tool, config_file):
+        tool_cache = getattr(self.app, 'tool_cache', None)
+        if tool_cache:
+            self.app.tool_cache.cache_tool(config_file, tool)
+
+    def load_tool_from_cache(self, config_file):
+        tool_cache = getattr( self.app, 'tool_cache', None )
+        tool = tool_cache and tool_cache.get_tool( config_file )
         return tool
 
     def load_hidden_lib_tool( self, path ):
