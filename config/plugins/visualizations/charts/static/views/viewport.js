@@ -93,6 +93,7 @@ define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Port
                 new ChartView( { process: process, chart: chart, dataset: self.app.dataset, targets: self.targets } );
             }, function( err ) {
                 chart.state( 'failed', 'Please verify that your internet connection works properly. This visualization could not be accessed in the repository. Please contact the Galaxy Team if this error persists.' );
+                console.debug( err );
                 process.resolve();
             });
         }

@@ -49,7 +49,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                 index.push( {
                     id          : type_id,
                     title       : ( type.zoomable ? '<span class="fa fa-search-plus"/>' : '' ) + type.title + ' (' + type.library + ')',
-                    description : type.description,
+                    description : type.description || 'No description available.',
                     url         : repository_root + 'src/visualizations/' + self.app.split( type_id ) + '/logo.png'
                 });
             });

@@ -34,7 +34,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
                                     input.is_zero && columns.push( { 'label' : 'Column: None', 'value' : 'zero' } );
                                     var meta = dataset.metadata_column_types;
                                     for ( var key in meta ) {
-                                        var valid = ( [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 && input.is_numeric ) || input.is_text || input.is_label;
+                                        var valid = ( [ 'int', 'float' ].indexOf( meta[ key ] ) != -1 && input.is_numeric ) || input.is_label;
                                         valid && columns.push( { 'label' : 'Column: ' + ( parseInt( key ) + 1 ), 'value' : key } );
                                     }
                                     input.data = columns;
