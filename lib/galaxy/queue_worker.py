@@ -53,7 +53,6 @@ def reload_toolbox(app, **kwargs):
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
     app.toolbox = _get_new_toolbox(app)
-    app.reindex_tool_search()
     app.toolbox._reload_count = reload_count + 1
 
 
@@ -69,6 +68,7 @@ def _get_new_toolbox(app):
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
+    app.reindex_tool_search(new_toolbox)
     return new_toolbox
 
 
