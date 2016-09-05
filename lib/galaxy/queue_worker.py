@@ -5,6 +5,7 @@ reloading the toolbox, etc., across multiple processes.
 
 import logging
 import threading
+import time
 
 import galaxy.queues
 from galaxy import util
@@ -65,9 +66,12 @@ def _get_new_toolbox(app):
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)
+    start = time.time()
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
+    end = time.time() - start
+    log.debug("Toolbox reload took %d seconds", end)
     app.reindex_tool_search(new_toolbox)
     return new_toolbox
 
