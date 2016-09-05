@@ -1,6 +1,8 @@
 import logging
 import os
 import string
+import time
+from xml.etree.ElementTree import ParseError
 
 from markupsafe import escape
 from six import iteritems
@@ -104,7 +106,16 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         for config_filename in config_filenames:
             try:
                 self._init_tools_from_config( config_filename )
-            except:
+            except ParseError:
+                # Occasionally we experience "Missing required parameter 'shed_tool_conf'."
+                # This happens if parsing the shed_tool_conf fails, so we just sleep a second and try again.
+                # TODO: figure out why this fails occasionally (try installing hundreds of tools in batch ...).
+                time.sleep(1)
+                try:
+                    self._init_tools_from_config(config_filename)
+                except Exception:
+                    raise
+            except Exception:
                 log.exception( "Error loading tools defined in config %s", config_filename )
 
     def _init_tools_from_config( self, config_filename ):
