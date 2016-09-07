@@ -128,7 +128,7 @@ class ToolParameter( object, Dictifiable ):
         """
         return []
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         """Convert a value to a string representation suitable for persisting"""
         return unicodify( value )
 
@@ -136,13 +136,13 @@ class ToolParameter( object, Dictifiable ):
         """Convert a value created with to_json back to an object representation"""
         return value
 
-    def value_to_basic( self, value, app ):
+    def value_to_basic( self, value, app, use_security=False ):
         if isinstance( value, RuntimeValue ):
             return { '__class__': 'RuntimeValue' }
         elif isinstance( value, dict ):
             if value.get('__class__') == 'RuntimeValue':
                 return value
-        return self.to_json( value, app )
+        return self.to_json( value, app, use_security )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         # Handle Runtime values (valid for any parameter?)
@@ -249,7 +249,7 @@ class TextToolParameter( ToolParameter ):
         else:
             return form_builder.TextField( self.name, self.size, value )
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
             rval = ''
@@ -471,7 +471,7 @@ class BooleanToolParameter( ToolParameter ):
     def to_python( self, value, app=None ):
         return ( value in [ True, 'True', 'true' ] )
 
-    def to_json( self, value, app=None ):
+    def to_json( self, value, app, use_security ):
         if self.to_python( value, app ):
             return 'true'
         else:
@@ -546,7 +546,7 @@ class FileToolParameter( ToolParameter ):
         """
         return "multipart/form-data"
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         if value in [ None, '' ]:
             return None
         elif isinstance( value, string_types ):
@@ -616,7 +616,7 @@ class FTPFileToolParameter( ToolParameter ):
     def from_json( self, value, trans=None, other_values={} ):
         return self.to_python( value, trans.app, validate=True )
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         return self.to_python( value, app )
 
     def to_python( self, value, app, validate=False ):
@@ -954,7 +954,7 @@ class SelectToolParameter( ToolParameter ):
             value = value_map( value )
         return value
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         return value
 
     def get_initial_value( self, trans, other_values ):
@@ -1678,7 +1678,7 @@ class BaseDataToolParameter( ToolParameter ):
                     if dataset_collection_matcher.hdca_match( hdca, reduction=self.multiple ):
                         return hdca
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         def single_to_json( value ):
             src = None
             if isinstance( value, dict ) and 'src' in value and 'id' in value:
@@ -1690,7 +1690,7 @@ class BaseDataToolParameter( ToolParameter ):
             elif hasattr( value, 'id' ):
                 src = 'hda'
             if src is not None:
-                return { 'id' : app.security.encode_id( value.id ), 'src' : src }
+                return { 'id' : app.security.encode_id( value.id ) if use_security else value.id, 'src' : src }
         if value not in [ None, '', 'None' ]:
             if isinstance( value, list ) and len( value ) > 0:
                 values = [ single_to_json( v ) for v in value ]
@@ -1702,7 +1702,7 @@ class BaseDataToolParameter( ToolParameter ):
     def to_python( self, value, app ):
         def single_to_python( value ):
             if isinstance( value, dict ) and 'src' in value:
-                id = app.security.decode_id( value[ 'id' ] )
+                id = value[ 'id' ] if isinstance( value[ 'id' ], int ) else app.security.decode_id( value[ 'id' ] )
                 if value[ 'src' ] == 'dce':
                     return app.model.context.query( app.model.DatasetCollectionElement ).get( id )
                 elif value[ 'src' ] == 'hdca':
@@ -1726,7 +1726,7 @@ class BaseDataToolParameter( ToolParameter ):
             decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
             if not decoded_id.isdigit():
                 decoded_id = app.security.decode_id( decoded_id )
-            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( decoded_id ) )
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( decoded_id ) )
         elif str( value ).startswith( "dce:" ):
             return app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
         elif str( value ).startswith( "hdca:" ):
@@ -2268,25 +2268,25 @@ class LibraryDatasetToolParameter( ToolParameter ):
 
     # converts values to json representation:
     #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         if not isinstance( value, list ):
             value = [value]
         lst = []
         for item in value:
-            encoded_id = encoded_name = None
+            lda_id = lda_name = None
             if isinstance(item, app.model.LibraryDatasetDatasetAssociation):
-                encoded_id = app.security.encode_id( item.id )
-                encoded_name = item.name
+                lda_id = app.security.encode_id( item.id ) if use_security else item.id
+                lda_name = item.name
             elif isinstance(item, dict):
-                encoded_id = item.get('id')
-                encoded_name = item.get('name')
+                lda_id = item.get('id')
+                lda_name = item.get('name')
             else:
                 lst = []
                 break
-            if encoded_id is not None:
+            if lda_id is not None:
                 lst.append( {
-                    'id'   : encoded_id,
-                    'name' : encoded_name,
+                    'id'   : lda_id,
+                    'name' : lda_name,
                     'src'  : 'ldda'
                 } )
         if len( lst ) == 0:
@@ -2308,15 +2308,15 @@ class LibraryDatasetToolParameter( ToolParameter ):
             if isinstance(item, app.model.LibraryDatasetDatasetAssociation):
                 lst.append(item)
             else:
-                encoded_id = None
+                lda_id = None
                 if isinstance(item, dict):
-                    encoded_id = item.get('id')
+                    lda_id = item.get('id')
                 elif isinstance(item, string_types):
-                    encoded_id = item
+                    lda_id = item
                 else:
                     lst = []
                     break
-                lda = app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( app.security.decode_id( encoded_id ) )
+                lda = app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( lda_id if isinstance( lda_id, int ) else app.security.decode_id( lda_id ) )
                 if lda is not None:
                     lst.append( lda )
                 elif validate:
