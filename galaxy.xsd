@@ -14,7 +14,21 @@
   
   <xs:element name="tool">
     <xs:annotation>
-      <xs:documentation xml:lang="en">The outer-most tag set</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+The outer-most tag set of tool XML files.
+
+## Example:
+
+```xml
+<tool id="ucsc_table_direct1"
+      name="UCSC Main"
+      version="1.0.0"
+      hidden="false"
+      profile_version="16.01"
+      tool_type="data_source"
+      URL_method="post">
+```
+      ]]></xs:documentation>
     </xs:annotation>
     <xs:complexType>
       <xs:all>
@@ -337,6 +351,7 @@
       <xs:element name="param" type="Param"/>
       <xs:element name="repeat" type="Repeat"/>
       <xs:element name="conditional" type="Conditional"/>
+      <xs:element name="section" type="Section"/>
       <xs:element name="display" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for display</xs:documentation>
@@ -421,8 +436,32 @@
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-  
-  
+
+  <xs:complexType name="Section">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+        TODOWIKIMOVE
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The internal key used for the section</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="title" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Human readable label for the section</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="expanded" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>  
   
   <xs:complexType name="Param">
     <xs:annotation>
@@ -579,6 +618,20 @@
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
+        <xs:attribute name="detect_errors" type="xs:string">
+          <xs:annotation>
+            <xs:documentation><![CDATA[
+If present, this attribute can be one of
+
+* ``default`` no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
+* ``exit_code`` error if tool exit code is not 0. (The @jmchilton recommendation).
+* ``aggressive`` error if tool exit code is not 0 or either Exception: or Error: appears in standard error/output. (The @bgruening recommendation).
+
+For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - legacy tools default to ``default`` described above.
+]]>
+            </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="interpreter" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
@@ -1072,7 +1125,171 @@
     </xs:simpleContent>
   </xs:complexType>
   
-  
+  <xs:complexType name="RequestParameterTranslation">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+        See ~/tools/data_source/ucsc_tablebrowser.xml for an example of how to use this tag set. This tag set is used only in "data_source" tools (the "tool_type" attribute value is "data_source"). This tag set is contained within the <param> tag set - it contains a set of <request_param> tags.
+      ]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="request_param" minOccurs="0" maxOccurs="unbounded" type="RequestParameter"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RequestParameter">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the <request_param_translation> tag set ( used only in "data_source" tools ) - the external data source application may send back parameter names like "GENOME" which must be translated to "dbkey" in Galaxy.]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="RequestParameterElement" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="galaxy_name" type="RequestParameterGalaxyNameType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          Each of these maps directly to a remote_name value
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="remote_name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          The string representing the name of the parameter in the remote data source
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="missing" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">
+          The default value to use for galaxy_name if the remote_name parameter is not included in the request
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:simpleType name="RequestParameterGalaxyNameType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="URL" />
+      <xs:enumeration value="dbkey" />
+      <xs:enumeration value="organism" />
+      <xs:enumeration value="table" />
+      <xs:enumeration value="description" />
+      <xs:enumeration value="name" />
+      <xs:enumeration value="info" />
+      <xs:enumeration value="data_type" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:group name="RequestParameterElement">
+    <xs:choice>
+      <xs:element name="append_param" type="RequestParameterAppend" />
+      <xs:element name="value_translation" type="RequestParameterValueTranslation" />
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="RequestParameterAppend">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the <request_param> tag set if galaxy_name="URL" - some remote data sources ( e.g., Gbrowse, Biomart ) send parameters back to Galaxy in the initial response that must be added to the value of "URL" prior to Galaxy sending the secondary request to the remote data source via URL.]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="value" minOccurs="0" maxOccurs="unbounded" type="RequestParameterAppendValue"/>
+    </xs:sequence>
+    <xs:attribute name="separator" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+The text to use to join the requested parameters together (example ``separator="&amp;"``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="first_separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+The text to use to join the request_param parameters to the first requested parameter (example ``first_separator="?"``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="join" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+The text to use to join the param name to its value (example ``join="="``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="RequestParameterAppendValue">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the <append_param> tag set - allows for appending a param name / value pair to the value of URL.
+
+Example:
+
+```xml
+<request_param_translation>
+    <request_param galaxy_name="URL" remote_name="URL" missing="">
+        <append_param separator="&amp;" first_separator="?" join="=">
+            <value name="_export" missing="1" />
+        </append_param>
+    </request_param>
+</request_param_tranlsation>
+```
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Any valid HTTP request parameter name. The name / value pair must be received from the remote data source and will be appended to the value of URL as something like "&_export=1" (e.g. ``name="_export"``).
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="missing" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[Must be a valid HTTP request parameter value (e.g. ``missing="1"``).]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="RequestParameterValueTranslation">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the <request_param> tag set the parameter value received from a remote data source may be named differently in Galaxy, and this tag set allows for the value to be appropriately translated.]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="value" minOccurs="0" maxOccurs="unbounded" type="RequestParameterValueTranslationValue"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RequestParameterValueTranslationValue">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the <value_translation> tag set - allows for changing the data type value to something supported by Galaxy.
+
+Example:
+
+```xml
+<request_param_translation>
+    <request_param galaxy_name="data_type" remote_name="hgta_outputType" missing="bed" >
+        <value_translation>
+            <value galaxy_value="tabular" remote_value="primaryTable" />
+        </value_translation>
+    </request_param>
+</request_param_tranlsation>
+```
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="galaxy_value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+The target value (e.g. for setting data format: the list of supported data formats is contained in the ~/config/datatypes_conf.xml.sample file).
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="remote_value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[The value supplied by the remote data source application]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
   <xs:complexType name="Stdio">
     <xs:annotation>
       <xs:documentation xml:lang="en">Galaxy currently supports using regular expressions to scan stdout and stderr, and it also allows exit codes to be scanned for ranges. The 'stdio' tag has two subtags, 'regex' and 'exit_code', to define regular expressions and exit code processing, respectively. </xs:documentation>
@@ -1142,7 +1359,7 @@
       <xs:enumeration value="literal"/>
     </xs:restriction>
   </xs:simpleType>
-  
+
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for ChangeFormat</xs:documentation>
