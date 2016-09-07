@@ -44,6 +44,7 @@ The outer-most tag set of tool XML files.
             <xs:documentation xml:lang="en">Specifies the command to be run in order to get the tool's version string. The resulting value will be found in the "Info" field of the history dataset.</xs:documentation>
           </xs:annotation>
         </xs:element>
+        <xs:element name="request_parameter_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="command" type="Command"/>
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
         <xs:element name="outputs" type="Outputs" minOccurs="0"/>
@@ -785,70 +786,144 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
   </xs:complexType>
   <xs:complexType name="Sanitizer">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Sanitizer</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+See ~/tools/filters/grep.xml for an example of how to use this tag set. This tag set is used to replace the basic parameter sanitization with custom directives. This tag set is contained within the <param> tag set - it contains a set of <valid> and <mapping> tags.
+
+Examples:
+
+```
+<param name="mystring" type="text" label="Say something interesting">
+  <sanitizer invalid_char="">
+    <valid initial="string.letters,string.digits"><add value="_" /> </valid>
+  </sanitizer>
+</param>
+```
+
+```
+<sanitizer>
+  <valid initial="string.printable">
+   <remove value="&apos;"/>
+  </valid>
+  <mapping initial="none">
+    <add source="&apos;" target=""/>
+  </mapping>
+</sanitizer>
+```
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="valid" type="Valid" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="SanitizerElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="sanitize" type="PermissiveBoolean">
+    <xs:attribute name="sanitize" type="PermissiveBoolean" default="true">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for sanitize</xs:documentation>
+        <xs:documentation xml:lang="en">is this parameter sanitized (default is ``true``)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="invalid_char" type="xs:string">
+    <xs:attribute name="invalid_char" type="xs:string" default="X">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for invalid_char</xs:documentation>
+        <xs:documentation xml:lang="en">character to replace invalid characters with</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="Valid">
+  <xs:group name="SanitizerElement">
+    <xs:choice>
+      <xs:element name="valid" type="SanitizerValid"/>
+      <xs:element name="mapping" type="SanitizerMapping"/>
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="SanitizerValid">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Valid</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the <sanitizer> tag set. Used to specify a list of allowed characters. Contains <add> and <remove> tags.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="ValidElement" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="SanitizerValidElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="initial" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for initial</xs:documentation>
+        <xs:documentation xml:lang="en">initial characters to allow
+no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="ValidElementType" abstract="true">
+  <xs:complexType name="SanitizerValidElementType" abstract="true">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ValidElementType</xs:documentation>
+      <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for preset</xs:documentation>
+        <xs:documentation xml:lang="en">Target characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">A character to add or remove from the list of valid characters</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="Add">
+  <xs:complexType name="SanitizerValidAdd">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Add</xs:documentation>
+      <xs:documentation xml:lang="en">Used to add individual characters or preset lists of characters. Character must not be allowed as a valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
     </xs:annotation>
     <xs:complexContent>
-      <xs:extension base="ValidElementType"/>
+      <xs:extension base="SanitizerValidElementType"/>
     </xs:complexContent>
   </xs:complexType>
-  <xs:complexType name="Remove">
+  <xs:complexType name="SanitizerValidRemove">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Remove</xs:documentation>
+      <xs:documentation xml:lang="en">Used to remove individual characters or preset lists of characters. Character must not be allowed as a valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
     </xs:annotation>
     <xs:complexContent>
-      <xs:extension base="ValidElementType"/>
+      <xs:extension base="SanitizerValidElementType"/>
     </xs:complexContent>
   </xs:complexType>
-  <xs:group name="ValidElement">
+  <xs:group name="SanitizerValidElement">
     <xs:choice>
-      <xs:element name="add" type="Add" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="remove" type="Remove" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="add" type="SanitizerValidAdd" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="remove" type="SanitizerValidRemove" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="SanitizerMapping">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the <sanitizer> tag set. Used to specify a mapping of disallowed character to replacement string. Contains <add> and <remove> tags.]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="SanitizerMappingElement" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="initial" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">initial character mapping (default is ``galaxy.util.mapped_chars``)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="SanitizerMappingAdd" abstract="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Replace all occurrences of this character with the string of ``target``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="target" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Replace all occurrences of ``source`` with this string</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="SanitizerMappingRemove" abstract="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Character to remove from mapping.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:group name="SanitizerMappingElement">
+    <xs:choice>
+      <xs:element name="add" type="SanitizerMappingAdd" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="remove" type="SanitizerMappingRemove" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Filter">
@@ -908,16 +983,23 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
   </xs:complexType>
   <xs:complexType name="Outputs">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Outputs</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the <data> tag set. The files and collections created by tools as a result of their execution are named by Galaxy. You specify the number and type of your output files using the contained <data> and <collection> tags. You must pass them to your tool executable through using line variables just like the parameters described in the previous sections.
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="data" type="Data" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="collection" type="Collection" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="OutputsElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
+  <xs:group name="OutputsElement">
+    <xs:choice>
+      <xs:element name="data" type="Data"/>
+      <xs:element name="collection" type="Collection" />
+    </xs:choice>
+  </xs:group>
   <xs:complexType name="Data">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Data</xs:documentation>
+      <xs:documentation xml:lang="en">TODOWIKIMOVE</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="change_format" type="ChangeFormat" minOccurs="0"/>
@@ -1099,15 +1181,55 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
   </xs:complexType>
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ConfigFiles</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[See ~/tools/maf/maf_filter.xml for an example of how this tag set is used in a tool. This tag set is a container for <configfile> tag sets - it defines an additional configuration section.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="configfile" minOccurs="0" maxOccurs="unbounded" type="ConfigFile"/>
     </xs:sequence>
   </xs:complexType>
+
   <xs:complexType name="ConfigFile">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ConfigFile</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This tag set is contained within the <configfiles> tag set. It allows for the creation of a temporary file for file-based parameter transfer.
+
+*Example*
+
+The following is taken from the ~/tools/plotting/xy_plot.xml tool config.
+
+```xml
+<configfiles>
+    <configfile name="script_file">
+      ## Setup R error handling to go to stderr
+      options( show.error.messages=F, error = function () { cat( geterrmessage(), file=stderr() ); q( "no", 1, F ) } )
+      ## Determine range of all series in the plot
+      xrange = c( NULL, NULL )
+      yrange = c( NULL, NULL )
+      #for $i, $s in enumerate( $series )
+          s${i} = read.table( "${s.input.file_name}" )
+          x${i} = s${i}[,${s.xcol}]
+          y${i} = s${i}[,${s.ycol}]
+          xrange = range( x${i}, xrange )
+          yrange = range( y${i}, yrange )
+      #end for
+      ## Open output PDF file
+      pdf( "${out_file1}" )
+      ## Dummy plot for axis / labels
+      plot( NULL, type="n", xlim=xrange, ylim=yrange, main="${main}", xlab="${xlab}", ylab="${ylab}" )
+      ## Plot each series
+      #for $i, $s in enumerate( $series )
+          #if $s.series_type['type'] == "line"
+              lines( x${i}, y${i}, lty=${s.series_type.lty}, lwd=${s.series_type.lwd}, col=${s.series_type.col} )
+          #elif $s.series_type.type == "points"
+              points( x${i}, y${i}, pch=${s.series_type.pch}, cex=${s.series_type.cex}, col=${s.series_type.col} )
+          #end if
+      #end for
+      ## Close the PDF file
+      devname = dev.off()
+    </configfile>
+</configfiles>
+```
+]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
@@ -1116,15 +1238,10 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
             <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="type" type="ConfigFileType" default="template">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-  
+
   <xs:complexType name="RequestParameterTranslation">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -1349,17 +1466,6 @@ The target value (e.g. for setting data format: the list of supported data forma
     </xs:attribute>
   </xs:complexType>
   
-  
-  <xs:simpleType name="ConfigFileType">
-    <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ConfigFileType</xs:documentation>
-    </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="template"/>
-      <xs:enumeration value="literal"/>
-    </xs:restriction>
-  </xs:simpleType>
-
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for ChangeFormat</xs:documentation>
