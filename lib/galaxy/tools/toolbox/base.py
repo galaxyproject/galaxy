@@ -24,6 +24,7 @@ from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
+from .lineages import fill_lineage_map
 from .panel import panel_item_types
 from .panel import ToolPanelElements
 from .panel import ToolSection
@@ -95,6 +96,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """ Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
         """
+        start = time.time()
         self._tool_tag_manager.reset_tags()
         config_filenames = listify( config_filenames )
         for config_filename in config_filenames:
@@ -117,6 +119,10 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     raise
             except Exception:
                 log.exception( "Error loading tools defined in config %s", config_filename )
+        log.debug("Reading tools from config files took %d seconds", time.time() - start)
+        # We fill the toolshed lineage in one request to the database,
+        # this is way faster than registering each tool one by one.
+        fill_lineage_map(self.app, self._lineage_map, self._tools_by_id)
 
     def _init_tools_from_config( self, config_filename ):
         """
@@ -276,15 +282,17 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
         else:
             inserted = False
-            index = self._integrated_tool_panel.index_of_tool_id( tool_id )
+            #index = self._integrated_tool_panel.index_of_tool_id( tool_id )
+            index = None
             if index:
                 panel_dict.insert_tool( index, tool )
                 inserted = True
             if not inserted:
                 # Check the tool's installed versions.
                 versions = []
-                if hasattr( tool, 'lineage' ):
-                    versions = tool.lineage.get_versions()
+                #if hasattr( tool, 'lineage' ):
+                    #versions = tool.lineage.get_versions()
+                    #versions = []
                 for tool_lineage_version in versions:
                     lineage_id = tool_lineage_version.id
                     index = self._integrated_tool_panel.index_of_tool_id( lineage_id )
@@ -307,7 +315,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
                     else:
                         # We are in the process of installing the tool.
-
                         tool_lineage = self._lineage_map.get( tool_id )
                         already_loaded = self._lineage_in_panel( panel_dict, tool_lineage=tool_lineage ) is not None
                         if not already_loaded:
@@ -316,6 +323,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                             log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
 
     def _load_tool_panel( self ):
+        start = time.time()
         for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
             if item_type == panel_item_types.TOOL:
                 tool_id = key.replace( 'tool_', '', 1 )
@@ -355,6 +363,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
                 self._tool_panel[ key ] = section
+        log.debug("loading tool panel took %d seconds", time.time() - start)
 
     def _load_integrated_tool_panel_keys( self ):
         """
@@ -517,8 +526,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             from_cache = tool
             if from_cache:
                 log.debug("Loading tool %s from cache", str(tool.id))
-                if guid:
-                    tool_shed_repository = tool.tool_shed_repository
             elif guid:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
@@ -539,10 +546,11 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
-                # Make sure the tool has a tool_version.
-                tool_lineage = self._lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
-                # Load the tool's lineage ids.
-                tool.lineage = tool_lineage
+                if not guid:
+                    # Make sure non tool shed tools have a tool_version object.
+                    # tool shed tools will get their lineage later using fill_lineage_map()
+                    tool_lineage = self._lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
+                    tool.lineage = tool_lineage
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
