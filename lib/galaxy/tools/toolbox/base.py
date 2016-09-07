@@ -517,6 +517,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             from_cache = tool
             if from_cache:
                 log.debug("Loading tool %s from cache", str(tool.id))
+                if guid:
+                    tool_shed_repository = tool.tool_shed_repository
             elif guid:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
