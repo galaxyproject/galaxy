@@ -4,17 +4,18 @@ Object Store plugin for the Integrated Rule-Oriented Data Store (iRODS)
 The module is named rods to avoid conflicting with the PyRods module, irods
 """
 
+import logging
 import os
 import time
-import logging
 
-from posixpath import join as path_join
 from posixpath import basename as path_basename
 from posixpath import dirname as path_dirname
+from posixpath import join as path_join
 
-from galaxy.exceptions import ObjectNotFound, ObjectInvalid
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import safe_relpath
-from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
+
+from ..objectstore import DiskObjectStore, local_extra_dirs, ObjectStore
 
 try:
     import irods

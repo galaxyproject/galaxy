@@ -10,10 +10,12 @@ import os
 import re
 import sys
 
+import pkg_resources
+
+from six import iteritems
+
 from galaxy.util.properties import NicerConfigParser
 
-import pkg_resources
-from six import iteritems
 
 __all__ = ['loadapp', 'loadserver', 'loadfilter', 'appconfig']
 

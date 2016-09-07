@@ -1,9 +1,11 @@
 from __future__ import print_function
+
 import hashlib
 import os
 import re
-from string import Template
 import subprocess
+
+from string import Template
 
 from galaxy.util import asbool
 

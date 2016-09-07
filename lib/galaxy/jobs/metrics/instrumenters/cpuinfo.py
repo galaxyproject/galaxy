@@ -1,3 +1,4 @@
+import logging
 import re
 
 from galaxy import util
@@ -5,7 +6,6 @@ from galaxy import util
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 
-import logging
 log = logging.getLogger( __name__ )
 
 PROCESSOR_LINE = re.compile(r"processor\s*\:\s*(\d+)")
