@@ -2273,20 +2273,20 @@ class LibraryDatasetToolParameter( ToolParameter ):
             value = [value]
         lst = []
         for item in value:
-            encoded_id = encoded_name = None
+            lda_id = lda_name = None
             if isinstance(item, app.model.LibraryDatasetDatasetAssociation):
-                encoded_id = app.security.encode_id( item.id ) if security else item.id
-                encoded_name = item.name
+                lda_id = app.security.encode_id( item.id ) if security else item.id
+                lda_name = item.name
             elif isinstance(item, dict):
-                encoded_id = item.get('id')
-                encoded_name = item.get('name')
+                lda_id = item.get('id')
+                lda_name = item.get('name')
             else:
                 lst = []
                 break
-            if encoded_id is not None:
+            if lda_id is not None:
                 lst.append( {
-                    'id'   : encoded_id,
-                    'name' : encoded_name,
+                    'id'   : lda_id,
+                    'name' : lda_name,
                     'src'  : 'ldda'
                 } )
         if len( lst ) == 0:
@@ -2308,15 +2308,15 @@ class LibraryDatasetToolParameter( ToolParameter ):
             if isinstance(item, app.model.LibraryDatasetDatasetAssociation):
                 lst.append(item)
             else:
-                encoded_id = None
+                lda_id = None
                 if isinstance(item, dict):
-                    encoded_id = item.get('id')
+                    lda_id = item.get('id')
                 elif isinstance(item, string_types):
-                    encoded_id = item
+                    lda_id = item
                 else:
                     lst = []
                     break
-                lda = app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( encoded_id if isinstance( encoded_id, int ) else app.security.decode_id( encoded_id ) )
+                lda = app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( lda_id if isinstance( lda_id, int ) else app.security.decode_id( lda_id ) )
                 if lda is not None:
                     lst.append( lda )
                 elif validate:
