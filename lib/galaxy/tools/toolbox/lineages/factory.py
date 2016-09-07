@@ -27,7 +27,9 @@ class LineageMap(object):
         if versionless_tool_id and versionless_tool_id not in self.lineage_map:
             self.lineage_map[versionless_tool_id] = ToolShedLineage.from_tool(self.app, tool, tool_shed_repository)
         if tool_id not in self.lineage_map:
-            if tool_shed_repository:
+            if versionless_tool_id:
+                lineage = self.lineage_map[versionless_tool_id]
+            elif tool_shed_repository:
                 lineage = ToolShedLineage.from_tool(self.app, tool, tool_shed_repository)
             else:
                 lineage = StockLineage.from_tool( tool )
