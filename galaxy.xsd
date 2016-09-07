@@ -845,41 +845,40 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="SanitizerValidElementType" abstract="true">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
-    </xs:annotation>
-    <xs:attribute name="preset" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Target characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="value" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">A character to add or remove from the list of valid characters</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
   <xs:complexType name="SanitizerValidAdd">
     <xs:annotation>
       <xs:documentation xml:lang="en">Used to add individual characters or preset lists of characters. Character must not be allowed as a valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
     </xs:annotation>
-    <xs:complexContent>
-      <xs:extension base="SanitizerValidElementType"/>
-    </xs:complexContent>
+    <xs:attribute name="preset" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Add target characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Add a character to add to the list of valid characters</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="SanitizerValidRemove">
     <xs:annotation>
       <xs:documentation xml:lang="en">Used to remove individual characters or preset lists of characters. Character must not be allowed as a valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
     </xs:annotation>
-    <xs:complexContent>
-      <xs:extension base="SanitizerValidElementType"/>
-    </xs:complexContent>
+    <xs:attribute name="preset" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Remove characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A character to remove from the list of valid characters</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="SanitizerValidElement">
     <xs:choice>
-      <xs:element name="add" type="SanitizerValidAdd" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="remove" type="SanitizerValidRemove" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="add" type="SanitizerValidAdd"/>
+      <xs:element name="remove" type="SanitizerValidRemove"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="SanitizerMapping">
@@ -895,9 +894,9 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="SanitizerMappingAdd" abstract="true">
+  <xs:complexType name="SanitizerMappingAdd">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Use to add character mapping during sanitization. Character must not be allowed as a valid input for the mapping to occur.]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="source" type="xs:string">
       <xs:annotation>
@@ -910,9 +909,9 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="SanitizerMappingRemove" abstract="true">
+  <xs:complexType name="SanitizerMappingRemove">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Use to remove character mapping during sanitization.]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="source" type="xs:string">
       <xs:annotation>
