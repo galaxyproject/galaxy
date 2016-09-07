@@ -201,7 +201,8 @@ class BaseJobRunner( object ):
         return build_command(
             self,
             job_wrapper,
-            include_metadata=include_metadata,
+            this_app=self.app,
+	    include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
             modify_command_for_container=modify_command_for_container,
             container=container

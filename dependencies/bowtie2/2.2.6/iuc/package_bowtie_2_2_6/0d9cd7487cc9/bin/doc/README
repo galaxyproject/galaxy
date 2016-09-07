@@ -1,0 +1,4 @@
+To populate this directory, change to the bowtie2 directory and type
+'make doc'.  You must have pandoc installed:
+
+  http://johnmacfarlane.net/pandoc/

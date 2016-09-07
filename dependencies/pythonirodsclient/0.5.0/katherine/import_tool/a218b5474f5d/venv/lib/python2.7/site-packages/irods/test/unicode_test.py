@@ -16,9 +16,6 @@ UNICODE_TEST_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'unicode_sampler.xml')
 
 
-
-
-
 def parse_xml_file(path):
     # parse xml document
     parser = ET.XMLParser(encoding='utf-8')

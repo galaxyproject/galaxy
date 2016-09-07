@@ -5,13 +5,15 @@ from irods.connection import Connection
 
 logger = logging.getLogger(__name__)
 
+
 class Pool(object):
+
     def __init__(self, account):
         self.account = account
         self._lock = threading.Lock()
         self.active = set()
         self.idle = set()
-        
+
     def get_connection(self):
         with self._lock:
             try:

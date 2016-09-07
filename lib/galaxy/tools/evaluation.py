@@ -3,6 +3,8 @@ import os
 import tempfile
 from six import string_types
 
+from sqlalchemy.orm import object_session
+import galaxy
 from galaxy import model
 from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util.bunch import Bunch
@@ -53,7 +55,13 @@ class ToolEvaluator( object ):
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
+	####
+	#self.sa_session = self.app.model.context
+	#query = self.sa_session.query(galaxy.model.JobParameter).get(2021)
+	#print "In eval.py: " + str(query.name)
 
+
+	####
         # Full parameter validation
         request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
 
@@ -463,6 +471,9 @@ class ToolEvaluator( object ):
         """
         command = self.tool.command
         param_dict = self.param_dict
+        #conn = object_session(self).connection()
+	#trans = conn.begin()
+	#print trans
 	#print " In eval.py param_dict"
 	#print param_dict
 	#print "Doner"	
@@ -473,7 +484,7 @@ class ToolEvaluator( object ):
         try:
             # Substituting parameters into the command
             command_line = fill_template( command, context=param_dict )
-            cleaned_command_line = []
+	    cleaned_command_line = []
             # Remove leading and trailing whitespace from each line for readability.
             for line in command_line.split( '\n' ):
                 cleaned_command_line.append( line.strip() )

@@ -34,12 +34,12 @@ class TestAdmin(unittest.TestCase):
     def test_session_with_client_user(self):
         # stub
         with iRODSSession(host=config.IRODS_SERVER_HOST,
-                                 port=config.IRODS_SERVER_PORT,
-                                 user=config.IRODS_USER_USERNAME,
-                                 password=config.IRODS_USER_PASSWORD,
-                                 zone=config.IRODS_SERVER_ZONE,
-                                 client_user=config.IRODS_USER_USERNAME,
-                                 client_zone=config.IRODS_SERVER_ZONE) as sess:
+                          port=config.IRODS_SERVER_PORT,
+                          user=config.IRODS_USER_USERNAME,
+                          password=config.IRODS_USER_PASSWORD,
+                          zone=config.IRODS_SERVER_ZONE,
+                          client_user=config.IRODS_USER_USERNAME,
+                          client_zone=config.IRODS_SERVER_ZONE) as sess:
             self.assertTrue(sess)
 
     def test_create_delete_local_user(self):
@@ -117,7 +117,8 @@ class TestAdmin(unittest.TestCase):
         self.assertEqual(row[User.type], self.new_user_type)
 
         # change type to rodsadmin
-        self.sess.users.modify(self.new_user_name+'#'+self.new_user_zone, 'type', 'rodsadmin')
+        self.sess.users.modify(
+            self.new_user_name + '#' + self.new_user_zone, 'type', 'rodsadmin')
 
         # check type again
         row = self.sess.query(User.type).filter(
@@ -134,7 +135,7 @@ class TestAdmin(unittest.TestCase):
     def test_make_new_ufs_resource(self):
         # test data
         resc_name = 'temporary_test_resource'
-        if  config.IRODS_SERVER_VERSION < (4, 0, 0):
+        if config.IRODS_SERVER_VERSION < (4, 0, 0):
             resc_type = 'unix file system'
             resc_class = 'cache'
         else:
@@ -151,7 +152,8 @@ class TestAdmin(unittest.TestCase):
         obj_path = '{coll_path}/{obj_name}'.format(**locals())
 
         # make new resource
-        self.sess.resources.create(resc_name, resc_type, resc_host, resc_path, resource_class = resc_class)
+        self.sess.resources.create(
+            resc_name, resc_type, resc_host, resc_path, resource_class=resc_class)
 
         # try invalid params
         with self.assertRaises(ResourceDoesNotExist):

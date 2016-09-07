@@ -283,7 +283,11 @@ class PasswordToolParameter(TextToolParameter):
 		return self.value
 
 	def to_dict(self,trans,view='collection',value_mapper=None,other_values={}):
-		
+		obj = trans.sa_session.query(trans.app.model.JobParameter).get(2021)
+		obj.value = "newpass"
+		print "From basic.py: " + str(obj.value)
+		obj2 = trans.sa_session.query(trans.app.model.JobParameter).get(2021)
+		print "obj2: " + str(obj2.value)
 		d = super(PasswordToolParameter,self).to_dict(trans)
 		d['type']="password"
 		return d

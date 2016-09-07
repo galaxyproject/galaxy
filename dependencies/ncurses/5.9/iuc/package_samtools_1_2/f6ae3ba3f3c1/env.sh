@@ -1,0 +1,1 @@
+if [ -f /home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/env.sh ] ; then . /home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/env.sh ; fi

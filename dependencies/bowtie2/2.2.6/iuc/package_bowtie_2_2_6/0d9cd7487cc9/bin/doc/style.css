@@ -1,0 +1,230 @@
+/* 
+Stylesheet for the free sNews15_1 template
+from http://www.free-css-templates.com
+*/
+
+/* Reset all margins and paddings for browsers */
+* { 
+	padding: 0;
+	margin: 0;
+}
+
+body { 
+	font: .8em Verdana, Arial, Sans-Serif; 
+	line-height: 1.6em; 
+	margin: 0;
+	/* background-image: url(../images/bg.jpg); */
+	/* background-repeat: repeat */
+}
+
+#wrap {	margin: 0 auto;	width: 95% }
+
+/* TOP HEADER -------- */
+#top {
+	margin: 0 auto;
+	padding: 0;
+	color: #666;
+	background: #FFF url(../images/cbcbstrip.jpg) repeat-x top;
+	height: 81px;
+}
+#top h1 { padding: 10px 0 0 25px; color: #FFF; font-size: 240%; background: transparent;}
+#top h2 { padding: 0px 0 0 25px; color: #bbb; font-size: 100%; background: transparent;}
+#top .padding { padding-top: 5px; }
+/* SEARCH BOX AND BUTTON ----------*/
+#search { float: right;  padding: 10px 25px 0 0;  }
+
+#search input.text { 
+	border: 1px solid #eee;
+	display: inline;
+	margin-top: 5px;
+	width: 120px;
+	height: 12px;
+	font-size: 10px;
+ }
+ #search input.searchbutton {
+	border: 0;
+	background: transparent;
+	color: #FFF;
+	cursor: pointer;
+	font: bold 0.8em Arial, Arial, Sans-Serif
+ }
+
+#subheader { 
+	clear: both; 
+	border-top: 1px dotted #888;	
+	border-bottom: 1px dotted #888;
+	background: #eaeaea;
+	color: #505050;
+	padding: 1em;
+	margin: 15px 0px 10px 0px;
+	
+}
+#subheader a { text-decoration: none; /* border-bottom: 1px dashed #0066B3; */ } 
+ 
+ 
+/* TOP MENU ---------- */
+#topmenu {  	margin: 0px 8px 0 8px; 
+			padding: 0;
+			background: url(../images/menu.jpg) repeat-x top;
+			height: 30px;
+			
+}
+#topmenu .lefts { 
+	background: url(../images/menul.jpg) no-repeat left; 
+	height: 30px; 
+	padding-left: 0px;
+}
+#topmenu .rights {
+	background: url(../images/menur.jpg) no-repeat right;
+	float: right;
+	height: 30px;
+	width: 8px;
+}
+#topmenu li a { 
+	color: #FFF;
+	text-align: left;
+	padding-left: 10px;
+	padding-right: 15px;
+	text-decoration: none;
+	background: transparent;
+	font-weight: bold
+} 
+#topmenu li { padding: 0px;
+	float: left;
+	margin: 0;
+	font-size: 11px;
+	line-height: 30px;
+	white-space: nowrap;
+	/* list-style-type: none; */
+	width: auto;
+	background: url(../images/sep.gif) no-repeat top right
+	
+}
+
+#main { background: #FFF; margin: 25px 0 15px 0; color: #666; }
+
+#main #rightside {
+	width: 300px;
+	float: right;
+	background: #FFF;
+	margin-right: 0px;
+	color: #555;
+	
+} 
+
+#main #rightside .box {
+	background: #efefef;
+	margin-bottom: 10px;
+	padding: 5px;
+	color: #555;
+}
+
+#main #rightside h2 {
+	font: bold 1.0em Arial, Arial, Sans-Serif; 
+	background: #CDCDCD url(../images/greyc.gif) no-repeat top right;
+	height: 18px;
+	padding: 3px;
+	color: #666;
+}
+
+/* LEFT SIDE - ARTICLES AREA -------- */
+#leftside {
+	padding-left: 8px;
+	color: #555;
+	background: #FFF;
+	margin-right: 305px;
+	margin-left: 0px;
+}
+
+#manual {
+	margin-right: 305px;
+	margin-left: 0px;
+	width: auto;
+}
+
+#leftside h1 { padding: 15px 0 10px 0 }
+#leftside h2 { padding: 15px 0 10px 0; color: #555; text-indent: 17px; background: #FFF url(../images/head.gif) no-repeat left; }
+#leftside h3 { padding: 15px 0 10px 0; font-size: 100%; margin-left: 5px; text-indent: 17px; background: #FFF url(../images/head.gif) no-repeat left; }
+#leftside ul { margin-left: 24px; padding-left 24px; list-style-type: circle }
+#leftside li { }
+#leftside p { padding: 0px 0 10px 0 }
+
+#footer {
+	clear: both;
+	background: #FFF url(../images/footer.jpg) repeat-x;
+	height: 46px;
+	margin-left: 0px;
+	margin-right: 0px;
+	font-size: 75%;
+	color: #666;
+}
+#footer p  { padding: 5px }
+#footer .rside { float: right; display: inline; padding: 5px; text-align: right}
+
+#toc ol { list-style: roman }
+
+a { color: #0066B3; background: inherit; text-decoration: none }
+h1 { font: bold 1.9em Arial, Arial, Sans-Serif }
+h2 { font: bold 1.2em Arial, Arial, Sans-Serif; padding: 0; margin: 0 }
+ul { padding: 0; margin: 0; list-style-type: none }
+li {  }
+ol { margin-left: 24px;
+     padding-left 24px;
+     list-style: decimal }
+/* blockquote { margin-left: 35px; font-family: "Courier New", Courier, monospace; } */
+blockquote { margin-left: 35px; font-family: "Courier New", Courier; }
+tt { font: .8em; font-family: "Courier New", Courier; }
+code { font: .8em; font-family: "Courier New", Courier; }
+.date { border-top: 1px solid #e5e5e5; text-align: right; margin-bottom: 25px; margin-top: 5px;}
+#main #leftside .date a, #main #rightside a { border: 0; text-decoration: none; }
+
+.comment .date { text-align: left; border: 0;}	
+
+
+#breadcrumbs { 
+	float: left;
+	padding-left: 8px;
+	padding-top: 0px;
+	font: bold .8em Arial, Arial, Sans-Serif; 
+	color: #666;
+	width: 100%;
+	height: 25px;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	clear: both;
+}
+
+
+
+#leftside #txt {width: 100%; height: 10em; padding: 3px 3px 3px 6px; margin-left:0em;}
+#leftside textarea { border: 1px solid #bbb; width: 100%;  }
+
+
+/* SNEWS */
+#main #leftside fieldset { float: left; width: 100%; border: 1px solid #ccc; padding: 10px 8px; margin: 0 10px 8px 0; background: #FFF; color: #000; }
+#main #leftside fieldset p { width: 100%; }
+#main input { padding: 3px; margin: 0; border: 1px solid #bbb }
+/*p { margin-top: 5px; }*/
+p { margin-top: 10px; }
+/*input.search { border: 1px solid #ccc; padding: 4px; width: 160px; }*/
+.comment { background: #FFF; color: #808080; padding: 10px; margin: 0 0 10px 0; border-top: 1px solid #ccc; }
+.commentsbox { background: #FFF; color: #808080; padding: 10px; margin: 0 0 10px 0; border-top: 1px solid #ccc; }
+
+#manual h1  { margin: 0 15px 10px 15px; padding: 10px 0 10px 0; font: bold 1.9em Arial, Arial, Sans-Serif }
+#manual h2  { margin: 0 15px 10px 15px; padding: 10px 0 10px 0; font: bold 1.2em Arial, Arial, Sans-Serif }
+#manual h3  { margin: 0 15px 10px 20px; padding: 10px 0 10px 0; font: 1.2em Arial, Arial, Sans-Serif }
+#manual h4  { margin: 0 15px 10px 25px; padding: 10px 0 10px 0; font: 1.1em Arial, Arial, Sans-Serif }
+#manual p   { margin: 0 15px 10px 15px; color: #444 }
+#manual table { margin-top: 15px }
+#manual ul  { margin: 0 15px 10px 15px; padding: 0; margin: 0 }
+#manual pre { margin: 0 15px 15px 25px }
+#manual li  { margin: 0 15px 1px 15px; color: #444 }
+#manual ol  { margin-left: 24px; padding-left 24px; list-style: decimal }
+#manual td  { vertical-align: top; }
+#manual blockquote { margin-left: 35px; font-family: "Courier New", Courier; }
+#manual tt { font: .8em; font-family: "Courier New", Courier; }
+#manual code { font: .8em; font-family: "Courier New", Courier; }
+#manual .date { border-top: 1px solid #e5e5e5; text-align: right; margin-bottom: 25px; margin-top: 5px;}
+#manual .date a, #main #rightside a { border: 0; text-decoration: none; }
+#manual .date a, #main #rightside a { border: 0; text-decoration: none; }
+#manual td { vertical-align: top; }

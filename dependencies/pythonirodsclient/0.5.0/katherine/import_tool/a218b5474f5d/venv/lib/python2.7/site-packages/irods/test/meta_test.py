@@ -159,7 +159,7 @@ class TestMeta(unittest.TestCase):
 
         # add metadata to test object
         meta = self.sess.metadata.add(DataObject, test_obj_path,
-                               iRODSMeta(attribute, value, units))
+                                      iRODSMeta(attribute, value, units))
 
         # get metadata
         meta = self.sess.metadata.get(DataObject, test_obj_path)
@@ -172,24 +172,24 @@ class TestMeta(unittest.TestCase):
         # remove test object
         obj.unlink(force=True)
 
-
     def test_irodsmetacollection_data_obj(self):
         '''
         Tested as data_object metadata
         '''
         # test settings
         avu_count = 5
-        
+
         # make test object
         test_obj_path = self.coll_path + '/test_irodsmetacollection'
         test_obj = helpers.make_object(self.sess, test_obj_path)
 
         # test AVUs
-        triplets = [('test_attr'+str(i), 'test_value', 'test_units') for i in range(avu_count)]
+        triplets = [('test_attr' + str(i), 'test_value', 'test_units')
+                    for i in range(avu_count)]
 
         # get coll meta
         imc = test_obj.metadata
-        
+
         # try invalid key
         with self.assertRaises(KeyError):
             imc.get_one('bad_key')
@@ -205,12 +205,12 @@ class TestMeta(unittest.TestCase):
         # add AVUs
         for triplet in triplets:
             imc.add(*triplet)
- 
+
         # add another AVU with existing attribute name
         attr_name = triplets[0][0]
         duplicate_triplet = (attr_name, 'other_value', 'test_units')
         imc.add(*duplicate_triplet)
-        
+
         # get_one should fail
         with self.assertRaises(KeyError):
             imc.get_one(attr_name)
@@ -249,7 +249,7 @@ class TestMeta(unittest.TestCase):
 
         # del item
         del imc[attr_name]
-        
+
         with self.assertRaises(KeyError):
             imc[attr_name]
 

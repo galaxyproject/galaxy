@@ -1,0 +1,2 @@
+PATH=/home/katie/galaxy-1/dependencies/bowtie2/2.2.6/iuc/package_bowtie_2_2_6/0d9cd7487cc9/bin:$PATH; export PATH
+BOWTIE2_ROOT_DIR=/home/katie/galaxy-1/dependencies/bowtie2/2.2.6/iuc/package_bowtie_2_2_6/0d9cd7487cc9; export BOWTIE2_ROOT_DIR

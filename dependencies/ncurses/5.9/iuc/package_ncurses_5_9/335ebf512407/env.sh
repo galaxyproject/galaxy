@@ -1,0 +1,11 @@
+NCURSES_INCLUDE_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/include; export NCURSES_INCLUDE_PATH
+NCURSES_LIB_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/lib/; export NCURSES_LIB_PATH
+NCURSES_ROOT_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407; export NCURSES_ROOT_PATH
+LD_LIBRARY_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/lib:$LD_LIBRARY_PATH; export LD_LIBRARY_PATH
+DYLD_LIBRARY_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/lib:$DYLD_LIBRARY_PATH; export DYLD_LIBRARY_PATH
+LIBRARY_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/lib:$LIBRARY_PATH; export LIBRARY_PATH
+C_INCLUDE_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/include:$C_INCLUDE_PATH; export C_INCLUDE_PATH
+CPLUS_INCLUDE_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/include:$CPLUS_INCLUDE_PATH; export CPLUS_INCLUDE_PATH
+C_INCLUDE_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/include/ncurses:$C_INCLUDE_PATH; export C_INCLUDE_PATH
+CPLUS_INCLUDE_PATH=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407/include/ncurses:$CPLUS_INCLUDE_PATH; export CPLUS_INCLUDE_PATH
+NCURSES_ROOT_DIR=/home/katie/galaxy-1/dependencies/ncurses/5.9/iuc/package_ncurses_5_9/335ebf512407; export NCURSES_ROOT_DIR

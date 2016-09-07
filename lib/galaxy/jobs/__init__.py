@@ -781,6 +781,47 @@ class JobWrapper( object ):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
+	#####
+	'''
+	query = self.sa_session.query(galaxy.model.JobParameter).filter(galaxy.model.JobParameter.job_id==self.job_id).first()
+		
+	print " query: " + str(query.id)
+	idVar = query.id 
+	jobIdOrig = query.job_id
+	jobId = query.job_id
+	queryList = []
+	queryList.append(query)
+	passwordName = ''
+	
+	while (query is not None) and jobIdOrig == jobId:
+		idVar = idVar + 1
+		jobId = query.job_id
+		print "query: " + str(query.name)
+		
+		if query.name == "JPCNn681vcGV4KuvuT16":
+			print "It's value: " + query.value
+			passwordName = query.value[1:-1]
+		queryList.append(query)
+		query = self.sa_session.query(galaxy.model.JobParameter).get(idVar)
+	index = 0
+	for item in queryList:
+		print "Here in the searching: " + item.name
+		print "passwordName: " + passwordName
+		if str(item.name) == (passwordName):	
+			print "I match"
+			print "type: " + str(type(item.value))
+			item.value = unicode('"ass"', "utf-8")
+			print "second type: " + str(type(item.value))
+#			self.sa_session.add(item)
+#			self.sa_session.flush()
+			indexOfPass = index
+			print "indexOfPass: " + str(indexOfPass)
+		index = index + 1
+#	print "Name: " + queryList[indexOfPass].value
+#	print "New value: " + queryList[indexOfPass].value
+ 	'''
+	#####	
+
     def _job_dataset_path_rewriter( self, working_directory ):
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
         if outputs_to_working_directory:

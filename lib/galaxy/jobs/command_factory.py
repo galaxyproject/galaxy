@@ -1,8 +1,9 @@
 from os import getcwd
 import re
+import galaxy
+from galaxy import model
 from os.path import join
 from os.path import abspath
-
 from galaxy import util
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
@@ -20,6 +21,7 @@ YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 def build_command(
     runner,
     job_wrapper,
+    this_app=None,
     container=None,
     modify_command_for_container=True,
     include_metadata=False,
@@ -37,6 +39,32 @@ def build_command(
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
+    job_id = job_wrapper.job_id
+    sa_session = this_app.model.context
+    query = sa_session.query(galaxy.model.JobParameter).filter(galaxy.model.JobParameter.job_id==job_id).first()
+    idVar = query.id
+    jobId = query.job_id
+    jobOrig = query.job_id
+    queryList = []
+    queryList.append(query)
+    passwordName = ''
+   
+    while (query is not None) and jobOrig == jobId:
+	idVar = idVar + 1
+	jobId = query.job_id
+	if query.name == "JPCNn681vcGV4KuvuT16":
+		passwordName = query.value[1:-1]
+	queryList.append(query)	
+	query = sa_session.query(galaxy.model.JobParameter).get(idVar)
+    index = 0
+    for item in queryList:
+	if str(item.name) == (passwordName):
+		item.value = unicode('""',"utf-8")
+		indexOfPass = index
+	index = index + 1
+    print "Name: " + queryList[indexOfPass].value
+    print "New value: " + queryList[indexOfPass].value
+    
     shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
@@ -115,6 +143,8 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
+	
+    ####
     tool_commands = str(tool_commands)
     envVar = ''
     if ' JPCNn681vcGV4KuvuT16 ' in tool_commands:
@@ -122,33 +152,16 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
 	end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
         index = end + 1 
         passVar = ''
-	#print "Type: " + str(type(tool_commands))
- 	#print "Should be a blank space: " + tool_commands[end]
-	#print "Before while loop: " + tool_commands[index]	
         while (index < len(tool_commands)) and (tool_commands[index] is not ' '):  
-	#	print "Index: " + str(index)
-	#	print "Letter: " + tool_commands[index]
-		
 		passVar = passVar + tool_commands[index]
                 index = index + 1
 	
         envVar = "PASS=" + '"'+passVar + '"'
-        #print "PASSL " + passVar
-	#to delete the JCBN
-        #tool_commands = tool_commands[:m.start()] + tool_commands[m.end()+1:]
-        #to replace the password val
         indexSoFar = end +1
 	tool_commands = tool_commands.replace(passVar, '$PASS')
-	#print "After replacement: " + tool_commands
         tool_commands = tool_commands.replace('JPCNn681vcGV4KuvuT16 ', '')
-	#print "At the end: " + tool_commands
-	#while tool_commands[indexSoFar] is not ' ':
-        #        tool_commands = tool_commands[:indexSoFar] + tool_commands[indexSoFar+1:]
-        #tool_commands = tool_commands[:indexSoFar] + " $PASS" + tool_commands[indexSoFar + 1:]
-        #tool_commands = tool_commands[:m.start()] + tool_commands[m.end() +1:]
-    #print "This is tool commands from command_factory.py: " + tool_commands
 
-
+	####
 
     script_contents = u"#!%s\n%s%s%s\n%s" % (
         shell,

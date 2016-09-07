@@ -1,21 +1,26 @@
 from irods.column import Column, Integer, String, DateTime, Keyword
 
+
 class ModelBase(type):
     columns = {}
+
     def __new__(cls, name, bases, attr):
-        columns = [y for (x,y) in attr.iteritems() if isinstance(y, Column)]
+        columns = [y for (x, y) in attr.iteritems() if isinstance(y, Column)]
         for col in columns:
             ModelBase.columns[col.icat_id] = col
         attr['_columns'] = columns
-        #attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
+        # attr['_icat_column_names'] = [y.icat_key for (x,y) in columns]
         return type.__new__(cls, name, bases, attr)
+
 
 class Model(object):
     __metaclass__ = ModelBase
 
+
 class Zone(Model):
     id = Column(Integer, 'ZONE_ID', 101)
     name = Column(String, 'ZONE_NAME', 102)
+
 
 class User(Model):
     id = Column(Integer, 'USER_ID', 201)
@@ -29,13 +34,17 @@ class User(Model):
     modify_time = Column(DateTime, 'USER_MODIFY_TIME', 209)
 
 # R_COLL_USER_MAIN in rodsGenQuery.h
+
+
 class CollectionUser(Model):
     name = Column(String, 'COL_COLL_USER_NAME', 1300)
     zone = Column(String, 'COL_COLL_USER_ZONE', 1301)
 
+
 class UserGroup(Model):
     id = Column(Integer, 'USER_GROUP_ID', 900)
     name = Column(String, 'USER_GROUP_NAME', 901)
+
 
 class Resource(Model):
     id = Column(Integer, 'R_RESC_ID', 301)
@@ -56,16 +65,17 @@ class Resource(Model):
     parent = Column(String, 'R_RESC_PARENT', 317)
     obj_count = Column(Integer, 'R_RESC_OBJCOUNT', 318)
 
+
 class DataObject(Model):
-    id = Column(Integer, 'D_DATA_ID', 401) 
+    id = Column(Integer, 'D_DATA_ID', 401)
     collection_id = Column(Integer, 'D_COLL_ID', 402)
-    name = Column(String, 'DATA_NAME', 403) # basename
+    name = Column(String, 'DATA_NAME', 403)  # basename
     replica_number = Column(Integer, 'DATA_REPL_NUM', 404)
     version = Column(String, 'DATA_VERSION', 405)
     type = Column(String, 'DATA_TYPE_NAME', 406)
     size = Column(Integer, 'DATA_SIZE', 407)
     resource_name = Column(String, 'D_RESC_NAME', 409)
-    path = Column(String, 'D_DATA_PATH', 410) # physical path on resource
+    path = Column(String, 'D_DATA_PATH', 410)  # physical path on resource
     owner_name = Column(String, 'D_OWNER_NAME', 411)
     owner_zone = Column(String, 'D_OWNER_ZONE', 412)
     replica_status = Column(String, 'D_REPL_STATUS', 413)
@@ -77,7 +87,8 @@ class DataObject(Model):
     create_time = Column(DateTime, 'D_CREATE_TIME', 419)
     modify_time = Column(DateTime, 'D_MODIFY_TIME', 420)
     resc_hier = Column(String, 'D_RESC_HIER', 422)
-    
+
+
 class Collection(Model):
     id = Column(Integer, 'COLL_ID', 500)
     name = Column(String, 'COLL_NAME', 501)
@@ -90,11 +101,13 @@ class Collection(Model):
     create_time = Column(DateTime, 'COLL_CREATE_TIME', 508)
     modify_time = Column(DateTime, 'COLL_MODIFY_TIME', 509)
 
+
 class DataObjectMeta(Model):
     id = Column(String, 'COL_META_DATA_ATTR_ID', 603)
     name = Column(String, 'COL_META_DATA_ATTR_NAME', 600)
     value = Column(String, 'COL_META_DATA_ATTR_VALUE', 601)
     units = Column(String, 'COL_META_DATA_ATTR_UNITS', 602)
+
 
 class CollectionMeta(Model):
     id = Column(String, 'COL_META_COLL_ATTR_UNITS', 613)
@@ -102,11 +115,13 @@ class CollectionMeta(Model):
     value = Column(String, 'COL_META_COLL_ATTR_VALUE', 611)
     units = Column(String, 'COL_META_COLL_ATTR_UNITS', 612)
 
+
 class ResourceMeta(Model):
     id = Column(String, 'COL_META_RESC_ATTR_UNITS', 633)
     name = Column(String, 'COL_META_RESC_ATTR_NAME', 630)
     value = Column(String, 'COL_META_RESC_ATTR_VALUE', 631)
     units = Column(String, 'COL_META_RESC_ATTR_UNITS', 632)
+
 
 class UserMeta(Model):
     id = Column(String, 'COL_META_USER_ATTR_ID', 643)
@@ -114,12 +129,14 @@ class UserMeta(Model):
     value = Column(String, 'COL_META_USER_ATTR_VALUE', 641)
     units = Column(String, 'COL_META_USER_ATTR_UNITS', 642)
 
+
 class DataAccess(Model):
     type = Column(Integer, 'DATA_ACCESS_TYPE', 700)
     name = Column(String, 'COL_DATA_ACCESS_NAME', 701)
     token_namespace = Column(String, 'COL_DATA_TOKEN_NAMESPACE', 702)
     user_id = Column(Integer, 'COL_DATA_ACCESS_USER_ID', 703)
     data_id = Column(Integer, 'COL_DATA_ACCESS_DATA_ID', 704)
+
 
 class CollectionAccess(Model):
     type = Column(Integer, 'COL_COLL_ACCESS_TYPE', 710)

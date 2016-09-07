@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+"""
+ Copyright 2014, Ben Langmead <langmea@cs.jhu.edu>
+
+ This file is part of Bowtie 2.
+
+ Bowtie 2 is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Bowtie 2 is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with Bowtie 2.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
+
+import os
+import imp
+import inspect
+import logging
+
+
+
+def main():
+    logging.basicConfig(level=logging.ERROR,
+                        format='%(levelname)s: %(message)s'
+                        )
+    inspect_bin_name      = "bowtie-inspect"
+    inspect_bin_s         = "bowtie2-inspect-s"
+    inspect_bin_l         = "bowtie2-inspect-l"
+    idx_ext_l             = '.1.bt2l'; 
+    idx_ext_s             = '.1.bt2'; 
+    curr_script           = os.path.realpath(inspect.getsourcefile(main))
+    ex_path               = os.path.dirname(curr_script)
+    inspect_bin_spec      = os.path.join(ex_path,inspect_bin_s)
+    bld                   = imp.load_source('bowtie2-build',os.path.join(ex_path,'bowtie2-build'))
+    options,arguments     = bld.build_args()
+
+    if '--verbose' in options:
+        logging.getLogger().setLevel(logging.INFO)
+        
+    if '--debug' in options:
+        inspect_bin_spec += '-debug'
+        inspect_bin_l += '-debug'
+        
+    if '--large-index' in options:
+        inspect_bin_spec = os.path.join(ex_path,inspect_bin_l)
+    elif len(arguments) >= 1:
+        idx_basename = arguments[-1]
+        large_idx_exists = os.path.exists(idx_basename + idx_ext_l)
+        small_idx_exists = os.path.exists(idx_basename + idx_ext_s)
+        if large_idx_exists and not small_idx_exists:
+            inspect_bin_spec = os.path.join(ex_path,inspect_bin_l)
+    
+    arguments[0] = inspect_bin_name
+    arguments.insert(1, 'basic-0')
+    arguments.insert(1, '--wrapper')
+    logging.info('Command: %s %s' %  (inspect_bin_spec,' '.join(arguments[1:])))
+    os.execv(inspect_bin_spec, arguments)        
+        
+        
+if __name__ == "__main__":
+    main()
+
+
+
+
+

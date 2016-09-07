@@ -44,7 +44,8 @@ class DefaultJobAction(object):
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None):
-        pass
+        print "In tools/actions/post.py: I got here" 
+	pass
 
     @classmethod
     def get_config_form(cls, trans):

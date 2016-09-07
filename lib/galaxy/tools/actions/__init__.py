@@ -47,14 +47,18 @@ class DefaultToolAction( object ):
         parameter name to Dataset instance for each tool parameter that is
         of the DataToolParameter type.
         """
-        if current_user_roles is None:
+	
+	if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
 
         def visitor( input, value, prefix, parent=None, **kwargs ):
 
             def process_dataset( data, formats=None ):
-                if not data or isinstance( data, RuntimeValue ):
+                print "I can get here"
+		flag = trans.sa_session.query(trans.app.model.JobParameter).get(2021)
+		print flag
+		if not data or isinstance( data, RuntimeValue ):
                     return None
                 if formats is None:
                     formats = input.formats

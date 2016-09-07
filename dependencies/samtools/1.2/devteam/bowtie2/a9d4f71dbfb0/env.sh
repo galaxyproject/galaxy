@@ -1,0 +1,1 @@
+if [ -f /home/katie/galaxy-1/dependencies/samtools/1.2/iuc/package_samtools_1_2/f6ae3ba3f3c1/env.sh ] ; then . /home/katie/galaxy-1/dependencies/samtools/1.2/iuc/package_samtools_1_2/f6ae3ba3f3c1/env.sh ; fi

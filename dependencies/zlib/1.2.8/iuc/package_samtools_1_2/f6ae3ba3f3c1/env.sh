@@ -1,0 +1,1 @@
+if [ -f /home/katie/galaxy-1/dependencies/zlib/1.2.8/iuc/package_zlib_1_2_8/63a4a902cda2/env.sh ] ; then . /home/katie/galaxy-1/dependencies/zlib/1.2.8/iuc/package_zlib_1_2_8/63a4a902cda2/env.sh ; fi

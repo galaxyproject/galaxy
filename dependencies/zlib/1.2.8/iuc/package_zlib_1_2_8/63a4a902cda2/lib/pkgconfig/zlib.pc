@@ -1,0 +1,13 @@
+prefix=/home/katie/galaxy-1/dependencies/zlib/1.2.8/iuc/package_zlib_1_2_8/63a4a902cda2
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+sharedlibdir=${libdir}
+includedir=${prefix}/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.8
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}

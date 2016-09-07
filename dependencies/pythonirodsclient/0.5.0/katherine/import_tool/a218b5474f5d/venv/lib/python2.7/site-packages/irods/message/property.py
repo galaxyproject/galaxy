@@ -2,7 +2,9 @@ from base64 import b64encode, b64decode
 
 from irods.message.ordered import OrderedProperty, OrderedMetaclass, OrderedClass
 
+
 class MessageProperty(OrderedProperty):
+
     def __get__(self, obj, cls):
         return obj._values[self.name]
 
@@ -26,21 +28,27 @@ class MessageProperty(OrderedProperty):
             return self.parse(el.text)
         return None
 
+
 class IntegerProperty(MessageProperty):
+
     def format(self, value):
         return str(value)
 
     def parse(self, value):
         return int(value)
+
 
 class LongProperty(MessageProperty):
+
     def format(self, value):
         return str(value)
 
     def parse(self, value):
         return int(value)
 
+
 class BinaryProperty(MessageProperty):
+
     def __init__(self, length):
         self.length = length
         super(BinaryProperty, self).__init__()
@@ -51,7 +59,9 @@ class BinaryProperty(MessageProperty):
     def parse(self, value):
         return b64decode(value)
 
+
 class StringProperty(MessageProperty):
+
     def __init__(self, length=None):
         self.length = length
         super(StringProperty, self).__init__()
@@ -66,7 +76,9 @@ class StringProperty(MessageProperty):
             return value.decode('utf-8')
         return value
 
+
 class ArrayProperty(MessageProperty):
+
     def __init__(self, property):
         self.property = property
         super(ArrayProperty, self).__init__()
@@ -78,7 +90,9 @@ class ArrayProperty(MessageProperty):
     def unpack(self, els):
         return [self.property.unpack([el]) for el in els]
 
+
 class SubmessageProperty(MessageProperty):
+
     def __init__(self, message_cls):
         self.message_cls = message_cls
         super(SubmessageProperty, self).__init__()

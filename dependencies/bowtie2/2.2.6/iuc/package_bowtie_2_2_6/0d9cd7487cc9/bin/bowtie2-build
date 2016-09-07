@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+
+"""
+ Copyright 2014, Ben Langmead <langmea@cs.jhu.edu>
+
+ This file is part of Bowtie 2.
+
+ Bowtie 2 is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Bowtie 2 is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with Bowtie 2.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
+
+import os
+import sys
+import inspect
+import logging
+
+
+def build_args():
+    """
+    Parse the wrapper arguments. Returns the options,<programm arguments> tuple.
+    """
+
+    parsed_args = {}
+    to_remove = []
+    argv = sys.argv[:]
+    for i, arg in enumerate(argv):
+        if arg == '--large-index':
+            parsed_args[arg] = ""
+            to_remove.append(i)
+        elif arg == '--debug':
+            parsed_args[arg] = ""
+            to_remove.append(i)
+        elif arg == '--verbose':
+            parsed_args[arg] = ""
+            to_remove.append(i)
+
+    for i in reversed(to_remove):
+        del argv[i]
+
+    return parsed_args, argv
+
+
+def main():
+    logging.basicConfig(level=logging.ERROR,
+                        format='%(levelname)s: %(message)s'
+                        )
+    delta               = 200
+    small_index_max_size= 4 * 1024**3 - delta
+    build_bin_name      = "bowtie2-build"
+    build_bin_s         = "bowtie2-build-s"
+    build_bin_l         = "bowtie2-build-l"
+    curr_script         = os.path.realpath(inspect.getsourcefile(main))
+    ex_path             = os.path.dirname(curr_script)
+    build_bin_spec      = os.path.join(ex_path,build_bin_s)
+
+    options, argv = build_args()
+
+    if '--verbose' in options:
+        logging.getLogger().setLevel(logging.INFO)
+        
+    if '--debug' in options:
+        build_bin_spec += '-debug'
+        build_bin_l += '-debug'
+
+    if '--large-index' in options:
+        build_bin_spec = os.path.join(ex_path,build_bin_l)
+    elif len(argv) >= 2:
+        ref_fnames = argv[-2]
+        tot_size = 0
+        for fn in ref_fnames.split(','):
+            if os.path.exists(fn):
+                statinfo = os.stat(fn)
+                tot_size += statinfo.st_size
+        if tot_size > small_index_max_size:
+            build_bin_spec = os.path.join(ex_path,build_bin_l)
+
+    argv[0] = build_bin_name
+    argv.insert(1, 'basic-0')
+    argv.insert(1, '--wrapper')
+    logging.info('Command: %s %s' % (build_bin_spec, ' '.join(argv[1:])))
+    os.execv(build_bin_spec, argv)
+
+if __name__ == "__main__":
+    main()
+
+
+

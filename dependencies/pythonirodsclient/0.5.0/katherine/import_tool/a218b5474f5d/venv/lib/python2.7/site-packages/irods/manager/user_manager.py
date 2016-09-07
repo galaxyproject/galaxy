@@ -9,20 +9,21 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class UserManager(Manager):
+
     def get(self, user_name, user_zone=""):
         query = self.sess.query(User).filter(User.name == user_name)
-        
+
         if len(user_zone) > 0:
             query = query.filter(User.zone == user_zone)
-        
+
         try:
             result = query.one()
         except NoResultFound:
             raise UserDoesNotExist()
         return iRODSUser(self, result)
-    
-    
+
     def create(self, user_name, user_type, user_zone="", auth_str=""):
         message_body = GeneralAdminRequest(
             "add",
@@ -39,7 +40,7 @@ class UserManager(Manager):
             response = conn.recv()
         logger.debug(response.int_info)
         return self.get(user_name, user_zone)
-    
+
     def remove(self, user_name, user_zone=""):
         message_body = GeneralAdminRequest(
             "rm",
@@ -53,8 +54,7 @@ class UserManager(Manager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
-        
-    
+
     def modify(self, user_name, option, new_value, user_zone=""):
         # checks
         if option == 'password':
@@ -63,7 +63,7 @@ class UserManager(Manager):
         # must append zone to username for this API call
         if len(user_zone) > 0:
             user_name += "#" + user_zone
-        
+
         message_body = GeneralAdminRequest(
             "modify",
             "user",
@@ -81,6 +81,7 @@ class UserManager(Manager):
 
 
 class UserGroupManager(UserManager):
+
     def get(self, name):
         query = self.sess.query(UserGroup).filter(UserGroup.name == name)
 
@@ -108,7 +109,8 @@ class UserGroupManager(UserManager):
         return self.get(name)
 
     def getmembers(self, name):
-        results = self.sess.query(User).filter(User.type != 'rodsgroup', UserGroup.name == name).get_results()
+        results = self.sess.query(User).filter(
+            User.type != 'rodsgroup', UserGroup.name == name).get_results()
         return [iRODSUser(self, row) for row in results]
 
     def addmember(self, group_name, user_name, user_zone=""):
@@ -126,7 +128,7 @@ class UserGroupManager(UserManager):
             conn.send(request)
             response = conn.recv()
         logger.debug(response.int_info)
- 
+
     def removemember(self, group_name, user_name, user_zone=""):
         message_body = GeneralAdminRequest(
             "modify",

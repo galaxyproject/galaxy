@@ -9,19 +9,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class ResourceManager(Manager):
+
     def get(self, name, zone=""):
         query = self.sess.query(Resource).filter(Resource.name == name)
-        
+
         if len(zone) > 0:
             query = query.filter(Resource.zone_name == zone)
-        
+
         try:
             result = query.one()
         except NoResultFound:
             raise ResourceDoesNotExist()
         return iRODSResource(self, result)
-    
 
     def create(self, name, resource_type, host, path, context="", zone="", resource_class=""):
         with self.sess.pool.get_connection() as conn:
@@ -56,9 +57,10 @@ class ResourceManager(Manager):
 
             conn.send(request)
             response = conn.recv()
-            self.sess.cleanup() # close connections to get new agents with up to date resource manager
+            self.sess.cleanup()
+                              # close connections to get new agents with up to
+                              # date resource manager
         logger.debug(response.int_info)
-
 
     def remove(self, name, test=False):
         if test:
@@ -76,5 +78,7 @@ class ResourceManager(Manager):
         with self.sess.pool.get_connection() as conn:
             conn.send(request)
             response = conn.recv()
-            self.sess.cleanup() # close connections to get new agents with up to date resource manager
+            self.sess.cleanup()
+                              # close connections to get new agents with up to
+                              # date resource manager
         logger.debug(response.int_info)

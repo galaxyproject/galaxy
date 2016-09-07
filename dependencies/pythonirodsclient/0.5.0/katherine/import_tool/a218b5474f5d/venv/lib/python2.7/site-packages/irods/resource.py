@@ -1,7 +1,9 @@
 import sys
 from irods.models import Resource
 
+
 class iRODSResource(object):
+
     def __init__(self, manager, result=None):
         self.manager = manager
         if result:

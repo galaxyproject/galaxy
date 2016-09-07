@@ -1,0 +1,610 @@
+#!/usr/bin/env perl
+
+#
+# Copyright 2011, Ben Langmead <langmea@cs.jhu.edu>
+#
+# This file is part of Bowtie 2.
+#
+# Bowtie 2 is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bowtie 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bowtie 2.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+# bowtie2:
+#
+# A wrapper script for bowtie2.  Provides various advantages over running
+# bowtie2 directly, including:
+#
+# 1. Handling compressed inputs
+# 2. Redirecting output to various files
+# 3. Output directly to bam (not currently supported)
+
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use File::Spec;
+use POSIX;
+
+
+my ($vol,$script_path,$prog);
+$prog = File::Spec->rel2abs( __FILE__ );
+
+while (-f $prog && -l $prog){
+    my (undef, $dir, undef) = File::Spec->splitpath($prog);
+    $prog = File::Spec->rel2abs(readlink($prog), $dir);
+}
+
+($vol,$script_path,$prog) 
+                = File::Spec->splitpath($prog);
+my $os_is_nix   = $^O ne "MSWin32";
+my $align_bin_s = $os_is_nix ? 'bowtie2-align-s' : 'bowtie2-align-s.exe'; 
+my $build_bin   = $os_is_nix ? 'bowtie2-build' : 'bowtie2-build.exe';               
+my $align_bin_l = $os_is_nix ? 'bowtie2-align-l' : 'bowtie2-align-l.exe'; 
+my $align_prog_s= File::Spec->catpath($vol,$script_path,$align_bin_s);
+my $align_prog_l= File::Spec->catpath($vol,$script_path,$align_bin_l);
+my $align_prog  = $align_prog_s;
+my $idx_ext_l     = 'bt2l'; 
+my $idx_ext_s     = 'bt2'; 
+my $idx_ext       = $idx_ext_s; 
+my %signo       = ();
+my @signame     = ();
+
+sub quote_params {
+    my %params_2_quote = ('--rg' => 1, '--rg-id' => 1,
+                          '-S' => 1, '-U' => 1,
+                          '-1' => 1, '-2' => 1
+    );
+    my $param_list = shift;
+    my $quoting = 0;
+    
+    for (my $i=0; $i<scalar(@{$param_list}); $i++){
+        if($quoting){
+            $quoting = 0;
+            $param_list->[$i] = "\"".$param_list->[$i]."\"";
+            next;
+        }
+    	$quoting = 1 if(exists($params_2_quote{$param_list->[$i]}));
+    }
+}
+
+
+{
+	# Get signal info
+	use Config;
+	my $i = 0;
+	for my $name (split(' ', $Config{sig_name})) {
+		$signo{$name} = $i;
+		$signame[$i] = $name;
+		$i++;
+	}
+}
+
+(-x "$align_prog") ||
+	Fail("Expected bowtie2 to be in same directory with bowtie2-align:\n$script_path\n");
+
+# Get description of arguments from Bowtie 2 so that we can distinguish Bowtie
+# 2 args from wrapper args
+sub getBt2Desc($) {
+	my $d = shift;
+	my $cmd = "\"$align_prog\" --wrapper basic-0 --arg-desc";
+	open(my $fh, "$cmd |") || Fail("Failed to run command '$cmd'\n");
+	while(readline $fh) {
+		chomp;
+		next if /^\s*$/;
+		my @ts = split(/\t/);
+		$d->{$ts[0]} = $ts[1];
+	}
+	close($fh);
+	$? == 0 || Fail("Description of arguments failed!\n");
+}
+
+my %desc = ();
+my %wrapped = ("1" => 1, "2" => 1);
+getBt2Desc(\%desc);
+
+# Given an option like -1, determine whether it's wrapped (i.e. should be
+# handled by this script rather than being passed along to Bowtie 2)
+sub isWrapped($) { return defined($wrapped{$_[0]}); }
+
+my @orig_argv = @ARGV;
+
+my @bt2w_args = (); # options for wrapper
+my @bt2_args  = (); # options for Bowtie 2
+my $saw_dd = 0;
+for(0..$#ARGV) {
+	if($ARGV[$_] eq "--") {
+		$saw_dd = 1;
+		next;
+	}
+	push @bt2w_args, $ARGV[$_] if !$saw_dd;
+	push @bt2_args,  $ARGV[$_] if  $saw_dd;
+}
+if(!$saw_dd) {
+	@bt2_args = @bt2w_args;
+	@bt2w_args= ();
+}
+
+my $debug = 0;
+my %read_fns = ();
+my %read_compress = ();
+my $cap_out = undef;       # Filename for passthrough
+my $no_unal = 0;
+my $large_idx = 0;
+# Remove whitespace
+for my $i (0..$#bt2_args) {
+	$bt2_args[$i]=~ s/^\s+//; $bt2_args[$i] =~ s/\s+$//;
+}
+
+# We've handled arguments that the user has explicitly directed either to the
+# wrapper or to bowtie2, now we capture some of the bowtie2 arguments that
+# ought to be handled in the wrapper
+for(my $i = 0; $i < scalar(@bt2_args); $i++) {
+	next unless defined($bt2_args[$i]);
+	my $arg = $bt2_args[$i];
+	my @args = split(/=/, $arg);
+	if(scalar(@args) > 2) {
+		$args[1] = join("=", @args[1..$#args]);
+	}
+	$arg = $args[0];
+	if($arg eq "-U" || $arg eq "--unpaired") {
+		$bt2_args[$i] = undef;
+		$arg =~ s/^-U//; $arg =~ s/^--unpaired//;
+		if($arg ne "") {
+			# Argument was part of this token
+			my @args = split(/,/, $arg);
+			for my $a (@args) { push @bt2w_args, ("-U", $a); }
+		} else {
+			# Argument is in the next token
+			$i < scalar(@bt2_args)-1 || Fail("Argument expected in next token!\n");
+			$i++;
+			my @args = split(/,/, $bt2_args[$i]);
+			for my $a (@args) { push @bt2w_args, ("-U", $a); }
+			$bt2_args[$i] = undef;
+		}
+	}
+	if($arg =~ /^--?([12])/ && $arg !~ /^--?12/) {
+		my $mate = $1;
+		$bt2_args[$i] = undef;
+		$arg =~ s/^--?[12]//;
+		if($arg ne "") {
+			# Argument was part of this token
+			my @args = split(/,/, $arg);
+			for my $a (@args) { push @bt2w_args, ("-$mate", $a); }
+		} else {
+			# Argument is in the next token
+			$i < scalar(@bt2_args)-1 || Fail("Argument expected in next token!\n");
+			$i++;
+			my @args = split(/,/, $bt2_args[$i]);
+			for my $a (@args) { push @bt2w_args, ("-$mate", $a); }
+			$bt2_args[$i] = undef;
+		}
+	}
+	if($arg eq "--debug") {
+		$debug = 1;
+		$bt2_args[$i] = undef;
+	}
+	if($arg eq "--no-unal") {
+		$no_unal = 1;
+		$bt2_args[$i] = undef;
+	}
+	if($arg eq "--large-index") {
+		$large_idx = 1;
+		$bt2_args[$i] = undef;
+	}
+	for my $rarg ("un-conc", "al-conc", "un", "al") {
+		if($arg =~ /^--${rarg}$/ || $arg =~ /^--${rarg}-gz$/ || $arg =~ /^--${rarg}-bz2$/ || $arg =~ /^--${rarg}-lz4$/) {
+			$bt2_args[$i] = undef;
+			if(scalar(@args) > 1 && $args[1] ne "") {
+				$read_fns{$rarg} = $args[1];
+			} else {
+				$i < scalar(@bt2_args)-1 || Fail("--${rarg}* option takes an argument.\n");
+				$read_fns{$rarg} = $bt2_args[$i+1];
+				$bt2_args[$i+1] = undef;
+			}
+			$read_compress{$rarg} = "";
+			$read_compress{$rarg} = "gzip"  if $arg eq "--${rarg}-gz";
+			$read_compress{$rarg} = "bzip2" if $arg eq "--${rarg}-bz2";
+			$read_compress{$rarg} = "lz4" if $arg eq "--${rarg}-lz4";
+			last;
+		}
+	}
+}
+# If the user asked us to redirect some reads to files, or to suppress
+# unaligned reads, then we need to capture the output from Bowtie 2 and pass it
+# through this wrapper.
+my $passthru = 0;
+if(scalar(keys %read_fns) > 0 || $no_unal) {
+	$passthru = 1;
+	push @bt2_args, "--passthrough";
+	$cap_out = "-";
+	for(my $i = 0; $i < scalar(@bt2_args); $i++) {
+		next unless defined($bt2_args[$i]);
+		my $arg = $bt2_args[$i];
+		if($arg eq "-S" || $arg eq "--output") {
+			$i < scalar(@bt2_args)-1 || Fail("-S/--output takes an argument.\n");
+			$cap_out = $bt2_args[$i+1];
+			$bt2_args[$i] = undef;
+			$bt2_args[$i+1] = undef;
+		}
+	}
+}
+my @tmp = ();
+for (@bt2_args) { push(@tmp, $_) if defined($_); }
+@bt2_args = @tmp;
+
+my @unps = ();
+my @mate1s = ();
+my @mate2s = ();
+my @to_delete = ();
+my $temp_dir = "/tmp";
+my $bam_out = 0;
+my $ref_str = undef;
+my $no_pipes = 0;
+my $keep = 0;
+my $verbose = 0;
+my $readpipe = undef;
+my $log_fName = undef;
+my $help = 0;
+
+my @bt2w_args_cp = (@bt2w_args>0) ? @bt2w_args : @bt2_args;
+Getopt::Long::Configure("pass_through","no_ignore_case");
+
+my @old_ARGV = @ARGV;
+@ARGV = @bt2w_args_cp;
+
+GetOptions(
+	"1=s"                           => \@mate1s,
+	"2=s"                           => \@mate2s,
+	"reads|U=s"                     => \@unps,
+	"temp-directory=s"              => \$temp_dir,
+	"bam"                           => \$bam_out,
+	"no-named-pipes"                => \$no_pipes,
+	"ref-string|reference-string=s" => \$ref_str,
+	"keep"                          => \$keep,
+	"verbose"                       => \$verbose,
+	"log-file=s"                    => \$log_fName,
+	"help|h"                        => \$help
+);
+
+@ARGV = @old_ARGV;
+
+my $old_stderr;
+
+if ($log_fName) {
+    open($old_stderr, ">&STDERR") or Fail("Cannot dup STDERR!\n");
+    open(STDERR, ">", $log_fName) or Fail("Cannot redirect to log file $log_fName.\n");
+}
+
+Info("Before arg handling:\n");
+Info("  Wrapper args:\n[ @bt2w_args ]\n");
+Info("  Binary args:\n[ @bt2_args ]\n");
+
+sub cat_file($$) {
+	my ($ifn, $ofh) = @_;
+	my $ifh = undef;
+	if($ifn =~ /\.gz$/) {
+		open($ifh, "gzip -dc \"$ifn\" |") ||
+			 Fail("Could not open gzipped read file: $ifn \n");
+	} elsif($ifn =~ /\.bz2/) {
+		open($ifh, "bzip2 -dc \"$ifn\" |") ||
+			Fail("Could not open bzip2ed read file: $ifn \n");
+	} elsif($ifn =~ /\.lz4/) {
+		open($ifh, "lz4 -dc \"$ifn\" |") ||
+			Fail("Could not open lz4ed read file: $ifn \n");
+	} else {
+		open($ifh, $ifn) || Fail("Could not open read file: $ifn \n");
+	}
+	while(readline $ifh) { print {$ofh} $_; }
+	close($ifh);
+}
+
+# Return non-zero if and only if the input should be wrapped (i.e. because
+# it's compressed).
+sub wrapInput($$$) {
+	my ($unps, $mate1s, $mate2s) = @_;
+	for my $fn (@$unps, @$mate1s, @$mate2s) {
+		return 1 if $fn =~ /\.gz$/ || $fn =~ /\.bz2$/ || $fn =~ /\.lz4$/;
+	}
+	return 0;
+}
+
+sub Info {
+    if ($verbose) {
+        print STDERR "(INFO): " ,@_;
+    }
+}
+
+sub Error {
+    my @msg = @_;
+    $msg[0] = "(ERR): ".$msg[0];
+    printf STDERR @msg;
+}
+
+sub Fail {
+    Error(@_);
+    die("Exiting now ...\n");    
+}
+
+sub Extract_IndexName_From {
+    my $index_opt = $ref_str ? '--index' : '-x';
+    for (my $i=0; $i<@_; $i++) {
+        if ($_[$i] eq $index_opt){
+            return $_[$i+1];
+        }
+    }
+    Info("Cannot find any index option (--reference-string, --ref-string or -x) in the given command line.\n");    
+}
+
+if(wrapInput(\@unps, \@mate1s, \@mate2s)) {
+	if(scalar(@mate2s) > 0) {
+		#
+		# Wrap paired-end inputs
+		#
+		# Put reads into temporary files or fork off processes to feed named pipes
+		scalar(@mate2s) == scalar(@mate1s) ||
+			Fail("Different number of files specified with --reads/-1 as with -2\n");
+		# Make a named pipe for delivering mate #1s
+		my $m1fn = "$temp_dir/$$.inpipe1";
+		push @to_delete, $m1fn;
+		push @bt2_args, "-1 $m1fn";
+		# Create named pipe 1 for writing
+		if(!$no_pipes) {
+			mkfifo($m1fn, 0700) || Fail("mkfifo($m1fn) failed.\n");
+		}
+		my $pid = 0;
+		$pid = fork() unless $no_pipes;
+		if($pid == 0) {
+			# Open named pipe 1 for writing
+			open(my $ofh, ">$m1fn") || Fail("Can't open '$m1fn' for writing\n");
+			for my $ifn (@mate1s) { cat_file($ifn, $ofh); }
+			close($ofh);
+			exit 0 unless $no_pipes;
+		}
+		# Make a named pipe for delivering mate #2s
+		my $m2fn = "$temp_dir/$$.inpipe2";
+		push @to_delete, $m2fn;
+		push @bt2_args, "-2 $m2fn";
+		# Create named pipe 2 for writing
+		if(!$no_pipes) {
+			mkfifo($m2fn, 0700) || Fail("mkfifo($m2fn) failed.\n");
+		}
+		$pid = 0;
+		$pid = fork() unless $no_pipes;
+		if($pid == 0) {
+			# Open named pipe 2 for writing
+			open(my $ofh, ">$m2fn") || Fail("Can't open '$m2fn' for writing.\n");
+			for my $ifn (@mate2s) { cat_file($ifn, $ofh); }
+			close($ofh);
+			exit 0 unless $no_pipes;
+		}
+	}
+	if(scalar(@unps) > 0) {
+		#
+		# Wrap unpaired inputs.
+		#
+		# Make a named pipe for delivering unpaired reads
+		my $ufn = "$temp_dir/$$.unp";
+		push @to_delete, $ufn;
+		push @bt2_args, "-U $ufn";
+		# Create named pipe 2 for writing
+		if(!$no_pipes) {
+			mkfifo($ufn, 0700) || Fail("mkfifo($ufn) failed.\n");
+		}
+		my $pid = 0;
+		$pid = fork() unless $no_pipes;
+		if($pid == 0) {
+			# Open named pipe 2 for writing
+			open(my $ofh, ">$ufn") || Fail("Can't open '$ufn' for writing.\n");
+			for my $ifn (@unps) { cat_file($ifn, $ofh); }
+			close($ofh);
+			exit 0 unless $no_pipes;
+		}
+	}
+} else {
+	if(scalar(@mate2s) > 0) {
+		# Just pass all the mate arguments along to the binary
+		push @bt2_args, ("-1", join(",", @mate1s));
+		push @bt2_args, ("-2", join(",", @mate2s));
+	}
+	if(scalar(@unps) > 0) {
+		push @bt2_args, ("-U", join(",", @unps));
+	}
+}
+
+if(defined($ref_str)) {
+	my $ofn = "$temp_dir/$$.ref_str.fa";
+	open(my $ofh, ">$ofn") ||
+		Fail("could not open temporary fasta file '$ofn' for writing.\n");
+	print {$ofh} ">1\n$ref_str\n";
+	close($ofh);
+	push @to_delete, $ofn;
+	system("$build_bin $ofn $ofn") == 0 ||
+		Fail("bowtie2-build returned non-0 exit level.\n");
+	push @bt2_args, ("--index", "$ofn");
+	push @to_delete, ("$ofn.1.".$idx_ext, "$ofn.2.".$idx_ext, 
+	                  "$ofn.3.".$idx_ext, "$ofn.4.".$idx_ext,
+	                  "$ofn.rev.1.".$idx_ext, "$ofn.rev.2.".$idx_ext);
+}
+
+Info("After arg handling:\n");
+Info("  Binary args:\n[ @bt2_args ]\n");
+
+my $index_name = Extract_IndexName_From(@bt2_args);
+
+if ($large_idx) {
+    Info("Using a large index enforced by user.\n");
+    $align_prog  = $align_prog_l;
+    $idx_ext     = $idx_ext_l;
+    if (not -f $index_name.".1.".$idx_ext_l) {
+        Fail("Cannot find the large index ${index_name}.1.${idx_ext_l}\n");
+    }
+    Info("Using large index (${index_name}.1.${idx_ext_l}).\n");
+}
+else {
+    if ((-f $index_name.".1.".$idx_ext_l) && 
+        (not -f $index_name.".1.".$idx_ext_s)) {
+        Info("Cannot find a small index but a large one seems to be present.\n");
+        Info("Switching to using the large index (${index_name}.1.${idx_ext_l}).\n");
+        $align_prog  = $align_prog_l;
+        $idx_ext     = $idx_ext_l;
+    }
+    else {
+        Info("Using the small index (${index_name}.1.${idx_ext_s}).\n")
+    }
+}
+
+my $debug_str = ($debug ? "-debug" : "");
+
+# Construct command invoking bowtie2-align
+quote_params(\@bt2_args);
+my $cmd = "\"$align_prog$debug_str\" --wrapper basic-0 ".join(" ", @bt2_args);
+
+# Possibly add read input on an anonymous pipe
+$cmd = "$readpipe $cmd" if defined($readpipe);
+
+Info("$cmd\n");
+my $ret;
+if(defined($cap_out)) {
+	# Open Bowtie 2 pipe
+	open(BT, "$cmd |") || Fail("Could not open Bowtie 2 pipe: '$cmd |'\n");
+	# Open output pipe
+	my $ofh = *STDOUT;
+	my @fhs_to_close = ();
+	if($cap_out ne "-") {
+		open($ofh, ">$cap_out") ||
+			Fail("Could not open output file '$cap_out' for writing.\n");
+	}
+	my %read_fhs = ();
+	for my $i ("al", "un", "al-conc", "un-conc") {
+		if(defined($read_fns{$i})) {
+            my ($vol, $base_spec_dir, $base_fname) = File::Spec->splitpath($read_fns{$i});
+            if (-d $read_fns{$i}) {
+                $base_spec_dir = $read_fns{$i};
+                $base_fname = undef;
+            }
+			if($i =~ /-conc$/) {
+				# Open 2 output files, one for mate 1, one for mate 2
+				my ($fn1, $fn2);
+                if ($base_fname) {
+                    ($fn1, $fn2) = ($base_fname,$base_fname);
+                }
+                else {
+                    ($fn1, $fn2) = ($i.'-mate',$i.'-mate');
+                }
+				if($fn1 =~ /%/) {
+					$fn1 =~ s/%/1/g; $fn2 =~ s/%/2/g;
+				} elsif($fn1 =~ /\.[^.]*$/) {
+					$fn1 =~ s/\.([^.]*)$/.1.$1/;
+					$fn2 =~ s/\.([^.]*)$/.2.$1/;
+				} else {
+					$fn1 .= ".1";
+					$fn2 .= ".2";
+				}
+                $fn1 = File::Spec->catpath($vol,$base_spec_dir,$fn1);
+                $fn2 = File::Spec->catpath($vol,$base_spec_dir,$fn2);
+				$fn1 ne $fn2 || Fail("$fn1\n$fn2\n");
+				my ($redir1, $redir2) = (">$fn1", ">$fn2");
+				$redir1 = "| gzip -c $redir1"  if $read_compress{$i} eq "gzip";
+				$redir1 = "| bzip2 -c $redir1" if $read_compress{$i} eq "bzip2";
+				$redir1 = "| lz4 -c $redir1" if $read_compress{$i} eq "lz4";
+				$redir2 = "| gzip -c $redir2"  if $read_compress{$i} eq "gzip";
+				$redir2 = "| bzip2 -c $redir2" if $read_compress{$i} eq "bzip2";
+				$redir2 = "| lz4 -c $redir2" if $read_compress{$i} eq "lz4";
+				open($read_fhs{$i}{1}, $redir1) || Fail("Could not open --$i mate-1 output file '$fn1'\n");
+				open($read_fhs{$i}{2}, $redir2) || Fail("Could not open --$i mate-2 output file '$fn2'\n");
+				push @fhs_to_close, $read_fhs{$i}{1};
+				push @fhs_to_close, $read_fhs{$i}{2};
+			} else {
+			    my $redir = ">".File::Spec->catpath($vol,$base_spec_dir,$i."-seqs");
+			    if ($base_fname) {
+				    $redir = ">$read_fns{$i}";
+			    }
+				$redir = "| gzip -c $redir"  if $read_compress{$i} eq "gzip";
+				$redir = "| bzip2 -c $redir" if $read_compress{$i} eq "bzip2";
+				$redir = "| lz4 -c $redir" if $read_compress{$i} eq "lz4";
+				open($read_fhs{$i}, $redir) || Fail("Could not open --$i output file '$read_fns{$i}'\n");
+				push @fhs_to_close, $read_fhs{$i};
+			}
+		}
+	}
+	while(<BT>) {
+		chomp;
+		my $filt = 0;
+		unless(substr($_, 0, 1) eq "@") {
+			# If we are supposed to output certain reads to files...
+			my $tab1_i = index($_, "\t") + 1;
+			my $tab2_i = index($_, "\t", $tab1_i);
+			my $fl = substr($_, $tab1_i, $tab2_i - $tab1_i);
+			my $unal = ($fl & 4) != 0;
+			$filt = 1 if $no_unal && $unal;
+			if($passthru) {
+				if(scalar(keys %read_fhs) == 0) {
+					# Next line is read with some whitespace escaped
+					my $l = <BT>;
+				} else {
+					my $mate1 = (($fl &  64) != 0);
+					my $mate2 = (($fl & 128) != 0);
+					my $unp = !$mate1 && !$mate2;
+					my $pair = !$unp;
+					# Next line is read with some whitespace escaped
+					my $l = <BT>;
+					chomp($l);
+					$l =~ s/%(..)/chr(hex($1))/eg;
+					if((defined($read_fhs{un}) || defined($read_fhs{al})) && $unp) {
+						if($unal) {
+							# Failed to align
+							print {$read_fhs{un}} $l if defined($read_fhs{un});
+						} else {
+							# Aligned
+							print {$read_fhs{al}} $l if defined($read_fhs{al});
+						}
+					}
+					if((defined($read_fhs{"un-conc"}) || defined($read_fhs{"al-conc"})) && $pair) {
+						my $conc  = (($fl &   2) != 0);
+						if     ($conc && $mate1) {
+							print {$read_fhs{"al-conc"}{1}} $l if defined($read_fhs{"al-conc"});
+						} elsif($conc && $mate2) {
+							print {$read_fhs{"al-conc"}{2}} $l if defined($read_fhs{"al-conc"});
+						} elsif(!$conc && $mate1) {
+							print {$read_fhs{"un-conc"}{1}} $l if defined($read_fhs{"un-conc"});
+						} elsif(!$conc && $mate2) {
+							print {$read_fhs{"un-conc"}{2}} $l if defined($read_fhs{"un-conc"});
+						}
+					}
+				}
+			}
+		}
+		print {$ofh} "$_\n" if !$filt;
+	}
+	for my $k (@fhs_to_close) { close($k); }
+	close($ofh);
+	close(BT);
+	$ret = $?;
+} else {
+	$ret = system($cmd);
+}
+if(!$keep) { for(@to_delete) { unlink($_); } }
+
+if ($ret == -1) {
+    Error("Failed to execute bowtie2-align: $!\n");
+	exit 1;
+} elsif ($ret & 127) {
+	my $signm = "(unknown)";
+	$signm = $signame[$ret & 127] if defined($signame[$ret & 127]);
+	my $ad = "";
+	$ad = "(core dumped)" if (($ret & 128) != 0);
+    Error("bowtie2-align died with signal %d (%s) $ad\n", ($ret & 127), $signm);
+	exit 1;
+} elsif($ret != 0) {
+	Error("bowtie2-align exited with value %d\n", ($ret >> 8));
+}
+exit ($ret >> 8);

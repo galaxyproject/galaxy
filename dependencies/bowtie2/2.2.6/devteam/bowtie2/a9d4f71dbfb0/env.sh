@@ -1,0 +1,1 @@
+if [ -f /home/katie/galaxy-1/dependencies/bowtie2/2.2.6/iuc/package_bowtie_2_2_6/0d9cd7487cc9/env.sh ] ; then . /home/katie/galaxy-1/dependencies/bowtie2/2.2.6/iuc/package_bowtie_2_2_6/0d9cd7487cc9/env.sh ; fi

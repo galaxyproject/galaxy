@@ -115,7 +115,8 @@ class TestQuery(unittest.TestCase):
 
     def test_query_order_by_desc(self):
         # query for user names
-        results = self.sess.query(User.name).order_by(User.name, order='desc').all()
+        results = self.sess.query(User.name).order_by(
+            User.name, order='desc').all()
 
         # get user names from results
         user_names = []
@@ -131,7 +132,8 @@ class TestQuery(unittest.TestCase):
 
     def test_query_order_by_invalid_param(self):
         with self.assertRaises(ValueError):
-            results = self.sess.query(User.name).order_by(User.name, order='moo').all()
+            results = self.sess.query(User.name).order_by(
+                User.name, order='moo').all()
 
     def test_query_strip(self):
         query = self.sess.query(Resource)
