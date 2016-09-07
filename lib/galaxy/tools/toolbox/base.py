@@ -510,34 +510,27 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             path_template = item.get( "file" )
             template_kwds = self._path_template_kwds()
             path = string.Template(path_template).safe_substitute(**template_kwds)
-            repository_id = None
+            tool_shed_repository = None
+            can_load_into_panel_dict = True
 
             tool = self.load_tool_from_cache(os.path.join(tool_path, path))
-            if tool and guid:
-                # tool was in cache, so let's short-circuit and return
+            from_cache = tool
+            if from_cache:
                 log.debug("Loading tool %s from cache", str(tool.id))
-                key = 'tool_%s' % str(tool.id)
-                self.__add_tool(tool, load_panel_dict, panel_dict)
-                integrated_panel_dict.update_or_append(index, key, tool)
-                return
-            else:
-                tool_shed_repository = None
-            can_load_into_panel_dict = True
-            if guid is not None and not tool_shed_repository:
+            elif guid:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
-                    repository_id = self.app.security.encode_id( tool_shed_repository.id )
-                    tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=internal )
-            if not tool:
-                tool = self.load_tool(os.path.join(tool_path, path), guid=guid, repository_id=repository_id,
-                                      use_cached=internal)
+                    repository_id = self.app.security.encode_id(tool_shed_repository.id)
+                    tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id)
+            else:  # tool was not in cache and is not a tool shed tool.
+                tool = self.load_tool(os.path.join(tool_path, path))
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
             key = 'tool_%s' % str(tool.id)
             if can_load_into_panel_dict:
-                if guid is not None:
+                if guid and not from_cache:
                     tool.tool_shed = tool_shed_repository.tool_shed
                     tool.repository_name = tool_shed_repository.name
                     tool.repository_owner = tool_shed_repository.owner
