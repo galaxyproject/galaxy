@@ -410,6 +410,9 @@ Toggle line numbers
       <xs:documentation xml:lang="en">Documentation for TestOutput</xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <!-- TODO: This would be more percise if TestOutput was subclassed and only children
+           of output_collection were allowed to hve elements. -->
+      <xs:element name="element" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="1"/>
       <xs:element name="extra_files" type="TestExtraFile" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="metadata" type="TestMetadata" minOccurs="0" maxOccurs="unbounded"/>
@@ -442,6 +445,18 @@ Toggle line numbers
     <xs:attribute name="md5" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected MD5sum for output.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="checksum" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Checksum expression for output in the form ``hash_type:hash_value`` (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="compare" type="TestOutputCompareType">
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines). If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2192,6 +2207,18 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:enumeration value="stdout"/>
       <xs:enumeration value="stderr"/>
       <xs:enumeration value="both"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TestOutputCompareType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of comparison to use for test outputs.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="diff"/>
+      <xs:enumeration value="re_match"/>
+      <xs:enumeration value="sim_size"/>
+      <xs:enumeration value="re_match_multiline"/>
+      <xs:enumeration value="contains"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="PermissiveBoolean">
