@@ -9,9 +9,6 @@
     <xs:documentation xml:lang="en">A Galaxy XML tool wrapper</xs:documentation>
   </xs:annotation>
   
-   <xs:include schemaLocation="citation.xsd"/>
-   <xs:include schemaLocation="citations.xsd"/>
-  
   <xs:element name="tool">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2260,6 +2257,42 @@ Then whenever the user selects the "interval"" option from the select list, the 
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+
+  <xs:complexType name="Citations">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Tool files may declare one citations element. Each citations element can contain one or more citation tag elements - each of which specifies tool citation information using either a DOI or a BibTeX entry.
+</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="citation" type="Citation" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Citation">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Each citations element can contain one or more citation tag elements - each of which specifies tool citation information using either a DOI or a BibTeX entry.</xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="CitationType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">type of citation</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:simpleType name="CitationType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of citation represented.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bibtex"/>
+      <xs:enumeration value="doi"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:simpleType name="RequirementType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for RequirementType</xs:documentation>
