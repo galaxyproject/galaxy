@@ -1,6 +1,6 @@
 from .factory import LineageMap
-from .tool_shed import ToolVersionCache
 from .interface import ToolLineage
+from .tool_shed import ToolVersionCache
 
 
 __all__ = ["LineageMap", "ToolLineage", "ToolVersionCache"]

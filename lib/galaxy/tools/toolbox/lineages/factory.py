@@ -1,5 +1,4 @@
 from .stock import StockLineage
-from .tool_shed import get_installed_tools_version
 from .tool_shed import ToolShedLineage
 
 

@@ -24,8 +24,6 @@ from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
-from .lineages import fill_lineage_map
-from .lineages import ToolVersionCache
 from .panel import panel_item_types
 from .panel import ToolPanelElements
 from .panel import ToolSection

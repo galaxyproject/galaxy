@@ -1,7 +1,11 @@
-import cProfile
-import StringIO
-import pstats
+"""
+Use this context handler to profile slow parts of the code.
+http://docs.sqlalchemy.org/en/latest/faq/performance.html#code-profiling
+"""
 import contextlib
+import cProfile
+import pstats
+import StringIO
 
 
 @contextlib.contextmanager
