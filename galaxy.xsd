@@ -44,8 +44,8 @@ The outer-most tag set of tool XML files.
             <xs:documentation xml:lang="en">Specifies the command to be run in order to get the tool's version string. The resulting value will be found in the "Info" field of the history dataset.</xs:documentation>
           </xs:annotation>
         </xs:element>
-        <xs:element name="request_parameter_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="command" type="Command"/>
+        <xs:element name="request_parameter_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
         <xs:element name="outputs" type="Outputs" minOccurs="0"/>
         <xs:element name="inputs" type="Inputs" minOccurs="0"/>
@@ -53,7 +53,56 @@ The outer-most tag set of tool XML files.
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
         <xs:element name="help" type="xs:string" minOccurs="0">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the last tag set in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html.
+
+| tag | details |
+| ``.. class:: warningmark`` | a yellow warning symbol  |
+| ``.. class:: infomark`` | a blue information symbol |
+| ``.. image:: path-of-the-file.png :height: 500 :width: 600`` | insert a png file of height 500 and width 600 at this position |
+| ``**bold**`` | bold |
+| ``*italic*`` | italic |
+| ``*`` | list |
+| ``-`` |list |
+| ``::`` | paragraph| 
+| ``-----`` | a horizontal line |
+
+Example:
+
+Show a warning sign to remind users that this tool accept fasta format files only, followed by an example of the query sequence and a figure.
+
+```xml
+<help>
+
+.. class:: warningmark
+
+'''TIP''' This tool requires *fasta* format.
+
+----
+
+'''Example'''
+
+Query sequence::
+    >seq1
+    >ATCG...
+
+.. image:: my_figure.png
+    :height: 500
+    :width: 600
+
+</help>
+``` 
+
+Best Practices
+
+From https://galaxy-iuc-standards.readthedocs.org/en/latest/ :
+
+The help tag should be started and finished by a CDATA tag.
+
+```
+<help> <![CDATA[      your lines of restructuredText here      ]]><![CDATA[
+```
+</help>
+]]></xs:documentation>
           </xs:annotation>
         </xs:element>
         <xs:element name="code" type="Code" minOccurs="0"/>
@@ -150,11 +199,11 @@ The outer-most tag set of tool XML files.
   </xs:complexType>
   <xs:complexType name="Code">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Code</xs:documentation>
+      <xs:documentation xml:lang="en">**Deprecated** do not use this unless absolutely necessary. This tag set provides detailed control of the way the tool is executed. This (optional) code can be deployed in a separate file in the same directory as the tool's config file. These hooks are being replaced by new tool config features and methods in the ~/lib/galaxy/tools/__init__.py code file.</xs:documentation>
     </xs:annotation>
-    <xs:attribute name="file" type="xs:string">
+    <xs:attribute name="file" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
+        <xs:documentation xml:lang="en">This value is the name of the executable code file, and is called in the exec_before_process(), exec_before_job(), exec_after_process() and exec_after_job()( methods.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -170,7 +219,9 @@ The outer-most tag set of tool XML files.
   </xs:complexType>
   <xs:complexType name="Tests">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Tests</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Container tag set for the <test> tag sets. Any number of tests can be included, and each test is wrapped within separate <test> tag sets. Functional tests are executed via Planemo or the ~/run_tests.sh shell script.
+
+See [WritingTests](https://wiki.galaxyproject.org/Admin/Tools/WritingTests) on the wiki and [Test-Driven Development](http://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development) section of the Planemo docs for more information on writing tests.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="test" type="Test" minOccurs="0" maxOccurs="unbounded"/>
@@ -178,39 +229,123 @@ The outer-most tag set of tool XML files.
   </xs:complexType>
   <xs:complexType name="Test">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Test</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[This tag set contains the necessary parameter values for executing the tool via the functional test framework.
+
+Example
+
+The following two tests will tool execute the ~/tools/filters/sorter.xml tool. Notice the way that the tool's inputs and outputs are defined.
+
+
+Toggle line numbers
+  <tests>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="column" value="1"/>
+      <param name="order" value="ASC"/>
+      <param name="style" value="num"/>
+      <output name="out_file1" file="sort1_num.bed"/>
+    </test>
+    <test>
+      <param name="input" value="7.bed"/>
+      <param name="column" value="1"/>
+      <param name="order" value="ASC"/>
+      <param name="style" value="alpha"/>
+      <output name="out_file1" file="sort1_alpha.bed"/>
+    </test>
+  </tests>
+Example
+
+Test the execution of the MAF-to-FASTA converter ( ~/tools/maf/maf_to_fasta.xml ).
+
+
+Toggle line numbers
+<tests>
+    <test>
+        <param name="input1" value="3.maf" ftype="maf"/>
+        <param name="species" value="canFam1"/>
+        <param name="fasta_type" value="concatenated"/>
+        <output name="out_file1" file="cf_maf2fasta_concat.dat" ftype="fasta"/>
+    </test>
+</tests>
+Example
+
+This test demonstrates verifying specific properties about a test output instead of directly comparing it to another file. Here the file attribute is not specified and instead a series of assertions is made about the output.
+
+
+Toggle line numbers
+<test>
+    <param name="input" value="maf_stats_interval_in.dat" />
+    <param name="lineNum" value="99999"/>
+    <output name="out_file1">
+        <assert_contents>
+            <has_text text="chr7" />
+            <not_has_text text="chr8" />
+            <has_text_matching expression="1274\d+53" />
+            <has_line_matching expression=".*\s+127489808\s+127494553" />
+            <!-- &#009; is XML escape code for tab -->
+            <has_line line="chr7&#009;127471195&#009;127489808" />
+            <has_n_columns n="3" />
+        </assert_contents>
+    </output>
+</test>
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="param" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output_collection" type="TestOutputCollection" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="assert_command" type="TestAssertions" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="assert_stdout" type="TestAssertions" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="assert_stderr" type="TestAssertions" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:sequence>
+    <xs:attribute name="expect_exit_code" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Describe the job's expected exit code.</xs:documentation>
+      </xs:annotation>      
+    </xs:attribute>
+    <xs:attribute name="expect_failure" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expect the job to fail, if set to true no job output checks may be present in test definition.</xs:documentation>
+      </xs:annotation>      
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestParam">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for TestParam</xs:documentation>
+      <xs:documentation xml:lang="en">This tag set defines the tool's input parameters for executing the tool via the functional test framework.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="collection" type="TestCollection" minOccurs="0" maxOccurs="1" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en">This value must match the name of the associated input parameter.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">This value must be one of the legal values that can be assigned to an input parameter.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ftype" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for ftype</xs:documentation>
+        <xs:documentation xml:lang="en">This attribute name should be included only with the parameter that defines the input dataset for the tool. If this attribute name is not included, the functional test framework will attempt to determine the data type for the input dataset using the data type sniffers.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="dbkey" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for dbkey</xs:documentation>
+        <xs:documentation xml:lang="en">dbkey for the referenced input format.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -282,26 +417,91 @@ The outer-most tag set of tool XML files.
     </xs:sequence>
   </xs:complexType>
   <xs:group name="TestAssertion">
-    <xs:choice>
-      <xs:element name="has_line" type="TestAssertionHasLine"/>
-      <xs:element name="has_text" type="TestAssertionHasText"/>
-      <!-- TODO: implement something to auto generate rest of valid assetions from Python. -->
+    <xs:choice> 
+      <xs:element name="has_text" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="not_has_text" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_text_matching" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
+        </xs:documentation>
+      </xs:annotation>
+      </xs:element>
+      <xs:element name="has_line" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_line_matching" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts a line matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_line_matching expression=".*\s+127489808\s+127494553" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_n_columns" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts tabular output contains the specified number (``n``) of columns (e.g. ``<has_n_columns n="3" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="is_valid_xml" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_element_with_path" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the XML output contains at least one element (or tag) with the specified XPath-like ``path`` (e.g. ``<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_n_elements_with_path" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the XML output contains the specified number (``n``) of elements (or tags) with the specified XPath-like ``path`` (e.g. ``<has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="element_text_is" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path`` is the specified ``text`` (e.g. ``<element_text_is path="BlastOutput_program" text="blastp" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="element_text_matches">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path`` matches the regular expression defined by ``expression`` (e.g. ``<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="attribute_is" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />`` ).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="attribute_matches" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` matches the regular expression specified by ``expression`` || ``<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />``).]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="element_text" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>`` ||).]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:choice>
   </xs:group>
-  <xs:complexType name="TestAssertionHasLine">
-    <xs:attribute name="line" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Line the test output must contain.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
-  <xs:complexType name="TestAssertionHasText">
-    <xs:attribute name="text" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Text the test output must contain.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
   <xs:complexType name="TestCollectionElement">
     <xs:sequence>
       <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="unbounded"/>
@@ -1002,11 +1202,8 @@ Container tag set for the <data> tag set. The files and collections created by t
     </xs:annotation>
     <xs:sequence>
       <xs:element name="change_format" type="ChangeFormat" minOccurs="0"/>
-      <xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="unbounded">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"></xs:documentation>
-        </xs:annotation>
-      </xs:element>
+      <xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="discover_datasets" type="OutputDiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="actions" type="Actions" minOccurs="0"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
@@ -1050,7 +1247,7 @@ Container tag set for the <data> tag set. The files and collections created by t
       <xs:documentation xml:lang="en">Documentation for Collection</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="discover_datasets" type="DiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -1106,24 +1303,109 @@ The ``<data>`` tag can contain a ``<filter>`` tag which includes a Python code b
     </xs:simpleContent>
   </xs:complexType>
 
-  <xs:complexType name="DiscoverDatasets">
+  <xs:complexType name="OutputDiscoverDatasets">
      <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for DiscoverDatasets</xs:documentation>
+      <xs:documentation xml:lang="en">Describe datasets to dynamically collect after the job complete.
+
+More information can be found at https://wiki.galaxyproject.org/Admin/Tools/MultipleOutputFiles#Number_of_Output_datasets_cannot_be_determined_until_tool_run.
+</xs:documentation>
     </xs:annotation>
     <xs:attribute name="pattern" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for pattern</xs:documentation>
+        <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="directory" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for directory</xs:documentation>
+        <xs:documentation xml:lang="en">Directory (relative to working directory) to search for files.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="format" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ext" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="visible" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="assign_primary_output" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Replace the primary dataset described by the parameter ``data`` parameter with the first output discovered.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="OutputCollectionDiscoverDatasets">
+     <xs:annotation>
+      <xs:documentation xml:lang="en">See https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml and https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml for examples</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="pattern" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="directory" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Directory (relative to working directory) to search for files.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="format" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ext" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="visible" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="Actions">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Actions</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[The ``<actions>`` in the Bowtie wrapper is used in lieu of the deprecated <code> tag to set the dbkey of the output dataset. In bowtie_wrapper.xml (see below), according to the first action block, if the refGenomeSource.genomeSource is "indexed" (not "history"), then it will assign the dbkey of the output file to be the same as that of the reference file. It does this by looking at through the loc file and finding the line that has the value that's been selected in the index dropdown box as column 1 of the loc file entry and using the dbkey, in column 0 (ignoring comment lines (starting with #) along the way).
+
+If refGenomeSource.genomeSource is "history", it resorts to default behavior for Galaxy, which is that the output is assigned the same value as the first input that has a dbkey specified.
+
+The second block would not be needed for most cases--it is required here to handle the specific case of a small reference file we use for functional testing. It says that if the dbkey has been set to "equCab2chrM" (that's what the <filter type="metadata_value"... column="1" /> tag) does then it should be changed to "equCab2" (the <option type="from_param" ... column="0" ...> tag does).
+
+Example:
+
+```xml
+<actions>
+   <conditional name="refGenomeSource.genomeSource">
+      <when value="indexed">
+           <action type="metadata" name="dbkey">
+            <option type="from_file" name="bowtie_indices.loc" column="0" offset="0">
+               <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+               <filter type="param_value" ref="refGenomeSource.index" column="1"/>
+            </option>
+         </action>
+       </when>
+    </conditional>
+    <!-- Special casing equCab2chrM to equCab2 -->
+    <action type="metadata" name="dbkey">
+        <option type="from_param" name="refGenomeSource.genomeSource" column="0" offset="0">
+            <filter type="insert_column" column="0" value="equCab2chrM"/>
+            <filter type="insert_column" column="0" value="equCab2"/>
+            <filter type="metadata_value" ref="output" name="dbkey" column="1" />
+        </option>
+    </action>
+</actions>
+```
+
+]]>
+</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="ActionsElement" minOccurs="0" maxOccurs="unbounded"/>
@@ -1137,63 +1419,63 @@ The ``<data>`` tag can contain a ``<filter>`` tag which includes a Python code b
   </xs:group>
   <xs:complexType name="Action">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Action</xs:documentation>
+      <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="option" type="ActionsOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="type" type="ActionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="default" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for default</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="ActionsOption">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ActionsOption</xs:documentation>
+      <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="type" type="ActionsOptionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for column</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="offset" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for offset</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="param_attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for param_attribute</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="ActionsConditional">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ActionsConditional</xs:documentation>
+      <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
@@ -1205,14 +1487,14 @@ The ``<data>`` tag can contain a ``<filter>`` tag which includes a Python code b
   </xs:complexType>
   <xs:complexType name="ActionsConditionalWhen">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ActionsConditionalWhen</xs:documentation>
+      <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1446,7 +1728,13 @@ The target value (e.g. for setting data format: the list of supported data forma
 
   <xs:complexType name="Stdio">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Galaxy currently supports using regular expressions to scan stdout and stderr, and it also allows exit codes to be scanned for ranges. The 'stdio' tag has two subtags, 'regex' and 'exit_code', to define regular expressions and exit code processing, respectively. </xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Tools write the bulk of useful data to datasets, but they can also write messages to standard I/O (stdio) channels known as standard output (stdout) and standard error (stderr). Both stdout and stderr are typically written to the executing program's console or terminal. Previous versions of Galaxy checked stderr for execution errors - if any text showed up on stderr, then the tool's execution was marked as failed. However, many tools write messages to stderr that are not errors, and using stderr allows programs to redirect other interesting messages to a separate file. Programs may also exit with codes that indicate success or failure. One convention is for programs to return 0 on success and a non-zero exit code on failure.
+
+Legacy tools (ones with ``profile_version`` unspecified or a ``profile_version`` of less than 16.04) will default to checking stderr for errors as described above. Newer tools will instead treat an exit code other than 0 as an error. The ``detect_error`` on ``command`` can swap between these behaviors but the ``stdio`` directive allows more options in defining error conditions (though these aren't always intuitive).
+
+With ``stdio`` directive, Galaxy can use regular expressions to scan stdout and stderr, and it also allows exit codes to be scanned for ranges. The ``<stdio>`` tag has two subtags, ``<regex>`` and ``<exit_code>``, to define regular expressions and exit code processing, respectively. They are defined below. If a tool does not have any valid ``<regex>`` or ``<exit_code>`` tags, then Galaxy will use the previous technique for finding errors.
+
+A note should be made on the order in which exit codes and regular expressions are applied and how the processing stops. Exit code rules are applied before regular expression rules. The rationale is that exit codes are more clearly defined and are easier to check computationally, so they are applied first. Exit code rules are applied in the order in which they appear in the tool's configuration file, and regular expressions are also applied in the order in which they appear in the tool's configuration file. However, once a rule is triggered that causes a fatal error, no further rules are checked.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="regex" minOccurs="0" maxOccurs="unbounded" type="Regex"/>
@@ -1457,21 +1745,51 @@ The target value (e.g. for setting data format: the list of supported data forma
   
   <xs:complexType name="ExitCode">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ExitCode</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. Each <exit_code> tag defines a range of exit codes, and each range can be associated with a description of the error (e.g., "Out of Memory", "Invalid Sequence File") and an error level. The description just describes the condition and can be anything. The error level is either a warning or a fatal error. A warning means that stderr will be updated with the error's description. A fatal error means that the tool's execution will be marked as having an error and the workflow will stop. Note that, if the error level is not supplied, then a fatal error is assumed to have occurred.
+
+The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied <exit_code> tags' ranges, then no errors are applied to the tool's execution.
+
+Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at http://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
+
+The <exit_code> tag's supported attributes are as follows:
+
+* range: This indicates the range of exit codes to check. The range can be one of the following:
+  * n: the exit code will only be compared to n;
+  * [m:n]: the exit code must be greater than or equal to m and less than or equal to n;
+  * [m:]: the exit code must be greater than or equal to m;
+  * [:n]: the exit code must be less than or equal to n.
+* level: This indicates the error level of the exit code. The level can have one of two values:
+  * warning: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A warning-level error will not cause the tool to fail.
+  * fatal: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+* description: This is an optional description of the error that corresponds to the exit code.
+The following is an example of the <exit_code> tag:
+
+```xml
+<stdio>
+    <exit_code range="2"   level="fatal"   description="Out of Memory" />
+    <exit_code range="3:5" level="warning" description="Low disk space" />
+    <exit_code range="6:"  level="fatal"   description="Bad input dataset" />
+</stdio>
+```
+
+If the tool returns 0 or 1, then the tool will not be marked as having an error. If the exit code is 2, then the tool will fail with the description "Out of Memory" added to stderr. If the tool returns 3, 4, or 5, then the tool will not be marked as having failed, but "Low disk space" will be added to stderr. Finally, if the tool returns any number greater than or equal to 6, then the description "Bad input dataset" will be added to stderr and the tool will be marked as having failed.
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="range" type="RangeType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for range</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="level" type="LevelType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for level</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="description" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for description</xs:documentation>
+        <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1479,7 +1797,58 @@ The target value (e.g. for setting data format: the list of supported data forma
   
   <xs:complexType name="Regex">
     <xs:annotation>
-      <xs:documentation xml:lang="en">A regular expression defines a pattern of characters</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+A regular expression defines a pattern of characters. The patterns include the following:
+
+GCTA, which matches on the fixed string "GCTA";
+* [abcd], which matches on the characters a, b, c, or d;
+* [CG]{12}, which matches on 12 consecutive characters that are C or G;
+* a.*z, which matches on the character "a", followed by 0 or more characters of any type, followed by a "z";
+* ^X, which matches the letter X at the beginning of a string;
+* Y$, which matches the letter Y at the end of a string.
+
+There are many more possible regular expressions. A reference to all supported regular expressions can be found under Python Regular Expression Syntax.
+
+A regular expression includes the following attributes:
+
+* source: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values:
+  * stdout: the regular expression will be applied to stdout;
+  * stderr: the regular expression will be applied to stderr;
+  * both: the regular expression will be applied to both stderr and stdout (which is the default case).
+* match: This is the regular expression that will be used to match against stdout and/or stderr. If the <regex> tag does not contain the match attribute, then the <regex> tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
+* level: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). The level can be log, warning or fatal as described below.
+ * log and warning: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+ * fatal: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+* description: Just like its <exit_code> counterpart, this is an optional description of the regular expression that has matched.
+
+The following is an example of regular expressions that may be used:
+
+```xml
+<stdio>
+    <regex match="low space"
+           source="both"
+           level="warning"
+           description="Low space on device" />
+    <regex match="error"
+           source="stdout"
+           level="fatal"
+           description="Unknown error encountered" />
+    <regex match="[CG]{12}"
+           description="Fatal error - CG island 12 nts long found" />
+    <regex match="^Branch A"
+           level="warning"
+           description="Branch A was taken in execution" />
+</stdio>
+```
+
+The regular expression matching proceeds as follows. First, if either stdout or stderr match on "low space", then a warning is registered. If stdout contained the string "---LOW SPACE---", then stdout has the string "Warning: Low space on device" added to its beginning. The same goes for if stderr had contained the string "low space". Since only a warning could have occurred, the processing continues.
+
+Next, the regular expression "error" is matched only against stdout. If stdout contains the string "error" regardless of its capitalization, then a fatal error has occurred and the processing stops. In that case, stdout would be prepended with the string "Fatal: Unknown error encountered". Note that, if stderr contained "error", "ERROR", or "ErRor" then it would not matter - stderr was not being scanned.
+
+If the second regular expression did not match, then the third regular expression is checked. The third regular expression does not contain an error level, so an error level of "fatal" is assumed. The third regular expression also does not contain a source, so both stdout and stderr are checked. The third regular expression looks for 12 consecutive "C"s or "G"s in any order and in uppercase or lowercase. If stdout contained "cgccGGCCcGGcG" or stderr contained "CCCCCCgggGGG", then the regular expression would match, the tool would be marked with a fatal error, and the stream that contained the 12-nucleotide CG island would be prepended with "Fatal: Fatal error - CG island 12 nts long found".
+
+Finally, if the tool did not match any of the fatal errors, then the fourth regular expression is checked. Since no source is specified, both stdout and stderr are checked. If "Branch A" is at the beginning of stdout or stderr, then a warning will be registered and the source that contained "Branch A" will be prepended with the warning "Warning: Branch A was taken in execution".
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="source" type="SourceType">
       <xs:annotation>
