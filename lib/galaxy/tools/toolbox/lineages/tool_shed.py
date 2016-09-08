@@ -7,6 +7,40 @@ except ImportError:
     ToolVersion = None
 
 
+class ToolVersionCache(object):
+    """
+    Instances of this class allow looking up tool_version objects from memory
+    (instead of querying the database) using the tool_version id. It also allows
+    looking up parent tool_version ids using a child tool_id, or the inverse.
+    This allows quickly getting all previous/next tool versions without numerous
+    database requests.
+    """
+    def __init__(self, app):
+        self.app = app
+        self.tool_version_by_id = self.get_tool_versions()
+        self.tool_id_to_parent_id, self.parent_id_to_tool_id = self.get_tva_map()
+
+    def get_tva_map(self):
+        """
+        Retrieves all ToolVersionAssociation objects from the database, and builds
+        dictionaries that can be used to either get a tools' parent tool_version id
+        (which can be used to get the parent's tool_version object), or to get the
+        child's tool id using the parent's tool_version id.
+        """
+        tvas = self.app.install_model.context.query(self.app.install_model.ToolVersionAssociation).all()
+        tool_id_to_parent_id = {tva.tool_id: tva.parent_id for tva in tvas}
+        parent_id_to_tool_id = {tva.parent_id: tva.tool_id for tva in tvas}
+        return tool_id_to_parent_id, parent_id_to_tool_id
+
+    def get_tool_versions(self):
+        """
+        Get all tool_version objects from the database and build a dictionary
+        with the tool_version id as key and the tool_version object as value.
+        """
+        tool_versions = self.app.install_model.context.query(self.app.install_model.ToolVersion).all()
+        return {tv.id: tv for tv in tool_versions}
+
+
 class ToolShedLineage(ToolLineage):
     """ Representation of tool lineage derived from tool shed repository
     installations. """
@@ -22,7 +56,7 @@ class ToolShedLineage(ToolLineage):
     @staticmethod
     def from_tool( app, tool, tool_shed_repository ):
         # Make sure the tool has a tool_version.
-        if not get_install_tool_version( app, tool.id ):
+        if not get_installed_tool_version( app, tool.id ):
             tool_version = ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
             app.install_model.context.add( tool_version )
             app.install_model.context.flush()
@@ -30,7 +64,7 @@ class ToolShedLineage(ToolLineage):
 
     @staticmethod
     def from_tool_id( app, tool_id ):
-        tool_version = get_install_tool_version( app, tool_id )
+        tool_version = get_installed_tool_version( app, tool_id )
         if tool_version:
             return ToolShedLineage( app, tool_version )
         else:
@@ -38,7 +72,8 @@ class ToolShedLineage(ToolLineage):
 
     def get_version_ids( self, reverse=False ):
         tool_version = self.app.install_model.context.query( ToolVersion ).get( self.tool_version_id )
-        return tool_version.get_version_ids( self.app, reverse=reverse )
+        result = tool_version.get_version_ids( self.app, reverse=reverse )
+        return result
 
     def get_versions( self, reverse=False ):
         return map( ToolLineageVersion.from_guid, self.get_version_ids( reverse=reverse ) )
@@ -54,11 +89,7 @@ class ToolShedLineage(ToolLineage):
         return rval
 
 
-def get_install_tool_version( app, tool_id ):
-    return app.install_model.context.query(
-        app.install_model.ToolVersion
-    ).filter(
-        app.install_model.ToolVersion.table.c.tool_id == tool_id
-    ).first()
+def get_installed_tool_version( app, tool_id ):
+    return app.tool_version_cache.tool_version_by_id.get(tool_id, None)
 
 __all__ = [ "ToolShedLineage" ]

@@ -115,7 +115,7 @@ class DataManagerHandler( object ):
             # Persist the altered shed_data_manager_config file.
             if data_manager_config_has_changes:
                 reload_count = self.app.data_managers._reload_count
-                self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename  )
+                self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename )
                 while self.app.data_managers._reload_count <= reload_count:
                     time.sleep(1)  # Wait for shed_data_manager watcher thread to pick up changes
         return rval

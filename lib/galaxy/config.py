@@ -830,7 +830,9 @@ class ConfiguresGalaxyMixin:
         self.citations_manager = CitationsManager( self )
 
         from galaxy.tools.toolbox.cache import ToolCache
+        from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
         self.tool_cache = ToolCache()
+        self.tool_version_cache = ToolVersionCache(self)
 
         self._toolbox_lock = threading.RLock()
         self.toolbox = None
@@ -848,11 +850,13 @@ class ConfiguresGalaxyMixin:
         )
         self.container_finder = containers.ContainerFinder(app_info)
 
-    def reindex_tool_search( self ):
+    def reindex_tool_search( self, toolbox=None ):
         # Call this when tools are added or removed.
         import galaxy.tools.search
         index_help = getattr( self.config, "index_tool_help", True )
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
+        if not toolbox:
+            toolbox = self.toolbox
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager

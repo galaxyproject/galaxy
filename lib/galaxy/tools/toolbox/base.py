@@ -1,6 +1,8 @@
 import logging
 import os
 import string
+import time
+from xml.etree.ElementTree import ParseError
 
 from markupsafe import escape
 from six import iteritems
@@ -93,6 +95,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         """ Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
         """
+        start = time.time()
         self._tool_tag_manager.reset_tags()
         config_filenames = listify( config_filenames )
         for config_filename in config_filenames:
@@ -104,8 +107,18 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         for config_filename in config_filenames:
             try:
                 self._init_tools_from_config( config_filename )
-            except:
+            except ParseError:
+                # Occasionally we experience "Missing required parameter 'shed_tool_conf'."
+                # This happens if parsing the shed_tool_conf fails, so we just sleep a second and try again.
+                # TODO: figure out why this fails occasionally (try installing hundreds of tools in batch ...).
+                time.sleep(1)
+                try:
+                    self._init_tools_from_config(config_filename)
+                except Exception:
+                    raise
+            except Exception:
                 log.exception( "Error loading tools defined in config %s", config_filename )
+        log.debug("Reading tools from config files took %d seconds", time.time() - start)
 
     def _init_tools_from_config( self, config_filename ):
         """
@@ -243,42 +256,42 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
         return tool_path
 
-    def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
+    def __add_tool_to_tool_panel(self, tool, panel_component, section=False):
         # See if a version of this tool is already loaded into the tool panel.
         # The value of panel_component will be a ToolSection (if the value of
         # section=True) or self._tool_panel (if section=False).
-        tool_id = str( tool.id )
-        tool = self._tools_by_id[ tool_id ]
+        tool_id = str(tool.id)
+        tool = self._tools_by_id[tool_id]
         if section:
             panel_dict = panel_component.elems
         else:
             panel_dict = panel_component
 
-        related_tool = self._lineage_in_panel( panel_dict, tool=tool )
+        related_tool = self._lineage_in_panel(panel_dict, tool=tool)
         if related_tool:
-            if self._newer_tool( tool, related_tool ):
+            if self._newer_tool(tool, related_tool):
                 panel_dict.replace_tool(
                     previous_tool_id=related_tool.id,
                     new_tool_id=tool_id,
                     tool=tool,
                 )
-                log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+                log.debug("Loaded tool id: %s, version: %s into tool panel." % (tool.id, tool.version))
         else:
             inserted = False
-            index = self._integrated_tool_panel.index_of_tool_id( tool_id )
+            index = self._integrated_tool_panel.index_of_tool_id(tool_id)
             if index:
-                panel_dict.insert_tool( index, tool )
+                panel_dict.insert_tool(index, tool)
                 inserted = True
             if not inserted:
                 # Check the tool's installed versions.
                 versions = []
-                if hasattr( tool, 'lineage' ):
+                if hasattr(tool, 'lineage'):
                     versions = tool.lineage.get_versions()
                 for tool_lineage_version in versions:
                     lineage_id = tool_lineage_version.id
-                    index = self._integrated_tool_panel.index_of_tool_id( lineage_id )
+                    index = self._integrated_tool_panel.index_of_tool_id(lineage_id)
                     if index:
-                        panel_dict.insert_tool( index, tool )
+                        panel_dict.insert_tool(index, tool)
                         inserted = True
                 if not inserted:
                     if (
@@ -292,19 +305,19 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         # Shed, but is also not yet defined in
                         # integrated_tool_panel.xml, so append it to the tool
                         # panel.
-                        panel_dict.append_tool( tool )
-                        log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
+                        panel_dict.append_tool(tool)
+                        log.debug("Loaded tool id: %s, version: %s into tool panel.." % (tool.id, tool.version))
                     else:
                         # We are in the process of installing the tool.
-
-                        tool_lineage = self._lineage_map.get( tool_id )
-                        already_loaded = self._lineage_in_panel( panel_dict, tool_lineage=tool_lineage ) is not None
+                        tool_lineage = self._lineage_map.get(tool_id)
+                        already_loaded = self._lineage_in_panel(panel_dict, tool_lineage=tool_lineage) is not None
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
-                            panel_dict.append_tool( tool )
-                            log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
+                            panel_dict.append_tool(tool)
+                            log.debug("Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version))
 
     def _load_tool_panel( self ):
+        start = time.time()
         for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
             if item_type == panel_item_types.TOOL:
                 tool_id = key.replace( 'tool_', '', 1 )
@@ -344,6 +357,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
                 self._tool_panel[ key ] = section
+        log.debug("loading tool panel took %d seconds", time.time() - start)
 
     def _load_integrated_tool_panel_keys( self ):
         """
@@ -499,62 +513,35 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             path_template = item.get( "file" )
             template_kwds = self._path_template_kwds()
             path = string.Template(path_template).safe_substitute(**template_kwds)
-            repository_id = None
-
             tool_shed_repository = None
             can_load_into_panel_dict = True
-            if guid is not None:
-                # The tool is contained in an installed tool shed repository, so load
-                # the tool only if the repository has not been marked deleted.
-                tool_shed = item.elem.find( "tool_shed" ).text
-                repository_name = item.elem.find( "repository_name" ).text
-                repository_owner = item.elem.find( "repository_owner" ).text
-                installed_changeset_revision_elem = item.elem.find( "installed_changeset_revision" )
-                if installed_changeset_revision_elem is None:
-                    # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-                    installed_changeset_revision_elem = item.elem.find( "changeset_revision" )
-                installed_changeset_revision = installed_changeset_revision_elem.text
-                if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
-                    try:
-                        tool_shed_path, reduced_path = path.split('/repos/', 1)
-                        splitted_path = reduced_path.split('/')
-                        assert tool_shed_path == tool_shed
-                        assert splitted_path[0] == repository_owner
-                        assert splitted_path[1] == repository_name
-                        if splitted_path[2] != installed_changeset_revision:
-                            # This can happen if the Tool Shed repository has been
-                            # updated to a new revision and the installed_changeset_revision
-                            # element in shed_tool_conf.xml file has been updated too
-                            log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path, installed_changeset_revision, splitted_path[2])
-                            installed_changeset_revision = splitted_path[2]
-                    except AssertionError:
-                        log.debug("Error while loading tool %s", path)
-                        pass
-                tool_shed_repository = self._get_tool_shed_repository( tool_shed,
-                                                                       repository_name,
-                                                                       repository_owner,
-                                                                       installed_changeset_revision )
+
+            tool = self.load_tool_from_cache(os.path.join(tool_path, path))
+            from_cache = tool
+            if from_cache:
+                log.debug("Loading tool %s from cache", str(tool.id))
+            elif guid:  # tool was not in cache and is a tool shed tool
+                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
-                    repository_id = self.app.security.encode_id( tool_shed_repository.id )
-                # Else there is not yet a tool_shed_repository record, we're in the process of installing
-                # a new repository, so any included tools can be loaded into the tool panel.
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=internal )
+                    repository_id = self.app.security.encode_id(tool_shed_repository.id)
+                    tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id)
+            else:  # tool was not in cache and is not a tool shed tool.
+                tool = self.load_tool(os.path.join(tool_path, path))
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
-            key = 'tool_%s' % str( tool.id )
+            key = 'tool_%s' % str(tool.id)
             if can_load_into_panel_dict:
-                if guid is not None:
-                    tool.tool_shed = tool_shed
-                    tool.repository_name = repository_name
-                    tool.repository_owner = repository_owner
-                    tool.installed_changeset_revision = installed_changeset_revision
+                if guid and not from_cache:
+                    tool.tool_shed = tool_shed_repository.tool_shed
+                    tool.repository_name = tool_shed_repository.name
+                    tool.repository_owner = tool_shed_repository.owner
+                    tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
-                # Make sure the tool has a tool_version.
+                # Make sure tools have a tool_version object.
                 tool_lineage = self._lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
-                # Load the tool's lineage ids.
                 tool.lineage = tool_lineage
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
@@ -570,6 +557,37 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:
             log.exception( "Error reading tool from path: %s" % path )
+
+    def get_tool_repository_from_xml_item(self, item, path):
+        tool_shed = item.elem.find("tool_shed").text
+        repository_name = item.elem.find("repository_name").text
+        repository_owner = item.elem.find("repository_owner").text
+        installed_changeset_revision_elem = item.elem.find("installed_changeset_revision")
+        if installed_changeset_revision_elem is None:
+            # Backward compatibility issue - the tag used to be named 'changeset_revision'.
+            installed_changeset_revision_elem = item.elem.find("changeset_revision")
+        installed_changeset_revision = installed_changeset_revision_elem.text
+        if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
+            try:
+                tool_shed_path, reduced_path = path.split('/repos/', 1)
+                splitted_path = reduced_path.split('/')
+                assert tool_shed_path == tool_shed
+                assert splitted_path[0] == repository_owner
+                assert splitted_path[1] == repository_name
+                if splitted_path[2] != installed_changeset_revision:
+                    # This can happen if the Tool Shed repository has been
+                    # updated to a new revision and the installed_changeset_revision
+                    # element in shed_tool_conf.xml file has been updated too
+                    log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path,
+                              installed_changeset_revision, splitted_path[2])
+                    installed_changeset_revision = splitted_path[2]
+            except AssertionError:
+                log.debug("Error while loading tool %s", path)
+                pass
+        return self._get_tool_shed_repository(tool_shed,
+                                              repository_name,
+                                              repository_owner,
+                                              installed_changeset_revision)
 
     def _get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         # Abstract class doesn't have a dependency on the database, for full Tool Shed
@@ -685,17 +703,26 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
     def load_tool( self, config_file, guid=None, repository_id=None, use_cached=False, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
-        tool_cache = getattr( self.app, 'tool_cache', None )
-        tool = use_cached and tool_cache and tool_cache.get_tool( config_file )
+        tool = None
+        if use_cached:
+            tool = self.load_tool_from_cache(config_file)
         if not tool:
             tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
-            if tool_cache:
-                self.app.tool_cache.cache_tool(config_file, tool)
-        tool_id = tool.id
-        if not tool_id.startswith("__"):
+            self.add_tool_to_cache(tool, config_file)
+        if not tool.id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
+        return tool
+
+    def add_tool_to_cache(self, tool, config_file):
+        tool_cache = getattr(self.app, 'tool_cache', None)
+        if tool_cache:
+            self.app.tool_cache.cache_tool(config_file, tool)
+
+    def load_tool_from_cache(self, config_file):
+        tool_cache = getattr( self.app, 'tool_cache', None )
+        tool = tool_cache and tool_cache.get_tool( config_file )
         return tool
 
     def load_hidden_lib_tool( self, path ):
