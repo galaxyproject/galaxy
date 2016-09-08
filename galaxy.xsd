@@ -291,7 +291,7 @@ Toggle line numbers
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="param" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output_collection" type="TestOutputCollection" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="assert_command" type="TestAssertions" minOccurs="0" maxOccurs="1">
@@ -320,6 +320,25 @@ Toggle line numbers
         <xs:documentation xml:lang="en">Expect the job to fail, if set to true no job output checks may be present in test definition.</xs:documentation>
       </xs:annotation>      
     </xs:attribute>
+  </xs:complexType>
+  <xs:group name="TestParamElement">
+    <xs:choice>
+      <xs:element name="param" type="TestParam" />
+      <xs:element name="repeat" type="TestRepeat" />
+      <xs:element name="conditional" type="TestConditional" />
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="TestConditional">
+    <xs:sequence>
+      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestRepeat">
+    <xs:sequence>
+      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
   </xs:complexType>
   <xs:complexType name="TestParam">
     <xs:annotation>
@@ -446,6 +465,11 @@ Toggle line numbers
     <xs:attribute name="type" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="count" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Number of elements in output collection.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -864,6 +888,11 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
             <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="strict" type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
@@ -1165,7 +1194,7 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="column" type="xs:integer" use="required">
+    <xs:attribute name="column" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for column</xs:documentation>
       </xs:annotation>
@@ -1280,7 +1309,7 @@ Container tag set for the <data> tag set. The files and collections created by t
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="type" type="xs:string" use="required">
+    <xs:attribute name="type" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
       </xs:annotation>
@@ -1293,6 +1322,22 @@ Container tag set for the <data> tag set. The files and collections created by t
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Input collection or dataset to derive output dataset element's format/datatype from.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Input collection to derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="structured_like" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Input collection or dataset to derive structure of input from (out element count and identifiers).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="inherit_format" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``structured_like`` is set, inherit format of outputs from format of corresponding input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
