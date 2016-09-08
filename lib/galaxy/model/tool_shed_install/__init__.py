@@ -596,7 +596,6 @@ class ToolVersion( object, Dictifiable ):
         else:
             return None
 
-
     def get_next_version( self, app ):
         child_id = app.tool_version_cache.parent_id_to_tool_id.get(self.id, None)
         if child_id:

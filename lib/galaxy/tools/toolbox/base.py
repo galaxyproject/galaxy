@@ -25,12 +25,12 @@ from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
 from .lineages import fill_lineage_map
+from .lineages import ToolVersionCache
 from .panel import panel_item_types
 from .panel import ToolPanelElements
 from .panel import ToolSection
 from .panel import ToolSectionLabel
 from .parser import ensure_tool_conf_item, get_toolbox_parser
-from .lineages import ToolVersionCache
 from .tags import tool_tag_manager
 from .watcher import get_tool_watcher
 from .watcher import get_tool_conf_watcher
@@ -121,9 +121,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             except Exception:
                 log.exception( "Error loading tools defined in config %s", config_filename )
         log.debug("Reading tools from config files took %d seconds", time.time() - start)
-        # We fill the toolshed lineage in one request to the database,
-        # this is way faster than registering each tool one by one.
-        fill_lineage_map(self.app, self._lineage_map, self._tools_by_id)
 
     def _init_tools_from_config( self, config_filename ):
         """
@@ -299,7 +296,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         panel_dict.insert_tool(index, tool)
                         inserted = True
                 if not inserted:
-                    if (tool.guid is None or
+                    if (
+                        tool.guid is None or
                         tool.tool_shed is None or
                         tool.repository_name is None or
                         tool.repository_owner is None or
@@ -544,11 +542,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
-                if not guid:
-                    # Make sure non tool shed tools have a tool_version object.
-                    # tool shed tools will get their lineage later using fill_lineage_map()
-                    tool_lineage = self._lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
-                    tool.lineage = tool_lineage
+                # Make sure tools have a tool_version object.
+                tool_lineage = self._lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
+                tool.lineage = tool_lineage
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )

@@ -3,6 +3,7 @@ import StringIO
 import pstats
 import contextlib
 
+
 @contextlib.contextmanager
 def profiled():
     pr = cProfile.Profile()

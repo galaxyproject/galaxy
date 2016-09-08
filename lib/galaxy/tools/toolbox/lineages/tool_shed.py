@@ -11,8 +11,7 @@ class ToolVersionCache(object):
     def __init__(self, app):
         self.app = app
         self.tool_version_by_id = self.get_tool_versions()
-        self.tool_id_to_parent_id, \
-        self.parent_id_to_tool_id = self.get_tva_map()
+        self.tool_id_to_parent_id, self.parent_id_to_tool_id = self.get_tva_map()
 
     def get_tva_map(self):
         tvas = self.app.install_model.context.query(self.app.install_model.ToolVersionAssociation).all()
@@ -23,7 +22,6 @@ class ToolVersionCache(object):
     def get_tool_versions(self):
         tool_versions = self.app.install_model.context.query(self.app.install_model.ToolVersion).all()
         return {tv.id: tv for tv in tool_versions}
-
 
 
 class ToolShedLineage(ToolLineage):
@@ -75,20 +73,6 @@ class ToolShedLineage(ToolLineage):
 
 
 def get_installed_tool_version( app, tool_id ):
-    return app.install_model.context.query(
-        app.install_model.ToolVersion
-    ).filter(
-        app.install_model.ToolVersion.table.c.tool_id == tool_id
-    ).first()
-
-
-def get_installed_tools_version( app, tool_ids ):
-    """
-    Get a list of ToolVersion objects for all tool_ids
-    """
-    tool_versions = app.install_model.context.query(
-        app.install_model.ToolVersion).filter(
-        app.install_model.ToolVersion.table.c.tool_id.in_(tool_ids)).all()
-    return tool_versions
+    return app.tool_version_cache.tool_version_by_id.get(tool_id, None)
 
 __all__ = [ "ToolShedLineage" ]
