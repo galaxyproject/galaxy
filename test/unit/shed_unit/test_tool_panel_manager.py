@@ -75,6 +75,7 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         tool_versions = {}
         previous_guid = None
         for v in "1", "2", "3":
+            self.__toolbox = self.get_new_toolbox()
             changeset = "0123456789abcde%s" % v
             guid = DEFAULT_GUID + ("v%s" % v)
             tool = self._init_ts_tool( guid=guid, filename="tool_v%s.xml" % v )
@@ -107,13 +108,12 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
                 tool_panel_dict=tool_panel_dict,
             )
             self._verify_tool_confs()
-            new_toolbox = self.get_new_toolbox()
-            section = new_toolbox._tool_panel["tid1"]
+            section = self.toolbox._tool_panel["tid1"]
             # New GUID replaced old one in tool panel but both
             # appear in integrated tool panel.
             if previous_guid:
                 assert ("tool_%s" % previous_guid) not in section.panel_items()
-            assert ("tool_%s" % guid) in new_toolbox._integrated_tool_panel["tid1"].panel_items()
+            assert ("tool_%s" % guid) in self.toolbox._integrated_tool_panel["tid1"].panel_items()
             previous_guid = guid
 
     def test_uninstall_in_section( self ):
