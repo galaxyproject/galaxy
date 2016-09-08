@@ -327,6 +327,7 @@ Toggle line numbers
     </xs:annotation>
     <xs:sequence>
       <xs:element name="collection" type="TestCollection" minOccurs="0" maxOccurs="1" />
+      <xs:element name="composite_data" type="TestCompositeData" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -349,6 +350,21 @@ Toggle line numbers
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:complexType name="TestCompositeData">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Define extra composite input files for test input.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path relative to test-data of composite file.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ftype" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Optional datatype of composite file for test input.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="TestCollection">
     <xs:annotation>
       <xs:documentation xml:lang="en">Definition of a collection for test input.</xs:documentation>
@@ -368,6 +384,7 @@ Toggle line numbers
     </xs:annotation>
     <xs:sequence>
       <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="extra_files" type="TestExtraFile" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -389,13 +406,37 @@ Toggle line numbers
         <xs:documentation xml:lang="en">Documentation for sort</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An alias for file.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="md5" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected MD5sum for output.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestExtraFile">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Define test for extra files on corresponding output.</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="TestOutput">
+        <xs:attribute type="xs:string" name="type">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Extra file type (either ``file`` or ``directory``).</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
   </xs:complexType>
   <xs:complexType name="TestOutputCollection">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for TestOutputCollection</xs:documentation>
+      <xs:documentation xml:lang="en">Define test for extra files on corresponding output collection.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="element" type="TestCollectionElement" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="element" type="TestOutput" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -502,21 +543,6 @@ Toggle line numbers
       </xs:element>
     </xs:choice>
   </xs:group>
-  <xs:complexType name="TestCollectionElement">
-    <xs:sequence>
-      <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-    <xs:attribute name="file" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en">Consists of all tag sets that define the tool's input parameters. Each &lt;param&gt; tag within the &lt;inputs&gt; tag set maps to a command line parameter within the 'command' tag set described above.</xs:documentation>
@@ -1211,7 +1237,7 @@ Container tag set for the <data> tag set. The files and collections created by t
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="format" type="xs:string" use="required">
+    <xs:attribute name="format" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
       </xs:annotation>
@@ -1256,12 +1282,17 @@ Container tag set for the <data> tag set. The files and collections created by t
     </xs:attribute>
     <xs:attribute name="type" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
+        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="format_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Input collection or dataset to derive output dataset element's format/datatype from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
