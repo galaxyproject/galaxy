@@ -44,6 +44,7 @@ The outer-most tag set of tool XML files.
             <xs:documentation xml:lang="en">Specifies the command to be run in order to get the tool's version string. The resulting value will be found in the "Info" field of the history dataset.</xs:documentation>
           </xs:annotation>
         </xs:element>
+        <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="command" type="Command"/>
         <xs:element name="request_parameter_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
@@ -134,6 +135,16 @@ The help tag should be started and finished by a CDATA tag.
           <xs:documentation xml:lang="en"> Allows for certain framework functionality to be performed on certain types of tools. This is currently only used in "data_source" tools, but will undoubtedly be used with other tools in the future. </xs:documentation>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="profile_version" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for profile_version</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="workflow_compatible" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Is this tool usable within a workflow (defaults to ``true`` for normal tools and ``false`` for data sources).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="URL_method" type="URLmethodType">
         <xs:annotation>
           <xs:documentation xml:lang="en">Only if "tool_type" attribute value is "data_source" - defines the HTTP request method to use when communicating with an external data source application ( the default is "get" ).</xs:documentation>
@@ -141,7 +152,19 @@ The help tag should be started and finished by a CDATA tag.
       </xs:attribute>
     </xs:complexType>
   </xs:element>
-  
+
+  <xs:complexType name="ToolAction">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Describe the backend Python action to execute for this Galaxy tool.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+    </xs:sequence>
+    <xs:attribute name="module" type="xs:string" use="required">
+    </xs:attribute>
+    <xs:attribute name="class" type="xs:string" use="required">
+    </xs:attribute>
+  </xs:complexType>
+
   <xs:complexType name="Requirements">
     <xs:annotation>
       <xs:documentation xml:lang="en">This is a container tag set for the 'requirement' tag set described below. </xs:documentation>
@@ -194,6 +217,26 @@ The help tag should be started and finished by a CDATA tag.
     <xs:attribute name="method" type="MethodType">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for method</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="merge_outputs" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for merge_outputs</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="split_inputs" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for split_inputs</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="split_size" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for split_size</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="split_mode" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for split_mode</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -315,9 +358,19 @@ Toggle line numbers
         <xs:documentation xml:lang="en">Describe the job's expected exit code.</xs:documentation>
       </xs:annotation>      
     </xs:attribute>
+    <xs:attribute name="expect_num_outputs" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Assert the number of outputs this test should produce.</xs:documentation>
+      </xs:annotation>      
+    </xs:attribute>
     <xs:attribute name="expect_failure" type="xs:boolean" default="false">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expect the job to fail, if set to true no job output checks may be present in test definition.</xs:documentation>
+      </xs:annotation>      
+    </xs:attribute>
+    <xs:attribute name="maxseconds" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum amount of time to let test run.</xs:documentation>
       </xs:annotation>      
     </xs:attribute>
   </xs:complexType>
@@ -347,6 +400,7 @@ Toggle line numbers
     <xs:sequence>
       <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="TestParam">
     <xs:annotation>
@@ -355,6 +409,7 @@ Toggle line numbers
     <xs:sequence>
       <xs:element name="collection" type="TestCollection" minOccurs="0" maxOccurs="1" />
       <xs:element name="composite_data" type="TestCompositeData" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="metadata" type="TestParamMetadata" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -410,14 +465,10 @@ Toggle line numbers
       <xs:documentation xml:lang="en">Documentation for TestOutput</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <!-- TODO: This would be more percise if TestOutput was subclassed and only children
-           of output_collection were allowed to hve elements. -->
-      <xs:element name="element" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="1"/>
-      <xs:element name="extra_files" type="TestExtraFile" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="metadata" type="TestMetadata" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestOutputElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required">
+    <!-- TODO: This would be more percise if this was required if at the top-level. -->
+    <xs:attribute name="name" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
       </xs:annotation>
@@ -460,7 +511,19 @@ Toggle line numbers
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="TestMetadata">
+  <xs:group name="TestOutputElement">
+    <xs:choice>
+      <xs:element name="element" type="TestOutput"/>
+      <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
+      <xs:element name="discovered_dataset" type="TestDiscoveredDataset"/>
+      <!-- TODO: To be more percise only one assert_contents is allowed - this should not be in here. -->
+      <xs:element name="assert_contents" type="TestAssertions"/>
+      <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
+      <xs:element name="extra_files" type="TestExtraFile" />
+      <xs:element name="metadata" type="TestOutputMetadata"/>
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="TestParamMetadata">
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
@@ -471,6 +534,32 @@ Toggle line numbers
         <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestOutputMetadata">
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestDiscoveredDataset">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Define test for a discovered dataset on corresponding output.</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="TestOutput">
+        <xs:attribute type="xs:string" name="designation">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">The designation of the discovered dataset.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
   </xs:complexType>
   <xs:complexType name="TestExtraFile">
     <xs:annotation>
@@ -630,6 +719,11 @@ Toggle line numbers
         <xs:documentation xml:lang="en">Documentation for target</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="nginx_upload" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Boolean indicates if this is an upload tool or not.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   
   
@@ -639,6 +733,11 @@ Toggle line numbers
       <xs:element name="repeat" type="Repeat"/>
       <xs:element name="conditional" type="Conditional"/>
       <xs:element name="section" type="Section"/>
+      <xs:element name="upload_dataset" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Internal, intentionally undocumented feature.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
       <xs:element name="display" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for display</xs:documentation>
@@ -657,8 +756,8 @@ Toggle line numbers
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  
-  
+
+
   <xs:complexType name="Conditional">
     <xs:annotation>
       <xs:documentation xml:lang="en">This is a container for conditional parameters in the tool ( must contain 'when' tag sets ) - the command line is wrapped in an if-else statement. </xs:documentation>
@@ -666,9 +765,30 @@ Toggle line numbers
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="InputElement"/>
+          <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
           <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
+        <xs:attribute name="value_from" type="xs:string">
+          <xs:annotation>
+            <xs:documentation><![CDATA[Infrequently used option to dynamically access Galaxy internals, this should be avoided.
+
+Galaxy method to execute.]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="value_ref" type="xs:string">
+          <xs:annotation>
+            <xs:documentation><![CDATA[Infrequently used option to dynamically access Galaxy internals, this should be avoided.
+
+Referenced parameter to pass method.]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="value_ref_in_group" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation><![CDATA[Infrequently used option to dynamically access Galaxy internals, this should be avoided.
+
+Is referenced parameter is the same group.]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -885,8 +1005,10 @@ Toggle line numbers
       <xs:enumeration value="text"/>
       <xs:enumeration value="integer"/>
       <xs:enumeration value="float"/>
+      <xs:enumeration value="color"/>
       <xs:enumeration value="boolean"/>
       <xs:enumeration value="genomebuild"/>
+      <xs:enumeration value="library_data"/>
       <xs:enumeration value="select"/>
       <xs:enumeration value="data_column"/>
       <xs:enumeration value="hidden"/>
@@ -1039,6 +1161,11 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
         <xs:documentation xml:lang="en">Documentation for message</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="check" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for check</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="filename" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for filename</xs:documentation>
@@ -1072,6 +1199,11 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
     <xs:attribute name="split" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for split</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="skip" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for skip</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1270,6 +1402,11 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
         <xs:documentation xml:lang="en">Documentation for ref_attribute</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="index" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for index</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="Outputs">
     <xs:annotation>
@@ -1293,13 +1430,18 @@ Container tag set for the <data> tag set. The files and collections created by t
     </xs:annotation>
     <xs:sequence>
       <xs:element name="change_format" type="ChangeFormat" minOccurs="0"/>
-      <xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="filter" type="OutputFilter" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="discover_datasets" type="OutputDiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="actions" type="Actions" minOccurs="0"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="auto_format" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``true``, this output will sniffed and its format determined automatically by Galaxy.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string">
@@ -1338,7 +1480,9 @@ Container tag set for the <data> tag set. The files and collections created by t
       <xs:documentation xml:lang="en">Documentation for Collection</xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <xs:element name="data" type="Data" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="filter" type="OutputFilter" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -1615,9 +1759,16 @@ Example:
       <xs:documentation xml:lang="en"><![CDATA[See ~/tools/maf/maf_filter.xml for an example of how this tag set is used in a tool. This tag set is a container for <configfile> tag sets - it defines an additional configuration section.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="configfile" minOccurs="0" maxOccurs="unbounded" type="ConfigFile"/>
+      <xs:group ref="ConfigFilesElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
+
+  <xs:group name="ConfigFilesElement">
+    <xs:choice>
+      <xs:element name="inputs" type="ConfigInputs"/>
+      <xs:element name="configfile" type="ConfigFile"/>
+    </xs:choice>
+  </xs:group>
 
   <xs:complexType name="ConfigFile">
     <xs:annotation>
@@ -1667,6 +1818,47 @@ The following is taken from the ~/tools/plotting/xy_plot.xml tool config.
         <xs:attribute name="name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ConfigInputs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This tag set is contained within the <configfiles> tag set. It tells Galaxy to write out a JSON representation of the tool parameters .
+
+*Example*
+
+The following will create a cheetah variable that can be evaluated as ``$inputs`` that 
+will contain the tool parameter inputs.
+
+```xml
+    <configfiles>
+        <inputs name="inputs" />
+    <configfiles>
+```
+
+The following will instead write the inputs to the tool's working directory with the specified name (i.e. ``inputs.json``).
+
+```xml
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+    <configfiles>
+```
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Cheetah variable to populate the path to the inputs JSON file created in response to this directive.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="filename" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -2128,6 +2320,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:documentation xml:lang="en">Documentation for ValidatorType</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
+      <xs:enumeration value="empty_dataset"/>
       <xs:enumeration value="expression"/>
       <xs:enumeration value="regex"/>
       <xs:enumeration value="in_range"/>
