@@ -7,6 +7,25 @@ except ImportError:
     ToolVersion = None
 
 
+class ToolVersionCache(object):
+    def __init__(self, app):
+        self.app = app
+        self.tool_version_by_id = self.get_tool_versions()
+        self.tool_id_to_parent_id, \
+        self.parent_id_to_tool_id = self.get_tva_map()
+
+    def get_tva_map(self):
+        tvas = self.app.install_model.context.query(self.app.install_model.ToolVersionAssociation).all()
+        tool_id_to_parent_id = {tva.tool_id: tva.parent_id for tva in tvas}
+        parent_id_to_tool_id = {tva.parent_id: tva.tool_id for tva in tvas}
+        return tool_id_to_parent_id, parent_id_to_tool_id
+
+    def get_tool_versions(self):
+        tool_versions = self.app.install_model.context.query(self.app.install_model.ToolVersion).all()
+        return {tv.id: tv for tv in tool_versions}
+
+
+
 class ToolShedLineage(ToolLineage):
     """ Representation of tool lineage derived from tool shed repository
     installations. """
@@ -38,7 +57,8 @@ class ToolShedLineage(ToolLineage):
 
     def get_version_ids( self, reverse=False ):
         tool_version = self.app.install_model.context.query( ToolVersion ).get( self.tool_version_id )
-        return tool_version.get_version_ids( self.app, reverse=reverse )
+        result = tool_version.get_version_ids( self.app, reverse=reverse )
+        return result
 
     def get_versions( self, reverse=False ):
         return map( ToolLineageVersion.from_guid, self.get_version_ids( reverse=reverse ) )

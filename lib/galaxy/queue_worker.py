@@ -63,6 +63,8 @@ def _get_new_toolbox(app):
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
     """
     from galaxy import tools
+    from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+    app.tool_version_cache = ToolVersionCache(app)  # Load new tools into version cache
     tool_configs = app.config.tool_configs
     if app.config.migrated_tools_config not in tool_configs:
         tool_configs.append(app.config.migrated_tools_config)

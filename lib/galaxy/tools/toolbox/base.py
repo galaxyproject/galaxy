@@ -30,6 +30,7 @@ from .panel import ToolPanelElements
 from .panel import ToolSection
 from .panel import ToolSectionLabel
 from .parser import ensure_tool_conf_item, get_toolbox_parser
+from .lineages import ToolVersionCache
 from .tags import tool_tag_manager
 from .watcher import get_tool_watcher
 from .watcher import get_tool_conf_watcher
@@ -260,48 +261,45 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
         return tool_path
 
-    def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
+    def __add_tool_to_tool_panel(self, tool, panel_component, section=False):
         # See if a version of this tool is already loaded into the tool panel.
         # The value of panel_component will be a ToolSection (if the value of
         # section=True) or self._tool_panel (if section=False).
-        tool_id = str( tool.id )
-        tool = self._tools_by_id[ tool_id ]
+        tool_id = str(tool.id)
+        tool = self._tools_by_id[tool_id]
         if section:
             panel_dict = panel_component.elems
         else:
             panel_dict = panel_component
 
-        related_tool = self._lineage_in_panel( panel_dict, tool=tool )
+        related_tool = self._lineage_in_panel(panel_dict, tool=tool)
         if related_tool:
-            if self._newer_tool( tool, related_tool ):
+            if self._newer_tool(tool, related_tool):
                 panel_dict.replace_tool(
                     previous_tool_id=related_tool.id,
                     new_tool_id=tool_id,
                     tool=tool,
                 )
-                log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+                log.debug("Loaded tool id: %s, version: %s into tool panel." % (tool.id, tool.version))
         else:
             inserted = False
-            #index = self._integrated_tool_panel.index_of_tool_id( tool_id )
-            index = None
+            index = self._integrated_tool_panel.index_of_tool_id(tool_id)
             if index:
-                panel_dict.insert_tool( index, tool )
+                panel_dict.insert_tool(index, tool)
                 inserted = True
             if not inserted:
                 # Check the tool's installed versions.
                 versions = []
-                #if hasattr( tool, 'lineage' ):
-                    #versions = tool.lineage.get_versions()
-                    #versions = []
+                if hasattr(tool, 'lineage'):
+                    versions = tool.lineage.get_versions()
                 for tool_lineage_version in versions:
                     lineage_id = tool_lineage_version.id
-                    index = self._integrated_tool_panel.index_of_tool_id( lineage_id )
+                    index = self._integrated_tool_panel.index_of_tool_id(lineage_id)
                     if index:
-                        panel_dict.insert_tool( index, tool )
+                        panel_dict.insert_tool(index, tool)
                         inserted = True
                 if not inserted:
-                    if (
-                        tool.guid is None or
+                    if (tool.guid is None or
                         tool.tool_shed is None or
                         tool.repository_name is None or
                         tool.repository_owner is None or
@@ -311,16 +309,16 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         # Shed, but is also not yet defined in
                         # integrated_tool_panel.xml, so append it to the tool
                         # panel.
-                        panel_dict.append_tool( tool )
-                        log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
+                        panel_dict.append_tool(tool)
+                        log.debug("Loaded tool id: %s, version: %s into tool panel.." % (tool.id, tool.version))
                     else:
                         # We are in the process of installing the tool.
-                        tool_lineage = self._lineage_map.get( tool_id )
-                        already_loaded = self._lineage_in_panel( panel_dict, tool_lineage=tool_lineage ) is not None
+                        tool_lineage = self._lineage_map.get(tool_id)
+                        already_loaded = self._lineage_in_panel(panel_dict, tool_lineage=tool_lineage) is not None
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
-                            panel_dict.append_tool( tool )
-                            log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
+                            panel_dict.append_tool(tool)
+                            log.debug("Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version))
 
     def _load_tool_panel( self ):
         start = time.time()

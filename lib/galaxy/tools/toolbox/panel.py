@@ -2,6 +2,9 @@ from abc import abstractmethod
 
 from six import iteritems
 
+from collections import OrderedDict
+
+from galaxy.util.odict import odict
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
