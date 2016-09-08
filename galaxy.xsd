@@ -21,7 +21,7 @@ The outer-most tag set of tool XML files.
       name="UCSC Main"
       version="1.0.0"
       hidden="false"
-      profile_version="16.01"
+      profile="16.01"
       tool_type="data_source"
       URL_method="post">
 ```
@@ -29,6 +29,8 @@ The outer-most tag set of tool XML files.
     </xs:annotation>
     <xs:complexType>
       <xs:all>
+        <!-- TODO: Move the anyType further into macros def... -->
+        <xs:element name="macros" type="xs:anyType" minOccurs="0"/>
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation>
@@ -133,7 +135,7 @@ The help tag should be started and finished by a CDATA tag.
           <xs:documentation xml:lang="en"> Allows for certain framework functionality to be performed on certain types of tools. This is currently only used in "data_source" tools, but will undoubtedly be used with other tools in the future. </xs:documentation>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="profile_version" type="xs:string">
+      <xs:attribute name="profile" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for profile_version</xs:documentation>
         </xs:annotation>
@@ -378,6 +380,23 @@ Toggle line numbers
       <xs:element name="repeat" type="TestRepeat" />
       <xs:element name="conditional" type="TestConditional" />
       <xs:element name="section" type="TestSection" />
+      <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="output_collection" type="TestOutputCollection"/>
+      <xs:element name="assert_command" type="TestAssertions">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="assert_stdout" type="TestAssertions">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="assert_stderr" type="TestAssertions">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:choice>
   </xs:group>
   <xs:complexType name="TestSection">
@@ -503,9 +522,14 @@ Toggle line numbers
     </xs:attribute>
     <xs:attribute name="compare" type="TestOutputCompareType">
     </xs:attribute>
+    <xs:attribute name="lines_diff" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="delta" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines). If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed.</xs:documentation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -578,7 +602,7 @@ Toggle line numbers
       <xs:documentation xml:lang="en">Define test for extra files on corresponding output collection.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="element" type="TestOutput" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="element" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -748,7 +772,7 @@ Toggle line numbers
       <xs:documentation xml:lang="en">Documentation for InputType</xs:documentation>
     </xs:annotation>
     <xs:sequence/>
-    <xs:attribute name="name" type="xs:string" use="required">
+    <xs:attribute name="name" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Name for this element</xs:documentation>
       </xs:annotation>
@@ -787,6 +811,13 @@ Referenced parameter to pass method.]]></xs:documentation>
 Is referenced parameter is the same group.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
+
+        <xs:attribute name="label" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Human readable description for the conditional, unused in the Galaxy UI currently.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -861,7 +892,7 @@ Is referenced parameter is the same group.]]></xs:documentation>
         <xs:documentation xml:lang="en">Human readable label for the section</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="expanded" type="xs:boolean" default="false">
+    <xs:attribute name="expanded" type="PermissiveBoolean" default="false">
       <xs:annotation>
         <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used</xs:documentation>
       </xs:annotation>
@@ -875,21 +906,22 @@ Is referenced parameter is the same group.]]></xs:documentation>
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:element name="label" type="xs:string" minOccurs="0" maxOccurs="1">
-            <xs:annotation>
-              <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
-            </xs:annotation>
-          </xs:element>
-          <xs:choice>
-            <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded"/>
-            <xs:element name="options" type="Options" minOccurs="0" maxOccurs="1"/>
-          </xs:choice>
-          <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="unbounded"/>
-          <xs:element name="sanitizer" type="Sanitizer" minOccurs="0" maxOccurs="1"/>
+          <xs:group ref="ParamElement" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
+        <!-- TODO: add unique constraints... -->
         <xs:attribute name="type" type="ParamType" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="area" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="argument" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Command-line argument this parameter maps to (e.g. ``--foobar``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="label" type="xs:string">
@@ -912,12 +944,12 @@ Is referenced parameter is the same group.]]></xs:documentation>
             <xs:documentation xml:lang="en">Documentation for optional</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="min" type="xs:integer">
+        <xs:attribute name="min" type="xs:float">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for min</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="max" type="xs:integer">
+        <xs:attribute name="max" type="xs:float">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for max</xs:documentation>
           </xs:annotation>
@@ -982,7 +1014,8 @@ Is referenced parameter is the same group.]]></xs:documentation>
             <xs:documentation xml:lang="en">Documentation for falsevalue</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="size" type="xs:int">
+        <xs:attribute name="size" type="xs:string">
+          <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for size</xs:documentation>
           </xs:annotation>
@@ -995,6 +1028,26 @@ Is referenced parameter is the same group.]]></xs:documentation>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
+
+  <xs:group name="ParamElement">
+    <xs:choice>
+      <xs:element name="label" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="option" type="ParamOption" />
+      <xs:element name="options" type="Options"/>
+      <xs:element name="validator" type="Validator" />
+      <xs:element name="sanitizer" type="Sanitizer"/>
+      <xs:element name="help" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:choice>
+  </xs:group>
+
   <xs:simpleType name="ParamType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for ParamType</xs:documentation>
@@ -1149,61 +1202,66 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for Validator</xs:documentation>
     </xs:annotation>
-    <xs:attribute name="type" type="ValidatorType" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="message" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for message</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="check" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for check</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="filename" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for filename</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="metadata_name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for metadata_name</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="metadata_column" type="xs:integer">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for metadata_column</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="line_startswith" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for line_startswith</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:decimal">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for min</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:decimal">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for max</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="split" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for split</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="skip" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for skip</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="ValidatorType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="message" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for message</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="check" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for check</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="filename" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for filename</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="metadata_name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for metadata_name</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="metadata_column" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for metadata_column</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="line_startswith" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for line_startswith</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="min" type="xs:decimal">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for min</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max" type="xs:decimal">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for max</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="split" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for split</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="skip" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for skip</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+
+      </xs:extension>
+    </xs:simpleContent>
   </xs:complexType>
   <xs:complexType name="Sanitizer">
     <xs:annotation>
@@ -1422,16 +1480,22 @@ Container tag set for the <data> tag set. The files and collections created by t
       <xs:element name="collection" type="Collection" />
     </xs:choice>
   </xs:group>
+  <xs:group name="DataElement">
+    <xs:choice>
+      <xs:element name="change_format" type="ChangeFormat"/>
+      <xs:element name="filter" type="OutputFilter" />
+      <xs:element name="discover_datasets" type="OutputDiscoverDatasets" />
+      <xs:element name="actions" type="Actions"/>    
+    </xs:choice>
+  </xs:group>
   <xs:complexType name="Data">
     <xs:annotation>
       <xs:documentation xml:lang="en">TODOWIKIMOVE</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="change_format" type="ChangeFormat" minOccurs="0"/>
-      <xs:element name="filter" type="OutputFilter" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="discover_datasets" type="OutputDiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="actions" type="Actions" minOccurs="0"/>
+      <xs:group ref="DataElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
+    <!-- TODO: add a unique constraint for action. -->
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
@@ -1473,14 +1537,21 @@ Container tag set for the <data> tag set. The files and collections created by t
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+
+  <xs:group name="CollectionElement">
+    <xs:choice>
+      <xs:element name="data" type="Data" />
+      <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
+      <xs:element name="filter" type="OutputFilter" />
+    </xs:choice>
+  </xs:group>
+
   <xs:complexType name="Collection">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for Collection</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="data" type="Data" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="filter" type="OutputFilter" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="CollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -2067,11 +2138,16 @@ With ``stdio`` directive, Galaxy can use regular expressions to scan stdout and 
 A note should be made on the order in which exit codes and regular expressions are applied and how the processing stops. Exit code rules are applied before regular expression rules. The rationale is that exit codes are more clearly defined and are easier to check computationally, so they are applied first. Exit code rules are applied in the order in which they appear in the tool's configuration file, and regular expressions are also applied in the order in which they appear in the tool's configuration file. However, once a rule is triggered that causes a fatal error, no further rules are checked.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="regex" minOccurs="0" maxOccurs="unbounded" type="Regex"/>
-      <xs:element name="exit_code" minOccurs="0" maxOccurs="unbounded" type="ExitCode"/>
+      <xs:group ref="StdioElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
   
+  <xs:group name="StdioElement">
+    <xs:choice>
+      <xs:element name="regex" type="Regex"/>
+      <xs:element name="exit_code" type="ExitCode"/>
+    </xs:choice>
+  </xs:group>
   
   <xs:complexType name="ExitCode">
     <xs:annotation>
@@ -2301,6 +2377,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:enumeration value="python-module"/>
       <xs:enumeration value="binary"/>
       <xs:enumeration value="package"/>
+      <xs:enumeration value="set_environment"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ContainerType">
@@ -2372,6 +2449,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
     <xs:restriction base="xs:string">
       <xs:enumeration value="yes"/>
       <xs:enumeration value="true"/>
+      <xs:enumeration value="True"/>
       <xs:enumeration value="on"/>
       <xs:enumeration value="false"/>
       <xs:enumeration value="False"/>
@@ -2452,7 +2530,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:documentation xml:lang="en">Documentation for RangeType</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="(\d)*:?(\d)*"/>
+      <xs:pattern value="\-?(\d)*:?\-?(\d)*"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="SourceType">
