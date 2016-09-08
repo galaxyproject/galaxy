@@ -8,18 +8,35 @@ except ImportError:
 
 
 class ToolVersionCache(object):
+    """
+    Instances of this class allow looking up tool_version objects from memory
+    (instead of querying the database) using the tool_version id. It also allows
+    looking up parent tool_version ids using a child tool_id, or the inverse.
+    This allows quickly getting all previous/next tool versions without numerous
+    database requests.
+    """
     def __init__(self, app):
         self.app = app
         self.tool_version_by_id = self.get_tool_versions()
         self.tool_id_to_parent_id, self.parent_id_to_tool_id = self.get_tva_map()
 
     def get_tva_map(self):
+        """
+        Retrieves all ToolVersionAssociation objects from the database, and builds
+        dictionaries that can be used to either get a tools' parent tool_version id
+        (which can be used to get the parent's tool_version object), or to get the
+        child's tool id using the parent's tool_version id.
+        """
         tvas = self.app.install_model.context.query(self.app.install_model.ToolVersionAssociation).all()
         tool_id_to_parent_id = {tva.tool_id: tva.parent_id for tva in tvas}
         parent_id_to_tool_id = {tva.parent_id: tva.tool_id for tva in tvas}
         return tool_id_to_parent_id, parent_id_to_tool_id
 
     def get_tool_versions(self):
+        """
+        Get all tool_version objects from the database and build a dictionary
+        with the tool_version id as key and the tool_version object as value.
+        """
         tool_versions = self.app.install_model.context.query(self.app.install_model.ToolVersion).all()
         return {tv.id: tv for tv in tool_versions}
 
