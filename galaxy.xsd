@@ -326,8 +326,16 @@ Toggle line numbers
       <xs:element name="param" type="TestParam" />
       <xs:element name="repeat" type="TestRepeat" />
       <xs:element name="conditional" type="TestConditional" />
+      <xs:element name="section" type="TestSection" />
     </xs:choice>
   </xs:group>
+  <xs:complexType name="TestSection">
+    <xs:sequence>
+      <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="TestConditional">
     <xs:sequence>
       <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
@@ -404,6 +412,7 @@ Toggle line numbers
     <xs:sequence>
       <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="1"/>
       <xs:element name="extra_files" type="TestExtraFile" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="metadata" type="TestMetadata" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -433,6 +442,18 @@ Toggle line numbers
     <xs:attribute name="md5" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected MD5sum for output.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestMetadata">
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
