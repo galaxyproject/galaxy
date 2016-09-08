@@ -29,7 +29,9 @@ define(['utils/utils',
             'hidden_data'       : '_fieldHidden',
             'baseurl'           : '_fieldHidden',
             'library_data'      : '_fieldLibrary',
-            'ftpfile'           : '_fieldFtp'
+            'ftpfile'           : '_fieldFtp',
+            'submit'            : '_fieldButton',
+            'label'             : '_fieldLabel'
         },
 
         /** Returns an input field for a given field type */
@@ -41,7 +43,9 @@ define(['utils/utils',
                 Galaxy.emit.debug('form-parameters::_addRow()', 'Auto matched field type (' + input_def.type + ').');
             }
             input_def.value === undefined && ( input_def.value = null );
-            field.value( input_def.value );
+            if ( field.value ) { // added for input submit
+                field.value( input_def.value );
+            }
             return field;
         },
 
@@ -209,6 +213,29 @@ define(['utils/utils',
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
                 onchange    : input_def.onchange
+            });
+        },
+
+        /** button input field */
+        _fieldButton: function( input_def ) {
+            // create input element
+            return new Ui.ButtonIcon({
+                id          : 'field-' + input_def.id,
+                type        : input_def.type,
+                onclick     : input_def.onclick,
+                cls         : 'ui-button-icon',
+                title       : input_def.title,
+                icon        : input_def.icon,
+                tooltip     : input_def.tooltip
+            });
+        },
+
+        /** label field */
+        _fieldLabel: function( input_def ) {
+            // create label
+            return new Ui.Label({
+                id          : 'field-' + input_def.id,
+                title       : input_def.title
             });
         }
     });

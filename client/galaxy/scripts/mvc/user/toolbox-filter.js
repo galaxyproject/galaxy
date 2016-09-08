@@ -75,8 +75,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         
                         tools.inputs.push( { name: "t_" + filter['filterpath'], type: 'boolean', label: helptext } );
                         this.radio_values.push( filter['checked'] );
-                        all_inputs.push( tools );
                     }
+                    all_inputs.push( tools );
 		}
                 if( section_filters.length > 0 ) {
                     sections = {  
@@ -88,8 +88,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             helptext = filter['short_desc'] + " " + filter['desc'];
                         sections.inputs.push( { name: "s_" + filter['filterpath'], type: 'boolean', label: helptext } );
                         this.radio_values.push( filter['checked'] );
-                        all_inputs.push( sections );
-                    }                    
+                    }
+                    all_inputs.push( sections );
 		}
                 if( label_filters.length > 0 ) {
                     labels = {  
@@ -101,8 +101,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             helptext = filter['short_desc'] + " " + filter['desc'];
                         labels.inputs.push( { name: "l_" + filter['filterpath'], type: 'boolean', label: helptext } );
                         this.radio_values.push( filter['checked'] ); 
-                        all_inputs.push( labels );
                     }
+                    all_inputs.push( labels );
 		}
             }
             return all_inputs;

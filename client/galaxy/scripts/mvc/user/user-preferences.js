@@ -17,11 +17,11 @@ var UserPreferences = Backbone.View.extend({
     callManageInfo: function( e ) {
         var userInfo = null,
             url = Galaxy.root + 'api/user_preferences/manage_user_info',
-            self = this;
+            self = this,
+            $el = $( '.user-preferences-all' );
         $( '.user-pref' ).hide();
         $.getJSON( url, function( data ) {
-              userInfo = new Manage.ManageUserInformation( self, data );
-              self.$( '.user-preferences-all' ).append( userInfo.$el );
+              userInfo = new Manage.ManageUserInformation( self, $el, data );
         });
     },
   
