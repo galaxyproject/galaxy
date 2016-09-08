@@ -45,6 +45,7 @@ The outer-most tag set of tool XML files.
           </xs:annotation>
         </xs:element>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
+        <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command"/>
         <xs:element name="request_parameter_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
@@ -1754,6 +1755,34 @@ Example:
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+
+  <xs:complexType name="EnvironmentVariables">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="environment_variable" type="EnvironmentVariable" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EnvironmentVariable">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See ~/tools/maf/maf_filter.xml for an example of how this tag set is used in a tool. This tag set is a container for <configfile> tag sets - it defines an additional configuration section.]]></xs:documentation>
@@ -2255,6 +2284,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
+      <xs:enumeration value="manage_data"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="URLmethodType">
