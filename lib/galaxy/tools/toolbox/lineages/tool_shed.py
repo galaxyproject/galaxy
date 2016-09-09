@@ -10,14 +10,14 @@ except ImportError:
 class ToolVersionCache(object):
     """
     Instances of this class allow looking up tool_version objects from memory
-    (instead of querying the database) using the tool_version id. It also allows
-    looking up parent tool_version ids using a child tool_id, or the inverse.
-    This allows quickly getting all previous/next tool versions without numerous
+    (instead of querying the database) using the tool_version id or the tool_id.
+    This is used to lookup parent tool_version ids using child tool_id, or the
+    inverse, and getting all previous/next tool versions without numerous
     database requests.
     """
     def __init__(self, app):
         self.app = app
-        self.tool_version_by_id = self.get_tool_versions()
+        self.tool_version_by_id, self.tool_version_by_tool_id = self.get_tool_versions()
         self.tool_id_to_parent_id, self.parent_id_to_tool_id = self.get_tva_map()
 
     def get_tva_map(self):
@@ -34,11 +34,13 @@ class ToolVersionCache(object):
 
     def get_tool_versions(self):
         """
-        Get all tool_version objects from the database and build a dictionary
-        with the tool_version id as key and the tool_version object as value.
+        Get all tool_version objects from the database and build 2 dictionaries,
+        with tool_version id or tool_id as key and the tool_version object as value.
         """
         tool_versions = self.app.install_model.context.query(self.app.install_model.ToolVersion).all()
-        return {tv.id: tv for tv in tool_versions}
+        tool_version_by_id = {tv.id: tv for tv in tool_versions}
+        tool_version_by_tool_id = {tv.tool_id: tv for tv in tool_versions}
+        return tool_version_by_id, tool_version_by_tool_id
 
 
 class ToolShedLineage(ToolLineage):
@@ -90,6 +92,6 @@ class ToolShedLineage(ToolLineage):
 
 
 def get_installed_tool_version( app, tool_id ):
-    return app.tool_version_cache.tool_version_by_id.get(tool_id, None)
+    return app.tool_version_cache.tool_version_by_tool_id.get(tool_id, None)
 
 __all__ = [ "ToolShedLineage" ]

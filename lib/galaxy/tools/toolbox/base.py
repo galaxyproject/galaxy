@@ -520,15 +520,17 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             from_cache = tool
             if from_cache:
                 log.debug("Loading tool %s from cache", str(tool.id))
+                if guid:
+                    tool_shed_repository = tool.tool_shed_repository
             elif guid:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id(tool_shed_repository.id)
-                    tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id)
+                    tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=False)
             else:  # tool was not in cache and is not a tool shed tool.
-                tool = self.load_tool(os.path.join(tool_path, path))
+                tool = self.load_tool(os.path.join(tool_path, path), use_cached=False)
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
             key = 'tool_%s' % str(tool.id)
@@ -708,7 +710,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool = self.load_tool_from_cache(config_file)
         if not tool:
             tool = self.create_tool( config_file=config_file, repository_id=repository_id, guid=guid, **kwds )
-            self.add_tool_to_cache(tool, config_file)
+            if tool.tool_shed_repository or not guid:
+                self.add_tool_to_cache(tool, config_file)
         if not tool.id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
