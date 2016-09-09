@@ -699,7 +699,6 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         return {
             'message'       : message,
             'status'        : status,
-            'has_api_key'   : bool( trans.user.api_keys ),
             'user_api_key'  : trans.user.api_keys[ 0 ].key if trans.user.api_keys else None,
             'app_name'      : trans.webapp.name
         }
