@@ -47,13 +47,35 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation>
-            <xs:documentation xml:lang="en">The value is displayed in the tool menu immediately following the hyperlink for the tool</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
+the tool menu immediately following the hyperlink for the tool (based on the
+``name`` attribute of the ``<tool>`` tag set described above).
+
+### Example
+
+```xml
+<description>table browser</description>
+```
+]]></xs:documentation>
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
         <xs:element name="version_command" type="xs:string" minOccurs="0">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Specifies the command to be run in order to get the tool's version string. The resulting value will be found in the "Info" field of the history dataset.</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
+order to get the tool's version string. The resulting value will be found in the
+"Info" field of the history dataset.
+
+Unlike the [``command``](#tool|command) tag, this value is taken as a literal and so there is no
+need to escape values like ``$`` and command inputs are not available for variable
+substitution.
+
+### Example
+
+```xml
+<version_command>tophat -version</version_command>
+```
+]]></xs:documentation>
           </xs:annotation>
         </xs:element>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
@@ -1171,7 +1193,182 @@ Is referenced parameter is the same group.]]></xs:documentation>
 
   <xs:complexType name="Command">
     <xs:annotation>
-      <xs:documentation xml:lang="en">This tag specifies how Galaxy should invoke the tool's executable, passing its required input parameter values (the command line specification links the parameters supplied in the form with the actual tool executable). Any word inside it starting with a dollar sign ($) will be treated as a variable whose values can be acquired from one of three sources: parameters, metadata, or output files. After the substitution of variables with their values, the content is interpreted with Cheetah and finally given to the interpreter specified in the corresponding attribute (if any).</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This tag specifies how Galaxy should invoke the tool's executable, passing its
+required input parameter values (the command line specification links the
+parameters supplied in the form with the actual tool executable). Any word
+inside it starting with a dollar sign (``$``) will be treated as a variable whose
+values can be acquired from one of three sources: parameters, metadata, or
+output files. After the substitution of variables with their values, the content
+is interpreted with [Cheetah](http://www.cheetahtemplate.org/) and finally given
+to the interpreter specified in the corresponding attribute (if any).
+
+### Examples
+
+The following uses a compiled executable ([bedtools](http://bedtools.readthedocs.io/en/latest/)).
+
+```xml
+<command>bed12ToBed6 -i '$input' > '$output'</command>
+```
+
+A few things to note about even this simple example:
+
+* Input and output variables (boringly named ``input`` and ``output``)
+  are expanded into paths using the ``$`` Cheetah directive.
+* Paths should be quoted so that the Galaxy database files may contain spaces.
+* We are building up a shell script - so special characters like ``>`` can be used
+  (in this case the standard output of the bedtools call is written to the path
+  specified by ``'$output'``).
+
+The bed12ToBed6 tool can be found [here](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bedtools/bed12ToBed6.xml).
+
+A more sophisticated bedtools example demonstrates the use of loops, conditionals,
+and uses whitespace to make a complex command very readable can be found in
+[annotateBed](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bedtools/annotateBed.xml)
+tool.
+
+```xml
+<command>
+bedtools annotate
+        -i "${inputA}"
+        #if $names.names_select == 'yes':
+            -files
+            #for $bed in $names.beds:
+                "${bed.input}"
+            #end for
+            -names
+            #for $bed in $names.beds:
+                "${bed.inputName}"
+            #end for
+        #else:
+            #set files = '" "'.join( [ str( $file ) for $file in $names.beds ] )
+            -files "${files}"
+            #set names = '" "'.join( [ str( $name.display_name ) for $name in $names.beds ] )
+            -names "${names}"
+        #end if
+        $strand
+        $counts
+        $both
+        > "${output}"
+</command>
+```
+
+The following example (taken from [xpath](https://github.com/galaxyproject/tools-iuc/blob/master/tools/xpath/xpath.xml) tool)
+uses an interpreted executable. In this case a Perl script is shipped with the
+tool and the directory of the tool itself is referenced with ``$__tool_directory__``.
+
+```xml
+<command>
+  perl $__tool_directory__/xpath -q -e '$expression' '$input' > '$output'
+</command>
+```
+
+The following example demonstrates accessing metadata from datasets. Metadata values
+(e.g., ``${input.metadata.chromCol}``) are acquired from the ``Metadata`` model associated
+with the objects selected as the values of each of the relative form field
+parameters in the tool form. Accessing this information is generally enabled using
+the following feature components.
+
+A set of "metadata information" is defined for each supported data type (see the
+``MetadataElement`` objects in the various data types classes in
+[``/lib/galaxy/datatypes``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/datatypes).
+The ``DatasetFilenameWrapper`` class in the
+[/lib/galaxy/tools/wrappers.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/wrappers.py)
+code file wraps a metadata collection to return metadata parameters wrapped
+according to the Metadata spec.
+
+```xml
+<command>
+        #set genome = $input.metadata.dbkey
+        #set datatype = $input.datatype
+        mkdir -p output_dir &amp;&amp;
+        python $__tool_directory__/extract_genomic_dna.py
+        --input "$input"
+        --genome "$genome"
+        #if $input.is_of_type("gff"):
+            --input_format "gff"
+            --columns "1,4,5,7"
+            --interpret_features $interpret_features
+        #else:
+            --input_format "interval"
+            --columns "${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol},${input.metadata.nameCol}"
+        #end if
+        --reference_genome_source $reference_genome_cond.reference_genome_source
+        #if str($reference_genome_cond.reference_genome_source) == "cached"
+            --reference_genome $reference_genome_cond.reference_genome.fields.path
+        #else:
+            --reference_genome $reference_genome_cond.reference_genome
+        #end if
+        --output_format $output_format_cond.output_format
+        #if str($output_format_cond.output_format) == "fasta":
+            --fasta_header_type $output_format_cond.fasta_header_type_cond.fasta_header_type
+            #if str($output_format_cond.fasta_header_type_cond.fasta_header_type) == "char_delimited":
+                --fasta_header_delimiter $output_format_cond.fasta_header_type_cond.fasta_header_delimiter
+            #end if
+        #end if
+        --output $output
+</command>
+```
+
+In additon to demonstrating accessing metadata, this example demonstrates:
+
+* ``$input.is_of_type("gff")`` which can be used to check if an input is of a
+  given datatype.
+* ``#set datatype = $input.datatype`` which is the syntax for defining variables
+  in Cheetah.
+
+<a name="cheetah_reserved_variables"></a>
+
+### Reserved Variables
+
+Galaxy provides a few pre-defined variables which can be used in your command line,
+even though they don't appear in your tool's parameters.
+
+Name | Description
+---- | -----------
+``$__tool_directory__`` | The directory the tool currently resides in (new in 15.03)
+``$__new_file_path__`` | ``config/galaxy.ini``'s ``new_file_path`` value
+``$__tool_data_path__`` | ``config/galaxy.ini``'s tool_data_path value
+``$__root_dir__`` | Top-level Galaxy source directory made absolute via ``os.path.abspath()``
+``$__datatypes_config__`` | ``config/galaxy.ini``'s datatypes_config value
+``$__user_id__`` | Email's numeric ID (id column of ``galaxy_user`` table in the database)
+``$__user_email__`` | User's email address
+``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
+
+Additional runtime properties are available as environment variables. Since these
+are not Cheetah variables (the values aren't available until runtme) these should likely
+be escaped with a backslash (``\``) when appearing in ``command`` or ``configfile`` elements.
+
+Name | Description
+---- | -----------
+``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
+
+See the [Planemo docs](http://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
+on the topic of ``GALAXY_SLOTS`` for more information and examples.
+
+### Attributes
+
+#### ``detect_errors``
+
+If present on the ``command`` tag, this attribute can be one of:
+
+* ``default`` no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
+* ``exit_code`` error if tool exit code is not 0. (The @jmchilton recommendation).
+* ``aggressive`` error if tool exit code is not 0 or either ``Exception:`` or ``Error:``
+  appears in standard error/output. (The @bgruening recommendation).
+
+For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
+Legacy tools default to ``default`` behavior described above (erroring if the tool
+produces any standard error output).
+
+See [PR 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
+information and discussion on the ``detect_errors`` attribute.
+
+#### ``interpreter``
+
+Older tools may define an ``intepreter`` attribute on the command, but this is
+deprecated and using the ``$__tool_directory__`` variable is superior.
+]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
