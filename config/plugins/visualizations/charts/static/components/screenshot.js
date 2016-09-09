@@ -45,7 +45,7 @@ define( [ 'libs/underscore' ], function( _ ) {
         } catch ( err ) {
             console.debug( 'FAILED - screenshot::_canvas2png() - ' + err );
             if (options.error) {
-                options.error( 'Please reduce your chart to a single panel and try again.' );
+                options.error( 'Please reduce your visualization to a single panel and try again.' );
             }
         }
     };
@@ -78,7 +78,7 @@ define( [ 'libs/underscore' ], function( _ ) {
     function createPDF( options ) {
         var xml = toXML( options );
         var data = {
-            filename    : name || 'chart',
+            filename    : 'visualization',
             type        : 'application/pdf',
             height      : xml.height,
             width       : xml.width,
@@ -117,7 +117,7 @@ define( [ 'libs/underscore' ], function( _ ) {
         var $svg = options.$el.find( 'svg' );
         if ( $svg.length == 0 ) {
             if ( options.error ) {
-                options.error( 'No SVG found. This chart type does not support SVG/PDF export.' );
+                options.error( 'No SVG found. This visualization type does not support SVG/PDF export.' );
                 return;
             }
         }

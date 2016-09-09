@@ -90,7 +90,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
                 this.trigger( 'redraw' );
                 return true;
             }
-            console.debug( 'model::load() - Chart attributes unavailable.' );
+            console.debug( 'model::load() - Visualization attributes unavailable.' );
             return false;
         }
     });

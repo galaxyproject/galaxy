@@ -11,7 +11,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
             this.export_button = new Ui.ButtonMenu({
                 icon    : 'fa-camera',
                 title   : 'Export',
-                tooltip : 'Export/Download visualization'
+                tooltip : 'Export/Download Visualization'
             });
             this.export_button.addMenu({
                 key         : 'png',
@@ -51,7 +51,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                 icon        : 'fa-file-o',
                 onclick     : function() {
                     self.app.modal.show({
-                        title   : 'Send chart data for PDF creation',
+                        title   : 'Send visualization data for PDF creation',
                         body    : 'Galaxy does not provide integrated PDF export scripts. You may click \'Continue\' to create the PDF by using a 3rd party service (https://export.highcharts.com).',
                         buttons : {
                             'Cancel' : function() { self.app.modal.hide() },
@@ -78,7 +78,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                 operations: {
                     edit_button: new Ui.ButtonIcon({
                         icon    : 'fa-edit',
-                        tooltip : 'Customize this chart',
+                        tooltip : 'Customize this Visualization',
                         title   : 'Editor',
                         onclick : function() {
                             self._wait( self.chart, function() {
@@ -89,11 +89,11 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                     export_button: this.export_button,
                     save_button: new Ui.ButtonIcon({
                         icon    : 'fa-save',
-                        tooltip : 'Save this chart',
+                        tooltip : 'Save this Visualization',
                         title   : 'Save',
                         onclick : function() {
-                            self.message.update( { message: 'Saving chart \'' + self.chart.get( 'title' ) + '\'. It will appear in the list of \'Saved Visualizations\'.', status: 'success' } );
-                            self.chart.save( { error : function() { self.message.update( { message: 'Could not save chart.', status: 'danger' } ) } } );
+                            self.message.update( { message: 'Saving \'' + self.chart.get( 'title' ) + '\'. It will appear in the list of \'Saved Visualizations\'.', status: 'success' } );
+                            self.chart.save( { error : function() { self.message.update( { message: 'Could not save visualization.', status: 'danger' } ) } } );
                         }
                     })
                 }
@@ -130,7 +130,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
             if ( this.app.deferred.ready() ) {
                 callback();
             } else {
-                this.message.update( { message: 'Your chart is currently being processed. Please wait and try again.' } );
+                this.message.update( { message: 'Your visualization is currently being processed. Please wait and try again.' } );
             }
         }
     });

@@ -74,7 +74,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
                 onnew       : function() { self.chart.groups.add( { id : Utils.uid() } ) }
             });
             this.description = new Description( this.app );
-            this.message = new Ui.Message( { message : 'There are no options for this chart type.', persistent : true, status : 'info' } );
+            this.message = new Ui.Message( { message : 'There are no options for this visualization type.', persistent : true, status : 'info' } );
             this.setElement( $( '<div/>' ).append( this.description.$el )
                                           .append( this.repeat.$el.addClass( 'ui-margin-bottom' ) )
                                           .append( this.message.$el.addClass( 'ui-margin-bottom' ) ) );

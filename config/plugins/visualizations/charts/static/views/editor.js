@@ -43,7 +43,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                         self.tabs.hideTab( 'groups' );
                         self.portlet.hideOperation( 'draw' );
                         console.debug( 'editor::onchange() - Chart type not found.' );
-                        self.message.update( { message: 'The requested chart type could not be found. Please select a new type from below or contact us.', status: 'danger', persistent: true } );
+                        self.message.update( { message: 'The requested visualization type could not be found. Please select a new type from below or contact us.', status: 'danger', persistent: true } );
                     } else {
                         self.tabs.showTab( 'settings' );
                         self.tabs.showTab( 'groups' );
@@ -51,7 +51,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                         self.chart.definition = chart_definition;
                         self.chart.set( { type : chart_type, modified : true } );
                         self.message.model.set( 'message', '' );
-                        console.debug( 'editor::onchange() - Switched chart type.' );
+                        console.debug( 'editor::onchange() - Switched visualization type.' );
                     }
                 },
                 ondblclick  : function( chart_id ) {
@@ -73,25 +73,25 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 id      : 'main',
                 title   : 'Start',
                 icon    : 'fa fa-bars',
-                tooltip : 'Start by selecting a chart type.',
-                $el     : $( '<div/>' ).append( ( new Ui.Label( { title : 'Provide a chart title:' } ).$el ) )
+                tooltip : 'Start by selecting a visualization.',
+                $el     : $( '<div/>' ).append( ( new Ui.Label( { title : 'Provide a title:' } ).$el ) )
                                        .append( this.title.$el )
                                        .append( $( '<div/>' ).addClass( 'ui-form-info ui-margin-bottom' ).html( 'This title will appear in the list of \'Saved Visualizations\'.' ) )
-                                       .append( ( new Ui.Label( { title : 'Select a chart type:' } ).$el.addClass( 'ui-margin-top' ) ) )
+                                       .append( ( new Ui.Label( { title : 'Select a visualization:' } ).$el.addClass( 'ui-margin-top' ) ) )
                                        .append( this.types.$el )
             });
             this.tabs.add({
                 id      : 'settings',
                 title   : 'Customize',
                 icon    : 'fa-gear',
-                tooltip : 'Customize chart options.',
+                tooltip : 'Customize the visualization.',
                 $el     : ( new SettingsView( this.app ) ).$el
             });
             this.tabs.add({
                 id      : 'groups',
                 title   : 'Select data',
                 icon    : 'fa-database',
-                tooltip : 'Specify your data options.',
+                tooltip : 'Specify data options.',
                 $el     : ( new GroupsView( this.app ) ).$el
             });
 
@@ -135,7 +135,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 date        : Utils.time()
             });
             if ( this.chart.groups.length == 0 ) {
-                this.message.update( { message: 'Please specify data options before drawing the chart.', persistent: false } );
+                this.message.update( { message: 'Please specify data options before rendering the visualization.', persistent: false } );
                 this.tabs.show( 'groups' );
                 return;
             }
@@ -145,7 +145,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 if ( valid ) {
                     _.each( group.get( '__data_columns' ), function( data_columns, name ) {
                         if ( group.attributes[ name ] === null ) {
-                            self.message.update( { status: 'danger', message: 'This chart type requires column types not found in your tabular file.', persistent: false } );
+                            self.message.update( { status: 'danger', message: 'This visualization type requires column types not found in your tabular file.', persistent: false } );
                             self.tabs.show( 'groups' );
                             valid = false;
                         }

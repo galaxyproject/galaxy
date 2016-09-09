@@ -6,7 +6,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-
             this.app = app;
             this.chart = app.chart;
             this.description = new Description( this.app );
-            this.message = new Ui.Message( { message: 'There are no options for this chart type.', persistent: true, status: 'info' } );
+            this.message = new Ui.Message( { message: 'There are no options for this visualization type.', persistent: true, status: 'info' } );
             this.setElement( $( '<div/>' ).append( this.description.$el )
                                           .append( this.message.$el.addClass( 'ui-margin-bottom' ) )
                                           .append( this.$form = $( '<div/>' ).addClass( 'ui-margin-bottom' ) ) );
