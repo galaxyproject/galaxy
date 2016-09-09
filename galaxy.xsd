@@ -108,6 +108,8 @@ The help tag should be started and finished by a CDATA tag.
         </xs:element>
         <xs:element name="code" type="Code" minOccurs="0"/>
         <xs:element name="uihints" type="UIhints" minOccurs="0"/>
+        <xs:element name="options" type="Options" minOccurs="0"/>
+        <xs:element name="trackster_conf" type="TracksterConf" minOccurs="0"/>
         <xs:element name="citations" type="Citations" minOccurs="0"/>
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required">
@@ -125,9 +127,14 @@ The help tag should be started and finished by a CDATA tag.
           <xs:documentation xml:lang="en">This string defaults to "1.0.0' if it is not included in the tag. It allows for tool versioning and should be changed with each new version of the tool.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="hidden" type="xs:boolean" default="false">
+      <xs:attribute name="hidden" type="PermissiveBoolean" default="false">
         <xs:annotation>
           <xs:documentation xml:lang="en"> Allows for tools to be loaded upon server startup, but not displayed in the tool menu </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="display_interface" type="PermissiveBoolean">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"></xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="tool_type" type="ToolTypeType">
@@ -252,7 +259,7 @@ The help tag should be started and finished by a CDATA tag.
   </xs:complexType>
   <xs:complexType name="UIhints">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for UIhints</xs:documentation>
+      <xs:documentation xml:lang="en">Used only for data source tools, this directive contains UI options (currently only ``minwidth`` is valid).</xs:documentation>
     </xs:annotation>
     <xs:attribute name="minwidth" type="xs:integer">
       <xs:annotation>
@@ -260,6 +267,48 @@ The help tag should be started and finished by a CDATA tag.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+
+  <xs:complexType name="Options">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This directive is used to specify some rarely modified options.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="refresh" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Deprecated, likely unused attribute.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sanitize" type="PermissiveBoolean" default="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This attribute can be used to turn off all input sanitization for a tool.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="TracksterConf">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This directive is used to specify some rarely modified trackster options.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="action" type="TracksterAction" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TracksterAction">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="output_name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
   <xs:complexType name="Tests">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Container tag set for the <test> tag sets. Any number of tests can be included, and each test is wrapped within separate <test> tag sets. Functional tests are executed via Planemo or the ~/run_tests.sh shell script.
@@ -726,7 +775,7 @@ Toggle line numbers
         <xs:documentation xml:lang="en">Documentation for action</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="check_values" type="xs:boolean">
+    <xs:attribute name="check_values" type="PermissiveBoolean">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for check_values</xs:documentation>
       </xs:annotation>
@@ -869,6 +918,11 @@ Is referenced parameter is the same group.]]></xs:documentation>
             <xs:documentation xml:lang="en"> The default number of repeat units </xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="help" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Short help description for repeat element.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -974,9 +1028,14 @@ Is referenced parameter is the same group.]]></xs:documentation>
             <xs:documentation xml:lang="en">Documentation for accept_default</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="force_select" type="xs:boolean">
+        <xs:attribute name="force_select" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for force_select</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="use_header_names" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for use_header_names</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
@@ -999,7 +1058,7 @@ Is referenced parameter is the same group.]]></xs:documentation>
             <xs:documentation xml:lang="en">Documentation for hierarchy</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="checked" type="CheckedType">
+        <xs:attribute name="checked" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for checked</xs:documentation>
           </xs:annotation>
@@ -1025,6 +1084,11 @@ Is referenced parameter is the same group.]]></xs:documentation>
             <xs:documentation xml:lang="en">Documentation for metadata_name</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="dynamic_options" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated method to allow access to Python code to generate options for a select list.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
@@ -1037,7 +1101,7 @@ Is referenced parameter is the same group.]]></xs:documentation>
         </xs:annotation>
       </xs:element>
       <xs:element name="option" type="ParamOption" />
-      <xs:element name="options" type="Options"/>
+      <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
       <xs:element name="help" type="xs:string">
@@ -1128,7 +1192,7 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
   </xs:complexType>
   
   
-  <xs:complexType name="Options">
+  <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for Options</xs:documentation>
     </xs:annotation>
@@ -1229,9 +1293,9 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
             <xs:documentation xml:lang="en">Documentation for metadata_name</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="metadata_column" type="xs:integer">
+        <xs:attribute name="metadata_column" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for metadata_column</xs:documentation>
+            <xs:documentation xml:lang="en">This can be an integer index to the column or a column name.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="line_startswith" type="xs:string">
@@ -1257,6 +1321,11 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
         <xs:attribute name="skip" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for skip</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="table_name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for table_name</xs:documentation>
           </xs:annotation>
         </xs:attribute>
 
@@ -1418,9 +1487,9 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
         <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="column" type="xs:integer">
+    <xs:attribute name="column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for column</xs:documentation>
+        <xs:documentation xml:lang="en">This can be a column index or a column name.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ref" type="xs:string">
@@ -2442,20 +2511,6 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:enumeration value="recurse"/>
     </xs:restriction>
   </xs:simpleType>
-  <xs:simpleType name="CheckedType">
-    <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for CheckedType</xs:documentation>
-    </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="yes"/>
-      <xs:enumeration value="true"/>
-      <xs:enumeration value="True"/>
-      <xs:enumeration value="on"/>
-      <xs:enumeration value="false"/>
-      <xs:enumeration value="False"/>
-      <xs:enumeration value="no"/>
-    </xs:restriction>
-  </xs:simpleType>
   <xs:simpleType name="ValidatorType">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for ValidatorType</xs:documentation>
@@ -2471,6 +2526,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:enumeration value="no_options"/>
       <xs:enumeration value="empty_field"/>
       <xs:enumeration value="dataset_metadata_in_file"/>
+      <xs:enumeration value="dataset_metadata_in_data_table"/>
       <xs:enumeration value="dataset_ok_validator"/>
     </xs:restriction>
   </xs:simpleType>
@@ -2566,6 +2622,8 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:enumeration value="false"/>
       <xs:enumeration value="True"/>
       <xs:enumeration value="False"/>
+      <xs:enumeration value="yes"/>
+      <xs:enumeration value="no"/>
     </xs:restriction>
   </xs:simpleType>
 </xs:schema>
