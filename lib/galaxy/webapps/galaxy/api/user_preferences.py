@@ -848,26 +848,20 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         else:
             user = trans.user
 
-        if user and kwd.get('button_comm_server', False):
-            enabled_comm = params.get( 'enable_communication_server', 'false' )
-            print(enabled_comm)
+        enabled_comm = params.get( 'enable_communication_server', None )
+        if user and enabled_comm is not None:
             if enabled_comm == 'true':
-                message = 'Your communication settings has been updated and activated.'
+                message = 'Your communication server has been activated.'
             else:
-                message = 'Your communication settings has been updated and deactivated.'
-
-            activated = enabled_comm
-            user.preferences['communication_server'] = enabled_comm
-
+                message = 'Your communication server has been disabled.'
+            user.preferences[ 'communication_server' ] = enabled_comm
             trans.sa_session.add( user )
             trans.sa_session.flush()
-        else:
-            activated = user.preferences.get( 'communication_server', 'false' )
 
         return {
-            'message': message,
-            'status': status,
-            'activated': activated
+            'message'   : message,
+            'status'    : status,
+            'activated' : user.preferences.get( 'communication_server', 'false' )
         }
 
     '''@expose_api
