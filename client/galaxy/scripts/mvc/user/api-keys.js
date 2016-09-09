@@ -4,13 +4,12 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         initialize: function ( app, options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
-            this.key = options.has_api_key ? options.user_api_key : 'Not available.';
             this.form = new Form({
                 title   : 'Web API Key',
                 inputs  : [ { name      : 'api-key',
                               type      : 'text',
                               label     : 'Current API key:',
-                              value     : self.key,
+                              value     : options.has_api_key ? options.user_api_key : 'Not available.',
                               readonly  : true,
                               help      : ' An API key will allow you to access ' + ( options.app_name === 'galaxy' ? 'Galaxy' : 'the Tool Shed' ) +
                                           ' via its web API. Please note that this key acts as an alternate means to access your account and should be' +
