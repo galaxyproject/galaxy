@@ -128,12 +128,12 @@ Query sequence::
 </help>
 ```
 
-Best Practices
+### Best Practices
 
-From https://galaxy-iuc-standards.readthedocs.org/en/latest/ :
+From https://galaxy-iuc-standards.readthedocs.org/en/latest/:
 
 The help tag should be started and finished by a [CDATA tag](https://en.wikipedia.org/wiki/CDATA).
-</help>
+
 ]]></xs:documentation>
           </xs:annotation>
         </xs:element>
@@ -820,34 +820,38 @@ Toggle line numbers
   </xs:group>
   <xs:complexType name="Inputs">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Consists of all tag sets that define the tool's input parameters. Each &lt;param&gt; tag within the &lt;inputs&gt; tag set maps to a command line parameter within the 'command' tag set described above.</xs:documentation>
+      <xs:documentation xml:lang="en">Consists of all tag sets that define the
+tool's input parameters. Each &lt;param&gt; tag within the &lt;inputs&gt; tag set
+maps to a command line parameter within the [``command``](#tool|command) tag. Most
+tools will not need to specify any attributes on this tag itself.
+</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="action" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for action</xs:documentation>
+        <xs:documentation xml:lang="en">URL used by data source tools.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="check_values" type="PermissiveBoolean">
+    <xs:attribute name="check_values" type="PermissiveBoolean" default="true">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for check_values</xs:documentation>
+        <xs:documentation xml:lang="en">Set to ``false`` to disable parameter checking in data source tools.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="method" type="URLmethodType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for method</xs:documentation>
+        <xs:documentation xml:lang="en">Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="target" type="TargetType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for target</xs:documentation>
+        <xs:documentation xml:lang="en">UI link target to use for data source tools (e.g. ``_top``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="nginx_upload" type="xs:boolean">
+    <xs:attribute name="nginx_upload" type="PermissiveBoolean" default="false">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Boolean indicates if this is an upload tool or not.</xs:documentation>
+        <xs:documentation xml:lang="en">This boolean indicates if this is an upload tool or not.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -946,7 +950,59 @@ Is referenced parameter is the same group.]]></xs:documentation>
 
   <xs:complexType name="Repeat">
     <xs:annotation>
-      <xs:documentation xml:lang="en">This is a container for any tag sets that can be contained within the 'inputs' tag set. When this is used, the tool will allow the user to add any number of additional sets of the contained parameters ( an "Add new 'title'" button will be displayed on the tool form ).</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+See
+[xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/xy_plot/xy_plot.xml)
+for an example of how to use this tag set. This is a container for any tag sets
+that can be contained within the ``<inputs>`` tag set. When this is used, the
+tool will allow the user to add any number of additional sets of the contained
+parameters (an option to add new iterations will be displayed on the tool form).
+All input parameters contained within the ``<repeat>`` tag can be retrieved by
+enumerating over ``$<name_of_repeat_tag_set>`` in the relevant Cheetah code.
+This returns the rank and the parameter objects of the repeat container. See the
+Cheetah code below.
+
+### Example
+
+This is part is contained in the ``<inputs>`` tag set.
+
+```xml
+<repeat name="series" title="Series">
+    <param name="input" type="data" format="tabular" label="Dataset"/>
+    <param name="xcol" type="data_column" data_ref="input" label="Column for x axis"/>
+    <param name="ycol" type="data_column" data_ref="input" label="Column for y axis"/>
+</repeat>
+```
+
+This Cheetah code can be used in the ``<command>`` tag set or the
+``<configfile>`` tag set.
+
+```xml
+#for $i, $s in enumerate( $series )
+    rank_of_series=$i
+    input_path=${s.input.file_name}
+    x_colom=${s.xcol}
+    y_colom=${s.ycol}
+#end for
+```
+
+### Testing
+
+This is an example test case with multiple repeat elements for the example above. Instances are created by referring to names with a special format: "<repeat name>_<repeat index>|<param name>"
+
+```xml
+<test>
+    <param name="series_0|input" value="/path/to/tabular1.tsv" ftype="tabular"/>
+    <param name="series_0|xcol" value="1"/>
+    <param name="series_0|ycol" value="2"/>
+    <param name="series_1|input" value="/path/to/tabular2.tsv" ftype="tabular"/>
+    <param name="series_1|xcol" value="4"/>
+    <param name="series_1|ycol" value="2"/>
+</test>
+```
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
@@ -984,9 +1040,33 @@ Is referenced parameter is the same group.]]></xs:documentation>
 
   <xs:complexType name="Section">
     <xs:annotation>
-      <xs:documentation xml:lang="en">
-        TODOWIKIMOVE
-      </xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This tag is used to group parameters into sections of the interface. Sections
+are implemented to replace the commonly used tactic of hiding advanced options
+behind a conditional, with sections you can easily visually group a related set
+of options.
+
+### Example
+
+The XML configuration is relatively trivial for sections:
+
+```xml
+<inputs>
+ <section name="adv" title="Advanced Options" expanded="False">
+   <param name="plot_color" type="color" label="Track color" />
+ </section>
+</inputs>
+```
+
+In your command template, you'll need to include the section name to access the
+variable:
+
+```
+--color $adv.plot_color
+```
+
+Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [PR #35](https://github.com/galaxyproject/galaxy/pull/35)
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
@@ -1364,26 +1444,31 @@ produces any standard error output).
 See [PR 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
 information and discussion on the ``detect_errors`` attribute.
 
+#### ``strict``
+
+This boolean forces the ``#set -e`` directive on in shell scripts - so that in a
+multi-part command if any part fails the job exits with a non-zero exit code.
+This is enabled by default for tools with ``profile>=16.04`` and disabled on
+legacy tools.
+
 #### ``interpreter``
 
 Older tools may define an ``intepreter`` attribute on the command, but this is
 deprecated and using the ``$__tool_directory__`` variable is superior.
+
+### Best Practices
+
+From https://galaxy-iuc-standards.readthedocs.org/en/latest/:
+
+The ``command`` tag should be started and finished by a [CDATA tag](https://en.wikipedia.org/wiki/CDATA).
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="detect_errors" type="xs:string">
           <xs:annotation>
-            <xs:documentation><![CDATA[
-If present, this attribute can be one of
-
-* ``default`` no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
-* ``exit_code`` error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive`` error if tool exit code is not 0 or either Exception: or Error: appears in standard error/output. (The @bgruening recommendation).
-
-For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - legacy tools default to ``default`` described above.
-]]>
-            </xs:documentation>
+            <xs:documentation></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="interpreter" type="xs:string">
