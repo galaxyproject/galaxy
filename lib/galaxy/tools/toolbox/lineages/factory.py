@@ -20,12 +20,11 @@ class LineageMap(object):
         self.lineage_map = {}
         self.app = app
 
-    def register(self, tool, **kwds):
+    def register(self, tool, from_toolshed=False):
         tool_id = tool.id
         versionless_tool_id = remove_version_from_guid( tool_id )
-        tool_shed_repository = kwds.get("tool_shed_repository", None)
-        if tool_shed_repository:
-            lineage = ToolShedLineage.from_tool(self.app, tool, tool_shed_repository)
+        if from_toolshed:
+            lineage = ToolShedLineage.from_tool(self.app, tool)
         else:
             lineage = StockLineage.from_tool( tool )
         if versionless_tool_id and versionless_tool_id not in self.lineage_map:

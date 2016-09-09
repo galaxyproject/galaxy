@@ -56,10 +56,10 @@ class ToolShedLineage(ToolLineage):
         self._tool_shed_repository = tool_shed_repository
 
     @staticmethod
-    def from_tool( app, tool, tool_shed_repository ):
+    def from_tool( app, tool ):
         # Make sure the tool has a tool_version.
         if not get_installed_tool_version( app, tool.id ):
-            tool_version = ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
+            tool_version = ToolVersion( tool_id=tool.id, tool_shed_repository=tool.tool_shed_repository )
             app.install_model.context.add( tool_version )
             app.install_model.context.flush()
         return ToolShedLineage( app, tool.tool_version )
