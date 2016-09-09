@@ -834,20 +834,17 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
     @expose_api
     def change_communication( self, trans, cntrller='user_preferences', **kwd):
         """
-            Provides a form with which the user can activate/deactivate
-            the commnication server.
+        Allows the user to activate/deactivate the commnication server.
         """
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = 'Communication server settings unchanged.'
+        status  = 'done'
         user_id = params.get( 'user_id', None )
-        
         if user_id and is_admin:
             user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
         else:
             user = trans.user
-
         enabled_comm = params.get( 'enable_communication_server', None )
         if user and enabled_comm is not None:
             if enabled_comm == 'true':
@@ -857,7 +854,6 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             user.preferences[ 'communication_server' ] = enabled_comm
             trans.sa_session.add( user )
             trans.sa_session.flush()
-
         return {
             'message'   : message,
             'status'    : status,
