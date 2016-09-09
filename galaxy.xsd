@@ -14,7 +14,7 @@
       <xs:documentation xml:lang="en"><![CDATA[
 The outer-most tag set of tool XML files.
 
-## Example:
+### Example:
 
 ```xml
 <tool id="ucsc_table_direct1"
@@ -97,11 +97,7 @@ Best Practices
 
 From https://galaxy-iuc-standards.readthedocs.org/en/latest/ :
 
-The help tag should be started and finished by a CDATA tag.
-
-```
-<help> <![CDATA[      your lines of restructuredText here      ]]><![CDATA[
-```
+The help tag should be started and finished by a [CDATA tag](https://en.wikipedia.org/wiki/CDATA).
 </help>
 ]]></xs:documentation>
           </xs:annotation>
@@ -134,17 +130,17 @@ The help tag should be started and finished by a CDATA tag.
       </xs:attribute>
       <xs:attribute name="display_interface" type="PermissiveBoolean">
         <xs:annotation>
-          <xs:documentation xml:lang="en"></xs:documentation>
+          <xs:documentation xml:lang="en">Display the display the tool's graphical tool form by setting this to ``true``.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="tool_type" type="ToolTypeType">
         <xs:annotation>
-          <xs:documentation xml:lang="en"> Allows for certain framework functionality to be performed on certain types of tools. This is currently only used in "data_source" tools, but will undoubtedly be used with other tools in the future. </xs:documentation>
+          <xs:documentation xml:lang="en"> Allows for certain framework functionality to be performed on certain types of tools. This is currently only used in "data_source" tools, but will undoubtedly be used with other tools in the future.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="profile" type="xs:string">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Documentation for profile_version</xs:documentation>
+          <xs:documentation xml:lang="en">Documentation for profile</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="workflow_compatible" type="xs:boolean" default="true">
