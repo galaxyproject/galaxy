@@ -91,16 +91,6 @@ class ToolParameter( object, Dictifiable ):
         """Return user friendly name for the parameter"""
         return self.label if self.label else self.name
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        raise TypeError( "Abstract Method" )
-
-    def get_html( self, trans=None, value=None, other_values={} ):
-        """
-        Returns the html widget corresponding to the parameter.
-        Optionally attempt to retain the current value specific by 'value'
-        """
-        return self.get_html_field( trans, value, other_values ).get_html()
-
     def from_json( self, value, trans=None, other_values={} ):
         """
         Convert a value from an HTML POST into the parameters preferred value
@@ -241,14 +231,6 @@ class TextToolParameter( ToolParameter ):
         self.value = input_source.get( 'value' )
         self.area = input_source.get_bool( 'area', False )
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        if value is None:
-            value = self.value
-        if self.area:
-            return form_builder.TextArea( self.name, self.size, value )
-        else:
-            return form_builder.TextField( self.name, self.size, value )
-
     def to_json( self, value, app, use_security ):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
@@ -316,11 +298,6 @@ class IntegerToolParameter( TextToolParameter ):
                 raise ValueError( "An integer is required" )
         if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        if isinstance( value, int ):
-            value = str( value )
-        return super( IntegerToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
 
     def from_json( self, value, trans, other_values={} ):
         try:
@@ -397,11 +374,6 @@ class FloatToolParameter( TextToolParameter ):
         if self.min is not None or self.max is not None:
             self.validators.append( validation.InRangeValidator( None, self.min, self.max ) )
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        if isinstance( value, float ):
-            value = str( value )
-        return super( FloatToolParameter, self ).get_html_field( trans=trans, value=value, other_values=other_values )
-
     def from_json( self, value, trans, other_values={} ):
         try:
             return float( value )
@@ -456,12 +428,6 @@ class BooleanToolParameter( ToolParameter ):
         self.truevalue = input_source.get( 'truevalue', 'true' )
         self.falsevalue = input_source.get( 'falsevalue', 'false' )
         self.checked = input_source.get_bool( 'checked', False )
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        checked = self.checked
-        if value is not None:
-            checked = self.from_json( value )
-        return form_builder.CheckboxField( self.name, checked, refresh_on_change=self.refresh_on_change )
 
     def from_json( self, value, trans=None, other_values={} ):
         if form_builder.CheckboxField.is_checked( value ):
@@ -518,9 +484,6 @@ class FileToolParameter( ToolParameter ):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
         self.ajax = input_source.get_bool( 'ajax-upload', False )
-
-    def get_html_field( self, trans=None, value=None, other_values={}  ):
-        return form_builder.FileField( self.name, ajax=self.ajax, value=value )
 
     def from_json( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
@@ -597,13 +560,6 @@ class FTPFileToolParameter( ToolParameter ):
             return False
         return True
 
-    def get_html_field( self, trans=None, value=None, other_values={}  ):
-        if trans is None or trans.user is None:
-            user_ftp_dir = None
-        else:
-            user_ftp_dir = trans.user_ftp_dir
-        return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value=value )
-
     def to_param_dict_string( self, value, other_values={} ):
         if value is '':
             return 'None'
@@ -661,9 +617,6 @@ class HiddenToolParameter( ToolParameter ):
         self.value = input_source.get( 'value' )
         self.hidden = True
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, self.value )
-
     def get_initial_value( self, trans, other_values ):
         return self.value
 
@@ -684,9 +637,6 @@ class ColorToolParameter( ToolParameter ):
         ToolParameter.__init__( self, tool, input_source )
         self.value = input_source.get( 'value', '#fdeada' )
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, self.value )
-
     def get_initial_value( self, trans, other_values ):
         return self.value.lower()
 
@@ -703,9 +653,6 @@ class BaseURLToolParameter( HiddenToolParameter ):
 
     def get_initial_value( self, trans, other_values ):
         return self._get_value()
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, self._get_value() )
 
     def from_json( self, value=None, trans=None, other_values={} ):
         return self._get_value()
@@ -863,29 +810,6 @@ class SelectToolParameter( ToolParameter ):
                 return set()
         else:
             return self.legal_values
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        # Dynamic options are not yet supported in workflow, allow
-        # specifying the value as text for now.
-        options = list(self.get_options( trans, other_values ))
-        if len( list( options ) ) == 0 and trans.workflow_building_mode:
-            if self.multiple:
-                if value is None:
-                    value = ""
-                else:
-                    value = "\n".join( value )
-                return form_builder.TextArea( self.name, value=value )
-            else:
-                return form_builder.TextField( self.name, value=(value or "") )
-        if value is not None:
-            if not isinstance( value, list ):
-                value = [ value ]
-        field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-        for text, optval, selected in options:
-            if value:
-                selected = ( optval in value )
-            field.add_option( text, optval, selected )
-        return field
 
     def from_json( self, value, trans, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
@@ -1446,28 +1370,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         recurse_options( legal_values, self.get_options( trans=trans, other_values=other_values ) )
         return legal_values
 
-    def get_html( self, trans=None, value=None, other_values={} ):
-        """
-        Returns the html widget corresponding to the paramter.
-        Optionally attempt to retain the current value specific by 'value'
-        """
-        return self.get_html_field( trans, value, other_values ).get_html()
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        # Dynamic options are not yet supported in workflow, allow
-        # specifying the value as text for now.
-        options = self.get_options( trans, value, other_values )
-        if len( list( options ) ) == 0 and trans.workflow_building_mode:
-            if self.multiple:
-                if value is None:
-                    value = ""
-                else:
-                    value = "\n".join( value )
-                return form_builder.TextArea( self.name, value=value )
-            else:
-                return form_builder.TextField( self.name, value=(value or "") )
-        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, options, value, refresh_on_change_values=self.refresh_on_change_values )
-
     def from_json( self, value, trans, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
         if len( list( legal_values ) ) == 0 and trans.workflow_building_mode:
@@ -1782,37 +1684,6 @@ class DataToolParameter( BaseDataToolParameter ):
             conv_types = [ tool.app.datatypes_registry.get_datatype_by_extension( conv_extensions.lower() ) ]
             self.conversions.append( ( name, conv_extensions, conv_types ) )
 
-    def get_html_field( self, trans, value=None, other_values={} ):
-        if value is not None:
-            if not isinstance( value, list ):
-                value = [ value ]
-        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-        return self._get_select_dataset_field( self._get_history( trans ), dataset_matcher, multiple=self.multiple )
-
-    def _get_select_dataset_field( self, history, dataset_matcher, multiple=False, suffix="" ):
-        field_name = "%s%s" % ( self.name, suffix )
-        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-
-        for hda_match, hid in self.match_datasets( history, dataset_matcher ):
-            if not hda_match.implicit_conversion:
-                hda = hda_match.hda
-                hda_name = hda.name
-                selected = dataset_matcher.selected( hda )
-                if hda.visible:
-                    hidden_text = ""
-                else:
-                    hidden_text = " (hidden)"
-                field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
-            else:
-                hda_name = hda_match.original_hda.name
-                hda = hda_match.hda  # Get converted dataset
-                target_ext = hda_match.target_ext
-                selected = dataset_matcher.selected( hda )
-                field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
-
-        self._ensure_selection( field )
-        return field
-
     def match_collections( self, history, dataset_matcher, reduction=True ):
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
@@ -2085,9 +1956,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
         return history_query.HistoryQuery.from_parameter( self, dataset_collection_type_descriptions )
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return self._get_single_collection_field( trans=trans, history=self._get_history( trans ), value=value, other_values=other_values )
-
     def match_collections( self, trans, history, dataset_matcher ):
         dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
@@ -2107,22 +1975,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             datasets_match = dataset_collection_matcher.hdca_match( history_dataset_collection )
             if datasets_match:
                 yield history_dataset_collection
-
-    def _get_single_collection_field( self, trans, history, value, other_values ):
-        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-
-        for dataset_collection_instance in self.match_collections( trans, history, dataset_matcher ):
-            instance_id = dataset_collection_instance.hid
-            instance_name = dataset_collection_instance.name
-            selected = ( value and ( dataset_collection_instance == value ) )
-            if dataset_collection_instance.visible:
-                hidden_text = ""
-            else:
-                hidden_text = " (hidden)"
-            field.add_option( "%s:%s %s" % ( instance_id, hidden_text, instance_name ), dataset_collection_instance.id, selected )
-        self._ensure_selection( field )
-        return field
 
     def from_json( self, value, trans, other_values={} ):
         rval = None
@@ -2235,9 +2087,6 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     def get_initial_value( self, trans, other_values ):
         return None
 
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, self.value )
-
 
 class LibraryDatasetToolParameter( ToolParameter ):
     """
@@ -2248,9 +2097,6 @@ class LibraryDatasetToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', True )
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.LibraryField( self.name, value=value, trans=trans )
 
     def get_initial_value( self, trans, other_values ):
         return None
