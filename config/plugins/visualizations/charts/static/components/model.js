@@ -38,7 +38,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
         },
 
         /** Pack and save nested chart model */
-        save: function() {
+        save: function( options ) {
             var self = this;
             var chart_dict = {
                 attributes : this.attributes,
@@ -60,10 +60,15 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
             viz.save().then( function( response ) {
                 if ( response && response.id ) {
                     self.viz_options.visualization_id = response.id;
+                    options.success && options.success();
                     console.debug( 'model::save() - Received visualization id: ' + response.id );
                 } else {
+                    options.error && options.error();
                     console.debug( 'model::save() - Unrecognized response. Saving may have failed.' );
                 }
+            }).fail( function( response ) {
+                options.error && options.error();
+                console.debug( 'model::save() - Saving failed.' );
             });
             console.debug( 'model::save() - Saved with configuration:' );
             console.debug( this.viz_options );

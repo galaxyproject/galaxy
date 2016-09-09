@@ -86,7 +86,16 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'plugin/views/vi
                             });
                         }
                     }),
-                    export_button: this.export_button
+                    export_button: this.export_button,
+                    save_button: new Ui.ButtonIcon({
+                        icon    : 'fa-save',
+                        tooltip : 'Save this chart',
+                        title   : 'Save',
+                        onclick : function() {
+                            self.message.update( { message: 'Saving chart \'' + self.chart.get( 'title' ) + '\'. It will appear in the list of \'Saved Visualizations\'.', status: 'success' } );
+                            self.chart.save( { error : function() { self.message.update( { message: 'Could not save chart.', status: 'danger' } ) } } );
+                        }
+                    })
                 }
             });
             this.portlet.append( this.message.$el );

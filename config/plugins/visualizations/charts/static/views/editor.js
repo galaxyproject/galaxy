@@ -14,12 +14,12 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 icon : 'fa-bar-chart-o',
                 title: 'Editor',
                 operations      : {
-                    'save'  : new Ui.ButtonIcon({
-                        icon    : 'fa-save',
-                        tooltip : 'Save and Draw Chart',
-                        title   : 'Save and Draw',
+                    'draw'  : new Ui.ButtonIcon({
+                        icon    : 'fa-line-chart',
+                        tooltip : 'Draw Chart',
+                        title   : 'Draw',
                         onclick : function() {
-                            self._saveChart();
+                            self._drawChart();
                         }
                     }),
                     'back'  : new Ui.ButtonIcon({
@@ -41,13 +41,13 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                     if ( !chart_definition ) {
                         self.tabs.hideTab( 'settings' );
                         self.tabs.hideTab( 'groups' );
-                        self.portlet.hideOperation( 'save' );
+                        self.portlet.hideOperation( 'draw' );
                         console.debug( 'editor::onchange() - Chart type not found.' );
                         self.message.update( { message: 'The requested chart type could not be found. Please select a new type from below or contact us.', status: 'danger', persistent: true } );
                     } else {
                         self.tabs.showTab( 'settings' );
                         self.tabs.showTab( 'groups' );
-                        self.portlet.showOperation( 'save' );
+                        self.portlet.showOperation( 'draw' );
                         self.chart.definition = chart_definition;
                         self.chart.set( { type : chart_type, modified : true } );
                         self.message.model.set( 'message', '' );
@@ -55,7 +55,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                     }
                 },
                 ondblclick  : function( chart_id ) {
-                    self._saveChart();
+                    self._drawChart();
                 }
             });
 
@@ -76,7 +76,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 tooltip : 'Start by selecting a chart type.',
                 $el     : $( '<div/>' ).append( ( new Ui.Label( { title : 'Provide a chart title:' } ).$el ) )
                                        .append( this.title.$el )
-                                       .append( $( '<div/>' ).addClass( 'ui-form-info ui-margin-bottom' ).html( 'This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.' ) )
+                                       .append( $( '<div/>' ).addClass( 'ui-form-info ui-margin-bottom' ).html( 'This title will appear in the list of \'Saved Visualizations\'.' ) )
                                        .append( ( new Ui.Label( { title : 'Select a chart type:' } ).$el.addClass( 'ui-margin-top' ) ) )
                                        .append( this.types.$el )
             });
@@ -126,8 +126,8 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             this.title.value( title );
         },
 
-        /** Save chart data */
-        _saveChart: function() {
+        /** Draw chart data */
+        _drawChart: function() {
             var self = this;
             this.chart.set({
                 type        : this.types.value(),
@@ -155,7 +155,6 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
             if ( valid ) {
                 this.app.go( 'viewer' );
                 this.app.deferred.execute( function() {
-                    self.chart.save();
                     self.chart.trigger( 'redraw' );
                 });
             }
