@@ -4,7 +4,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         initialize: function ( app, options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
-            this.key = options.has_api_key ? options.user_api_key : 'none set';
+            this.key = options.has_api_key ? options.user_api_key : 'Not available.';
             this.form = new Form({
                 title   : 'Web API Key',
                 inputs  : [ { name      : 'api-key',
