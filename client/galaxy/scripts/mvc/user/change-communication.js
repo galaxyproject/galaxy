@@ -24,8 +24,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         },
 
-
-        /** saves the change in communication setting */
+        /** Saves changes */
         saveCommunicationChanges: function() {
             var self = this;
             var data = { 'enable_communication_server': self.form.data.create()[ 'change-communication' ] };

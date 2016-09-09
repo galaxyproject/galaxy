@@ -834,8 +834,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
     @expose_api
     def change_communication( self, trans, cntrller='user_preferences', **kwd):
         """
-            Provides a form with which the user can activate/deactivate
-            the commnication server.
+        Provides a form with which the user can activate/deactivate the commnication server.
         """
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
