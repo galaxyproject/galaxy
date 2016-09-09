@@ -72,7 +72,6 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
 		var input_def = this.input_list[input_id];
 		var typeParam = input_def['type']
 		if (typeParam == "password"){
-			job_def.inputs[job_input_id] = job_def.inputs[job_input_id] + 'secret';
 			job_def.inputs.JPCNn681vcGV4KuvuT16 = job_input_id;
 			
 		}

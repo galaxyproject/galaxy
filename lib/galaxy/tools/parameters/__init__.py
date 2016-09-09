@@ -159,9 +159,9 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     """
     rval = dict()
     for key, value in param_values.iteritems():
-	print "Error spot, name so far: " + str(key)
-	print "Error spot, value so far: " + str(value)
-	print "Error spot, type of value so far: " + str(type(value))
+	#print "Error spot, name so far: " + str(key)
+	#print "Error spot, value so far: " + str(value)
+	#print "Error spot, type of value so far: " + str(type(value))
 	value = json_fix( loads( value ) )
         if key in params:
             value = params[ key ].value_from_basic( value, app, ignore_errors )

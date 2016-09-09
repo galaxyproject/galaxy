@@ -62,8 +62,8 @@ def build_command(
 		item.value = unicode('""',"utf-8")
 		indexOfPass = index
 	index = index + 1
-    print "Name: " + queryList[indexOfPass].value
-    print "New value: " + queryList[indexOfPass].value
+#    print "Name: " + queryList[indexOfPass].value
+ #   print "New value: " + queryList[indexOfPass].value
     
     shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
