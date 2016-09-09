@@ -16,7 +16,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils'
                 operations      : {
                     'draw'  : new Ui.ButtonIcon({
                         icon    : 'fa-line-chart',
-                        tooltip : 'View Visualization',
+                        tooltip : 'Render Visualization',
                         title   : 'Visualize',
                         onclick : function() {
                             self._drawChart();
