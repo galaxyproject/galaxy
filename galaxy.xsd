@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema 
+<xs:schema
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
     elementFormDefault="qualified"
     attributeFormDefault="unqualified"
@@ -8,13 +8,26 @@
     <xs:appinfo>Galaxy Schema</xs:appinfo>
     <xs:documentation xml:lang="en">A Galaxy XML tool wrapper</xs:documentation>
   </xs:annotation>
-  
+
   <xs:element name="tool">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-The outer-most tag set of tool XML files.
+The outer-most tag set of tool XML files. Attributes on this tag apply to the
+tool as a whole.
 
-### Example:
+### Examples
+
+A normal tool:
+
+```xml
+<tool id="seqtk_seq"
+      name="Convert FASTQ to FASTA"
+      version="1.0.0"
+      profile="16.04"
+>
+```
+
+A ``data_source`` tool contains a few more relevant attributes.
 
 ```xml
 <tool id="ucsc_table_direct1"
@@ -64,7 +77,7 @@ The outer-most tag set of tool XML files.
 | ``*italic*`` | italic |
 | ``*`` | list |
 | ``-`` |list |
-| ``::`` | paragraph| 
+| ``::`` | paragraph|
 | ``-----`` | a horizontal line |
 
 Example:
@@ -91,7 +104,7 @@ Query sequence::
     :width: 600
 
 </help>
-``` 
+```
 
 Best Practices
 
@@ -110,47 +123,71 @@ The help tag should be started and finished by a [CDATA tag](https://en.wikipedi
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Must be unique across all tools; should be lowercase and contain only letters, numbers, and underscores. It allows for tool versioning and metrics of the number of times a tool is used, among other things.</xs:documentation>
+          <xs:documentation xml:lang="en">Must be unique across all tools;
+should be lowercase and contain only letters, numbers, and underscores.
+It allows for tool versioning and metrics of the number of times a tool is used,
+among other things.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation>
-          <xs:documentation xml:lang="en">This string is what is displayed as a hyperlink in the tool menu</xs:documentation>
+          <xs:documentation xml:lang="en">This string is what is displayed as a
+hyperlink in the tool menu.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="version" type="xs:string" default="1.0.0">
         <xs:annotation>
-          <xs:documentation xml:lang="en">This string defaults to "1.0.0' if it is not included in the tag. It allows for tool versioning and should be changed with each new version of the tool.</xs:documentation>
+          <xs:documentation xml:lang="en">This string defaults to ``1.0.0`` if it is not
+included in the tag. It allows for tool versioning and should be changed with each new version
+of the tool.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="hidden" type="PermissiveBoolean" default="false">
         <xs:annotation>
-          <xs:documentation xml:lang="en"> Allows for tools to be loaded upon server startup, but not displayed in the tool menu </xs:documentation>
+          <xs:documentation xml:lang="en">Allows for tools to be loaded upon
+server startup, but not displayed in the tool menu. This attribute should be
+applied in the toolbox configuration instead and so should be considered
+deprecated.
+</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="display_interface" type="PermissiveBoolean">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Display the display the tool's graphical tool form by setting this to ``true``.</xs:documentation>
+          <xs:documentation xml:lang="en">Disable the display the tool's
+graphical tool form by setting this to ``false``.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="tool_type" type="ToolTypeType">
         <xs:annotation>
-          <xs:documentation xml:lang="en"> Allows for certain framework functionality to be performed on certain types of tools. This is currently only used in "data_source" tools, but will undoubtedly be used with other tools in the future.</xs:documentation>
+          <xs:documentation xml:lang="en">Allows for certain framework
+functionality to be performed on certain types of tools. Normal tools that execute
+typical command-line jobs do not need to specify this, special kinds of tools such
+as [Data Source](https://wiki.galaxyproject.org/Admin/Internals/DataSources) and
+[Data Manager](https://wiki.galaxyproject.org/Admin/Tools/DataManagers) tools should
+set this to have values such as ``data_source`` or ``manage_data``.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="profile" type="xs:string">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Documentation for profile</xs:documentation>
+          <xs:documentation xml:lang="en">This string specified the minimum Galaxy
+version that should be required to run this tool. Certain legacy behaviors such
+as using standard error content to detect errors instead of exit code are disabled
+automatically if profile is set to any version newer than ``16.01``, such as
+``16.04``.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="workflow_compatible" type="xs:boolean" default="true">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Is this tool usable within a workflow (defaults to ``true`` for normal tools and ``false`` for data sources).</xs:documentation>
+          <xs:documentation xml:lang="en">This attribute indicates if
+this tool usable within a workflow (defaults to ``true`` for normal tools and
+``false`` for data sources).</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="URL_method" type="URLmethodType">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Only if "tool_type" attribute value is "data_source" - defines the HTTP request method to use when communicating with an external data source application ( the default is "get" ).</xs:documentation>
+          <xs:documentation xml:lang="en">Only used if ``tool_type`` attribute value
+is ``data_source`` - this attribute defines the HTTP request method to use when
+communicating with an external data source application (the default is ``get``).</xs:documentation>
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
@@ -177,7 +214,7 @@ The help tag should be started and finished by a [CDATA tag](https://en.wikipedi
       <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-  
+
   <xs:complexType name="Requirement">
     <xs:annotation>
       <xs:documentation xml:lang="en">This tag set is contained within the 'requirements' tag set. Third party programs or modules that the tool depends upon (and which are not distributed with Galaxy) are included in this tag set. The intention is that when Galaxy starts it can check whether the required programs or modules are available, and if not this tool will not be loaded. </xs:documentation>
@@ -401,22 +438,22 @@ Toggle line numbers
     <xs:attribute name="expect_exit_code" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">Describe the job's expected exit code.</xs:documentation>
-      </xs:annotation>      
+      </xs:annotation>
     </xs:attribute>
     <xs:attribute name="expect_num_outputs" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">Assert the number of outputs this test should produce.</xs:documentation>
-      </xs:annotation>      
+      </xs:annotation>
     </xs:attribute>
     <xs:attribute name="expect_failure" type="xs:boolean" default="false">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expect the job to fail, if set to true no job output checks may be present in test definition.</xs:documentation>
-      </xs:annotation>      
+      </xs:annotation>
     </xs:attribute>
     <xs:attribute name="maxseconds" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">Maximum amount of time to let test run.</xs:documentation>
-      </xs:annotation>      
+      </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:group name="TestParamElement">
@@ -674,7 +711,7 @@ Toggle line numbers
     </xs:sequence>
   </xs:complexType>
   <xs:group name="TestAssertion">
-    <xs:choice> 
+    <xs:choice>
       <xs:element name="has_text" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``).]]>
@@ -792,8 +829,8 @@ Toggle line numbers
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  
-  
+
+
   <xs:group name="InputElement">
     <xs:choice>
       <xs:element name="param" type="Param"/>
@@ -866,9 +903,9 @@ Is referenced parameter is the same group.]]></xs:documentation>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-  
-  
-  
+
+
+
   <xs:complexType name="ConditionalWhen">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for ConditionalWhen</xs:documentation>
@@ -882,9 +919,9 @@ Is referenced parameter is the same group.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  
-  
-  
+
+
+
   <xs:complexType name="Repeat">
     <xs:annotation>
       <xs:documentation xml:lang="en">This is a container for any tag sets that can be contained within the 'inputs' tag set. When this is used, the tool will allow the user to add any number of additional sets of the contained parameters ( an "Add new 'title'" button will be displayed on the tool form ).</xs:documentation>
@@ -947,8 +984,8 @@ Is referenced parameter is the same group.]]></xs:documentation>
         <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-  </xs:complexType>  
-  
+  </xs:complexType>
+
   <xs:complexType name="Param">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for Param</xs:documentation>
@@ -1130,8 +1167,8 @@ Is referenced parameter is the same group.]]></xs:documentation>
       <xs:enumeration value="data_collection"/>
     </xs:restriction>
   </xs:simpleType>
-  
-  
+
+
   <xs:complexType name="Command">
     <xs:annotation>
       <xs:documentation xml:lang="en">This tag specifies how Galaxy should invoke the tool's executable, passing its required input parameter values (the command line specification links the parameters supplied in the form with the actual tool executable). Any word inside it starting with a dollar sign ($) will be treated as a variable whose values can be acquired from one of three sources: parameters, metadata, or output files. After the substitution of variables with their values, the content is interpreted with Cheetah and finally given to the interpreter specified in the corresponding attribute (if any).</xs:documentation>
@@ -1165,8 +1202,8 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-  
-  
+
+
   <xs:complexType name="ParamOption">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for ParamOption</xs:documentation>
@@ -1186,8 +1223,8 @@ For newer tools with ``profile_version>=16.04``, the default is ``exit_code`` - 
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-  
-  
+
+
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for Options</xs:documentation>
@@ -1550,7 +1587,7 @@ Container tag set for the <data> tag set. The files and collections created by t
       <xs:element name="change_format" type="ChangeFormat"/>
       <xs:element name="filter" type="OutputFilter" />
       <xs:element name="discover_datasets" type="OutputDiscoverDatasets" />
-      <xs:element name="actions" type="Actions"/>    
+      <xs:element name="actions" type="Actions"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Data">
@@ -1993,7 +2030,7 @@ This tag set is contained within the <configfiles> tag set. It tells Galaxy to w
 
 *Example*
 
-The following will create a cheetah variable that can be evaluated as ``$inputs`` that 
+The following will create a cheetah variable that can be evaluated as ``$inputs`` that
 will contain the tool parameter inputs.
 
 ```xml
@@ -2206,14 +2243,14 @@ A note should be made on the order in which exit codes and regular expressions a
       <xs:group ref="StdioElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
-  
+
   <xs:group name="StdioElement">
     <xs:choice>
       <xs:element name="regex" type="Regex"/>
       <xs:element name="exit_code" type="ExitCode"/>
     </xs:choice>
   </xs:group>
-  
+
   <xs:complexType name="ExitCode">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2264,8 +2301,8 @@ If the tool returns 0 or 1, then the tool will not be marked as having an error.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  
-  
+
+
   <xs:complexType name="Regex">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2342,7 +2379,7 @@ Finally, if the tool did not match any of the fatal errors, then the fourth regu
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  
+
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See ~/tools/extract/extract_genomic_dna.xml for an example of how this tag set is used in a tool. This tag set is optionally contained within the <data> tag set and is the container tag set for the following <when> tag set.]]></xs:documentation>
