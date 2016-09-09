@@ -17,8 +17,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     })
                 },
                 onchange: function() {
-                   console.log( 'change' );
-                   //self.saveCommunicationChanges();
                    self.saveCommunicationChanges();
                }
             });
@@ -32,9 +30,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var self = this;
             var data = { 'enable_communication_server': self.form.data.create()[ 'change-communication' ] };
             $.getJSON( Galaxy.root + 'api/user_preferences/change_communication', data, function( response ) {
-                var input_id = self.form.data.match( 'change-communication' );
-                var field = self.form.field_list[ input_id ];
-                field.value( response.activated );
                 self.form.message.update({
                    message     : response.message,
                    status      : response.status === 'error' ? 'danger' : 'success'
