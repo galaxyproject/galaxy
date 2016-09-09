@@ -42,7 +42,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
             if( tool_filters.length > 0 || section_filters.length > 0 || label_filters.length > 0 ) {
                 if( tool_filters.length > 0 ) {
-                    tools = {  
+                    tools = {
                         name: 'Edit ToolBox filters :: Tools',
                         type: 'section',
                         label: '',
@@ -50,7 +50,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         expanded: true
                     }
                     // build inputs for tool filter
-                    for( var i = 0; i < tool_filters.length; i++ ) { 
+                    for( var i = 0; i < tool_filters.length; i++ ) {
                         var filter = tool_filters[i],
                             helptext = filter['short_desc'] + " " + filter['desc'];
                         tools.inputs.push( { name: "t_" + filter['filterpath'],
@@ -62,7 +62,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     all_inputs.push( tools );
 		}
                 if( section_filters.length > 0 ) {
-                    sections = {  
+                    sections = {
                         name: 'Edit ToolBox filters :: Sections',
                         type: 'section',
                         label: 'Edit ToolBox filters :: Sections',
@@ -70,7 +70,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         expanded: true
                     }
                     // build inputs for section filter
-                    for( var i = 0; i < section_filters.length; i++ ) { 
+                    for( var i = 0; i < section_filters.length; i++ ) {
                         var filter = section_filters[i],
                             helptext = filter['short_desc'] + " " + filter['desc'];
                         sections.inputs.push( { name: "s_" + filter['filterpath'],
@@ -97,7 +97,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                                               type: 'boolean',
                                               label: filter['filterpath'],
                                               help: helptext,
-                                              value: filter['checked'] } ); 
+                                              value: filter['checked'] } );
                     }
                     all_inputs.push( labels );
 		}
