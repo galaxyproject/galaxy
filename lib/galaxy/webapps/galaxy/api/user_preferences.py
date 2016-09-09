@@ -687,33 +687,22 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
 
     @expose_api
     def api_keys( self, trans, cntrller='user_preferences', **kwd ):
-        '''
+        """
         Generate API keys
-        '''
-        params = util.Params( kwd )
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
-        status = params.get( 'status', 'done' )
-        if params.get( 'new_api_key_button', False ):
+        """
+        params  = util.Params( kwd )
+        message = 'API key unchanged.'
+        status  = 'done'
+        if params.get( 'new_api_key', False ):
             self.create_api_key( trans, trans.user )
-            message = "Generated a new web API key"
-            status = "done"
-
-        if( trans.user.api_keys ):
-            return {
-                'message': message,
-                'status': status,
-                'has_api_key': True,
-                'user_api_key': trans.user.api_keys[0].key,
-                'app_name': trans.webapp.name
-            }
-        else:
-            return {
-                'message': message,
-                'status': status,
-                'has_api_key': False,
-                'app_name': trans.webapp.name
-            }
-
+            message = 'Generated a new web API key.'
+        return {
+            'message'       : message,
+            'status'        : status,
+            'has_api_key'   : bool( trans.user.api_keys ),
+            'user_api_key'  : trans.user.api_keys[ 0 ].key if trans.user.api_keys else None,
+            'app_name'      : trans.webapp.name
+        }
 
     def tool_filters( self, trans, cntrller='user_preferences', **kwd ):
         """

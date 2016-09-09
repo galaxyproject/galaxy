@@ -152,6 +152,7 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 type        : input_def.type,
                 area        : input_def.area,
+                readonly    : input_def.readonly,
                 placeholder : input_def.placeholder,
                 onchange    : input_def.onchange
             });
