@@ -890,13 +890,91 @@ tools will not need to specify any attributes on this tag itself.
 
   <xs:complexType name="Conditional">
     <xs:annotation>
-      <xs:documentation xml:lang="en">This is a container for conditional parameters in the tool ( must contain 'when' tag sets ) - the command line is wrapped in an if-else statement. </xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This is a container for conditional parameters in the tool (must contain 'when'
+tag sets) - the command line (or portions thereof) are then wrapped in an if-else
+statement. A good example tool that demonstrates many conditional parameters is
+[biom_convert.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/biom_format/biom_convert.xml).
+
+```xml
+<conditional name="input_type">
+    <param name="input_type_selector" type="select" label="Choose the source BIOM format">
+        <option value="tsv" selected="True">Tabular File</option>
+        <option value="biom">BIOM File</option>
+    </param>
+    <when value="tsv">
+        <param name="input_table" type="data" format="tabular" label="Tabular File" argument="--input-fp"/>
+        <param name="process_obs_metadata" type="select" label="Process metadata associated with observations when converting" argument="--process-obs-metadata">
+            <option value="" selected="True">Do Not process metadata</option>
+            <option value="taxonomy">taxonomy</option>
+            <option value="naive">naive</option>
+            <option value="sc_separated">sc_separated</option>
+        </param>
+    </when>
+    <when value="biom">
+        <param name="input_table" type="data" format="biom1" label="Tabular File" argument="--input-fp"/>
+    </when>
+</conditional>
+```
+
+The first directive following the conditional is a [``param``](#tool|inputs|param),
+this param must be of type ``select`` or ``boolean``. Depending on the value a
+user selects for this "test" parameter - different UI elements will be shown.
+These different paths are described by the following the ``when`` blocks shown
+above.
+
+The following Cheetah block demonstrates the use of the ``conditoinal``
+shown above:
+
+```
+biom convert -i "${input_type.input_table}" -o "${output_table}"
+#if str( $input_type.input_type_selector ) == "tsv":
+    #if $input_type.process_obs_metadata:
+        --process-obs-metadata "${input_type.process_obs_metadata}"
+    #end if
+#end if
+```
+
+Notice that the parameter ``input_table`` appears down both ``when`` clauses
+so ``${input_type.input_table}`` appears unconditionally but we need to
+conditionally reference ``${input_type.process_obs_metadata}`` with a Cheetah
+``if`` statement.
+
+A common use of the conditional wrapper is to select between reference data
+(managed by the Galaxy deployer or admin - for instance via Data Managers) or
+history files for references. A good example tool that demonstrates this is
+the [Bowtie 2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
+
+```xml
+<conditional name="reference_genome">
+  <param name="source" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options. See `Indexes` section of help below">
+    <option value="indexed">Use a built-in genome index</option>
+    <option value="history">Use a genome from the history and build index</option>
+  </param>
+  <when value="indexed">
+    <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+      <options from_data_table="bowtie2_indexes">
+        <filter type="sort_by" column="2"/>
+        <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+      </options>
+    </param>
+  </when>
+  <when value="history">
+    <param name="own_file" type="data" format="fasta" metadata_name="dbkey" label="Select reference genome" />
+  </when>
+</conditional>
+```
+
+The Bowtie 2 wrapper also demonstrates other conditional paths - such as choosing
+between paired inputs of single stranded inputs.
+]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
           <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
-          <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="when" type="c" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
         <xs:attribute name="value_from" type="xs:string">
           <xs:annotation>
@@ -934,14 +1012,18 @@ Is referenced parameter is the same group.]]></xs:documentation>
 
   <xs:complexType name="ConditionalWhen">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ConditionalWhen</xs:documentation>
+      <xs:documentation xml:lang="en">This directive describes one potential
+set of input for the tool at this depth. See documentation for the
+[``conditional``](#tool|conditional) block for more details and examples (XML
+and corresponding Cheetah conditionals).</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">Value for the tool form test parameter
+corresponding to this ``when`` block.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -951,7 +1033,6 @@ Is referenced parameter is the same group.]]></xs:documentation>
   <xs:complexType name="Repeat">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-
 See
 [xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/xy_plot/xy_plot.xml)
 for an example of how to use this tag set. This is a container for any tag sets
@@ -981,7 +1062,7 @@ This Cheetah code can be used in the ``<command>`` tag set or the
 ```xml
 #for $i, $s in enumerate( $series )
     rank_of_series=$i
-    input_path=${s.input.file_name}
+    input_path=${s.input}
     x_colom=${s.xcol}
     y_colom=${s.ycol}
 #end for
