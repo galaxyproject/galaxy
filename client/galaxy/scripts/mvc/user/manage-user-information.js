@@ -1,9 +1,11 @@
 /** Edits user information */
-define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
+define( [ 'mvc/form/form-view',
+          'mvc/ui/ui-misc',
+          'mvc/user/add-edit-address' ],
+function( Form, Ui, Address ) {
     var ManageUserInformation = Backbone.View.extend({
-        initialize: function ( app, $el, options ) {
-            var self = this,
-                filter = null;
+        initialize: function ( app, $el, options, address_message ) {
+            var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.original_email = options["email"];
             this.original_username = options["username"];
@@ -36,13 +38,20 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             // address display form
             this.addressform = self._buildAddressForm( self, options, app, $el );
             $el.append( self.addressform.$el );
+            // show message if an address is added or updated
+            if( address_message ) {
+                self.addressform.message.update({
+                    message : address_message.message,
+                    status  : address_message.status === 'error' ? 'danger' : 'success',
+                });
+            }
         },
 
         /** build form for user addresses */
         _buildAddressForm: function( self, options, app, $el ) {
             return new Form({
                 title   : 'User Addresses',
-                inputs  : self._buildAddressInputs( self, options ),
+                inputs  : self._buildAddressInputs( self, options, $el, app ),
                 buttons : {
                     'addaddress': new Ui.ButtonIcon({
                         id          : 'add-address',
@@ -52,7 +61,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         title       : 'Add new address',
                         icon        : 'fa-plus',
                         floating    : 'clear',
-                        onclick     : function() { self._addAddress( self ); }
+                        onclick     : function() { self._addAddress( self, $el, app ); }
                     })
                 },
                 onchange: function() {
@@ -61,20 +70,24 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         },
         /** apply address filter */
-        _applyAddressFilter: function( app, $parentEl, self ) {
+        _applyAddressFilter: function( app, $el, self ) {
             var field = null,
                 active_filter = "";
             active_filter = self.addressform.data.create()["address_filters"];
             // fetch the addresses based on the selected filter
             $.getJSON( Galaxy.root + 'api/user_preferences/manage_user_info/', { 'show_filter': active_filter }, function( response ) {
-                // remove the previous forms
-                self.addressform.$el.remove();
-                self.addressform = self._buildAddressForm( self, response, app, $parentEl );
-                $parentEl.append( self.addressform.$el );
+                self._updateAddressForm( app, $el, self, response );
                 // get and set the active filter's value
                 field = self.addressform.field_list[ self.addressform.data.match( 'address_filters' ) ];
                 field.value( active_filter );
             });
+        },
+
+        /** update address form with new data */
+        _updateAddressForm: function( app, $el, self, response ) {
+            self.addressform.$el.remove();
+            self.addressform = self._buildAddressForm( self, response, app, $el );
+            $el.append( self.addressform.$el );
         },
 
         /** build inputs for user login information form */
@@ -137,7 +150,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** builds inputs for displaying address */
-        _buildAddressInputs: function( self, data ) {
+        _buildAddressInputs: function( self, data, $el, app ) {
             var all_inputs = [],
                 labels = {};
 
@@ -171,35 +184,35 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             help: this['desc'] + ': <br>' + this['html']
                         } );
                         if( !item_object['deleted'] ) {
-
                             all_inputs.push( {
                                 id: 'edit_' + this['address_id'],
-                                type: 'submit', title: 'Edit', tooltip: 'Edit',
-                                onclick: function() { self._editAddress.call( _self ); },
+                                type: 'submit',
+                                title: 'Edit',
+                                tooltip: 'Edit',
+                                onclick: function() { self._editAddress.call( _self, self, $el, app ); },
                                 icon: 'fa-pencil-square-o'
                             } );
-
                             all_inputs.push( {
                                 id: 'delete_' + this['address_id'],
                                 type: 'submit',
                                 title: 'Delete',
                                 tooltip: 'Delete',
-                                onclick: function() { self._deleteAddress.call( _self ); },
+                                onclick: function() { self._deleteAddress.call( _self, self, $el, app ); },
                                 icon: 'fa-remove'
                             } );
                         }
                         else {
                             all_inputs.push( { 
                                 id: 'undelete_' + this['address_id'],
-                                type: 'submit', title: 'Undelete',
+                                type: 'submit',
+                                title: 'Undelete',
                                 tooltip: 'Undelete',
-                                onclick: function() { self._undeleteAddress.call( _self ); },
+                                onclick: function() { self._undeleteAddress.call( _self, self, $el, app ); },
                                 icon: 'fa-reply'
                             } );
                         }
                         // adds a horizontal line at the end of each address section
                         all_inputs.push( { id: '', title: '', type: 'hidden', help: '<hr class="docutils">' } );
-
                     } ).call( data["addresses"][item] );
                 }
             }
@@ -207,26 +220,43 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** edit address */
-        _editAddress: function() {
-            //console.log('edit clicked');
-            //console.log( this );
+        _editAddress: function( self, $el, app ) {
+            self.loginform.$el.remove();
+            self.addressform.$el.remove();
+            $.getJSON( Galaxy.root + 'api/user_preferences/edit_address/', {'address_id': this['address_id'] }, function( response ) {
+                address = new Address.AddEditAddress( $el, app, response );
+            });
         },
 
         /** delete address */
-        _deleteAddress: function() {
-            //console.log('delete clicked');
-            //console.log( this );
+        _deleteAddress: function( self, $el, app ) {
+            var active_filter = self.addressform.data.create()["address_filters"];
+            $.getJSON( Galaxy.root + 'api/user_preferences/delete_address/', { 'address_id': this["address_id"] }, function( response ) {
+                self._updateAddressForm( app, $el, self, response );
+                self.addressform.message.update({
+                    message : response.message,
+                    status  : response.status === 'error' ? 'danger' : 'success',
+                });
+            });
         },
 
         /** revert the delete status */
-        _undeleteAddress: function() {
-            //console.log('undelete clicked');
-            //console.log( this );
+        _undeleteAddress: function( self, $el, app ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/undelete_address/', { 'address_id': this["address_id"] }, function( response ) {
+                self._updateAddressForm( app, $el, self, response );
+                self.addressform.message.update({
+                    message : response.message,
+                    status  : response.status === 'error' ? 'danger' : 'success',
+                });
+            });
         },
 
-        /** adds new address */
-        _addAddress: function() {
-            //console.log( "add address" );
+        /** add new address */
+        _addAddress: function( self, $el, app ) {
+            var address;
+            self.loginform.$el.remove();
+            self.addressform.$el.remove();
+            address = new Address.AddEditAddress( $el, app );
         },
 
         /** renders message */

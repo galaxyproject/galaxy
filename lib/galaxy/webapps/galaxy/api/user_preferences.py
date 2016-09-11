@@ -433,55 +433,54 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         ok = True
         if not trans.app.config.allow_user_creation and not is_admin:
             return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
-        if params.get( 'new_address_button', False ):
-            if not short_desc:
-                ok = False
-                message = 'Enter a short description for this address'
-            elif not name:
-                ok = False
-                message = 'Enter the name'
-            elif not institution:
-                ok = False
-                message = 'Enter the institution associated with the user'
-            elif not address:
-                ok = False
-                message = 'Enter the address'
-            elif not city:
-                ok = False
-                message = 'Enter the city'
-            elif not state:
-                ok = False
-                message = 'Enter the state/province/region'
-            elif not postal_code:
-                ok = False
-                message = 'Enter the postal code'
-            elif not country:
-                ok = False
-                message = 'Enter the country'
-            if ok:
-                user_address = trans.model.UserAddress( user=user,
-                                                        desc=short_desc,
-                                                        name=name,
-                                                        institution=institution,
-                                                        address=address,
-                                                        city=city,
-                                                        state=state,
-                                                        postal_code=postal_code,
-                                                        country=country,
-                                                        phone=phone )
-                trans.sa_session.add( user_address )
-                trans.sa_session.flush()
-                message = 'Address (%s) has been added' % escape( user_address.desc )
-                new_kwd = dict( message=message, status=status )
-                if is_admin:
-                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
-                return self.user_info(cntrller, trans, new_kwd)
-            else:
-                return {
-                    'user_id': user_id,
-                    'message': escape( message ),
-                    'status': 'error'
-                }
+        if not short_desc:
+            ok = False
+            message = 'Enter a short description for this address'
+        elif not name:
+            ok = False
+            message = 'Enter the name'
+        elif not institution:
+            ok = False
+            message = 'Enter the institution associated with the user'
+        elif not address:
+            ok = False
+            message = 'Enter the address'
+        elif not city:
+            ok = False
+            message = 'Enter the city'
+        elif not state:
+            ok = False
+            message = 'Enter the state/province/region'
+        elif not postal_code:
+            ok = False
+            message = 'Enter the postal code'
+        elif not country:
+            ok = False
+            message = 'Enter the country'
+        if ok:
+            user_address = trans.model.UserAddress( user=user,
+                                                    desc=short_desc,
+                                                    name=name,
+                                                    institution=institution,
+                                                    address=address,
+                                                    city=city,
+                                                    state=state,
+                                                    postal_code=postal_code,
+                                                    country=country,
+                                                    phone=phone )
+            trans.sa_session.add( user_address )
+            trans.sa_session.flush()
+            message = 'Address (%s) has been added' % escape( user_address.desc )
+            new_kwd = dict( message=message, status=status )
+            if is_admin:
+                new_kwd[ 'id' ] = trans.security.encode_id( user.id )
+            return self.user_info(cntrller, trans, new_kwd)
+        else:
+            return {
+                'user_id': user_id,
+                'message': escape( message ),
+                'status': 'error'
+            }
 
     @expose_api
     def change_password( self, trans, password=None, confirm=None, current=None, token=None, **kwd):

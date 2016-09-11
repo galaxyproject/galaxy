@@ -14,14 +14,14 @@ var UserPreferences = Backbone.View.extend({
     },
 
     /** redirects to manage user information view */
-    callManageInfo: function( e ) {
+    callManageInfo: function( message ) {
         var userInfo = null,
             url = Galaxy.root + 'api/user_preferences/manage_user_info',
             self = this,
             $el = $( '.user-preferences-all' );
         $( '.user-pref' ).hide();
         $.getJSON( url, function( data ) {
-              userInfo = new Manage.ManageUserInformation( self, $el, data );
+              userInfo = new Manage.ManageUserInformation( self, $el, data, message );
         });
     },
   
