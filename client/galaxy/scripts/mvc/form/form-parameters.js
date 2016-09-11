@@ -30,8 +30,7 @@ define(['utils/utils',
             'baseurl'           : '_fieldHidden',
             'library_data'      : '_fieldLibrary',
             'ftpfile'           : '_fieldFtp',
-            'submit'            : '_fieldButton',
-            'label'             : '_fieldLabel'
+            'submit'            : '_fieldButton'
         },
 
         /** Returns an input field for a given field type */
@@ -228,15 +227,6 @@ define(['utils/utils',
                 title       : input_def.title,
                 icon        : input_def.icon,
                 tooltip     : input_def.tooltip
-            });
-        },
-
-        /** label field */
-        _fieldLabel: function( input_def ) {
-            // create label
-            return new Ui.Label({
-                id          : 'field-' + input_def.id,
-                title       : input_def.title
             });
         }
     });

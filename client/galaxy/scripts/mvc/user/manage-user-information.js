@@ -2,24 +2,27 @@
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     var ManageUserInformation = Backbone.View.extend({
         initialize: function ( app, $el, options ) {
-            var self = this;
+            var self = this,
+                filter = null;
             this.model = options && options.model || new Backbone.Model( options );
             this.original_email = options["email"];
             this.original_username = options["username"];
             this.loginform = new Form({
                 title   : 'Login Information',
                 inputs  : self._buildLoginInputs( self, options ),
-                operations      : {
-                    'back'  : new Ui.ButtonIcon({
+                operations : {
+                    'back' : new Ui.ButtonIcon({
                         icon    : 'fa-caret-left',
                         tooltip : 'Return to user preferences',
                         title   : 'Preferences',
-                        onclick : function() { self.loginform.$el.remove();
-                                               self.addressform.$el.remove(); 
-                                               app.showPreferences() }
+                        onclick : function() {
+                            self.loginform.$el.remove();
+                            self.addressform.$el.remove(); 
+                            app.showPreferences();
+                        }
                     })
                 },
-                buttons        : {
+                buttons : {
                     'save'  : new Ui.Button({
                         tooltip : 'Save',
                         title   : 'Save',
@@ -31,10 +34,16 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
             $el.append( this.loginform.$el );
             // address display form
-            this.addressform = new Form({
+            this.addressform = self._buildAddressForm( self, options, app, $el );
+            $el.append( self.addressform.$el );
+        },
+
+        /** build form for user addresses */
+        _buildAddressForm: function( self, options, app, $el ) {
+            return new Form({
                 title   : 'User Addresses',
                 inputs  : self._buildAddressInputs( self, options ),
-                buttons        : {
+                buttons : {
                     'addaddress': new Ui.ButtonIcon({
                         id          : 'add-address',
                         type        : 'submit',
@@ -42,41 +51,86 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         tooltip     : 'Add new address',
                         title       : 'Add new address',
                         icon        : 'fa-plus',
-                        floating: 'clear',
-                        onclick     : function() { self._addAddress( self ) }
-                    }) 
+                        floating    : 'clear',
+                        onclick     : function() { self._addAddress( self ); }
+                    })
+                },
+                onchange: function() {
+                    self._applyAddressFilter( app, $el, self );
                 }
             });
-            $el.append( this.addressform.$el );
+        },
+        /** apply address filter */
+        _applyAddressFilter: function( app, $parentEl, self ) {
+            var field = null,
+                active_filter = "";
+            active_filter = self.addressform.data.create()["address_filters"];
+            // fetch the addresses based on the selected filter
+            $.getJSON( Galaxy.root + 'api/user_preferences/manage_user_info/', { 'show_filter': active_filter }, function( response ) {
+                // remove the previous forms
+                self.addressform.$el.remove();
+                self.addressform = self._buildAddressForm( self, response, app, $parentEl );
+                $parentEl.append( self.addressform.$el );
+                // get and set the active filter's value
+                field = self.addressform.field_list[ self.addressform.data.match( 'address_filters' ) ];
+                field.value( active_filter );
+            });
         },
 
-        /** builds inputs for user login information form */
+        /** build inputs for user login information form */
         _buildLoginInputs: function( self, data ) {
             var all_inputs = [],
                 email = {},
                 username = {};
-            email = { id: 'email_input', name: 'email', type: 'text', label: 'Email address:', value: data["email"], size: "40",
-                      help: 'If you change your email address you will receive an activation link in the new mailbox and you have to' + 
-                            ' activate your account by visiting it.' };
+            email = { 
+                id: 'email_input',
+                name: 'email',
+                type: 'text',
+                label: 'Email address:',
+                value: data["email"],
+                size: "40",
+                help: 'If you change your email address you will receive an activation link in the new mailbox and you have to' + 
+                    ' activate your account by visiting it.'
+            };
             all_inputs.push( email );
             if(data['webapp'] === 'tool_shed') {
                 if( data['active_repositories'] ) {
-                    username = { id: 'name_input', name: 'username', label: 'Public name:', type: 'hidden', value: data["username"], 
-                                 help: 'You cannot change your public name after you have created a repository in this tool shed.' };
+                    username = { 
+                        id: 'name_input',
+                        name: 'username',
+                        label: 'Public name:',
+                        type: 'hidden',
+                        value: data["username"], 
+                        help: 'You cannot change your public name after you have created a repository in this tool shed.'
+                    };
                 }
                 else {
-                    username = { id: 'name_input', name: 'username', label: 'Public name:', type: 'text', value: data["username"], size: "40",
-                                 help: 'Your public name provides a means of identifying you publicly within this tool shed. Public ' +
-                                       'names must be at least three characters in length and contain only lower-case letters, numbers, ' +
-                                       'and the "-" character.  You cannot change your public name after you have created a repository ' +
-                                       'in this tool shed.' };
+                    username = { 
+                        id: 'name_input',
+                        name: 'username',
+                        label: 'Public name:',
+                        type: 'text',
+                        value: data["username"],
+                        size: "40",
+                        help: 'Your public name provides a means of identifying you publicly within this tool shed. Public ' +
+                              'names must be at least three characters in length and contain only lower-case letters, numbers, ' +
+                              'and the "-" character.  You cannot change your public name after you have created a repository ' +
+                              'in this tool shed.'
+                    };
                 }
             }
             else {
-                username = { id: 'name_input', name: 'username', label: 'Public name:', type: 'text', value: data["username"], size: "40",
-                             help: 'Your public name is an identifier that will be used to generate addresses for information ' +
-                                   'you share publicly. Public names must be at least three characters in length and contain only lower-case ' +
-                                   'letters, numbers, and the "-" character.' };
+                username = { 
+                    id: 'name_input',
+                    name: 'username',
+                    label: 'Public name:',
+                    type: 'text',
+                    value: data["username"],
+                    size: "40",
+                    help: 'Your public name is an identifier that will be used to generate addresses for information ' +
+                          'you share publicly. Public names must be at least three characters in length and contain only lower-case ' +
+                          'letters, numbers, and the "-" character.'
+                };
             }
             all_inputs.push( username );
             return all_inputs;
@@ -86,56 +140,85 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         _buildAddressInputs: function( self, data ) {
             var all_inputs = [],
                 labels = {};
+
+            all_inputs.push( {
+                id: 'address_filters',
+                name: 'address_filters',
+                label: 'Choose filter',
+                type: 'select',
+                display: 'radiobutton',
+                data: [ { label: 'Active', value: 'Active' },
+                        { label: 'Deleted', value: 'Deleted' },
+                        { label: 'All', value: 'All' }
+                      ]
+            });
             if( data["addresses"] || data["addresses"].length > 0 ) {
-                labels = { id: 'address_labels', name: 'address_labels', label: 'Choose filter', type: 'select', display: 'radiobutton',
-                           data: [ { label: 'Active', value: '0' }, { label: 'Deleted', value: '1' }, { label: 'All', value: '2' } ] };
-                all_inputs.push( labels );
-                
+                // build inputs for each address
                 for( var item in data["addresses"] ) {
                     var item_object = data["addresses"][item],
                         address_id = item_object['address_id'],
                         desc = item_object['desc'],
                         html = item_object['html'];
+
                     // anonymous function added to have closures
                     // i.e. to bind correct data to the delete, edit etc methods
                     ( function() {
                         var _self = this;
-                        all_inputs.push( { id: this['address_id'], title: this['desc'] + ': ', type: 'label', help: '<br>' + this['html'] } );
+                        all_inputs.push( {
+                            id: this['address_id'],
+                            title: '',
+                            type: 'hidden',
+                            help: this['desc'] + ': <br>' + this['html']
+                        } );
                         if( !item_object['deleted'] ) {
-                            all_inputs.push( { id: 'edit_' + this['address_id'], type: 'submit', title: 'Edit', tooltip: 'Edit', 
-                                           onclick: function() { self._editAddress.call( _self ); }, 
-                                           icon: 'fa-pencil-square-o' } );
 
-                            all_inputs.push( { id: 'delete_' + this['address_id'], type: 'submit', title: 'Delete', tooltip: 'Delete',
-                                           onclick: function() { self._deleteAddress.call( _self ); }, 
-                                           icon: 'fa-remove' } );
+                            all_inputs.push( {
+                                id: 'edit_' + this['address_id'],
+                                type: 'submit', title: 'Edit', tooltip: 'Edit',
+                                onclick: function() { self._editAddress.call( _self ); },
+                                icon: 'fa-pencil-square-o'
+                            } );
+
+                            all_inputs.push( {
+                                id: 'delete_' + this['address_id'],
+                                type: 'submit',
+                                title: 'Delete',
+                                tooltip: 'Delete',
+                                onclick: function() { self._deleteAddress.call( _self ); },
+                                icon: 'fa-remove'
+                            } );
                         }
                         else {
-                            all_inputs.push( { id: 'undelete_' + this['address_id'], type: 'submit', title: 'Undelete', tooltip: 'Undelete',
-                                           onclick: function() { self._undeleteAddress.call( _self ); }, icon: 'fa-reply' } );
+                            all_inputs.push( { 
+                                id: 'undelete_' + this['address_id'],
+                                type: 'submit', title: 'Undelete',
+                                tooltip: 'Undelete',
+                                onclick: function() { self._undeleteAddress.call( _self ); },
+                                icon: 'fa-reply'
+                            } );
                         }
                         // adds a horizontal line at the end of each address section
-                        all_inputs.push( { id: '', title: '', type: 'label', help: '<hr class="docutils">' } )
+                        all_inputs.push( { id: '', title: '', type: 'hidden', help: '<hr class="docutils">' } );
 
                     } ).call( data["addresses"][item] );
-                } 
+                }
             }
             return all_inputs;
         },
 
-        /** edits the address */
+        /** edit address */
         _editAddress: function() {
             //console.log('edit clicked');
             //console.log( this );
         },
 
-        /** deletes the address */
+        /** delete address */
         _deleteAddress: function() {
             //console.log('delete clicked');
             //console.log( this );
         },
 
-        /** reverts the delete status */
+        /** revert the delete status */
         _undeleteAddress: function() {
             //console.log('undelete clicked');
             //console.log( this );
