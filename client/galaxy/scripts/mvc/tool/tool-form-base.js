@@ -50,11 +50,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.options = Utils.merge(options, this.options);
             this.options = Utils.merge({
                 icon            : options.icon,
-                title           : '<b>' + options.name + '</b> ' + 
-                                        options.description + 
-                                        ' (Galaxy Version ' + 
-                                        options.version + ')' + " . " +
-                                        req_message + ".",
+                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')' + " . " + req_message + ".",
                 operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
                     self.refresh();
@@ -299,11 +295,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             if ( nreq > 0 ) {
                 var requirements_message = 'This tool requires ';
                 _.each( options.requirements, function( req, i ) {
-                    requirements_message += req.name + 
-                                            ( req.version ? ' (Version ' + 
-                                            req.version + ')' : '' ) + 
-                                            ( i < nreq - 2 ? ', ' : 
-                                            ( i == nreq - 2 ? ' and ' : '' ) );
+                    requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
                 });
                 return $( '<span/>' ).append( requirements_message );
             }
