@@ -46,27 +46,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Build form */
         _buildForm: function(options) {
             var self = this;
-            var req_message = self._templateRequirements(options)[0].textContent;
             this.options = Utils.merge(options, this.options);
-            if (options.requirements.length > 0) {
-                this.options = Utils.merge({
-                    icon            : options.icon,
-                    title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')' + ". " + req_message + ".",
-                    operations      : !this.options.hide_operations && this._operations(),
-                    onchange        : function() {
-                        self.refresh();
-                    }
-                }, this.options);
-            } else {
-                 this.options = Utils.merge({
-                    icon            : options.icon,
-                    title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')' + ".",
-                    operations      : !this.options.hide_operations && this._operations(),
-                    onchange        : function() {
-                        self.refresh();
-                    }
-                }, this.options);
-            };
+            this.options = Utils.merge({
+                icon            : options.icon,
+                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')' + ". " + this._templateRequirements(options),
+                operations      : !this.options.hide_operations && this._operations(),
+                onchange        : function() {
+                    self.refresh();
+                }
+            }, this.options);
             this.options.customize && this.options.customize( this.options );
             this.render();
             if ( !this.options.collapsible ) {
@@ -306,11 +294,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             if ( nreq > 0 ) {
                 var requirements_message = 'This tool requires ';
                 _.each( options.requirements, function( req, i ) {
-                    requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
+                    requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) ) + ".";
                 });
-                return $( '<span/>' ).append( requirements_message );
+                return requirements_message;
             }
-            return 'No requirements found.';
+            return ''; //No requirements found
         }
     });
 });
