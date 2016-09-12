@@ -91,18 +91,19 @@ substitution.
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the last tag set in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html.
 
-| tag | details |
-| ``.. class:: warningmark`` | a yellow warning symbol  |
-| ``.. class:: infomark`` | a blue information symbol |
-| ``.. image:: path-of-the-file.png :height: 500 :width: 600`` | insert a png file of height 500 and width 600 at this position |
-| ``**bold**`` | bold |
-| ``*italic*`` | italic |
-| ``*`` | list |
-| ``-`` |list |
-| ``::`` | paragraph|
-| ``-----`` | a horizontal line |
+tag | details
+--- | -------
+``.. class:: warningmark`` | a yellow warning symbol
+``.. class:: infomark`` | a blue information symbol
+``.. image:: path-of-the-file.png :height: 500 :width: 600`` | insert a png file of height 500 and width 600 at this position |
+``**bold**`` | bold
+``*italic*`` | italic
+``*`` | list
+``-`` |list
+``::`` | paragraph
+``-----`` | a horizontal line
 
-Example:
+### Examples
 
 Show a warning sign to remind users that this tool accept fasta format files only, followed by an example of the query sequence and a figure.
 
@@ -1636,11 +1637,10 @@ dynamically creates a list of options whose values can be
 obtained from a predefined file stored locally or a dataset selected from the
 current history.
 
-There are at least five basic ways to use this tag - for of these correspond to
-a ``from_XXX`` attribute on the ``options`` directive and the other is to just
-use filters.
+There are at least five basic ways to use this tag - four of these correspond to
+a ``from_XXX`` attribute on the ``options`` directive and the other is to
+exclusively use ``filter``s to populate options.
 
-* Using a filter.
 * ``from_data_table`` - The options for the select list are dynamically obtained
   from a file specified in the Galaxy configuration file
   ``tool_data_table_conf.xml`` or from a Tool Shed installed data manager.
@@ -1651,13 +1651,84 @@ use filters.
   ``from_data_table``.
 * ``from_parameter`` - The options for the select list are dynamically obtained
   from a parameter.
+* Using ``filter``s - various filters can be used to populate options, see
+  examples in the [``filter``](#tool|inputs|param|options|filter) documentation.
 
 ### ``from_data_table``
 
+See Galaxy's
+[data tables documentation](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
+for information on setting up data tables.
+
+Once a data table has been configured and populated, these can be easily
+leveraged via tools.
+
+This ``conditional`` block in the
+[bowtie2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml)
+wrapper demonstrates using ``from_data_table`` options as an
+alternative to local reference data.
+
+```xml
+<conditional name="reference_genome">
+  <param name="source" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options. See `Indexes` section of help below">
+    <option value="indexed">Use a built-in genome index</option>
+    <option value="history">Use a genome from the history and build index</option>
+  </param>
+  <when value="indexed">
+    <param name="index" type="select" label="Select reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+      <options from_data_table="bowtie2_indexes">
+        <filter type="sort_by" column="2"/>
+        <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+      </options>
+    </param>
+  </when>
+  <when value="history">
+    <param name="own_file" type="data" format="fasta" metadata_name="dbkey" label="Select reference genome" />
+  </when>
+</conditional>
+```
+
+A minimal example wouldn't even need the ``filter`` or ``validator`` above, but
+they are frequently nice features to add to your wrapper and can improve the user
+experience of a tool.
 
 ### ``from_dataset``
 
-https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml
+The following example is taken from the Mothur tool
+[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+and demonstrates generating options from a dataset directly.
+
+```xml
+<param name="taxonomy" type="data" format="mothur.seq.taxonomy" label="taxonomy - Taxonomy" help="please make sure your file has no quotation marks in it"/>
+<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+    <options from_dataset="taxonomy">
+        <column name="name" index="1"/>
+        <column name="value" index="1"/>
+        <filter type="unique_value" name="unique_taxon" column="1"/>
+        <filter type="sort_by" name="sorted_taxon" column="1"/>
+    </options>
+    <sanitizer>
+        <valid initial="default">
+            <add preset="string.printable"/>
+            <add value=";"/>
+            <remove value="&quot;"/>
+            <remove value="&apos;"/>
+        </valid>
+    </sanitizer>
+</param>
+```
+
+Filters can be used to generate options from dataset directly also as the
+example below demonstrates (many more examples are present in the
+[``filter``](#tool|inputs|param|options|filter) documentation).
+
+```xml
+<param name="species1" type="select" label="When Species" multiple="false">
+    <options>
+        <filter type="data_meta" ref="input1" key="species" />
+    </options>
+</param>
+```
 
 ### ``from_file``
 
@@ -1679,6 +1750,17 @@ of the file.
     </options>
 </param>
 ```
+
+In general, ``from_file`` should be considered deprecated and  ``from_data_table``
+should be prefered.
+
+### ``from_parameter``
+
+This variant of the ``options`` directive is discouraged because it exposes
+internal Galaxy structures. See the older
+[bowtie](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie_wrappers/bowtie_wrapper.xml)
+wrappers for an example of these.
+
 ]]>
 </xs:documentation>
     </xs:annotation>
@@ -3018,11 +3100,30 @@ The target value (e.g. for setting data format: the list of supported data forma
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Tools write the bulk of useful data to datasets, but they can also write messages to standard I/O (stdio) channels known as standard output (stdout) and standard error (stderr). Both stdout and stderr are typically written to the executing program's console or terminal. Previous versions of Galaxy checked stderr for execution errors - if any text showed up on stderr, then the tool's execution was marked as failed. However, many tools write messages to stderr that are not errors, and using stderr allows programs to redirect other interesting messages to a separate file. Programs may also exit with codes that indicate success or failure. One convention is for programs to return 0 on success and a non-zero exit code on failure.
 
-Legacy tools (ones with ``profile_version`` unspecified or a ``profile_version`` of less than 16.04) will default to checking stderr for errors as described above. Newer tools will instead treat an exit code other than 0 as an error. The ``detect_error`` on ``command`` can swap between these behaviors but the ``stdio`` directive allows more options in defining error conditions (though these aren't always intuitive).
+Legacy tools (ones with ``profile`` unspecified or a ``profile`` of less than
+16.04) will default to checking stderr for errors as described above. Newer
+tools will instead treat an exit code other than 0 as an error. The
+``detect_error`` on ``command`` can swap between these behaviors but the
+``stdio`` directive allows more options in defining error conditions (though
+these aren't always intuitive).
 
-With ``stdio`` directive, Galaxy can use regular expressions to scan stdout and stderr, and it also allows exit codes to be scanned for ranges. The ``<stdio>`` tag has two subtags, ``<regex>`` and ``<exit_code>``, to define regular expressions and exit code processing, respectively. They are defined below. If a tool does not have any valid ``<regex>`` or ``<exit_code>`` tags, then Galaxy will use the previous technique for finding errors.
+With ``stdio`` directive, Galaxy can use regular expressions to scan stdout and
+stderr, and it also allows exit codes to be scanned for ranges. The ``<stdio>``
+tag has two subtags, ``<regex>`` and ``<exit_code>``, to define regular
+expressions and exit code processing, respectively. They are defined below. If a
+tool does not have any valid ``<regex>`` or ``<exit_code>`` tags, then Galaxy
+will use the previous technique for finding errors.
 
-A note should be made on the order in which exit codes and regular expressions are applied and how the processing stops. Exit code rules are applied before regular expression rules. The rationale is that exit codes are more clearly defined and are easier to check computationally, so they are applied first. Exit code rules are applied in the order in which they appear in the tool's configuration file, and regular expressions are also applied in the order in which they appear in the tool's configuration file. However, once a rule is triggered that causes a fatal error, no further rules are checked.]]></xs:documentation>
+A note should be made on the order in which exit codes and regular expressions
+are applied and how the processing stops. Exit code rules are applied before
+regular expression rules. The rationale is that exit codes are more clearly
+defined and are easier to check computationally, so they are applied first. Exit
+code rules are applied in the order in which they appear in the tool's
+configuration file, and regular expressions are also applied in the order in
+which they appear in the tool's configuration file. However, once a rule is
+triggered that causes a fatal error, no further rules are
+checked.]]></xs:documentation>
+
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="StdioElement" minOccurs="0" maxOccurs="unbounded" />
@@ -3047,15 +3148,16 @@ Note that most Unix and Linux variants only support positive integers 0 to 255 f
 
 The <exit_code> tag's supported attributes are as follows:
 
-* range: This indicates the range of exit codes to check. The range can be one of the following:
-  * n: the exit code will only be compared to n;
-  * [m:n]: the exit code must be greater than or equal to m and less than or equal to n;
-  * [m:]: the exit code must be greater than or equal to m;
-  * [:n]: the exit code must be less than or equal to n.
-* level: This indicates the error level of the exit code. The level can have one of two values:
-  * warning: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A warning-level error will not cause the tool to fail.
-  * fatal: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
-* description: This is an optional description of the error that corresponds to the exit code.
+* ``range``: This indicates the range of exit codes to check. The range can be one of the following:
+  * ``n``: the exit code will only be compared to n;
+  * ``[m:n]``: the exit code must be greater than or equal to m and less than or equal to n;
+  * ``[m:]``: the exit code must be greater than or equal to m;
+  * ``[:n]``: the exit code must be less than or equal to n.
+* ``level``: This indicates the error level of the exit code. The level can have one of two values:
+  * ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A warning-level error will not cause the tool to fail.
+  * ``fatal``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+* ``description``: This is an optional description of the error that corresponds to the exit code.
+
 The following is an example of the <exit_code> tag:
 
 ```xml
@@ -3066,7 +3168,13 @@ The following is an example of the <exit_code> tag:
 </stdio>
 ```
 
-If the tool returns 0 or 1, then the tool will not be marked as having an error. If the exit code is 2, then the tool will fail with the description "Out of Memory" added to stderr. If the tool returns 3, 4, or 5, then the tool will not be marked as having failed, but "Low disk space" will be added to stderr. Finally, if the tool returns any number greater than or equal to 6, then the description "Bad input dataset" will be added to stderr and the tool will be marked as having failed.
+If the tool returns 0 or 1, then the tool will not be marked as having an error.
+If the exit code is 2, then the tool will fail with the description ``Out of
+Memory`` added to stderr. If the tool returns 3, 4, or 5, then the tool will not
+be marked as having failed, but ``Low disk space`` will be added to stderr.
+Finally, if the tool returns any number greater than or equal to 6, then the
+description ``Bad input dataset`` will be added to stderr and the tool will be
+marked as having failed.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -3093,26 +3201,28 @@ If the tool returns 0 or 1, then the tool will not be marked as having an error.
       <xs:documentation xml:lang="en"><![CDATA[
 A regular expression defines a pattern of characters. The patterns include the following:
 
-GCTA, which matches on the fixed string "GCTA";
-* [abcd], which matches on the characters a, b, c, or d;
-* [CG]{12}, which matches on 12 consecutive characters that are C or G;
-* a.*z, which matches on the character "a", followed by 0 or more characters of any type, followed by a "z";
-* ^X, which matches the letter X at the beginning of a string;
-* Y$, which matches the letter Y at the end of a string.
+* ``GCTA``, which matches on the fixed string "GCTA";
+* ``[abcd]``, which matches on the characters a, b, c, or d;
+* ``[CG]{12}``, which matches on 12 consecutive characters that are C or G;
+* ``a.*z``, which matches on the character "a", followed by 0 or more characters of any type, followed by a "z";
+* ``^X``, which matches the letter X at the beginning of a string;
+* ``Y$``, which matches the letter Y at the end of a string.
 
-There are many more possible regular expressions. A reference to all supported regular expressions can be found under Python Regular Expression Syntax.
+There are many more possible regular expressions. A reference to all supported
+regular expressions can be found under
+[Python Regular Expression Syntax](https://docs.python.org/3/library/re.html#regular-expression-syntax).
 
 A regular expression includes the following attributes:
 
-* source: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values:
-  * stdout: the regular expression will be applied to stdout;
-  * stderr: the regular expression will be applied to stderr;
-  * both: the regular expression will be applied to both stderr and stdout (which is the default case).
-* match: This is the regular expression that will be used to match against stdout and/or stderr. If the <regex> tag does not contain the match attribute, then the <regex> tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
-* level: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). The level can be log, warning or fatal as described below.
- * log and warning: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
- * fatal: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
-* description: Just like its <exit_code> counterpart, this is an optional description of the regular expression that has matched.
+* ``source``: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values:
+  * ``stdout``: the regular expression will be applied to stdout;
+  * ``stderr``: the regular expression will be applied to stderr;
+  * ``both``: the regular expression will be applied to both stderr and stdout (which is the default case).
+* ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the <regex> tag does not contain the match attribute, then the <regex> tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
+* ``level``: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). The level can be log, warning or fatal as described below.
+ * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+ * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+* ``description``: Just like its ``exit_code`` counterpart, this is an optional description of the regular expression that has matched.
 
 The following is an example of regular expressions that may be used:
 
@@ -3134,13 +3244,37 @@ The following is an example of regular expressions that may be used:
 </stdio>
 ```
 
-The regular expression matching proceeds as follows. First, if either stdout or stderr match on "low space", then a warning is registered. If stdout contained the string "---LOW SPACE---", then stdout has the string "Warning: Low space on device" added to its beginning. The same goes for if stderr had contained the string "low space". Since only a warning could have occurred, the processing continues.
+The regular expression matching proceeds as follows. First, if either stdout or
+stderr match on ``low space``, then a warning is registered. If stdout contained
+the string ``---LOW SPACE---``, then stdout has the string ``Warning: Low space
+on device`` added to its beginning. The same goes for if stderr had contained the
+string ``low space``. Since only a warning could have occurred, the processing
+continues.
 
-Next, the regular expression "error" is matched only against stdout. If stdout contains the string "error" regardless of its capitalization, then a fatal error has occurred and the processing stops. In that case, stdout would be prepended with the string "Fatal: Unknown error encountered". Note that, if stderr contained "error", "ERROR", or "ErRor" then it would not matter - stderr was not being scanned.
+Next, the regular expression ``error`` is matched only against stdout. If stdout
+contains the string ``error`` regardless of its capitalization, then a fatal
+error has occurred and the processing stops. In that case, stdout would be
+prepended with the string ``Fatal: Unknown error encountered``. Note that, if
+stderr contained ``error``, ``ERROR``, or ``ErRor`` then it would not matter -
+stderr was not being scanned.
 
-If the second regular expression did not match, then the third regular expression is checked. The third regular expression does not contain an error level, so an error level of "fatal" is assumed. The third regular expression also does not contain a source, so both stdout and stderr are checked. The third regular expression looks for 12 consecutive "C"s or "G"s in any order and in uppercase or lowercase. If stdout contained "cgccGGCCcGGcG" or stderr contained "CCCCCCgggGGG", then the regular expression would match, the tool would be marked with a fatal error, and the stream that contained the 12-nucleotide CG island would be prepended with "Fatal: Fatal error - CG island 12 nts long found".
+If the second regular expression did not match, then the third regular
+expression is checked. The third regular expression does not contain an error
+level, so an error level of ``fatal`` is assumed. The third regular expression
+also does not contain a source, so both stdout and stderr are checked. The third
+regular expression looks for 12 consecutive "C"s or "G"s in any order and in
+uppercase or lowercase. If stdout contained ``cgccGGCCcGGcG`` or stderr
+contained ``CCCCCCgggGGG``, then the regular expression would match, the tool
+would be marked with a fatal error, and the stream that contained the
+12-nucleotide CG island would be prepended with ``Fatal: Fatal error - CG island
+12 nts long found``.
 
-Finally, if the tool did not match any of the fatal errors, then the fourth regular expression is checked. Since no source is specified, both stdout and stderr are checked. If "Branch A" is at the beginning of stdout or stderr, then a warning will be registered and the source that contained "Branch A" will be prepended with the warning "Warning: Branch A was taken in execution".
+Finally, if the tool did not match any of the fatal errors, then the fourth
+regular expression is checked. Since no source is specified, both stdout and
+stderr are checked. If ``Branch A`` is at the beginning of stdout or stderr, then
+a warning will be registered and the source that contained ``Branch A`` will be
+prepended with the warning ``Warning: Branch A was taken in execution``.
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="source" type="SourceType">
@@ -3223,8 +3357,49 @@ Then whenever the user selects the "interval"" option from the select list, the 
 
   <xs:complexType name="Citations">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Tool files may declare one citations element. Each citations element can contain one or more citation tag elements - each of which specifies tool citation information using either a DOI or a BibTeX entry.
-</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Tool files may declare one
+citations element. Each citations element can contain one or more citation tag
+elements - each of which specifies tool citation information using either a DOI
+or a BibTeX entry.
+
+These citations will appear at the bottom of the tool form in a formatted way
+but the user will have to option to select RAW BibTeX for copying and pasting as
+well. Likewise, the history menu includes an option allowing users to aggregate
+all such citations across an analysis in a list of citations.
+
+BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
+http://dx.doi.org/ and cached.
+
+```xml
+<citations>
+   <!-- Example of annotating a citation using a DOI. -->
+   <citation type="doi">10.1093/bioinformatics/btq281</citation>
+
+   <!-- Example of annotating a citation using a BibTex entry. -->
+   <citation type="bibtex">@ARTICLE{Kim07aninterior-point,
+   author = {Seung-jean Kim and Kwangmoo Koh and Michael Lustig and Stephen Boyd and Dimitry Gorinevsky},
+   title = {An interior-point method for large-scale l1-regularized logistic regression},
+   journal = {Journal of Machine Learning Research},
+   year = {2007},
+   volume = {8},
+   pages = {1519-1555}
+   }</citation>
+ </citations>
+```
+
+For more implementation information see the
+[pull request](https://bitbucket.org/galaxy/galaxy-central/pull-requests/440/initial-bibtex-doi-citation-support-in/diff)
+adding this feature. For more examples of how to add this to tools checkout the
+following commits adding this to the
+[NCBI BLAST+ suite](https://github.com/peterjc/galaxy_blast/commit/9d2e3906915895765ecc3f48421b91fabf2ccd8b),
+[phenotype association tools](https://bitbucket.org/galaxy/galaxy-central/commits/39c983151fe328ff5d415f6da81ce5b21a7e18a4),
+[MAF suite](https://bitbucket.org/galaxy/galaxy-central/commits/60f63d6d4cb7b73286f3c747e8acaa475e4b6fa8),
+and [MACS2 suite](https://github.com/jmchilton/galaxytools/commit/184971dea73e236f11e82b77adb5cab615b8391b).
+
+This feature was added to the August 2014 release of Galaxy, tools annotated
+with citations will work in older releases of Galaxy but no citation information
+will be available to the end user.
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="citation" type="Citation" minOccurs="0" maxOccurs="unbounded"/>
@@ -3233,13 +3408,16 @@ Then whenever the user selects the "interval"" option from the select list, the 
 
   <xs:complexType name="Citation">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Each citations element can contain one or more citation tag elements - each of which specifies tool citation information using either a DOI or a BibTeX entry.</xs:documentation>
+      <xs:documentation xml:lang="en">Each citations element can contain one or
+more ``citation`` tag elements - each of which specifies tool citation
+information using either a DOI or a BibTeX entry.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="CitationType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">type of citation</xs:documentation>
+            <xs:documentation xml:lang="en">Type of citation - currently ``doi``
+and ``bibtex`` are the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
