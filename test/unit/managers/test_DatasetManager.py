@@ -162,6 +162,11 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.log( "a private dataset shouldn't be accessible to just anyone" )
         self.assertFalse( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
 
+        self.log( "a private dataset shouldn be manageable by an admin" )
+        self.assertFalse( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
+        self.log( "a private dataset shouldn be accessible by an admin" )
+        self.assertFalse( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
+
 
 # =============================================================================
 class DatasetRBACPermissionsTestCase( BaseTestCase ):
@@ -248,7 +253,6 @@ class DatasetSerializerTestCase( BaseTestCase ):
         role_id = self.app.security.decode_id( role_id )
         role = self.role_manager.get( self.trans, role_id )
         self.assertTrue( who_manages in [ user_role.user for user_role in role.users ])
-        # wat
 
         self.log( 'permissions should be not returned for non-managing users' )
         not_my_supervisor = self.user_manager.create( **user3_data )
@@ -258,6 +262,11 @@ class DatasetSerializerTestCase( BaseTestCase ):
         self.log( 'permissions should not be returned for anon users' )
         self.assertRaises( SkipAttribute, self.dataset_serializer.serialize_permissions,
             dataset, 'perms', user=None )
+
+        self.log( 'permissions should be returned for admin users' )
+        permissions = self.dataset_serializer.serialize_permissions( dataset, 'perms', user=self.admin_user )
+        self.assertIsInstance( permissions, dict )
+        self.assertKeys( permissions, [ 'manage', 'access' ] )
 
     def test_serializers( self ):
         # self.user_manager.create( **user2_data )

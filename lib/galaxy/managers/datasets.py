@@ -199,7 +199,8 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
     def serialize_permissions( self, dataset, key, user=None, **context ):
         """
         """
-        if not self.dataset_manager.permissions.manage.is_permitted( dataset, user ):
+        is_admin = self.user_manager.is_admin( user )
+        if not is_admin and not self.dataset_manager.permissions.manage.is_permitted( dataset, user ):
             self.skip()
 
         management_permissions = self.dataset_manager.permissions.manage.by_dataset( dataset )
