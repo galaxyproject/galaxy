@@ -383,6 +383,28 @@ class DatasetDeserializerTestCase( BaseTestCase ):
         permissions = self.dataset_serializer.serialize_permissions( dataset, 'perms', user=who_manages )
         self.assertEqual( new_manage_permissions, permissions[ 'manage' ] )
 
+    def test_deserialize_permissions_with_admin( self ):
+        dataset = self.dataset_manager.create()
+        who_manages = self.user_manager.create( **user2_data )
+        self.dataset_manager.permissions.manage.grant( dataset, who_manages )
+        existing_permissions = self.dataset_serializer.serialize_permissions( dataset, 'permissions', user=who_manages )
+        existing_manage_permissions = existing_permissions[ 'manage' ]
+
+        user3 = self.user_manager.create( **user3_data )
+        self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
+            dataset, user=user3, data={ 'permissions': existing_permissions })
+
+        self.log( 'deserializing permissions using an admin user should not error' )
+        private_role = self.user_manager.private_role( who_manages )
+        private_role = private_role.to_dict( value_mapper={ 'id' : self.app.security.encode_id } )
+        permissions = dict( manage=existing_manage_permissions, access=[ private_role[ 'id' ] ] )
+        self.dataset_deserializer.deserialize( dataset, user=who_manages, data={
+            'permissions': permissions
+        })
+
+        self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
+            dataset, user=user3, data={ 'permissions': existing_permissions })
+
 
 # =============================================================================
 # NOTE: that we test the DatasetAssociation* classes in either test_HDAManager or test_LDAManager
