@@ -1636,19 +1636,21 @@ dynamically creates a list of options whose values can be
 obtained from a predefined file stored locally or a dataset selected from the
 current history.
 
-There are four basic ways to use this tag - each corresponding to an attribute
-on the ``options`` directive. These are:
+There are at least five basic ways to use this tag - for of these correspond to
+a ``from_XXX`` attribute on the ``options`` directive and the other is to just
+use filters.
 
+* Using a filter.
 * ``from_data_table`` - The options for the select list are dynamically obtained
-    from a file specified in the Galaxy configuration file
-   ``tool_data_table_conf.xml`` or from a Tool Shed installed data manager.
+  from a file specified in the Galaxy configuration file
+  ``tool_data_table_conf.xml`` or from a Tool Shed installed data manager.
 * ``from_dataset`` - The options for the select list are dynamically obtained
-    from input dataset selected for the tool from the current history.
+  from input dataset selected for the tool from the current history.
 * ``from_file`` - The options for the select list are dynamically obtained from
-    a file. This mechanis is discourage in favor of the more generic
-    ``from_data_table``.
+  a file. This mechanis is discourage in favor of the more generic
+  ``from_data_table``.
 * ``from_parameter`` - The options for the select list are dynamically obtained
-    from a parameter.
+  from a parameter.
 
 ### ``from_data_table``
 
@@ -1733,16 +1735,48 @@ of the file.
   </xs:group>
   <xs:complexType name="Column">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Column</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within an
+``<options>`` tag set - specifies columns used in building select options from a
+file stored locally (i.e. index or tool data) or a dataset in the
+current history.
+
+Any number of columns may be described, but at least one must be given the name
+``value`` and it will serve as the value of this parameter in the Cheetah
+template and elsewhwere (e.g. in API for instance).
+
+If a column named ``name`` is defined, this too has special meaning and it will
+be the value the tool form user sees for each option. If no ``name`` column
+appears, ``value`` will serve as the name.
+
+### Examples
+
+The following fragment shows options from the dataset in the current history
+that has been selected as the value of the parameter named ``input1``.
+
+```xml
+<options from_dataset="input1">
+    <column name="name" index="0"/>
+    <column name="value" index="0"/>
+</options>
+```
+
+The [interval2maf](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
+tool makes use of this tag with files from a history, and the
+[star_fusion](https://github.com/galaxyproject/tools-iuc/blob/master/tools/star_fusion/star_fusion.xml)
+tool makes use of this to reference a data table.
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en">Name given to the column with index
+``index``, the names ``name`` and ``value`` have special meaning as described
+above.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="index" type="xs:decimal" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for index</xs:documentation>
+        <xs:documentation xml:lang="en">0-based index of the column in the
+target file.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1834,6 +1868,15 @@ metadata fields will be checked unless they appear in the list of fields
 specified by the ``skip`` attribute.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="table_name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Tool data table name to check against
+if ``type`` is ``dataset_metadata_in_tool_data``. See the documentation for
+[tool data tables](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
+and [data managers](https://wiki.galaxyproject.org/Admin/Tools/DataManagers) for
+more information.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Tool data filename to check against
@@ -1872,22 +1915,33 @@ being used for validation start with a this attribute value.</xs:documentation>
 ``in_range`` - this is the maximum number allowed.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="exclude_min" type="xs:decimal">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">When the ``type`` attribute value is
+``in_range`` - this boolean indicates if the ``min`` value is allowed.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="exclude_max" type="xs:decimal">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">When the ``type`` attribute value is
+``in_range`` - this boolean indicates if the ``max`` value is allowed.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="split" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en"></xs:documentation>
+            <xs:documentation xml:lang="en">If ``type`` is `dataset_metadata_in_file``,
+this attribute is the column separator to use for values in the specified file.
+This default is ``\t`` and due to a bug in older versions of Galaxy, should
+not be modified.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="skip" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en"></xs:documentation>
+            <xs:documentation xml:lang="en">Comma-seperated list of metadata
+fields to skip if type is ``metadata``. If not specified, all non-optional
+metadata fields will be checked unless ``check`` attribute is specified.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="table_name" type="xs:string">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"></xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
@@ -2034,61 +2088,187 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
   </xs:group>
   <xs:complexType name="Filter">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Filter</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within an
+``<options>`` tag set - filter out values obtained from a locally stored file (e.g.
+a tool data table) or a dataset in the current history.
+
+### Examples
+
+The following example from Mothur's
+[remove.groups.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.groups.xml)
+tool demonstrates filtering a select list based on the metadata of an input to
+to the tool.
+
+```xml
+<param name="group_in" type="data" format="mothur.groups,mothur.count_table" label="group or count table - Groups"/>
+<param name="groups" type="select" label="groups - Pick groups to remove" multiple="true" optional="false">
+    <options>
+        <filter type="data_meta" ref="group_in" key="groups"/>
+    </options>
+</param>
+```
+
+This more advanced example, taken from Mothur's
+[remove.linage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+tool demonstrates using filters to sort a list and remove duplicate entries.
+
+```xml
+<param name="taxonomy" type="data" format="mothur.cons.taxonomy" label="constaxonomy - Constaxonomy file. Provide either a constaxonomy file or a taxonomy file" help="please make sure your file has no quotation marks in it"/>
+<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+    <options from_dataset="taxonomy">
+        <column name="name" index="2"/>
+        <column name="value" index="2"/>
+        <filter type="unique_value" name="unique_taxon" column="2"/>
+        <filter type="sort_by" name="sorted_taxon" column="2"/>
+    </options>
+    <sanitizer>
+        <valid initial="default">
+            <add preset="string.printable"/>
+            <add value=";"/>
+            <remove value="&quot;"/>
+            <remove value="&apos;"/>
+        </valid>
+    </sanitizer>
+</param>
+```
+
+This example taken from the
+[hisat2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/hisat2/hisat2.xml)
+tool demonstrates filtering values from a tool data table.
+
+```xml
+<param help="If your genome of interest is not listed, contact the Galaxy team" label="Select a reference genome" name="index" type="select">
+    <options from_data_table="hisat2_indexes">
+        <filter column="2" type="sort_by" />
+        <validator message="No genomes are available for the selected input dataset" type="no_options" />
+    </options>
+</param>
+```
+
+The
+[gemini_load.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/gemini/gemini_load.xml)
+tool demonstrates adding values to an option list using ``filter``s.
+
+```xml
+<param name="infile" type="data" format="vcf" label="VCF file to be loaded in the GEMINI database" help="Only build 37 (aka hg19) of the human genome is supported.">
+    <options>
+        <filter type="add_value" value="hg19" />
+        <filter type="add_value" value="Homo_sapiens_nuHg19_mtrCRS" />
+        <filter type="add_value" value="hg_g1k_v37" />
+    </options>
+</param>
+```
+
+While this fragment from maf_to_interval.xml demonstrates removing items.
+
+```xml
+<param name="species" type="select" label="Select additional species"
+       display="checkboxes" multiple="true"
+       help="The species matching the dbkey of the alignment is always included.
+       A separate history item will be created for each species.">
+  <options>
+    <filter type="data_meta" ref="input1" key="species" />
+    <filter type="remove_value" meta_ref="input1" key="dbkey" />
+  </options>
+</param>
+```
+
+This example taken from
+[snpSift_dbnsfp.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tool_collections/snpsift/snpsift_dbnsfp/snpSift_dbnsfp.xml)
+demonstrates splitting up strings into multiple values.
+
+```xml
+<param name="annotations" type="select" multiple="true" display="checkboxes" label="Annotate with">
+    <options from_data_table="snpsift_dbnsfps">
+        <column name="name" index="4"/>
+        <column name="value" index="4"/>
+        <filter type="param_value" ref="dbnsfp" column="3" />
+        <filter type="multiple_splitter" column="4" separator=","/>
+    </options>
+</param>
+```
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="type" type="FilterType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+These values are defined in the module
+[/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
+in the ``filter_types`` dictionary. Currently defined values are: ``data_meta``,
+``param_value``, ``static_value``, ``unique_value``, ``multiple_splitter``,
+``attribute_value_splitter``, ``add_value``, ``remove_value``, and
+``sort_by``]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This can be a column index or a column name.</xs:documentation>
+        <xs:documentation xml:lang="en">Column targeted by this filter - this
+attribute is unused and invalid if ``type`` is ``add_value`` or ``remove_value``.
+This can be a column index or a column name.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name displayed for value to add (only
+used with ``type`` of ``add_value``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ref" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for ref</xs:documentation>
+        <xs:documentation xml:lang="en">The attribute name of the reference file
+(tool data) or input dataset. Only used when ``type`` is
+``data_meta`` (required), ``param_value`` (required), or ``remove_value``
+(optional).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for key</xs:documentation>
+        <xs:documentation xml:lang="en">When ``type`` is ``data_meta``, ``param_value``,
+or ``remove_value`` - this is the name of the metadata key of ref to filter by.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="multiple" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[For types ``data_meta`` and
+``remove_value``, whether option values are multiple. Columns will be split by
+separator. Defaults to ``false``.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="separator" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for separator</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[When ``type`` is ``data_meta``,
+``multiple_splitter``, or ``remove_value`` - this is used to split one value
+into multiple parts. When ``type`` is ``data_meta`` or ``remove_value`` this is
+only used if ``multiple`` is set to ``true``.]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="compare" type="CompareType">
+    <xs:attribute name="keep" type="PermissiveBoolean" default="true">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for compare</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="keep" type="PermissiveBoolean">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for keep</xs:documentation>
+        <xs:documentation xml:lang="en">If ``true``, keep columns matching the
+value, if ``false`` discard columns matching the value. Used when ``type`` is
+either ``static_value`` or ``param_value``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">Target value of the operations - has
+slightly different meanings depending on ``type``. For instance when ``type`` is
+``add_value`` it is the value to add to the list and when ``type`` is
+``static_value`` it is the value compared against.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ref_attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for ref_attribute</xs:documentation>
+        <xs:documentation xml:lang="en">Only used when ``type`` is
+``param_value``. Period (``.``) separated attribute chain of input (``ref``)
+attributes to use as value for filter.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="index" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for index</xs:documentation>
+        <xs:documentation xml:lang="en">Used when ``type`` is ``add_value``, it
+is the index into the list to add the option to. If not set, the option will be
+added to the end of the list.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2451,7 +2631,86 @@ Example:
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-
+  <xs:complexType name="ActionsConditionalFilter">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="ActionsConditionalFilterType" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="compare" type="CompareType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ref" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="column" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="keep" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="keep" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="cast" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="param_attribute" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="strip" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="old_column" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="old_value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="new_column" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="new_value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="EnvironmentVariables">
     <xs:annotation>
       <xs:documentation xml:lang="en">
@@ -3091,7 +3350,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
   </xs:simpleType>
   <xs:simpleType name="FilterType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for FilterType</xs:documentation>
+      <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_meta"/>
@@ -3101,6 +3360,21 @@ Then whenever the user selects the "interval"" option from the select list, the 
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
       <xs:enumeration value="sort_by"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ActionsConditionalFilterType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="param_value"/>
+      <xs:enumeration value="insert_column"/>
+      <xs:enumeration value="column_strip"/>
+      <xs:enumeration value="multiple_splitter"/>
+      <xs:enumeration value="column_replace"/>
+      <xs:enumeration value="metadata_value"/>
+      <xs:enumeration value="boolean"/>
+      <xs:enumeration value="string_function"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ActionType">
@@ -3128,6 +3402,7 @@ Then whenever the user selects the "interval"" option from the select list, the 
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="startswith"/>
+      <xs:enumeration value="re_search"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="LevelType">
