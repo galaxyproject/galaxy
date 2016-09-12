@@ -4,7 +4,6 @@ API operations for Workflows
 
 from __future__ import absolute_import
 
-import json
 import logging
 import urllib
 from sqlalchemy import desc, false, or_, true

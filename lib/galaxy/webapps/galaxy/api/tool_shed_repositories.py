@@ -226,8 +226,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         category_id = kwd.get( 'category_id', '' )
+        params = dict( installable=True )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] )
+        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories', category_id, 'repositories' ], params=params )
         category = json.loads( util.url_get( url ) )
         return category
 
@@ -251,8 +252,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tool_dependencies = dict()
         tools = dict()
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        tsr_id = kwd.get( 'tsr_id', '' )
-        tool_ids = util.listify( kwd.get( 'tool_ids', None ) )
+        tsr_id = kwd.get( 'tsr_id', None )
+        tool_ids = kwd.get( 'tool_ids', None )
+        if tool_ids is not None:
+            tool_ids = util.listify( tool_ids )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
                                     'id': tool_panel_section_select_field.field_id,
@@ -307,6 +310,27 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     tool_dependencies[ changeset ] = self.__get_tool_dependencies( repository_dependency, tool_dependencies[ changeset ] )
         repository_data[ 'tool_dependencies' ] = tool_dependencies
         return repository_data
+
+    @expose_api
+    @web.require_admin
+    def shed_search( self, trans, **kwd ):
+        """
+        GET /api/tool_shed_repositories/shed_search
+
+        Search for a specific repository in the toolshed.
+
+        :param q:          the query string to search for
+        :param q:          str
+
+        :param tool_shed_url:   the URL of the toolshed to search
+        :param tool_shed_url:   str
+        """
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
+        q = kwd.get( 'term', None )
+        if None in [ q, tool_shed_url ]:
+            return {}
+        response = json.loads( util.url_get( tool_shed_url, params=dict( q=q ), pathspec=[ 'api', 'repositories' ] ) )
+        return response
 
     @expose_api
     def import_workflow( self, trans, payload, **kwd ):

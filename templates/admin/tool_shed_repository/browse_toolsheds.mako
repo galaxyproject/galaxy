@@ -38,6 +38,7 @@ ul.workflow_tools, ul.workflow_names {
 <%def name="javascripts()">
     ${parent.javascripts()}
 </%def>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.12.0/themes/base/jquery-ui.css">
 <script type="text/javascript">
 <%
 import json
@@ -56,87 +57,41 @@ var valid_tool_dependencies = Array();
 var valid_tools = Array();
 var repository_data = Object();
 var tool_sheds = ${tool_sheds};
-workflows_missing_tools = _.template([
-    '<table id="workflows_missing_tools" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
-        '<thead id="grid-table-header">',
-            '<tr>',
-                '<th class="datasetRow">Workflows</th>',
-                '<th class="datasetRow">Tool IDs</th>',
-                '<th class="datasetRow">Shed</th>',
-                '<th class="datasetRow">Name</th>',
-                '<th class="datasetRow">Owner</th>',
-                '<th class="datasetRow">Actions</th>',
-            '</tr>',
-        '</thead>',
-        '<tbody>',
-            '<\% _.each(Object.keys(workflows), function(workflow_key) { \%>',
-                '<\% var workflow_details = workflow_key.split("/"); \%>',
-                '<\% var workflow = workflows[workflow_key]; \%>',
-                '<tr>',
-                    '<td class="datasetRow">',
-                        '<ul class="workflow_names">',
-                            '<\% _.each(workflow.workflows.sort(), function(wf) { \%>',
-                                '<li class="workflow_names"><\%= wf \%></li>',
-                            '<\% }); \%>',
-                        '</ul>',
-                    '</td>',
-                    '<td class="datasetRow">',
-                        '<ul class="workflow_tools">',
-                            '<\% _.each(workflow.tools.sort(), function(tool) { \%>',
-                                '<li class="workflow_tools"><\%= tool \%></li>',
-                            '<\% }); \%>',
-                        '</ul>',
-                    '</td>',
-                    '<td class="datasetRow"><\%= workflow_details[0] \%></td>',
-                    '<td class="datasetRow"><\%= workflow_details[2] \%></td>',
-                    '<td class="datasetRow"><\%= workflow_details[1] \%></td>',
-                    '<td class="datasetRow">',
-                        '<ul class="workflow_tools">',
-                            '<li class="workflow_tools"><input type="button" class="show_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-toolids="<\%= workflow.tools.join(",") \%>" value="Preview" /></li>',
-                            '<li><input type="button" class="queue_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-toolids="<\%= workflow.tools.join(",") \%>" value="Add to queue" /></li>',
-                        '</ul>',
-                    '</td>',
-                '</tr>',
-            '<\% }); \%>',
-        '</ul>',
-    '</div>',
-].join(''));
-repository_queue_tab = _.template([
-    '<li class="nav-tab" role="presentation" id="repository_installation_queue">',
-        '<a href="#repository_queue" data-toggle="tab">Repository Installation Queue</a>',
-    '</li>',
-].join(''))
-repository_queue_template = _.template([
-    '<div class="tab-pane" id="repository_queue">',
-        '<table id="queued_repositories" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
-            '<thead id="grid-table-header">',
-                '<tr>',
-                    '<th class="datasetRow"><input class="btn btn-primary" type="submit" id="install_all" name="install_all" value="Install all" /></th>',
-                    '<th class="datasetRow"><input class="btn btn-primary" type="submit" id="clear_queue" name="clear_queue" value="Clear queue" /></th>',
-                    '<th class="datasetRow">ToolShed</th>',
-                    '<th class="datasetRow">Name</th>',
-                    '<th class="datasetRow">Owner</th>',
-                    '<th class="datasetRow">Revision</th>',
-                '</tr>',
-            '</thead>',
-            '<tbody>',
-                '<\% _.each(repositories, function(repository) { \%>',
-                    '<tr id="queued_repository_<\%= repository.id \%>">',
-                        '<td class="datasetRow">',
-                            '<input class="btn btn-primary install_one" data-repokey="<\%= repository.queue_key \%>" type="submit" id="install_repository_<\%= repository.id \%>" name="install_repository" value="Install now" />',
+categories_in_shed = _.template([
+    '<div class="tab-pane" id="list_categories">',
+        '<div id="standard-search" style="height: 2em; margin: 1em;">',
+            '<span class="ui-widget" >',
+                '<input class="search-box-input" id="repository_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />',
+            '</span>',
+        '</div>',
+        '<div style="clear: both; margin-top: 1em;">',
+            '<h2>Repositories by Category</h2>',
+            '<table class="grid">',
+                '<thead id="grid-table-header">',
+                    '<tr>',
+                        '<th>Name</th>',
+                        '<th>Description</th>',
+                        '<th>Repositories</th>',
+                    '</tr>',
+                '</thead>',
+                '<\% _.each(categories, function(category) { \%>',
+                    '<tr>',
+                        '<td>',
+                            '<button class="category-selector" data-categoryid="<\%= category.id \%>"><\%= category.name \%></button>',
                         '</td>',
-                        '<td class="datasetRow">',
-                            '<input class="btn btn-primary remove_one" data-repokey="<\%= repository.queue_key \%>" type="submit" id="unqueue_repository_<\%= repository.id \%>" name="unqueue_repository" value="Remove from queue" />',
-                        '</td>',
-                        '<td class="datasetRow"><\%= repository.tool_shed_url \%></td>',
-                        '<td class="datasetRow"><\%= repository.name \%></td>',
-                        '<td class="datasetRow"><\%= repository.owner \%></td>',
-                        '<td class="datasetRow"><\%= repository.changeset \%></td>',
+                        '<td><\%= category.description \%></td>',
+                        '<td><\%= category.repositories \%></td>',
                     '</tr>',
                 '<\% }); \%>',
-            '</tbody>',
-        '</table>',
-        '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',
+            '</table>',
+        '</div>',
+    '</div>',
+].join(''));
+create_tps_template = _.template([
+    '<div id="new_tps_<\%= tool.clean \%>" class="form-row">',
+        '<input data-toolguid="<\%= tool.guid \%>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<\%= tool.clean \%>" type="text">',
+        '<input id="per_tool_select_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Select existing" id="select_existing_<\%= tool.clean \%>" type="button">',
+        '<input id="cancel_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Cancel" type="button">',
     '</div>',
 ].join(''));
 repository_details_template = _.template([
@@ -158,13 +113,9 @@ repository_details_template = _.template([
                     '<input class="btn btn-primary preview-button" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
                     '<div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>',
                 '</div>',
-                '<div class="toolParamHelp" style="clear: both;">',
-                'Please select a revision and review the settings below before installing.',
-                '</div>',
             '</div>',
             '<\%= shed_tool_conf \%>',
-            '<\%= tool_panel_section \%>',
-            '<div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"><\%= current_changeset \%></strong></div>',
+            '<div class="toolFormTitle">Dependencies of this repository at revision <strong id="current_changeset"><\%= current_changeset \%></strong></div>',
             '<div class="toolFormBody">',
                 '<\% if (current_metadata.has_repository_dependencies) { \%>',
                     '<p id="install_repository_dependencies_checkbox">',
@@ -230,8 +181,7 @@ repository_details_template = _.template([
                                     '<th style="padding-left: 40px;">Name</th>',
                                     '<th>Description</th>',
                                     '<th>Version</th>',
-                                    '<th>Tool Panel Section</th>',
-                                '</tr>',
+                                    '<th><\%= tps_selection_template({tps: panel_section_dict}) \%></tr>',
                             '</thead>',
                             '<tbody id="tools_in_repo">',
                                     '<\% _.each(tools[current_changeset], function(tool) { \%>',
@@ -244,11 +194,7 @@ repository_details_template = _.template([
                                             '<td><\%= tool.description \%></td>',
                                             '<td style="width: 15%"><\%= tool.version \%></td>',
                                             '<td style="width: 35%">',
-                                                '<div class="tool_tps_switcher tps_switcher_<\%= tool.clean \%>" id="per_tool_tps_container_<\%= tool.clean \%>">',
-                                                    '<span id="tps_button_<\%= tool.clean \%>" >',
-                                                        '<input class="btn btn-primary show_tool_tps_selector" id="select_tps_button_<\%= tool.clean \%>" data-toolguid="<\%= tool.guid \%>" data-toolname="<\%= tool.clean \%>" type="button" value="Specify panel section" />',
-                                                    '</span>',
-                                                '</div>',
+                                                '<\%= select_tps_template({tool: tool, tps: panel_section_dict}) \%>',
                                             '</td>',
                                         '</tr>',
                                     '<\% }); \%>',
@@ -260,79 +206,49 @@ repository_details_template = _.template([
         '</form>',
     '</div>',
 ].join(''));
-shed_tool_conf = _.template([
-    '<div class="toolFormTitle">Shed tool configuration file:</div>',
-    '<div class="toolFormBody">',
-    '<div class="form-row">',
-        '<\%= stc_html \%>',
-        '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
-    '</div>',
-].join(''));
-var tool_dependency_template = _.template([
-    '<\% if (has_repository_dependencies) { \%>',
-        '<\% _.each(repository_dependencies, function(dependency) { \%>',
-            '<\% if (dependency.includes_tool_dependencies) { \%>',
-                '<\% dependency.tool_dependency_template = tool_dependency_template \%>',
-                '<\%= tool_dependency_template(dependency) \%>',
-            '<\% } \%>',
-        '<\% }); \%>',
-    '<\% } \%>',
-].join(''));
-repository_dependencies_template = _.template([
-    '<div class="tables container-table" id="repository_dependencies_table">',
-        '<span class="repository_dependency_row"><p>Repository installation requires the following:</p></span>',
-        '<ul id="repository_deps">',
-            '<\% if (has_repository_dependencies) { \%>',
-                '<\% _.each(repository_dependencies, function(dependency) { \%>',
-                    '<\% dependency.repository_dependency_template = repository_dependency_template; \%>',
-                    '<\%= repository_dependency_template(dependency) \%>',
-                '<\% }); \%>',
-            '<\% } \%>',
-        '</ul>',
-    '</div>'].join(''));
-repository_dependency_template = _.template([
-    '<li id="metadata_<\%= id \%>" class="datasetRow repository_dependency_row" style="display: table-row;">',
-        'Repository <b><\%= repository.name \%></b> revision <b><\%= changeset_revision \%></b> owned by <b><\%= repository.owner \%></b>',
+repository_queue_tab = _.template([
+    '<li class="nav-tab" role="presentation" id="repository_installation_queue">',
+        '<a href="#repository_queue" data-toggle="tab">Repository Installation Queue</a>',
     '</li>',
-    '<\% if (has_repository_dependencies) { \%>',
-        '<\% _.each(repository_dependencies, function(dependency) { \%>',
-            '<\% dependency.repository_dependency_template = repository_dependency_template; \%>',
-            '<li id="repository_<\%= id \%>_deps">',
-                '<\%= repository_dependency_template(dependency) \%>',
-            '</li>',
-        '<\% }); \%>',
-    '<\% } \%>'
-].join(''));
-categories_in_shed = _.template([
-    '<div class="tab-pane" id="list_categories">',
-        '<div style="clear: both; margin-top: 1em;">',
-            '<h2>Repositories by Category</h2>',
-            '<table class="grid">',
-                '<thead id="grid-table-header">',
-                    '<tr>',
-                        '<th>Name</th>',
-                        '<th>Description</th>',
-                        '<th>Repositories</th>',
-                    '</tr>',
-                '</thead>',
-                '<\% _.each(categories, function(category) { \%>',
-                    '<tr>',
-                        '<td>',
-                            '<button class="category-selector" data-categoryid="<\%= category.id \%>"><\%= category.name \%></button>',
+].join(''))
+repository_queue_template = _.template([
+    '<div class="tab-pane" id="repository_queue">',
+        '<table id="queued_repositories" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
+            '<thead id="grid-table-header">',
+                '<tr>',
+                    '<th class="datasetRow"><input class="btn btn-primary" type="submit" id="install_all" name="install_all" value="Install all" /></th>',
+                    '<th class="datasetRow"><input class="btn btn-primary" type="submit" id="clear_queue" name="clear_queue" value="Clear queue" /></th>',
+                    '<th class="datasetRow">ToolShed</th>',
+                    '<th class="datasetRow">Name</th>',
+                    '<th class="datasetRow">Owner</th>',
+                    '<th class="datasetRow">Revision</th>',
+                '</tr>',
+            '</thead>',
+            '<tbody>',
+                '<\% _.each(repositories, function(repository) { \%>',
+                    '<tr id="queued_repository_<\%= repository.id \%>">',
+                        '<td class="datasetRow">',
+                            '<input class="btn btn-primary install_one" data-repokey="<\%= repository.queue_key \%>" type="submit" id="install_repository_<\%= repository.id \%>" name="install_repository" value="Install now" />',
                         '</td>',
-                        '<td><\%= category.description \%></td>',
-                        '<td><\%= category.repositories \%></td>',
+                        '<td class="datasetRow">',
+                            '<input class="btn btn-primary remove_one" data-repokey="<\%= repository.queue_key \%>" type="submit" id="unqueue_repository_<\%= repository.id \%>" name="unqueue_repository" value="Remove from queue" />',
+                        '</td>',
+                        '<td class="datasetRow"><\%= repository.tool_shed_url \%></td>',
+                        '<td class="datasetRow"><\%= repository.name \%></td>',
+                        '<td class="datasetRow"><\%= repository.owner \%></td>',
+                        '<td class="datasetRow"><\%= repository.changeset \%></td>',
                     '</tr>',
                 '<\% }); \%>',
-            '</table>',
-        '</div>',
+            '</tbody>',
+        '</table>',
+        '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',
     '</div>',
 ].join(''));
 repositories_in_category = _.template([
     '<div class="tab-pane" id="list_repositories">',
         '<div id="standard-search" style="height: 2em; margin: 1em;">',
             '<span class="ui-widget" >',
-                '<input class="search-box-input" id="repository_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />',
+                '<input class="search-box-input" id="category_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />',
             '</span>',
         '</div>',
         '<div style="clear: both; margin-top: 1em;">',
@@ -362,6 +278,59 @@ repositories_in_category = _.template([
         '</div>',
     '</div>',
 ].join(''));
+repository_dependencies_template = _.template([
+    '<div class="tables container-table" id="repository_dependencies_table">',
+        '<span class="repository_dependency_row"><p>Repository installation requires the following:</p></span>',
+        '<ul id="repository_deps">',
+            '<\% if (has_repository_dependencies) { \%>',
+                '<\% _.each(repository_dependencies, function(dependency) { \%>',
+                    '<\% dependency.repository_dependency_template = repository_dependency_template; \%>',
+                    '<\%= repository_dependency_template(dependency) \%>',
+                '<\% }); \%>',
+            '<\% } \%>',
+        '</ul>',
+    '</div>'].join(''));
+repository_dependency_template = _.template([
+    '<li id="metadata_<\%= id \%>" class="datasetRow repository_dependency_row" style="display: table-row;">',
+        'Repository <b><\%= repository.name \%></b> revision <b><\%= changeset_revision \%></b> owned by <b><\%= repository.owner \%></b>',
+    '</li>',
+    '<\% if (has_repository_dependencies) { \%>',
+        '<\% _.each(repository_dependencies, function(dependency) { \%>',
+            '<\% dependency.repository_dependency_template = repository_dependency_template; \%>',
+            '<li id="repository_<\%= id \%>_deps">',
+                '<\%= repository_dependency_template(dependency) \%>',
+            '</li>',
+        '<\% }); \%>',
+    '<\% } \%>'
+].join(''));
+select_tps_template = _.template([
+    '<div id="select_tps_<\%= tool.clean \%>" class="tps_creator">',
+        '<select style="width: 30em;" data-toolguid="<\%= tool.guid \%>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%= tool.clean \%>">',
+            '<\%= tps_select_options({sections: tps.sections}) \%>',
+        '</select>',
+        '<input id="per_tool_create_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Create new" id="create_new_<\%= tool.clean \%>" type="button">',
+        '<input id="cancel_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Cancel" type="button">',
+        '<div style="clear: both;" class="toolParamHelp"></div>',
+    '</div>',
+].join(''));
+shed_tool_conf = _.template([
+    '<div class="toolFormTitle">Shed tool configuration file:</div>',
+    '<div class="toolFormBody">',
+    '<div class="form-row">',
+        '<\%= stc_html \%>',
+        '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
+    '</div>',
+].join(''));
+tool_dependency_template = _.template([
+    '<\% if (has_repository_dependencies) { \%>',
+        '<\% _.each(repository_dependencies, function(dependency) { \%>',
+            '<\% if (dependency.includes_tool_dependencies) { \%>',
+                '<\% dependency.tool_dependency_template = tool_dependency_template \%>',
+                '<\%= tool_dependency_template(dependency) \%>',
+            '<\% } \%>',
+        '<\% }); \%>',
+    '<\% } \%>',
+].join(''));
 tool_sheds_template = _.template([
     '<div class="tab-pane" id="list_toolsheds">',
         '<div class="toolFormTitle">Accessible Galaxy tool sheds</div>',
@@ -383,45 +352,92 @@ tool_sheds_template = _.template([
         '</div>',
     '</div>',
 ].join(''));
-tps_selection_template = _.template([
-    '<div class="tab-pane" id="select_tps">',
-        '<select name="<\%= name \%>" id="<\%= id \%>',
-            '<\% _.each(sections, function(section) { \%>',
-                '<option value="<\%= section.id \%>"><\%= section.name \%>',
-            '<\% }); \%>',
-        '</select>',
-        '<input class="btn btn-primary" type="button" id="create_new" value="Create new" />',
-        '<div class="toolParamHelp" style="clear: both;">',
-            'Select an existing tool panel section to contain the installed tools (optional).',
-        '</div>',
-    '</div>'].join(''));
 tps_creation_template = _.template([
-    '<div class="form-row" id="new_tps">',
-        '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
-        '<input class="btn btn-primary" type="button" id="select_existing" value="Select existing" />',
-        '<div class="toolParamHelp" style="clear: both;">',
-            'Add a new tool panel section to contain the installed tools (optional).',
+    '<div id="tool_panel_section">',
+        '<div class="toolFormTitle">Tool Panel Section</div>',
+        '<div class="toolFormBody">',
+            '<div class="form-row" id="new_tps">',
+                '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
+                '<input class="btn btn-primary" type="button" id="select_existing" value="Select existing" />',
+                '<div class="toolParamHelp" style="clear: both;">',
+                    'Add a new tool panel section to contain the installed tools (optional).',
+                '</div>',
+            '</div>',
         '</div>',
-    '</div>'].join(''));
-var tps_picker_template = _.template([
-    '<span id="tps_button_<\%= tool.clean \%>" >',
-        '<input class="btn btn-primary show_tool_tps_selector" id="select_tps_button_<\%= tool.clean \%>" data-toolguid="<\%= tool.guid \%>" type="button" value="Specify panel section" />',
-    '</span>',
-].join(''));
-var select_tps_template = _.template([
-    '<div id="select_tps_<\%= tool.clean \%>" class="tps_creator">',
-        '<select style="width: 30em;" data-toolguid="<\%= tool.guid \%>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%= tool.clean \%>">',
-        '</select>',
-        '<input id="per_tool_create_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Create new" id="create_new_<\%= tool.clean \%>" type="button">',
-        '<input id="cancel_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Cancel" type="button">',
-        '<div style="clear: both;" class="toolParamHelp"></div>',
     '</div>',
 ].join(''));
-var create_tps_template = _.template([
-    '<div id="new_tps_<\%= tool.clean \%>" class="form-row">',
-        '<input data-toolguid="<\%= tool.guid \%>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<\%= tool.clean \%>" type="text">',
-        '<input id="per_tool_select_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Select existing" id="select_existing_<\%= tool.clean \%>" type="button">',
-        '<input id="cancel_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Cancel" type="button">',
+tps_picker_template = _.template([
+    '<div class="tool_tps_switcher tps_switcher_<\%= tool.clean \%>" id="per_tool_tps_container_<\%= tool.clean \%>">',
+        '<span id="tps_button_<\%= tool.clean \%>" >',
+            '<input class="btn btn-primary show_tool_tps_selector" id="select_tps_button_<\%= tool.clean \%>" data-toolguid="<\%= tool.guid \%>" data-toolname="<\%= tool.clean \%>" type="button" value="Specify panel section" />',
+        '</span>',
+    '</div>',
+].join(''));
+tps_selection_template = _.template([
+    '<div id="tool_panel_section">',
+        '<div class="toolFormTitle">Tool Panel Section</div>',
+        '<div class="toolFormBody">',
+            '<div class="tab-pane" id="select_tps">',
+                '<select name="<\%= name \%>" id="<\%= tps.id \%>">',
+                '<\% console.log(tps.sections) \%>',
+                    '<\%= tps_select_options({sections: tps.sections}) \%>',
+                '</select>',
+                '<input class="btn btn-primary" type="button" id="create_new" value="Create new" />',
+                '<div class="toolParamHelp" style="clear: both;">',
+                    'Select an existing tool panel section to contain the installed tools (optional).',
+                '</div>',
+            '</div>',
+        '</div>',
+    '</div>',
+].join(''));
+tps_select_options = _.template([
+    '<\% _.each(sections, function(section) { \%>',
+        '<option value="<\%= section.id \%>"><\%= section.name \%></option>',
+    '<\% }); \%>',
+].join(''));
+workflows_missing_tools = _.template([
+    '<table id="workflows_missing_tools" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
+        '<thead id="grid-table-header">',
+            '<tr>',
+                '<th class="datasetRow">Workflows</th>',
+                '<th class="datasetRow">Tool IDs</th>',
+                '<th class="datasetRow">Shed</th>',
+                '<th class="datasetRow">Name</th>',
+                '<th class="datasetRow">Owner</th>',
+                '<th class="datasetRow">Actions</th>',
+            '</tr>',
+        '</thead>',
+        '<tbody>',
+            '<\% _.each(Object.keys(workflows), function(workflow_key) { \%>',
+                '<\% var workflow_details = workflow_key.split("/"); \%>',
+                '<\% var workflow = workflows[workflow_key]; \%>',
+                '<tr>',
+                    '<td class="datasetRow">',
+                        '<ul class="workflow_names">',
+                            '<\% _.each(workflow.workflows.sort(), function(wf) { \%>',
+                                '<li class="workflow_names"><\%= wf \%></li>',
+                            '<\% }); \%>',
+                        '</ul>',
+                    '</td>',
+                    '<td class="datasetRow">',
+                        '<ul class="workflow_tools">',
+                            '<\% _.each(workflow.tools.sort(), function(tool) { \%>',
+                                '<li class="workflow_tools"><\%= tool \%></li>',
+                            '<\% }); \%>',
+                        '</ul>',
+                    '</td>',
+                    '<td class="datasetRow"><\%= workflow_details[0] \%></td>',
+                    '<td class="datasetRow"><\%= workflow_details[2] \%></td>',
+                    '<td class="datasetRow"><\%= workflow_details[1] \%></td>',
+                    '<td class="datasetRow">',
+                        '<ul class="workflow_tools">',
+                            '<li class="workflow_tools"><input type="button" class="show_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-toolids="<\%= workflow.tools.join(",") \%>" value="Preview" /></li>',
+                            '<li><input type="button" class="queue_wf_repo btn btn-primary" data-shed="<\%= workflow_details[0] \%>" data-owner="<\%= workflow_details[1] \%>" data-repo="<\%= workflow_details[2] \%>" data-toolids="<\%= workflow.tools.join(",") \%>" value="Add to queue" /></li>',
+                        '</ul>',
+                    '</td>',
+                '</tr>',
+            '<\% }); \%>',
+        '</ul>',
     '</div>',
 ].join(''));
 
@@ -432,35 +448,31 @@ function bind_category_events() {
         shed_url = $('#tab_contents').attr('data-shedurl');
         api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_repository")}';
         params = {"tool_shed_url": shed_url, "tsr_id": tsr_id};
-        $.get(api_url, params, function(data) {
-            var changesets = Object.keys(data.repository.metadata);
-            data.tool_shed_url = shed_url;
-            data.current_changeset = changesets[changesets.length - 1];
-            data.current_metadata = data.repository.metadata[data.current_changeset];
-            data.repository_dependencies_template = repository_dependencies_template;
-            data.repository_dependency_template = repository_dependency_template;
-            data.tps_selection_template = tps_selection_template;
-            repository_data = data;
-            repository_data.shed_tool_conf = shed_tool_conf({'stc_html': repository_data.shed_conf});
-            repository_data.tool_panel_section = '';
-            if (repository_data.repository.metadata[data.current_changeset].includes_tools_for_display_in_tool_panel) {
-                repository_data.tool_panel_section = tps_selection_template(repository_data.panel_section_dict)
-            }
-            $('#repository_details').replaceWith(repository_details_template(data));
-            $('#repo_info_tab').click();
-            require(["libs/jquery/jstree"], function() {
-                $('#repository_deps').jstree();
-            });
-            $('#repository_installation').ready(function() {
-                bind_repository_events();
-            });
-        });
-        $('#repository_contents').click();
+        load_repository_contents(tsr_id, shed_url, api_url, params);
     });
+    setup_repo_search('#category_search');
 }
 function bind_repository_events() {
     var current_changeset = get_current_changeset();
     var current_metadata = repository_data.repository.metadata[current_changeset];
+    var previous_tps;
+    $('#tool_panel_section_select').focus(function() {
+        previous_tps = $('#tool_panel_section_select').find("option:selected").val();
+    });
+    $('#tool_panel_section_select').change(function() {
+        new_tps = $('#tool_panel_section_select').find("option:selected").val();
+        $('.tool_panel_section_picker').each(function() {
+            // $(this).find("option").removeAttr("selected");
+            tool_tps = $(this).find("option:selected");
+            // console.log(previous_tps);
+            if (tool_tps.val() == previous_tps) {
+                tool_tps.removeAttr('selected');
+                console.log('tis');
+                $(this).val(new_tps);
+                $("select option[value='" + new_tps + "']").attr("selected","selected");
+            }
+        });
+    });
     $('.show_tool_tps_selector').click(function() {
         var changeset = get_current_changeset();
         var tool_guid = $(this).attr('data-toolguid');
@@ -511,7 +523,6 @@ function bind_repository_events() {
 }
 function bind_shed_events() {
     $('.category-selector').click(function() {
-        var tabsw = $('#category_list_tab');
         $('#list_repositories').replaceWith('<div id="list_repositories" class="tab-pane"><img src="/static/images/jstree/throbber.gif" alt="Loading repositories..." /></div>');
         var category_id = $(this).attr('data-categoryid');
         var shed_url = $('#tab_contents').attr('data-shedurl');
@@ -538,7 +549,8 @@ function bind_workflow_events() {
             repository_data.shed_tool_conf = shed_tool_conf({'stc_html': repository_data.shed_conf});
             repository_data.tool_panel_section = '';
             if (repository_data.repository.metadata[data.current_changeset].includes_tools_for_display_in_tool_panel) {
-                repository_data.tool_panel_section = tps_selection_template(repository_data.panel_section_dict)
+                tps_dict = {'current_changeset': data.current_changeset, 'tps': repository_data.panel_section_dict};
+                repository_data.tool_panel_section = tps_selection_template(tps_dict);
             }
             $('#repository_details').replaceWith(repository_details_template(data));
             $('#repo_info_tab').click();
@@ -748,6 +760,47 @@ function load_from_workflow() {
         bind_workflow_events();
     });
 }
+function load_repository_contents(tsr_id, shed_url, api_url, params) {
+    console.log('woop');
+    $.get(api_url, params, function(data) {
+        var changesets = Object.keys(data.repository.metadata);
+        data.tool_shed_url = shed_url;
+        data.current_changeset = changesets[changesets.length - 1];
+        data.current_metadata = data.repository.metadata[data.current_changeset];
+        data.repository_dependencies_template = repository_dependencies_template;
+        data.repository_dependency_template = repository_dependency_template;
+        data.tps_selection_template = tps_selection_template;
+        // data.tps = repository_data.panel_section_dict;
+        repository_data = data;
+        repository_data.shed_tool_conf = shed_tool_conf({'stc_html': repository_data.shed_conf});
+        repository_data.tool_panel_section = '';
+        if (repository_data.repository.metadata[data.current_changeset].includes_tools_for_display_in_tool_panel) {
+            tps_dict = {'current_changeset': data.current_changeset, 'tps': repository_data.panel_section_dict};
+            repository_data.tool_panel_section = tps_selection_template(tps_dict)
+        }
+        $('#repository_details').replaceWith(repository_details_template(data));
+        $('#repo_info_tab').click();
+        require(["libs/jquery/jstree"], function() {
+            $('#repository_deps').jstree();
+        });
+        $('#repository_installation').ready(function() {
+            bind_repository_events();
+        });
+    });
+    $('#repository_contents').click();
+}
+function parse_shed_response(data) {
+    var results = [];
+    var hits = data.hits;
+    $.each(hits, function(hit) {
+        var record = hits[hit];
+        var label = record.repository.name + ' by ' + record.repository.repo_owner_username + ': ' + record.repository.description;
+        result = {value: record.repository.id, label: label};
+        console.log(record);
+        results.push(result);
+    });
+    return results;
+}
 function prepare_installation(params, api_url) {
     $.post(api_url, params, function(data) {
         iri_parameters = JSON.parse(data);
@@ -812,6 +865,27 @@ function repository_in_queue(repository_metadata) {
 function save_repository_queue(repository_queue) {
     localStorage.repositories = JSON.stringify(repository_queue);
 }
+function search_in_shed(request, response) {
+    var shed_url = $('#tab_contents').attr('data-shedurl');
+    var base_url = '${h.url_for(controller='/api/tool_shed_repositories', action='shed_search')}';
+    $.get(base_url, {term: request.term, tool_shed_url: shed_url}, function(data) {
+        result_list = parse_shed_response(data);
+        response(result_list);
+    });
+}
+function setup_repo_search(selector) {
+    $(selector).autocomplete({
+        source: search_in_shed,
+        minLength: 3,
+        select: function(event, ui) {
+            var tsr_id = ui.item.value;
+            var shed_url = $('#tab_contents').attr('data-shedurl');
+            var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_repository")}';
+            var params = {"tool_shed_url": shed_url, "tsr_id": tsr_id};
+            load_repository_contents(tsr_id, shed_url, api_url, params);
+        },
+    });
+}
 function select_tps(params) {
     var tool_panel_section = {};
     if ($('#tool_panel_section_select').length) {
@@ -833,13 +907,13 @@ function select_tps(params) {
     return tool_panel_section;
 }
 function show_global_tps_select() {
-    $('#tool_panel_section').empty();
-    $('#tool_panel_section').append(tps_selection_template(repository_data.panel_section_dict));
+    tps_dict = {'current_changeset': repository_data.current_changeset, 'tps': repository_data.panel_section_dict};
+    $('#tool_panel_section').replaceWith(tps_selection_template(tps_dict));
     $('#create_new').click(show_global_tps_create);
 }
 function show_global_tps_create() {
-    $('#tool_panel_section').empty();
-    $('#tool_panel_section').append(tps_creation_template(repository_data.panel_section_dict));
+    console.log('GTPS');
+    $('#tool_panel_section').replaceWith(tps_creation_template(repository_data));
     $('#select_existing').click(show_global_tps_select);
 }
 function show_panel_button(tool_guid, changeset) {
@@ -925,6 +999,7 @@ $(document).ready(function() {
             $('#list_categories').replaceWith(categories_in_shed(data));
             $('#category_list_tab').click();
             bind_shed_events();
+            setup_repo_search('#category_search');
         });
     });
     $('#repository_installation_queue').click(bind_wf_button);

@@ -423,7 +423,6 @@ class RepositoriesController( BaseAPIController ):
                                       self.app.model.Repository.table.c.name == name,
                                       self.app.model.User.table.c.username == owner,
                                       self.app.model.Repository.table.c.user_id == self.app.model.User.table.c.id ) ]
-                log.debug( clause_list)
                 repository = trans.sa_session.query( self.app.model.Repository ).filter( *clause_list ).first()
                 for changeset, changehash in repository.installable_revisions( self.app ):
                     metadata = metadata_util.get_current_repository_metadata_for_changeset_revision( self.app, repository, changehash )
