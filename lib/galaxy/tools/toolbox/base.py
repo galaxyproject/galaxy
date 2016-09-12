@@ -33,7 +33,6 @@ from .tags import tool_tag_manager
 from .watcher import get_tool_watcher
 from .watcher import get_tool_conf_watcher
 
-
 log = logging.getLogger( __name__ )
 
 
@@ -520,8 +519,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             from_cache = tool
             if from_cache:
                 log.debug("Loading tool %s from cache", str(tool.id))
-                if guid:
-                    tool_shed_repository = tool.tool_shed_repository
             elif guid:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
@@ -543,7 +540,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     tool.guid = guid
                     tool.version = item.elem.find( "version" ).text
                 # Make sure tools have a tool_version object.
-                tool_lineage = self._lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
+                tool_lineage = self._lineage_map.register( tool, from_toolshed=guid )
                 tool.lineage = tool_lineage
                 if item.has_elem:
                     self._tool_tag_manager.handle_tags( tool.id, item.elem )
