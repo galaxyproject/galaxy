@@ -46,10 +46,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Build form */
         _buildForm: function(options) {
             var self = this;
+            var req_message = self._templateRequirements(options)[0].textContent;
             this.options = Utils.merge(options, this.options);
             this.options = Utils.merge({
                 icon            : options.icon,
-                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
+                title           : '<b>' + options.name + '</b> ' + 
+                                        options.description + 
+                                        ' (Galaxy Version ' + 
+                                        options.version + ')' + " . " +
+                                        req_message + ".",
                 operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
                     self.refresh();
@@ -246,31 +251,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 });
             }
 
-            // button for version selection
-            if (options.requirements && options.requirements.length > 0) {
-                menu_button.addMenu({
-                    icon    : 'fa-info-circle',
-                    title   : 'Requirements',
-                    tooltip : 'Display tool requirements',
-                    onclick : function() {
-                        if (!this.visible || self.portlet.collapsed ) {
-                            this.visible = true;
-                            self.portlet.expand();
-                            self.message.update({
-                                persistent  : true,
-                                message     : self._templateRequirements(options),
-                                status      : 'info'
-                            });
-                        } else {
-                            this.visible = false;
-                            self.message.update({
-                                message     : ''
-                            });
-                        }
-                    }
-                });
-            }
-
             // add toolshed url
             if (options.sharable_url) {
                 menu_button.addMenu({
@@ -319,10 +299,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             if ( nreq > 0 ) {
                 var requirements_message = 'This tool requires ';
                 _.each( options.requirements, function( req, i ) {
-                    requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
+                    requirements_message += req.name + 
+                                            ( req.version ? ' (Version ' + 
+                                            req.version + ')' : '' ) + 
+                                            ( i < nreq - 2 ? ', ' : 
+                                            ( i == nreq - 2 ? ' and ' : '' ) );
                 });
-                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://wiki.galaxyproject.org/Tools/Requirements' ).text( 'here' );
-                return $( '<span/>' ).append( requirements_message + '. Click ' ).append( requirements_link ).append( ' for more information.' );
+                return $( '<span/>' ).append( requirements_message );
             }
             return 'No requirements found.';
         }
