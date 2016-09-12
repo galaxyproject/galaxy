@@ -1569,18 +1569,54 @@ The ``command`` tag should be started and finished by a [CDATA tag](https://en.w
 
   <xs:complexType name="ParamOption">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for ParamOption</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+See [/tools/filters/sorter.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/filters/sorter.xml)
+for typical examples of how to use this tag set. This directive is used to described
+static lists of options and is contained
+within the [``param``](#tool|inputs|param) directive when the ``type`` attribute
+value is ``select`` (i.e. ``<param type="select" ...>``).
+
+### Example
+
+```xml
+<param name="style" type="select" label="with flavor">
+    <option value="num">Numerical sort</option>
+    <option value="gennum">General numeric sort</option>
+    <option value="alpha">Alphabetical sort</option>
+</param>
+```
+
+An option can also be annotated with ``selected="true"`` to specify a
+default option.
+
+```xml
+<param name="col" type="select" label="From">
+    <option value="0" selected="true">Column 1 / Sequence name</option>
+    <option value="1">Column 2 / Source</option>
+    <option value="2">Column 3 / Feature</option>
+    <option value="6">Column 7 / Strand</option>
+    <option value="7">Column 8 / Frame</option>
+</param>
+```
+]]>
+</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="value" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[The value of the
+corresponding variable when used the Cheetah template. Also the value that
+should be used in building test cases and used when building requests for the
+API.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="selected" type="PermissiveBoolean" default="false">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for selected</xs:documentation>
+            <xs:documentation xml:lang="en">A boolean parameter indicating
+if the corresponding option is selected by default (the default is ``false``).
+</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -1590,7 +1626,59 @@ The ``command`` tag should be started and finished by a [CDATA tag](https://en.w
 
   <xs:complexType name="ParamOptions">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Options</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+See [/tools/extract/liftOver_wrapper.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/extract/liftOver_wrapper.xml)
+for an example of how to use this tag set. This tag set is optionally contained
+within the ``<param>`` tag when the ``type`` attribute value is ``select`` or
+``data`` and used to dynamically generated lists of options. This tag set
+dynamically creates a list of options whose values can be
+obtained from a predefined file stored locally or a dataset selected from the
+current history.
+
+There are four basic ways to use this tag - each corresponding to an attribute
+on the ``options`` directive. These are:
+
+* ``from_data_table`` - The options for the select list are dynamically obtained
+    from a file specified in the Galaxy configuration file
+   ``tool_data_table_conf.xml`` or from a Tool Shed installed data manager.
+* ``from_dataset`` - The options for the select list are dynamically obtained
+    from input dataset selected for the tool from the current history.
+* ``from_file`` - The options for the select list are dynamically obtained from
+    a file. This mechanis is discourage in favor of the more generic
+    ``from_data_table``.
+* ``from_parameter`` - The options for the select list are dynamically obtained
+    from a parameter.
+
+### ``from_data_table``
+
+
+### ``from_dataset``
+
+https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml
+
+### ``from_file``
+
+The following example is for Blast databases. In this example users maybe select
+a database that is pre-formatted and cached in Galaxy clusters. When a new
+dataset is available, admins must add the database to the local file named
+"blastdb.loc". All such databases in that file are included in the options of
+the select list. For a local instance, the file (e.g. ``blastdb.loc`` or
+``alignseq.loc``) must be stored in the configured
+[``tool_data_path``](https://github.com/galaxyproject/galaxy/tree/master/tool-data)
+directory. In this example, the option names and values are taken from column 0
+of the file.
+
+```xml
+<param name="source_select" type="select" display="radio" label="Choose target database">
+    <options from_file="blastdb.loc">
+        <column name="name" index="0"/>
+        <column name="value" index="0"/>
+    </options>
+</param>
+```
+]]>
+</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded"/>
@@ -1660,7 +1748,64 @@ The ``command`` tag should be started and finished by a [CDATA tag](https://en.w
   </xs:complexType>
   <xs:complexType name="Validator">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Validator</xs:documentation>
+
+      <xs:documentation xml:lang="en"><![CDATA[
+
+See the
+[annotation_profiler](https://github.com/galaxyproject/tools-devteam/blob/master/tools/annotation_profiler/annotation_profiler.xml)
+tool for an example of how to use this tag set. This tag set is contained within
+the <param> tag set - it applies a validator to the containing parameter.
+
+### Examples
+
+The following demonstrates a simple validator ``unspecified_build`` ensuring
+that a dbkey is present on the selected dataset. This example is taken from the
+[extract_genomic_dna](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml#L42)
+tool.
+
+```xml
+<param name="input" type="data" format="gff,interval" label="Fetch sequences for intervals in">
+    <validator type="unspecified_build" />
+</param>
+```
+
+Along the same line, the following example taken from
+[samtools_mpileup](https://github.com/galaxyproject/tools-devteam/blob/master/tool_collections/samtools/samtools_mpileup/samtools_mpileup.xml)
+ensures that a dbkey is present and that FASTA indices in the ``fasta_indexes``
+tool data table are present.
+
+```xml
+<param format="bam" label="BAM file(s)" name="input_bam" type="data" min="1" multiple="True">
+    <validator type="unspecified_build" />
+    <validator type="dataset_metadata_in_data_table" metadata_name="dbkey" table_name="fasta_indexes" metadata_column="1"
+               message="Sequences are not currently available for the specified build." />
+</param>
+```
+
+In this older, somewhat deprecated example - a genome build of the dataset must
+be stored in Galaxy clusters and the name of the genome (``dbkey``) must be one
+of the values in the first column of file ``alignseq.loc`` - that could be
+expressed with the validator. In general, ``dataset_metadata_in_file`` should be
+considered deprecated in favor of
+
+```xml
+<validator type="dataset_metadata_in_file"
+           filename="alignseq.loc"
+           metadata_name="dbkey"
+           metadata_column="1"
+           message="Sequences are not currently available for the specified build."
+           split=" "
+           line_startswith="seq" />
+```
+
+A very common validator is simply ensure a Python expression is valid for a
+specified value. In the following example - paths/names that downstream tools
+use in filenames may not contain ``..``.
+
+```xml
+<validator type="expression" message="No two dots (..) allowed">'..' not in value</validator>
+```
+]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
