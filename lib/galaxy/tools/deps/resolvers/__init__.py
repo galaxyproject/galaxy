@@ -1,8 +1,12 @@
+from abc import (
+    ABCMeta,
+    abstractmethod,
+    abstractproperty,
+)
+
 from galaxy.util.dictifiable import Dictifiable
 
 from ..requirements import ToolRequirement
-
-from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class DependencyResolver(Dictifiable, object):

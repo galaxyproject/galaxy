@@ -2,16 +2,17 @@
 Dependency management for tools.
 """
 
+import logging
 import os.path
 
-import logging
-log = logging.getLogger( __name__ )
+from galaxy.util import plugin_config
 
 from .resolvers import NullDependency
+from .resolvers.conda import CondaDependencyResolver
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
-from .resolvers.conda import CondaDependencyResolver
-from galaxy.util import plugin_config
+
+log = logging.getLogger( __name__ )
 
 # TODO: Load these from the plugins. Would require a two step initialization of
 # DependencyManager - where the plugins are loaded first and then the config

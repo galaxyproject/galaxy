@@ -1,33 +1,35 @@
 import logging
 import re
-import traceback
 import sys
+import traceback
 import uuid
+
 from math import isinf
 
-from .interface import (
-    ToolSource,
-    PagesSource,
-    PageSource,
-    InputSource,
-    ToolStdioExitCode,
-    ToolStdioRegex,
-    TestCollectionDef,
-    TestCollectionOutputDef,
-)
-from .util import (
-    error_on_exit_code,
-    aggressive_error_checks,
-)
-from .output_collection_def import dataset_collector_descriptions_from_elem
-from .output_actions import ToolOutputActionGroup
+from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
-from galaxy.tools.deps import requirements
+
+from .interface import (
+    InputSource,
+    PageSource,
+    PagesSource,
+    TestCollectionDef,
+    TestCollectionOutputDef,
+    ToolSource,
+    ToolStdioExitCode,
+    ToolStdioRegex,
+)
+from .output_actions import ToolOutputActionGroup
+from .output_collection_def import dataset_collector_descriptions_from_elem
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure
+)
+from .util import (
+    aggressive_error_checks,
+    error_on_exit_code,
 )
 
 

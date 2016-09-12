@@ -1,7 +1,8 @@
 
 
 class ToolCache(object):
-    """ Cache tool defintions to allow quickly reloading the whole
+    """
+    Cache tool definitions to allow quickly reloading the whole
     toolbox.
     """
 

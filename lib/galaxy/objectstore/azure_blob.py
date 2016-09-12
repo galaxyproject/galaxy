@@ -10,17 +10,16 @@ import time
 
 from datetime import datetime
 
-from galaxy.exceptions import ObjectNotFound, ObjectInvalid
-from galaxy.util import umask_fix_perms, safe_relpath, directory_hash_id
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import directory_hash_id, safe_relpath, umask_fix_perms
 from galaxy.util.sleeper import Sleeper
-from ..objectstore import ObjectStore, convert_bytes
-
+from ..objectstore import convert_bytes, ObjectStore
 
 try:
+    from azure.common import AzureHttpError
     from azure.storage import CloudStorageAccount
     from azure.storage.blob import BlockBlobService
     from azure.storage.blob.models import Blob
-    from azure.common import AzureHttpError
 except ImportError:
     BlockBlobService = None
 

@@ -1,16 +1,18 @@
+import logging
+import os
+import string
+
 from abc import (
     ABCMeta,
     abstractmethod
 )
-import os
-import string
 
 import six
 
 from galaxy.util import asbool
+
 from ..deps import docker_util
 
-import logging
 log = logging.getLogger(__name__)
 
 DEFAULT_CONTAINER_TYPE = "docker"

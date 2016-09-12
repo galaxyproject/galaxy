@@ -102,11 +102,12 @@ class ToolBox( BaseGalaxyToolBox ):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app ):
+    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            tool_conf_watcher=tool_conf_watcher
         )
 
     @property
@@ -1690,7 +1691,7 @@ class Tool( object, Dictifiable ):
                 else:
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
                         tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )

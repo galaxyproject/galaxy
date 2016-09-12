@@ -1,3 +1,4 @@
+import logging
 import os
 
 from ..deps import commands
@@ -6,7 +7,6 @@ from ..deps.containers import docker_cache_path
 from ..deps.requirements import parse_requirements_from_xml
 from ...tools import loader_directory
 
-import logging
 log = logging.getLogger(__name__)
 
 

@@ -1,11 +1,13 @@
-import re
+import binascii
 import bz2
 import gzip
-import zipfile
-import binascii
 import imghdr
-from galaxy import util
+import re
+import zipfile
+
 from six import StringIO
+
+from galaxy import util
 
 HTML_CHECK_LINES = 100
 

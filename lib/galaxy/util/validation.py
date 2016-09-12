@@ -2,10 +2,10 @@
 
 TODO: Refactor BaseController references to similar methods to use this module.
 """
+from six import string_types
+
 from galaxy import exceptions
 from galaxy.util.sanitize_html import sanitize_html
-
-from six import string_types
 
 
 def validate_and_sanitize_basestring( key, val ):

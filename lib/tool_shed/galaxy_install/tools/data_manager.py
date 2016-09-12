@@ -1,6 +1,7 @@
 import logging
 import os
 import threading
+import time
 
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import xml_util
@@ -113,7 +114,10 @@ class DataManagerHandler( object ):
                 data_manager_config_has_changes = True
             # Persist the altered shed_data_manager_config file.
             if data_manager_config_has_changes:
-                self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename  )
+                reload_count = self.app.data_managers._reload_count
+                self.data_manager_config_elems_to_xml_file( config_elems, shed_data_manager_conf_filename )
+                while self.app.data_managers._reload_count <= reload_count:
+                    time.sleep(1)  # Wait for shed_data_manager watcher thread to pick up changes
         return rval
 
     def remove_from_data_manager( self, repository ):

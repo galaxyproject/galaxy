@@ -161,6 +161,9 @@ class ToolDataTableManager( object ):
         os.chmod( full_path, 0644 )
 
     def reload_tables( self, table_names=None ):
+        """
+        Reload tool data tables.
+        """
         tables = self.get_tables()
         if not table_names:
             table_names = tables.keys()
