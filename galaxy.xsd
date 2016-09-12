@@ -230,7 +230,15 @@ communicating with an external data source application (the default is ``get``).
 
   <xs:complexType name="Requirements">
     <xs:annotation>
-      <xs:documentation xml:lang="en">This is a container tag set for the 'requirement' tag set described below. </xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This is a container tag set for the ``requirement`` and ``container`` tags
+described in greater detail below. ``requirement``s describe software packages
+and other individual computing requirements required to execute a tool, while
+``container``s describe Docker containers that should be able to serve as
+complete descriptions of the runtime of a tool.
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
@@ -240,7 +248,53 @@ communicating with an external data source application (the default is ``get``).
 
   <xs:complexType name="Requirement">
     <xs:annotation>
-      <xs:documentation xml:lang="en">This tag set is contained within the 'requirements' tag set. Third party programs or modules that the tool depends upon (and which are not distributed with Galaxy) are included in this tag set. The intention is that when Galaxy starts it can check whether the required programs or modules are available, and if not this tool will not be loaded. </xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``requirements`` tag set. Third party
+programs or modules that the tool depends upon (and which are not distributed
+with Galaxy) are included in this tag set.
+
+When a tool runs, Galaxy attempts to *resolve* these requirements (also called
+dependencies). ``requirement``s are meant to be abstract and resolvable by
+multiple different systems (e.g. [conda](http://conda.pydata.org/docs/), the
+[Galaxy Tool Shed dependency management system](https://wiki.galaxyproject.org/ToolShedToolFeatures#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories),
+or [environment modules](http://modules.sourceforge.net/)).
+
+Read more about dependency resolvers in Galaxy on
+[docs.galaxyproject.org](https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html).
+The current best practice for tool dependencies is to target Conda, this is
+discussed in greater detail
+[here](https://docs.galaxyproject.org/en/master/admin/conda_faq.html).
+
+### Examples
+
+This example shows a tool that requires the samtools 0.0.18 package.
+
+This package is available via the Tool Shed (see
+[Tool Shed dependency management](https://wiki.galaxyproject.org/ToolShedToolFeatures#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories)
+) as well as [Conda](https://docs.galaxyproject.org/en/master/admin/conda_faq.html)
+and can be configured locally to adapt to any other package management system.
+
+```xml
+<requirements>
+    <requirement type="package" version="0.1.18">samtools</requirement>
+</requirements>
+```
+
+This older example shows a tool that requires R version 2.15.1. The
+``tool_depensencies.xml`` should contain matching declarations for Galaxy to
+actually install the R runtime. The ``set_envirornment`` type is only respected
+by the tool shed and is ignored by the newer and preferred conda dependency
+resolver.
+
+```xml
+<requirements>
+    <requirement type="set_environment">R_SCRIPT_PATH</requirement>
+    <requirement type="package" version="2.15.1">R</requirement>
+</requirements>
+```
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
@@ -259,8 +313,17 @@ communicating with an external data source application (the default is ``get``).
   </xs:complexType>
   <xs:complexType name="Container">
     <xs:annotation>
-      <xs:documentation xml:lang="en">This tag set is contained within the 'requirements' tag set. Galaxy can be configured to run tools within Docker (https://www.docker.com/) containers - this tag allows the tool to suggest possible valid Docker containers for this tool.
-      </xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the 'requirements' tag set. Galaxy can be
+configured to run tools within Docker (https://www.docker.com/) containers -
+this tag allows the tool to suggest possible valid Docker containers for this
+tool.
+
+Read more about configuring Galaxy to run Docker jobs
+[here](https://wiki.galaxyproject.org/Admin/Tools/Docker).
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
