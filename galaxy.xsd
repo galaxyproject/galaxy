@@ -2190,9 +2190,20 @@ metadata fields will be checked unless ``check`` attribute is specified.</xs:doc
   <xs:complexType name="Sanitizer">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-See ~/tools/filters/grep.xml for an example of how to use this tag set. This tag set is used to replace the basic parameter sanitization with custom directives. This tag set is contained within the <param> tag set - it contains a set of <valid> and <mapping> tags.
 
-Examples:
+See
+[/tools/filters/grep.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/filters/grep.xml)
+for a typical example of how to use this tag set. This tag set is used to
+replace the basic parameter sanitization with custom directives. This tag set is
+contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
+``<mapping>`` tags.
+
+### Examples
+
+This example replaces the invalid character default of ``X`` with the empty
+string (so invalid characters are effectively dropped instead of replaced with
+``X``) and indicates the only valid characters for this input are ASCII letters,
+ASCII digits, and ``_``.
 
 ```
 <param name="mystring" type="text" label="Say something interesting">
@@ -2201,6 +2212,9 @@ Examples:
   </sanitizer>
 </param>
 ```
+
+This example allows many more valid characters and specifies that ``&`` will just
+be dropped from the input.
 
 ```
 <sanitizer>
@@ -2219,12 +2233,14 @@ Examples:
     </xs:sequence>
     <xs:attribute name="sanitize" type="PermissiveBoolean" default="true">
       <xs:annotation>
-        <xs:documentation xml:lang="en">is this parameter sanitized (default is ``true``)</xs:documentation>
+        <xs:documentation xml:lang="en">This boolean parameter determines if the
+input is sanitized at all (the default is ``true``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="invalid_char" type="xs:string" default="X">
       <xs:annotation>
-        <xs:documentation xml:lang="en">character to replace invalid characters with</xs:documentation>
+        <xs:documentation xml:lang="en">The attribute specifies the character
+used as a replacement for invalid characters.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2236,21 +2252,25 @@ Examples:
   </xs:group>
   <xs:complexType name="SanitizerValid">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Contained within the <sanitizer> tag set. Used to specify a list of allowed characters. Contains <add> and <remove> tags.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the
+``<sanitizer>`` tag set, these are used to specify a list of allowed characters.
+Contains ``<add>`` and ``<remove>`` tags.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="SanitizerValidElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="initial" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">initial characters to allow
-no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:documentation>
+        <xs:documentation xml:lang="en">This describes the initial characters to
+allow as valid, the default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="SanitizerValidAdd">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Used to add individual characters or preset lists of characters. Character must not be allowed as a valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
+      <xs:documentation xml:lang="en">This directive is used to add individual
+characters or preset lists of characters. Character must not be allowed as a
+valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
@@ -2265,7 +2285,10 @@ no, default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:docume
   </xs:complexType>
   <xs:complexType name="SanitizerValidRemove">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Used to remove individual characters or preset lists of characters. Character must not be allowed as a valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
+      <xs:documentation xml:lang="en">This directive is used to remove
+individual characters or preset lists of characters.
+Character must not be allowed as a valid input for the mapping to occur.
+Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
@@ -2982,7 +3005,11 @@ Example:
 
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[See ~/tools/maf/maf_filter.xml for an example of how this tag set is used in a tool. This tag set is a container for <configfile> tag sets - it defines an additional configuration section.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[See
+[xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/xy_plot/xy_plot.xml)
+for an example of how this tag set is used in a tool. This tag set is a
+container for ``<configfile>`` and ``<inputs>`` tag sets - which can be used
+to setup configuration files for use by tools.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="ConfigFilesElement" minOccurs="0" maxOccurs="unbounded" />
@@ -2999,11 +3026,14 @@ Example:
   <xs:complexType name="ConfigFile">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-This tag set is contained within the <configfiles> tag set. It allows for the creation of a temporary file for file-based parameter transfer.
+
+This tag set is contained within the ``<configfiles>`` tag set. It allows for
+the creation of a temporary file for file-based parameter transfer.
 
 *Example*
 
-The following is taken from the ~/tools/plotting/xy_plot.xml tool config.
+The following is taken from the [xy_plot.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/xy_plot/xy_plot.xml)
+tool config.
 
 ```xml
 <configfiles>
@@ -3037,13 +3067,21 @@ The following is taken from the ~/tools/plotting/xy_plot.xml tool config.
     </configfile>
 </configfiles>
 ```
+
+This file is then used in the ``command`` block of the tool as follows:
+
+```xml
+<command>bash "$__tool_directory__/r_wrapper.sh" "$script_file"</command>
+```
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="name" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+            <xs:documentation xml:lang="en">Cheetah variable used to reference
+the path to the file created with this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -3053,7 +3091,9 @@ The following is taken from the ~/tools/plotting/xy_plot.xml tool config.
   <xs:complexType name="ConfigInputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-This tag set is contained within the <configfiles> tag set. It tells Galaxy to write out a JSON representation of the tool parameters .
+
+This tag set is contained within the <configfiles> tag set. It tells Galaxy to
+write out a JSON representation of the tool parameters .
 
 *Example*
 
@@ -3061,25 +3101,32 @@ The following will create a cheetah variable that can be evaluated as ``$inputs`
 will contain the tool parameter inputs.
 
 ```xml
-    <configfiles>
-        <inputs name="inputs" />
-    <configfiles>
+<configfiles>
+    <inputs name="inputs" />
+<configfiles>
 ```
 
-The following will instead write the inputs to the tool's working directory with the specified name (i.e. ``inputs.json``).
+The following will instead write the inputs to the tool's working directory with
+the specified name (i.e. ``inputs.json``).
 
 ```xml
-    <configfiles>
-        <inputs name="inputs" filename="inputs.json" />
-    <configfiles>
+<configfiles>
+    <inputs name="inputs" filename="inputs.json" />
+<configfiles>
 ```
+
+A contrived example of a tool that uses this is the test tool
+[inputs_as_json.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json.xml).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="name" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Cheetah variable to populate the path to the inputs JSON file created in response to this directive.</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+Cheetah variable to populate the path to the inputs JSON file created in
+response to this directive.
+]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="filename" type="xs:string">
