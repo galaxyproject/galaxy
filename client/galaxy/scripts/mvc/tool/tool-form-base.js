@@ -48,14 +48,25 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             var self = this;
             var req_message = self._templateRequirements(options)[0].textContent;
             this.options = Utils.merge(options, this.options);
-            this.options = Utils.merge({
-                icon            : options.icon,
-                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')' + " . " + req_message + ".",
-                operations      : !this.options.hide_operations && this._operations(),
-                onchange        : function() {
-                    self.refresh();
-                }
-            }, this.options);
+            if (options.requirements.length > 0) {
+                this.options = Utils.merge({
+                    icon            : options.icon,
+                    title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')' + ". " + req_message + ".",
+                    operations      : !this.options.hide_operations && this._operations(),
+                    onchange        : function() {
+                        self.refresh();
+                    }
+                }, this.options);
+            } else {
+                 this.options = Utils.merge({
+                    icon            : options.icon,
+                    title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')' + ".",
+                    operations      : !this.options.hide_operations && this._operations(),
+                    onchange        : function() {
+                        self.refresh();
+                    }
+                }, this.options);
+            };
             this.options.customize && this.options.customize( this.options );
             this.render();
             if ( !this.options.collapsible ) {
