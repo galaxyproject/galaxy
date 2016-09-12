@@ -305,7 +305,99 @@ communicating with an external data source application (the default is ``get``).
   </xs:complexType>
   <xs:complexType name="Code">
     <xs:annotation>
-      <xs:documentation xml:lang="en">**Deprecated** do not use this unless absolutely necessary. This tag set provides detailed control of the way the tool is executed. This (optional) code can be deployed in a separate file in the same directory as the tool's config file. These hooks are being replaced by new tool config features and methods in the ~/lib/galaxy/tools/__init__.py code file.</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+**Deprecated** do not use this unless absolutely necessary.
+
+This tag set provides detailed control of the way the tool is executed. This
+(optional) code can be deployed in a separate file in the same directory as the
+tool's config file. These hooks are being replaced by new tool config features
+and methods in the ~/lib/galaxy/tools/__init__.py code file.
+
+### Examples
+
+#### Dynamic Options
+
+Use associated dynamic select lists where selecting an option in the first
+select list dynamically re-renders the options in the second select list. In
+this example, we are populating both dynamic select lists from metadata elements
+associated with a tool's single input dataset. The 2 metadata elements we're
+using look like this.
+
+```python
+MetadataElement( name="field_names", default=[], desc="Field names", readonly=True, optional=True, visible=True, no_value=[] )
+# The keys in the field_components map to the list of field_names in the above element
+# which ensures order for select list options that are built from it.
+MetadataElement( name="field_components", default={}, desc="Field names and components", readonly=True, optional=True, visible=True, no_value={} )
+```
+
+Our tool config includes a code file tag like this.
+
+```xml
+<code file="tool_form_utils.py" />
+```
+
+Here are the relevant input parameters in our tool config. The first parameter
+is the input dataset that includes the above metadata elements.
+
+```xml
+<param name="input" type="data" format="vtkascii,vtkbinary" label="Shape with uncolored surface field">
+    <validator type="expression" message="Shape must have an uncolored surface field.">value is not None and len(value.metadata.field_names) > 0</validator>
+</param>
+```
+
+The following parameter dynamically renders a select list consisting of the
+elements in the ``field_names`` metadata element associated with the selected
+input dataset.
+
+```xml
+<param name="field_name" type="select" label="Field name" refresh_on_change="True">
+    <options>
+        <filter type="data_meta" ref="input" key="field_names"/>
+        <validator type="no_options" message="The selected shape has no uncolored surface fields." />
+    </options>
+</param>
+```
+
+The following parameter calls the ``get_field_components_options()`` function in
+the ``tool_form_utils.py`` code file discussed above. This function returns the
+value of the input dataset's ``field_components`` metadata element dictionary
+whose key is the currently selected ``field_name`` from the select list parameter
+above.
+
+```xml
+<param name="field_component_index" type="select" label="Field component index" dynamic_options="get_field_components_options(input, field_name=field_name)" help="Color will be applied to the selected field's component associated with this index." />
+```
+
+Changing the selected option in the ``field_name`` select list will dynamically
+re-render the options available in the associated ``field_component_index`` select
+list, which is the behavior we want.
+
+The ``get_field_components_options()`` method looks like this.
+
+```python
+def get_field_components_options( dataset, field_name ):
+    options = []
+    if dataset.metadata is None:
+        return options
+    if not hasattr( dataset.metadata, 'field_names' ):
+        return options
+    if dataset.metadata.field_names is None:
+        return options
+    if field_name is None:
+        # The expression validator that helps populate the select list of input
+        # datsets in the icqsol_color_surface_field tool does not filter out
+        # datasets with no field field_names, so we need this check.
+        if len( dataset.metadata.field_names ) == 0:
+            return options
+        field_name = dataset.metadata.field_names[0]
+    field_components = dataset.metadata.field_components.get( field_name, [] )
+    for i, field_component in enumerate( field_components ):
+        options.append( ( field_component, field_component, i == 0 ) )
+    return options
+```
+
+]]></xs:documentation>
+
     </xs:annotation>
     <xs:attribute name="file" type="xs:string" use="required">
       <xs:annotation>
@@ -1760,6 +1852,11 @@ This variant of the ``options`` directive is discouraged because it exposes
 internal Galaxy structures. See the older
 [bowtie](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie_wrappers/bowtie_wrapper.xml)
 wrappers for an example of these.
+
+### Other Ways to Dynamically Generate Options
+
+Though deprecated and discouraged, [``code``](#tool|code) blocks can also be
+used to generate dynamic options.
 
 ]]>
 </xs:documentation>
