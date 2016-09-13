@@ -88,22 +88,25 @@ class DependencyManager( object ):
         self.dependency_resolvers = self.__build_dependency_resolvers( conf_file )
 
     def dependency_shell_commands( self, requirements, **kwds ):
-        commands = []
+        requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
+        return [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
+
+    def requirements_to_dependencies(self, requirements, **kwds):
+        """
+        Takes a list of requirements and returns a dictionary
+        with requirements as key and dependencies as value.
+        """
+        requirement_to_dependency = dict()
         for requirement in requirements:
-            log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = NullDependency(version=requirement.version, name=requirement.name)
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,
                                             type=requirement.type,
                                             **kwds )
                 log.debug(dependency.resolver_msg)
-            dependency_commands = dependency.shell_commands( requirement )
-            if not dependency_commands:
-                log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
-            else:
-                commands.append( dependency_commands )
-        return commands
+                if dependency.dependency_type:
+                    requirement_to_dependency[requirement] = dependency
+        return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
         return any( map( lambda r: isinstance( r, ToolShedPackageDependencyResolver ), self.dependency_resolvers ) )
