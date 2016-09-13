@@ -205,6 +205,30 @@
     ${ render_msg( 'One or more of your original parameters may no longer be valid or displayed properly.', status='warning' ) }
 %endif
 
+%if job and job.dependencies:
+    <br>
+    <table class="tabletip">
+        <thead>
+        <tr>
+            <th>Dependency</th>
+            <th>Dependency Type</th>
+            <th>Version</th>
+        </tr>
+        </thead>
+        <tbody>
+
+            %for dependency in job.dependencies:
+                <tr><td>${ dependency['name'] | h }</td>
+                    <td>${ dependency['dependency_type'] | h }</td>
+                    <td>${ dependency['version'] | h }</td>
+                </tr>
+            %endfor
+
+        </tbody>
+    </table>
+    <br />
+%endif
+
 <script type="text/javascript">
 $(function(){
     $( '.input-dataset-show-params' ).on( 'click', function( ev ){

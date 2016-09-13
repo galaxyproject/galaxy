@@ -304,6 +304,7 @@ class Tool( object, Dictifiable ):
         self.guid = guid
         self.old_id = None
         self.version = None
+        self.dependencies = []
         # Enable easy access to this tool's version lineage.
         self.lineage_ids = []
         # populate toolshed repository info, if available
@@ -1284,13 +1285,15 @@ class Tool( object, Dictifiable ):
 
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
-        return self.app.toolbox.dependency_manager.dependency_shell_commands(
+        requirements_to_dependencies = self.app.toolbox.dependency_manager.requirements_to_dependencies(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
             metadata=metadata,
         )
+        self.dependencies = [dep.to_dict() for dep in requirements_to_dependencies.values()]
+        return [dep.shell_commands(req) for req, dep in requirements_to_dependencies.items()]
 
     @property
     def installed_tool_dependencies(self):

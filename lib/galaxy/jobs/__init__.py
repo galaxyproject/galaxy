@@ -755,6 +755,7 @@ class JobWrapper( object ):
         self.sa_session = self.app.model.context
         self.extra_filenames = []
         self.command_line = None
+        self.dependencies = []
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
@@ -902,6 +903,7 @@ class JobWrapper( object ):
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
+        job.dependencies = self.tool.dependencies
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files
