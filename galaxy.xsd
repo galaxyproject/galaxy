@@ -1113,12 +1113,14 @@ etc...).
       <xs:element name="element" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
-      <xs:documentation xml:lang="en"><![CDATA[
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
 
 This value is the same as the value of the ``name`` attribute of the
 ``<collecton>`` tag set contained within the tool's ``<outputs>`` tag set.
 
 ]]></xs:documentation>
+      </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type" type="xs:string">
       <xs:annotation>
@@ -1132,6 +1134,7 @@ or ``list:paired``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+
   <xs:complexType name="TestAssertions">
     <xs:annotation>
       <xs:documentation><![CDATA[
