@@ -173,6 +173,9 @@ class ManageDatasetRBACPermission( DatasetRBACPermission ):
         # anonymous users cannot manage permissions on datasets
         if self.user_manager.is_anonymous( user ):
             return False
+        # admin can always manager permissions
+        if self.user_manager.is_admin( user ):
+            return True
         for role in user.all_roles():
             if self._role_is_permitted( dataset, role ):
                 return True
@@ -225,7 +228,9 @@ class AccessDatasetRBACPermission( DatasetRBACPermission ):
         current_roles = self._roles( dataset )
         # NOTE: that because of short circuiting this allows
         #   anonymous access to public datasets
-        return ( self._is_public_from_roles( current_roles ) or
+        return ( self._is_public_based_on_roles( current_roles ) or
+                 # admin can always manager permissions
+                 self.user_manager.is_admin( user ) or
                  self._user_has_all_roles( user, current_roles ) )
 
     def grant( self, item, user ):
@@ -241,14 +246,14 @@ class AccessDatasetRBACPermission( DatasetRBACPermission ):
     # TODO: these are a lil off message
     def is_public( self, dataset ):
         current_roles = self._roles( dataset )
-        return self._is_public_from_roles( current_roles )
+        return self._is_public_based_on_roles( current_roles )
 
     def set_private( self, dataset, user, flush=True ):
         private_role = self.user_manager.private_role( user )
         return self.set( dataset, [ private_role ], flush=flush )
 
     # ---- private
-    def _is_public_from_roles( self, roles ):
+    def _is_public_based_on_roles( self, roles ):
         return len( roles ) == 0
 
     def _user_has_all_roles( self, user, roles ):
@@ -259,6 +264,6 @@ class AccessDatasetRBACPermission( DatasetRBACPermission ):
 
     def _role_is_permitted( self, dataset, role ):
         current_roles = self._roles( dataset )
-        return ( self._is_public_from_roles( current_roles ) or
+        return ( self._is_public_based_on_roles( current_roles ) or
                  # if there's only one role and this is it, let em in
                  ( ( len( current_roles ) == 1 ) and ( role == current_roles[0] ) ) )

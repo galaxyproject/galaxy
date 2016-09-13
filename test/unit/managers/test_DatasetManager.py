@@ -112,6 +112,11 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.log( "a dataset without permissions should be accessible" )
         self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
 
+        self.log( "a dataset without permissions should be manageable by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
+        self.log( "a dataset without permissions should be accessible by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
+
     def test_create_public_dataset( self ):
         self.log( "should be able to create a new Dataset and give it some permissions that actually, you know, "
             "might work if there's any justice in this universe" )
@@ -134,6 +139,11 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.assertFalse( self.dataset_manager.permissions.manage.is_permitted( dataset, user3 ) )
         self.log( "a public dataset should be accessible" )
         self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
+
+        self.log( "a public dataset should be manageable by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
+        self.log( "a public dataset should be accessible by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
 
     def test_create_private_dataset( self ):
         self.log( "should be able to create a new Dataset and give it private permissions" )
@@ -162,10 +172,10 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.log( "a private dataset shouldn't be accessible to just anyone" )
         self.assertFalse( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
 
-        self.log( "a private dataset shouldn be manageable by an admin" )
-        self.assertFalse( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
-        self.log( "a private dataset shouldn be accessible by an admin" )
-        self.assertFalse( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
+        self.log( "a private dataset should be manageable by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
+        self.log( "a private dataset should be accessible by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
 
 
 # =============================================================================
