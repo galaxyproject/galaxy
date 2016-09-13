@@ -384,6 +384,10 @@ class DatasetDeserializerTestCase( BaseTestCase ):
         self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
             dataset, user=user3, data={ 'permissions': existing_permissions })
 
+        self.log( 'deserializing permissions using an anon user should error' )
+        self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
+            dataset, user=None, data={ 'permissions': existing_permissions })
+
         self.log( 'deserializing permissions with a single access should make the dataset private' )
         private_role = self.user_manager.private_role( who_manages )
         private_role = private_role.to_dict( value_mapper={ 'id' : self.app.security.encode_id } )
