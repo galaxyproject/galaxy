@@ -522,46 +522,63 @@ def get_field_components_options( dataset, field_name ):
 
   <xs:complexType name="Tests">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Container tag set for the <test> tag sets. Any number of tests can be included, and each test is wrapped within separate <test> tag sets. Functional tests are executed via Planemo or the ~/run_tests.sh shell script.
+      <xs:documentation xml:lang="en"><![CDATA[
 
-See [WritingTests](https://wiki.galaxyproject.org/Admin/Tools/WritingTests) on the wiki and [Test-Driven Development](http://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development) section of the Planemo docs for more information on writing tests.]]></xs:documentation>
+Container tag set for the <test> tag sets. Any number of tests can be included,
+and each test is wrapped within separate <test> tag sets. Functional tests are
+executed via [Planemo](http://planemo.readthedocs.io/) or the
+[run_tests.sh](https://github.com/galaxyproject/galaxy/blob/dev/run_tests.sh)
+shell script distributed with Galaxy.
+
+The documentation contained here is mostly reference documentation, for
+tutorials on writing tool tests please check out Planemo's
+[Test-Driven Development](http://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development)
+documentation or the much older wiki content for
+[WritingTests](https://wiki.galaxyproject.org/Admin/Tools/WritingTests).
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="test" type="Test" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
+
   <xs:complexType name="Test">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[This tag set contains the necessary parameter values for executing the tool via the functional test framework.
+      <xs:documentation xml:lang="en"><![CDATA[
 
-Example
+This tag set contains the necessary parameter values for executing the tool via
+the functional test framework.
 
-The following two tests will tool execute the ~/tools/filters/sorter.xml tool. Notice the way that the tool's inputs and outputs are defined.
+### Example
 
+The following two tests will tool execute the
+[/tools/filters/sorter.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/filters/sorter.xml)
+tool. Notice the way that the tool's inputs and outputs are defined.
 
-Toggle line numbers
+```xml
   <tests>
     <test>
-      <param name="input" value="1.bed"/>
+      <param name="input" value="1.bed" ftype="bed" />
       <param name="column" value="1"/>
       <param name="order" value="ASC"/>
       <param name="style" value="num"/>
-      <output name="out_file1" file="sort1_num.bed"/>
+      <output name="out_file1" file="sort1_num.bed" ftype="bed" />
     </test>
     <test>
-      <param name="input" value="7.bed"/>
+      <param name="input" value="7.bed" ftype="bed" />
       <param name="column" value="1"/>
       <param name="order" value="ASC"/>
       <param name="style" value="alpha"/>
-      <output name="out_file1" file="sort1_alpha.bed"/>
+      <output name="out_file1" file="sort1_alpha.bed" ftype="bed" />
     </test>
   </tests>
-Example
+```
 
-Test the execution of the MAF-to-FASTA converter ( ~/tools/maf/maf_to_fasta.xml ).
+The following example, tests the execution of the MAF-to-FASTA converter
+([/tools/maf/maf_to_fasta.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/maf/maf_to_fasta.xml)).
 
-
-Toggle line numbers
+```xml
 <tests>
     <test>
         <param name="input1" value="3.maf" ftype="maf"/>
@@ -570,12 +587,13 @@ Toggle line numbers
         <output name="out_file1" file="cf_maf2fasta_concat.dat" ftype="fasta"/>
     </test>
 </tests>
-Example
+```
 
-This test demonstrates verifying specific properties about a test output instead of directly comparing it to another file. Here the file attribute is not specified and instead a series of assertions is made about the output.
+This test demonstrates verifying specific properties about a test output instead
+of directly comparing it to another file. Here the file attribute is not
+specified and instead a series of assertions is made about the output.
 
-
-Toggle line numbers
+```xml
 <test>
     <param name="input" value="maf_stats_interval_in.dat" />
     <param name="lineNum" value="99999"/>
@@ -591,6 +609,8 @@ Toggle line numbers
         </assert_contents>
     </output>
 </test>
+```
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -620,12 +640,15 @@ Toggle line numbers
     </xs:attribute>
     <xs:attribute name="expect_num_outputs" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Assert the number of outputs this test should produce.</xs:documentation>
+        <xs:documentation xml:lang="en">Assert the number of outputs this test
+should produce, this is useful to ensure ``filter`` directives are implemented correctly.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="expect_failure" type="xs:boolean" default="false">
+    <xs:attribute name="expect_failure" type="PermissiveBoolean" default="false">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Expect the job to fail, if set to true no job output checks may be present in test definition.</xs:documentation>
+        <xs:documentation xml:lang="en">Setting this to ``true`` indicates
+the expectation is for the job fail. If set to ``true`` no job output checks may
+be present in ``test`` definition.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="maxseconds" type="xs:integer">
@@ -644,17 +667,27 @@ Toggle line numbers
       <xs:element name="output_collection" type="TestOutputCollection"/>
       <xs:element name="assert_command" type="TestAssertions">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+          <xs:documentation xml:lang="en">Describe assertions about the job's
+generated command-line.
+
+$assertions
+</xs:documentation>
         </xs:annotation>
       </xs:element>
       <xs:element name="assert_stdout" type="TestAssertions">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+          <xs:documentation xml:lang="en">Describe assertions about the job's standard error.
+
+$assertions
+</xs:documentation>
         </xs:annotation>
       </xs:element>
       <xs:element name="assert_stderr" type="TestAssertions">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
+          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.
+
+$assertions
+</xs:documentation>
         </xs:annotation>
       </xs:element>
     </xs:choice>
@@ -681,7 +714,13 @@ Toggle line numbers
   </xs:complexType>
   <xs:complexType name="TestParam">
     <xs:annotation>
-      <xs:documentation xml:lang="en">This tag set defines the tool's input parameters for executing the tool via the functional test framework.</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set defines the tool's input parameters for executing the tool via the
+functional test framework. See [``test``'s](#tool|tests|test) documentation for
+some simple examples of parameters.
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="collection" type="TestCollection" minOccurs="0" maxOccurs="1" />
@@ -690,22 +729,29 @@ Toggle line numbers
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must match the name of the associated input parameter.</xs:documentation>
+        <xs:documentation xml:lang="en">This value must match the name of the
+associated input parameter.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must be one of the legal values that can be assigned to an input parameter.</xs:documentation>
+        <xs:documentation xml:lang="en">This value must be one of the legal
+values that can be assigned to an input parameter.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ftype" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This attribute name should be included only with the parameter that defines the input dataset for the tool. If this attribute name is not included, the functional test framework will attempt to determine the data type for the input dataset using the data type sniffers.</xs:documentation>
+        <xs:documentation xml:lang="en">This attribute name should be included
+only with the parameter that defines the input dataset for the tool. If this
+attribute name is not included, the functional test framework will attempt to
+determine the data type for the input dataset using the data type sniffers.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="dbkey" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">dbkey for the referenced input format.</xs:documentation>
+        <xs:documentation xml:lang="en">Specifies a ``dbkey`` value for the
+referenced input dataset. This is only valid if the corresponding parameter is
+of ``type`` ``data``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -739,7 +785,16 @@ Toggle line numbers
   </xs:complexType>
   <xs:complexType name="TestOutput">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for TestOutput</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set defines the variable that names the output dataset for the
+functional test framework. The functional test framework will execute the tool
+using the parameters defined in the ``<param>`` tag sets and generate a
+temporary file, which will either be compared with the file named in the
+``file`` attribute value or checked against assertions made by a child
+``assert_contents`` tag to verify that the tool is functionally correct.
+
+        ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestOutputElement" minOccurs="0" maxOccurs="unbounded" />
@@ -747,37 +802,68 @@ Toggle line numbers
     <!-- TODO: This would be more percise if this was required if at the top-level. -->
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+This value is the same as the value of the ``name`` attribute of the ``<data>``
+tag set contained within the tool's ``<outputs>`` tag set.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="file" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, this value is the name of the output file stored in the target
+``test-data`` directory which will be used to compare the results of executing
+the tool via the functional test framework.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ftype" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for ftype</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, this value will be checked against the corresponding output's
+data type. If these do match, the test will fail.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="sort" type="PermissiveBoolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for sort</xs:documentation>
+        <xs:documentation xml:lang="en">This flag causes the lines of the output
+to be sorted before they are compared to the expected output. This could be
+useful for non-deterministic output.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">An alias for file.</xs:documentation>
+        <xs:documentation xml:lang="en">An alias for ``file``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="md5" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Expected MD5sum for output.</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, the target output's MD5 hash should match the value specified
+here. For large static files it may be inconvenient to upload the entiry file
+and this can be used instead.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="checksum" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Checksum expression for output in the form ``hash_type:hash_value`` (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, the target output's checksum should match the value specified
+here. This value should have the form ``hash_type:hash_value``
+(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
+it may be inconvenient to upload the entiry file and this can be used instead.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="compare" type="TestOutputCompareType">
@@ -799,7 +885,62 @@ Toggle line numbers
       <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
       <xs:element name="discovered_dataset" type="TestDiscoveredDataset"/>
       <!-- TODO: To be more percise only one assert_contents is allowed - this should not be in here. -->
-      <xs:element name="assert_contents" type="TestAssertions"/>
+      <xs:element name="assert_contents" type="TestAssertions">
+        <xs:annotation>
+          <xs:documentation><![CDATA[
+$assertions
+
+### Examples
+
+The following demonstrtes a wide variety of text-based and tabular
+assertion statements.
+
+```xml
+<output name="out_file1">
+    <assert_contents>
+        <has_text text="chr7" />
+        <not_has_text text="chr8" />
+        <has_text_matching expression="1274\d+53" />
+        <has_line_matching expression=".*\s+127489808\s+127494553" />
+        <!-- &#009; is XML escape code for tab -->
+        <has_line line="chr7&#009;127471195&#009;127489808" />
+        <has_n_columns n="3" />
+    </assert_contents>
+</output>
+```
+
+The following demonstrtes a wide variety of XML assertion statements.
+
+```xml
+<output name="out_file1">
+    <assert_contents>
+        <is_valid_xml />
+        <has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />
+        <has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />
+        <element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*" />
+        <element_text_is path="BlastOutput_program" text="blastp" />
+        <element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def">
+            <not_has_text text="EDK72998.1" />
+            <has_text_matching expression="ABK[\d\.]+" />
+        </element_text>
+    </assert_contents>
+</output>
+```
+
+The following demonstrtes verifying XML content with XPath-like expressions.
+
+```xml
+<output name="out_file1">
+    <assert_contents>
+        <attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />
+        <attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />
+    </assert_contents>
+</output>
+```
+
+]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
       <!-- TODO: This would be more percise if this was only allowed at the top-level. -->
       <xs:element name="extra_files" type="TestExtraFile" />
       <xs:element name="metadata" type="TestOutputMetadata"/>
@@ -882,7 +1023,19 @@ Toggle line numbers
   </xs:complexType>
   <xs:complexType name="TestAssertions">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for TestAssertion</xs:documentation>
+      <xs:documentation><![CDATA[
+This tag set defines a sequence of checks or assertions to run against the
+target output. This tag requires no attributes, but child tags should be used to
+define the assertions to make about the output. The functional test framework
+makes it easy to extend Galaxy with such tags, the following table summarizes
+many of the default assertion tags that come with Galaxy and examples of each
+can be found below.
+
+The implementation of these tags are simply Python functions defined in the
+[``galaxy.tools.verify.asserts``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts]
+module.
+]]>
+      </xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
@@ -964,12 +1117,12 @@ Toggle line numbers
       </xs:element>
       <xs:element name="attribute_matches" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` matches the regular expression specified by ``expression`` || ``<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />``).]]></xs:documentation>
+          <xs:documentation><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` matches the regular expression specified by ``expression`` (e.g. ``<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />``).]]></xs:documentation>
         </xs:annotation>
       </xs:element>
       <xs:element name="element_text" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>`` ||).]]></xs:documentation>
+          <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
         </xs:annotation>
       </xs:element>
     </xs:choice>
@@ -2837,9 +2990,12 @@ in the same way that the command line parameters are (discussed in the
 
 The following will create a variable called ``$out_file1`` with data type
 ``pdf``.
+
+```xml
 <outputs>
     <data format="pdf" name="out_file1" />
 </outputs>
+```
 
 The valid values for format can be found in
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample).
@@ -2869,7 +3025,7 @@ conditional blocks should not contain parameters with the same name.
         </param>
         <when value="no"/>
         <when value="yes">
-        <!-- qual454, qualsolid, qualillumina -->
+            <!-- qual454, qualsolid, qualillumina -->
             <param name="qfile" type="data" format="qual" label="qfile - a quality file"/>
         </when>
     </conditional>
@@ -2983,14 +3139,28 @@ dataset in the history view. (Default is ``false``.)</xs:documentation>
 
   <xs:complexType name="Collection">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Collection</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<outputs>`` tag set, and it defines the
+output dataset collection description resulting from the tool's execution. The
+value of the attribute ``label`` can be acquired from input parameters or
+metadata in the same way that the command line parameters are (discussed in the
+[``command``](#tool|command) directive).
+
+Creating collections in tools is covered in-depth in
+[planemo's documentation](http://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="CollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+    <xs:attribute name="name" type="xs:string" required="true">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
+``name`` is used as the Cheetah variable containing the Galaxy assigned output
+path in ``command`` and ``configfile`` elements. The name should not contain
+pipes or periods (e.g. ``.``).]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type" type="xs:string">
@@ -3000,28 +3170,40 @@ dataset in the history view. (Default is ``false``.)</xs:documentation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+This will be the name of the history item for the output data set. The string
+can include structure like ``${<some param name>.<some attribute>}``, as
+discussed for command line parameters in the ``<command>`` tag set section
+above. The default label is ``${tool.name} on ${on_string}``.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Input collection or dataset to derive output dataset element's format/datatype from.</xs:documentation>
+        <xs:documentation xml:lang="en">This is the name of input collection or
+dataset to derive output dataset collection's element's format/datatype from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Input collection to derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
+        <xs:documentation xml:lang="en">This is the name of input collection to
+derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-
     <xs:attribute name="structured_like" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Input collection or dataset to derive structure of input from (out element count and identifiers).</xs:documentation>
+        <xs:documentation xml:lang="en">This is the name of input collection or
+dataset to derive "structure" of the output from (output element count and
+identifiers). For instance, if the referenced input has three ordered items with
+identifiers ``sample1``, ``sample2``,  and ``sample3``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="inherit_format" type="xs:boolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``structured_like`` is set, inherit format of outputs from format of corresponding input.</xs:documentation>
+        <xs:documentation xml:lang="en">If ``structured_like`` is set, inherit
+format of outputs from format of corresponding input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4381,7 +4563,10 @@ and ``bibtex`` are the only supported options.</xs:documentation>
   </xs:simpleType>
   <xs:simpleType name="TestOutputCompareType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Type of comparison to use for test outputs.</xs:documentation>
+      <xs:documentation xml:lang="en">Type of comparison to use when comparing
+test generated output files to expected output files. Currently valid value are
+``diff`` (the default), ``re_match``, ``sim_size``, ``re_match_multiline``,
+and ``contains``.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="diff"/>
