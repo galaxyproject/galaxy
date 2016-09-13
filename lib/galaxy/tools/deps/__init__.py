@@ -97,6 +97,7 @@ class DependencyManager( object ):
                                             version=requirement.version,
                                             type=requirement.type,
                                             **kwds )
+                log.debug(dependency.resolver_msg)
             dependency_commands = dependency.shell_commands( requirement )
             if not dependency_commands:
                 log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
