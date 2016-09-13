@@ -2797,7 +2797,12 @@ added to the end of the list.</xs:documentation>
   <xs:complexType name="Outputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Container tag set for the <data> tag set. The files and collections created by tools as a result of their execution are named by Galaxy. You specify the number and type of your output files using the contained <data> and <collection> tags. You must pass them to your tool executable through using line variables just like the parameters described in the previous sections.
+Container tag set for the ``<data>`` and ``<collection>`` tag sets.
+The files and collections created by tools as a result of their execution are
+named by Galaxy. You specify the number and type of your output files using the
+contained ``<data>`` and ``<collection>`` tags. These may be passed to your tool
+executable through using line variables just like the parameters described in
+the ``<inputs>`` documentation.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -2820,50 +2825,150 @@ Container tag set for the <data> tag set. The files and collections created by t
   </xs:group>
   <xs:complexType name="Data">
     <xs:annotation>
-      <xs:documentation xml:lang="en">TODOWIKIMOVE</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<outputs>`` tag set, and it defines the
+output data description for the files resulting from the tool's execution. The
+value of the attribute ``label`` can be acquired from input parameters or metadata
+in the same way that the command line parameters are (discussed in the
+<command> tag set section above).
+
+### Examples
+
+The following will create a variable called ``$out_file1`` with data type
+``pdf``.
+<outputs>
+    <data format="pdf" name="out_file1" />
+</outputs>
+
+The valid values for format can be found in
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample).
+
+The following will create a dataset in the history panel whose data type is the
+same as that of the input dataset selected (and named ``input1``) for the tool.
+
+```xml
+<outputs>
+    <data format_source="input1" name="out_file1" metadata_source="input1"/>
+</outputs>
+```
+
+The following will create datasets in the history panel, setting the output data
+type to be the same as that of an input dataset named by the ``format_source``
+attribute. Note that a conditional name is not included, so 2 separate
+conditional blocks should not contain parameters with the same name.
+
+```xml
+<inputs>
+    <!-- fasta may be an aligned fasta that subclasses Fasta -->
+    <param name="fasta" type="data" format="fasta" label="fasta - Sequences"/>
+    <conditional name="qual">
+        <param name="add" type="select" label="Trim based on a quality file?" help="">
+            <option value="no">no</option>
+            <option value="yes">yes</option>
+        </param>
+        <when value="no"/>
+        <when value="yes">
+        <!-- qual454, qualsolid, qualillumina -->
+            <param name="qfile" type="data" format="qual" label="qfile - a quality file"/>
+        </when>
+    </conditional>
+</inputs>
+<outputs>
+    <data format_source="fasta" name="trim_fasta"
+          label="${tool.name} on ${on_string}: trim.fasta"/>
+    <data format_source="qfile" name="trim_qual"
+          label="${tool.name} on ${on_string}: trim.qual">
+        <filter>qual['add'] == 'yes'</filter>
+    </data>
+</outputs>
+```
+
+Assume that the tool includes an input parameter named ``database`` which is a
+select list (as shown below). Also assume that the user selects the first option
+in the ``$database`` select list. Then the following will ensure that the tool
+produces a tabular data set whose associated history item has the label ``Blat
+on Human (hg18)``.
+
+```xml
+<inputs>
+    <param format="tabular" name="input" type="data" label="Input stuff"/>
+    <param type="select" name="database" label="Database">
+        <option value="hg18">Human (hg18)</option>
+        <option value="dm3">Fly (dm3)</option>
+    </param>
+</inputs>
+<outputs>
+    <data format="input" name="output" label="Blat on ${database.value_label}" />
+</outputs>
+```
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="DataElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <!-- TODO: add a unique constraint for action. -->
-    <xs:attribute name="name" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+    <xs:attribute name="name" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
+``name`` is used as the Cheetah variable containing the Galaxy assigned output
+path in ``command`` and ``configfile`` elements. The name should not contain
+pipes or periods (e.g. ``.``).]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="auto_format" type="PermissiveBoolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``true``, this output will sniffed and its format determined automatically by Galaxy.</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If ``true``, this output will sniffed and its format determined automatically by Galaxy.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
+        <xs:documentation xml:lang="en">The short name for the output datatype.
+The valid values for format can be found in
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for format_source</xs:documentation>
+        <xs:documentation xml:lang="en">This sets the data type of the output file to be the same format as that of a tool input dataset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="metadata_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for metadata_source</xs:documentation>
+        <xs:documentation xml:lang="en">This copies the metadata information
+from the tool's input dataset. This is particularly useful for interval data
+types where the order of the columns is not set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+This will be the name of the history item for the output data set. The string
+can include structure like ``${<some param name>.<some attribute>}``, as
+discussed for command line parameters in the ``<command>`` tag set section
+above. The default label is ``${tool.name} on ${on_string}``.
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for from_work_dir</xs:documentation>
+        <xs:documentation xml:lang="en">Relative path to a file produced by the
+tool in its working directory. Output's contents are set to this file's
+contents.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="hidden" type="xs:boolean">
+    <xs:attribute name="hidden" type="xs:boolean" default="false">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for hidden</xs:documentation>
+        <xs:documentation xml:lang="en">Boolean indicating whether to hide
+dataset in the history view. (Default is ``false``.)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2924,7 +3029,15 @@ Container tag set for the <data> tag set. The files and collections created by t
   <xs:complexType name="OutputFilter">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-The ``<data>`` tag can contain a ``<filter>`` tag which includes a Python code block to be executed to test whether to include this output in the outputs the tool ultimately creates. If the code, when executed, returns ``True``, the output dataset is retained. In these code blocks the tool parameters appear as Python variables and are thus referred to without the $ used for the Cheetah template (used in the ``<command>`` tag). Variables that are part of conditionals are accessed using a hash named after the conditional. For example:
+The ``<data>`` tag can contain a ``<filter>`` tag which includes a Python code
+block to be executed to test whether to include this output in the outputs the
+tool ultimately creates. If the code, when executed, returns ``True``,
+the output dataset is retained. In these code blocks the tool parameters appear
+as Python variables and are thus referred to without the $ used for the Cheetah
+template (used in the ``<command>`` tag). Variables that are part of
+conditionals are accessed using a hash named after the conditional.
+
+### Example
 
 ```xml
     <inputs>
@@ -3584,7 +3697,8 @@ Example:
     <xs:attribute name="galaxy_value" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-The target value (e.g. for setting data format: the list of supported data formats is contained in the ~/config/datatypes_conf.xml.sample file).
+The target value (e.g. for setting data format: the list of supported data formats is contained in the
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -3800,7 +3914,13 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
 
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[See ~/tools/extract/extract_genomic_dna.xml for an example of how this tag set is used in a tool. This tag set is optionally contained within the <data> tag set and is the container tag set for the following <when> tag set.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[See
+[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
+or the test tool
+[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+for simple examples of how this tag set is used in a tool. This tag set is
+optionally contained within the ``<data>`` tag set and is the container tag set
+for the following ``<when>`` tag set.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="when" type="ChangeFormatWhen" maxOccurs="unbounded"/>
@@ -3809,12 +3929,14 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
   <xs:complexType name="ChangeFormatWhen">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-If the data type of the output dataset is the specified type, the data type is changed to the desired type.
 
-Examples:
+If the data type of the output dataset is the specified type, the data type is
+changed to the desired type.
 
-Assume that your tool config includes the following select list parameter structure:
+### Examples
 
+Assume that your tool config includes the following select list parameter
+structure:
 
 ```xml
 <param name="out_format" type="select" label="Output data type">
@@ -3823,7 +3945,9 @@ Assume that your tool config includes the following select list parameter struct
 </param>
 ```
 
-Then whenever the user selects the "interval"" option from the select list, the following structure in your tool config will override the format="fasta" setting in the <data> tag set with format="interval".
+Then whenever the user selects the ``interval`` option from the select list, the
+following structure in your tool config will override the ``format="fasta"`` setting
+in the ``<data>`` tag set with ``format="interval"``.
 
 ```xml
 <outputs>
@@ -3834,22 +3958,34 @@ Then whenever the user selects the "interval"" option from the select list, the 
     </data>
 </outputs>
 ```
+
+See
+[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
+or the test tool
+[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+for more examples.
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
     <xs:attribute name="input" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must be the attribute name of the desired input parameter</xs:documentation>
+        <xs:documentation xml:lang="en">This value must be the attribute name of
+the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must also be an attribute name of an input parameter</xs:documentation>
+        <xs:documentation xml:lang="en">This value must also be an attribute
+name of an input parameter (e.g. ``value="interval"`` above).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must be a supported data type (e.g. ``format="interval"``)</xs:documentation>
+        <xs:documentation xml:lang="en">This value must be a supported data type
+(e.g. ``format="interval"``). See
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
+for a list of supported formats.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
