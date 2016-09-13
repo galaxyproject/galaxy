@@ -1036,11 +1036,6 @@ tools will not need to specify any attributes on this tag itself.
       <xs:documentation xml:lang="en">Documentation for InputType</xs:documentation>
     </xs:annotation>
     <xs:sequence/>
-    <xs:attribute name="name" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Name for this element</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
   </xs:complexType>
 
 
@@ -1132,6 +1127,11 @@ between paired inputs of single stranded inputs.
           <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
           <xs:element name="when" type="c" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Name for this element</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="value_from" type="xs:string">
           <xs:annotation>
             <xs:documentation><![CDATA[Infrequently used option to dynamically access Galaxy internals, this should be avoided.
@@ -1246,6 +1246,11 @@ This is an example test case with multiple repeat elements for the example above
         <xs:sequence>
           <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Name for this element</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="title" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en"> The title of the repeat section, which will be displayed on the tool form </xs:documentation>
@@ -1327,62 +1332,213 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
 
   <xs:complexType name="Param">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Documentation for Param</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Contained within the ``<inputs>`` tag set - each of these specifies a field that
+will be displayed on the tool form. Ultimately, the values of these form fields
+will be passed as the command line parameters to the tool's executable.
+
+### Common Attributes
+
+The attributes valid for this tag vary wildly based on the ``type`` of the
+parameter being described. All the attributes for the ``param`` element are
+documented below for completeness, but here are the common ones for each
+type are as follows:
+
+$attribute_list:name,type,optional,label,help,argument
+
+### Parameter Types
+
+#### ``text``
+
+When ``type="text"``, the parameter is free form text and appears as a text box
+in the tool form.
+
+$attribute_list:value,size,area
+
+##### Examples
+
+Sometimes you need labels for data or graph axes, chart titles, etc. This can be
+done using a text field. The following will create a text box 30 characters wide
+with the default value of "V1".
+
+```xml
+<param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
+```
+
+The ``size`` parameter can be two dimensional, if it is the textbox will be
+rendered on the tool form as a text area instead of a single line text box.
+
+```xml
+<param name="foo" type="text" area="True" size="5x25" />
+```
+
+#### ``integer`` and ``float``
+
+These parameters represent whole number and real numbers, respectively.
+
+$attribute_list:value,min,max
+
+##### Example
+
+```
+<param name="region_size" size="4" type="integer" value="1" label="flanking regions of size" />
+```
+
+#### ``boolean``
+
+This represents a binary true or false value.
+
+$attribute_list:checked,truevalue,falsevalue
+
+#### ``data``
+
+A dataset from the current history. Multiple types might be used for the param form.
+
+##### Examples
+
+The following will find all "coordinate interval files" contained within the
+current history and dynamically populate a select list with them. If they are
+selected, their destination and internal file name will be passed to the
+appropriate command line variable.
+
+```xml
+<param name="interval_file" type="data" format="interval" label="near intervals in"/>
+```
+
+The following demonstrates a ``param`` which may accept multiple files and
+multiple formats.
+
+```xml
+<param format="sam,bam" multiple="true" name="bamOrSamFile" type="data"
+       label="Alignments in BAM or SAM format"
+       help="The set of aligned reads." />
+```
+
+$attribute_list:format,multiple
+
+#### ``select``
+
+The following will create a select list containing the options "Downstream" and
+"Upstream". Depending on the selection, a ``d`` or ``u`` value will be passed to
+the ``$upstream_or_down`` variable on the command line.
+
+```xml
+<param name="upstream_or_down" type="select" label="Get">
+  <option value="u">Upstream</option>
+  <option value="d">Downstream</option>
+</param>
+```
+
+The following will create a checkbox list allowing the user to select
+"Downstream", "Upstream", both, or neither. Depending on the selection, the
+value of ``$upstream_or_down`` will be ``d``, ``u``, ``u,d``, or "".
+
+```xml
+<param name="upstream_or_down" type="select" label="Get" multiple="true" display="checkboxes">
+  <option value="u">Upstream</option>
+  <option value="d">Downstream</option>
+</param>
+```
+
+$attribute_list:data_ref,dynamic_options,display,multiple
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
           <xs:group ref="ParamElement" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
-        <!-- TODO: add unique constraints... -->
         <xs:attribute name="type" type="ParamType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+
+Describes the parameter type - each different type as different semantics and
+the tool form widget is different. Currently valid parameter types are:
+``text``,  ``integer``,  ``float``,  ``boolean``,  ``genomebuild``,  ``select``,
+``color``,  ``data_column``,  ``hidden``,  ``hidden_data``,  ``baseurl``,
+``file``,  ``ftpfile``,  ``data``,  ``data_collection``,  ``library_data``,
+``drill_down``. The definition of supported parameter types as defined in the
+``parameter_types dictionary`` in
+[/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/basic.py).
+
+]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="name" type="xs:string">
+            <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[Name for this element. This ``name``
+is used as the Cheetah variable containing the user-supplied parameter name in
+``command`` and ``configfile`` elements. The name should not contain pipes or
+periods (e.g. ``.``). Some "reserved" names are ``REDIRECT_URL``,
+``DATA_URL``, ``GALAXY_URL``.]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <!-- TODO: add unique constraints... -->
         <xs:attribute name="area" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+            <xs:documentation xml:lang="en">Boolean indicating if this should be
+rendered as a one line text box (if ``false``) or a multi-line text area (if
+``true``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="argument" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Command-line argument this parameter maps to (e.g. ``--foobar``).</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+
+If the parameter reflects just one command line argument of a certain tool, this
+tag should be set to that particular argument. It is rendered in parenthesis
+after the help section, and it will create the name attribute from the argument
+attribute by stripping the dashes (e.g. if ``argument="--sensitive"`` then
+``name="sensitive"`` is implicit).
+
+]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="label" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+            <xs:documentation xml:lang="en">The attribute value will be displayed on the tool page as the label of the form field (``label="Sort Query"``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="help" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
+            <xs:documentation xml:lang="en">Short bit of text, rendered on the
+tool form just below the associated field to provide information about the
+field.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="value" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+            <xs:documentation xml:lang="en">The default value for this
+parameter.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="optional" type="xs:string" default="false">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for optional</xs:documentation>
+            <xs:documentation xml:lang="en">If ``false``, parameter must have a
+value. Defaults to "false".</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:float">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for min</xs:documentation>
+            <xs:documentation xml:lang="en">Minimum valid parameter value - only
+valid when ``type`` is ``integer`` or ``float``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="max" type="xs:float">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for max</xs:documentation>
+            <xs:documentation xml:lang="en">Maximum valid parameter value - only
+valid when ``type`` is ``integer`` or ``float``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="format" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
+            <xs:documentation xml:lang="en">Only if ``type`` attribute value is
+``data`` or ``data_collection`` - the list of supported data formats is
+contained in the
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
+file. Use the file extension.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="collection_type" type="xs:string">
@@ -1392,7 +1548,14 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
         </xs:attribute>
         <xs:attribute name="data_ref" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for data_ref</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+
+Only valid if ``type`` attribute value is ``select`` or ``data_column``. Used
+with select lists whose options are dynamically generated based on certain
+metadata attributes of the dataset upon which this parameter depends (usually
+but not always the tool's input dataset).
+
+            ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="accept_default" type="xs:boolean">
@@ -1412,12 +1575,15 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for display</xs:documentation>
+            <xs:documentation xml:lang="en">This attribute is used only if
+``type`` attribute value is ``select`` - render a select list as a set of check
+boxes or radio buttons. Defaults to a drop-down menu select list.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="multiple" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for multiple</xs:documentation>
+            <xs:documentation xml:lang="en">Allow multiple valus to be selected.
+Valid with ``data`` and ``select`` parameters.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="numerical" type="PermissiveBoolean">
@@ -1432,23 +1598,31 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
         </xs:attribute>
         <xs:attribute name="checked" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for checked</xs:documentation>
+            <xs:documentation xml:lang="en">Set to ``true`` if the ``boolean``
+parameter should be checked (or ``true``) by default.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="truevalue" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for truevalue</xs:documentation>
+            <xs:documentation xml:lang="en">The parameter value in the Cheetah
+template if the parameter is ``true`` or checked by the user. Only valid if
+``type`` is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="falsevalue" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for falsevalue</xs:documentation>
+            <xs:documentation xml:lang="en">The parameter value in the Cheetah
+template if the parameter is ``false`` or not checked by the user. Only valid if
+``type`` is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="size" type="xs:string">
           <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for size</xs:documentation>
+            <xs:documentation xml:lang="en">Used only if ``type`` attribute
+value is ``text``. To create a multi-line text box add an ``area="True"``
+attribute to the param tag. This can be one dimensional (e.g. ``size="40"``)
+or two dimensional (e.g. ``size="5x25"``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="metadata_name" type="xs:string">
@@ -1458,7 +1632,10 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
         </xs:attribute>
         <xs:attribute name="dynamic_options" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Deprecated method to allow access to Python code to generate options for a select list.</xs:documentation>
+            <xs:documentation xml:lang="en">Deprecated/discouraged method to
+allow access to Python code to generate options for a select list. See
+[``code``'s](#tool|code) documentation for an example.
+</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
