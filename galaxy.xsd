@@ -1170,7 +1170,7 @@ Is referenced parameter is the same group.]]></xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive describes one potential
 set of input for the tool at this depth. See documentation for the
-[``conditional``](#tool|conditional) block for more details and examples (XML
+[``conditional``](#tool|inputs|conditional) block for more details and examples (XML
 and corresponding Cheetah conditionals).</xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -1443,6 +1443,56 @@ value of ``$upstream_or_down`` will be ``d``, ``u``, ``u,d``, or "".
 
 $attribute_list:data_ref,dynamic_options,display,multiple
 
+#### ``data_column``
+
+$attribute_list:force_select,numerical,use_header_name
+
+#### ``drill_down``
+
+$attribute_list:hierarchy
+
+#### ``data_collection``
+
+$attribute_list:format,collection_type
+
+The following will create a parameter that only accepts paired FASTQ files.
+
+##### Examples
+
+```xml
+<param name="inputs" type="data_collection" collection_type="paired" label="Input FASTQs" format="fastq">
+</param>
+```
+
+More detailed information on writing tools that consume collections can be found
+in the [planemo documentation](http://planemo.readthedocs.io/en/latest/writing_advanced.html#collections).
+
+#### ``color``
+
+$attribute_list:value
+
+##### Examples
+
+The following example will create a color selector parameter.
+
+```xml
+<param name="feature_color" type="color" label="Default feature color" value="#ff00ff">
+</param>
+```
+
+Given that the output includes a pound sign, it is often convenient to use a
+sanitizer to prevent Galaxy from escaping the result.
+
+```xml
+<param name="feature_color" type="color" label="Default feature color" value="#ff00ff">
+  <sanitizer>
+    <valid initial="string.letters,string.digits">
+      <add value="#" />
+    </valid>
+  </sanitizer>
+</param>
+```
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
@@ -1460,7 +1510,7 @@ the tool form widget is different. Currently valid parameter types are:
 ``color``,  ``data_column``,  ``hidden``,  ``hidden_data``,  ``baseurl``,
 ``file``,  ``ftpfile``,  ``data``,  ``data_collection``,  ``library_data``,
 ``drill_down``. The definition of supported parameter types as defined in the
-``parameter_types dictionary`` in
+``parameter_types`` dictionary in
 [/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/basic.py).
 
 ]]></xs:documentation>
@@ -1498,7 +1548,9 @@ attribute by stripping the dashes (e.g. if ``argument="--sensitive"`` then
         </xs:attribute>
         <xs:attribute name="label" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">The attribute value will be displayed on the tool page as the label of the form field (``label="Sort Query"``).</xs:documentation>
+            <xs:documentation xml:lang="en">The attribute value will be
+displayed on the tool page as the label of the form field
+(``label="Sort Query"``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="help" type="xs:string">
@@ -1543,7 +1595,14 @@ file. Use the file extension.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="collection_type" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Restrict valid collection types for data_collection params (e.g. list, paired, list:paired, etc...).</xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+
+This is only valid if ``type`` is ``data_collection``. Restrict the kind of
+collection that can be consumed by this parameter (e.g. ``paired``,
+``list:paired``, ``list``). Multiple such collection types can be specified here
+as a comma separated list.
+
+              ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="data_ref" type="xs:string">
@@ -1634,7 +1693,7 @@ or two dimensional (e.g. ``size="5x25"``).</xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en">Deprecated/discouraged method to
 allow access to Python code to generate options for a select list. See
-[``code``'s](#tool|code) documentation for an example.
+``code``'s documentation for an example.
 </xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -3156,6 +3215,7 @@ Example:
   <xs:complexType name="EnvironmentVariables">
     <xs:annotation>
       <xs:documentation xml:lang="en">
+This directive should contain one or more ``environment_variable`` definition.
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -3166,13 +3226,47 @@ Example:
   <xs:complexType name="EnvironmentVariable">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
+
+This directive defines an environment variable that will be available when the
+tool executes. The body should be a Cheetah template block that may reference
+the tool's inputs as demonstrated below.
+
+### Example
+
+The following demonstrates a couple ``environment_variable`` definitions.
+
+```xml
+<environment_variables>
+    <environment_variable name="INTVAR">$inttest</environment_variable>
+    <environment_variable name="IFTEST">#if int($inttest) == 3
+ISTHREE
+#else#
+NOTTHREE
+#end if#</environment_variable>
+    </environment_variables>
+</environment_variables>
+```
+
+If these environment variables are used in another Cheetah context, such as in
+the ``command`` block, the ``$`` used indicate shell expansion of a variable
+should be escaped with a ``\`` so prevent it from being evaluated as a Cheetah
+variable instead of shell variable.
+
+```xml
+<command>
+    echo "\$INTVAR"  >  $out_file1;
+    echo "\$IFTEST"  >> $out_file1;
+</command>
+```
+
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="name" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+            <xs:documentation xml:lang="en">Name of the environment variable to
+define.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
