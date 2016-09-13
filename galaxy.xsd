@@ -1000,19 +1000,130 @@ The following demonstrtes verifying XML content with XPath-like expressions.
   </xs:complexType>
   <xs:complexType name="TestOutputCollection">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Define test for extra files on corresponding output collection.</xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Define tests for extra files corresponding to an output collection.
+
+``output_collection`` directives should specify a ``name`` and ``type``
+attribute to describe the expected output collection as a whole.
+
+Expectations about collecton contents are described using child ``element``
+directives. For nested collections, these child ``element`` directives may
+themselves contain children.
+
+### Examples
+
+The [genetrack](https://github.com/galaxyproject/tools-iuc/blob/master/tools/genetrack/genetrack.xml)
+tool demonstrates basic usage of an ``output_collection`` test expectation.
+
+```xml
+<test>
+    <param name="input" value="genetrack_input2.gff" ftype="gff" />
+    <param name="input_format" value="gff" />
+    <param name="sigma" value="5" />
+    <param name="exclusion" value="20" />
+    <param name="up_width" value="10" />
+    <param name="down_width" value="10" />
+    <param name="filter" value="3" />
+    <output_collection name="genetrack_output" type="list">
+        <element name="s5e20u10d10F3_on_data_1" file="genetrack_output2.gff" ftype="gff" />
+    </output_collection>
+</test>
+```
+
+The [CWPair2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/cwpair2/cwpair2.xml)
+tool demonstrates that ``element``s can specify a ``compare`` attribute just
+like [``output``](#tool|tests|test|output).
+
+```xml
+<test>
+    <param name="input" value="cwpair2_input1.gff" />
+    <param name="up_distance" value="25" />
+    <param name="down_distance" value="100" />
+    <param name="method" value="all" />
+    <param name="binsize" value="1" />
+    <param name="threshold_format" value="relative_threshold" />
+    <param name="relative_threshold" value="0.0" />
+    <param name="output_files" value="matched_pair" />
+    <output name="statistics_output" file="statistics1.tabular" ftype="tabular" />
+    <output_collection name="MP" type="list">
+        <element name="data_MP_closest_f0u25d100_on_data_1.gff" file="closest_mp_output1.gff" ftype="gff" compare="contains"/>
+        <element name="data_MP_largest_f0u25d100_on_data_1.gff" file="largest_mp_output1.gff" ftype="gff" compare="contains"/>
+        <element name="data_MP_mode_f0u25d100_on_data_1.gff" file="mode_mp_output1.gff" ftype="gff" compare="contains"/>
+    </output_collection>
+</test>
+```
+
+The
+[collection_creates_dynamic_nested](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/collection_creates_dynamic_nested.xml)
+test tool demonstrates the use of nested ``element`` directives as described
+above. Notice also that it tests the output with ``assert_contents`` instead of
+supplying a ``file`` attribute. Like hinted at with with ``compare`` attribute
+above, the ``element`` tag can specify any of the test attributes that apply to
+the [``output``](#tool|tests|test|output) (e.g. ``md5``, ``compare``, ``diff``,
+etc...).
+
+```xml
+<test>
+  <param name="foo" value="bar" />
+  <output_collection name="list_output" type="list:list">
+    <element name="oe1">
+      <element name="ie1">
+        <assert_contents>
+          <has_text_matching expression="^A\n$" />
+        </assert_contents>
+      </element>
+      <element name="ie2">
+        <assert_contents>
+          <has_text_matching expression="^B\n$" />
+        </assert_contents>
+      </element>
+    </element>
+    <element name="oe2">
+      <element name="ie1">
+        <assert_contents>
+          <has_text_matching expression="^C\n$" />
+        </assert_contents>
+      </element>
+      <element name="ie2">
+        <assert_contents>
+          <has_text_matching expression="^D\n$" />
+        </assert_contents>
+      </element>
+    </element>
+    <element name="oe3">
+      <element name="ie1">
+        <assert_contents>
+          <has_text_matching expression="^E\n$" />
+        </assert_contents>
+      </element>
+      <element name="ie2">
+        <assert_contents>
+          <has_text_matching expression="^F\n$" />
+        </assert_contents>
+      </element>
+    </element>
+  </output_collection>
+</test>
+```
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="element" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
-      </xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This value is the same as the value of the ``name`` attribute of the
+``<collecton>`` tag set contained within the tool's ``<outputs>`` tag set.
+
+]]></xs:documentation>
     </xs:attribute>
     <xs:attribute name="type" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+        <xs:documentation xml:lang="en">Expected collection type (e.g. ``list``, ``paired``,
+or ``list:paired``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="count" type="xs:integer">
