@@ -1445,6 +1445,8 @@ $attribute_list:data_ref,dynamic_options,display,multiple
 
 #### ``data_column``
 
+This parameter type is used to select columns from a parameter.
+
 $attribute_list:force_select,numerical,use_header_name
 
 #### ``drill_down``
@@ -1492,6 +1494,9 @@ sanitizer to prevent Galaxy from escaping the result.
   </sanitizer>
 </param>
 ```
+
+This covers examples of the most common parameter types, the remaining parameter
+types are more obsecure and less likely to be useful for most tool authors.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -1617,19 +1622,25 @@ but not always the tool's input dataset).
             ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="accept_default" type="xs:boolean">
+        <xs:attribute name="accept_default" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for accept_default</xs:documentation>
+            <xs:documentation xml:lang="en"></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="force_select" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for force_select</xs:documentation>
+            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
+value is ``data_column``, this is deprecated and the inverse of ``optional``.
+Set to ``false`` to not force user to select an option in the list.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="use_header_names" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for use_header_names</xs:documentation>
+            <xs:documentation xml:lang="en">>Used only if the ``type`` attribute
+value is ``data_column``, if ``true`` Galaxy assumes first row of ``data_ref``
+is a header and builds the select list with these values rather than the more
+generic ``c1`` ... ``cN``.
+</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="display" type="DisplayType">
@@ -1647,12 +1658,16 @@ Valid with ``data`` and ``select`` parameters.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="numerical" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for numerical</xs:documentation>
+            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
+value is ``data_column``, if ``true`` the column will be treated as numerical
+when filtering columns based on metadata.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="hierarchy" type="HierarchyType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Documentation for hierarchy</xs:documentation>
+            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
+value is ``drill_down``, this attribute determines the drill down is
+``recursive`` or ``exact``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="checked" type="PermissiveBoolean">
@@ -1684,11 +1699,17 @@ attribute to the param tag. This can be one dimensional (e.g. ``size="40"``)
 or two dimensional (e.g. ``size="5x25"``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <!-- metadata_name appears in some wrappers but I think this is a copy
+             and paste problem and doesn't reflect something actually used by
+             Galaxy.
+        -->
+        <!--
         <xs:attribute name="metadata_name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for metadata_name</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        -->
         <xs:attribute name="dynamic_options" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Deprecated/discouraged method to
