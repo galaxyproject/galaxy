@@ -3073,10 +3073,19 @@ conditionals are accessed using a hash named after the conditional.
 
   <xs:complexType name="OutputDiscoverDatasets">
      <xs:annotation>
-      <xs:documentation xml:lang="en">Describe datasets to dynamically collect after the job complete.
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Describe datasets to dynamically collect after the job complete.
+
+There are many simple tools with examples of this element distributed with
+Galaxy, including:
+
+* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output.xml
+* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_assign_primary.xml
+* https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml
 
 More information can be found at https://wiki.galaxyproject.org/Admin/Tools/MultipleOutputFiles#Number_of_Output_datasets_cannot_be_determined_until_tool_run.
-</xs:documentation>
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="pattern" type="xs:string" use="required">
       <xs:annotation>
@@ -3111,7 +3120,20 @@ More information can be found at https://wiki.galaxyproject.org/Admin/Tools/Mult
   </xs:complexType>
   <xs:complexType name="OutputCollectionDiscoverDatasets">
      <xs:annotation>
-      <xs:documentation xml:lang="en">See https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml and https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml for examples</xs:documentation>
+       <xs:documentation xml:lang="en"><![CDATA[
+
+This tag allows one to describe the datasets contained within an output
+collection dynamically, such that the outputs are "discovered" based on regular
+expressions after the job is complete.
+
+There are many simple tools with examples of this element distributed with
+Galaxy, including:
+
+* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_split_on_column.xml
+* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_list_of_pairs.xml
+* https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/collection_creates_dynamic_nested.xml
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="pattern" type="xs:string" use="required">
       <xs:annotation>
@@ -3141,13 +3163,93 @@ More information can be found at https://wiki.galaxyproject.org/Admin/Tools/Mult
   </xs:complexType>
   <xs:complexType name="Actions">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[The ``<actions>`` in the Bowtie wrapper is used in lieu of the deprecated <code> tag to set the dbkey of the output dataset. In bowtie_wrapper.xml (see below), according to the first action block, if the refGenomeSource.genomeSource is "indexed" (not "history"), then it will assign the dbkey of the output file to be the same as that of the reference file. It does this by looking at through the loc file and finding the line that has the value that's been selected in the index dropdown box as column 1 of the loc file entry and using the dbkey, in column 0 (ignoring comment lines (starting with #) along the way).
+      <xs:documentation xml:lang="en"><![CDATA[
 
-If refGenomeSource.genomeSource is "history", it resorts to default behavior for Galaxy, which is that the output is assigned the same value as the first input that has a dbkey specified.
+The ``actions`` directive allows tools to dynamically take actions related to an
+``output`` either unconditionally or conditionally based on inputs. These
+actions currently include setting metadata values and the output's data format.
 
-The second block would not be needed for most cases--it is required here to handle the specific case of a small reference file we use for functional testing. It says that if the dbkey has been set to "equCab2chrM" (that's what the <filter type="metadata_value"... column="1" /> tag) does then it should be changed to "equCab2" (the <option type="from_param" ... column="0" ...> tag does).
+The examples below will demonstrate that the ``actions`` tag contains child
+``conditional`` tags. The these conditionals are met, additional ``action``
+directives below the conditional are apply to the ``data`` output.
 
-Example:
+### Metadata
+
+The ``<actions>`` in the Bowtie 2 wrapper is used in lieu of the deprecated
+``<code>`` tag to set the ``dbkey`` of the output dataset. In
+[bowtie2_wrapper.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml)
+(see below), according to the first action block, if the
+```reference_genome.source`` is ``indexed`` (not ``history``), then it will assign
+the ``dbkey`` of the output file to be the same as that of the reference file. It
+does this by looking at through the data table and finding the entry that has the
+value that's been selected in the index dropdown box as column 1 of the loc file
+entry and using the dbkey, in column 0 (ignoring comment lines (starting with #)
+along the way).
+
+If ``reference_genome.source`` is ``history``, it pulls the ``dbkey`` from the
+supplied file.
+
+```xml
+<data format="bam" name="output" label="${tool.name} on ${on_string}: aligned reads (sorted BAM)">
+  <filter>analysis_type['analysis_type_selector'] == "simple" or analysis_type['sam_opt'] is False</filter>
+  <actions>
+    <conditional name="reference_genome.source">
+      <when value="indexed">
+        <action type="metadata" name="dbkey">
+          <option type="from_data_table" name="bowtie2_indexes" column="1" offset="0">
+            <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+            <filter type="param_value" ref="reference_genome.index" column="0"/>
+          </option>
+        </action>
+      </when>
+      <when value="history">
+        <action type="metadata" name="dbkey">
+          <option type="from_param" name="reference_genome.own_file" param_attribute="dbkey" />
+        </action>
+      </when>
+    </conditional>
+  </actions>
+</data>
+```
+
+### Format
+
+The Bowtie 2 example also demonstrates conditionally setting an output format
+based on inputs, as shown below:
+
+```xml
+<data format="fastqsanger" name="output_unaligned_reads_r" label="${tool.name} on ${on_string}: unaligned reads (R)">
+    <filter>( library['type'] == "paired" or library['type'] == "paired_collection" ) and library['unaligned_file'] is True</filter>
+    <actions>
+        <conditional name="library.type">
+            <when value="paired">
+                <action type="format">
+                    <option type="from_param" name="library.input_2" param_attribute="ext" />
+                </action>
+            </when>
+            <when value="paired_collection">
+                <action type="format">
+                    <option type="from_param" name="library.input_1" param_attribute="reverse.ext" />
+                </action>
+            </when>
+        </conditional>
+    </actions>
+</data>
+```
+
+### Unconditional Actions - An Older Example
+
+The first approach above to setting ``dbkey`` based on tool data tables is
+prefered, but an older example using so called "loc files" directly is found
+below.
+
+In addition to demonstrating this lower-level direct access of .loc files, it
+demonstrates an unconditional action. The second block would not be needed for
+most cases - it was required in this tool to handle the specific case of a small
+reference file used for functional testing. It says that if the dbkey has been
+set to ``equCab2chrM`` (which is what the ```<filter type="metadata_value"...
+column="1" />`` tag does), then it should be changed to ``equCab2`` (which is the
+``<option type="from_param" ... column="0" ...>`` tag does).
 
 ```xml
 <actions>
@@ -3171,7 +3273,6 @@ Example:
     </action>
 </actions>
 ```
-
 ]]>
 </xs:documentation>
     </xs:annotation>
@@ -3187,24 +3288,37 @@ Example:
   </xs:group>
   <xs:complexType name="Action">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This directive is contained within an output ``data``'s  ``actions`` directive
+(either directly or beneath a parent ``conditional`` tag). This directive
+describes modifications to either the output's format or metadata (based on
+whether ``type`` is ``format`` or ``metadata``).
+
+See [``actions``](#tool|outputs|data|actions) documentation for examples
+of this directive.
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="option" type="ActionsOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="type" type="ActionType">
+    <xs:attribute name="type" type="ActionType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Type of action (either ``format`` or
+``metadata`` currently).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">If ``type="metadata"``, the name of the
+metadata element.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="default" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">If ``type="format"``, the default format
+if none of the nested options apply.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3243,26 +3357,45 @@ Example:
   </xs:complexType>
   <xs:complexType name="ActionsConditional">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This directive is contained within an output ``data``'s  ``actions`` directive.
+This directive describes the state of the inputs required to apply an ``action``
+(specified as children of the child ``when`` directives to this element) to an
+output.
+
+See [``actions``](#tool|outputs|data|actions) documentation for examples
+of this directive.
+
+]]></xs:documentation>
     </xs:annotation>
-    <xs:complexContent>
-      <xs:extension base="InputType">
-        <xs:sequence>
-          <xs:element name="when" type="ActionsConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
-        </xs:sequence>
-      </xs:extension>
-    </xs:complexContent>
+    <xs:sequence>
+        <xs:element name="when" type="ActionsConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of the input parameter to base
+conditional logic on. The value of this parameter will be matched against nested
+``when`` directives.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="ActionsConditionalWhen">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+See [``actions``](#tool|outputs|data|actions) documentation for examples
+of this directive.
+
+      ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Value to match conditional input value
+against.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
