@@ -211,9 +211,8 @@ class TextToolParameter( ToolParameter ):
     >>> p = TextToolParameter( None, XML( '<param name="_name" type="text" value="default" />' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['area: False', 'argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: TextToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: text', 'value: default']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -266,9 +265,8 @@ class IntegerToolParameter( TextToolParameter ):
     >>> p = IntegerToolParameter( None, XML( '<param name="_name" type="integer" value="10" />' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['area: False', 'argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'max: None', 'min: None', 'model_class: IntegerToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: integer', 'value: 10']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', '10')]
     >>> type( p.from_json( "10", trans ) )
     <type 'int'>
     >>> type( p.from_json( "_string", trans ) )
@@ -342,9 +340,8 @@ class FloatToolParameter( TextToolParameter ):
     >>> p = FloatToolParameter( None, XML( '<param name="_name" type="float" value="3.141592" />' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['area: False', 'argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'max: None', 'min: None', 'model_class: FloatToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: float', 'value: 3.141592']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', '3.141592')]
     >>> type( p.from_json( "36.1", trans ) )
     <type 'float'>
     >>> type( p.from_json( "_string", trans ) )
@@ -419,9 +416,8 @@ class BooleanToolParameter( ToolParameter ):
     >>> p = BooleanToolParameter( None, XML( '<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'falsevalue: _falsevalue', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: BooleanToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'truevalue: _truevalue', 'type: boolean', 'value: True']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', True)]
     >>> print p.from_json( 'true' )
     True
     >>> print p.to_param_dict_string( True )
@@ -480,9 +476,8 @@ class FileToolParameter( ToolParameter ):
     >>> p = FileToolParameter( None, XML( '<param name="_name" type="file"/>' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: FileToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: file']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -540,9 +535,8 @@ class FTPFileToolParameter( ToolParameter ):
     >>> p = FTPFileToolParameter( None, XML( '<param name="_name" type="ftpfile"/>' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: FTPFileToolParameter', 'multiple: True', 'name: _name', 'optional: True', 'refresh_on_change: False', 'type: ftpfile']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -613,9 +607,8 @@ class HiddenToolParameter( ToolParameter ):
     >>> p = HiddenToolParameter( None, XML( '<param name="_name" type="hidden" value="_value"/>' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'help: ', 'hidden: True', 'is_dynamic: False', 'label: ', 'model_class: HiddenToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: hidden', 'value: _value']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', '_value')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -639,9 +632,8 @@ class ColorToolParameter( ToolParameter ):
     >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff"/>' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: ColorToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: color', 'value: #ffffff']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', '#ffffff')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -662,9 +654,8 @@ class BaseURLToolParameter( HiddenToolParameter ):
     >>> p = BaseURLToolParameter( None, XML( '<param name="_name" type="base_url" value="_value"/>' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'help: ', 'hidden: True', 'is_dynamic: False', 'label: ', 'model_class: BaseURLToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: base_url', 'value: _value']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', '_value')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -719,9 +710,8 @@ class SelectToolParameter( ToolParameter ):
     ... ''' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'display: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: SelectToolParameter', 'multiple: False', 'name: _name', 'optional: False', "options: [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', False)]", 'refresh_on_change: False', 'type: select', 'value: y']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', False)]), ('refresh_on_change', False), ('type', 'select'), ('value', 'y')]
     >>> p = SelectToolParameter( None, XML(
     ... '''
     ... <param name="_name" type="select" multiple="true">
@@ -732,9 +722,8 @@ class SelectToolParameter( ToolParameter ):
     ... ''' ) )
     >>> print p.name
     _name
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'display: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: SelectToolParameter', 'multiple: True', 'name: _name', 'optional: True', "options: [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]", 'refresh_on_change: False', 'type: select', 'value: z']
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('type', 'select'), ('value', 'z')]
     >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
@@ -1613,7 +1602,7 @@ class DataToolParameter( BaseDataToolParameter ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
-            raise ValueError( "History does not include a dataset of the required format / build" )
+            raise ValueError( "Specify a dataset of the required format / build." )
         if value in [ None, "None", '' ]:
             return None
         if isinstance( value, dict ) and 'values' in value:
@@ -1880,7 +1869,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
-            raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
+            raise ValueError( "Specify a dataset collection of the correct type." )
         if value in [None, "None"]:
             return None
         if isinstance( value, dict ) and 'values' in value:
