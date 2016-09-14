@@ -673,24 +673,272 @@ $assertions
     </xs:choice>
   </xs:group>
   <xs:complexType name="TestSection">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Specify test parameters below a named of a ``section`` block matching
+one in ``inputs`` with this element.
+
+``param`` elements in a ``test`` block can be arranged into nested ``repeat``,
+``conditional``, and ``select`` structures to match the inputs. While this might
+be overkill for simple tests, it helps prevent ambiguous definitions and keeps
+things organized in large test cases. A future ``profile`` version of Galaxy
+tools may require ``section`` blocks be explicitly defined with this
+directive.
+
+### Examples
+
+The test tool demonstrating sections
+([section.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/section.xml))
+contains a test case demonstrating this block. This test case appears below:
+
+```xml
+<test>
+    <section name="int">
+        <param name="inttest" value="12456" />
+    </section>
+    <section name="float">
+        <param name="floattest" value="6.789" />
+    </section>
+    <output name="out_file1">
+        <assert_contents>
+            <has_line line="12456" />
+            <has_line line="6.789" />
+        </assert_contents>
+    </output>
+</test>
+```
+
+]]>
+      </xs:documentation>
+    </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This value must match the name of the
+associated input ``section``.</xs:documentation>
+      </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestConditional">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Specify test parameters below a named of a ``conditional`` block matching
+one in ``inputs`` with this element.
+
+``param`` elements in a ``test`` block can be arranged into nested ``repeat``,
+``conditional``, and ``select`` structures to match the inputs. While this might
+be overkill for simple tests, it helps prevent ambiguous definitions and keeps
+things organized in large test cases. A future ``profile`` version of Galaxy
+tools may require ``conditional`` blocks be explicitly defined with this
+directive.
+
+### Examples
+
+The following example demonstrates disambiguation of a parameter (named ``use``)
+which appears in multiple ``param`` names in ``conditional``s in the ``inputs``
+definition of the [disambiguate_cond.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/disambiguate_cond.xml)
+tool.
+
+```xml
+<!-- Can use nested conditional blocks as shown below to disambiguate
+     various nested parameters. -->
+<test>
+    <conditional name="p1">
+        <param name="use" value="False"/>
+    </conditional>
+    <conditional name="p2">
+        <param name="use" value="True"/>
+    </conditional>
+    <conditional name="p3">
+        <param name="use" value="False"/>
+    </conditional>
+    <conditional name="files">
+        <param name="attach_files" value="True" />
+        <conditional name="p4">
+            <param name="use" value="True"/>
+            <param name="file" value="simple_line_alternative.txt" />
+        </conditional>
+    </conditional>
+    <output name="out_file1">
+        <assert_contents>
+            <has_line line="7 4 7" />
+            <has_line line="This is a different line of text." />
+        </assert_contents>
+    </output>
+</test>
+```
+
+The [tophat2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/tophat2/tophat2_wrapper.xml)
+tool demonstrates a real tool that benefits from more structured test cases
+using the ``conditional`` test directive. One such test case from that tool is
+shown below.
+
+```xml
+<!-- Test base-space paired-end reads with user-supplied reference fasta and full parameters -->
+<test>
+    <!-- TopHat commands:
+    tophat2 -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -g 40 +coverage-search +min-coverage-intron 50 +max-coverage-intro 20000 +segment-mismatches 2 +segment-length 25 +microexon-search +report_discordant_pairs tophat_in1 test-data/tophat_in2.fastqsanger test-data/tophat_in3.fastqsanger
+    Replace the + with double-dash
+    Rename the files in tmp_dir appropriately
+    -->
+    <conditional name="singlePaired">
+      <param name="sPaired" value="paired"/>
+      <param name="input1" ftype="fastqsanger" value="tophat_in2.fastqsanger"/>
+      <param name="input2" ftype="fastqsanger" value="tophat_in3.fastqsanger"/>
+      <param name="mate_inner_distance" value="20"/>
+      <param name="report_discordant_pairs" value="Yes" />
+    </conditional>
+    <param name="genomeSource" value="indexed"/>
+    <param name="index" value="tophat_test"/>
+    <conditional name="params">
+      <param name="settingsType" value="full"/>
+      <param name="library_type" value="FR Unstranded"/>
+      <param name="read_mismatches" value="5"/>
+      <!-- Error: the read mismatches (5) and the read gap length (2) should be less than or equal to the read edit dist (2) -->
+      <param name="read_edit_dist" value="5" />
+      <param name="bowtie_n" value="Yes"/>
+      <param name="mate_std_dev" value="20"/>
+      <param name="anchor_length" value="8"/>
+      <param name="splice_mismatches" value="0"/>
+      <param name="min_intron_length" value="70"/>
+      <param name="max_intron_length" value="500000"/>
+      <param name="max_multihits" value="40"/>
+      <param name="min_segment_intron" value="50" />
+      <param name="max_segment_intron" value="500000" />
+      <param name="seg_mismatches" value="2"/>
+      <param name="seg_length" value="25"/>
+      <conditional name="indel_search">
+        <param name="allow_indel_search" value="No"/>
+      </conditional>
+      <conditional name="own_junctions">
+        <param name="use_junctions" value="Yes" />
+        <conditional name="gene_model_ann">
+          <param name="use_annotations" value="No" />
+        </conditional>
+        <conditional name="raw_juncs">
+          <param name="use_juncs" value="No" />
+        </conditional>
+        <conditional name="no_novel_juncs">
+          <param name="no_novel_juncs" value="No" />
+        </conditional>
+      </conditional>
+      <conditional name="coverage_search">
+        <param name="use_search" value="No" />
+      </conditional>
+      <param name="microexon_search" value="Yes" />
+      <conditional name="bowtie2_settings">
+        <param name="b2_settings" value="No" />
+      </conditional>
+      <!-- Fusion search params -->
+      <conditional name="fusion_search">
+        <param name="do_search" value="Yes" />
+        <param name="anchor_len" value="21" />
+        <param name="min_dist" value="10000021" />
+        <param name="read_mismatches" value="3" />
+        <param name="multireads" value="4" />
+        <param name="multipairs" value="5" />
+        <param name="ignore_chromosomes" value="chrM"/>
+      </conditional>
+    </conditional>
+    <conditional name="readGroup">
+      <param name="specReadGroup" value="no" />
+    </conditional>
+    <output name="junctions" file="tophat2_out4j.bed" />
+    <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" />
+</test>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This value must match the name of the
+associated input ``conditional``.</xs:documentation>
+      </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestRepeat">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Specify test parameters below an iteration of a ``repeat`` block with this
+element.
+
+``param`` elements in a ``test`` block can be arranged into nested ``repeat``,
+``conditional``, and ``select`` structures to match the inputs. While this might
+be overkill for simple tests, it helps prevent ambiguous definitions and keeps
+things organized in large test cases. A future ``profile`` version of Galaxy
+tools may require ``repeat`` blocks be explicitly defined with this directive.
+
+### Examples
+
+The test tool [disambiguate_repeats.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/disambiguate_repeats.xml)
+demonstrates the use of this directive.
+
+This first test case demonstrates that this block allows different values for
+the ``param`` named ``input`` to be tested even though this parameter name
+appears in two different ``<repeat>`` elements in the ``<inputs>`` definition.
+
+```xml
+<!-- Can disambiguate repeats and specify multiple blocks using,
+     nested structure. -->
+<test>
+    <repeat name="queries">
+        <param name="input" value="simple_line.txt"/>
+    </repeat>
+    <repeat name="more_queries">
+        <param name="input" value="simple_line_alternative.txt"/>
+    </repeat>
+    <output name="out_file1">
+        <assert_contents>
+            <has_line line="This is a line of text." />
+            <has_line line="This is a different line of text." />
+        </assert_contents>
+    </output>
+</test>
+```
+
+The second definition in that file demonstrates repeated ``<repeat>`` blocks
+allowing multiple instances of a single repeat to be specified.
+
+```xml
+<!-- Multiple such blocks can be specified but only with newer API
+     driven tests. -->
+<test>
+    <repeat name="queries">
+        <param name="input" value="simple_line.txt"/>
+    </repeat>
+    <repeat name="queries">
+        <param name="input" value="simple_line_alternative.txt"/>
+    </repeat>
+    <repeat name="more_queries">
+        <param name="input" value="simple_line.txt"/>
+    </repeat>
+    <repeat name="more_queries">
+        <param name="input" value="simple_line_alternative.txt"/>
+    </repeat>
+    <output name="out_file1" file="simple_lines_interleaved.txt"/>
+</test>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This value must match the name of the
+associated input ``repeat``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestParam">
     <xs:annotation>
@@ -710,7 +958,7 @@ some simple examples of parameters.
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">This value must match the name of the
-associated input parameter.</xs:documentation>
+associated input parameter (``param``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
