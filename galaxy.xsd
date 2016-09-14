@@ -1224,10 +1224,10 @@ provides a demonstration of using this tag.
   </xs:complexType>
   <xs:complexType name="TestDiscoveredDataset">
     <xs:annotation>
-      <![CDATA[
+      <xs:documentation><![CDATA[
 
-This directive specifies a test for an output's discovered dataset. It acts as an 
-``output`` test tag in many ways and can define any tests of that tag (e.g. 
+This directive specifies a test for an output's discovered dataset. It acts as an
+``output`` test tag in many ways and can define any tests of that tag (e.g.
 ``assert_contents``, ``value``, ``compare``, ``md5``, ``checksum``, ``metadata``, etc...).
 
 ### Example
