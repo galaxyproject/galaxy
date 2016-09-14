@@ -1187,20 +1187,75 @@ The following demonstrtes verifying XML content with XPath-like expressions.
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestOutputMetadata">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This directive specifies a test for an output's metadata as an expected key-value pair.
+
+### Example
+
+The functional test tool
+[tool_provided_metadata_1.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/tool_provided_metadata_1.xml)
+provides a demonstration of using this tag.
+
+```xml
+<test>
+  <param name="input1" value="simple_line.txt" />
+  <output name="out1" file="simple_line.txt" ftype="txt">
+    <metadata name="name" value="my dynamic name" />
+    <metadata name="info" value="my dynamic info" />
+    <metadata name="dbkey" value="cust1" />
+  </output>
+</test>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metdata element to check.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">Expected value (as a string) of metadata value.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestDiscoveredDataset">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Define test for a discovered dataset on corresponding output.</xs:documentation>
+      <![CDATA[
+
+This directive specifies a test for an output's discovered dataset. It acts as an 
+``output`` test tag in many ways and can define any tests of that tag (e.g. 
+``assert_contents``, ``value``, ``compare``, ``md5``, ``checksum``, ``metadata``, etc...).
+
+### Example
+
+The functional test tool
+multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
+provides a demonstration of using this tag.
+
+```xml
+<test>
+  <param name="num_param" value="7" />
+  <param name="input" ftype="txt" value="simple_line.txt"/>
+  <output name="sample">
+    <assert_contents>
+      <has_line line="1" />
+    </assert_contents>
+    <!-- no sample1 it was consumed by named output "sample" -->
+    <discovered_dataset designation="sample2" ftype="tabular">
+      <assert_contents><has_line line="2" /></assert_contents>
+    </discovered_dataset>
+    <discovered_dataset designation="sample3" ftype="tabular">
+      <assert_contents><has_line line="3" /></assert_contents>
+    </discovered_dataset>
+  </output>
+</test>
+```
+
+]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
       <xs:extension base="TestOutput">
