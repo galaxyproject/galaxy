@@ -3608,7 +3608,7 @@ if none of the nested options apply.</xs:documentation>
       <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="filter" type="ActionsConditionalFilter" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="type" type="ActionsOptionType">
       <xs:annotation>
