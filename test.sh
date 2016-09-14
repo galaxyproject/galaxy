@@ -1,18 +1,34 @@
 #! /bin/bash
-count=`wc -l test.urls  | cut -f1 -d' '`
-root_url="https://bitbucket.org/galaxy/galaxy-central/raw/c3eefbdaaa1ab242a1c81b65482ef2fbe943a390/"
+if [ ! -d galaxy ];
+then
+    git clone https://github.com/galaxyproject/galaxy.git galaxy
+fi
+cd galaxy
+git pull
+cd ..
+
+if [ ! -d tools-iuc ];
+then
+    git clone https://github.com/galaxyproject/tools-iuc.git tools-iuc
+fi
+cd tools-iuc
+git pull
+cd ..
+
+count=`wc -l tool_files.list | cut -f1 -d' '`
 echo "1..$count"
 count=0
 while read p; do
     count=$((count+1))
-    url="$root_url""$p"
-    result=`curl -ksL "$url" | xmllint --nowarning --noout --schema galaxy.xsd - 2> err.tmp`
+    path=$p
+
+    result=`planemo normalize --expand_macros "$path" | xmllint --nowarning --noout --schema galaxy.xsd - 2> err.tmp`
     if [ $? -eq 0 ]
     then
         echo "ok $count $url";
     else
-        echo "not ok $count $url";
+        echo "not ok $count $path";
         cat err.tmp  | sed 's/^/    /'
     fi
-done <test.urls
+done <tool_files.list
 rm err.tmp
