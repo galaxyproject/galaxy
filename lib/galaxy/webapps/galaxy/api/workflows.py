@@ -527,7 +527,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        stored_workflow = self.__get_stored_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_workflow( trans, workflow_id )
         results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:

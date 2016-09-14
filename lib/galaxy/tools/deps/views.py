@@ -1,6 +1,6 @@
 from galaxy.exceptions import (
-    RequestParameterMissingException,
-    NotImplemented
+    NotImplemented,
+    RequestParameterMissingException
 )
 
 
@@ -13,7 +13,7 @@ class DependencyResolversView(object):
         self._app = app
 
     def index(self):
-        return map(lambda r: r.to_dict(), self._dependency_resolvers)
+        return [r.to_dict() for r in self._dependency_resolvers]
 
     def show(self, index):
         return self._dependency_resolver(index).to_dict()
@@ -125,5 +125,5 @@ class DependencyResolversView(object):
         """
         return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
 
-    def get_requirements_status(self, requested_requirements):
-        return [self.manager_dependency(**req) for req in requested_requirements]
+    def get_requirements_status(self, requested_requirements, installed_tool_dependencies=None):
+        return [self.manager_dependency(installed_tool_dependencies=installed_tool_dependencies, **req) for req in requested_requirements]

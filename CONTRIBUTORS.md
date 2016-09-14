@@ -48,6 +48,7 @@ The following individuals have contributed code to Galaxy:
 * Eric Enns <eric.enns@gmail.com>
 * fescudie <fescudie@toulouse.inra.fr>
 * Dorine Francheteau <dorine@bx.psu.edu>
+* Jean-Frédéric (@JeanFred on Github)
 * Jaime Frey <jfrey@cs.wisc.edu>
 * Carrie Ganote <cganote@iu.edu>
 * Ryan Golhar <ngsbioinformatics@gmail.com>
@@ -77,6 +78,7 @@ The following individuals have contributed code to Galaxy:
 * Simone Leo <simone.leo@gmail.com>
 * Kanwei Li <kanwei@gmail.com>
 * Michael Li <michael.li@uwaterloo.ca>
+* Pierre Lindenbaum <plindenbaum@yahoo.fr>
 * Mikael Loaec <mikael.loaec@versailles.inra.fr>
 * Philip Mabon <philipmabon@gmail.com>
 * Remi Marenco <remi.marenco@gmail.com> <remimarenco@gmail.com>

@@ -36,8 +36,11 @@ then CycleError is raised, and the exception object supports
 many methods to help analyze and break the cycles.  This requires
 a good deal more code than topsort itself!
 """
-from galaxy.util.odict import odict as OrderedDict
+
 from six import PY3
+
+from galaxy.util.odict import odict as OrderedDict
+
 if PY3:
     def list_filter(f, lst):
         return list(filter(f, lst))

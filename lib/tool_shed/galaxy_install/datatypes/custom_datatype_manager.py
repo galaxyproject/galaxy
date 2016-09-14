@@ -91,7 +91,7 @@ class CustomDatatypeLoader( object ):
             os.write( fd, '%s' % xml_util.xml_to_string( sniffers ) )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
-        os.chmod( proprietary_datatypes_config, 0644 )
+        os.chmod( proprietary_datatypes_config, 0o644 )
         # Load custom datatypes
         self.app.datatypes_registry.load_datatypes( root_dir=self.app.config.root,
                                                     config=proprietary_datatypes_config,

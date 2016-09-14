@@ -19,7 +19,7 @@ from sqlalchemy.orm import eagerload_all
 from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
-from galaxy.util import inflector, unicodify
+from galaxy.util import inflector, unicodify, FILENAME_VALID_CHARS
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
@@ -799,6 +799,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         replace_id = kwd.get( 'replace_id', None )
         replace_dataset = None
         upload_option = kwd.get( 'upload_option', 'upload_file' )
+        if kwd.get( 'files_0|uni_to_posix', False ):
+            to_posix_lines = kwd.get( 'files_0|to_posix_lines', '' )
+        else:
+            to_posix_lines = kwd.get( 'to_posix_lines', '' )
         if kwd.get( 'files_0|space_to_tab', False ):
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
@@ -1027,6 +1031,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     history=history,
                                     widgets=widgets,
                                     template_id=template_id,
+                                    to_posix_lines=to_posix_lines,
                                     space_to_tab=space_to_tab,
                                     link_data_only=link_data_only,
                                     show_deleted=show_deleted,
@@ -1143,6 +1148,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.ext = None
         uploaded_dataset.file_type = file_type
         uploaded_dataset.dbkey = params.get( 'dbkey', None )
+        uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
@@ -1269,6 +1275,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         replace_id = kwd.get( 'replace_id', None )
         replace_dataset = None
         upload_option = kwd.get( 'upload_option', 'import_from_history' )
+        if kwd.get( 'files_0|to_posix_lines', False ):
+            to_posix_lines = kwd.get( 'files_0|to_posix_lines', '' )
+        else:
+            to_posix_lines = kwd.get( 'to_posix_lines', '' )
         if kwd.get( 'files_0|space_to_tab', False ):
             space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
@@ -1442,6 +1452,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             history=history,
                                             widgets=[],
                                             template_id=template_id,
+                                            to_posix_lines=to_posix_lines,
                                             space_to_tab=space_to_tab,
                                             link_data_only=link_data_only,
                                             show_deleted=show_deleted,
@@ -1519,9 +1530,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             trans.response.set_content_type( ldda.get_mime() )
             fStat = os.stat( ldda.file_name )
             trans.response.headers[ 'Content-Length' ] = int( fStat.st_size )
-            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
             fname = ldda.name
-            fname = ''.join( c in valid_chars and c or '_' for c in fname )[ 0:150 ]
+            fname = ''.join( c in FILENAME_VALID_CHARS and c or '_' for c in fname )[ 0:150 ]
             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % fname
             try:
                 return open( ldda.file_name )

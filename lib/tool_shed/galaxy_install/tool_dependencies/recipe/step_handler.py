@@ -1,26 +1,23 @@
+import hashlib
 import logging
 import os
 import re
 import shutil
 import stat
-from string import Template
 import tarfile
 import tempfile
 import time
 import urllib2
 import zipfile
-import hashlib
+from string import Template
+
+# TODO: eliminate the use of fabric here.
+from fabric.api import lcd, settings
 
 from galaxy.util import asbool
 from galaxy.util.template import fill_template
-
-from tool_shed.util import basic_util
-from tool_shed.util import tool_dependency_util
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
-
-# TODO: eliminate the use of fabric here.
-from fabric.api import settings
-from fabric.api import lcd
+from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger( __name__ )
 

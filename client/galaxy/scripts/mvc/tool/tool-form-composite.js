@@ -16,11 +16,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.render();
             this._refresh();
             this.$el.on( 'click', function() { self._refresh() } );
+            this.$steps.scroll( function() { self._refresh() } );
             $( window ).resize( function() { self._refresh() } );
         },
 
-        /** Refresh height of scrollable div below header */
-        _refresh: function() {
+        /** Refresh height of scrollable div below header, handle scrolling by lazy loading steps */
+        _refresh: function( step_index ) {
             var margin = _.reduce( this.$el.children(), function( memo, child ) {
                 return memo + $( child ).outerHeight();
             }, 0 ) - this.$steps.height() + 25;
@@ -167,9 +168,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this._renderMessage();
             this._renderParameters();
             this._renderHistory();
-            _.each ( this.steps, function( step, i ) { self._renderStep( step, i ) } );
-            this.deferred.execute( function() { self.execute_btn.unwait();
-                                                self.execute_btn.model.set( { wait_text: 'Sending...', percentage: -1 } ); } );
+            _.each ( this.steps, function( step ) { self._renderStep( step ) } );
         },
 
         /** Render header */
@@ -179,8 +178,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 icon        : 'fa-check',
                 title       : 'Run workflow',
                 cls         : 'btn btn-primary',
-                wait        : true,
-                wait_text   : 'Preparing...',
                 onclick     : function() { self._execute() }
             });
             this.$header.addClass( 'ui-form-header' ).empty()
@@ -194,6 +191,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             if ( this.model.get( 'has_upgrade_messages' ) ) {
                 this.$message.append( new Ui.Message( {
                     message     : 'Some tools in this workflow may have changed since it was last saved or some errors were found. The workflow may still run, but any new options will have default values. Please review the messages below to make a decision about whether the changes will affect your analysis.',
+                    status      : 'warning',
+                    persistent  : true,
+                    fade        : false
+                } ).$el );
+            }
+            var step_version_changes = this.model.get( 'step_version_changes' );
+            if ( step_version_changes && step_version_changes.length > 0 ) {
+                this.$message.append( new Ui.Message( {
+                    message     : 'Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this Galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.',
                     status      : 'warning',
                     persistent  : true,
                     fade        : false
@@ -249,18 +255,16 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         },
 
         /** Render step */
-        _renderStep: function( step, i ) {
+        _renderStep: function( step ) {
             var self = this;
             var form = null;
-            var current = null;
-            self.$steps.addClass( 'ui-steps' );
             this.deferred.execute( function( promise ) {
-                current = promise;
+                self.$steps.addClass( 'ui-steps' );
                 if ( step.step_type == 'tool' ) {
                     form = new ToolFormBase( step );
                     if ( step.post_job_actions && step.post_job_actions.length ) {
                         form.portlet.append( $( '<div/>' ).addClass( 'ui-form-element-disabled' )
-                            .append( $( '<div/>' ).addClass( 'ui-form-title' ).html( 'Job Post Actions' ) )
+                            .append( $( '<div/>' ).addClass( 'ui-form-title' ).html( '<b>Job Post Actions</b>' ) )
                             .append( $( '<div/>' ).addClass( 'ui-form-preview' ).html(
                                 _.reduce( step.post_job_actions, function( memo, value ) {
                                     return memo + ' ' + value.short_str;
@@ -271,28 +275,20 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     _.each( step.inputs, function( input ) { input.flavor = 'module' } );
                     form = new Form( Utils.merge({
                         title    : '<b>' + step.name + '</b>',
-                        onchange : function() { _.each( self.links[ i ], function( link ) { self._refreshStep( link ) } ) }
+                        onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
+                        inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );
                 }
-                self.forms[ i ] = form;
+                self.forms[ step.index ] = form;
                 self._append( self.$steps, form.$el );
                 step.needs_refresh && self._refreshStep( step );
-                self._resolve( form.deferred, promise );
-                self.execute_btn.model.set( 'percentage', ( i + 1 ) * 100.0 / self.steps.length );
-                Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Workflow step state ready.', step );
-            } );
-        },
-
-        /** This helps with rendering lazy loaded steps */
-        _resolve: function( deferred, promise ) {
-            var self = this;
-            setTimeout( function() {
-                if ( deferred && deferred.ready() || !deferred ) {
-                    promise.resolve();
-                } else {
-                    self._resolve( deferred, promise );
-                }
-            }, 0 );
+                form.portlet[ !self.show_progress ? 'enable' : 'disable' ]();
+                self.show_progress && self.execute_btn.model.set( { wait        : true,
+                                                                    wait_text   : 'Preparing...',
+                                                                    percentage  : ( step.index + 1 ) * 100.0 / self.steps.length } );
+                Galaxy.emit.debug( 'tool-form-composite::initialize()', step.index + ' : Workflow step state ready.', step );
+                setTimeout( function() { promise.resolve() }, 0 );
+            });
         },
 
         /** Refreshes step values from source step values */
@@ -332,12 +328,35 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             }
         },
 
-        /** Execute workflow */
+        /** Refresh the history after job submission while form is shown */
+        _refreshHistory: function() {
+            var self = this;
+            var history = parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
+            this._refresh_history && clearTimeout( this._refresh_history );
+            if ( history ) {
+                history.refresh().success( function() {
+                    if ( history.numOfUnfinishedShownContents() === 0 ) {
+                        self._refresh_history = setTimeout( function() { self._refreshHistory() }, history.UPDATE_DELAY );
+                    }
+                });
+            }
+        },
+
+        /** Build remaining steps */
         _execute: function() {
             var self = this;
+            this.show_progress = true;
             this._enabled( false );
+            this.deferred.execute( function( promise ) {
+                setTimeout( function() { promise.resolve(); self._submit(); }, 0 );
+            });
+        },
+
+        /** Validate and submit workflow */
+        _submit: function() {
+            var self = this;
             var job_def = {
-                new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
+                new_history_name    : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
                 replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
                 inputs              : {}
             };
@@ -383,7 +402,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.empty().append( self._templateSuccess( response ) );
-                        parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
+                        self._refreshHistory();
                     },
                     error   : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission failed.', response );
@@ -420,14 +439,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Append new dom to body */
         _append: function( $container, $el ) {
-            $container.append( '<p/>' ).addClass( 'ui-margin-top' ).append( $el );
+            $container.append( '<p/>' ).append( $el );
         },
 
         /** Set enabled/disabled state */
         _enabled: function( enabled ) {
-            if ( enabled ) { this.execute_btn.unwait() } else { this.execute_btn.wait() }
-            if ( enabled ) { this.history_form.portlet.enable() } else { this.history_form.portlet.disable() }
-            _.each( this.forms, function( form ) { if ( enabled ) {  form.portlet.enable() } else { form.portlet.disable() } });
+            this.execute_btn.model.set( { wait: !enabled, wait_text: 'Sending...', percentage: -1 } );
+            this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
+            this.history_form && this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
+            _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
         },
 
         /** Handle workflow parameter */
@@ -452,23 +472,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         /** Templates */
         _templateSuccess: function( response ) {
             if ( response && response.length > 0 ) {
-                var $message = $( '<div/>' ).addClass( 'donemessagelarge' )
-                                .append( $( '<p/>' ).text( 'Successfully ran workflow \'' + this.model.get( 'name' ) + '\' and datasets will appear as jobs are created - you may need to refresh your history panel to see these.' ) );
-                for ( var i in response ) {
-                    var invocation = response[ i ];
-                    var $invocation = $( '<div/>' ).addClass( 'workflow-invocation-complete' );
-                    invocation.history && $invocation.append( $( '<p/>' ).text( 'These datasets will appear in a new history: ' )
-                                                     .append( $( '<a/>' ).addClass( 'new-history-link' )
-                                                                         .attr( 'data-history-id', invocation.history.id )
-                                                                         .attr( 'target', '_top' )
-                                                                         .attr( 'href', '/history/switch_to_history?hist_id=' + invocation.history.id )
-                                                                         .text( invocation.history.name ) ) );
-                    _.each( invocation.outputs, function( output ) {
-                        $invocation.append( $( '<div/>' ).addClass( 'messagerow' ).html( '<b>' + output.hid + '</b>: ' + output.name ) );
-                    });
-                    $message.append( $invocation );
-                }
-                return $message;
+                return $( '<div/>' ).addClass( 'donemessagelarge' ).append( $( '<p/>' ).html( 'Successfully invoked workflow <b>' + Utils.sanitize( this.model.get( 'name' ) ) + '</b>' + ( response.length > 1 ? ' <b>' + response.length + ' times</b>' : '' ) + '. Datasets will appear as jobs are created.' ) );
             } else {
                 return this._templateError( response );
             }

@@ -1,11 +1,11 @@
 # Dan Blankenberg
-import cookielib
 import json
 import optparse
 import os
-import urllib
-import urllib2
-import urlparse
+
+from six.moves import http_cookiejar
+from six.moves.urllib.parse import unquote_plus, urlencode, urlparse
+from six.moves.urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -13,6 +13,7 @@ from galaxy.datatypes.registry import Registry
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
 DEFAULT_GENOMESPACE_TOOLNAME = 'Galaxy'
+FILENAME_VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
 CHUNK_SIZE = 2**20  # 1mb
 
@@ -46,8 +47,6 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
 GENOMESPACE_UNKNOWN_FORMAT_KEY = 'unknown'
 GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = None
 
-VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
-
 
 def chunk_write( source_stream, target_stream, source_method="read", target_method="write" ):
     source_method = getattr( source_stream, source_method )
@@ -62,12 +61,12 @@ def chunk_write( source_stream, target_stream, source_method="read", target_meth
 
 def get_cookie_opener( gs_username, gs_token, gs_toolname=None ):
     """ Create a GenomeSpace cookie opener """
-    cj = cookielib.CookieJar()
+    cj = http_cookiejar.CookieJar()
     for cookie_name, cookie_value in [ ( 'gs-token', gs_token ), ( 'gs-username', gs_username ) ]:
         # create a super-cookie, valid for all domains
-        cookie = cookielib.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
+        cookie = http_cookiejar.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
         cj.set_cookie( cookie )
-    cookie_opener = urllib2.build_opener( urllib2.HTTPCookieProcessor( cj ) )
+    cookie_opener = build_opener( HTTPCookieProcessor( cj ) )
     cookie_opener.addheaders.append( ( 'gs-toolname', gs_toolname or DEFAULT_GENOMESPACE_TOOLNAME ) )
     return cookie_opener
 
@@ -84,7 +83,7 @@ def get_galaxy_ext_from_genomespace_format_url( url_opener, file_format_url ):
 
 def get_genomespace_site_urls():
     genomespace_sites = {}
-    for line in urllib2.urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
+    for line in urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
         line = line.rstrip()
         if not line or line.startswith( "#" ):
             continue
@@ -97,14 +96,14 @@ def get_genomespace_site_urls():
 
 
 def set_genomespace_format_identifiers( url_opener, dm_site ):
-    gs_request = urllib2.Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
+    gs_request = Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
     gs_request.get_method = lambda: 'GET'
     opened_gs_request = url_opener.open( gs_request )
     genomespace_formats = json.loads( opened_gs_request.read() )
     for format in genomespace_formats:
         GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT[ format['url'] ] = format['name']
     global GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN
-    GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = dict( map( lambda x: ( x[1], x[0] ), GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT.iteritems() ) ).get( GENOMESPACE_UNKNOWN_FORMAT_KEY, GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN )
+    GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = dict( ( x[1], x[0] ) for x in GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT.items() ).get( GENOMESPACE_UNKNOWN_FORMAT_KEY, GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN )
 
 
 def download_from_genomespace_file_browser( json_parameter_file, genomespace_site, gs_toolname ):
@@ -148,25 +147,25 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
         filetype_key = "%s%i" % ( file_type_prefix, file_num )
         filetype_url = datasource_params.get( filetype_key, None )
         galaxy_ext = get_galaxy_ext_from_genomespace_format_url( url_opener, filetype_url )
-        formated_download_url = "%s?%s" % ( download_url, urllib.urlencode( [ ( 'dataformat', filetype_url ) ] ) )
-        new_file_request = urllib2.Request( formated_download_url )
+        formatted_download_url = "%s?%s" % ( download_url, urlencode( [ ( 'dataformat', filetype_url ) ] ) )
+        new_file_request = Request( formatted_download_url )
         new_file_request.get_method = lambda: 'GET'
         target_download_url = url_opener.open( new_file_request )
         filename = None
         if 'Content-Disposition' in target_download_url.info():
             # If the response has Content-Disposition, try to get filename from it
-            content_disposition = dict( map( lambda x: x.strip().split('=') if '=' in x else ( x.strip(), '' ), target_download_url.info()['Content-Disposition'].split( ';' ) ) )
+            content_disposition = dict( x.strip().split('=') if '=' in x else ( x.strip(), '' ) for x in target_download_url.info()['Content-Disposition'].split( ';' ) )
             if 'filename' in content_disposition:
                 filename = content_disposition[ 'filename' ].strip( "\"'" )
         if not filename:
-            parsed_url = urlparse.urlparse( download_url )
-            filename = urllib.unquote_plus( parsed_url[2].split( '/' )[-1] )
+            parsed_url = urlparse( download_url )
+            filename = unquote_plus( parsed_url[2].split( '/' )[-1] )
         if not filename:
             filename = download_url
         metadata_dict = None
         original_filename = filename
         if output_filename is None:
-            filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
+            filename = ''.join( c in FILENAME_VALID_CHARS and c or '-' for c in filename )
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )

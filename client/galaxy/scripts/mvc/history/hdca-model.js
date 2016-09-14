@@ -111,11 +111,6 @@ var HistoryListOfListsDatasetCollection = ListOfListsDC.extend( hcontentMixin ).
         model_class         : 'HistoryDatasetCollectionAssociation'
     }),
 
-    initialize : function( model, options ){
-        ListOfListsDC.prototype.initialize.call( this, model, options );
-        hcontentMixin.initialize.call( this, model, options );
-    },
-
     /** Override to post to contents route w/o id. */
     save : buildHDCASave( ListOfListsDC.prototype.save ),
 

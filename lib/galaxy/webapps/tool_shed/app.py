@@ -6,6 +6,7 @@ import galaxy.quota
 import galaxy.tools.data
 import galaxy.webapps.tool_shed.model
 from galaxy import tools
+from galaxy.config import configure_logging
 from galaxy.managers.tags import CommunityTagManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.util.dbkeys import GenomeBuilds
@@ -13,6 +14,7 @@ from galaxy.web import security
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -26,7 +28,7 @@ class UniverseApplication( object ):
         # Read the tool_shed.ini configuration file and check for errors.
         self.config = config.Configuration( **kwd )
         self.config.check()
-        config.configure_logging( self.config )
+        configure_logging( self.config )
         # Initialize the  Galaxy datatypes registry.
         self.datatypes_registry = galaxy.datatypes.registry.Registry()
         self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )

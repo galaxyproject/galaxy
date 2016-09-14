@@ -246,7 +246,7 @@ def new_state( trans, tool, invalid=False ):
         log.debug( 'Failed to build tool state for tool "%s" using standard method, will try to fall back on custom method: %s', tool.id, e )
     inputs = tool.inputs_by_page[ 0 ]
     context = ExpressionContext( state.inputs, parent=None )
-    for input in inputs.itervalues():
+    for input in inputs.values():
         try:
             state.inputs[ input.name ] = input.get_initial_value( trans, context )
         except:

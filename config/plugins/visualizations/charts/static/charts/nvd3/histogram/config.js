@@ -1,31 +1,27 @@
-define(['plugin/charts/forms/default'], function(config_default) {
-return $.extend(true, {}, config_default, {
-    library     : 'NVD3',
-    tag         : 'svg',
-    title       : 'Histogram',
-    category    : 'Data processing (requires \'charts\' tool from Toolshed)',
-    execute     : 'histogram',
-    keywords    : 'small medium large',
-    columns     : {
-        y : {
-            title       : 'Observations',
-            is_numeric  : true
+define( [ 'plugin/charts/utilities/tabular-form' ], function( default_config ) {
+    return $.extend( true, {}, default_config, {
+        library     : 'NVD3',
+        tag         : 'svg',
+        title       : 'Histogram',
+        category    : 'Data processing (requires \'charts\' tool from Toolshed)',
+        keywords    : 'nvd3 default',
+        datatype    : 'tabular',
+        groups      : {
+            key : {
+                label       : 'Provide a label',
+                type        : 'text',
+                placeholder : 'Data label',
+                value       : 'Data label'
+            },
+            color : {
+                label       : 'Pick a series color',
+                type        : 'color'
+            },
+            y : {
+                label       : 'Observations',
+                type        : 'data_column',
+                is_numeric  : true
+            }
         }
-    },
-    settings    : {
-        x_axis_label : {
-            init : 'Values'
-        },
-        y_axis_label : {
-            init : 'Density'
-        },
-        y_axis_type : {
-            init : 'f'
-        },
-        y_axis_precision : {
-            init : '.2'
-        }
-    }
-});
-
+    });
 });

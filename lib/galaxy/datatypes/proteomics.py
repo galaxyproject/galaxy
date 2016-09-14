@@ -1,7 +1,6 @@
 """
 Proteomics Datatypes
 """
-import binascii
 import logging
 import re
 
@@ -272,10 +271,9 @@ class ThermoRAW(Binary):
         # This combination represents 17 bytes, but to play safe we read 20 bytes from
         # the start of the file.
         try:
-            header = open(filename).read(20)
-            hexheader = binascii.b2a_hex(header)
-            finnigan = binascii.hexlify('F\0i\0n\0n\0i\0g\0a\0n')
-            if hexheader.find(finnigan) != -1:
+            header = open(filename, 'rb').read(20)
+            finnigan = b'F\0i\0n\0n\0i\0g\0a\0n'
+            if header.find(finnigan) != -1:
                 return True
             return False
         except:

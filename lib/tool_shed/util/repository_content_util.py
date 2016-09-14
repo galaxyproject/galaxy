@@ -1,11 +1,8 @@
 import os
 import shutil
 
-from tool_shed.util import commit_util
-from tool_shed.util import hg_util
-from tool_shed.util import xml_util
-
 import tool_shed.repository_types.util as rt_util
+from tool_shed.util import commit_util, hg_util, xml_util
 
 
 def upload_tar( trans, rdah, tdah, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar,

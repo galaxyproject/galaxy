@@ -1,16 +1,20 @@
+import logging
+import os
+import string
+
 from abc import (
     ABCMeta,
     abstractmethod
 )
-import os
-import string
 
 import six
 
 from galaxy.util import asbool
+
+from .requirements import ContainerDescription
+from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 from ..deps import docker_util
 
-import logging
 log = logging.getLogger(__name__)
 
 DEFAULT_CONTAINER_TYPE = "docker"
@@ -55,9 +59,17 @@ class ContainerFinder(object):
                 container_type,
                 tool_info,
                 destination_info,
-                job_info
+                job_info,
+                container_description,
             )
             return container
+
+        if "container_override" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container_override"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
 
         # Is destination forcing Galaxy to use a particular container do it,
         # this is likely kind of a corner case. For instance if deployers
@@ -90,6 +102,13 @@ class ContainerFinder(object):
 
         # If we still don't have a container, check to see if any container
         # types define a default container id and use that.
+        if "container" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
+
         for container_type in CONTAINER_CLASSES.keys():
             container_id = self.__default_container_id(container_type, destination_info)
             if container_id:
@@ -135,7 +154,7 @@ class ContainerFinder(object):
             return self.__build_container_id_from_parts(container_type, destination_info, mode="default")
         return None
 
-    def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info):
+    def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info, container_description=None):
         # TODO: ensure destination_info is dict-like
         if not self.__container_type_enabled(container_type, destination_info):
             return NULL_CONTAINER
@@ -144,7 +163,7 @@ class ContainerFinder(object):
         # container type is - there should be more thought put into this.
         # Checking which are availalbe - settings policies for what can be
         # auto-fetched, etc....
-        return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info)
+        return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info, container_description)
 
     def __container_type_enabled(self, container_type, destination_info):
         return asbool(destination_info.get("%s_enabled" % container_type, False))
@@ -197,23 +216,33 @@ class ToolInfo(object):
 
 class JobInfo(object):
 
-    def __init__(self, working_directory, tool_directory, job_directory):
+    def __init__(self, working_directory, tool_directory, job_directory, job_directory_type):
         self.working_directory = working_directory
         self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
         # of the job not of the tool.
         self.tool_directory = tool_directory
+        self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
 class Container( object ):
     __metaclass__ = ABCMeta
 
-    def __init__(self, container_id, app_info, tool_info, destination_info, job_info):
+    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
         self.destination_info = destination_info
         self.job_info = job_info
+        self.container_description = container_description
+
+    @property
+    def resolve_dependencies(self):
+        return DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES if not self.container_description else self.container_description.resolve_dependencies
+
+    @property
+    def shell(self):
+        return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
 
     @abstractmethod
     def containerize_command(self, command):
@@ -321,16 +350,20 @@ class DockerContainer(Container):
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
 
-        if self.job_info.job_directory:
-            # We have a job directory, so everything needed (excluding index
+        if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
+            # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
             defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
-        elif self.app_info.outputs_to_working_directory:
-            # Should need default_file_path (which is a course estimate given
-            # object stores anyway).
-            defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro"
         else:
-            defaults = "$galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw"
+            defaults = "$galaxy_root:ro,$tool_directory:ro"
+            if self.job_info.job_directory:
+                defaults += ",$job_directory:ro"
+            if self.app_info.outputs_to_working_directory:
+                # Should need default_file_path (which is a course estimate given
+                # object stores anyway).
+                defaults += ",$working_directory:rw,$default_file_path:ro"
+            else:
+                defaults += ",$working_directory:rw,$default_file_path:rw"
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:ro"

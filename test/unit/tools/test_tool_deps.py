@@ -1,15 +1,23 @@
-import tempfile
 import os.path
-from stat import S_IXUSR
-from os import makedirs, stat, symlink, chmod, environ
+import tempfile
+
+from contextlib import contextmanager
+from os import (
+    chmod,
+    environ,
+    makedirs,
+    stat,
+    symlink,
+)
 from shutil import rmtree
+from stat import S_IXUSR
+from subprocess import PIPE, Popen
+
 from galaxy.tools.deps import DependencyManager
 from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
-from galaxy.tools.deps.resolvers.modules import ModuleDependencyResolver, ModuleDependency
+from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
-from contextlib import contextmanager
-from subprocess import Popen, PIPE
 
 
 def test_tool_dependencies():
@@ -175,7 +183,7 @@ def test_galaxy_dependency_object_script():
         # Create env.sh file that just exports variable FOO and verify it
         # shell_commands export it correctly.
         env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
-        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_VERSION)
+        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_REPO_NAME, TEST_VERSION)
         __assert_foo_exported( dependency.shell_commands( Bunch( type="package" ) ) )
 
 

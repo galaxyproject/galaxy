@@ -141,10 +141,11 @@ def set_metadata():
             json.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) )  # setting metadata has failed somehow
 
     for i, ( filename, file_dict ) in enumerate( new_job_metadata_dict.iteritems(), start=1 ):
-        new_dataset = galaxy.model.Dataset( id=-i, external_filename=os.path.join( tool_job_working_directory, file_dict[ 'filename' ] ) )
+        new_dataset_filename = os.path.join( tool_job_working_directory, "working", file_dict[ 'filename' ] )
+        new_dataset = galaxy.model.Dataset( id=-i, external_filename=new_dataset_filename )
         extra_files = file_dict.get( 'extra_files', None )
         if extra_files is not None:
-            new_dataset._extra_files_path = os.path.join( tool_job_working_directory, extra_files )
+            new_dataset._extra_files_path = os.path.join( tool_job_working_directory, "working", extra_files )
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = galaxy.model.HistoryDatasetAssociation( id=-i, dataset=new_dataset, extension=file_dict.get( 'ext', 'data' ) )
         set_meta_with_tool_provided( new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry )

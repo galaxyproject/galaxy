@@ -157,6 +157,7 @@ class MockTool(object):
 
     def __init__(self, app):
         self.version_string_cmd = TEST_VERSION_COMMAND
+        self.dependencies = []
 
     def build_dependency_shell_commands(self, job_directory):
         return TEST_DEPENDENCIES_COMMANDS

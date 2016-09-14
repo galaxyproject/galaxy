@@ -1,10 +1,11 @@
 # post processing, add sequence and additional annoation info if available
-from urllib import urlencode
+from six.moves.urllib.parse import urlencode
+
 from galaxy.datatypes.images import create_applet_tag_peek
 
 
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
-    primary_data = out_data.items()[0][1]
+    primary_data = next(iter(out_data.values()))
 
     # default params for LAJ type
     params = {

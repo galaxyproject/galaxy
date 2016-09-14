@@ -1,8 +1,12 @@
+from abc import (
+    ABCMeta,
+    abstractmethod,
+    abstractproperty,
+)
+
 from galaxy.util.dictifiable import Dictifiable
 
 from ..requirements import ToolRequirement
-
-from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class DependencyResolver(Dictifiable, object):
@@ -87,6 +91,13 @@ class Dependency(Dictifiable, object):
         the dependency.
         """
 
+    @property
+    def resolver_msg(self):
+        """
+        Return a message describing this dependency
+        """
+        return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
+
 
 class NullDependency( Dependency ):
     dependency_type = None
@@ -95,6 +106,13 @@ class NullDependency( Dependency ):
     def __init__(self, version=None, name=None):
         self.version = version
         self.name = name
+
+    @property
+    def resolver_msg(self):
+        """
+        Return a message describing this dependency
+        """
+        return "Dependency %s not found." % self.name
 
     def shell_commands( self, requirement ):
         return None

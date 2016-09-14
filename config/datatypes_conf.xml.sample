@@ -320,6 +320,7 @@
     <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="true"/>
     <!-- datatypes storing triples -->
     <datatype extension="triples" type="galaxy.datatypes.triples:Triples" display_in_upload="false"/>
+    <datatype extension="hdt" type="galaxy.datatypes.triples:HDT" display_in_upload="true"/>
     <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="true"/>
     <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="true"/>
     <datatype extension="ttl" type="galaxy.datatypes.triples:Turtle" display_in_upload="true"/>
@@ -595,6 +596,7 @@
     <sniffer type="galaxy.datatypes.proteomics:ThermoRAW"/>
     <sniffer type="galaxy.datatypes.molecules:CML"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>
+    <sniffer type="galaxy.datatypes.triples:HDT"/>
     <sniffer type="galaxy.datatypes.triples:Turtle"/>
     <sniffer type="galaxy.datatypes.triples:NTriples"/>
     <sniffer type="galaxy.datatypes.triples:Jsonld"/>

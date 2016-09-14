@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-import sys
-import string
 import optparse
-import tempfile
 import sqlite3
+import string
+import sys
+import tempfile
+
+import six
 
 
 def stop_err( msg ):
@@ -28,13 +30,13 @@ def solid2sanger( quality_string, min_qual=0 ):
     return sanger
 
 
-def Translator(frm='', to='', delete='', keep=None):
-    allchars = string.maketrans('', '')
+def Translator(frm='', to='', delete=''):
     if len(to) == 1:
         to = to * len(frm)
-    trans = string.maketrans(frm, to)
-    if keep is not None:
-        delete = allchars.translate(allchars, keep.translate(allchars, delete))
+    if six.PY2:
+        trans = string.maketrans(frm, to)
+    else:
+        trans = str.maketrans(frm, to)
 
     def callable(s):
         return s.translate(trans, delete)

@@ -33,6 +33,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             if p.returncode != 0:
+                stderr = stderr.strip()
                 if stderr == 'SLURM accounting storage is disabled':
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
@@ -43,7 +44,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             cmd = [ 'scontrol', '-o' ]
             if '.' in ajs.job_id:
                 # custom slurm-drmaa-with-cluster-support job id syntax
-                job_id, cluster = ajs.job_id.split('.', maxsplit=1)
+                job_id, cluster = ajs.job_id.split('.', 1)
                 cmd.extend( [ '-M', cluster ] )
             else:
                 job_id = ajs.job_id

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Reads an interval or gene BED and a MAF Source.
 Produces a FASTA file containing the aligned intervals/gene sequences, based upon the provided coordinates
@@ -24,8 +23,9 @@ usage: %prog maf_file [options]
 
 usage: %prog dbkey_of_BED comma_separated_list_of_additional_dbkeys_to_extract comma_separated_list_of_indexed_maf_files input_gene_bed_file output_fasta_file cached|user GALAXY_DATA_INDEX_DIR
 """
-
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 import bx.intervals.io
@@ -142,7 +142,7 @@ def __main__():
                     primary_name = secondary_name = fields[3]
                     alignment_strand = fields[5]
                 except Exception as e:
-                    print "Error loading exon positions from input line %i: %s" % ( line_count, e )
+                    print("Error loading exon positions from input line %i: %s" % ( line_count, e ))
                     continue
             else:  # Process as standard intervals
                 try:
@@ -155,7 +155,7 @@ def __main__():
                     secondary_name = ""
                     alignment_strand = line.strand
                 except Exception as e:
-                    print "Error loading region positions from input line %i: %s" % ( line_count, e )
+                    print("Error loading region positions from input line %i: %s" % ( line_count, e ))
                     continue
 
             # Write alignment to output file
@@ -182,7 +182,7 @@ def __main__():
             output.write( "\n" )
             regions_extracted += 1
         except Exception as e:
-            print "Unexpected error from input line %i: %s" % ( line_count, e )
+            print("Unexpected error from input line %i: %s" % ( line_count, e ))
             continue
 
     # close output file
@@ -193,11 +193,11 @@ def __main__():
 
     # Print message about success for user
     if regions_extracted > 0:
-        print "%i regions were processed successfully." % ( regions_extracted )
+        print("%i regions were processed successfully." % ( regions_extracted ))
     else:
-        print "No regions were processed successfully."
+        print("No regions were processed successfully.")
         if line_count > 0 and options.geneBED:
-            print "This tool requires your input file to conform to the 12 column BED standard."
+            print("This tool requires your input file to conform to the 12 column BED standard.")
 
 if __name__ == "__main__":
     __main__()

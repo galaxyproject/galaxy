@@ -6,8 +6,9 @@ Galaxy tool panel.
 from abc import ABCMeta
 from abc import abstractmethod
 
-from galaxy.util import parse_xml, string_as_bool
 import yaml
+
+from galaxy.util import parse_xml, string_as_bool
 
 DEFAULT_MONITOR = False
 

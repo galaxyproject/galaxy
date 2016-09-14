@@ -181,8 +181,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         if not data or not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+        fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
 
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
@@ -1054,14 +1053,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         else:
             decoded_dataset_collection_ids = []
             decoded_dataset_ids = []
-        if target_history_id:
-            target_history_ids = [ self.decode_id(target_history_id) ]
-        elif target_history_ids:
-            if not isinstance( target_history_ids, list ):
-                target_history_ids = target_history_ids.split(",")
-            target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
-        else:
+        if new_history_name:
             target_history_ids = []
+        else:
+            if target_history_id:
+                target_history_ids = [ self.decode_id(target_history_id) ]
+            elif target_history_ids:
+                if not isinstance( target_history_ids, list ):
+                    target_history_ids = target_history_ids.split(",")
+                target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
+            else:
+                target_history_ids = []
         done_msg = error_msg = ""
         new_history = None
         if do_copy:
