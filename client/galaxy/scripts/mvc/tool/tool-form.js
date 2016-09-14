@@ -58,32 +58,18 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                 inputs          : this.data.create()
             }
 
-	//console.log("Env vars: " + typeof(Object.keys(process.env)));
-	//Object.keys(process.env).forEach(function(key,index) {
-	//	console.log("Key: " + key + " Index: " + index);
-	//}
 	
-	for (var propt in process.env) {
-		console.log(propt + ': ' + process.env[propt]);
-	}
-	for (var job_input_id in job_def.inputs){
-		console.log("I got here");
-		var input_id = this.data.match(job_input_id);
-		var input_def = this.input_list[input_id];
-		var typeParam = input_def['type']
-		if (typeParam == "password"){
-			job_def.inputs.JPCNn681vcGV4KuvuT16 = job_input_id;
-			
-		}
-	}
-	for (vart in job_def.inputs){
-	 	console.log("Job def input val: " + vart)
-		console.log("Job def input: " + job_def.inputs[vart])
-	}	   
-	//console.log("Job def inputs: " + Object.prototype.toString.call(job_def.inputs))
+	  for (var job_input_id in job_def.inputs){
+                        var input_id = this.form.data.match(job_input_id);
+                        var input_def = this.form.input_list[input_id];
+                        var typeParam = input_def['type']
+                        if (typeParam == "password"){
+                                job_def.inputs.JPCNn681vcGV4KuvuT16 = job_input_id;
 
+                        }
+            }
 
-            this.trigger( 'reset' );
+            this.form.trigger( 'reset' );
             if ( !self.validate( job_def ) ) {
                 Galaxy.emit.debug( 'tool-form::submit()', 'Submission canceled. Validation failed.' );
                 callback && callback();

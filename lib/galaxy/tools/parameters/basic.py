@@ -273,21 +273,16 @@ class TextToolParameter( ToolParameter ):
 
 class PasswordToolParameter(TextToolParameter):
 
-	def get_html_field(self,trans=None, value=None, other_values={}):
-		
-		if value is None:
-			value = self.value
-		return form_builder.PasswordField(self.name,self.size,value)
+#	def get_html_field(self,trans=None, value=None, other_values={}):
+#		
+#		if value is None:
+#			value = self.value
+#		return form_builder.PasswordField(self.name,self.size,value)
 
 	def get_initial_value(self,trans,context,history=None):
 		return self.value
 
 	def to_dict(self,trans,view='collection',value_mapper=None,other_values={}):
-		#obj = trans.sa_session.query(trans.app.model.JobParameter).get(2021)
-		#obj.value = "newpass"
-		#print "From basic.py: " + str(obj.value)
-		#obj2 = trans.sa_session.query(trans.app.model.JobParameter).get(2021)
-		#print "obj2: " + str(obj2.value)
 		d = super(PasswordToolParameter,self).to_dict(trans)
 		d['type']="password"
 		return d

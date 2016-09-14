@@ -48,7 +48,7 @@ def build_command(
     queryList = []
     queryList.append(query)
     passwordName = ''
-   
+    passwordIS = ''   
     while (query is not None) and jobOrig == jobId:
 	idVar = idVar + 1
 	jobId = query.job_id
@@ -59,6 +59,7 @@ def build_command(
     index = 0
     for item in queryList:
 	if str(item.name) == (passwordName):
+		passwordIS = item.value
 		item.value = unicode('""',"utf-8")
 		indexOfPass = index
 	index = index + 1
@@ -93,7 +94,7 @@ def build_command(
             external_command_shell = "/bin/sh"
         else:
             external_command_shell = shell
-        externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)
+        externalized_commands = __externalize_commands(job_wrapper, passwordIS, external_command_shell, commands_builder, remote_command_params)
         if container and modify_command_for_container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside
@@ -145,21 +146,22 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         set_e = "set -e\n"
 	
     ####
-    tool_commands = str(tool_commands)
+#    tool_commands = str(tool_commands)
     envVar = ''
-    if ' JPCNn681vcGV4KuvuT16 ' in tool_commands:
-	start = tool_commands.find(' JPCNn681vcGV4KuvuT16 ')
-	end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
-        index = end + 1 
-        passVar = ''
-        while (index < len(tool_commands)) and (tool_commands[index] is not ' '):  
-		passVar = passVar + tool_commands[index]
-                index = index + 1
+    envVar = "PASS=" + passwordIS
+#    if ' JPCNn681vcGV4KuvuT16 ' in tool_commands:
+#	start = tool_commands.find(' JPCNn681vcGV4KuvuT16 ')
+#	end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
+ #       index = end + 1 
+#        passVar = ''
+#        while (index < len(tool_commands)) and (tool_commands[index] is not ' '):  
+#		passVar = passVar + tool_commands[index]
+#                index = index + 1
 	
-        envVar = "PASS=" + '"'+passVar + '"'
-        indexSoFar = end +1
-	tool_commands = tool_commands.replace(passVar, '$PASS')
-        tool_commands = tool_commands.replace('JPCNn681vcGV4KuvuT16 ', '')
+#        envVar = "PASS=" + '"'+passVar + '"'
+#        indexSoFar = end +1
+#	tool_commands = tool_commands.replace(passVar, '$PASS')
+#        tool_commands = tool_commands.replace('JPCNn681vcGV4KuvuT16 ', '')
 
 	####
 

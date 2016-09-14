@@ -501,7 +501,20 @@ class ToolEvaluator( object ):
             tool_dir = os.path.abspath( self.tool.tool_dir )
             abs_executable = os.path.join( tool_dir, executable )
             command_line = command_line.replace(executable, abs_executable, 1)
-            command_line = interpreter + " " + command_line
+	    command_line = interpreter + " " + command_line
+	if command_line.find("JPCNn681vcGV4KuvuT16") != (-1):
+            start = command_line.find(' JPCNn681vcGV4KuvuT16 ')
+            end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
+            index = end + 1
+            passVar = ''
+            while (index < len(command_line)) and (command_line[index] != ' '):
+                passVar = passVar + command_line[index]
+                index = index + 1
+            print "passVar: " + passVar
+            command_line = command_line.replace(passVar, '$PASS')
+            command_line = command_line.replace('JPCNn681vcGV4KuvuT16 ', '')
+            print "command_line: " + command_line	
+
         self.command_line = command_line
 
     def __build_config_files( self ):
