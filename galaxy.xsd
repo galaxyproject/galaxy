@@ -130,12 +130,6 @@ Query sequence::
 </help>
 ```
 
-### Best Practices
-
-From https://galaxy-iuc-standards.readthedocs.org/en/latest/:
-
-The help tag should be started and finished by a [CDATA tag](https://en.wikipedia.org/wiki/CDATA).
-
 ]]></xs:documentation>
           </xs:annotation>
         </xs:element>
@@ -2202,12 +2196,6 @@ legacy tools.
 
 Older tools may define an ``intepreter`` attribute on the command, but this is
 deprecated and using the ``$__tool_directory__`` variable is superior.
-
-### Best Practices
-
-From https://galaxy-iuc-standards.readthedocs.org/en/latest/:
-
-The ``command`` tag should be started and finished by a [CDATA tag](https://en.wikipedia.org/wiki/CDATA).
 
 ]]></xs:documentation>
     </xs:annotation>
