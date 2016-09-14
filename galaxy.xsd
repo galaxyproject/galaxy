@@ -615,23 +615,6 @@ specified and instead a series of assertions is made about the output.
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestParamElement" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="output_collection" type="TestOutputCollection" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="assert_command" type="TestAssertions" minOccurs="0" maxOccurs="1">
-        <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="assert_stdout" type="TestAssertions" minOccurs="0" maxOccurs="1">
-        <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="assert_stderr" type="TestAssertions" minOccurs="0" maxOccurs="1">
-        <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.</xs:documentation>
-        </xs:annotation>
-      </xs:element>
     </xs:sequence>
     <xs:attribute name="expect_exit_code" type="xs:integer">
       <xs:annotation>
@@ -676,7 +659,8 @@ $assertions
       </xs:element>
       <xs:element name="assert_stdout" type="TestAssertions">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the job's standard error.
+          <xs:documentation xml:lang="en">Describe assertions about the job's
+standard output.
 
 $assertions
 </xs:documentation>
@@ -684,7 +668,8 @@ $assertions
       </xs:element>
       <xs:element name="assert_stderr" type="TestAssertions">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Describe assertions about the jobs standard error.
+          <xs:documentation xml:lang="en">Describe assertions about the job's
+standard error.
 
 $assertions
 </xs:documentation>
@@ -1392,7 +1377,7 @@ between paired inputs of single stranded inputs.
       <xs:extension base="InputType">
         <xs:sequence>
           <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
-          <xs:element name="when" type="c" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
         <xs:attribute name="name" type="xs:string">
           <xs:annotation>
@@ -3269,7 +3254,7 @@ Creating collections in tools is covered in-depth in
     <xs:sequence>
       <xs:group ref="CollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" required="true">
+    <xs:attribute name="name" type="xs:string" use="required">
         <xs:annotation>
           <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
 ``name`` is used as the Cheetah variable containing the Galaxy assigned output
@@ -3720,11 +3705,6 @@ against.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:integer">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="keep" type="PermissiveBoolean">
       <xs:annotation>
         <xs:documentation xml:lang="en"></xs:documentation>
       </xs:annotation>
