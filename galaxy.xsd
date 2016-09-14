@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema
-    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:gxdocs="http://galaxyproject.org/xml/1.0"
     elementFormDefault="qualified"
     attributeFormDefault="unqualified"
     >
@@ -10,7 +11,7 @@
   </xs:annotation>
 
   <xs:element name="tool">
-    <xs:annotation>
+    <xs:annotation gxdocs:best_practices="tools">
       <xs:documentation xml:lang="en"><![CDATA[
 The outer-most tag set of tool XML files. Attributes on this tag apply to the
 tool as a whole.
@@ -46,7 +47,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="macros" type="xs:anyType" minOccurs="0"/>
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
-          <xs:annotation>
+          <xs:annotation gxdocs:best_practices="tool-descriptions">
             <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
 the tool menu immediately following the hyperlink for the tool (based on the
 ``name`` attribute of the ``<tool>`` tag set described above).
@@ -88,7 +89,7 @@ substitution.
         <xs:element name="tests" type="Tests" minOccurs="0"/>
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
         <xs:element name="help" type="xs:string" minOccurs="0">
-          <xs:annotation>
+          <xs:annotation gxdocs:best_practices="help-tag">
             <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the last tag set in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html.
 
 tag | details
@@ -145,7 +146,7 @@ The help tag should be started and finished by a [CDATA tag](https://en.wikipedi
         <xs:element name="citations" type="Citations" minOccurs="0"/>
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required">
-        <xs:annotation>
+        <xs:annotation gxdocs:best_practices="tool-ids">
           <xs:documentation xml:lang="en">Must be unique across all tools;
 should be lowercase and contain only letters, numbers, and underscores.
 It allows for tool versioning and metrics of the number of times a tool is used,
@@ -153,13 +154,13 @@ among other things.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation>
+        <xs:annotation gxdocs:best_practices="tool-names">
           <xs:documentation xml:lang="en">This string is what is displayed as a
 hyperlink in the tool menu.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="version" type="xs:string" default="1.0.0">
-        <xs:annotation>
+        <xs:annotation gxdocs:best_practices="tool-versions">
           <xs:documentation xml:lang="en">This string defaults to ``1.0.0`` if it is not
 included in the tag. It allows for tool versioning and should be changed with each new version
 of the tool.</xs:documentation>
@@ -521,7 +522,7 @@ def get_field_components_options( dataset, field_name ):
   </xs:complexType>
 
   <xs:complexType name="Tests">
-    <xs:annotation>
+    <xs:annotation gxdocs:best_practices="tests">
       <xs:documentation xml:lang="en"><![CDATA[
 
 Container tag set for the <test> tag sets. Any number of tests can be included,
@@ -1811,7 +1812,7 @@ displayed on the tool page as the label of the form field
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="help" type="xs:string">
-          <xs:annotation>
+          <xs:annotation gxdocs:best_practices="parameter-help">
             <xs:documentation xml:lang="en">Short bit of text, rendered on the
 tool form just below the associated field to provide information about the
 field.</xs:documentation>
@@ -2018,7 +2019,7 @@ allow access to Python code to generate options for a select list. See
 
 
   <xs:complexType name="Command">
-    <xs:annotation>
+    <xs:annotation gxdocs:best_practices="command-tag">
       <xs:documentation xml:lang="en"><![CDATA[
 This tag specifies how Galaxy should invoke the tool's executable, passing its
 required input parameter values (the command line specification links the
@@ -2217,7 +2218,7 @@ The ``command`` tag should be started and finished by a [CDATA tag](https://en.w
             <xs:documentation></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="interpreter" type="xs:string">
+        <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
           </xs:annotation>
