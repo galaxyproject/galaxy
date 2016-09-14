@@ -7,9 +7,11 @@ from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
+from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 from tool_shed.util import common_util
 from tool_shed.util import repository_util
-import galaxy.queue_worker
+from galaxy.queue_worker import reload_data_managers
+from galaxy.queue_worker import send_control_task
 
 # set up logger
 import logging
@@ -21,11 +23,12 @@ DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 
 
 class DataManagers( object ):
-    def __init__( self, app, xml_filename=None ):
+    def __init__( self, app, xml_filename=None, conf_watchers=None ):
         self.app = app
         self.data_managers = odict()
         self.managed_data_tables = odict()
         self.tool_path = None
+        self._reload_count = 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
         for filename in util.listify( self.filename ):
             if not filename:
@@ -33,6 +36,21 @@ class DataManagers( object ):
             self.load_from_xml( filename )
         if self.app.config.shed_data_manager_config_file:
             self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
+        if conf_watchers:
+            self.conf_watchers = conf_watchers
+        else:
+            self.conf_watchers = self.get_conf_watchers()
+
+    def get_conf_watchers(self):
+        conf_watchers = []
+        conf_watchers.extend([(get_tool_conf_watcher(lambda: reload_data_managers(self.app)), filename) for filename in util.listify(self.filename) if filename])
+        if self.app.config.shed_data_manager_config_file:
+            conf_watchers.append((get_tool_conf_watcher(lambda: reload_data_managers(self.app)), self.app.config.shed_data_manager_config_file))
+        [watcher.watch_file(filename) for watcher, filename in conf_watchers]
+        return [watcher for watcher, filename in conf_watchers]
+
+    def shutdown(self):
+        [watcher.shutdown() for watcher in self.conf_watchers]
 
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
         try:
@@ -303,9 +321,10 @@ class DataManager( object ):
                         self.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
                         data_table_value[ name ] = self.process_value_translation( data_table_name, name, **data_table_value )
                 data_table.add_entry( data_table_value, persist=True, entry_source=self )
-                galaxy.queue_worker.send_control_task(self.data_managers.app, 'reload_tool_data_tables',
-                                                      noop_self=True,
-                                                      kwargs={'table_name': data_table_name} )
+                send_control_task(self.data_managers.app,
+                                  'reload_tool_data_tables',
+                                  noop_self=True,
+                                  kwargs={'table_name': data_table_name} )
         if self.undeclared_tables and data_tables_dict:
             # We handle the data move, by just moving all the data out of the extra files path
             # moving a directory and the target already exists, we move the contents instead
@@ -323,9 +342,9 @@ class DataManager( object ):
                         if name in path_column_names:
                             data_table_value[ name ] = os.path.abspath( os.path.join( self.data_managers.app.config.galaxy_data_manager_data_path, value ) )
                     data_table.add_entry( data_table_value, persist=True, entry_source=self )
-                    galaxy.queue_worker.send_control_task(self.data_managers.app, 'reload_tool_data_tables',
-                                                          noop_self=True,
-                                                          kwargs={'table_name': data_table_name} )
+                    send_control_task(self.data_managers.app, 'reload_tool_data_tables',
+                                      noop_self=True,
+                                      kwargs={'table_name': data_table_name} )
         else:
             for data_table_name, data_table_values in data_tables_dict.iteritems():
                 # tool returned extra data table entries, but data table was not declared in data manager

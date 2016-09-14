@@ -5,6 +5,7 @@ reloading the toolbox, etc., across multiple processes.
 
 import logging
 import threading
+import time
 
 import galaxy.queues
 from galaxy import util
@@ -49,6 +50,44 @@ def reload_tool(app, **kwargs):
         log.error("Reload tool invoked without tool id.")
 
 
+def reload_toolbox(app, **kwargs):
+    log.debug("Executing toolbox reload on '%s'", app.config.server_name)
+    reload_count = app.toolbox._reload_count
+    app.toolbox = _get_new_toolbox(app)
+    app.toolbox._reload_count = reload_count + 1
+
+
+def _get_new_toolbox(app):
+    """
+    Generate a new toolbox, by constructing a toolbox from the config files,
+    and then adding pre-existing data managers from the old toolbox to the new toolbox.
+    """
+    from galaxy import tools
+    from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+    app.tool_version_cache = ToolVersionCache(app)  # Load new tools into version cache
+    tool_configs = app.config.tool_configs
+    if app.config.migrated_tools_config not in tool_configs:
+        tool_configs.append(app.config.migrated_tools_config)
+    start = time.time()
+    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
+    new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
+    [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
+    end = time.time() - start
+    log.debug("Toolbox reload took %d seconds", end)
+    app.reindex_tool_search(new_toolbox)
+    return new_toolbox
+
+
+def reload_data_managers(app, **kwargs):
+    from galaxy.tools.data_manager.manager import DataManagers
+    log.debug("Executing data managers reload on '%s'", app.config.server_name)
+    app._configure_tool_data_tables(from_shed_config=False)
+    reload_tool_data_tables(app)
+    reload_count = app.data_managers._reload_count
+    app.data_managers = DataManagers(app, conf_watchers=app.data_managers.conf_watchers)
+    app.data_managers._reload_count = reload_count + 1
+
+
 def reload_display_application(app, **kwargs):
     display_application_ids = kwargs.get('display_application_ids', None)
     log.debug("Executing display application reload task for %s" % display_application_ids)
@@ -63,7 +102,7 @@ def reload_sanitize_whitelist(app):
 def reload_tool_data_tables(app, **kwargs):
     params = util.Params(kwargs)
     log.debug("Executing tool data table reload for %s" % params.get('table_names', 'all tables'))
-    table_names = app.tool_data_tables.reload_tables( table_names=params.get('table_name', None))
+    table_names = app.tool_data_tables.reload_tables(table_names=params.get('table_name', None))
     log.debug("Finished data table reload for %s" % table_names)
 
 
@@ -76,6 +115,8 @@ def admin_job_lock(app, **kwargs):
              % (job_lock, "not" if job_lock else "now"))
 
 control_message_to_task = { 'reload_tool': reload_tool,
+                            'reload_toolbox': reload_toolbox,
+                            'reload_data_managers': reload_data_managers,
                             'reload_display_application': reload_display_application,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock,

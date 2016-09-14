@@ -1,17 +1,18 @@
-import tempfile
 import os
+import tempfile
 
-from galaxy.tools.parameters.basic import SelectToolParameter
+from xml.etree.ElementTree import XML
+
+from galaxy.datatypes.metadata import MetadataSpecCollection
 from galaxy.tools.parameters.basic import DrillDownSelectToolParameter
 from galaxy.tools.parameters.basic import IntegerToolParameter
+from galaxy.tools.parameters.basic import SelectToolParameter
+from galaxy.tools.wrappers import DatasetFilenameWrapper
+from galaxy.tools.wrappers import InputValueWrapper
 from galaxy.tools.wrappers import RawObjectWrapper
 from galaxy.tools.wrappers import SelectToolParameterWrapper
-from galaxy.tools.wrappers import InputValueWrapper
-from galaxy.tools.wrappers import DatasetFilenameWrapper
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.util.bunch import Bunch
-from xml.etree.ElementTree import XML
-from galaxy.datatypes.metadata import MetadataSpecCollection
 
 
 def with_mock_tool(func):

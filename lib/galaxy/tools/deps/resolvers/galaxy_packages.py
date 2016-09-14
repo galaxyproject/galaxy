@@ -1,15 +1,24 @@
-from os import listdir
-from os.path import join, isdir, islink, realpath, basename, exists
+import logging
 
-from ..resolvers import (
-    DependencyResolver,
-    NullDependency,
-    Dependency,
-    ListableDependencyResolver,
+from os import listdir
+from os.path import (
+    basename,
+    exists,
+    isdir,
+    islink,
+    join,
+    realpath,
 )
+
 from .resolver_mixins import UsesToolDependencyDirMixin
 
-import logging
+from ..resolvers import (
+    Dependency,
+    DependencyResolver,
+    ListableDependencyResolver,
+    NullDependency,
+)
+
 log = logging.getLogger( __name__ )
 
 

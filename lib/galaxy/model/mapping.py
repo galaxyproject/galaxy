@@ -445,6 +445,7 @@ model.Job.table = Table(
     Column( "state", String( 64 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "command_line", TEXT ),
+    Column( "dependencies", JSONType, nullable=True),
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),

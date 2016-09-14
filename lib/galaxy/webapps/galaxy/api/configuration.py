@@ -8,6 +8,7 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.managers import configuration
+from galaxy.queue_worker import send_control_task
 
 import logging
 log = logging.getLogger( __name__ )
@@ -89,7 +90,7 @@ class ConfigurationController( BaseAPIController ):
         PUT /api/configuration/toolbox
         Reload the Galaxy toolbox (but not individual tools).
         """
-        self.app.reload_toolbox()
+        send_control_task(self.app.toolbox.app, 'reload_toolbox')
 
 
 def _tool_conf_to_dict(conf):

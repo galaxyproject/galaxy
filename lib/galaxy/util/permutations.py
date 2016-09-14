@@ -6,8 +6,8 @@ first.
 Maybe this doesn't make sense and maybe much of this stuff could be replaced
 with itertools product and permutations. These are open questions.
 """
-from galaxy.util.bunch import Bunch
 from galaxy.exceptions import MessageException
+from galaxy.util.bunch import Bunch
 
 input_classification = Bunch(
     SINGLE="single",
