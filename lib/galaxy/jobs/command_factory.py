@@ -129,7 +129,7 @@ def build_command(
     return commands_builder.build()
 
 
-def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
+def __externalize_commands(job_wrapper, passwordIS, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
     config = job_wrapper.app.config

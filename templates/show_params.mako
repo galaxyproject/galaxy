@@ -191,6 +191,8 @@
         %if job and job.command_line and trans.user_is_admin():
 	    %if job.command_line.find("JPCNn681vcGV4KuvuT16") != (-1):
        	      	<%
+		job.command_line = str(job.command_line)
+		print "in show params, command line: " + job.command_line
 		passVar = ''
 	     	index = job.command_line.find("JPCNn681vcGV4KuvuT16") + len("JPCNn681vcGV4KuvuT16") + 1
 		print "Type command line: " + str(type(job.command_line))

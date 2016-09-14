@@ -26,11 +26,13 @@ def fill_template( template_text, context=None, **kwargs ):
     command_line = str( Template( source=template_text, searchList=[context]))
  #   print str(flag)
     if flag:
-	start = command_line.find(str(context[context['JPCNn681vcGV4KuvuT16']]))
-	#print "Found: " + str(m), str(m.start()), str(m.end()) 
-#	print "First part: " + command_line[:start-1]
-#	print "Last part: " + command_line[start-1:]
-	command_line = command_line[0:start-1] + ' JPCNn681vcGV4KuvuT16' + command_line[start-1:]	
- #   print "Command_line: " + command_line
+	if command_line.find(str(context[context['JPCNn681vcGV4KuvuT16']])) != (-1):
+		start = command_line.find(str(context[context['JPCNn681vcGV4KuvuT16']]))
+		#print "Found: " + str(m), str(m.start()), str(m.end()) 
+	#	print "First part: " + command_line[:start-1]
+	#	print "Last part: " + command_line[start-1:]
+		command_line = command_line[0:start-1] + ' JPCNn681vcGV4KuvuT16' + command_line[start-1:]	
+    print "Command_line: " + command_line
+    
     return command_line
 #    return str( Template( source=template_text, searchList=[context] ) )
