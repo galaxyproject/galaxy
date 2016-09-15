@@ -2,8 +2,11 @@
 API operations on Galaxy's installed tools.
 """
 import logging
+import os
+
 from galaxy import exceptions
 from galaxy.managers import repos
+from galaxy.util import string_as_bool
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
@@ -42,9 +45,16 @@ class RepositoriesController( BaseAPIController ):
             if repo.upgrade_available:
                 repo_dict['update'] = 'new version'
             repo_list.append( repo_dict )
+        enriched_repo_dicts = self.__enrich_repos( trans, repo_list )
+        return enriched_repo_dicts
+
+    def __enrich_repos(self, trans, repo_list):
         unique_dicts = self._list_unique_repos( repo_list )
         unique_dicts_w_sections = self._add_all_sections_for_repo( trans, unique_dicts )
-        return self._strip_dicts( unique_dicts_w_sections.values() )
+        # log.debug('unique_dicts_w_sections')
+        # log.debug(unique_dicts_w_sections)
+        stripped_repo_dicts = self._prep_repo_dicts( unique_dicts_w_sections.values() )
+        return stripped_repo_dicts
 
     @expose_api
     @require_admin
@@ -61,23 +71,34 @@ class RepositoriesController( BaseAPIController ):
         :rtype:     dictionary
         """
         # TODO respect `view` that is requested
-        repo = self.repo_manager.get( trans, self.__decode_id( trans, id, 'repository' ) )
-        repo_dict = self.repo_serializer.serialize_to_view( repo, view='summary')
+
+        repo = self.repo_manager.get( trans, self.__decode_id(trans, id, 'repository') )
+
+        all_versions = string_as_bool( kwd.get( 'all_versions', False ) )
+        if all_versions:
+            versions = self.repo_manager.get_versions( trans, repo )
+        repo_dict = self.repo_serializer.serialize_to_view(repo, view='detailed')
+        repo_dict['revision_url'] = repo.get_sharable_url( trans.app ) + '/' + repo_dict.get('changeset_revision')
+        repo_dict['repo_location'] = os.path.abspath( repo.repo_path( trans.app, repo.changeset_revision ))
+        if all_versions:
+            for version in versions:
+                for key in version.keys():
+                    if key == 'id':
+                        version[ key ] = trans.security.encode_id( version[ key ] )
+            repo_dict['versions'] = versions
         return repo_dict
 
-    def _strip_dicts( self, repo_dicts ):
-        """
-        Minimize the size of returning dicts.
-        """
-        for repo in repo_dicts:
-            if 'sections' in repo.keys():
-                repo['sections'] = list(repo['sections'])
-            repo.pop('tool_shed', '')
-            if 'collapsed_repos' in repo.keys():
-                for r in repo['collapsed_repos']:
-                    # drop this unwanted key
-                    r.pop('tool_shed', '')
-        return repo_dicts
+    @expose_api
+    @require_admin
+    def load_tree( self, trans, id, **kwd ):
+        repo_revision = kwd.get( 'repo_revison', None )
+        return self.repo_manager.get_tree( trans, self.__decode_id(trans, id, 'repository'), repo_revision )
+
+    @expose_api
+    @require_admin
+    def load_file( self, trans, id, path, **kwd ):
+        repo_revision = kwd.get('repo_revision', None)
+        return self.repo_manager.get_file( trans, path, self.__decode_id(trans, id, 'repository'), repo_revision=repo_revision )
 
     def _list_unique_repos( self, all_repos ):
         """
@@ -90,6 +111,8 @@ class RepositoriesController( BaseAPIController ):
         repos_to_collapse = {}
         collapsed_trios = set()
         for repo_a in all_repos:
+            # if repo_a['name'] != 'fastqc':
+            #     continue
             if ( repo_a['name'] + repo_a['owner'] + repo_a['tool_shed'] ) in collapsed_trios:
                 # the repository is already collapsed, continue
                 continue
@@ -100,15 +123,16 @@ class RepositoriesController( BaseAPIController ):
                     continue
                 if repo_a['name'] == repo_b['name'] and repo_a['owner'] == repo_b['owner'] and repo_a['tool_shed'] == repo_b['tool_shed']:
                     # we found another revision of repo_a, store
+                    # collapsed_repos.append( (repo_b['ctx_rev'], repo_b['id']) )
+
                     collapsed_repos.append( repo_b.copy() )
                     continue
             if collapsed_repos:
-                # if other revision of repo were found, save them within the first repo
-                repo_a['collapsed_repos'] = collapsed_repos
-                repos_to_collapse[ repo_a['id'] ] = repo_a
+                repos_to_collapse[ repo_a['id'] ] = self._order_collapsed_repos( repo_a.copy(), collapsed_repos )
                 # store the trio identifying the already collapsed repo
                 collapsed_trios.add( repo_a['name'] + repo_a['owner'] + repo_a['tool_shed'] )
             else:
+                # there is only one installable revision of the repo installed
                 unique_repos[ repo_a['id'] ] = repo_a
         unique_repos.update( repos_to_collapse )
         return unique_repos
@@ -132,6 +156,36 @@ class RepositoriesController( BaseAPIController ):
                     # different sections - ignored as extreme cornercase
                     pass
         return unique_dicts
+
+    def _order_collapsed_repos(self, head_repo, collapsed_repos):
+        """
+        In case there are multiple installable revisions of the
+        repository installed we want the 'head repository' to be the latest.
+        """
+        all_repos = list(collapsed_repos)
+        all_repos.append(head_repo.copy())
+        tip_ctx_rev = head_repo.get('ctx_rev')
+        working_head_repo = head_repo.copy()
+
+        for repo in collapsed_repos:
+            # log.debug(working_head_repo)
+            if repo.get('ctx_rev') > tip_ctx_rev:
+                tip_ctx_rev = repo.get('ctx_rev')
+                new_collapsed_repos = [ x for x in all_repos if x['ctx_rev'] != tip_ctx_rev ]
+                working_head_repo = repo
+                working_head_repo['collapsed_repos'] = new_collapsed_repos
+
+        return working_head_repo
+
+    def _prep_repo_dicts( self, repo_dicts ):
+        """
+        Adjust and minimize the size of returning dicts.
+        """
+        for repo in repo_dicts:
+            if 'sections' in repo.keys():
+                repo['sections'] = list(repo['sections'])
+        # TODO drop collapsed repos, leave just ctx_rev and id
+        return repo_dicts
 
     def __decode_id( self, trans, encoded_id, object_name=None ):
         """

@@ -12,7 +12,7 @@ log = logging.getLogger( __name__ )
 class ToolShedRepository( object ):
     dict_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                      'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'create_time', 'update_time' )
-    dict_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+    dict_element_visible_keys = ( 'id', 'tool_shed', 'name', 'description', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                   'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'create_time', 'update_time' )
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
@@ -296,11 +296,18 @@ class ToolShedRepository( object ):
             return os.path.join( repo_path, self.name )
         return None
 
-    def repo_path( self, app ):
+    def repo_path( self, app, revision=None ):
+        """
+        Return the folder path to to the requested revision of the repository.
+        If no revision is requested return the installed changeset revision
+        (that is the first ever installed revision).
+        """
+        if not revision:
+            revision = self.installed_changeset_revision
         tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed )
         for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             tool_path = shed_tool_conf_dict[ 'tool_path' ]
-            relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
+            relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, revision )
             if os.path.exists( relative_path ):
                 return relative_path
         return None

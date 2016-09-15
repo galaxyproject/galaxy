@@ -614,6 +614,18 @@ def populate_api_routes( webapp, app ):
                            action='show',
                            conditions=dict( method=["GET"] ) )
 
+    webapp.mapper.connect( 'repo tree',
+                           '/api/admin/repos/{id}/files',
+                           controller='repositories',
+                           action='load_tree',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'repo file',
+                           '/api/admin/repos/{id}/fetch',
+                           controller='repositories',
+                           action='load_file',
+                           conditions=dict( method=["GET"] ) )
+
     # ====================
     # ===== JOBS API =====
     # ====================
