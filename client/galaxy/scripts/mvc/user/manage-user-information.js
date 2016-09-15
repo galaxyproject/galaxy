@@ -11,7 +11,7 @@ function( Form, Ui, Address ) {
             this.original_username = options["username"];
             this.loginform = new Form({
                 title   : 'Login Information',
-                inputs  : self._buildLoginInputs( self, options ),
+                inputs  : options["user_login_form"],
                 operations : {
                     'back' : new Ui.ButtonIcon({
                         icon    : 'fa-caret-left',
@@ -88,65 +88,6 @@ function( Form, Ui, Address ) {
             self.addressform.$el.remove();
             self.addressform = self._buildAddressForm( self, response, app, $el );
             $el.append( self.addressform.$el );
-        },
-
-        /** build inputs for user login information form */
-        _buildLoginInputs: function( self, data ) {
-            var all_inputs = [],
-                email = {},
-                username = {};
-            email = { 
-                id: 'email_input',
-                name: 'email',
-                type: 'text',
-                label: 'Email address:',
-                value: data["email"],
-                size: "40",
-                help: 'If you change your email address you will receive an activation link in the new mailbox and you have to' + 
-                    ' activate your account by visiting it.'
-            };
-            all_inputs.push( email );
-            if(data['webapp'] === 'tool_shed') {
-                if( data['active_repositories'] ) {
-                    username = { 
-                        id: 'name_input',
-                        name: 'username',
-                        label: 'Public name:',
-                        type: 'hidden',
-                        value: data["username"], 
-                        help: 'You cannot change your public name after you have created a repository in this tool shed.'
-                    };
-                }
-                else {
-                    username = { 
-                        id: 'name_input',
-                        name: 'username',
-                        label: 'Public name:',
-                        type: 'text',
-                        value: data["username"],
-                        size: "40",
-                        help: 'Your public name provides a means of identifying you publicly within this tool shed. Public ' +
-                              'names must be at least three characters in length and contain only lower-case letters, numbers, ' +
-                              'and the "-" character.  You cannot change your public name after you have created a repository ' +
-                              'in this tool shed.'
-                    };
-                }
-            }
-            else {
-                username = { 
-                    id: 'name_input',
-                    name: 'username',
-                    label: 'Public name:',
-                    type: 'text',
-                    value: data["username"],
-                    size: "40",
-                    help: 'Your public name is an identifier that will be used to generate addresses for information ' +
-                          'you share publicly. Public names must be at least three characters in length and contain only lower-case ' +
-                          'letters, numbers, and the "-" character.'
-                };
-            }
-            all_inputs.push( username );
-            return all_inputs;
         },
 
         /** builds inputs for displaying address */

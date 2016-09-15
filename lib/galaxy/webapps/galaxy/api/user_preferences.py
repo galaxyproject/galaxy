@@ -103,6 +103,11 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             username = user.username
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         status = kwd.get( 'status', 'done' )
+        # build inputs for login form
+        user_login_form = list()
+        # email input
+        user_login_form.append( dict( id='email_input', name='email', type='text', label='Email address:', value=email, size='40', help='If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.' ) )
+
         if trans.webapp.name == 'galaxy':
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
             user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
@@ -129,7 +134,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 address_list[index_add]["desc"] = item.desc
                 address_list[index_add]["html"] = item.get_html()
                 address_list[index_add]["deleted"] = item.deleted
-                address_list[index_add]["address_id"] = trans.security.encode_id(item.id)
+                address_list[index_add]["address_id"] = trans.security.encode_id( item.id )
                 index_add = index_add + 1
     
             # makes the widget list JSON iterable
@@ -141,6 +146,9 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 widget_list[index_widget]["html"] = item['widget'].get_html()
                 widget_list[index_widget]["helptext"] = item['helptext']
                 index_widget = index_widget + 1
+
+            # build username input
+            user_login_form.append( dict( id='name_input', name='username', type='text', label='Public name:', value=username, size='40', help='Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' ) )
 
             return {'cntrller': cntrller,
                     'webapp': trans.webapp.name,
@@ -159,9 +167,16 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                     'addresses' : address_list,
                     'show_filter': show_filter,
                     'message': message,
-                    'status': status
+                    'status': status,
+                    'user_login_form': user_login_form
                    }
         else:
+            if( user.active_repositories ):
+                # build username input
+                user_login_form.append( dict( id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.' ) )
+            else:
+                user_login_form.append( dict( id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.' ) )
+
             return {'cntrller': cntrller,
                     'webapp': trans.webapp.name,
                     'user_id': trans.security.encode_id( trans.user.id ),
@@ -170,7 +185,8 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                     'email': email,
                     'username': username,
                     'message': message,
-                    'status': status
+                    'status': status,
+                    'user_login_form': user_login_form
                    }
 
     @expose_api
