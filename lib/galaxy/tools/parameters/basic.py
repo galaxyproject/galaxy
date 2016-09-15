@@ -26,19 +26,19 @@ from galaxy.util.dictifiable import Dictifiable
 import galaxy.model
 from galaxy.util.bunch import Bunch
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
 workflow_building_modes = Bunch( DISABLED=False, ENABLED=True, USE_HISTORY=1 )
 
-WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
+workflow_parameter_regular_expression = re.compile( '''\$\{.+?\}''' )
 
 
-def contains_workflow_parameter(value, search=False):
+def contains_workflow_parameter( value, search=False ):
     if not isinstance( value, string_types ):
         return False
-    if search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search(value):
+    if search and workflow_parameter_regular_expression.search( value ):
         return True
-    if not search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.match(value):
+    if not search and workflow_parameter_regular_expression.match( value ):
         return True
     return False
 
