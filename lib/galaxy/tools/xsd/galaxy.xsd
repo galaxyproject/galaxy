@@ -90,7 +90,7 @@ substitution.
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
         <xs:element name="help" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="help-tag">
-            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the last tag set in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html.
+            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html.
 
 tag | details
 --- | -------
@@ -100,7 +100,7 @@ tag | details
 ``**bold**`` | bold
 ``*italic*`` | italic
 ``*`` | list
-``-`` |list
+``-`` | list
 ``::`` | paragraph
 ``-----`` | a horizontal line
 
@@ -121,7 +121,7 @@ Show a warning sign to remind users that this tool accept fasta format files onl
 
 Query sequence::
     >seq1
-    >ATCG...
+    ATCG...
 
 .. image:: my_figure.png
     :height: 500
@@ -156,7 +156,7 @@ hyperlink in the tool menu.</xs:documentation>
       <xs:attribute name="version" type="xs:string" default="1.0.0">
         <xs:annotation gxdocs:best_practices="tool-versions">
           <xs:documentation xml:lang="en">This string defaults to ``1.0.0`` if it is not
-included in the tag. It allows for tool versioning and should be changed with each new version
+included in the tag. It allows for tool versioning and should be increased with each new version
 of the tool.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -197,7 +197,7 @@ automatically if profile is set to any version newer than ``16.01``, such as
       <xs:attribute name="workflow_compatible" type="xs:boolean" default="true">
         <xs:annotation>
           <xs:documentation xml:lang="en">This attribute indicates if
-this tool usable within a workflow (defaults to ``true`` for normal tools and
+this tool is usable within a workflow (defaults to ``true`` for normal tools and
 ``false`` for data sources).</xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -246,8 +246,7 @@ complete descriptions of the runtime of a tool.
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the ``requirements`` tag set. Third party
-programs or modules that the tool depends upon (and which are not distributed
-with Galaxy) are included in this tag set.
+programs or modules that the tool depends upon are included in this tag set.
 
 When a tool runs, Galaxy attempts to *resolve* these requirements (also called
 dependencies). ``requirement``s are meant to be abstract and resolvable by
@@ -295,12 +294,12 @@ resolver.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="RequirementType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> This value defines the which type of the 3rd party module required by this tool </xs:documentation>
+            <xs:documentation xml:lang="en"> This value defines the which type of the 3rd party module required by this tool. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="version" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> Required for package type requirements </xs:documentation>
+            <xs:documentation xml:lang="en"> For package type requirements this value defines a specific version of the tool dependency. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -519,7 +518,7 @@ def get_field_components_options( dataset, field_name ):
     <xs:annotation gxdocs:best_practices="tests">
       <xs:documentation xml:lang="en"><![CDATA[
 
-Container tag set for the <test> tag sets. Any number of tests can be included,
+Container tag set to specify tests via the <test> tag sets. Any number of tests can be included,
 and each test is wrapped within separate <test> tag sets. Functional tests are
 executed via [Planemo](http://planemo.readthedocs.io/) or the
 [run_tests.sh](https://github.com/galaxyproject/galaxy/blob/dev/run_tests.sh)
@@ -547,7 +546,7 @@ the functional test framework.
 
 ### Example
 
-The following two tests will tool execute the
+The following two tests will execute the
 [/tools/filters/sorter.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/filters/sorter.xml)
 tool. Notice the way that the tool's inputs and outputs are defined.
 
@@ -970,7 +969,7 @@ values that can be assigned to an input parameter.</xs:documentation>
     <xs:attribute name="ftype" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute name should be included
-only with the parameter that defines the input dataset for the tool. If this
+only with parameters of ``type`` ``data`` for the tool. If this
 attribute name is not included, the functional test framework will attempt to
 determine the data type for the input dataset using the data type sniffers.</xs:documentation>
       </xs:annotation>
@@ -1054,7 +1053,7 @@ the tool via the functional test framework.
         <xs:documentation xml:lang="en"><![CDATA[
 
 If specified, this value will be checked against the corresponding output's
-data type. If these do match, the test will fail.
+data type. If these do not match, the test will fail.
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -1088,7 +1087,7 @@ and this can be used instead.
 
 If specified, the target output's checksum should match the value specified
 here. This value should have the form ``hash_type:hash_value``
-(e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
+(e.g. ``sha1:8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
 it may be inconvenient to upload the entiry file and this can be used instead.
 
 ]]></xs:documentation>
@@ -1526,10 +1525,10 @@ module.
   </xs:group>
   <xs:complexType name="Inputs">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Consists of all tag sets that define the
-tool's input parameters. Each &lt;param&gt; tag within the &lt;inputs&gt; tag set
+      <xs:documentation xml:lang="en"><![CDATA[Consists of all tag sets that define the
+tool's input parameters. Each ``<param>`` tag within the ``<inputs>`` tag set
 maps to a command line parameter within the [``command``](#tool|command) tag. Most
-tools will not need to specify any attributes on this tag itself.
+tools will not need to specify any attributes on this tag itself.]]>
 </xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -1625,7 +1624,7 @@ user selects for this "test" parameter - different UI elements will be shown.
 These different paths are described by the following the ``when`` blocks shown
 above.
 
-The following Cheetah block demonstrates the use of the ``conditoinal``
+The following Cheetah block demonstrates the use of the ``conditional``
 shown above:
 
 ```
@@ -1643,8 +1642,10 @@ conditionally reference ``${input_type.process_obs_metadata}`` with a Cheetah
 ``if`` statement.
 
 A common use of the conditional wrapper is to select between reference data
-(managed by the Galaxy deployer or admin - for instance via Data Managers) or
-history files for references. A good example tool that demonstrates this is
+managed by the Galaxy admins (for instance via
+[data managers](https://wiki.galaxyproject.org/Admin/Tools/DataManagers)
+) and
+history files. A good example tool that demonstrates this is
 the [Bowtie 2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
 
 ```xml
@@ -1752,7 +1753,7 @@ Cheetah code below.
 
 ### Example
 
-This is part is contained in the ``<inputs>`` tag set.
+This part is contained in the ``<inputs>`` tag set.
 
 ```xml
 <repeat name="series" title="Series">
@@ -1768,7 +1769,7 @@ This Cheetah code can be used in the ``<command>`` tag set or the
 ```xml
 #for $i, $s in enumerate( $series )
     rank_of_series=$i
-    input_path=${s.input}
+    input_path='${s.input}'
     x_colom=${s.xcol}
     y_colom=${s.ycol}
 #end for
@@ -1776,18 +1777,42 @@ This Cheetah code can be used in the ``<command>`` tag set or the
 
 ### Testing
 
-This is an example test case with multiple repeat elements for the example above. Instances are created by referring to names with a special format: "<repeat name>_<repeat index>|<param name>"
+This is an example test case with multiple repeat elements for the example above.
 
 ```xml
 <test>
-    <param name="series_0|input" value="/path/to/tabular1.tsv" ftype="tabular"/>
-    <param name="series_0|xcol" value="1"/>
-    <param name="series_0|ycol" value="2"/>
-    <param name="series_1|input" value="/path/to/tabular2.tsv" ftype="tabular"/>
-    <param name="series_1|xcol" value="4"/>
-    <param name="series_1|ycol" value="2"/>
+    <repeat name="series">
+        <param name="input" value="tabular1.tsv" ftype="tabular"/>
+        <param name="xcol" value="1"/>
+        <param name="ycol" value="2"/>
+    </repeat>
+    <repeat name="series">
+        <param name="input" value="tabular2.tsv" ftype="tabular"/>
+        <param name="xcol" value="4"/>
+        <param name="ycol" value="2"/>
+    </repeat>
+    <output name="out_file1" file="cool.pdf" ftype="pdf" />
 </test>
 ```
+
+See the documentation on the [``repeat`` test directive](#tool|tests|test|repeat).
+
+An older way to specify repeats in a test is by instances that are created by referring to names with a special format: "<repeat name>_<repeat index>|<param name>"
+
+```xml
+<test>
+    <param name="series_0|input" value="tabular1.tsv" ftype="tabular"/>
+    <param name="series_0|xcol" value="1"/>
+    <param name="series_0|ycol" value="2"/>
+    <param name="series_1|input" value="tabular2.tsv" ftype="tabular"/>
+    <param name="series_1|xcol" value="4"/>
+    <param name="series_1|ycol" value="2"/>
+    <output name="out_file1" file="cool.pdf" ftype="pdf" />
+</test>
+```
+
+The test tool [disambiguate_repeats.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/disambiguate_repeats.xml)
+demonstrates both testing strategies.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -1803,22 +1828,22 @@ This is an example test case with multiple repeat elements for the example above
         </xs:attribute>
         <xs:attribute name="title" type="xs:string" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The title of the repeat section, which will be displayed on the tool form </xs:documentation>
+            <xs:documentation xml:lang="en"> The title of the repeat section, which will be displayed on the tool form. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:integer">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The minimum number of repeat units </xs:documentation>
+            <xs:documentation xml:lang="en"> The minimum number of repeat units. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="max" type="xs:integer">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The maximum number of repeat units </xs:documentation>
+            <xs:documentation xml:lang="en"> The maximum number of repeat units. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="default" type="xs:integer" default="1">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The default number of repeat units </xs:documentation>
+            <xs:documentation xml:lang="en"> The default number of repeat units. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="help" type="xs:string">
@@ -1844,9 +1869,9 @@ The XML configuration is relatively trivial for sections:
 
 ```xml
 <inputs>
- <section name="adv" title="Advanced Options" expanded="False">
-   <param name="plot_color" type="color" label="Track color" />
- </section>
+    <section name="adv" title="Advanced Options" expanded="False">
+        <param name="plot_color" type="color" label="Track color" />
+    </section>
 </inputs>
 ```
 
@@ -1865,17 +1890,17 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The internal key used for the section</xs:documentation>
+        <xs:documentation xml:lang="en">The internal key used for the section.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="title" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Human readable label for the section</xs:documentation>
+        <xs:documentation xml:lang="en">Human readable label for the section.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="expanded" type="PermissiveBoolean" default="false">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used</xs:documentation>
+        <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2007,7 +2032,7 @@ $attribute_list:hierarchy
 
 $attribute_list:format,collection_type
 
-The following will create a parameter that only accepts paired FASTQ files.
+The following will create a parameter that only accepts paired FASTQ files grouped into a collection.
 
 ##### Examples
 
@@ -2186,7 +2211,7 @@ Set to ``false`` to not force user to select an option in the list.</xs:document
         </xs:attribute>
         <xs:attribute name="use_header_names" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en">>Used only if the ``type`` attribute
+            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
 value is ``data_column``, if ``true`` Galaxy assumes first row of ``data_ref``
 is a header and builds the select list with these values rather than the more
 generic ``c1`` ... ``cN``.
@@ -2220,7 +2245,7 @@ value is ``drill_down``, this attribute determines the drill down is
 ``recursive`` or ``exact``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="checked" type="PermissiveBoolean">
+        <xs:attribute name="checked" type="PermissiveBoolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">Set to ``true`` if the ``boolean``
 parameter should be checked (or ``true``) by default.</xs:documentation>
@@ -2352,29 +2377,29 @@ and uses whitespace to make a complex command very readable can be found in
 tool.
 
 ```xml
-<command>
+<command><![CDATA[
 bedtools annotate
         -i "${inputA}"
         #if $names.names_select == 'yes':
             -files
             #for $bed in $names.beds:
-                "${bed.input}"
+                '${bed.input}'
             #end for
             -names
             #for $bed in $names.beds:
-                "${bed.inputName}"
+                '${bed.inputName}'
             #end for
         #else:
             #set files = '" "'.join( [ str( $file ) for $file in $names.beds ] )
-            -files "${files}"
+            -files '${files}'
             #set names = '" "'.join( [ str( $name.display_name ) for $name in $names.beds ] )
-            -names "${names}"
+            -names '${names}'
         #end if
         $strand
         $counts
         $both
         > "${output}"
-</command>
+]]]]><![CDATA[></command>
 ```
 
 The following example (taken from [xpath](https://github.com/galaxyproject/tools-iuc/blob/master/tools/xpath/xpath.xml) tool)
@@ -2402,13 +2427,13 @@ code file wraps a metadata collection to return metadata parameters wrapped
 according to the Metadata spec.
 
 ```xml
-<command>
+<command><![CDATA[
         #set genome = $input.metadata.dbkey
         #set datatype = $input.datatype
-        mkdir -p output_dir &amp;&amp;
+        mkdir -p output_dir &&
         python $__tool_directory__/extract_genomic_dna.py
-        --input "$input"
-        --genome "$genome"
+        --input '$input'
+        --genome '$genome'
         #if $input.is_of_type("gff"):
             --input_format "gff"
             --columns "1,4,5,7"
@@ -2430,8 +2455,8 @@ according to the Metadata spec.
                 --fasta_header_delimiter $output_format_cond.fasta_header_type_cond.fasta_header_delimiter
             #end if
         #end if
-        --output $output
-</command>
+        --output '$output'
+]]]]><![CDATA[></command>
 ```
 
 In additon to demonstrating accessing metadata, this example demonstrates:
@@ -2450,7 +2475,7 @@ even though they don't appear in your tool's parameters.
 
 Name | Description
 ---- | -----------
-``$__tool_directory__`` | The directory the tool currently resides in (new in 15.03)
+``$__tool_directory__`` | The directory the tool description (XML file) currently resides in (new in 15.03)
 ``$__new_file_path__`` | ``config/galaxy.ini``'s ``new_file_path`` value
 ``$__tool_data_path__`` | ``config/galaxy.ini``'s tool_data_path value
 ``$__root_dir__`` | Top-level Galaxy source directory made absolute via ``os.path.abspath()``
@@ -2460,7 +2485,7 @@ Name | Description
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 
 Additional runtime properties are available as environment variables. Since these
-are not Cheetah variables (the values aren't available until runtme) these should likely
+are not Cheetah variables (the values aren't available until runtime) these should likely
 be escaped with a backslash (``\``) when appearing in ``command`` or ``configfile`` elements.
 
 Name | Description
@@ -3008,9 +3033,9 @@ ASCII digits, and ``_``.
 
 ```
 <param name="mystring" type="text" label="Say something interesting">
-  <sanitizer invalid_char="">
-    <valid initial="string.letters,string.digits"><add value="_" /> </valid>
-  </sanitizer>
+    <sanitizer invalid_char="">
+        <valid initial="string.letters,string.digits"><add value="_" /> </valid>
+    </sanitizer>
 </param>
 ```
 
@@ -3019,12 +3044,12 @@ be dropped from the input.
 
 ```
 <sanitizer>
-  <valid initial="string.printable">
-   <remove value="&apos;"/>
-  </valid>
-  <mapping initial="none">
-    <add source="&apos;" target=""/>
-  </mapping>
+    <valid initial="string.printable">
+        <remove value="&apos;"/>
+    </valid>
+    <mapping initial="none">
+        <add source="&apos;" target=""/>
+    </mapping>
 </sanitizer>
 ```
 ]]></xs:documentation>
@@ -3080,7 +3105,7 @@ valid input for the mapping to occur. Preset lists include default and none as w
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Add a character to add to the list of valid characters</xs:documentation>
+        <xs:documentation xml:lang="en">Add a character to the list of valid characters.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3098,7 +3123,7 @@ Preset lists include default and none as well as those available from string.* (
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A character to remove from the list of valid characters</xs:documentation>
+        <xs:documentation xml:lang="en">A character to remove from the list of valid characters.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3232,10 +3257,10 @@ While this fragment from maf_to_interval.xml demonstrates removing items.
        display="checkboxes" multiple="true"
        help="The species matching the dbkey of the alignment is always included.
        A separate history item will be created for each species.">
-  <options>
-    <filter type="data_meta" ref="input1" key="species" />
-    <filter type="remove_value" meta_ref="input1" key="dbkey" />
-  </options>
+    <options>
+        <filter type="data_meta" ref="input1" key="species" />
+        <filter type="remove_value" meta_ref="input1" key="dbkey" />
+    </options>
 </param>
 ```
 
