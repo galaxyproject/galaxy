@@ -176,7 +176,7 @@ class ToolParameter( object, Dictifiable ):
         for validator in self.validators:
             validator.validate( value, trans )
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
         tool_dict[ 'model_class' ] = self.__class__.__name__
@@ -246,7 +246,7 @@ class TextToolParameter( ToolParameter ):
     def get_initial_value( self, trans, other_values ):
         return self.value
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         d = super(TextToolParameter, self).to_dict(trans)
         d['area'] = self.area
         d['size'] = self.size
@@ -449,7 +449,7 @@ class BooleanToolParameter( ToolParameter ):
         else:
             return self.falsevalue
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         d = super(BooleanToolParameter, self).to_dict(trans)
         d['value'] = self.checked
         d['truevalue'] = self.truevalue
@@ -592,7 +592,7 @@ class FTPFileToolParameter( ToolParameter ):
             raise ValueError( "The FTP directory is not configured." )
         return lst
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+    def to_dict( self, trans, other_values=None ):
         d = super( FTPFileToolParameter, self ).to_dict( trans )
         d['multiple'] = self.multiple
         return d
@@ -661,7 +661,7 @@ class BaseURLToolParameter( HiddenToolParameter ):
             log.debug( 'Url creation failed for "%s": %s', self.name, e )
             return self.value
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
         d[ 'value' ] = self._get_value()
         return d
@@ -920,7 +920,7 @@ class SelectToolParameter( ToolParameter ):
         else:
             return []
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         d = super( SelectToolParameter, self ).to_dict( trans )
 
         # Get options, value.
@@ -992,7 +992,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     def get_legal_values( self, trans, other_values ):
         return set( dbkey for dbkey, _ in self._get_dbkey_names( trans=trans ) )
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
 
@@ -1176,7 +1176,7 @@ class ColumnListParameter( SelectToolParameter ):
     def get_dependencies( self ):
         return [ self.data_ref ]
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         d = super( ColumnListParameter, self ).to_dict( trans, other_values=other_values)
         d[ 'data_ref' ] = self.data_ref
         d[ 'numerical' ] = self.numerical
@@ -1486,7 +1486,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         """
         return self.filtered.keys()
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
         d['options'] = self.get_options( trans=trans, other_values=other_values )
@@ -1870,7 +1870,7 @@ class DataToolParameter( BaseDataToolParameter ):
             ref = ref()
         return ref
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+    def to_dict( self, trans, other_values={} ):
         # create dictionary and fill default parameters
         d = super( DataToolParameter, self ).to_dict( trans )
         extensions = self.extensions
@@ -2027,7 +2027,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def validate( self, value, trans=None ):
         return True  # TODO
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+    def to_dict( self, trans, other_values=None ):
         # create dictionary and fill default parameters
         other_values = other_values or {}
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
@@ -2171,7 +2171,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
         else:
             return lst
 
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+    def to_dict( self, trans, other_values=None ):
         d = super( LibraryDatasetToolParameter, self ).to_dict( trans )
         d['multiple'] = self.multiple
         return d
