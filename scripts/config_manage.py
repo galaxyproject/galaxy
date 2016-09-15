@@ -428,7 +428,8 @@ def _write_option(args, f, key, option_value, as_comment=False):
         comment = "\n".join(YAML_COMMENT_WRAPPER.wrap(desc))
         comment += "\n"
     as_comment_str = "#" if as_comment else ""
-    lines = "%s%s%s: %s" % (comment, as_comment_str, key, value)
+    key_val_str = yaml.dump({key: value}).lstrip("{").rstrip("\n}")
+    lines = "%s%s%s" % (comment, as_comment_str, key_val_str)
     lines_idented = "\n".join([("  %s" % l) for l in lines.split("\n")])
     f.write("%s\n\n" % lines_idented)
 
@@ -457,6 +458,7 @@ def _server_paste_to_uwsgi(app_desc, server_config):
     # required for static...
     uwsgi_dict["http-raw-body"] = True
     uwsgi_dict["offload-threads"] = 8
+    uwsgi_dict["module"] = app_desc.uwsgi_module
     return uwsgi_dict
 
 
