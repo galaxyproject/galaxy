@@ -20,7 +20,6 @@ from ..parameters import history_query
 from ..parameters import dynamic_options
 from .dataset_matcher import DatasetMatcher
 from .dataset_matcher import DatasetCollectionMatcher
-# For BaseURLToolParameter
 from galaxy.web import url_for
 from galaxy.util.dictifiable import Dictifiable
 import galaxy.model
