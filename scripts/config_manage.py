@@ -304,7 +304,7 @@ def _run_conversion(args, app_desc):
     for section in p.sections():
         if section.startswith("server:"):
             if server_section:
-                message = "Additional sever section after [%s] encountered [%s], will be ignored."
+                message = "Additional server section after [%s] encountered [%s], will be ignored."
                 _warn(message % (server_section, section))
             else:
                 server_section = section
