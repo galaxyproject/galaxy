@@ -346,19 +346,20 @@ class MetadataInFileColumnValidator( Validator ):
         if metadata_name:
             metadata_name = metadata_name.strip()
         metadata_column = int( elem.get( "metadata_column", 0 ) )
+        split = elem.get( "split", "\t" )
         message = elem.get( "message", "Value for metadata %s was not found in %s." % ( metadata_name, filename ) )
         line_startswith = elem.get( "line_startswith", None  )
         if line_startswith:
             line_startswith = line_startswith.strip()
-        return cls( filename, metadata_name, metadata_column, message, line_startswith )
+        return cls( filename, metadata_name, metadata_column, message, line_startswith, split )
 
-    def __init__( self, filename, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None ):
+    def __init__( self, filename, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None, split="\t" ):
         self.metadata_name = metadata_name
         self.message = message
         self.valid_values = []
         for line in open( filename ):
             if line_startswith is None or line.startswith( line_startswith ):
-                fields = line.split( '\t' )
+                fields = line.split( split )
                 if metadata_column < len( fields ):
                     self.valid_values.append( fields[metadata_column].strip() )
 
