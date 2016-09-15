@@ -3657,7 +3657,8 @@ Galaxy, including:
 * https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_assign_primary.xml
 * https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml
 
-More information can be found at https://wiki.galaxyproject.org/Admin/Tools/MultipleOutputFiles#Number_of_Output_datasets_cannot_be_determined_until_tool_run.
+More information can be found on Planemo's documentation for
+[multiple output files](http://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="pattern" type="xs:string" use="required">
