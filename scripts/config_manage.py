@@ -291,7 +291,7 @@ def _validate(args, app_desc):
     fp.flush()
     name = fp.name
     if Core is None:
-        raise Exception("Cannot validate file, pykawlify is not installed.")
+        raise Exception("Cannot validate file, pykwalify is not installed.")
     c = Core(
         source_file=path,
         schema_files=[name],
