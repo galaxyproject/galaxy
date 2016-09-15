@@ -10,7 +10,6 @@ from six import string_types
 from xml.etree.ElementTree import XML
 
 from galaxy import util
-from galaxy.web import form_builder
 from galaxy.util import string_as_bool, sanitize_param, unicodify
 from galaxy.util.expressions import ExpressionContext
 from sanitize import ToolParameterSanitizer
@@ -430,8 +429,6 @@ class BooleanToolParameter( ToolParameter ):
         self.checked = input_source.get_bool( 'checked', False )
 
     def from_json( self, value, trans=None, other_values={} ):
-        if form_builder.CheckboxField.is_checked( value ):
-            return True
         return self.to_python( value )
 
     def to_python( self, value, app=None ):
@@ -2202,7 +2199,6 @@ parameter_types = dict(
 
 class RuntimeValue( object ):
     """
-    Wrapper to note a value that is not yet set, but will be required at
-    runtime.
+    Wrapper to note a value that is not yet set, but will be required at runtime.
     """
     pass
