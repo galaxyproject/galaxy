@@ -42,6 +42,27 @@ class HDCAManager(
         """
         super( HDCAManager, self ).__init__( app )
 
+    def map_datasets( self, content, fn, *parents ):
+        """
+        Iterate over the datasets of a given collection, recursing into collections, and
+        calling fn on each dataset.
+
+        Uses the same kwargs as `contents` above.
+        """
+        returned = []
+        # lots of nesting going on within the nesting
+        collection = content.collection if hasattr( content, 'collection' ) else content
+        this_parents = ( content, ) + parents
+        for element in collection.elements:
+            next_parents = ( element, ) + this_parents
+            if element.is_collection:
+                processed_list = self.map_datasets( element.child_collection, fn, *next_parents )
+                returned.extend( processed_list )
+            else:
+                processed = fn( element.dataset_instance, *next_parents )
+                returned.append( processed )
+        return returned
+
     # TODO: un-stub
 
 
