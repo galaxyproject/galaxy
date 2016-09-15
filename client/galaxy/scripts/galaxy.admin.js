@@ -47,12 +47,19 @@ var AdminRouter = Backbone.Router.extend({
 
 var GalaxyAdminApp = Backbone.View.extend({
 
+  app_config: {
+    known_views: ['all', 'tools', 'packages', 'uninstalled']
+  },
+
   initialize: function(){
     Galaxy.adminapp = this;
     this.admin_router = new AdminRouter();
 
     this.admin_router.on('route:repolist', function(view, filter) {
-      console.log('view: '+view+' filter: '+filter);
+      if (Galaxy.adminapp.app_config.known_views.indexOf(view) === -1){
+        view = 'all';
+      }
+      console.log('view: '+view+' section_filter: '+filter);
       if (Galaxy.adminapp.adminReposListView){
         console.log('recycling reposlist view');
         Galaxy.adminapp.adminReposListView.repaint({view: view, section_filter: filter});

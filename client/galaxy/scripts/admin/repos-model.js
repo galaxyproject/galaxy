@@ -80,9 +80,20 @@ define([], function() {
 
   });
 
+// ============================================================================
+// JSTREE MODEL
+/** Represents folder structure parsable by the jstree component.
+ *
+ */
+
+var Jstree = Backbone.Model.extend({
+  urlRoot: Galaxy.root + 'api/admin/repos/'
+});
+
 return {
     Repo: Repo,
-    Repos: Repos
+    Repos: Repos,
+    Jstree: Jstree
 };
 
 });

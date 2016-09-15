@@ -87,6 +87,7 @@ function textify( lst ) {
 /**
  * Request handler for GET
  * @param{String}   url     - Url request is made to
+ * @param{Object}   data    - Data send to url
  * @param{Function} success - Callback on success
  * @param{Function} error   - Callback on error
  * @param{Boolean}  cache   - Use cached data if available

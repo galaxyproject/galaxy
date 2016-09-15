@@ -70,6 +70,7 @@ var AdminReposListView = Backbone.View.extend({
 
   repaint: function(options){
     this.options = _.extend( this.options, options );
+    this.render();
     this.removeAllRows();
     this.clearFilter();
     this.adjustMenu();
