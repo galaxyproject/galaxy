@@ -5,6 +5,7 @@ from collections import namedtuple
 from collections import OrderedDict
 import copy
 import os
+import shutil
 import string
 import sys
 import tempfile
@@ -23,6 +24,9 @@ except ImportError:
     Core = None
 
 DESCRIPTION = "Convert configuration files."
+
+APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
+DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ")
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ")
@@ -170,13 +174,7 @@ APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
 def main():
     """Entry point for conversion process."""
-    parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('action', metavar='ACTION', type=str,
-                        help='action (convert, build_sample_yaml, validate))')
-    parser.add_argument('app', metavar='APP', type=str, nargs="?",
-                        help='app (galaxy, tool_shed, or reports))')
-    parser.add_argument('--add_comments', default=False, action="store_true")
-    args = parser.parse_args()
+    args = _arg_parser().parse_args()
     app_name = args.app
     app_desc = APPS.get(app_name, None)
     action = args.action
@@ -192,6 +190,19 @@ def main():
         _to_rst(args, app_desc)
     else:
         raise Exception("Unknown config action [%s]" % action)
+
+
+def _arg_parser():
+    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser.add_argument('action', metavar='ACTION', type=str,
+                        help='action (convert, build_sample_yaml, validate))')
+    parser.add_argument('app', metavar='APP', type=str, nargs="?",
+                        help=APP_DESCRIPTION)
+    parser.add_argument('--add-comments', default=False, action="store_true")
+    parser.add_argument('--dry-run', default=False, action="store_true",
+                        help=DRY_RUN_DESCRIPTION)
+
+    return parser
 
 
 def _to_rst(args, app_desc, heading_level="~"):
@@ -342,7 +353,25 @@ def _run_conversion(args, app_desc):
     f = StringIO()
     _write_section(args, f, "uwsgi", uwsgi_dict)
     _write_section(args, f, app_desc.app_name, app_dict)
-    print(f.getvalue())
+    _replace_file(args, f, app_desc, ini_config, app_desc.destination)
+
+
+def _replace_file(args, f, app_desc, from_path, to_path):
+    dry_run = args.dry_run
+    contents = f.getvalue()
+    contents_indented = "\n".join([" |%s" % l for l in contents.splitlines()])
+    print("Writing the file contents:\n%s\nto %s" % (contents_indented, to_path))
+    if dry_run:
+        print("... skipping because --dry-run is enabled.")
+    else:
+        with open(to_path, "w") as to_f:
+            to_f.write(contents)
+    backup_path = "%s.backup" % from_path
+    print("Moving [%s] to [%s]" % (from_path, backup_path))
+    if dry_run:
+        print("... skipping because --dry-run is enabled.")
+    else:
+        shutil.move(from_path, backup_path)
 
 
 def _build_sample_yaml(args, app_desc):

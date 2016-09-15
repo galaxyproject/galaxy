@@ -38,20 +38,26 @@ uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against lat
 tool-shed-config-validate: ## validate tool shed YAML configuration file
 	$(IN_VENV) python scripts/config_manage.py validate tool_shed
 
+tool-shed-config-convert-dry-run: ## convert old style tool shed ini to yaml (dry run)
+	$(IN_VENV) python scripts/config_manage.py convert tool_shed --dry-run
+
 tool-shed-config-convert: ## convert old style tool shed ini to yaml
 	$(IN_VENV) python scripts/config_manage.py convert tool_shed
 
 tool-shed-config-rebuild-sample: ## Rebuild sample tool shed yaml file from schema
-	$(IN_VENV) python scripts/config_manage.py build_sample_yaml tool_shed --add_comments
+	$(IN_VENV) python scripts/config_manage.py build_sample_yaml tool_shed --add-comments
 
 reports-config-validate: ## validate reports YAML configuration file
 	$(IN_VENV) python scripts/config_manage.py validate reports
+
+reports-config-convert-dry-run: ## convert old style reports ini to yaml (dry run)
+	$(IN_VENV) python scripts/config_manage.py convert reports --dry-run
 
 reports-config-convert: ## convert old style reports ini to yaml
 	$(IN_VENV) python scripts/config_manage.py convert reports
 
 reports-config-rebuild-sample: ## Rebuild sample reports yaml file from schema
-	$(IN_VENV) python scripts/config_manage.py build_sample_yaml reports --add_comments
+	$(IN_VENV) python scripts/config_manage.py build_sample_yaml reports --add-comments
 
 reports-config-rebuild-rst: ## Rebuild sample reports RST docs
 	$(IN_VENV) python scripts/config_manage.py build_rst reports > doc/source/admin/reports_options.rst
