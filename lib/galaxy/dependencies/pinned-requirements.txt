@@ -33,6 +33,11 @@ Whoosh==2.7.4
 testfixtures==4.10.0
 galaxy_sequence_utils==1.0.2
 
+# pykwalify and dependencies
+pykwalify==1.5.1
+python-dateutil==2.5.3
+docopt==0.6.2
+
 # Cheetah and dependencies
 Cheetah==2.4.4
 Markdown==2.6.3
