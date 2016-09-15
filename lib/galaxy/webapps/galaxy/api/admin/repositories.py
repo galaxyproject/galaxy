@@ -111,8 +111,8 @@ class RepositoriesController( BaseAPIController ):
         repos_to_collapse = {}
         collapsed_trios = set()
         for repo_a in all_repos:
-            if repo_a['name'] != 'fastqc':
-                continue
+            # if repo_a['name'] != 'fastqc':
+            #     continue
             if ( repo_a['name'] + repo_a['owner'] + repo_a['tool_shed'] ) in collapsed_trios:
                 # the repository is already collapsed, continue
                 continue
