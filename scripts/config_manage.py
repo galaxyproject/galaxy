@@ -28,6 +28,7 @@ DESCRIPTION = "Convert configuration files."
 APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
+USING_SAMPLE_MESSAGE = "Path [%s] not a file, using sample."
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ")
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ")
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
@@ -273,7 +274,7 @@ def _build_uwsgi_schema(args, app_desc):
 def _validate(args, app_desc):
     path = app_desc.destination
     if not os.path.exists(path):
-        _warn("Path [%s] not a file, using sample.")
+        _warn(USING_SAMPLE_MESSAGE % path)
         path = app_desc.sample_destination
     with open(path, "r") as f:
         # Allow empty mapping (not allowed by pykawlify)
@@ -289,6 +290,8 @@ def _validate(args, app_desc):
     _ordered_dump(app_desc.schema.raw_schema, fp)
     fp.flush()
     name = fp.name
+    if Core is None:
+        raise Exception("Cannot validate file, pykawlify is not installed.")
     c = Core(
         source_file=path,
         schema_files=[name],
