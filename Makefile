@@ -10,6 +10,7 @@ MY_UPSTREAM:=origin
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
+CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
@@ -33,34 +34,34 @@ lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
 uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against latest uwsgi master.
-	$(IN_VENV) python scripts/config_manage.py build_uwsgi_yaml
+	$(CONFIG_MANAGE) build_uwsgi_yaml
 
 tool-shed-config-validate: ## validate tool shed YAML configuration file
-	$(IN_VENV) python scripts/config_manage.py validate tool_shed
+	$(CONFIG_MANAGE) validate tool_shed
 
 tool-shed-config-convert-dry-run: ## convert old style tool shed ini to yaml (dry run)
-	$(IN_VENV) python scripts/config_manage.py convert tool_shed --dry-run
+	$(CONFIG_MANAGE) convert tool_shed --dry-run
 
 tool-shed-config-convert: ## convert old style tool shed ini to yaml
-	$(IN_VENV) python scripts/config_manage.py convert tool_shed
+	$(CONFIG_MANAGE) convert tool_shed
 
 tool-shed-config-rebuild-sample: ## Rebuild sample tool shed yaml file from schema
-	$(IN_VENV) python scripts/config_manage.py build_sample_yaml tool_shed --add-comments
+	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
 
 reports-config-validate: ## validate reports YAML configuration file
-	$(IN_VENV) python scripts/config_manage.py validate reports
+	$(CONFIG_MANAGE) validate reports
 
 reports-config-convert-dry-run: ## convert old style reports ini to yaml (dry run)
-	$(IN_VENV) python scripts/config_manage.py convert reports --dry-run
+	$(CONFIG_MANAGE) convert reports --dry-run
 
 reports-config-convert: ## convert old style reports ini to yaml
-	$(IN_VENV) python scripts/config_manage.py convert reports
+	$(CONFIG_MANAGE convert reports
 
 reports-config-rebuild-sample: ## Rebuild sample reports yaml file from schema
-	$(IN_VENV) python scripts/config_manage.py build_sample_yaml reports --add-comments
+	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
 
 reports-config-rebuild-rst: ## Rebuild sample reports RST docs
-	$(IN_VENV) python scripts/config_manage.py build_rst reports > doc/source/admin/reports_options.rst
+	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
