@@ -152,7 +152,7 @@
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
             });
-            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
+            $('span.multiinput_wrap select[name*="|input"]').off('change').removeAttr('multiple').each(function(i, s) {
                 var select = $(s);
                 // The destroy on the following line is temporary and prevents
                 // select2 use on Input Dataset Steps, but allows elsewhere.  We
