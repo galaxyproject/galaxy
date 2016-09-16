@@ -51,7 +51,7 @@ function( Form, Ui, Address ) {
         _buildAddressForm: function( self, options, app, $el ) {
             return new Form({
                 title   : 'User Addresses',
-                inputs  : self._buildAddressInputs( self, options, $el, app ),
+                inputs  : options['user_address_list'],
                 buttons : {
                     'addaddress': new Ui.ButtonIcon({
                         id          : 'add-address',
@@ -65,10 +65,15 @@ function( Form, Ui, Address ) {
                     })
                 },
                 onchange: function() {
-                    self._applyAddressFilter( app, $el, self );
+                    self._editDelete( app, $el, self );
                 }
             });
         },
+
+        _editDelete: function( app, $el, self ) {
+            var change_address = self.addressform.data.create()["edit_delete_buttons"];
+        },        
+
         /** apply address filter */
         _applyAddressFilter: function( app, $el, self ) {
             var field = null,
@@ -88,76 +93,6 @@ function( Form, Ui, Address ) {
             self.addressform.$el.remove();
             self.addressform = self._buildAddressForm( self, response, app, $el );
             $el.append( self.addressform.$el );
-        },
-
-        /** builds inputs for displaying address */
-        _buildAddressInputs: function( self, data, $el, app ) {
-            var all_inputs = [],
-                labels = {};
-
-            all_inputs.push( {
-                id: 'address_filters',
-                name: 'address_filters',
-                label: 'Choose filter',
-                type: 'select',
-                display: 'radiobutton',
-                data: [ { label: 'Active', value: 'Active' },
-                        { label: 'Deleted', value: 'Deleted' },
-                        { label: 'All', value: 'All' }
-                      ]
-            });
-            if( data["addresses"] || data["addresses"].length > 0 ) {
-                // build inputs for each address
-                for( var item in data["addresses"] ) {
-                    var item_object = data["addresses"][item],
-                        address_id = item_object['address_id'],
-                        desc = item_object['desc'],
-                        html = item_object['html'];
-
-                    // anonymous function added to have closures
-                    // i.e. to bind correct data to the delete, edit etc methods
-                    ( function() {
-                        var _self = this;
-                        all_inputs.push( {
-                            id: this['address_id'],
-                            title: '',
-                            type: 'hidden',
-                            help: this['desc'] + ': <br>' + this['html']
-                        } );
-                        if( !item_object['deleted'] ) {
-                            all_inputs.push( {
-                                id: 'edit_' + this['address_id'],
-                                type: 'submit',
-                                title: 'Edit',
-                                tooltip: 'Edit',
-                                onclick: function() { self._editAddress.call( _self, self, $el, app ); },
-                                icon: 'fa-pencil-square-o'
-                            } );
-                            all_inputs.push( {
-                                id: 'delete_' + this['address_id'],
-                                type: 'submit',
-                                title: 'Delete',
-                                tooltip: 'Delete',
-                                onclick: function() { self._deleteAddress.call( _self, self, $el, app ); },
-                                icon: 'fa-remove'
-                            } );
-                        }
-                        else {
-                            all_inputs.push( { 
-                                id: 'undelete_' + this['address_id'],
-                                type: 'submit',
-                                title: 'Undelete',
-                                tooltip: 'Undelete',
-                                onclick: function() { self._undeleteAddress.call( _self, self, $el, app ); },
-                                icon: 'fa-reply'
-                            } );
-                        }
-                        // adds a horizontal line at the end of each address section
-                        all_inputs.push( { id: '', title: '', type: 'hidden', help: '<hr class="docutils">' } );
-                    } ).call( data["addresses"][item] );
-                }
-            }
-            return all_inputs;
         },
 
         /** edit address */
