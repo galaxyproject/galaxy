@@ -120,12 +120,12 @@ class ToolParameter( object, Dictifiable ):
         if isinstance( value, RuntimeValue ):
             return { '__class__': 'RuntimeValue' }
         elif isinstance( value, dict ):
-            if value.get('__class__') == 'RuntimeValue':
+            if value.get( '__class__' ) == 'RuntimeValue':
                 return value
         return self.to_json( value, app, use_security )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
-        # Handle Runtime values (valid for any parameter?)
+        # Handle Runtime and Unvalidated values
         if isinstance( value, dict ) and value.get( '__class__' ) == 'RuntimeValue':
             return RuntimeValue()
         elif isinstance( value, dict ) and value.get( '__class__' ) == 'UnvalidatedValue':
@@ -162,7 +162,7 @@ class ToolParameter( object, Dictifiable ):
         return value
 
     def validate( self, value, trans=None ):
-        if value in ["", None] and self.optional:
+        if value in [ "", None ] and self.optional:
             return
         for validator in self.validators:
             validator.validate( value, trans )
@@ -191,7 +191,7 @@ class ToolParameter( object, Dictifiable ):
             return parameter_types[ param_type ]( tool, param )
 
     @classmethod
-    def parse_name(cls, input_source):
+    def parse_name( cls, input_source ):
         name = input_source.get( 'name' )
         if name is None:
             argument = input_source.get( 'argument' )
@@ -206,18 +206,18 @@ class TextToolParameter( ToolParameter ):
     """
     Parameter that can take on any text value.
 
-    >>> p = TextToolParameter( None, XML( '<param name="blah" type="text" size="4" value="default" />' ) )
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch()
+    >>> p = TextToolParameter( None, XML( '<param name="_name" type="text" value="default" />' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <input type="text" name="blah" size="4" value="default">
-    >>> print p.get_html( value="meh" )
-    <input type="text" name="blah" size="4" value="meh">
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['area: False', 'argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: TextToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: text', 'value: default']
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
-        self.size = input_source.get( 'size' )
         self.value = input_source.get( 'value' )
         self.area = input_source.get_bool( 'area', False )
 
@@ -240,7 +240,6 @@ class TextToolParameter( ToolParameter ):
     def to_dict( self, trans, other_values={} ):
         d = super(TextToolParameter, self).to_dict(trans)
         d['area'] = self.area
-        d['size'] = self.size
         return d
 
 
@@ -249,14 +248,15 @@ class IntegerToolParameter( TextToolParameter ):
     Parameter that takes an integer value.
     >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
-    >>> p = IntegerToolParameter( None, XML( '<param name="blah" type="integer" size="4" value="10" />' ) )
+    >>> p = IntegerToolParameter( None, XML( '<param name="_name" type="integer" value="10" />' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <input type="text" name="blah" size="4" value="10">
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['area: False', 'argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'max: None', 'min: None', 'model_class: IntegerToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: integer', 'value: 10']
     >>> type( p.from_json( "10", trans ) )
     <type 'int'>
-    >>> type( p.from_json( "bleh", trans ) )
+    >>> type( p.from_json( "_string", trans ) )
     Traceback (most recent call last):
         ...
     ValueError: An integer or workflow parameter e.g. ${name} is required
@@ -324,14 +324,15 @@ class FloatToolParameter( TextToolParameter ):
     Parameter that takes a real number value.
     >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
-    >>> p = FloatToolParameter( None, XML( '<param name="blah" type="float" size="4" value="3.141592" />' ) )
+    >>> p = FloatToolParameter( None, XML( '<param name="_name" type="float" value="3.141592" />' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <input type="text" name="blah" size="4" value="3.141592">
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['area: False', 'argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'max: None', 'min: None', 'model_class: FloatToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: float', 'value: 3.141592']
     >>> type( p.from_json( "36.1", trans ) )
     <type 'float'>
-    >>> type( p.from_json( "bleh", trans ) )
+    >>> type( p.from_json( "_string", trans ) )
     Traceback (most recent call last):
         ...
     ValueError: A real number or workflow parameter e.g. ${name} is required
@@ -381,7 +382,7 @@ class FloatToolParameter( TextToolParameter ):
         try:
             return float( value )
         except Exception as err:
-            if contains_workflow_parameter(value):
+            if contains_workflow_parameter( value ):
                 return value
             if not value and self.optional:
                 return None
@@ -398,19 +399,22 @@ class BooleanToolParameter( ToolParameter ):
     """
     Parameter that takes one of two values.
 
-    >>> p = BooleanToolParameter( None, XML( '<param name="blah" type="boolean" checked="yes" truevalue="bulletproof vests" falsevalue="cellophane chests" />' ) )
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch() )
+    >>> p = BooleanToolParameter( None, XML( '<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <input type="checkbox" id="blah" name="blah" value="__CHECKED__" checked="checked"><input type="hidden" name="blah" value="__NOTHING__">
-    >>> print p.from_json( ["__CHECKED__","__NOTHING__"] )
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'falsevalue: _falsevalue', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: BooleanToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'truevalue: truevalue', 'type: boolean', 'value: True']
+    >>> print p.from_json( 'true' )
     True
     >>> print p.to_param_dict_string( True )
-    bulletproof vests
-    >>> print p.from_json( ["__NOTHING__"] )
+    _truevalue
+    >>> print p.from_json( 'false' )
     False
     >>> print p.to_param_dict_string( False )
-    cellophane chests
+    _falsevalue
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -441,7 +445,7 @@ class BooleanToolParameter( ToolParameter ):
             return self.falsevalue
 
     def to_dict( self, trans, other_values={} ):
-        d = super(BooleanToolParameter, self).to_dict(trans)
+        d = super( BooleanToolParameter, self ).to_dict( trans )
         d['value'] = self.checked
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
@@ -456,39 +460,29 @@ class FileToolParameter( ToolParameter ):
     """
     Parameter that takes an uploaded file as a value.
 
-    >>> p = FileToolParameter( None, XML( '<param name="blah" type="file"/>' ) )
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch() )
+    >>> p = FileToolParameter( None, XML( '<param name="_name" type="file"/>' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <input type="file" name="blah">
-    >>> p = FileToolParameter( None, XML( '<param name="blah" type="file" ajax-upload="true"/>' ) )
-    >>> print p.get_html()
-    <input type="file" name="blah" galaxy-ajax-upload="true">
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: FileToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: file']
     """
     def __init__( self, tool, input_source ):
-        """
-        Example: C{<param name="bins" type="file" />}
-        """
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
-        self.ajax = input_source.get_bool( 'ajax-upload', False )
 
     def from_json( self, value, trans=None, other_values={} ):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if type( value ) == dict:
             upload_store = trans.app.config.nginx_upload_store
-            assert upload_store, \
-                "Request appears to have been processed by nginx_upload_module \
-                but Galaxy is not configured to recognize it"
+            assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
             # Check that the file is in the right location
-            local_filename = os.path.abspath( value['path'] )
-            assert local_filename.startswith( upload_store ), \
-                "Filename provided by nginx (%s) is not in correct directory (%s)" % (local_filename, upload_store)
-            value = dict(
-                filename=value["name"],
-                local_filename=local_filename
-            )
+            local_filename = os.path.abspath( value[ 'path' ] )
+            assert local_filename.startswith( upload_store ), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
+            value = dict( filename=value[ "name" ], local_filename=local_filename )
         return value
 
     def get_required_enctype( self ):
@@ -525,11 +519,17 @@ class FileToolParameter( ToolParameter ):
 class FTPFileToolParameter( ToolParameter ):
     """
     Parameter that takes a file uploaded via FTP as a value.
+
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch() )
+    >>> p = FTPFileToolParameter( None, XML( '<param name="_name" type="ftpfile"/>' ) )
+    >>> print p.name
+    blah
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: FTPFileToolParameter', 'multiple: True', 'name: _name', 'optional: True', 'refresh_on_change: False', 'type: ftpfile']
     """
     def __init__( self, tool, input_source ):
-        """
-        Example: C{<param name="bins" type="file" />}
-        """
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', True )
@@ -585,7 +585,7 @@ class FTPFileToolParameter( ToolParameter ):
 
     def to_dict( self, trans, other_values=None ):
         d = super( FTPFileToolParameter, self ).to_dict( trans )
-        d['multiple'] = self.multiple
+        d[ 'multiple' ] = self.multiple
         return d
 
 
@@ -593,11 +593,14 @@ class HiddenToolParameter( ToolParameter ):
     """
     Parameter that takes one of two values.
 
-    >>> p = HiddenToolParameter( None, XML( '<param name="blah" type="hidden" value="wax so rockin"/>' ) )
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch() )
+    >>> p = HiddenToolParameter( None, XML( '<param name="_name" type="hidden" value="_value"/>' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <input type="hidden" name="blah" value="wax so rockin">
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'help: ', 'hidden: True', 'is_dynamic: False', 'label: ', 'model_class: HiddenToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: hidden', 'value: _value']
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -616,9 +619,14 @@ class ColorToolParameter( ToolParameter ):
     """
     Parameter that stores a color.
 
-    >>> p = ColorToolParameter( None, XML( '<param name="blah" type="color" value="#ffffff"/>' ) )
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch() )
+    >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff"/>' ) )
     >>> print p.name
-    blah
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: ColorToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: color', 'value: #ffffff']
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -633,6 +641,15 @@ class BaseURLToolParameter( HiddenToolParameter ):
     """
     Returns a parameter that contains its value prepended by the
     current server base url. Used in all redirects.
+    
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch() )
+    >>> p = BaseURLToolParameter( None, XML( '<param name="_name" type="base_url" value="_value"/>' ) )
+    >>> print p.name
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'help: ', 'hidden: True', 'is_dynamic: False', 'label: ', 'model_class: BaseURLToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'type: base_url', 'value: _value']
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -675,74 +692,34 @@ class SelectToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
 
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch() )
     >>> p = SelectToolParameter( None, XML(
     ... '''
-    ... <param name="blah" type="select">
-    ...     <option value="x">I am X</option>
-    ...     <option value="y" selected="true">I am Y</option>
-    ...     <option value="z">I am Z</option>
+    ... <param name="_name" type="select">
+    ...     <option value="x">x_label</option>
+    ...     <option value="y" selected="true">y_label</option>
+    ...     <option value="z">z_label</option>
     ... </param>
     ... ''' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <select name="blah" last_selected_value="y">
-    <option value="x">I am X</option>
-    <option value="y" selected>I am Y</option>
-    <option value="z">I am Z</option>
-    </select>
-    >>> print p.get_html( value="z" )
-    <select name="blah" last_selected_value="z">
-    <option value="x">I am X</option>
-    <option value="y">I am Y</option>
-    <option value="z" selected>I am Z</option>
-    </select>
-
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'display: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: SelectToolParameter', 'multiple: False', 'name: _name', 'optional: False', "options: [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', False)]", 'refresh_on_change: False', 'type: select', 'value: y']
     >>> p = SelectToolParameter( None, XML(
     ... '''
-    ... <param name="blah" type="select" multiple="true">
-    ...     <option value="x">I am X</option>
-    ...     <option value="y" selected="true">I am Y</option>
-    ...     <option value="z" selected="true">I am Z</option>
+    ... <param name="_name" type="select" multiple="true">
+    ...     <option value="x">x_label</option>
+    ...     <option value="y" selected="true">y_label</option>
+    ...     <option value="z" selected="true">z_label</option>
     ... </param>
     ... ''' ) )
     >>> print p.name
-    blah
-    >>> print p.get_html()
-    <select name="blah" multiple last_selected_value="z">
-    <option value="x">I am X</option>
-    <option value="y" selected>I am Y</option>
-    <option value="z" selected>I am Z</option>
-    </select>
-    >>> print p.get_html( value=["x","y"])
-    <select name="blah" multiple last_selected_value="y">
-    <option value="x" selected>I am X</option>
-    <option value="y" selected>I am Y</option>
-    <option value="z">I am Z</option>
-    </select>
-    >>> print p.to_param_dict_string( ["y", "z"] )
-    y,z
-
-    >>> p = SelectToolParameter( None, XML(
-    ... '''
-    ... <param name="blah" type="select" multiple="true" display="checkboxes">
-    ...     <option value="x">I am X</option>
-    ...     <option value="y" selected="true">I am Y</option>
-    ...     <option value="z" selected="true">I am Z</option>
-    ... </param>
-    ... ''' ) )
-    >>> print p.name
-    blah
-    >>> print p.get_html()
-    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
-    <div><input type="checkbox" name="blah" value="x" id="blah|x"><label class="inline" for="blah|x">I am X</label></div>
-    <div class="odd_row"><input type="checkbox" name="blah" value="y" id="blah|y" checked='checked'><label class="inline" for="blah|y">I am Y</label></div>
-    <div><input type="checkbox" name="blah" value="z" id="blah|z" checked='checked'><label class="inline" for="blah|z">I am Z</label></div>
-    >>> print p.get_html( value=["x","y"])
-    <div class="checkUncheckAllPlaceholder" checkbox_name="blah"></div>
-    <div><input type="checkbox" name="blah" value="x" id="blah|x" checked='checked'><label class="inline" for="blah|x">I am X</label></div>
-    <div class="odd_row"><input type="checkbox" name="blah" value="y" id="blah|y" checked='checked'><label class="inline" for="blah|y">I am Y</label></div>
-    <div><input type="checkbox" name="blah" value="z" id="blah|z"><label class="inline" for="blah|z">I am Z</label></div>
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'display: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: SelectToolParameter', 'multiple: True', 'name: _name', 'optional: True', "options: [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]", 'refresh_on_change: False', 'type: select', 'value: z']
     >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
@@ -755,7 +732,7 @@ class SelectToolParameter( ToolParameter ):
         self.display = input_source.get( 'display', None )
         self.separator = input_source.get( 'separator', ',' )
         self.legal_values = set()
-        self.dynamic_options = input_source.get( "dynamic_options", None )
+        self.dynamic_options = input_source.get( 'dynamic_options', None )
         self.options = parse_dynamic_options( self, input_source )
         if self.options is not None:
             for validator in self.options.validators:
@@ -767,7 +744,7 @@ class SelectToolParameter( ToolParameter ):
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) )
 
     def _get_dynamic_options_call_other_values( self, trans, other_values ):
-        call_other_values = ExpressionContext({ "__trans__": trans })
+        call_other_values = ExpressionContext( { '__trans__': trans } )
         if other_values:
             call_other_values.parent = other_values.parent
             call_other_values.update( other_values.dict )
@@ -794,7 +771,7 @@ class SelectToolParameter( ToolParameter ):
                 call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
                 return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, call_other_values ) )
             except Exception as e:
-                log.debug( 'Determining legal values failed for "%s": %s', self.name, e )
+                log.debug( "Determining legal values failed for '%s': %s", self.name, e )
                 return set()
         else:
             return self.legal_values
@@ -878,7 +855,7 @@ class SelectToolParameter( ToolParameter ):
             if not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                value = options[0][1]
+                value = options[ 0 ][ 1 ]
             else:
                 value = None
         elif len( value ) == 1:
@@ -918,16 +895,15 @@ class SelectToolParameter( ToolParameter ):
         options = self.get_options( trans, other_values )
         d[ 'options' ] = options
         if options:
-            value = options[0][1]
+            value = options[ 0 ][ 1 ]
             for option in options:
-                if option[2]:
+                if option[ 2 ]:
                     # Found selected option.
-                    value = option[1]
+                    value = option[ 1 ]
             d[ 'value' ] = value
 
-        d['display'] = self.display
-        d['multiple'] = self.multiple
-
+        d[ 'display' ] = self.display
+        d[ 'multiple' ] = self.multiple
         return d
 
 
