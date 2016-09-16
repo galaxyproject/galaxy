@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from __future__ import print_function
 
 import argparse
@@ -13,7 +14,6 @@ from textwrap import TextWrapper
 import urllib2
 
 import six
-from six.moves.configparser import SafeConfigParser
 from six import StringIO
 
 import yaml
@@ -22,6 +22,9 @@ try:
     from pykwalify.core import Core
 except ImportError:
     Core = None
+
+
+from galaxy.util.properties import nice_config_parser
 
 DESCRIPTION = "Convert configuration files."
 
@@ -309,8 +312,7 @@ def _run_conversion(args, app_desc):
         _warn("Failed to find a config to convert - exiting without changes.")
         sys.exit(1)
 
-    p = SafeConfigParser()
-    p.read(ini_config)
+    p = nice_config_parser(ini_config)
 
     server_section = None
     app_main_found = False

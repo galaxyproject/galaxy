@@ -29,11 +29,7 @@ def load_app_properties(
         if not config_file.endswith(".yml") and not config_file.endswith(".yml.sample"):
             if config_section is None:
                 config_section = "app:main"
-            defaults = {
-                'here': os.path.dirname(os.path.abspath(config_file)),
-                '__file__': os.path.abspath(config_file)
-            }
-            parser = NicerConfigParser(config_file, defaults=defaults)
+            parser = nice_config_parser(config_file)
             parser.optionxform = str  # Don't lower-case keys
             with open(config_file) as f:
                 parser.read_file(f)
@@ -58,6 +54,15 @@ def load_app_properties(
                 properties[ config_key ] = os.environ[ key ]
 
     return properties
+
+
+def nice_config_parser(path):
+    defaults = {
+        'here': os.path.dirname(os.path.abspath(path)),
+        '__file__': os.path.abspath(path)
+    }
+    parser = NicerConfigParser(path, defaults=defaults)
+    return parser
 
 
 class NicerConfigParser(ConfigParser):
