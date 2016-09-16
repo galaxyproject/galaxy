@@ -204,6 +204,16 @@ class CondaContext(object):
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
 
+    def exec_clean(self, args=[]):
+        """
+        Clean up after conda installation.
+        """
+        clean_base_args = [
+            "--tarballs"
+        ]
+        clean_base_args.extend(args)
+        return self.exec_command("clean", clean_base_args)
+
     def export_list(self, name, path):
         return self.exec_command("list", [
             "--name", name,
@@ -437,6 +447,7 @@ def build_isolated_environment(
 
         return (path or tempdir_name, exit_code)
     finally:
+        conda_context.exec_clean()
         shutil.rmtree(tempdir)
 
 
