@@ -28,7 +28,7 @@ before_install:
 
 install:
   - pip install tox
-  - if [ "$TOX_ENV" == "validate-test-tools" ]; then apt-get install libxml2-utils; fi
+  - if [ "$TOX_ENV" == "validate-test-tools" ]; then sudo apt-get install libxml2-utils; fi
   - if [ "$TOX_ENV" == "qunit" ]; then bash -c 'cd test/qunit && npm install'; fi
   - if [ "$TOX_ENV" == "first_startup" ]; then bash -c "bash scripts/common_startup.sh && wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite && mv db_gx_rev_0127.sqlite database/universe.sqlite && bash manage_db.sh -c ./config/galaxy.ini.sample upgrade"; fi
 
