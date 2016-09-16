@@ -9,7 +9,6 @@
   <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
-  <tool file="multi_page.xml"/>
   <tool file="library_data.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
