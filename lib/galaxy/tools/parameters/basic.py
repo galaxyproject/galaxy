@@ -54,11 +54,11 @@ class ToolParameter( object, Dictifiable ):
         input_source = ensure_input_source(input_source)
         self.tool = tool
         self.refresh_on_change_values = []
-        self.argument = input_source.get("argument")
+        self.argument = input_source.get( "argument" )
         self.name = ToolParameter.parse_name( input_source )
-        self.type = input_source.get("type")
-        self.hidden = input_source.get("hidden", False)
-        self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
+        self.type = input_source.get( "type" )
+        self.hidden = input_source.get( "hidden", False )
+        self.refresh_on_change = input_source.get_bool( "refresh_on_change", False )
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
         self.label = input_source.parse_label()
@@ -68,14 +68,6 @@ class ToolParameter( object, Dictifiable ):
             self.sanitizer = ToolParameterSanitizer.from_element( sanitizer_elem )
         else:
             self.sanitizer = None
-        try:
-            # These don't do anything right? These we should
-            # delete these two lines and eliminate checks for
-            # self.repeat in this file. -John
-            self.repeat = input_source.elem().get("repeat", None)
-            self.condition = input_source.elem().get( "condition", None )
-        except Exception:
-            self.repeat = None
         self.validators = []
         for elem in input_source.parse_validator_elems():
             self.validators.append( validation.Validator.from_element( self, elem ) )
@@ -834,7 +826,7 @@ class SelectToolParameter( ToolParameter ):
         if not legal_values:
             raise ValueError( "Parameter %s requires a value, but has no legal values defined." % self.name )
         if isinstance( value, list ):
-            if not self.repeat and not self.multiple:
+            if not self.multiple:
                 raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
             rval = []
             for v in value:
@@ -858,7 +850,7 @@ class SelectToolParameter( ToolParameter ):
         if value is None:
             return "None"
         if isinstance( value, list ):
-            if not self.repeat and not self.multiple:
+            if not self.multiple:
                 raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
             value = map( str, value )
         else:
@@ -1381,7 +1373,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             return None
         if not isinstance( value, list ):
             value = [ value ]
-        if not self.repeat and len( value ) > 1 and not self.multiple:
+        if len( value ) > 1 and not self.multiple:
             raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = []
         if not legal_values:
@@ -1422,7 +1414,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             for val in value:
                 options = get_options_list( val )
                 rval.extend( options )
-        if not self.repeat and len( rval ) > 1 and not self.multiple:
+        if len( rval ) > 1 and not self.multiple:
             raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
         rval = self.separator.join( map( value_map, rval ) )
         if self.tool is None or self.tool.options.sanitize:
