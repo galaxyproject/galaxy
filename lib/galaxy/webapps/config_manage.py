@@ -25,6 +25,7 @@ except ImportError:
 
 
 from galaxy.util.properties import nice_config_parser
+from galaxy.util import safe_makedirs
 
 DESCRIPTION = "Convert configuration files."
 
@@ -264,8 +265,8 @@ def _build_uwsgi_schema(args, app_desc):
         "mapping": options
     }
     path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
-    with open(path, "w") as f:
-        _ordered_dump(schema, f)
+    contents = _ordered_dump(schema)
+    _write_to_file(args, contents, path)
 
 
 def _validate(args, app_desc):
@@ -358,7 +359,7 @@ def _run_conversion(args, app_desc):
 
 
 def _replace_file(args, f, app_desc, from_path, to_path):
-    _write_buffer_to_file(args, f, to_path)
+    _write_to_file(args, f, to_path)
     backup_path = "%s.backup" % from_path
     print("Moving [%s] to [%s]" % (from_path, backup_path))
     if args.dry_run:
@@ -388,17 +389,21 @@ def _build_sample_yaml(args, app_desc):
     _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False)
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
-    _write_buffer_to_file(args, f, destination)
+    _write_to_file(args, f, destination)
 
 
-def _write_buffer_to_file(args, f, path):
+def _write_to_file(args, f, path):
     dry_run = args.dry_run
-    contents = f.getvalue()
+    if hasattr(f, "getvalue"):
+        contents = f.getvalue()
+    else:
+        contents = f
     contents_indented = "\n".join([" |%s" % l for l in contents.splitlines()])
     print("Writing the file contents:\n%s\nto %s" % (contents_indented, path))
     if dry_run:
         print("... skipping because --dry-run is enabled.")
     else:
+        safe_makedirs(os.path.dirname(path))
         with open(path, "w") as to_f:
             to_f.write(contents)
 

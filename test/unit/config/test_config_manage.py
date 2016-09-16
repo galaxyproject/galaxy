@@ -10,7 +10,7 @@ from galaxy.webapps.config_manage import main
 THIS_DIR = os.path.dirname(__file__)
 
 
-def test_simple_reports_conversion():
+def test_reports_conversion_1607_sample():
     with _config_directory("1607_root_samples") as config_dir:
         config_dir.manage_cli(["convert", "reports"])
         config_dir.assert_not_exists("config/reports.ini")
@@ -18,9 +18,31 @@ def test_simple_reports_conversion():
         config_dir.assert_moved("config/reports.ini", "config/reports.ini.backup")
 
 
-def test_simple_shed_conversion():
+def test_reports_build_sample():
+    with _config_directory("1607_root_samples") as config_dir:
+        config_dir.assert_not_exists("config/reports.yml.sample")
+        config_dir.manage_cli(["build_sample_yaml", "reports", "--add-comments"])
+        config_dir.assert_is_yaml("config/reports.yml.sample")
+
+
+def test_shed_conversion_1607_sample():
     with _config_directory("1607_root_samples") as config_dir:
         config_dir.manage_cli(["convert", "tool_shed"])
+        config_dir.assert_not_exists("config/tool_shed.ini")
+        config_dir.assert_is_yaml("config/tool_shed.yml")
+        config_dir.assert_moved("config/tool_shed.ini", "config/tool_shed.ini.backup")
+
+
+def test_shed_build_sample():
+    with _config_directory("1607_root_samples") as config_dir:
+        config_dir.assert_not_exists("config/tool_shed.yml.sample")
+        config_dir.manage_cli(["build_sample_yaml", "tool_shed", "--add-comments"])
+        config_dir.assert_is_yaml("config/tool_shed.yml.sample")
+
+
+def test_build_uwsgi_yaml():
+    with _config_directory("1607_root_samples") as config_dir:
+        config_dir.manage_cli(["build_uwsgi_yaml"])
 
 
 class _TestConfigDirectory(object):
