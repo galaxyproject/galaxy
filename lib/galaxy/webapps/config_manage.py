@@ -176,9 +176,11 @@ REPORTS_APP = App(
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
 
-def main():
+def main(argv=None):
     """Entry point for conversion process."""
-    args = _arg_parser().parse_args()
+    if argv is None:
+        argv = sys.argv
+    args = _arg_parser().parse_args(argv)
     app_name = args.app
     app_desc = APPS.get(app_name, None)
     action = args.action
@@ -205,7 +207,7 @@ def _arg_parser():
     parser.add_argument('--add-comments', default=False, action="store_true")
     parser.add_argument('--dry-run', default=False, action="store_true",
                         help=DRY_RUN_DESCRIPTION)
-
+    parser.add_argument('--galaxy_root', default=".", type=str)
     return parser
 
 
@@ -270,15 +272,16 @@ def _build_uwsgi_schema(args, app_desc):
         "desc": "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html",
         "mapping": options
     }
-    with open(UWSGI_SCHEMA_PATH, "w") as f:
+    path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
+    with open(path, "w") as f:
         _ordered_dump(schema, f)
 
 
 def _validate(args, app_desc):
-    path = app_desc.destination
+    path = os.path.join(args.galaxy_root, app_desc.destination)
     if not os.path.exists(path):
         _warn(USING_SAMPLE_MESSAGE % path)
-        path = app_desc.sample_destination
+        path = os.path.join(args.galaxy_root, app_desc.sample_destination)
     with open(path, "r") as f:
         # Allow empty mapping (not allowed by pykawlify)
         raw_config = _ordered_load(f)
@@ -304,7 +307,8 @@ def _validate(args, app_desc):
 
 def _run_conversion(args, app_desc):
     ini_config = None
-    for possible_ini_config in app_desc.config_paths:
+    for possible_ini_config_rel in app_desc.config_paths:
+        possible_ini_config = os.path.join(args.galaxy_root, possible_ini_config_rel)
         if os.path.exists(possible_ini_config):
             ini_config = possible_ini_config
 
@@ -358,22 +362,15 @@ def _run_conversion(args, app_desc):
     f = StringIO()
     _write_section(args, f, "uwsgi", uwsgi_dict)
     _write_section(args, f, app_desc.app_name, app_dict)
-    _replace_file(args, f, app_desc, ini_config, app_desc.destination)
+    destination = os.path.join(args.galaxy_root, app_desc.destination)
+    _replace_file(args, f, app_desc, ini_config, destination)
 
 
 def _replace_file(args, f, app_desc, from_path, to_path):
-    dry_run = args.dry_run
-    contents = f.getvalue()
-    contents_indented = "\n".join([" |%s" % l for l in contents.splitlines()])
-    print("Writing the file contents:\n%s\nto %s" % (contents_indented, to_path))
-    if dry_run:
-        print("... skipping because --dry-run is enabled.")
-    else:
-        with open(to_path, "w") as to_f:
-            to_f.write(contents)
+    _write_buffer_to_file(args, f, to_path)
     backup_path = "%s.backup" % from_path
     print("Moving [%s] to [%s]" % (from_path, backup_path))
-    if dry_run:
+    if args.dry_run:
         print("... skipping because --dry-run is enabled.")
     else:
         shutil.move(from_path, backup_path)
@@ -399,8 +396,20 @@ def _build_sample_yaml(args, app_desc):
             value[field] = new_field_value
     _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False)
     _write_sample_section(args, f, app_desc.app_name, schema)
-    with open(app_desc.sample_destination, "w") as out:
-        out.write(f.getvalue())
+    destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
+    _write_buffer_to_file(args, f, destination)
+
+
+def _write_buffer_to_file(args, f, path):
+    dry_run = args.dry_run
+    contents = f.getvalue()
+    contents_indented = "\n".join([" |%s" % l for l in contents.splitlines()])
+    print("Writing the file contents:\n%s\nto %s" % (contents_indented, path))
+    if dry_run:
+        print("... skipping because --dry-run is enabled.")
+    else:
+        with open(path, "w") as to_f:
+            to_f.write(contents)
 
 
 def _write_sample_section(args, f, section_header, schema, as_comment=True):
