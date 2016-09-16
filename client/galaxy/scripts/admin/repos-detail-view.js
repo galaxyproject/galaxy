@@ -99,7 +99,7 @@ var AdminReposDetailView = Backbone.View.extend({
     var that = this;
     this.options = _.extend( this.options, options );
     this.jstree = new mod_repos_model.Jstree();
-    this.jstree.url = this.jstree.urlRoot + this.id + '/files';
+    this.jstree.url = this.jstree.urlRoot + this.model.id + '/files';
     this.jstree.fetch({
       success: function(model, response){
         // This is to prevent double jquery load. I think. Carl is magician.
