@@ -35,8 +35,8 @@ class RepoManager( base.ModelManager ):
         """
         Retrieve all installed repositories from the database.
 
-        :returns:   all ToolShedRepository objects in the database
-        :rtype:     list
+        :returns:   all TS repository objects in the database
+        :rtype:     list of ToolShedRepository
 
         :raises: ItemAccessibilityException
         """
@@ -75,6 +75,14 @@ class RepoManager( base.ModelManager ):
         """
         Retrieve the contents of the repository's folder and return
         it in a form of json-serialized jstree object.
+
+        :param  repo_id:        the decoded id of the repo
+        :type   repo_id:        a decoded id string
+        :param  repo_revision:  revision of the repo to retrieve, defaults to tip
+        :type   repo_revision:  str
+
+        :returns:   tree in jstree format
+        :rtype:     JSTree object
         """
         repo = self.get( trans, repo_id )
         if not repo_revision:
@@ -94,6 +102,12 @@ class RepoManager( base.ModelManager ):
         Query the DB for all installed versions of
         repositories (using owner and repository name)
         and return them sorted by ctx_rev descending.
+
+        :param  repo:      repository to retrieve versions of
+        :type   repo:      ToolShedRepository
+
+        :returns:   desc sorted list with version dictionaries
+        :rtype:     list of dicts
         """
         versions = []
         repos = trans.sa_session.query( self.model_class ).filter( and_( self.model_class.table.c.name == repo.name,
@@ -103,6 +117,21 @@ class RepoManager( base.ModelManager ):
         return sorted( versions, key=itemgetter('ctx_rev'), reverse=True )
 
     def get_file( self, trans, file_path, decoded_repo_id, repo_revision=None ):
+        """
+        Retrieve the contents of the requested file in the given repository.
+        These are returned escaped and trimmed (if needed). Given path is checked
+        against the repository path to make sure it is within.
+
+        :param  file_path:          path relative to the repository root
+        :type   file_path:          str
+        :param  decoded_repo_id:    the decoded id of the repo
+        :type   decoded_repo_id:    a decoded id string
+        :param  repo_revision:      revision of the repo to browse, defaults to tip
+        :type   repo_revision:      str
+
+        :returns:   HTML escaped string
+        :rtype:     str
+        """
         MAX_CONTENT_SIZE = 1048576
         safe_str = ''
         repo = self.get( trans, decoded_repo_id )
@@ -149,15 +178,27 @@ class RepoManager( base.ModelManager ):
         """
         Detects whether the given path is browsable i.e. is within the
         given repository folders or tool dependencies.
+
+        :param  path:      any file path
+        :type   path:      str
+        :param  repo:      repository to check against
+        :type   repo:      ToolShedRepository
+
+        :returns:   True in case path is within repo or tool_dependency_dir
+        :rtype:     bool
         """
-        # log.debug('self.is_path_within_repo( app, path, repo)'+str(self.is_path_within_repo( app, path, repo)))
-        # log.debug('self.is_path_within_dependency_dir( app, path )'+str(self.is_path_within_dependency_dir( app, path )))
         return self.is_path_within_repo( app, path, repo) or self.is_path_within_dependency_dir( app, path )
 
     def is_path_within_dependency_dir( self, app, path ):
         """
         Detect whether the given path is within the tool_dependency_dir folder on the disk.
         (Specified by the config option). Use to filter malicious symlinks targeting outside paths.
+
+        :param  path:      any file path
+        :type   path:      str
+
+        :returns:   True in case path is within dependency_dir
+        :rtype:     bool
         """
         is_within = False
         resolved_path = os.path.realpath( path )
@@ -171,11 +212,17 @@ class RepoManager( base.ModelManager ):
         """
         Detect whether the given path is within the repository folder on the disk.
         Use to filter malicious symlinks targeting outside paths.
+
+        :param  path:      any file path
+        :type   path:      str
+        :param  repo:      repository to check against
+        :type   repo:      ToolShedRepository
+
+        :returns:   True in case path is within the given repo's folder
+        :rtype:     bool
         """
         repo_path = os.path.abspath( repo.repo_path( app, repo.changeset_revision ) )
-        # log.debug(repo_path)
         resolved_path = os.path.realpath( path )
-        # log.debug(resolved_path)
         return os.path.commonprefix( [ repo_path, resolved_path ] ) == repo_path
 
     def __create_jstree( self, directory ):
@@ -184,6 +231,12 @@ class RepoManager( base.ModelManager ):
         and its subfolders and returns jstree representation
         of its structure.
         Ignores .hg/ folder.
+
+        :param  directory:      path to dir to create jstree representation of
+        :type   directory:      str
+
+        :returns:   jstree representation of a given folder
+        :rtype:     JSTree object
         """
         dir_jstree = None
         jstree_paths = []
