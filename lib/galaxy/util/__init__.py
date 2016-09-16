@@ -8,7 +8,6 @@ from __future__ import absolute_import
 import binascii
 import collections
 import errno
-import grp
 import json
 import logging
 import os
@@ -22,6 +21,11 @@ import sys
 import tempfile
 import threading
 import time
+try:
+    import grp
+except ImportError:
+    # For Pulsar on Windows (which does not use the function that uses grp)
+    grp = None
 
 from datetime import datetime
 from hashlib import md5
