@@ -184,24 +184,15 @@ def main(argv=None):
     app_name = args.app
     app_desc = APPS.get(app_name, None)
     action = args.action
-    if action == "convert":
-        _run_conversion(args, app_desc)
-    elif action == "build_sample_yaml":
-        _build_sample_yaml(args, app_desc)
-    elif action == "validate":
-        _validate(args, app_desc)
-    elif action == "build_uwsgi_yaml":
-        _build_uwsgi_schema(args, app_desc)
-    elif action == "build_rst":
-        _to_rst(args, app_desc)
-    else:
-        raise Exception("Unknown config action [%s]" % action)
+    action_func = ACTIONS[action]
+    action_func(args, app_desc)
 
 
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument('action', metavar='ACTION', type=str,
-                        help='action (convert, build_sample_yaml, validate))')
+                        choices=ACTIONS.keys(),
+                        help='action to perform')
     parser.add_argument('app', metavar='APP', type=str, nargs="?",
                         help=APP_DESCRIPTION)
     parser.add_argument('--add-comments', default=False, action="store_true")
@@ -512,6 +503,14 @@ def _ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
             data.items())
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
+
+ACTIONS = {
+    "convert": _run_conversion,
+    "build_sample_yaml": _build_sample_yaml,
+    "validate": _validate,
+    "build_uwsgi_yaml": _build_uwsgi_schema,
+    "build_rst": _to_rst,
+}
 
 
 if __name__ == '__main__':
