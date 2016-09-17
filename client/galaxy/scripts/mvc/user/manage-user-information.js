@@ -65,13 +65,38 @@ function( Form, Ui, Address ) {
                     })
                 },
                 onchange: function() {
-                    self._editDelete( app, $el, self );
+                    self._addressOperations( app, $el, self );
                 }
             });
         },
 
-        _editDelete: function( app, $el, self ) {
-            var change_address = self.addressform.data.create()["edit_delete_buttons"];
+        // find the right operation on address id
+        _addressOperations: function( app, $el, self ) {
+            var changed_collection = self.addressform.data.create(),
+                operation_type = "",
+                id = "",
+                eachitem = null;
+            // find the first non-null item
+            for( var item in changed_collection ) {
+                eachitem = changed_collection[item];
+                if( eachitem !== null ) {
+                    operation_type = eachitem.split("_")[0],
+                    address_id = eachitem.split("_")[1];
+                    break;
+                }
+            }
+            // apply right operation using the address id
+            switch ( operation_type ) {
+                case 'edit':
+                    self._editAddress( self, $el, app, address_id );
+                    break;
+                case 'delete':
+                    self._deleteAddress( self, $el, app, address_id );
+                    break;
+                case 'undelete':
+                    self._undeleteAddress( self, $el, app, address_id );
+                    break;
+            }
         },        
 
         /** apply address filter */
@@ -96,18 +121,18 @@ function( Form, Ui, Address ) {
         },
 
         /** edit address */
-        _editAddress: function( self, $el, app ) {
+        _editAddress: function( self, $el, app, address_id ) {
             self.loginform.$el.remove();
             self.addressform.$el.remove();
-            $.getJSON( Galaxy.root + 'api/user_preferences/edit_address/', {'address_id': this['address_id'] }, function( response ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/edit_address/', {'address_id': address_id }, function( response ) {
                 address = new Address.AddEditAddress( $el, app, response );
             });
         },
 
         /** delete address */
-        _deleteAddress: function( self, $el, app ) {
+        _deleteAddress: function( self, $el, app, address_id ) {
             var active_filter = self.addressform.data.create()["address_filters"];
-            $.getJSON( Galaxy.root + 'api/user_preferences/delete_address/', { 'address_id': this["address_id"] }, function( response ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/delete_address/', { 'address_id': address_id }, function( response ) {
                 self._updateAddressForm( app, $el, self, response );
                 self.addressform.message.update({
                     message : response.message,
@@ -117,8 +142,8 @@ function( Form, Ui, Address ) {
         },
 
         /** revert the delete status */
-        _undeleteAddress: function( self, $el, app ) {
-            $.getJSON( Galaxy.root + 'api/user_preferences/undelete_address/', { 'address_id': this["address_id"] }, function( response ) {
+        _undeleteAddress: function( self, $el, app, address_id ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/undelete_address/', { 'address_id': address_id }, function( response ) {
                 self._updateAddressForm( app, $el, self, response );
                 self.addressform.message.update({
                     message : response.message,

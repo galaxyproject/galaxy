@@ -97,7 +97,11 @@ var Base = Backbone.View.extend({
     _changeValue: function() {
         this._setValue( this.model.get( 'value' ) );
         if ( this._getValue() === null && !this.model.get( 'multiple' ) && !this.model.get( 'optional' ) ) {
-            this._setValue( this.first() );
+            // logic to have all elements unchecked 
+            // on form load if set to true
+            if( !this.model.get( 'unchecked' ) ) {
+                this._setValue( this.first() );
+            }
         }
         this.all_button && this.all_button.value( $.isArray( this._getValue() ) ? this._getValue().length : 0, this.length() );
     },
@@ -208,6 +212,7 @@ Checkbox.View = BaseIcons.extend({
 var RadioButton = {};
 RadioButton.View = Base.extend({
     initialize: function( options ) {
+        options.unchecked = options.unchecked || false
         Base.prototype.initialize.call( this, options );
     },
 

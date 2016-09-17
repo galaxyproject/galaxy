@@ -136,16 +136,15 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             for item in addresses:
                 address_data = list()
                 address_id = trans.security.encode_id( item.id )
-                address_list[index_add] = dict()
-                address_list[index_add]["desc"] = item.desc
-                address_list[index_add]["html"] = item.get_html()
-                address_list[index_add]["deleted"] = item.deleted
-                address_list[index_add]["address_id"] = address_id
                 # build address list inputs
                 user_address_list.append( dict( id=address_id, title='', type='hidden', help=( item.desc + ': <br>' + item.get_html() ) ) )
-                address_data.append( dict( label='Edit', value=( 'edit_' + address_id ) ) )
-                address_data.append( dict( label='Delete', value=( 'delete_' + address_id ) ) )
-                user_address_list.append( dict( id='edit_delete_buttons', name=( 'edit_delete_buttons' ), label='Actions', type='select', display='radio', multiple=False, data=address_data ) )
+                if ( item.deleted ):
+                    address_data.append( dict( label='Undelete', value=( 'undelete_' + address_id ) ) )
+                    user_address_list.append( dict( name=( 'undelete_button_' + address_id ), label='Actions', type='select', unchecked=True, display='radio', data=address_data ) )
+                else:
+                    address_data.append( dict( label='Edit', value=( 'edit_' + address_id ) ) )
+                    address_data.append( dict( label='Delete', value=( 'delete_' + address_id ) ) )
+                    user_address_list.append( dict( name=( 'edit_delete_buttons_' + address_id ), label='Actions', type='select', unchecked=True, display='radio', data=address_data ) )
                 user_address_list.append( dict( id='horizontal_line', title='', type='hidden', help='<hr class="docutils">' ) )
                 index_add = index_add + 1
 
@@ -176,7 +175,6 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                     'user_type_fd_id': user_type_fd_id,
                     'user_type_fd_id_encoded': trans.security.encode_id( user_type_fd_id ),
                     'widgets': widget_list,
-                    'addresses' : address_list,
                     'show_filter': show_filter,
                     'message': message,
                     'status': status,
