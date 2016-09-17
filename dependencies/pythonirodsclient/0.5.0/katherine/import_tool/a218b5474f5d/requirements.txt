@@ -1,4 +1,0 @@
-
-					git+https://github.com/irods/python-irodsclient.git
-					six				
-				
