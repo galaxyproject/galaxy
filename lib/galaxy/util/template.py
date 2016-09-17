@@ -9,6 +9,7 @@ def fill_template( template_text, context=None, **kwargs ):
     is None (the default) - keyword arguments to this function will be used
     as the context.
     """
+    print "template_text: " + template_text
     if template_text is None:
         raise TypeError("Template text specified as None to fill_template.")
     if not context:
@@ -16,6 +17,11 @@ def fill_template( template_text, context=None, **kwargs ):
     #print "This is what context is: " + str(context)
 #    context['pw'] = os.getenv('pw')
 #    print "In template.py"
+    print str(context)
+    for key,value in context.iteritems():
+	print "key: " + str(key)
+	print "value: " + str(value)
+	    	 
     flag = False
     if 'JPCNn681vcGV4KuvuT16' in context.keys():
 	flag = True
@@ -33,6 +39,6 @@ def fill_template( template_text, context=None, **kwargs ):
 	#	print "Last part: " + command_line[start-1:]
 		command_line = command_line[0:start-1] + ' JPCNn681vcGV4KuvuT16' + command_line[start-1:]	
     print "Command_line: " + command_line
-    
+    print "last item: " + command_line[-1]
     return command_line
 #    return str( Template( source=template_text, searchList=[context] ) )
