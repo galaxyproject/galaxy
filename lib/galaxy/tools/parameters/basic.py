@@ -406,7 +406,7 @@ class BooleanToolParameter( ToolParameter ):
     _name
     >>> d = p.to_dict( trans )
     >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'falsevalue: _falsevalue', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: BooleanToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'truevalue: truevalue', 'type: boolean', 'value: True']
+    ['argument: None', 'falsevalue: _falsevalue', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: BooleanToolParameter', 'name: _name', 'optional: False', 'refresh_on_change: False', 'truevalue: _truevalue', 'type: boolean', 'value: True']
     >>> print p.from_json( 'true' )
     True
     >>> print p.to_param_dict_string( True )
@@ -524,7 +524,7 @@ class FTPFileToolParameter( ToolParameter ):
     >>> trans = Bunch( history=Bunch() )
     >>> p = FTPFileToolParameter( None, XML( '<param name="_name" type="ftpfile"/>' ) )
     >>> print p.name
-    blah
+    _name
     >>> d = p.to_dict( trans )
     >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
     ['argument: None', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: FTPFileToolParameter', 'multiple: True', 'name: _name', 'optional: True', 'refresh_on_change: False', 'type: ftpfile']
@@ -909,40 +909,20 @@ class SelectToolParameter( ToolParameter ):
 
 class GenomeBuildParameter( SelectToolParameter ):
     """
-    Select list that sets the last used genome build for the current history
-    as "selected".
+    Select list that sets the last used genome build for the current history as "selected".
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
-
-    >>> p = GenomeBuildParameter( None, XML(
-    ... '''
-    ... <param name="blah" type="genomebuild" />
-    ... ''' ) )
+    >>> p = GenomeBuildParameter( None, XML( '<param name="_name" type="genomebuild" value="hg17" />' ) )
     >>> print p.name
-    blah
-
-    >>> # hg17 should be selected by default
-    >>> print p.get_html( trans ) # doctest: +ELLIPSIS
-    <select name="blah" last_selected_value="hg17">
-    <option value="?">unspecified (?)</option>
-    ...
-    <option value="hg18">Human Mar. 2006 (NCBI36/hg18) (hg18)</option>
-    <option value="hg17" selected>Human May 2004 (NCBI35/hg17) (hg17)</option>
-    ...
-    </select>
-
-    >>> # If the user selected something else already, that should be used
-    >>> # instead
-    >>> print p.get_html( trans, value='hg18' ) # doctest: +ELLIPSIS
-    <select name="blah" last_selected_value="hg18">
-    <option value="?">unspecified (?)</option>
-    ...
-    <option value="hg18" selected>Human Mar. 2006 (NCBI36/hg18) (hg18)</option>
-    <option value="hg17">Human May 2004 (NCBI35/hg17) (hg17)</option>
-    ...
-    </select>
+    _name
+    >>> d = p.to_dict( trans )
+    >>> o = d[ 'options' ]
+    >>> [ i for i in o if i[ 2 ] == True ]
+    [('Human May 2004 (NCBI35/hg17) (hg17)', 'hg17', True)]
+    >>> [ i for i in o if i[ 1 ] == 'hg18' ]
+    [('Human Mar. 2006 (NCBI36/hg18) (hg18)', 'hg18', False)]
     """
     def __init__( self, *args, **kwds ):
         super( GenomeBuildParameter, self ).__init__( *args, **kwds )
@@ -1155,9 +1135,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     Parameter that takes on one (or many) of a specific set of values.
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
     >>> p = DrillDownSelectToolParameter( None, XML(
     ... '''
-    ... <param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
+    ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
     ...   <options>
     ...    <option name="Heading 1" value="heading1">
     ...        <option name="Option 1" value="option1"/>
@@ -1171,36 +1153,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     ...   </options>
     ... </param>
     ... ''' ) )
-    >>> print p.get_html()
-    <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
-    <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="checkbox" name="some_name" value="option1" >Option 1
-    </div>
-    <div class="form-row-input">
-    <input type="checkbox" name="some_name" value="option2" >Option 2
-    </div>
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
-    <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="checkbox" name="some_name" value="option3" >Option 3
-    </div>
-    <div class="form-row-input">
-    <input type="checkbox" name="some_name" value="option4" >Option 4
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    <div class="form-row-input">
-    <input type="checkbox" name="some_name" value="option5" >Option 5
-    </div>
-    </div>
+    >>> print p.name
+    _name
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'display: checkbox', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: DrillDownSelectToolParameter', 'name: _name', 'optional: False', "options: [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]", 'refresh_on_change: False', 'type: drill_down']
     >>> p = DrillDownSelectToolParameter( None, XML(
     ... '''
     ... <param name="some_name" type="drill_down" display="radio" hierarchy="recurse" multiple="false">
@@ -1217,36 +1174,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     ...   </options>
     ... </param>
     ... ''' ) )
-    >>> print p.get_html()
-    <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
-    <input type="radio" name="some_name" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="radio" name="some_name" value="option1" >Option 1
-    </div>
-    <div class="form-row-input">
-    <input type="radio" name="some_name" value="option2" >Option 2
-    </div>
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
-    <input type="radio" name="some_name" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="radio" name="some_name" value="option3" >Option 3
-    </div>
-    <div class="form-row-input">
-    <input type="radio" name="some_name" value="option4" >Option 4
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    <div class="form-row-input">
-    <input type="radio" name="some_name" value="option5" >Option 5
-    </div>
-    </div>
+    >>> d = p.to_dict( trans )
+    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
+    ['argument: None', 'display: radio', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: DrillDownSelectToolParameter', 'name: some_name', 'optional: False', "options: [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]", 'refresh_on_change: False', 'type: drill_down']
     >>> print sorted(p.options[1].items())
     [('name', 'Option 5'), ('options', []), ('selected', False), ('value', 'option5')]
     >>> p.options[0]["name"]
