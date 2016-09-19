@@ -22,6 +22,7 @@ from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.workflow.modules import MissingToolException
 
 
 log = logging.getLogger(__name__)
@@ -385,6 +386,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         GET /api/workflows/build
         Builds workflow model for run workflow form
         """
+        workflow_id = kwd.get( 'workflow_id', None )
         history_id = kwd.get( 'history_id', None )
         history = None
         try:
@@ -392,8 +394,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
             else:
                 history = trans.get_history()
-            if history is None and job is not None:
-                history = self.history_manager.get_owned( job.history.id, trans.user, current_history=trans.history )
             if history is None:
                 raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception as e:
@@ -422,11 +422,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 if step.tool_errors:
                     errors[ step.id ] = step.tool_errors
         if missing_tools:
-            stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+            workflow.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, workflow )
             raise exceptions.MessageException( 'Following tools missing: %s' % missing_tools )
-        stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+        workflow.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, workflow )
         step_models = []
-        for i, step in enumerate( steps ):
+        for i, step in enumerate( workflow.steps ):
             step_model = None
             if step.type == 'tool':
                 incoming = {}
@@ -459,7 +459,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 step_model[ 'messages' ] = step.upgrade_messages
             step_models.append( step_model )
         return {
-            'id'                    : app.security.encode_id( workflow.id ),
+            'id'                    : trans.app.security.encode_id( workflow.id ),
             'name'                  : workflow.name,
             'history_id'            : history_id,
             'steps'                 : step_models,
