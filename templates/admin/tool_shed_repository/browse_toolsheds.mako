@@ -305,7 +305,7 @@ repository_dependency_template = _.template([
 ].join(''));
 select_tps_template = _.template([
     '<div id="select_tps_<\%= tool.clean \%>" class="tps_creator">',
-        '<select style="width: 30em;" data-toolguid="<\%= tool.guid \%>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%= tool.clean \%>">',
+        '<select default="active" style="width: 30em;" data-toolguid="<\%= tool.guid \%>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<\%= tool.clean \%>">',
             '<\%= tps_select_options({sections: tps.sections}) \%>',
         '</select>',
         '<input id="per_tool_create_<\%= tool.clean \%>" class="btn btn-primary" data-toolguid="<\%= tool.guid \%>" value="Create new" id="create_new_<\%= tool.clean \%>" type="button">',
@@ -446,33 +446,14 @@ function bind_category_events() {
         $('#repository_details').replaceWith('<div class="tab-pane" id="repository_details"><p><img src="/static/images/jstree/throbber.gif" alt="Loading repository..." /></p></div>');
         tsr_id = $(this).attr('data-tsrid');
         shed_url = $('#tab_contents').attr('data-shedurl');
-        api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_repository")}';
-        params = {"tool_shed_url": shed_url, "tsr_id": tsr_id};
-        load_repository_contents(tsr_id, shed_url, api_url, params);
+        load_repository(shed_url, tsr_id);
     });
     setup_repo_search('#category_search');
 }
 function bind_repository_events() {
     var current_changeset = get_current_changeset();
     var current_metadata = repository_data.repository.metadata[current_changeset];
-    var previous_tps;
-    $('#tool_panel_section_select').focus(function() {
-        previous_tps = $('#tool_panel_section_select').find("option:selected").val();
-    });
-    $('#tool_panel_section_select').change(function() {
-        new_tps = $('#tool_panel_section_select').find("option:selected").val();
-        $('.tool_panel_section_picker').each(function() {
-            // $(this).find("option").removeAttr("selected");
-            tool_tps = $(this).find("option:selected");
-            // console.log(previous_tps);
-            if (tool_tps.val() == previous_tps) {
-                tool_tps.removeAttr('selected');
-                console.log('tis');
-                $(this).val(new_tps);
-                $("select option[value='" + new_tps + "']").attr("selected","selected");
-            }
-        });
-    });
+    bind_tps_propagation();
     $('.show_tool_tps_selector').click(function() {
         var changeset = get_current_changeset();
         var tool_guid = $(this).attr('data-toolguid');
@@ -526,13 +507,25 @@ function bind_shed_events() {
         $('#list_repositories').replaceWith('<div id="list_repositories" class="tab-pane"><img src="/static/images/jstree/throbber.gif" alt="Loading repositories..." /></div>');
         var category_id = $(this).attr('data-categoryid');
         var shed_url = $('#tab_contents').attr('data-shedurl');
-        var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_category")}'
-        var params = {'tool_shed_url': shed_url, 'category_id': category_id};
-        $.get(api_url, params, function(data) {
-            $('#list_repositories').replaceWith(repositories_in_category(data));
-            $('#repo_list_tab').click();
-            bind_category_events();
+        load_category(shed_url, category_id);
+    });
+}
+function bind_tps_propagation() {
+    $('#tool_panel_section_select').change(function() {
+        new_tps = $('#tool_panel_section_select').find('option:selected').val();
+        $('.tool_panel_section_picker[default="active"]').each(function() {
+            $(this).val(new_tps);
         });
+    });
+    $('.tool_panel_section_picker').change(function() {
+        new_value = $(this).find('option:selected').val();
+        default_tps = $('#tool_panel_section_select').find('option:selected').val();
+        if (new_value == default_tps) {
+            $(this).attr('default', 'active');
+        }
+        else {
+            $(this).removeAttr('default');
+        }
     });
 }
 function bind_workflow_events() {
@@ -617,12 +610,12 @@ function check_if_installed(repository_metadata) {
             }
         }
     });
-    if (repository_in_queue(repository_metadata)) {
-        $('#queue_install').prop('disabled', true);
-        $('#queue_install').val('This revision is in the queue');
+    if (repository_in_queue(repository_metadata) || already_installed) {
+        $('#queue_install').hide();
+        $('#queue_install').val('This revision is already in the queue');
     }
     else {
-        $('#queue_install').prop('disabled', false);
+        $('#queue_install').show();
         $('#queue_install').val('Install this revision later');
     }
 }
@@ -752,6 +745,16 @@ function install_from_queue(repository_metadata, queue_key) {
     remove_from_queue(undefined, undefined, queue_key);
     prepare_installation(params, url);
 }
+function load_category(shed_url, category_id) {
+    var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_category")}'
+    var params = {'tool_shed_url': shed_url, 'category_id': category_id};
+    $.get(api_url, params, function(data) {
+        $('#list_repositories').replaceWith(repositories_in_category(data));
+        $('#repo_list_tab').click();
+        bind_category_events();
+        window.location.hash = 'tab=list_repositories&tool_shed_url=' + shed_url + '&category_id=' + category_id;
+    });
+}
 function load_from_workflow() {
     api_url = '${h.url_for(controller='api', action='workflows', missing_tools=True)}';
     $.get(api_url, function(data) {
@@ -759,6 +762,11 @@ function load_from_workflow() {
         $('#repository_queue').append(workflows_missing_tools({'workflows': data}));
         bind_workflow_events();
     });
+}
+function load_repository(shed_url, tsr_id) {
+    api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_repository")}';
+    params = {"tool_shed_url": shed_url, "tsr_id": tsr_id};
+    load_repository_contents(tsr_id, shed_url, api_url, params);
 }
 function load_repository_contents(tsr_id, shed_url, api_url, params) {
     console.log('woop');
@@ -788,6 +796,17 @@ function load_repository_contents(tsr_id, shed_url, api_url, params) {
         });
     });
     $('#repository_contents').click();
+    window.location.hash = 'tab=repository_details&tool_shed_url=' + shed_url + '&tsr_id=' + tsr_id;
+}
+function load_toolshed(shed_url) {
+    api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_categories")}'
+    $.get(api_url, { tool_shed_url: shed_url }, function(data) {
+        $('#list_categories').replaceWith(categories_in_shed(data));
+        $('#category_list_tab').click();
+        bind_shed_events();
+        setup_repo_search('#category_search');
+        window.location.hash = 'tab=list_categories&tool_shed_url=' + shed_url;
+    });
 }
 function parse_shed_response(data) {
     var results = [];
@@ -909,6 +928,7 @@ function select_tps(params) {
 function show_global_tps_select() {
     tps_dict = {'current_changeset': repository_data.current_changeset, 'tps': repository_data.panel_section_dict};
     $('#tool_panel_section').replaceWith(tps_selection_template(tps_dict));
+    bind_tps_propagation();
     $('#create_new').click(show_global_tps_create);
 }
 function show_global_tps_create() {
@@ -987,6 +1007,35 @@ function tool_panel_section() {
     }
 }
 $(document).ready(function() {
+    var urlhash = String(window.location.hash);
+    urlhash = urlhash.replace(/^#/, '');
+    console.log({'hash': urlhash});
+    var page_params = {};
+    if (urlhash.length > 0) {
+        var parts = urlhash.split('&');
+        console.log(parts);
+        for (var i = 0; i < parts.length; i++) {
+            var kv = parts[i].split('=');
+            page_params[kv[0]] = kv[1];
+        }
+    }
+    console.log(page_params);
+    if (page_params.tab == 'list_categories') {
+        load_toolshed(page_params.tool_shed_url);
+        $('#tab_contents').attr('data-shedurl', page_params.tool_shed_url);
+        return;
+    }
+    else if (page_params.tab == 'list_repositories') {
+        load_category(page_params.tool_shed_url, page_params.category_id);
+        $('#tab_contents').attr('data-shedurl', page_params.tool_shed_url);
+        return;
+    }
+    else if (page_params.tab == 'repository_details') {
+        load_repository(page_params.tool_shed_url, page_params.tsr_id);
+        $('#tab_contents').attr('data-shedurl', page_params.tool_shed_url);
+        return;
+    }
+    console.log({'hash': urlhash});
     $('#list_toolsheds').replaceWith(tool_sheds_template({tool_sheds: tool_sheds}));
     $('#shed_list_tab').click();
     check_queue();
@@ -994,13 +1043,8 @@ $(document).ready(function() {
         $('#list_categories').replaceWith('<div id="list_categories" class="nav-tab"><img src="/static/images/jstree/throbber.gif" alt="Loading categories..." /></div>');
         shed_url = $(this).attr('data-shedurl');
         $('#tab_contents').attr('data-shedurl', shed_url);
-        api_url = '${h.url_for(controller='/api/tool_shed_repositories', action="shed_categories")}'
-        $.get(api_url, { tool_shed_url: shed_url }, function(data) {
-            $('#list_categories').replaceWith(categories_in_shed(data));
-            $('#category_list_tab').click();
-            bind_shed_events();
-            setup_repo_search('#category_search');
-        });
+        load_toolshed(shed_url);
+        window.location.hash = 'tab=list_categories&tool_shed_url=' + shed_url;
     });
     $('#repository_installation_queue').click(bind_wf_button);
 });
