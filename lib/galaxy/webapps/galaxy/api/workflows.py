@@ -20,6 +20,8 @@ from galaxy.workflow.run_request import build_workflow_run_config
 from galaxy.workflow.modules import module_factory, WorkflowModuleInjector
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.tools.parameters.meta import expand_workflow_inputs
+from galaxy.tools.parameters import params_to_incoming
+from galaxy.jobs.actions.post import ActionBox
 
 
 log = logging.getLogger(__name__)
@@ -378,6 +380,93 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
 
     @expose_api
+    def build( self, trans, kwd={} ):
+        """
+        GET /api/workflows/build
+        Builds workflow model for run workflow form
+        """
+        history_id = kwd.get( 'history_id', None )
+        history = None
+        try:
+            if history_id is not None:
+                history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
+            else:
+                history = trans.get_history()
+            if history is None and job is not None:
+                history = self.history_manager.get_owned( job.history.id, trans.user, current_history=trans.history )
+            if history is None:
+                raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
+        except Exception as e:
+            raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+        # build request context
+        workflow = self.__get_stored_accessible_workflow( trans, workflow_id ).latest_workflow
+        trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
+        module_injector = WorkflowModuleInjector( trans )
+        # prepare each step
+        errors = {}
+        has_upgrade_messages = False
+        step_version_changes = []
+        missing_tools = []
+        for step in workflow.steps:
+            try:
+                module_injector.inject( step, steps=workflow.steps )
+            except MissingToolException:
+                if step.tool_id not in missing_tools:
+                    missing_tools.append( step.tool_id )
+                continue
+            if step.upgrade_messages:
+                has_upgrade_messages = True
+            if step.type == 'tool' or step.type is None:
+                if step.module.version_changes:
+                    step_version_changes.extend( step.module.version_changes )
+                if step.tool_errors:
+                    errors[ step.id ] = step.tool_errors
+        if missing_tools:
+            stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+            raise exceptions.MessageException( 'Following tools missing: %s' % missing_tools )
+        stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+        step_models = []
+        for i, step in enumerate( steps ):
+            step_model = None
+            if step.type == 'tool':
+                incoming = {}
+                tool = trans.app.toolbox.get_tool( step.tool_id )
+                params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app )
+                step_model = tool.to_json( trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY )
+                step_model[ 'post_job_actions' ] = [{
+                    'short_str'         : ActionBox.get_short_str( pja ),
+                    'action_type'       : pja.action_type,
+                    'output_name'       : pja.output_name,
+                    'action_arguments'  : pja.action_arguments
+                } for pja in step.post_job_actions ]
+            else:
+                inputs = step.module.get_runtime_inputs( connections=step.output_connections )
+                step_model = {
+                    'name'   : step.module.name,
+                    'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
+                }
+            step_model[ 'step_id' ] = step.id
+            step_model[ 'step_type' ] = step.type
+            step_model[ 'output_connections' ] = [ {
+                'input_step_id'     : oc.input_step_id,
+                'output_step_id'    : oc.output_step_id,
+                'input_name'        : oc.input_name,
+                'output_name'       : oc.output_name
+            } for oc in step.output_connections ]
+            if step.annotations:
+                step_model[ 'annotation' ] = step.annotations[0].annotation
+            if step.upgrade_messages:
+                step_model[ 'messages' ] = step.upgrade_messages
+            step_models.append( step_model )
+        return {
+            'id'                    : app.security.encode_id( workflow.id ),
+            'name'                  : workflow.name,
+            'history_id'            : history_id,
+            'steps'                 : step_models,
+            'has_upgrade_messages'  : has_upgrade_messages
+        }
+
+    @expose_api
     def build_module( self, trans, payload={} ):
         """
         POST /api/workflows/build_module
@@ -527,7 +616,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        stored_workflow = self.__get_stored_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_workflow( trans, workflow_id )
         results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:
