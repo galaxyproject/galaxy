@@ -1791,8 +1791,6 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # add datasets
         visible_hda = other_values.get( self.name )
-        print self.name
-        print other_values
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
             match = dataset_matcher.hda_match( hda, check_security=False )
