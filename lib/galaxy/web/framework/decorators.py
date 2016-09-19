@@ -38,15 +38,22 @@ def expose( func ):
     return func
 
 
-def json( func, **json_kwargs ):
+def json( func, pretty=False ):
     """
     Format the response as JSON and set the response content type to
     JSON_CONTENT_TYPE.
     """
     @wraps(func)
     def call_and_format( self, trans, *args, **kwargs ):
-        trans.response.set_content_type( JSON_CONTENT_TYPE )
-        return safe_dumps( func( self, trans, *args, **kwargs ), **json_kwargs )
+        # pull out any callback argument to the api endpoint and set the content type to json or javascript
+        js_callback_fn_name = kwargs.pop( JSONP_CALLBACK_KEY, None )
+        if js_callback_fn_name:
+            trans.response.set_content_type( JSONP_CONTENT_TYPE )
+        else:
+            trans.response.set_content_type( JSON_CONTENT_TYPE )
+        rval = func( self, trans, *args, **kwargs )
+        return _format_return_as_json( rval, js_callback_fn_name, pretty=( pretty or trans.debug ) )
+
     if not hasattr( func, '_orig' ):
         call_and_format._orig = func
     return expose( _save_orig_fn( call_and_format, func ) )
@@ -56,7 +63,7 @@ def json_pretty( func ):
     """
     Indent and sort returned JSON.
     """
-    return json( func, indent=4, sort_keys=True )
+    return json( func, pretty=True )
 
 
 def require_login( verb="perform this action", use_panels=False, webapp='galaxy' ):
@@ -115,9 +122,17 @@ def expose_api( func, to_json=True, user_required=True ):
                 error_status = '400 Bad Request'
                 error_message = 'Your request did not appear to be valid JSON, please consult the API documentation'
                 return error
-        trans.response.set_content_type( "application/json" )
+
+        # pull out any callback argument to the api endpoint and set the content type to json or javascript
+        js_callback_fn_name = kwargs.pop( JSONP_CALLBACK_KEY, None )
+        if js_callback_fn_name:
+            trans.response.set_content_type( JSONP_CONTENT_TYPE )
+        else:
+            trans.response.set_content_type( JSON_CONTENT_TYPE )
+
         # send 'do not cache' headers to handle IE's caching of ajax get responses
         trans.response.headers[ 'Cache-Control' ] = "max-age=0,no-cache,no-store"
+
         # Perform api_run_as processing, possibly changing identity
         if 'payload' in kwargs and 'run_as' in kwargs['payload']:
             if not trans.user_can_do_run_as():
@@ -137,10 +152,8 @@ def expose_api( func, to_json=True, user_required=True ):
                 return "That user does not exist."
         try:
             rval = func( self, trans, *args, **kwargs)
-            if to_json and trans.debug:
-                rval = safe_dumps( rval, indent=4, sort_keys=True )
-            elif to_json:
-                rval = safe_dumps( rval )
+            if to_json:
+                rval = _format_return_as_json( rval, js_callback_fn_name, pretty=trans.debug )
             return rval
         except paste.httpexceptions.HTTPException:
             raise  # handled
@@ -267,7 +280,7 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
         try:
             rval = func( self, trans, *args, **kwargs )
             if to_json:
-                rval = _format_return_as_json( rval, js_callback_fn_name, debug=trans.debug )
+                rval = _format_return_as_json( rval, js_callback_fn_name, pretty=trans.debug )
             return rval
         except MessageException as e:
             traceback_string = format_exc()
@@ -293,16 +306,16 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
     return decorator
 
 
-def _format_return_as_json( rval, js_callback_fn_name=None, debug=False ):
+def _format_return_as_json( rval, js_callback_fn_name=None, pretty=False ):
     """
     Formats a return value as JSON or JSONP if `js_callback_fn_name` is present.
 
-    Use `debug=True` to return pretty printed json.
+    Use `pretty=True` to return pretty printed json.
     """
-    dumps_kwargs = dict( indent=4, sort_keys=True ) if debug else {}
+    dumps_kwargs = dict( indent=4, sort_keys=True ) if pretty else {}
     json = safe_dumps( rval, **dumps_kwargs )
     if js_callback_fn_name:
-        json = "{}({})".format( js_callback_fn_name, json )
+        json = "{}({});".format( js_callback_fn_name, json )
     return json
 
 
