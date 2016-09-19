@@ -1,9 +1,11 @@
 from galaxy import model
 from galaxy.util import bunch
-
+import imp
+import os
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
+import galaxy_mock
 from .test_parameter_parsing import BaseParameterTestCase
-
-
 class DataToolParameterTestCase( BaseParameterTestCase ):
 
     def test_to_python_none_values( self ):
@@ -35,17 +37,14 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         hda2 = MockHistoryDatasetAssociation( name="hda2", id=2 )
         self.stub_active_datasets( hda1, hda2 )
         field = self._simple_field()
-        assert len( field.options ) == 2
-        assert field.options[ 0 ][ 0 ] == "1: hda1"
-        assert field.options[ 1 ][ 0 ] == "2: hda2"
-
-        assert field.options[ 1 ][ 2 ]  # Last one selected
-        assert not field.options[ 0 ][ 2 ]  # Others not selected
+        assert len( field[ 'options' ][ 'hda' ] ) == 2
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "hda2"
+        assert field[ 'options' ][ 'hda' ][ 1 ][ 'name' ] == "hda1"
 
         hda2.datatype_matches = False
         field = self._simple_field()
-        assert len( field.options ) == 1
-        assert field.options[ 0 ][ 2 ] is True  # Last one selected
+        assert len( field[ 'options' ][ 'hda' ] ) == 1
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "hda1"
 
     def test_field_display_hidden_hdas_only_if_selected( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
@@ -53,9 +52,9 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self.stub_active_datasets( hda1, hda2 )
         hda1.visible = False
         hda2.visible = False
-        field = self._simple_field( value=hda2 )
-        self.assertEquals( len( field.options ), 1 )  # hda1 not an option, not visible or selected
-        assert field.options[ 0 ][ 0 ] == "2: (hidden) hda2"
+        field = self._simple_field( other_values = { "data2" : hda2 } )
+        self.assertEquals( len( field[ 'options' ][ 'hda' ] ), 1 )  # hda1 not an option, not visible or selected
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "(unavailable) hda2"
 
     def test_field_implicit_conversion_new( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
@@ -63,9 +62,9 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         hda1.conversion_destination = ( "tabular", None )
         self.stub_active_datasets( hda1 )
         field = self._simple_field()
-        assert len( field.options ) == 1
-        assert field.options[ 0 ][ 0 ] == "1: (as tabular) hda1"
-        assert field.options[ 0 ][ 1 ] == 1
+        assert len( field[ 'options' ][ 'hda' ] ) == 1
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "hda1 (as tabular)"
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'hid' ] == 1
 
     def test_field_implicit_conversion_existing( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
@@ -73,29 +72,27 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         hda1.conversion_destination = ( "tabular", MockHistoryDatasetAssociation( name="hda1converted", id=2 ) )
         self.stub_active_datasets( hda1 )
         field = self._simple_field()
-        assert len( field.options ) == 1
-        assert field.options[ 0 ][ 0 ] == "1: (as tabular) hda1"
+        print field
+        assert len( field[ 'options' ][ 'hda' ] ) == 1
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "hda1 (as tabular)"
         # This is difference with previous test, value is existing
         # hda id not new one.
-        assert field.options[ 0 ][ 1 ] == 2
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'hid' ] == 2
 
     def test_field_multiple( self ):
         self.multiple = True
         field = self._simple_field()
-        assert field.multiple
+        assert field[ 'multiple' ]
 
     def test_field_empty_selection( self ):
         field = self._simple_field()
-        assert len( field.options ) == 0
+        assert len( field[ 'options' ][ 'hda' ] ) == 0
+        assert len( field[ 'options' ][ 'hdca' ] ) == 0
 
     def test_field_empty_selection_optional( self ):
         self.optional = True
         field = self._simple_field()
-        assert len( field.options ) == 1
-        option = field.options[ 0 ]
-        assert option[ 0 ] == "Selection is Optional"
-        assert option[ 1 ] == "None"
-        assert option[ 2 ] is True
+        assert field[ 'optional' ]
 
     def test_get_initial_value( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
@@ -146,14 +143,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self.test_history = model.History()
         self.app.model.context.add( self.test_history )
         self.app.model.context.flush()
-        self.trans = bunch.Bunch(
-            app=self.app,
-            get_history=lambda **k: self.test_history,
-            get_current_user_roles=lambda: [],
-            workflow_building_mode=False,
-            webapp=bunch.Bunch( name="galaxy" ),
-            history=self.test_history,
-        )
+        self.trans = galaxy_mock.MockTrans( history= self.test_history )
         self.multiple = False
         self.optional = False
         self._param = None
@@ -162,10 +152,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self.test_history._active_datasets_children_and_roles = hdas
 
     def _simple_field( self, **kwds ):
-        field = self.param.get_html_field( trans=self.trans, **kwds )
-        if hasattr( field, "primary_field" ):
-            field = field.primary_field
-        return field
+        return self.param.to_dict( trans=self.trans, **kwds )
 
     @property
     def param( self ):

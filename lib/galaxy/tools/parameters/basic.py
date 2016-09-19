@@ -1771,10 +1771,10 @@ class DataToolParameter( BaseDataToolParameter ):
         # create dictionary and fill default parameters
         d = super( DataToolParameter, self ).to_dict( trans )
         extensions = self.extensions
-        all_edam_formats = self._datatypes_registery( trans, self.tool ).edam_formats
-        all_edam_data = self._datatypes_registery( trans, self.tool ).edam_data
-        edam_formats = map(lambda ext: all_edam_formats.get(ext, None),
-                           extensions)
+        datatypes_registery = self._datatypes_registery( trans, self.tool )
+        all_edam_formats = datatypes_registery.edam_formats if hasattr ( datatypes_registery, 'edam_formats' ) else {}
+        all_edam_data = datatypes_registery.edam_data if hasattr ( datatypes_registery, 'edam_formats' ) else {}
+        edam_formats = map(lambda ext: all_edam_formats.get(ext, None), extensions)
         edam_data = map(lambda ext: all_edam_data.get(ext, None), extensions)
 
         d['extensions'] = extensions
@@ -1801,6 +1801,8 @@ class DataToolParameter( BaseDataToolParameter ):
 
         # add datasets
         visible_hda = other_values.get( self.name )
+        print self.name
+        print other_values
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
             match = dataset_matcher.hda_match( hda, check_security=False )
@@ -1809,7 +1811,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
                 append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name if m.visible else '(hidden) %s' % m_name, 'hda' )
-        if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
+        if not has_matched and hasattr( visible_hda, 'id' ) and hasattr( visible_hda, 'hid' ) and hasattr( visible_hda, 'name' ):
             append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
 
         # add dataset collections
