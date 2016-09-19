@@ -15,6 +15,8 @@ from galaxy.web.framework import url_for
 log = logging.getLogger( __name__ )
 
 JSON_CONTENT_TYPE = "application/json"
+JSONP_CONTENT_TYPE = "application/javascript"
+JSONP_CALLBACK_KEY = 'callback'
 
 
 def error( message ):
@@ -233,7 +235,12 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
                 error_code = error_codes.USER_INVALID_JSON
                 return __api_error_response( trans, status_code=400, err_code=error_code )
 
-        trans.response.set_content_type( JSON_CONTENT_TYPE )
+        # pull out any callback argument to the api endpoint and set the content type to json or javascript
+        js_callback_fn_name = kwargs.pop( JSONP_CALLBACK_KEY, None )
+        if js_callback_fn_name:
+            trans.response.set_content_type( JSONP_CONTENT_TYPE )
+        else:
+            trans.response.set_content_type( JSON_CONTENT_TYPE )
 
         # send 'do not cache' headers to handle IE's caching of ajax get responses
         trans.response.headers[ 'Cache-Control' ] = "max-age=0,no-cache,no-store"
@@ -258,11 +265,9 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
                 error_code = error_codes.USER_INVALID_RUN_AS
                 return __api_error_response( trans, err_code=error_code, status_code=400 )
         try:
-            rval = func( self, trans, *args, **kwargs)
-            if to_json and trans.debug:
-                rval = safe_dumps( rval, indent=4, sort_keys=True )
-            elif to_json:
-                rval = safe_dumps( rval )
+            rval = func( self, trans, *args, **kwargs )
+            if to_json:
+                rval = _format_return_as_json( rval, js_callback_fn_name, debug=trans.debug )
             return rval
         except MessageException as e:
             traceback_string = format_exc()
@@ -286,6 +291,19 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
         decorator._orig = func
     decorator.exposed = True
     return decorator
+
+
+def _format_return_as_json( rval, js_callback_fn_name=None, debug=False ):
+    """
+    Formats a return value as JSON or JSONP if `js_callback_fn_name` is present.
+
+    Use `debug=True` to return pretty printed json.
+    """
+    dumps_kwargs = dict( indent=4, sort_keys=True ) if debug else {}
+    json = safe_dumps( rval, **dumps_kwargs )
+    if js_callback_fn_name:
+        json = "{}({})".format( js_callback_fn_name, json )
+    return json
 
 
 def __api_error_message( trans, **kwds ):
