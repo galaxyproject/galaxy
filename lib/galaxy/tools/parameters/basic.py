@@ -641,7 +641,7 @@ class BaseURLToolParameter( HiddenToolParameter ):
     """
     Returns a parameter that contains its value prepended by the
     current server base url. Used in all redirects.
-    
+
     >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch( history=Bunch() )
     >>> p = BaseURLToolParameter( None, XML( '<param name="_name" type="base_url" value="_value"/>' ) )
@@ -1375,8 +1375,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def to_dict( self, trans, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
-        d[ 'options' ]  = self.get_options( trans=trans, other_values=other_values )
-        d[ 'display' ]  = self.display
+        d[ 'options' ] = self.get_options( trans=trans, other_values=other_values )
+        d[ 'display' ] = self.display
         d[ 'multiple' ] = self.multiple
         return d
 
@@ -1762,8 +1762,8 @@ class DataToolParameter( BaseDataToolParameter ):
         d = super( DataToolParameter, self ).to_dict( trans )
         extensions = self.extensions
         datatypes_registery = self._datatypes_registery( trans, self.tool )
-        all_edam_formats = datatypes_registery.edam_formats if hasattr ( datatypes_registery, 'edam_formats' ) else {}
-        all_edam_data = datatypes_registery.edam_data if hasattr ( datatypes_registery, 'edam_formats' ) else {}
+        all_edam_formats = datatypes_registery.edam_formats if hasattr( datatypes_registery, 'edam_formats' ) else {}
+        all_edam_data = datatypes_registery.edam_data if hasattr( datatypes_registery, 'edam_formats' ) else {}
         edam_formats = map(lambda ext: all_edam_formats.get(ext, None), extensions)
         edam_data = map(lambda ext: all_edam_data.get(ext, None), extensions)
 

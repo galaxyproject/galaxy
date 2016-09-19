@@ -26,7 +26,6 @@ from galaxy.web.framework.formbuilder import form
 from galaxy.web.framework.helpers import grids, time_ago, to_unicode
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.extract import summarize
-from galaxy.workflow.modules import MissingToolException
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE

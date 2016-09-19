@@ -6,6 +6,8 @@ test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 import galaxy_mock
 from .test_parameter_parsing import BaseParameterTestCase
+
+
 class DataToolParameterTestCase( BaseParameterTestCase ):
 
     def test_to_python_none_values( self ):
@@ -52,7 +54,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self.stub_active_datasets( hda1, hda2 )
         hda1.visible = False
         hda2.visible = False
-        field = self._simple_field( other_values = { "data2" : hda2 } )
+        field = self._simple_field( other_values={ "data2" : hda2 } )
         self.assertEquals( len( field[ 'options' ][ 'hda' ] ), 1 )  # hda1 not an option, not visible or selected
         assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "(unavailable) hda2"
 
@@ -72,7 +74,6 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         hda1.conversion_destination = ( "tabular", MockHistoryDatasetAssociation( name="hda1converted", id=2 ) )
         self.stub_active_datasets( hda1 )
         field = self._simple_field()
-        print field
         assert len( field[ 'options' ][ 'hda' ] ) == 1
         assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "hda1 (as tabular)"
         # This is difference with previous test, value is existing
@@ -143,7 +144,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self.test_history = model.History()
         self.app.model.context.add( self.test_history )
         self.app.model.context.flush()
-        self.trans = galaxy_mock.MockTrans( history= self.test_history )
+        self.trans = galaxy_mock.MockTrans( history=self.test_history )
         self.multiple = False
         self.optional = False
         self._param = None
