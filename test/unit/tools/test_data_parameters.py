@@ -1,10 +1,10 @@
-from galaxy import model
-from galaxy.util import bunch
 import imp
 import os
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 import galaxy_mock
+from galaxy import model
+from galaxy.util import bunch
 from .test_parameter_parsing import BaseParameterTestCase
 
 
