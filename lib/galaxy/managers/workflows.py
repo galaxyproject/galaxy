@@ -346,6 +346,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         Builds workflow model for run workflow form
         """
+        workflow = stored.latest_workflow
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector( trans )
         # prepare each step
@@ -353,9 +354,9 @@ class WorkflowContentsManager(UsesAnnotations):
         has_upgrade_messages = False
         step_version_changes = []
         missing_tools = []
-        for step in stored.steps:
+        for step in workflow.steps:
             try:
-                module_injector.inject( step, steps=stored.steps )
+                module_injector.inject( step, steps=workflow.steps )
             except MissingToolException:
                 if step.tool_id not in missing_tools:
                     missing_tools.append( step.tool_id )
@@ -368,11 +369,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 if step.tool_errors:
                     errors[ step.id ] = step.tool_errors
         if missing_tools:
-            stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+            workflow.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, workflow )
             raise exceptions.MessageException( 'Following tools missing: %s' % missing_tools )
-        stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
+        workflow.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, workflow )
         step_models = []
-        for i, step in enumerate( stored.steps ):
+        for i, step in enumerate( workflow.steps ):
             step_model = None
             if step.type == 'tool':
                 incoming = {}

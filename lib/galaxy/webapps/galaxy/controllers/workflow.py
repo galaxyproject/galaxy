@@ -1037,7 +1037,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.history = history
         workflow_manager = workflows.WorkflowsManager( trans.app )
         workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
-        stored = workflow_manager.get_stored_accessible_workflow( trans, id ).latest_workflow
+        stored = workflow_manager.get_stored_accessible_workflow( trans, id )
         workflow_dict = workflow_contents_manager.workflow_to_dict( trans, stored, style='run' )
         return trans.fill_template( 'workflow/run.mako', workflow_dict=workflow_dict )
 
