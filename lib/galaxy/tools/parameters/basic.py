@@ -1144,7 +1144,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     ...    <option name="Heading 1" value="heading1">
     ...        <option name="Option 1" value="option1"/>
     ...        <option name="Option 2" value="option2"/>
-    ...        <option name="Heading 1" value="heading1">
+    ...        <option name="Heading 2" value="heading2">
     ...          <option name="Option 3" value="option3"/>
     ...          <option name="Option 4" value="option4"/>
     ...        </option>
@@ -1156,33 +1156,22 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     >>> print p.name
     _name
     >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'display: checkbox', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: DrillDownSelectToolParameter', 'name: _name', 'optional: False', "options: [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]", 'refresh_on_change: False', 'type: drill_down']
-    >>> p = DrillDownSelectToolParameter( None, XML(
-    ... '''
-    ... <param name="some_name" type="drill_down" display="radio" hierarchy="recurse" multiple="false">
-    ...   <options>
-    ...    <option name="Heading 1" value="heading1">
-    ...        <option name="Option 1" value="option1"/>
-    ...        <option name="Option 2" value="option2"/>
-    ...        <option name="Heading 1" value="heading1">
-    ...          <option name="Option 3" value="option3"/>
-    ...          <option name="Option 4" value="option4"/>
-    ...        </option>
-    ...    </option>
-    ...    <option name="Option 5" value="option5"/>
-    ...   </options>
-    ... </param>
-    ... ''' ) )
-    >>> d = p.to_dict( trans )
-    >>> [ "%s: %s" % ( key, d[ key ] ) for key in sorted( d ) ]
-    ['argument: None', 'display: radio', 'help: ', 'hidden: False', 'is_dynamic: False', 'label: ', 'model_class: DrillDownSelectToolParameter', 'name: some_name', 'optional: False', "options: [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]", 'refresh_on_change: False', 'type: drill_down']
-    >>> print sorted(p.options[1].items())
-    [('name', 'Option 5'), ('options', []), ('selected', False), ('value', 'option5')]
-    >>> p.options[0]["name"]
-    'Heading 1'
-    >>> p.options[0]["selected"]
-    False
+    >>> assert d[ 'multiple' ] == True
+    >>> assert d[ 'display' ] == 'checkbox'
+    >>> assert d[ 'options' ][ 0 ][ 'name' ] == 'Heading 1'
+    >>> assert d[ 'options' ][ 0 ][ 'value' ] == 'heading1'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 0 ][ 'name' ] == 'Option 1'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 0 ][ 'value' ] == 'option1'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 1 ][ 'name' ] == 'Option 2'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 1 ][ 'value' ] == 'option2'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'name' ] == 'Heading 2'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'value' ] == 'heading2'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 0 ][ 'name' ] == 'Option 3'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 0 ][ 'value' ] == 'option3'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 1 ][ 'name' ] == 'Option 4'
+    >>> assert d[ 'options' ][ 0 ][ 'options' ][ 2 ][ 'options' ][ 1 ][ 'value' ] == 'option4'
+    >>> assert d[ 'options' ][ 1 ][ 'name' ] == 'Option 5'
+    >>> assert d[ 'options' ][ 1 ][ 'value' ] == 'option5'
     """
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source( input_source )
@@ -1386,8 +1375,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def to_dict( self, trans, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
-        d['options'] = self.get_options( trans=trans, other_values=other_values )
-        d['display'] = self.display
+        d[ 'options' ]  = self.get_options( trans=trans, other_values=other_values )
+        d[ 'display' ]  = self.display
+        d[ 'multiple' ] = self.multiple
         return d
 
 
