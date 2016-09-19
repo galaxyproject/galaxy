@@ -347,7 +347,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _submit: function() {
             var self = this;
             var job_def = {
-                new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
+                new_history_name    : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
                 replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
                 inputs              : {}
             };
@@ -437,7 +437,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _enabled: function( enabled ) {
             this.execute_btn.model.set( { wait: !enabled, wait_text: 'Sending...', percentage: -1 } );
             this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
-            this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
+            this.history_form && this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
             _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
         },
 

@@ -1021,6 +1021,26 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                        % ( escape( workflow_name ), url_for( controller='workflow', action='editor', id=workflow_id ),
                                            url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
+    @web.expose
+    def run( self, trans, id, history_id=None, **kwargs ):
+        history = None
+        try:
+            if history_id is not None:
+                history_manager = histories.HistoryManager( trans.app )
+                history = history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
+            else:
+                history = trans.get_history()
+            if history is None:
+                raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
+        except Exception as e:
+            raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+        trans.history = history
+        workflow_manager = workflows.WorkflowsManager( trans.app )
+        workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
+        stored = workflow_manager.get_stored_accessible_workflow( trans, id ).latest_workflow
+        workflow_dict = workflow_contents_manager.workflow_to_dict( trans, stored, style='run' )
+        return trans.fill_template( 'workflow/run.mako', workflow_dict=workflow_dict )
+
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id )
 
