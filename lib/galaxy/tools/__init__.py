@@ -1683,7 +1683,7 @@ class Tool( object, Dictifiable ):
         # create tool model
         tool_model = self.to_dict( request_context )
         tool_model[ 'inputs' ] = {}
-        self.populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ], request_context )
+        self.populate_model( request_context, self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
         # create tool help
         tool_help = ''
@@ -1722,7 +1722,7 @@ class Tool( object, Dictifiable ):
         return tool_model
 
     # populates model from state
-    def populate_model( self, inputs, state_inputs, group_inputs, request_context, other_values=None ):
+    def populate_model( self, request_context, inputs, state_inputs, group_inputs, other_values=None ):
         other_values = ExpressionContext( state_inputs, other_values )
         for input_index, input in enumerate( inputs.itervalues() ):
             tool_dict = None
@@ -1732,7 +1732,7 @@ class Tool( object, Dictifiable ):
                 group_cache = tool_dict[ 'cache' ] = {}
                 for i in range( len( group_state ) ):
                     group_cache[ i ] = {}
-                    self.populate_model( input.inputs, group_state[ i ], group_cache[ i ], request_context, other_values )
+                    self.populate_model( request_context, input.inputs, group_state[ i ], group_cache[ i ], other_values )
             elif input.type == 'conditional':
                 tool_dict = input.to_dict( request_context )
                 if 'test_param' in tool_dict:
@@ -1743,10 +1743,10 @@ class Tool( object, Dictifiable ):
                         current_state = {}
                         if i == group_state.get( '__current_case__' ):
                             current_state = group_state
-                        self.populate_model( input.cases[ i ].inputs, current_state, tool_dict[ 'cases' ][ i ][ 'inputs' ], request_context, other_values )
+                        self.populate_model( request_context, input.cases[ i ].inputs, current_state, tool_dict[ 'cases' ][ i ][ 'inputs' ], other_values )
             elif input.type == 'section':
                 tool_dict = input.to_dict( request_context )
-                self.populate_model( input.inputs, group_state, tool_dict[ 'inputs' ], request_context, other_values )
+                self.populate_model( request_context, input.inputs, group_state, tool_dict[ 'inputs' ], other_values )
             else:
                 try:
                     tool_dict = input.to_dict( request_context, other_values=other_values )

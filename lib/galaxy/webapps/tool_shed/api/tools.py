@@ -170,7 +170,7 @@ class ToolsController( BaseAPIController ):
             tool_help = util.unicodify( tool_help, 'utf-8' )
         tool_dict = tool.to_dict( trans )
         tool_dict[ 'inputs' ] = {}
-        tool.populate_model( tool.inputs, {}, tool_dict[ 'inputs' ], trans )
+        tool.populate_model( trans, tool.inputs, {}, tool_dict[ 'inputs' ] )
         tool_dict.update({
             'help'          : tool_help,
             'citations'     : bool( tool.citations ),
