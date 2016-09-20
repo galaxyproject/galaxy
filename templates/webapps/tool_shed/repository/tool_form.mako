@@ -95,7 +95,7 @@
                         field.add_option( "Dynamically generated from old-style Dynamic Options.", "none" )
                     field_html = field.get_html( prefix )
                 else:
-                    field = TextField( param.name, "Parameter type: %s" % param.type )
+                    field = TextField( param.name, value="Parameter type: %s" % param.type )
                     field_html = field.get_html( prefix, disabled=True )
             %>
             <div class="form-row">
