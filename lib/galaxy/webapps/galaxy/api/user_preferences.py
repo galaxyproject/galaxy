@@ -144,7 +144,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 else:
                     address_data.append( dict( label='Edit', value=( 'edit_' + address_id ) ) )
                     address_data.append( dict( label='Delete', value=( 'delete_' + address_id ) ) )
-                    user_address_list.append( dict( name=( 'edit_delete_buttons_' + address_id ), label='Actions', type='select', unchecked=True, display='radio', data=address_data ) )
+                    user_address_list.append( dict( name=( 'edit_delete_buttons_' + address_id ), label='Actions', type='select', optional=True, display='radio', data=address_data ) )
                 user_address_list.append( dict( id='horizontal_line', title='', type='hidden', help='<hr class="docutils">' ) )
                 index_add = index_add + 1
 

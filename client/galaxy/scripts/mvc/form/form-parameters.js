@@ -104,8 +104,7 @@ define(['utils/utils',
                 error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
-                onchange    : input_def.onchange,
-                unchecked   : input_def.unchecked
+                onchange    : input_def.onchange
             });
         },
 
