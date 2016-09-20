@@ -221,7 +221,7 @@ def expose_api_anonymous( func, to_json=True ):
 
 # ----------------------------------------------------------------------------- (new) api decorators
 # TODO: rename as expose_api and make default.
-def _future_expose_api( func, to_json=True, user_required=True, user_or_session_required=True ):
+def _future_expose_api( func, to_json=True, user_required=True, user_or_session_required=True, handle_jsonp=True ):
     """
     Expose this function via the API.
     """
@@ -249,7 +249,8 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
                 return __api_error_response( trans, status_code=400, err_code=error_code )
 
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
-        jsonp_callback = kwargs.pop( JSONP_CALLBACK_KEY, None )
+        # TODO: use handle_jsonp to NOT overwrite existing tool_shed JSONP
+        jsonp_callback = kwargs.pop( JSONP_CALLBACK_KEY, None ) if handle_jsonp else None
         if jsonp_callback:
             trans.response.set_content_type( JSONP_CONTENT_TYPE )
         else:
@@ -393,4 +394,11 @@ def _future_expose_api_raw_anonymous( func ):
 
 
 def _future_expose_api_raw_anonymous_and_sessionless( func ):
-    return _future_expose_api( func, to_json=False, user_required=False, user_or_session_required=False )
+    # TODO: tool_shed api implemented JSONP first on a method-by-method basis, don't overwrite that for now
+    return _future_expose_api(
+        func,
+        to_json=False,
+        user_required=False,
+        user_or_session_required=False,
+        handle_jsonp=False
+    )
