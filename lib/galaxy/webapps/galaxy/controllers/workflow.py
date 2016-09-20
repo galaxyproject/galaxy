@@ -15,6 +15,7 @@ from tool_shed.util import encoding_util
 from galaxy import model
 from galaxy import util
 from galaxy import web
+from galaxy import exceptions
 from galaxy.managers import workflows, histories
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
@@ -1031,9 +1032,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             else:
                 history = trans.get_history()
             if history is None:
-                error( 'History unavailable. Please specify a valid history id' )
+                raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception as e:
-            error( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+            raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
         trans.history = history
         workflow_manager = workflows.WorkflowsManager( trans.app )
         workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
