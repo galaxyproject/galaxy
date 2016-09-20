@@ -47,6 +47,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 'quota': trans.app.quota_agent.get_quota( trans.user, nice_size=True ),
                }
 
+
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
         #params = util.Params( kwd )
         if user and user.values:
@@ -58,6 +59,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         else:
             user_type_form_definition = None
         return user_type_form_definition
+
 
     # ===== Methods for building SelectFields  ================================
     def __build_user_type_fd_id_select_field( self, trans, selected_value ):
@@ -73,6 +75,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                                    selected_value=selected_value,
                                    refresh_on_change=True )
 
+
     def __get_widgets( self, trans, user_type_form_definition, user=None, **kwd ):
         widgets = []
         if user_type_form_definition:
@@ -86,6 +89,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             else:
                 widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
         return widgets
+
 
     def user_info(self, cntrller, trans, kwd):
         '''Manage a user's login, password, public username, type, addresses, etc.'''
@@ -140,7 +144,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 user_address_list.append( dict( id=address_id, title='', type='hidden', help=( item.desc + ': <br>' + item.get_html() ) ) )
                 if ( item.deleted ):
                     address_data.append( dict( label='Undelete', value=( 'undelete_' + address_id ) ) )
-                    user_address_list.append( dict( name=( 'undelete_button_' + address_id ), label='Actions', type='select', unchecked=True, display='radio', data=address_data ) )
+                    user_address_list.append( dict( name=( 'undelete_button_' + address_id ), label='Actions', type='select', optional=True, display='radio', data=address_data ) )
                 else:
                     address_data.append( dict( label='Edit', value=( 'edit_' + address_id ) ) )
                     address_data.append( dict( label='Delete', value=( 'delete_' + address_id ) ) )
@@ -203,19 +207,33 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
     @expose_api
     def manage_user_info( self, trans, cntrller='user_preferences', **kwd ):
         """ Manage User Info API call """
-        return self.user_info(cntrller, trans, kwd)
+        params = util.Params( kwd )
+        call_type = params.get( 'call', 'None' )
+        # Redirect to different method based on the operation
+        if ( call_type == 'edit_info' ):
+            return self.edit_info( trans, cntrller, kwd )
+        elif ( call_type == 'add_address' ):
+            return self.new_address( trans, cntrller, kwd  )
+        elif ( call_type == 'edit_address' ):
+            return self.edit_address( trans, cntrller, kwd )
+        elif ( call_type == 'undelete_address' ):
+            return self.undelete_address( trans, cntrller, kwd )
+        elif( call_type == 'delete_address' ):
+            return self.delete_address( trans, cntrller, kwd )
+        else:
+            return self.user_info( cntrller, trans, kwd )
 
-    @expose_api
-    def edit_info( self, trans, cntrller='user_preferences', **kwd ):
+
+    def edit_info( self, trans, cntrller, kwd ):
         """
-        API call for Edit user information = username, email or password.
+        Save user information like email and public name
         """
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
         user_id = params.get( 'id', None )
-        button_type = params.get( 'button_name', None )
+        save_type = params.get( 'save_type', None )
         
         if user_id and is_admin:
             user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
@@ -225,7 +243,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             user = None
         else:
             user = trans.user
-        if user and (button_type == 'login_info_button'):
+        if user and (save_type == 'login_info'):
             # Editing email and username
             email = util.restore_text( params.get( 'email', '' ) )
             username = util.restore_text( params.get( 'username', '' ) ).lower()
@@ -262,7 +280,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
-        elif user and (button_type == 'edit_user_info_button'):
+        elif user and (save_type == 'edit_user_info'):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id not in [ 'none' ]:
@@ -299,11 +317,12 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         if status:
             kwd[ 'status' ] = status
         print(kwd)
-        # makes a call to manage user info method
+        # Return all data for user information page
         return self.user_info(cntrller, trans, kwd)
 
-    @expose_api
-    def edit_address( self, trans, cntrller='user_preferences', **kwd ):
+
+    def edit_address( self, trans, cntrller, kwd ):
+        """ Allow user to edit the saved address """
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -321,7 +340,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
         if address_obj.user_id != user.id:
             return trans.show_error_message( "Invalid address id." )
-        if params.get( 'edit_address_button', False  ):
+        if params.get( 'edit_address', False  ):
             short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
             name = util.restore_text( params.get( 'name', ''  ) )
             institution = util.restore_text( params.get( 'institution', ''  ) )
@@ -397,15 +416,21 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             'status': status
         }
     
-    @expose_api
-    def delete_address( self, trans, cntrller='user_preferences', address_id=None, **kwd ):
-        return self.__delete_undelete_address( trans, cntrller, 'delete', address_id=address_id, **kwd )
 
-    @expose_api
-    def undelete_address( self, trans, cntrller='user_preferences', address_id=None, **kwd ):
-        return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
+    def delete_address( self, trans, cntrller, kwd ):
+        """ Delete an address """
+        address_id = kwd.get( 'address_id', None )
+        return self.__delete_undelete_address( trans, cntrller, 'delete', address_id, kwd )
 
-    def __delete_undelete_address( self, trans, cntrller, op, address_id=None, **kwd ):
+
+    def undelete_address( self, trans, cntrller, kwd ):
+        """ Undelete an address """
+        address_id = kwd.get( 'address_id', None )
+        return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id, kwd )
+
+
+    def __delete_undelete_address( self, trans, cntrller, op, address_id, kwd ):
+        """ Delete or undelete an address based on parameter op """
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         user_id = kwd.get( 'id', False )
         if is_admin:
@@ -435,8 +460,9 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
 
         return self.user_info(cntrller, trans, kwd)
 
-    @expose_api
-    def new_address( self, trans, cntrller='user_preferences', **kwd ):
+
+    def new_address( self, trans, cntrller, kwd ):
+        """ Add new user address """
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )

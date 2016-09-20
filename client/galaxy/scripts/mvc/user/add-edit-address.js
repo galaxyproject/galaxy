@@ -46,23 +46,24 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             $el.append( self.addressform.$el );
         },
 
-        /** save the address */
+        /** Save the address */
         _saveAddress: function( self, app, options ) {
             var url = "",
                 data = {};
-            // save the address after edit
+            url = Galaxy.root + 'api/user_preferences/manage_user_info/';
+            // Save the address after edit
             if( options ) {
-                url = Galaxy.root + 'api/user_preferences/edit_address/';
                 data = self.addressform.data.create();
-                data.edit_address_button = true;
+                data.edit_address = true;
                 data.address_id = options.address_id;
+                data.call = 'edit_address';
             }
-            else { // saves new address
-                url = Galaxy.root + 'api/user_preferences/new_address/';
+            else { // Save new address
                 data = self.addressform.data.create();
+                data.call = 'add_address';
             }
             $.getJSON( url, data, function( response ) {
-                // show error in the same form
+                // Show error in the same form
                 if( response.status === 'error' ) {
                     self.addressform.message.update({
                         message : response.message,
@@ -70,7 +71,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     });
                 }
                 else {
-                    // if success, redirect to manage user information page
+                    // If api call succeeds, redirect to manage user information page
                     self.addressform.$el.remove();
                     app.callManageInfo( { message: response.message, status: response.status } );
                 }

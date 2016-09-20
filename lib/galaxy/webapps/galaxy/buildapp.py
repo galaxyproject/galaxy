@@ -82,11 +82,6 @@ def paste_app_factory( global_conf, **kwargs ):
 
     webapp.add_client_route( '/user_preferences' )
     webapp.add_client_route( '/user_preferences/manage_user_info' )
-    webapp.add_client_route( '/user_preferences/edit_info' )
-    webapp.add_client_route( '/user_preferences/edit_address' )
-    webapp.add_client_route( '/user_preferences/delete_address' )
-    webapp.add_client_route( '/user_preferences/undelete_address' )
-    webapp.add_client_route( '/user_preferences/new_address' )
     webapp.add_client_route( '/user_preferences/change_password' )
     webapp.add_client_route( '/user_preferences/set_default_permissions' )
     webapp.add_client_route( '/user_preferences/api_keys' )
@@ -481,36 +476,6 @@ def populate_api_routes( webapp, app ):
                            '/api/user_preferences/manage_user_info',
                            controller='user_preferences',
                            action='manage_user_info',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'edit_info',
-                           '/api/user_preferences/edit_info',
-                           controller='user_preferences',
-                           action='edit_info',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'edit_address',
-                           '/api/user_preferences/edit_address',
-                           controller='user_preferences',
-                           action='edit_address',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'delete_address',
-                           '/api/user_preferences/delete_address',
-                           controller='user_preferences',
-                           action='delete_address',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'undelete_address',
-                           '/api/user_preferences/undelete_address',
-                           controller='user_preferences',
-                           action='undelete_address',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'new_address',
-                           '/api/user_preferences/new_address',
-                           controller='user_preferences',
-                           action='new_address',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'change_password',
