@@ -65,7 +65,7 @@
                                name="${data.history_content_type}_ids" value="${data.hid}" checked="true" />
                         <label for="as-input-${ encoded_id }" >${_('Treat as input dataset')}</label>
                         <input type="text" id="as-named-input-${ encoded_id }" class="as-named-input"
-                               name="${data.history_content_type}_names" value="${data.display_name() | h}" checked="true" />
+                               name="${data.history_content_type}_names" value="${data.display_name() | h}" />
                     %endif
                 </div>
             </td>
