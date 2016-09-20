@@ -185,10 +185,10 @@ repository_details_template = _.template([
                             '</thead>',
                             '<tbody id="tools_in_repo">',
                                     '<\% _.each(tools[current_changeset], function(tool) { \%>',
-                                        '<tr id="libraryItem" class="tool_row" style="display: table-row;" style="width: 15%">',
+                                        '<tr id="libraryItem-<\%= tool.clean \%>" class="tool_row" style="display: table-row;" style="width: 15%">',
                                             '<td style="padding-left: 40px;">',
-                                                '<div id="tool" class="menubutton split popup" style="float: left;">',
-                                                    '<a class="view-info"><\%= tool.name \%></a>',
+                                                '<div id="tool-<\%= tool.clean \%>" class="menubutton split popup" style="float: left;">',
+                                                    '<a class="tool_form view-info" data-guid="<\%= tool.guid \%>"><\%= tool.name \%></a>',
                                                 '</div>',
                                             '</td>',
                                             '<td><\%= tool.description \%></td>',
@@ -500,6 +500,17 @@ function bind_repository_events() {
         prepare_installation(params, url);
     });
     check_if_installed(current_metadata);
+    $(document).on('click', '.tool_form', function() {
+        var guid = $(this).attr('data-guid');
+        var tool_shed_url = $('#repository_details').attr('data-shedurl');
+        var tsr_id = $('#repository_details').attr('data-tsrid');
+        var changeset = get_current_changeset();
+        var api_url = '${h.url_for(controller='/api/tool_shed_repositories', action='shed_tool_json')}';
+        var params = {'guid': guid, 'tool_shed_url': tool_shed_url, 'tsr_id': tsr_id, 'changeset': changeset};
+        $.get(api_url, params, function(data) {
+            console.log(data);
+        });
+    });
 }
 function bind_shed_events() {
     $('.category-selector').click(function() {
