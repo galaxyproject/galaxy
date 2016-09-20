@@ -196,6 +196,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     fade        : false
                 } ).$el );
             }
+            var step_version_changes = this.model.get( 'step_version_changes' );
+            if ( step_version_changes && step_version_changes.length > 0 ) {
+                this.$message.append( new Ui.Message( {
+                    message     : 'Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this Galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.',
+                    status      : 'warning',
+                    persistent  : true,
+                    fade        : false
+                } ).$el );
+            }
         },
 
         /** Render workflow parameters */

@@ -405,6 +405,7 @@ class WorkflowContentsManager(UsesAnnotations):
             'id'                    : trans.app.security.encode_id( stored.id ),
             'name'                  : stored.name,
             'steps'                 : step_models,
+            'step_version_changes'  : step_version_changes,
             'has_upgrade_messages'  : has_upgrade_messages
         }
 
