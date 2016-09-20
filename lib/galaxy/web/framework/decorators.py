@@ -46,13 +46,13 @@ def json( func, pretty=False ):
     @wraps(func)
     def call_and_format( self, trans, *args, **kwargs ):
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
-        js_callback_fn_name = kwargs.pop( JSONP_CALLBACK_KEY, None )
-        if js_callback_fn_name:
+        jsonp_callback = kwargs.pop( JSONP_CALLBACK_KEY, None )
+        if jsonp_callback:
             trans.response.set_content_type( JSONP_CONTENT_TYPE )
         else:
             trans.response.set_content_type( JSON_CONTENT_TYPE )
         rval = func( self, trans, *args, **kwargs )
-        return _format_return_as_json( rval, js_callback_fn_name, pretty=( pretty or trans.debug ) )
+        return _format_return_as_json( rval, jsonp_callback, pretty=( pretty or trans.debug ) )
 
     if not hasattr( func, '_orig' ):
         call_and_format._orig = func
@@ -124,8 +124,8 @@ def expose_api( func, to_json=True, user_required=True ):
                 return error
 
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
-        js_callback_fn_name = kwargs.pop( JSONP_CALLBACK_KEY, None )
-        if js_callback_fn_name:
+        jsonp_callback = kwargs.pop( JSONP_CALLBACK_KEY, None )
+        if jsonp_callback:
             trans.response.set_content_type( JSONP_CONTENT_TYPE )
         else:
             trans.response.set_content_type( JSON_CONTENT_TYPE )
@@ -153,7 +153,7 @@ def expose_api( func, to_json=True, user_required=True ):
         try:
             rval = func( self, trans, *args, **kwargs)
             if to_json:
-                rval = _format_return_as_json( rval, js_callback_fn_name, pretty=trans.debug )
+                rval = _format_return_as_json( rval, jsonp_callback, pretty=trans.debug )
             return rval
         except paste.httpexceptions.HTTPException:
             raise  # handled
@@ -249,8 +249,8 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
                 return __api_error_response( trans, status_code=400, err_code=error_code )
 
         # pull out any callback argument to the api endpoint and set the content type to json or javascript
-        js_callback_fn_name = kwargs.pop( JSONP_CALLBACK_KEY, None )
-        if js_callback_fn_name:
+        jsonp_callback = kwargs.pop( JSONP_CALLBACK_KEY, None )
+        if jsonp_callback:
             trans.response.set_content_type( JSONP_CONTENT_TYPE )
         else:
             trans.response.set_content_type( JSON_CONTENT_TYPE )
@@ -280,7 +280,7 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
         try:
             rval = func( self, trans, *args, **kwargs )
             if to_json:
-                rval = _format_return_as_json( rval, js_callback_fn_name, pretty=trans.debug )
+                rval = _format_return_as_json( rval, jsonp_callback, pretty=trans.debug )
             return rval
         except MessageException as e:
             traceback_string = format_exc()
@@ -306,16 +306,16 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
     return decorator
 
 
-def _format_return_as_json( rval, js_callback_fn_name=None, pretty=False ):
+def _format_return_as_json( rval, jsonp_callback=None, pretty=False ):
     """
-    Formats a return value as JSON or JSONP if `js_callback_fn_name` is present.
+    Formats a return value as JSON or JSONP if `jsonp_callback` is present.
 
     Use `pretty=True` to return pretty printed json.
     """
     dumps_kwargs = dict( indent=4, sort_keys=True ) if pretty else {}
     json = safe_dumps( rval, **dumps_kwargs )
-    if js_callback_fn_name:
-        json = "{}({});".format( js_callback_fn_name, json )
+    if jsonp_callback:
+        json = "{}({});".format( jsonp_callback, json )
     return json
 
 
