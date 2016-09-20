@@ -14,7 +14,6 @@ from galaxy import util
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.workflow import modules
-from galaxy.managers import histories
 from .base import decode_id
 
 # For WorkflowContentManager
