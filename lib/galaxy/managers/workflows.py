@@ -341,16 +341,15 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def _workflow_to_dict_run( self, trans, stored ):
         """
-        Builds workflow model for run workflow form
+        Builds workflow dictionary used by run workflow form
         """
         workflow = stored.latest_workflow
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector( trans )
-        # prepare each step
-        errors = {}
         has_upgrade_messages = False
         step_version_changes = []
         missing_tools = []
+        errors = {}
         for step in workflow.steps:
             try:
                 module_injector.inject( step, steps=workflow.steps )
