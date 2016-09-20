@@ -379,7 +379,6 @@ tps_selection_template = _.template([
         '<div class="toolFormBody">',
             '<div class="tab-pane" id="select_tps">',
                 '<select name="<\%= name \%>" id="<\%= tps.id \%>">',
-                '<\% console.log(tps.sections) \%>',
                     '<\%= tps_select_options({sections: tps.sections}) \%>',
                 '</select>',
                 '<input class="btn btn-primary" type="button" id="create_new" value="Create new" />',
@@ -769,7 +768,6 @@ function load_repository(shed_url, tsr_id) {
     load_repository_contents(tsr_id, shed_url, api_url, params);
 }
 function load_repository_contents(tsr_id, shed_url, api_url, params) {
-    console.log('woop');
     $.get(api_url, params, function(data) {
         var changesets = Object.keys(data.repository.metadata);
         data.tool_shed_url = shed_url;
@@ -808,6 +806,16 @@ function load_toolshed(shed_url) {
         window.location.hash = 'tab=list_categories&tool_shed_url=' + shed_url;
     });
 }
+function load_toolshed_list(tool_sheds) {
+    $('#list_toolsheds').replaceWith(tool_sheds_template({tool_sheds: tool_sheds}));
+    $('.shed-selector').click(function() {
+        $('#list_categories').replaceWith('<div id="list_categories" class="nav-tab"><img src="/static/images/jstree/throbber.gif" alt="Loading categories..." /></div>');
+        shed_url = $(this).attr('data-shedurl');
+        $('#tab_contents').attr('data-shedurl', shed_url);
+        load_toolshed(shed_url);
+        window.location.hash = 'tab=list_categories&tool_shed_url=' + shed_url;
+    });
+}
 function parse_shed_response(data) {
     var results = [];
     var hits = data.hits;
@@ -815,7 +823,6 @@ function parse_shed_response(data) {
         var record = hits[hit];
         var label = record.repository.name + ' by ' + record.repository.repo_owner_username + ': ' + record.repository.description;
         result = {value: record.repository.id, label: label};
-        console.log(record);
         results.push(result);
     });
     return results;
@@ -932,7 +939,6 @@ function show_global_tps_select() {
     $('#create_new').click(show_global_tps_create);
 }
 function show_global_tps_create() {
-    console.log('GTPS');
     $('#tool_panel_section').replaceWith(tps_creation_template(repository_data));
     $('#select_existing').click(show_global_tps_select);
 }
@@ -1009,17 +1015,15 @@ function tool_panel_section() {
 $(document).ready(function() {
     var urlhash = String(window.location.hash);
     urlhash = urlhash.replace(/^#/, '');
-    console.log({'hash': urlhash});
     var page_params = {};
     if (urlhash.length > 0) {
         var parts = urlhash.split('&');
-        console.log(parts);
         for (var i = 0; i < parts.length; i++) {
             var kv = parts[i].split('=');
             page_params[kv[0]] = kv[1];
         }
     }
-    console.log(page_params);
+    load_toolshed_list(tool_sheds);
     if (page_params.tab == 'list_categories') {
         load_toolshed(page_params.tool_shed_url);
         $('#tab_contents').attr('data-shedurl', page_params.tool_shed_url);
@@ -1035,17 +1039,8 @@ $(document).ready(function() {
         $('#tab_contents').attr('data-shedurl', page_params.tool_shed_url);
         return;
     }
-    console.log({'hash': urlhash});
-    $('#list_toolsheds').replaceWith(tool_sheds_template({tool_sheds: tool_sheds}));
     $('#shed_list_tab').click();
     check_queue();
-    $('.shed-selector').click(function() {
-        $('#list_categories').replaceWith('<div id="list_categories" class="nav-tab"><img src="/static/images/jstree/throbber.gif" alt="Loading categories..." /></div>');
-        shed_url = $(this).attr('data-shedurl');
-        $('#tab_contents').attr('data-shedurl', shed_url);
-        load_toolshed(shed_url);
-        window.location.hash = 'tab=list_categories&tool_shed_url=' + shed_url;
-    });
     $('#repository_installation_queue').click(bind_wf_button);
 });
 </script>
