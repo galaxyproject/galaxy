@@ -19,12 +19,10 @@ from .base import decode_id
 # For WorkflowContentManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector
+from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector, MissingToolException
 from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter, workflow_building_modes
-from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters import params_to_incoming
+from galaxy.tools.parameters import visit_input_values, params_to_incoming
 from galaxy.jobs.actions.post import ActionBox
-from galaxy.workflow.modules import MissingToolException
 from galaxy.web import url_for
 
 log = logging.getLogger( __name__ )
