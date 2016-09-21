@@ -9,7 +9,7 @@
 
             function validateString(test_string, type) {
                 var mail_re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-                var username_re = /^[a-z0-9\-]{3,255}$/;
+                var username_re = /^[a-z0-9._\-]{3,255}$/;
                 if (type === 'email') {
                     return mail_re.test(test_string);
                 } else if (type === 'username'){
@@ -45,9 +45,9 @@
             original_username = $( '#name_input' ).val();
 
             $( '#login_info' ).bind( 'submit', function( e ) {
-                var error_text_email= 'Please enter your valid email address.';
-                var error_text_email_long= 'Email cannot be more than 255 characters in length.';
-                var error_text_username_characters = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.';
+                var error_text_email = 'The format of the email address is not correct.';
+                var error_text_email_long = 'Email address cannot be more than 255 characters in length.';
+                var error_text_username_characters = "Public name must contain only lowercase letters, numbers, '.', '_' and '-'. It also must be between 3 and 255 characters in length.";
                 var email = $( '#email_input' ).val();
                 var name = $( '#name_input' ).val();
                 var validForm = true;
