@@ -153,15 +153,15 @@ def inherit(context):
                 %if t.webapp.name == 'galaxy':
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name is an identifier that will be used to generate addresses for information
-                        you share publicly. Public names must be at least three characters in length and contain only lower-case
-                        letters, numbers, and the '-' character.
+                        you share publicly. Public names must be at least three characters in length and contain only
+                        lower-case letters, numbers, dots, underscores, and dashes ('.', '_', '-').
                     </div>
                 %else:
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name provides a means of identifying you publicly within this tool shed. Public
                         names must be at least three characters in length and contain only lower-case letters, numbers,
-                        and the '-' character.  You cannot change your public name after you have created a repository
-                        in this tool shed.
+                        dots, underscores, and dashes ('.', '_', '-'). You cannot change your public name after you have
+                        created a repository in this Tool Shed.
                     </div>
                 %endif
             </div>

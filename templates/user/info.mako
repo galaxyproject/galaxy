@@ -102,15 +102,15 @@
                         <input type="hidden" id="name_input" name="username" value="${username | h}"/>
                         ${username | h}
                         <div class="toolParamHelp" style="clear: both;">
-                            You cannot change your public name after you have created a repository in this tool shed.
+                            You cannot change your public name after you have created a repository in this Tool Shed.
                         </div>
                     %else:
                         <input type="text" id="name_input" name="username" size="40" value="${username | h}"/>
                         <div class="toolParamHelp" style="clear: both;">
-                            Your public name provides a means of identifying you publicly within this tool shed. Public
+                            Your public name provides a means of identifying you publicly within this Tool Shed. Public
                             names must be at least three characters in length and contain only lower-case letters, numbers,
-                            and the '-' character.  You cannot change your public name after you have created a repository
-                            in this tool shed.
+                            dots, underscores, and dashes ('.', '_', '-').  You cannot change your public name after you have created a repository
+                            in this Tool Shed.
                         </div>
                     %endif
                 %else:
@@ -118,7 +118,7 @@
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name is an identifier that will be used to generate addresses for information
                         you share publicly. Public names must be at least three characters in length and contain only lower-case
-                        letters, numbers, and the '-' character.
+                        letters, numbers, dots, underscores, and dashes ('.', '_', '-').
                     </div>
                 %endif
             </div>
