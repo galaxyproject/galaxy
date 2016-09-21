@@ -1,4 +1,3 @@
-import binascii
 import bz2
 import gzip
 import imghdr
@@ -95,7 +94,7 @@ def check_gzip( file_path ):
     # for sff format.
     try:
         header = gzip.open( file_path ).read(4)
-        if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
+        if header == b'.sff':
             return ( True, True )
     except:
         return( False, False )
