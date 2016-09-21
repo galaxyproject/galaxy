@@ -67,7 +67,8 @@ class Mobile( BaseUIController ):
         #         kwd['email'] = autoreg[1]
         #         kwd['username'] = autoreg[2]
         #         params = util.Params( kwd )
-        #         message = validate_email( trans, kwd['email'] )
+        #         message = " ".join( [ validate_email( trans, kwd['email'] ),
+        #                               validate_publicname( trans, kwd['username'] ) ] ).rstrip()
         #         if not message:
         #             message, status, user, success = self.__register( trans, 'user', False, **kwd )
         #             if success:
