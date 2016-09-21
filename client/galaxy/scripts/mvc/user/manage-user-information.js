@@ -30,14 +30,23 @@ function( Form, Ui, Address ) {
                         title   : 'Save',
                         cls     : 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick : function() { self._saveEmailName( options, self ) }
+                        onclick : function() { self._saveEmailName( options, self, 'login_info' ) }
                     })
                 }
             });
             $el.append( this.loginform.$el );
+
+            // check if user information form needs to be built
+            if( options['values'] || options['user_info_forms'].length > 0 ) {
+                this.userinfoform = this._buildUserInfoForm( self, options, app, $el );
+                $el.append( self.userinfoform.$el );
+            }
+
             // Address display form
             this.addressform = self._buildAddressForm( self, options, app, $el );
             $el.append( self.addressform.$el );
+            // apply address filter
+            self._applyFilter( options['active_filter'], self );
             // Show message if an address is added or updated
             if( address_message ) {
                 self.addressform.message.update({
@@ -45,6 +54,23 @@ function( Form, Ui, Address ) {
                     status  : address_message.status === 'error' ? 'danger' : 'success',
                 });
             }
+        },
+
+        /* Build User Information Form */
+        _buildUserInfoForm: function( self, options, app, $el ) {
+            return new Form({
+                title   : 'User Information',
+                inputs  : options['user_info_form'],
+                buttons : {
+                    'save'  : new Ui.Button({
+                        tooltip : 'Save',
+                        title   : 'Save',
+                        cls     : 'ui-button btn btn-primary',
+                        floating: 'clear',
+                        onclick : function() { self._saveEmailName( options, self, 'edit_user_info' ) }
+                    })
+                }
+            });
         },
 
         /** Build form for user addresses */
@@ -65,6 +91,10 @@ function( Form, Ui, Address ) {
                     })
                 },
                 onchange: function() {
+                    var active_filter = self.addressform.data.create()["active_filter"];
+                    if( options['active_filter'] !== active_filter ) {
+                        self._applyAddressFilter( app, $el, self );
+                    }
                     self._addressOperations( app, $el, self );
                 }
             });
@@ -76,16 +106,18 @@ function( Form, Ui, Address ) {
                 operation_type = "",
                 id = "",
                 eachitem = null;
-            // Find the first non-null item
             for( var item in changed_collection ) {
-                eachitem = changed_collection[item];
+                eachitem = changed_collection[ item ];
                 if( eachitem !== null ) {
-                    operation_type = eachitem.split("_")[0],
-                    address_id = eachitem.split("_")[1];
-                    break;
+                    if( eachitem.indexOf('_') > 0 ) {
+                        var split_item = eachitem.split("_");
+                        operation_type = split_item[0],
+                        address_id = split_item[1];
+                        break;
+                    }
                 }
             }
-            // Apply the right operation using the address id
+            // apply the right operation using the address id
             switch ( operation_type ) {
                 case 'edit':
                     self._editAddress( self, $el, app, address_id );
@@ -97,20 +129,25 @@ function( Form, Ui, Address ) {
                     self._undeleteAddress( self, $el, app, address_id );
                     break;
             }
-        },        
+        },
 
         /** Apply address filter */
         _applyAddressFilter: function( app, $el, self ) {
             var field = null,
                 active_filter = "";
-            active_filter = self.addressform.data.create()["address_filters"];
+            active_filter = self.addressform.data.create()["active_filter"];
             // Fetch the addresses based on the selected filter
             $.getJSON( Galaxy.root + 'api/user_preferences/manage_user_info/', { 'show_filter': active_filter }, function( response ) {
                 self._updateAddressForm( app, $el, self, response );
-                // Get and set the active filter's value
-                field = self.addressform.field_list[ self.addressform.data.match( 'address_filters' ) ];
-                field.value( active_filter );
+                // Get the filter and set the active filter's value
+                self._applyFilter( active_filter, self );
             });
+        },
+
+        /** Set filter value */
+        _applyFilter: function( active_filter, self ) {
+            var field = self.addressform.field_list[ self.addressform.data.match( 'active_filter' ) ];
+            field.value( active_filter );
         },
 
         /** Update address form with new data */
@@ -126,6 +163,8 @@ function( Form, Ui, Address ) {
             self.addressform.$el.remove();
             $.getJSON( Galaxy.root + 'api/user_preferences/manage_user_info/', {'address_id': address_id, 'call': 'edit_address' }, function( response ) {
                  address = new Address.AddEditAddress( $el, app, response );
+                 // set default filter
+                 self._applyFilter( "All", self );
             });
         },
 
@@ -138,6 +177,8 @@ function( Form, Ui, Address ) {
                     message : response.message,
                     status  : response.status === 'error' ? 'danger' : 'success',
                 });
+                // set default filter
+                self._applyFilter( "All", self );
             });
         },
 
@@ -149,6 +190,8 @@ function( Form, Ui, Address ) {
                     message : response.message,
                     status  : response.status === 'error' ? 'danger' : 'success',
                 });
+                // set default filter
+                self._applyFilter( "All", self );
             });
         },
 
@@ -181,7 +224,7 @@ function( Form, Ui, Address ) {
         },
 
         /** Save login information */
-        _saveEmailName: function( data, self ) {
+        _saveEmailName: function( data, self, save_type ) {
             var url = Galaxy.root +  'api/user_preferences/manage_user_info',
                 data = {}, 
                 error_text_email= 'Please enter your valid email address.',
@@ -216,7 +259,11 @@ function( Form, Ui, Address ) {
             }
             // If values are changed and the form is valid
             if ( !nothing_changed && validForm ) {
-                data = { 'email': email, 'username': name, 'save_type': 'login_info', 'call': 'edit_info' };
+                data = { 'email': email, 'username': name, 'save_type': save_type, 'call': 'edit_info' };
+                // add an attribute to save user information form
+                if( save_type === 'edit_user_info' ) {
+                    data.user_type_fd_id = self.userinfoform.data.create()['user_type_fd_id'];
+                }
                 $.getJSON( url, data, function( response ) {
                     // renders the user info again with the messages and updated data
                     self.original_email = email;
@@ -227,12 +274,7 @@ function( Form, Ui, Address ) {
                     });
                 }, 'json');
             }
-        },
-
-        _saveUserType: function() {
-            //console.log("user type");
         }
-     
     });
 
     return {

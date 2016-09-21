@@ -119,28 +119,32 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
             user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
             widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
-            # user's addresses
+            # user's addresses filter
             show_filter = util.restore_text( kwd.get( 'show_filter', 'All' ) )
-            '''if show_filter == 'All':
+            if show_filter == 'All':
                 addresses = [address for address in user.addresses]
             elif show_filter == 'Deleted':
                 addresses = [address for address in user.addresses if address.deleted]
             else:
-                addresses = [address for address in user.addresses if not address.deleted]'''
-            # show all addresses
-            addresses = [address for address in user.addresses]
+                addresses = [address for address in user.addresses if not address.deleted]
             user_info_forms = self.get_all_forms( trans,
                                                   filter=dict( deleted=False ),
                                                   form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            # makes the address list JSON iterable
             address_list = dict()
+            filter_list = list()
             user_address_list = list()
-            index_add = 0
+            user_info_form = list()
+            # build filter options
+            filter_list.append( dict( label='All', value='All' ) )
+            filter_list.append( dict( label='Active', value='Active' ) )
+            filter_list.append( dict( label='Deleted', value='Deleted' ) )
+            # build filter
+            user_address_list.append( dict( name='active_filter', type='select', label='Filter', optional=True, data=filter_list, display='radiobutton' ) )      
 
+            # build address list inputs
             for item in addresses:
                 address_data = list()
                 address_id = trans.security.encode_id( item.id )
-                # build address list inputs
                 user_address_list.append( dict( id=address_id, title='', type='hidden', help=( item.desc + ': <br>' + item.get_html() ) ) )
                 if ( item.deleted ):
                     address_data.append( dict( label='Undelete', value=( 'undelete_' + address_id ) ) )
@@ -150,17 +154,16 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                     address_data.append( dict( label='Delete', value=( 'delete_' + address_id ) ) )
                     user_address_list.append( dict( name=( 'edit_delete_buttons_' + address_id ), label='Actions', type='select', optional=True, display='radio', data=address_data ) )
                 user_address_list.append( dict( id='horizontal_line', title='', type='hidden', help='<hr class="docutils">' ) )
-                index_add = index_add + 1
 
-            # makes the widget list JSON iterable
-            widget_list = dict()
-            index_widget = 0
-            for item in widgets:
-                widget_list[index_widget] = dict()
-                widget_list[index_widget]["label"] = item['label']
-                widget_list[index_widget]["html"] = item['widget'].get_html()
-                widget_list[index_widget]["helptext"] = item['helptext']
-                index_widget = index_widget + 1
+            # build user info list
+            if( user.values or user_info_forms ):
+                if( user_type_fd_id_select_field.options ):
+                    user_info_forms.append( dict( name='usertype', label='User type:', type='hidden', help=user_type_fd_id_select_field.get_html() ) )
+                else:
+                    user_info_forms.append( dict( name='user_type_fd_id', type='hidden', value=trans.security.encode_id( user_type_fd_id ) ) )
+                # build widgets inputs
+                for item in widgets:
+                    user_info_forms.append( dict( name=item['label'], label=item['label'], type='hidden', help=item['widget'].get_html(), helptext=item['helptext'] ) )
 
             # build username input
             user_login_form.append( dict( id='name_input', name='username', type='text', label='Public name:', value=username, size='40', help='Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' ) )
@@ -178,12 +181,13 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                     'user_type_form_definition': user_type_form_definition,
                     'user_type_fd_id': user_type_fd_id,
                     'user_type_fd_id_encoded': trans.security.encode_id( user_type_fd_id ),
-                    'widgets': widget_list,
                     'show_filter': show_filter,
                     'message': message,
                     'status': status,
                     'user_login_form': user_login_form,
-                    'user_address_list': user_address_list
+                    'user_address_list': user_address_list,
+                    'user_info_form': user_info_form,
+                    'active_filter': show_filter
                    }
         else:
             if( user.active_repositories ):
@@ -316,7 +320,6 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             kwd[ 'message' ] = util.sanitize_text( message )
         if status:
             kwd[ 'status' ] = status
-        print(kwd)
         # Return all data for user information page
         return self.user_info(cntrller, trans, kwd)
 
