@@ -530,7 +530,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if autoreg[0]:
                 kwd['email'] = autoreg[1]
                 kwd['username'] = autoreg[2]
-                message = validate_email( trans, kwd['email'] )  # self.__validate( trans, params, email, password, password, username )
+                message = " ".join( [ validate_email( trans, kwd['email'] ),
+                                      validate_publicname( trans, kwd['username'] ) ] ).rstrip()
                 if not message:
                     message, status, user, success = self.__register( trans, 'user', False, **kwd )
                     if success:

@@ -993,7 +993,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     myexperiment_target_url=myexperiment_target_url )
 
     @web.expose
-    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
+    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):
         user = trans.get_user()
         history = trans.get_history()
         if not user:
@@ -1014,7 +1014,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 job_ids=job_ids,
                 dataset_ids=dataset_ids,
                 dataset_collection_ids=dataset_collection_ids,
-                workflow_name=workflow_name
+                workflow_name=workflow_name,
+                dataset_names=dataset_names,
+                dataset_collection_names=dataset_collection_names
             )
             # Index page with message
             workflow_id = trans.security.encode_id( stored_workflow.id )
