@@ -439,7 +439,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Append new dom to body */
         _append: function( $container, $el ) {
-            $container.append( '<p/>' ).addClass( 'ui-margin-top' ).append( $el );
+            $container.append( '<p/>' ).append( $el );
         },
 
         /** Set enabled/disabled state */
