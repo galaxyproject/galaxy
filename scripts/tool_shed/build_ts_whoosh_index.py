@@ -25,6 +25,7 @@ import galaxy.webapps.tool_shed.model.mapping
 from galaxy.tools.loader_directory import load_tool_elements_from_path
 from galaxy.util import pretty_print_time_interval
 from galaxy.webapps.tool_shed import config, model
+from galaxy.util import directory_hash_id
 
 repo_schema = Schema(
     id=STORED,
@@ -152,7 +153,7 @@ def get_repos( sa_session, path_to_repositories ):
 
         #  Parse all the tools within repo for separate index.
         tools_list = []
-        path = os.path.join( path_to_repositories, *model.directory_hash_id( repo.id ))
+        path = os.path.join( path_to_repositories, *directory_hash_id( repo.id ) )
         path = os.path.join( path, "repo_%d" % repo.id )
         if os.path.exists(path):
             tools_list.extend( load_one_dir( path ) )
