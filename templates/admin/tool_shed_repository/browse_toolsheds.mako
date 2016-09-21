@@ -188,7 +188,7 @@ repository_details_template = _.template([
                                         '<tr id="libraryItem-<\%= tool.clean \%>" class="tool_row" style="display: table-row;" style="width: 15%">',
                                             '<td style="padding-left: 40px;">',
                                                 '<div id="tool-<\%= tool.clean \%>" class="menubutton split popup" style="float: left;">',
-                                                    '<a class="tool_form view-info" data-guid="<\%= tool.guid \%>"><\%= tool.name \%></a>',
+                                                    '<a class="tool_form view-info" data-toggle="modal" data-target="toolform_<\%= tool.clean \%>" data-clean="<\%= tool.clean \%>" data-guid="<\%= tool.guid \%>" data-name="<\%= tool.name \%>" data-desc="<\%= tool.description \%>"><\%= tool.name \%></a>',
                                                 '</div>',
                                             '</td>',
                                             '<td><\%= tool.description \%></td>',
@@ -502,6 +502,9 @@ function bind_repository_events() {
     check_if_installed(current_metadata);
     $(document).on('click', '.tool_form', function() {
         var guid = $(this).attr('data-guid');
+        var clean = $(this).attr('data-clean');
+        var name = $(this).attr('data-name');
+        var desc = $(this).attr('data-desc');
         var tool_shed_url = $('#repository_details').attr('data-shedurl');
         var tsr_id = $('#repository_details').attr('data-tsrid');
         var changeset = get_current_changeset();
@@ -509,6 +512,15 @@ function bind_repository_events() {
         var params = {'guid': guid, 'tool_shed_url': tool_shed_url, 'tsr_id': tsr_id, 'changeset': changeset};
         $.get(api_url, params, function(data) {
             console.log(data);
+            require(["mvc/ui/ui-modal", "mvc/form/form-view"], function (Modal, FormView) {
+                $(function() {
+                    var toolform = new FormView(data);
+                    // var html = '<div id="toolmodal_' + clean + '>' + toolform.render() + '</div>';
+                    var modal = new Modal.View();
+                    modal.show({'title': '<u>' + name + '</u> ' + desc, 'body': toolform.$el, 'buttons': { 'Close': function() { modal.hide(); }}});
+
+                });
+            });
         });
     });
 }
