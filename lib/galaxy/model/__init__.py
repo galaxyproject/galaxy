@@ -37,8 +37,9 @@ from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
-                                     PasswordField, SelectField, TextArea, TextField, WorkflowField,
-                                     WorkflowMappingField)
+                                     PasswordField, SelectField, TextArea,
+                                     TextField,
+                                     WorkflowField, WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
@@ -4257,6 +4258,8 @@ class FormDefinition( object, Dictifiable ):
                     value = field.get( 'default', '' )
             # Create the field widget
             field_widget = eval( field_type )( field_name )
+            if 'template' in field and field['template']:
+                field_widget.template = field['template']
             if field_type in [ 'TextField', 'PasswordField' ]:
                 field_widget.set_size( 40 )
                 field_widget.value = value

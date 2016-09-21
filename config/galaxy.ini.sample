@@ -958,6 +958,9 @@ use_interactive = True
 # Enable new run workflow form
 #run_workflow_toolform_upgrade = True
 
+# Enable custom templates with Web Components, PR #2751
+allow_web_components = False
+
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 

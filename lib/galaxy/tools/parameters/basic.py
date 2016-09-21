@@ -70,6 +70,7 @@ class ToolParameter( object, Dictifiable ):
             self.sanitizer = ToolParameterSanitizer.from_element( sanitizer_elem )
         else:
             self.sanitizer = None
+        self.template = input_source.get('template', None)
         try:
             # These don't do anything right? These we should
             # delete these two lines and eliminate checks for
@@ -194,6 +195,8 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
         tool_dict[ 'is_dynamic' ] = self.is_dynamic
+        if trans.app.config.get_bool('allow_web_components', False) and hasattr( self, 'template' ):
+            tool_dict['template'] = self.template
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
