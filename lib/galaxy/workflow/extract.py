@@ -25,8 +25,8 @@ log = logging.getLogger( __name__ )
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
-def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
-    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids, dataset_collection_ids=dataset_collection_ids )
+def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):
+    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids, dataset_collection_ids=dataset_collection_ids, dataset_names=dataset_names, dataset_collection_names=None )
     # Workflow to populate
     workflow = model.Workflow()
     workflow.name = workflow_name
@@ -52,7 +52,7 @@ def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None,
     return stored
 
 
-def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None ):
+def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, dataset_names=None, dataset_collection_names=None ):
     # Ensure job_ids and dataset_ids are lists (possibly empty)
     if job_ids is None:
         job_ids = []
@@ -79,19 +79,27 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     steps_by_job_id = {}
     hid_to_output_pair = {}
     # Input dataset steps
-    for hid in dataset_ids:
+    for i, hid in enumerate( dataset_ids ):
         step = model.WorkflowStep()
         step.type = 'data_input'
-        step.tool_inputs = dict( name="Input Dataset" )
+        if dataset_names:
+            name = dataset_names[i]
+        else:
+            name = "Input Dataset"
+        step.tool_inputs = dict( name=name )
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
-    for hid in dataset_collection_ids:
+    for i, hid in enumerate( dataset_collection_ids ):
         step = model.WorkflowStep()
         step.type = 'data_collection_input'
         if hid not in summary.collection_types:
             raise exceptions.RequestParameterInvalidException( "hid %s does not appear to be a collection" % hid )
         collection_type = summary.collection_types[ hid ]
-        step.tool_inputs = dict( name="Input Dataset Collection", collection_type=collection_type )
+        if dataset_collection_names:
+            name = dataset_collection_names[i]
+        else:
+            name = "Input Dataset Collection"
+        step.tool_inputs = dict( name=name, collection_type=collection_type )
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
     # Tool steps
