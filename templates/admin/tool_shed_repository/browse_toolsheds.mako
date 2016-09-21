@@ -7,6 +7,9 @@
     ${parent.stylesheets()}
     ${h.css( "dynatree_skin/ui.dynatree" )}
 <style type="text/css">
+.modal-dialog {
+    width: 70%;
+}
 div.expandLink {
     float: left;
     padding-left: 2px;
@@ -514,6 +517,7 @@ function bind_repository_events() {
             console.log(data);
             require(["mvc/ui/ui-modal", "mvc/form/form-view"], function (Modal, FormView) {
                 $(function() {
+                    data.cls = 'ui-portlet-plain';
                     var toolform = new FormView(data);
                     // var html = '<div id="toolmodal_' + clean + '>' + toolform.render() + '</div>';
                     var modal = new Modal.View();
