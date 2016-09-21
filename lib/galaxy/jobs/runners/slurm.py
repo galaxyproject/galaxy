@@ -33,6 +33,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             if p.returncode != 0:
+                stderr = stderr.strip()
                 if stderr == 'SLURM accounting storage is disabled':
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
