@@ -163,7 +163,7 @@ class ToolsController( BaseAPIController ):
                                                                           found_tool.tool_config )
         if message:
             status = 'error'
-        tool_state = tool_util.new_state( trans, tool, invalid=False )
+            return dict( message=message, status=status )
         tool_help = ''
         if tool.help:
             tool_help = tool.help.render( static_path=web.url_for( '/static' ), host_url=web.url_for( '/', qualified=True ) )
