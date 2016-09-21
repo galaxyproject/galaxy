@@ -12,12 +12,11 @@ import tempfile
 import zipfile
 
 import pysam
-
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
-from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
-from galaxy.util import nice_size, sqlite, which, FILENAME_VALID_CHARS
+from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
+from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from . import data, dataproviders
 
 
@@ -115,8 +114,8 @@ class Idat( Binary ):
 
     def sniff( self, filename ):
         try:
-            header = open( filename ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'IDAT' ):
+            header = open( filename, 'rb' ).read(4)
+            if header == b'IDAT':
                 return True
             return False
         except:
@@ -398,7 +397,7 @@ class Bam( Binary ):
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
             header = gzip.open( filename ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'BAM\1' ):
+            if header == b'BAM\1':
                 return True
             return False
         except:
@@ -523,9 +522,9 @@ class CRAM( Binary ):
 
     def get_cram_version( self, filename):
         try:
-            with open( filename, "r") as fh:
+            with open( filename, "rb") as fh:
                 header = fh.read(6)
-                return ord( header[4] ), ord( header[5] )
+            return ord( header[4] ), ord( header[5] )
         except Exception as exc:
             log.warning( '%s, get_cram_version Exception: %s', self, exc )
             return -1, -1
@@ -564,8 +563,8 @@ class CRAM( Binary ):
 
     def sniff( self, filename ):
         try:
-            header = open( filename ).read(4)
-            if header[0:4] == "CRAM":
+            header = open( filename, 'rb' ).read(4)
+            if header == b"CRAM":
                 return True
             return False
         except:
@@ -587,7 +586,7 @@ class Bcf( Binary):
         # The first 3 bytes of any bcf file is 'BCF', and the file is binary.
         try:
             header = gzip.open( filename ).read(3)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'BCF' ):
+            if header == b'BCF':
                 return True
             return False
         except:
@@ -646,7 +645,7 @@ class H5( Binary ):
     def sniff( self, filename ):
         # The first 8 bytes of any hdf5 file are 0x894844460d0a1a0a
         try:
-            header = open( filename ).read(8)
+            header = open( filename, 'rb' ).read(8)
             if header == self._magic:
                 return True
             return False
@@ -703,8 +702,8 @@ class Sff( Binary ):
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
         try:
-            header = open( filename ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
+            header = open( filename, 'rb' ).read(4)
+            if header == b'.sff':
                 return True
             return False
         except:
@@ -748,7 +747,7 @@ class BigWig(Binary):
 
     def sniff( self, filename ):
         try:
-            magic = self._unpack( "I", open( filename ) )
+            magic = self._unpack( "I", open( filename, 'rb' ) )
             return magic[0] == self._magic
         except:
             return False
@@ -795,8 +794,8 @@ class TwoBit (Binary):
             # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
             if os.path.getsize(filename) < 16:
                 return False
-            input = open(filename)
-            magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
+            header = open(filename, 'rb').read(TWOBIT_MAGIC_SIZE)
+            magic = struct.unpack(">L", header)[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
                 return True
         except IOError:
@@ -864,8 +863,8 @@ class SQlite ( Binary ):
         # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
         # about the format, see http://www.sqlite.org/fileformat.html
         try:
-            header = open(filename).read(16)
-            if binascii.b2a_hex(header) == binascii.hexlify('SQLite format 3\0'):
+            header = open(filename, 'rb').read(16)
+            if header == b'SQLite format 3\0':
                 return True
             return False
         except:
@@ -1074,8 +1073,8 @@ class Sra( Binary ):
         For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
         """
         try:
-            header = open(filename).read(8)
-            if binascii.b2a_hex(header) == binascii.hexlify('NCBI.sra'):
+            header = open(filename, 'rb').read(8)
+            if header == b'NCBI.sra':
                 return True
             else:
                 return False
@@ -1104,14 +1103,14 @@ class RData( Binary ):
     file_ext = 'RData'
 
     def sniff( self, filename ):
-        rdata_header = binascii.hexlify('RDX2\nX\n')
+        rdata_header = b'RDX2\nX\n'
         try:
-            header = open(filename).read(7)
-            if binascii.b2a_hex(header) == rdata_header:
+            header = open(filename, 'rb').read(7)
+            if header == rdata_header:
                 return True
 
             header = gzip.open( filename ).read(7)
-            if binascii.b2a_hex(header) == rdata_header:
+            if header == rdata_header:
                 return True
         except:
             return False
@@ -1124,12 +1123,12 @@ class OxliBinary(Binary):
     @staticmethod
     def _sniff(filename, oxlitype):
         try:
-            with open(filename) as fileobj:
+            with open(filename, 'rb') as fileobj:
                 header = fileobj.read(4)
-                if binascii.b2a_hex(header) == binascii.hexlify('OXLI'):
+                if header == b'OXLI':
                     fileobj.read(1)  # skip the version number
                     ftype = fileobj.read(1)
-                    if binascii.b2a_hex(ftype) == oxlitype:
+                    if binascii.hexlify(ftype) == oxlitype:
                         return True
             return False
         except IOError:
@@ -1154,7 +1153,7 @@ class OxliCountGraph(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "01")
+        return OxliBinary._sniff(filename, b"01")
 
 Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
                                         OxliCountGraph)
@@ -1178,7 +1177,7 @@ class OxliNodeGraph(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "02")
+        return OxliBinary._sniff(filename, b"02")
 
 Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling",
                                         OxliNodeGraph)
@@ -1203,7 +1202,7 @@ class OxliTagSet(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "03")
+        return OxliBinary._sniff(filename, b"03")
 
 Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
 
@@ -1224,7 +1223,7 @@ class OxliStopTags(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "04")
+        return OxliBinary._sniff(filename, b"04")
 
 Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist",
                                         OxliStopTags)
@@ -1249,7 +1248,7 @@ class OxliSubset(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "05")
+        return OxliBinary._sniff(filename, b"05")
 
 Binary.register_sniffable_binary_format("oxli.subset", "oxliss", OxliSubset)
 
@@ -1273,7 +1272,7 @@ class OxliGraphLabels(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "06")
+        return OxliBinary._sniff(filename, b"06")
 
 Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
@@ -1354,9 +1353,9 @@ class NetCDF( Binary ):
 
     def sniff( self, filename ):
         try:
-            with open( filename, 'r' ) as f:
+            with open( filename, 'rb' ) as f:
                 header = f.read(3)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'CDF' ):
+            if header == b'CDF':
                 return True
             return False
         except:
