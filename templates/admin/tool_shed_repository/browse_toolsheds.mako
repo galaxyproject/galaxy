@@ -515,13 +515,21 @@ function bind_repository_events() {
         var params = {'guid': guid, 'tool_shed_url': tool_shed_url, 'tsr_id': tsr_id, 'changeset': changeset};
         $.get(api_url, params, function(data) {
             console.log(data);
-            require(["mvc/ui/ui-modal", "mvc/form/form-view"], function (Modal, FormView) {
+            require(["utils/utils", "mvc/ui/ui-modal", "mvc/form/form-view"], function (Utils, Modal, FormView) {
                 $(function() {
                     data.cls = 'ui-portlet-plain';
                     var toolform = new FormView(data);
-                    // var html = '<div id="toolmodal_' + clean + '>' + toolform.render() + '</div>';
+                    Utils.deepeach(data.inputs, function( input ) {
+                        if (input.type) {
+                            if (['data', 'data_collection'].indexOf(input.type) != -1) {
+                                input.type = 'hidden';
+                                input.info = 'Data input \'' + input.name + '\' (' + Utils.textify(input.extensions) + ')';
+                            }
+                        }
+                    });
                     var modal = new Modal.View();
-                    modal.show({'title': '<u>' + name + '</u> ' + desc, 'body': toolform.$el, 'buttons': { 'Close': function() { modal.hide(); }}});
+                    var modal_title = '<u>' + name + '</u> ' + desc;
+                    modal.show({'title': modal_title, 'body': toolform.$el, 'buttons': { 'Close': function() { modal.hide(); }}});
 
                 });
             });
