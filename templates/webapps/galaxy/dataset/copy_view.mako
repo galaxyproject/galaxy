@@ -59,21 +59,22 @@
                 </select>
             </div>
             <div class="toolFormBody">
-                %if source_contents:
-                    %for data in source_contents:
-                        <%
-                            checked = ""
-                            encoded_id = trans.security.encode_id(data.id)
-                            input_id = "%s|%s" % ( data.history_content_type, encoded_id )
-                            if input_id in source_content_ids:
-                                checked = " checked='checked'"
-                        %>
-                        <div class="form-row">
-                            <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
-                            <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
-                        </div>
-                    %endfor
-                %else:
+                <% has_source_contents = False %>
+                %for data in source_contents:
+                    <%
+                        has_source_contents = True
+                        checked = ""
+                        encoded_id = trans.security.encode_id(data.id)
+                        input_id = "%s|%s" % ( data.history_content_type, encoded_id )
+                        if input_id in source_content_ids:
+                            checked = " checked='checked'"
+                    %>
+                    <div class="form-row">
+                        <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
+                        <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
+                    </div>
+                %endfor
+                %if not has_source_contents:
                     <div class="form-row">This history has no datasets.</div>
                 %endif
             </div>
