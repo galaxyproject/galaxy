@@ -17,6 +17,20 @@
                 $("#multiple-destination").show();
             });
         });
+        $(function() {
+            $("#source-content-all").click(function() {
+                $("input[name='source_content_ids']").each(function() {
+                    this.checked = true;
+                });
+            });
+        });
+        $(function() {
+            $("#source-content-none").click(function() {
+                $("input[name='source_content_ids']").each(function() {
+                    this.checked = false;
+                });
+            });
+        });
     </script>
     
 </%def>
@@ -61,6 +75,12 @@
             <div class="toolFormBody">
                 <% has_source_contents = False %>
                 %for data in source_contents:
+                    %if not has_source_contents:
+                        <div class="form-row">
+                            <input type="button" name="source-content-all" id="source-content-all" value="All"/>
+                            <input type="button" name="source-content-none" id="source-content-none" value="None"/>
+                        </div>
+                    %endif
                     <%
                         has_source_contents = True
                         checked = ""
