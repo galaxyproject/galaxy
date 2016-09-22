@@ -248,8 +248,8 @@ class Repository( object, Dictifiable ):
     def get_tool_dependencies( self, changeset_revision ):
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
-                return downloadable_revision.metadata.get( 'tool_dependencies', [] )
-        return []
+                return downloadable_revision.metadata.get( 'tool_dependencies', {} )
+        return {}
 
     def installable_revisions( self, app, sort_revisions=True ):
         return metadata_util.get_metadata_revisions( self,
