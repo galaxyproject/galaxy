@@ -1428,7 +1428,7 @@ many of the default assertion tags that come with Galaxy and examples of each
 can be found below.
 
 The implementation of these tags are simply Python functions defined in the
-[``galaxy.tools.verify.asserts``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts]
+[``galaxy.tools.verify.asserts``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts)
 module.
 ]]>
       </xs:documentation>
