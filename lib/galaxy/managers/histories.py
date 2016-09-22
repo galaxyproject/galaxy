@@ -227,6 +227,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             # 'contents_states',
             'contents_active',
             'hid_counter',
+            'importing',
         ], include_keys_from='summary' )
 
     # assumes: outgoing to json.dumps and sanitized
