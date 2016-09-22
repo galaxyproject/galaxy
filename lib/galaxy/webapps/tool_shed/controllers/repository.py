@@ -1713,8 +1713,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        dependencies = repository.get_tool_dependencies( changeset_revision )
-        if dependencies is not None:
+        dependencies = repository.get_tool_dependencies( trans.app, changeset_revision )
+        if len( dependencies ) > 0:
             return encoding_util.tool_shed_encode( dependencies )
         return ''
 
