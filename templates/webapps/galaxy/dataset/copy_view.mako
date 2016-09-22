@@ -77,8 +77,10 @@
                 %for data in source_contents:
                     %if not has_source_contents:
                         <div class="form-row">
-                            <input type="button" name="source-content-all" id="source-content-all" value="All"/>
-                            <input type="button" name="source-content-none" id="source-content-none" value="None"/>
+                            <div class="btn-group">
+                                <span class="select-all btn btn-default" name="source-content-all" id="source-content-all">All</span>
+                                <span class="deselect-all btn btn-default" name="source-content-none" id="source-content-none">None</span>
+                            </div>
                         </div>
                     %endif
                     <%
