@@ -781,7 +781,7 @@ class RepositoriesController( BaseAPIController ):
             else:
                 metadata_dict[ 'repository_dependencies' ] = []
             if metadata.includes_tool_dependencies and recursive:
-                metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( changehash )
+                metadata_dict[ 'tool_dependencies' ] = repository.get_tool_dependencies( trans.app, changehash )
             else:
                 metadata_dict[ 'tool_dependencies' ] = {}
             if metadata.includes_tools:

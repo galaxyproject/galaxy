@@ -245,9 +245,9 @@ class Repository( object, Dictifiable ):
     def get_type_class( self, app ):
         return app.repository_types_registry.get_class_by_label( self.type )
 
-    def get_tool_dependencies( self, changeset_revision ):
+    def get_tool_dependencies( self, app, changeset_revision ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
-        changeset_revision = suc.get_next_downloadable_changeset_revision( self, repo, changeset_revision )
+        changeset_revision = metadata_util.get_next_downloadable_changeset_revision( self, repo, changeset_revision )
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
                 return downloadable_revision.metadata.get( 'tool_dependencies', {} )
