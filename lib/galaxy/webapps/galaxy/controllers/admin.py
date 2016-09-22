@@ -784,8 +784,6 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     text = url_get( shed_url, password_mgr=self.app.tool_shed_registry.url_auth( shed_url ), pathspec=pathspec, params=params )
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode( text )
-                        if not tool_dependencies_dict:
-                            continue
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():
                             tool_dependency_name = requirements_dict[ 'name' ]
                             tool_dependency_version = requirements_dict[ 'version' ]
