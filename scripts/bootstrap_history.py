@@ -164,8 +164,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Deploy and Test Release**
 
-      - [ ] Update test to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+      - [ ] Update test.galaxyproject.org to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+      - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
       - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
+      - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
       - [ ] [Update bioblend testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target - add ``env`` target ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to ``tox.ini``.
 
 - [ ] **Create Release Notes**
