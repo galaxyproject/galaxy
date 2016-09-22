@@ -15,7 +15,7 @@ $toc
 
 $tag:tool://element[@name='tool']
 $tag:tool|description://element[@name='tool']//element[@name='description']
-$tag:tool|version_command://element[@name='tool']//element[@name='version_command']
+$tag:tool|version_command://complexType[@name='VersionCommand']
 $tag:tool|command://element[@name='tool']//element[@name='command'] hide_attributes
 $tag:tool|inputs://complexType[@name='Inputs']
 $tag:tool|inputs|section://complexType[@name='Section']

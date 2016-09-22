@@ -61,23 +61,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="xs:string" minOccurs="0">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
-order to get the tool's version string. The resulting value will be found in the
-"Info" field of the history dataset.
-
-Unlike the [``command``](#tool|command) tag, this value is taken as a literal and so there is no
-need to escape values like ``$`` and command inputs are not available for variable
-substitution.
-
-### Example
-
-```xml
-<version_command>tophat -version</version_command>
-```
-]]></xs:documentation>
-          </xs:annotation>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
         </xs:element>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
@@ -4134,7 +4118,6 @@ define.</xs:documentation>
     </xs:simpleContent>
   </xs:complexType>
 
-
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See
@@ -4264,6 +4247,52 @@ response to this directive.
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="VersionCommand">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
+order to get the tool's version string. The resulting value will be found in the
+"Info" field of the history dataset.
+
+Unlike the [``command``](#tool|command) tag, with the exception of the string
+``$__tool_directory__`` this value is taken as a literal and so there is no
+need to escape values like ``$`` and command inputs are not available for variable
+substitution.
+
+### Examples
+
+A simple example for a [TopHat](https://ccb.jhu.edu/software/tophat/index.shtml)
+tool definition might just be:
+
+```xml
+<version_command>tophat -version</version_command>
+```
+
+An example that leverages a Python script (e.g. ``count_reads.py``) shipped with
+the tool might be:
+
+```xml
+<version_command>python $__tool_directory__/count_reads.py</version_command>
+```
+
+Examples are included in the test tools directory including:
+
+- [version_command_plain.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_plain.xml)
+- [version_command_tool_dir.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_tool_dir.xml)
+- [version_command_interpreter.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_interpreter.xml) (*deprecated*)
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="interpreter" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*: Prefix the version command with an interpreter and the tool directory in order to execute a script shipped with the tool. It is better to just use ``<interpreter> $__tool_directory__/<script_name>``.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
