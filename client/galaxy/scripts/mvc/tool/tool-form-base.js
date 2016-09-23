@@ -16,12 +16,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     self._buildModel(process, options, true);
                 });
             }
-            // Listen to history panel
+            // listen to history panel
             if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
                 this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
                     this.refresh();
                 });
             }
+            // destroy dom elements
+            this.$el.on( 'remove', function() { self.remove() } );
         },
 
         /** Listen to history panel changes and update the tool form */

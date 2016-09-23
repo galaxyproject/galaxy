@@ -47,10 +47,6 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
             this.$el.append( this.form.$el );
         },
 
-        remove: function() {
-            this.form.remove();
-        },
-
         /** Submit a regular job.
          * @param{dict}     options   - Specifies tool id and version
          * @param{function} callback  - Called when request has completed
