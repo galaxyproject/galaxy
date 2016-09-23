@@ -26,7 +26,7 @@ def get_all_dependencies( app, metadata_entry, processed_dependency_links=[] ):
             dependency_dict[ 'tools' ] = dependency_metadata.metadata[ 'tools' ]
         dependency_dict[ 'repository_dependencies' ] = []
         if dependency_dict['includes_tool_dependencies']:
-            dependency_dict['tool_dependencies'] = repository.get_tool_dependencies( dependency_dict['changeset_revision'] )
+            dependency_dict['tool_dependencies'] = repository.get_tool_dependencies( app, dependency_dict['changeset_revision'] )
         if dependency_dict['has_repository_dependencies']:
             dependency_dict['repository_dependencies'] = get_all_dependencies( app, dependency_metadata, processed_dependency_links )
         else:
