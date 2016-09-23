@@ -42,11 +42,12 @@ var UserPreferences = Backbone.View.extend({
     /** redirects to change permissions view */
     callChangePermissions: function( e ) {
         var url = Galaxy.root + 'api/user_preferences/set_default_permissions',
-            data = {};
+            self = this,
+            $el = $( '.user-preferences-all' );;
         $( '.user-pref' ).hide();
-        data = { 'message': "", 'status': "" };
-        $.getJSON( url, data, function( response ) {
-            changePermissions = new Permissions.ChangePermissions( response );     
+        $.getJSON( url, function( data ) {
+            changePermissions = new Permissions.ChangePermissions( self, data, $el );  
+            //self.$( '.user-preferences-all' ).append( changePermissions.$el );   
         });
     },
 
@@ -168,7 +169,7 @@ var UserPreferences = Backbone.View.extend({
         this.$el.empty().append( template );
         $( ".manage-userinfo" ).on( "click", function() { self.callManageInfo() } );
         $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
-        $( ".change-permissions" ).on( "click", self.callChangePermissions );
+        $( ".change-permissions" ).on( "click", function() { self.callChangePermissions() } );
         $( ".manage-api-keys" ).on( "click", function() { self.callApiKeys() } );
         $( ".manage-toolbox-filters" ).on( "click", function() { self.callManageToolboxFilter() } );
         $( ".change-communication-setting" ).on( "click", function() { self.callChangeCommunication() } );

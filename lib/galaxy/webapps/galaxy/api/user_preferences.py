@@ -592,36 +592,65 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        update_roles = kwd.get( 'update_roles', False )
         if trans.user:
-            if 'update_roles_button' in kwd:
+            if update_roles:
                 p = util.Params( kwd )
-                
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = p.get( k + '_in', [] )
-                    if not isinstance( in_roles, list ):
-                        in_roles = [ in_roles ]
-                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
-                    action = trans.app.security_agent.get_action( v.action ).action
-                    permissions[ action ] = in_roles
+                    if p.get( k + '_out', [] ):
+                       in_roles = p.get( k + '_out', [] )
+                       if not isinstance( in_roles, list ):
+                           in_roles = [ in_roles ]
+                       in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
+                       action = trans.app.security_agent.get_action( v.action ).action
+                       permissions[ action ] = in_roles
+                    elif p.get( k + '_in', [] ):
+                       in_roles = p.get( k + '_in', [] )
+                       if not isinstance( in_roles, list ):
+                           in_roles = [ in_roles ]
+                       in_roles = self.get_roles_current( trans, in_roles, v )
+                       action = trans.app.security_agent.get_action( v.action ).action
+                       permissions[ action ] = in_roles
                 trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
                 message = 'Default new history permissions have been changed.'
-                return {
-                    'message': message,
-                    'status': status
-                }
-            else:
-                return self.render_permission_form( trans, message, status )
 
+            return self.render_permission_form( trans, message, status )
         else:
             # User not logged in, history group must be only public
-            #return trans.show_error_message( "You must be logged in to change your default permitted actions." )
             return {
                 'message': "You must be logged in to change your default permitted actions.",
                 'status': "error"
             }
 
-     
+    def get_roles_current(self, trans, in_roles, action):
+        """ Filter the role based on the selection """
+        selected_role = []
+        obj = trans.user
+        roles = trans.user.all_roles()
+        if isinstance( obj, trans.app.model.User ):
+            current_actions = obj.default_permissions
+        elif isinstance( obj, trans.app.model.History ):
+            current_actions = obj.default_permissions
+        elif isinstance( obj, trans.app.model.Dataset ):
+            current_actions = obj.actions
+        elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
+            current_actions = obj.actions + obj.dataset.actions
+        elif isinstance( obj, trans.app.model.Library ):
+            current_actions = obj.actions
+        elif isinstance( obj, trans.app.model.LibraryDataset ):
+            current_actions = obj.actions
+        elif isinstance( obj, trans.app.model.LibraryFolder ):
+            current_actions = obj.actions
+        else:
+            current_actions = []
+        for a in current_actions:
+            if a.action == action.action:
+                if( str(a.role.id) not in in_roles ):
+                    selected_role.append( a.role.id )
+        return selected_role
+
+
     def render_permission_form( self, trans, message, status, do_not_render=[], all_roles=[] ):
         ''' 
         Obtains parameters to build change permission form
@@ -676,11 +705,11 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         for item in current_actions:
             current_action_list[index] = dict()
             current_action_list[index]["action"] = item.action
-            #current_action_list[index]["action_key"] = item
             index = index + 1
-
-        index = 0
+        all_permitted_actions = list()
         permitted_action_list = dict()
+        action_role = list()
+        index = 0
         for item, action in permitted_actions:
             if item not in do_not_render: 
                 permitted_action_list[index] = dict()
@@ -688,13 +717,30 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                     role_list = self.get_roles_action( current_actions, permitted_actions, action, do_not_render, all_roles )
                 else:
                     role_list = self.get_roles_action( current_actions, permitted_actions, action, do_not_render, roles )
-	        permitted_action_list[index]["action"] = action.action
-	        permitted_action_list[index]["description"] = action.description
-	        permitted_action_list[index]["action_key"] = item
-	        permitted_action_list[index]["in_roles"] = role_list["in_role_iterable"]
-	        permitted_action_list[index]["out_roles"] = role_list["out_role_iterable"]
+                # make inputs for the permissions form
+                if( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access' ):
+                    all_permitted_actions.append( dict( name=( action.action.upper() + ':' ), type='hidden', help=( action.description + '<br/> NOTE: Users must have every role associated with this dataset in order to access it' ) ) )
+                else:
+                    all_permitted_actions.append( dict( name=( action.action.upper() + ':' ), type='hidden', help=action.description ) )
+                data_options_in = list()
+                data_options_out = list()
+                
+                for role_item_in in role_list["in_role_iterable"]:
+                    role_in = role_list["in_role_iterable"][role_item_in]
+                    data_options_in.append( dict( value=role_in['id'], label=role_in['name'] ) )
+
+                for role_item_out in role_list["out_role_iterable"]:
+                    role_out = role_list["out_role_iterable"][role_item_out]
+                    data_options_out.append( dict( value=role_out['id'], label=role_out['name'] ) )
+
+                all_permitted_actions.append( dict( name=( item + '_in' ), type='select', data=data_options_in, display='checkboxes',optional=True, label='Roles associated:', multiple=True ) )
+                all_permitted_actions.append( dict( name=( item + '_out' ), type='select', data=data_options_out, display='checkboxes', label='Roles not associated:', multiple=True, optional=True ) )                
+                all_permitted_actions.append( dict( id='horizontal_line', title='', type='hidden', help='<hr class="docutils">' ) )
             index = index + 1
- 
+
+        action_role.append( dict( value="",label='Add or remove roles' ) )
+        all_permitted_actions.append( dict(name=( 'addremove_actionrole' ), type='select', label='Action', display='radiobutton', optional=True, data=action_role, multiple=False ) )
+
         return {
             'userid': trans.user.id,
             'current_actions': current_action_list,
@@ -704,7 +750,8 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             'data_access': trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
             'all_roles': all_roles,
             'message': message,
-            'status': status
+            'status': status,
+            'role_form': all_permitted_actions
         }
 
 

@@ -29,8 +29,7 @@ define(['utils/utils',
             'hidden_data'       : '_fieldHidden',
             'baseurl'           : '_fieldHidden',
             'library_data'      : '_fieldLibrary',
-            'ftpfile'           : '_fieldFtp',
-            'submit'            : '_fieldButton'
+            'ftpfile'           : '_fieldFtp'
         },
 
         /** Returns an input field for a given field type */
@@ -205,28 +204,13 @@ define(['utils/utils',
             });
         },
 
-        /** FTP file field
-        */
+        /** FTP file field */
         _fieldFtp: function( input_def ) {
             return new SelectFtp.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,
                 onchange    : input_def.onchange
-            });
-        },
-
-        /** button input field */
-        _fieldButton: function( input_def ) {
-            // create input element
-            return new Ui.ButtonIcon({
-                id          : 'field-' + input_def.id,
-                type        : input_def.type,
-                onclick     : input_def.onclick,
-                cls         : 'ui-button-icon',
-                title       : input_def.title,
-                icon        : input_def.icon,
-                tooltip     : input_def.tooltip
             });
         }
     });
