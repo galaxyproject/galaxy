@@ -16,7 +16,6 @@ from tool_shed.utility_containers import ToolShedUtilityContainerManager
 from tool_shed.util import common_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
 from tool_shed.util import metadata_util
 
 log = logging.getLogger( __name__ )
