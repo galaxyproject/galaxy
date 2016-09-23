@@ -103,9 +103,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     Galaxy.emit.debug('tool-form-base::initialize()', 'Initial tool model ready.', new_model);
                     process.resolve();
                 },
-                error   : function(response, xhr) {
+                error   : function(response, status) {
                     var error_message = ( response && response.err_msg ) || 'Uncaught error.';
-                    if ( xhr.status == 401 ) {
+                    if ( status == 401 ) {
                         window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + self.options.id });
                     } else if ( self.$el.is(':empty') ) {
                         self.$el.prepend((new Ui.Message({
