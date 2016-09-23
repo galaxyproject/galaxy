@@ -111,7 +111,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
                     type        : 'boolean',
                     value       : String(Boolean(this.post_job_actions['DeleteIntermediatesAction' + output_id])),
                     ignore      : 'false',
-                    help        : 'Upon completion of this step, delete non-starred outputs from previous steps if they are no longer required as inputs in other steps.'
+                    help        : 'Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.'
                 };
 
                 // add output specific actions
