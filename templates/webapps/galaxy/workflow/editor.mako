@@ -379,7 +379,7 @@
             Details
         </div>
     </div>
-    <div class="unified-panel-body" style="overflow: auto;">
+    <div class="unified-panel-body workflow-right" style="overflow: auto;">
         ## Div for elements to modify workflow attributes.
         <div id="edit-attributes" class="metadataForm right-content">
             <div class="metadataFormTitle">Edit Workflow Attributes</div>
