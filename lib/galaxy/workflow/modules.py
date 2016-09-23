@@ -1355,7 +1355,7 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
     if module_injector is None:
         module_injector = WorkflowModuleInjector( trans, allow_tool_state_corrections )
     for step in workflow.steps:
-        step_args = param_map.get( step.id, {} )
+        step_args = param_map.get( str( step.id ), {} )
         step_errors = module_injector.inject( step, step_args=step_args )
         if step.type == 'tool' or step.type is None:
             if step_errors:

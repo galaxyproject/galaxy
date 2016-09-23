@@ -4,6 +4,7 @@ from galaxy import exceptions
 from galaxy import model
 
 from galaxy.managers import histories
+from galaxy.tools.parameters.meta import expand_workflow_inputs
 
 INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input', 'parameter_input' ]
 
@@ -48,7 +49,7 @@ class WorkflowRunConfig( object ):
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
 
-def normalize_inputs(steps, inputs, inputs_by):
+def _normalize_inputs(steps, inputs, inputs_by):
     normalized_inputs = {}
     for step in steps:
         if step.type not in INPUT_STEP_TYPES:
@@ -81,7 +82,7 @@ def normalize_inputs(steps, inputs, inputs_by):
     return normalized_inputs
 
 
-def normalize_step_parameters(steps, param_map, legacy=False):
+def _normalize_step_parameters(steps, param_map, legacy=False):
     """ Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
     per tep fashion or by tool id and normalize the parameters so
@@ -165,40 +166,6 @@ def _flatten_step_params( param_dict, prefix="" ):
 def build_workflow_run_config( trans, workflow, payload ):
     app = trans.app
     history_manager = histories.HistoryManager( app )
-
-    if "step_parameters" in payload and "parameters" in payload:
-        message = "Cannot specify both legacy parameters and step_parameters attributes."
-        raise exceptions.RequestParameterInvalidException( message )
-
-    if "inputs" in payload and "ds_map" in payload:
-        message = "Cannot specify both legacy ds_map and input attributes."
-        raise exceptions.RequestParameterInvalidException( message )
-
-    param_map = payload.get( 'parameters', {} )
-    legacy = payload.get("legacy", False)
-    param_map = normalize_step_parameters( workflow.steps, param_map, legacy=legacy )
-
-    inputs = payload.get( 'inputs', None )
-    inputs_by = payload.get( 'inputs_by', None )
-    # New default is to reference steps by index of workflow step
-    # which is intrinsic to the workflow and independent of the state
-    # of Galaxy at the time of workflow import.
-    default_inputs_by = 'step_index|step_uuid'
-
-    if inputs is None:
-        # Default to legacy behavior - read ds_map and reference steps
-        # by unencoded step id (a raw database id).
-        inputs = payload.get( 'ds_map', {} )
-        if legacy:
-            default_inputs_by = 'step_id|step_uuid'
-        inputs_by = inputs_by or default_inputs_by
-    else:
-        inputs = inputs or {}
-
-    inputs_by = inputs_by or default_inputs_by
-
-    add_to_history = 'no_add_to_history' not in payload
-    history_param = payload.get('history', '')
     allow_tool_state_corrections = payload.get( 'allow_tool_state_corrections', False )
 
     # Sanity checks.
@@ -207,104 +174,139 @@ def build_workflow_run_config( trans, workflow, payload ):
     if workflow.has_cycles:
         raise exceptions.MessageException( "Workflow cannot be run because it contains cycles" )
     if workflow.has_errors:
-        message = "Workflow cannot be run because of validation errors in some steps"
-        raise exceptions.MessageException( message )
+        raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
-    # Get target history.
-    if history_param.startswith('hist_id='):
-        # Passing an existing history to use.
-        encoded_history_id = history_param[ 8: ]
-        history_id = __decode_id( trans, encoded_history_id, model_type="history" )
-        history = history_manager.get_owned( history_id, trans.user, current_history=trans.history )
-    else:
-        # Send workflow outputs to new history.
-        history = app.model.History(name=history_param, user=trans.user)
-        trans.sa_session.add(history)
-        trans.sa_session.flush()
-
-    normalized_inputs = normalize_inputs( workflow.steps, inputs, inputs_by )
-    steps_by_id = workflow.steps_by_id
-
-    # Set workflow inputs.
-    for key, input_dict in normalized_inputs.iteritems():
-        step = steps_by_id[key]
-        if step.type == "parameter_input":
-            continue
-
-        if 'src' not in input_dict:
-            message = "Not input source type defined for input '%s'." % input_dict
-            raise exceptions.RequestParameterInvalidException( message )
-        if 'id' not in input_dict:
-            message = "Not input id defined for input '%s'." % input_dict
-            raise exceptions.RequestParameterInvalidException( message )
-        if 'content' in input_dict:
-            message = "Input cannot specify explicit 'content' attribute %s'." % input_dict
-            raise exceptions.RequestParameterInvalidException( message )
-        input_source = input_dict['src']
-        input_id = input_dict['id']
-        try:
-            if input_source == 'ldda':
-                ldda = trans.sa_session.query(app.model.LibraryDatasetDatasetAssociation).get(
-                    trans.security.decode_id(input_id))
-                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
-                content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-            elif input_source == 'ld':
-                ldda = trans.sa_session.query(app.model.LibraryDataset).get(
-                    trans.security.decode_id(input_id)).library_dataset_dataset_association
-                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
-                content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-            elif input_source == 'hda':
-                # Get dataset handle, add to dict and history if necessary
-                content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(
-                    trans.security.decode_id(input_id))
-                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), content.dataset )
-            elif input_source == 'uuid':
-                dataset = trans.sa_session.query(app.model.Dataset).filter(app.model.Dataset.uuid == input_id).first()
-                if dataset is None:
-                    # this will need to be changed later. If federation code is avalible, then a missing UUID
-                    # could be found amoung fereration partners
-                    message = "Input cannot find UUID: %s." % input_id
-                    raise exceptions.RequestParameterInvalidException( message )
-                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset )
-                content = history.add_dataset(dataset)
-            elif input_source == 'hdca':
-                content = app.dataset_collections_service.get_dataset_collection_instance(
-                    trans,
-                    'history',
-                    input_id
-                )
-            else:
-                message = "Unknown workflow input source '%s' specified." % input_source
-                raise exceptions.RequestParameterInvalidException( message )
-            if add_to_history and content.history != history:
-                content = content.copy()
-                if isinstance( content, app.model.HistoryDatasetAssociation ):
-                    history.add_dataset( content )
+    if 'input_params' in payload:
+        # payload = { input_params: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
+        params, param_keys = expand_workflow_inputs( payload.get( 'input_params', [] ) )
+        run_configs = []
+        for index, workflow_args in enumerate( params ):
+            new_history = None
+            if 'new_history_name' in payload:
+                if payload[ 'new_history_name' ]:
+                    nh_name = payload[ 'new_history_name' ]
                 else:
-                    history.add_dataset_collection( content )
-            input_dict['content'] = content
-        except AssertionError:
-            message = "Invalid workflow input '%s' specified" % input_id
-            raise exceptions.ItemAccessibilityException( message )
-
-    for key in set(normalized_inputs.keys()):
-        value = normalized_inputs[key]
-        if isinstance(value, dict) and 'content' in value:
-            normalized_inputs[key] = value['content']
+                    nh_name = 'History from %s workflow' % workflow.name
+                if index in param_keys:
+                    ids = param_keys[ index ]
+                    nids = len( ids )
+                    if nids == 1:
+                        nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
+                    elif nids > 1:
+                        nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
+                new_history = trans.app.model.History( user=trans.user, name=nh_name )
+                new_history.copy_tags_from( trans.user, trans.history )
+                trans.sa_session.add( new_history )
+                history = new_history
+            elif 'history_id' in payload:
+                history = history_manager.get_owned( trans.security.decode_id( payload.get( 'history_id' ), trans.user, current_history=trans.history ) )
+            else:
+                history = trans.history
+            run_configs.append( WorkflowRunConfig(
+                target_history=history,
+                replacement_dict=payload.get( 'replacement_params', {} ),
+                param_map=workflow_args,
+                allow_tool_state_corrections=allow_tool_state_corrections ) )
+        return run_configs
+    else:
+        if 'step_parameters' in payload and 'parameters' in payload:
+            raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
+        if 'inputs' in payload and 'ds_map' in payload:
+            raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy ds_map and input attributes." )
+        add_to_history = 'no_add_to_history' not in payload
+        history_param = payload.get( 'history', '' )
+        # Get target history.
+        if history_param.startswith( 'hist_id=' ):
+            # Passing an existing history to use.
+            encoded_history_id = history_param[ 8: ]
+            history_id = __decode_id( trans, encoded_history_id, model_type='history' )
+            history = history_manager.get_owned( history_id, trans.user, current_history=trans.history )
         else:
-            normalized_inputs[key] = value
-
-    # Run each step, connecting outputs to inputs
-    replacement_dict = payload.get('replacement_params', {})
-
-    run_config = WorkflowRunConfig(
-        target_history=history,
-        replacement_dict=replacement_dict,
-        inputs=normalized_inputs,
-        param_map=param_map,
-        allow_tool_state_corrections=allow_tool_state_corrections
-    )
-    return run_config
+            # Send workflow outputs to new history.
+            history = app.model.History(name=history_param, user=trans.user)
+            trans.sa_session.add(history)
+            trans.sa_session.flush()
+        param_map = payload.get( 'parameters', {} )
+        legacy = payload.get( 'legacy', False )
+        param_map = _normalize_step_parameters( workflow.steps, param_map, legacy=legacy )
+        inputs = payload.get( 'inputs', None )
+        inputs_by = payload.get( 'inputs_by', None )
+        # New default is to reference steps by index of workflow step
+        # which is intrinsic to the workflow and independent of the state
+        # of Galaxy at the time of workflow import.
+        default_inputs_by = 'step_index|step_uuid'
+        if inputs is None:
+            # Default to legacy behavior - read ds_map and reference steps
+            # by unencoded step id (a raw database id).
+            inputs = payload.get( 'ds_map', {} )
+            if legacy:
+                default_inputs_by = 'step_id|step_uuid'
+            inputs_by = inputs_by or default_inputs_by
+        else:
+            inputs = inputs or {}
+        inputs_by = inputs_by or default_inputs_by
+        normalized_inputs = _normalize_inputs( workflow.steps, inputs, inputs_by )
+        steps_by_id = workflow.steps_by_id
+        # Set workflow inputs.
+        for key, input_dict in normalized_inputs.iteritems():
+            step = steps_by_id[key]
+            if step.type == 'parameter_input':
+                continue
+            if 'src' not in input_dict:
+                raise exceptions.RequestParameterInvalidException( "Not input source type defined for input '%s'." % input_dict )
+            if 'id' not in input_dict:
+                raise exceptions.RequestParameterInvalidException( "Not input id defined for input '%s'." % input_dict )
+            if 'content' in input_dict:
+                raise exceptions.RequestParameterInvalidException( "Input cannot specify explicit 'content' attribute %s'." % input_dict )
+            input_source = input_dict[ 'src' ]
+            input_id = input_dict[ 'id' ]
+            try:
+                if input_source == 'ldda':
+                    ldda = trans.sa_session.query( app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( input_id ) )
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
+                    content = ldda.to_history_dataset_association( history, add_to_history=add_to_history )
+                elif input_source == 'ld':
+                    ldda = trans.sa_session.query( app.model.LibraryDataset ).get( trans.security.decode_id( input_id ) ).library_dataset_dataset_association
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
+                    content = ldda.to_history_dataset_association( history, add_to_history=add_to_history )
+                elif input_source == 'hda':
+                    # Get dataset handle, add to dict and history if necessary
+                    content = trans.sa_session.query( app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( input_id ) )
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), content.dataset )
+                elif input_source == 'uuid':
+                    dataset = trans.sa_session.query( app.model.Dataset ).filter( app.model.Dataset.uuid == input_id ).first()
+                    if dataset is None:
+                        # this will need to be changed later. If federation code is avalible, then a missing UUID
+                        # could be found amoung fereration partners
+                        raise exceptions.RequestParameterInvalidException( "Input cannot find UUID: %s." % input_id )
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset )
+                    content = history.add_dataset( dataset )
+                elif input_source == 'hdca':
+                    content = app.dataset_collections_service.get_dataset_collection_instance( trans, 'history', input_id )
+                else:
+                    raise exceptions.RequestParameterInvalidException( "Unknown workflow input source '%s' specified." % input_source )
+                if add_to_history and content.history != history:
+                    content = content.copy()
+                    if isinstance( content, app.model.HistoryDatasetAssociation ):
+                        history.add_dataset( content )
+                    else:
+                        history.add_dataset_collection( content )
+                input_dict[ 'content' ] = content
+            except AssertionError:
+                raise exceptions.ItemAccessibilityException( "Invalid workflow input '%s' specified" % input_id )
+        for key in set( normalized_inputs.keys() ):
+            value = normalized_inputs[ key ]
+            if isinstance( value, dict ) and 'content' in value:
+                normalized_inputs[ key ] = value[ 'content' ]
+            else:
+                normalized_inputs[ key ] = value
+        return WorkflowRunConfig(
+            target_history=history,
+            replacement_dict=payload.get( 'replacement_params', {} ),
+            inputs=normalized_inputs,
+            param_map=param_map,
+            allow_tool_state_corrections=allow_tool_state_corrections
+        )
 
 
 def workflow_run_config_to_request( trans, run_config, workflow ):

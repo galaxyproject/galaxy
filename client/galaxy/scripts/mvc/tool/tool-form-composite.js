@@ -358,7 +358,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var job_def = {
                 new_history_name    : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
                 replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
-                inputs              : {}
+                input_params        : {}
             };
             var validated = true;
             for ( var i in this.forms ) {
@@ -382,8 +382,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             form.highlight( input_id );
                             break;
                         }
-                        job_def.inputs[ step_id ] = job_def.inputs[ step_id ] || {};
-                        job_def.inputs[ step_id ][ job_input_id ] = job_inputs[ job_input_id ];
+                        job_def.input_params[ step_id ] = job_def.input_params[ step_id ] || {};
+                        job_def.input_params[ step_id ][ job_input_id ] = job_inputs[ job_input_id ];
                     }
                 }
                 if ( !validated ) {
@@ -397,7 +397,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation complete.', job_def );
                 Utils.request({
                     type    : 'POST',
-                    url     : Galaxy.root + 'api_internal/workflows/' + this.model.id + '/run',
+                    url     : Galaxy.root + 'api/workflows/' + this.model.id + '/invocations',
                     data    : job_def,
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
@@ -471,7 +471,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Templates */
         _templateSuccess: function( response ) {
-            if ( response && response.length > 0 ) {
+            if ( response ) {
+                response = $.isArray( response ) ? response : [ response ];
                 return $( '<div/>' ).addClass( 'donemessagelarge' ).append( $( '<p/>' ).html( 'Successfully invoked workflow <b>' + Utils.sanitize( this.model.get( 'name' ) ) + '</b>' + ( response.length > 1 ? ' <b>' + response.length + ' times</b>' : '' ) + '. Datasets will appear as jobs are created.' ) );
             } else {
                 return this._templateError( response );
