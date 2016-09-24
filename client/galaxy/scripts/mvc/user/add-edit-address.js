@@ -5,9 +5,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.addressform = new Form({
-                title   : options ? 'Edit address' : 'Add new address',
-                inputs  : [{ name: 'short_desc', label: 'Short Description:', type: 'text', value: options ? options.address_obj["desc"] : "",
-                             help: 'Required' },
+                title: options ? 'Edit address' : 'Add new address',
+                inputs: [{ name: 'short_desc', label: 'Short Description:', type: 'text', value: options ? options.address_obj["desc"] : "",
+                           help: 'Required' },
                            { name: 'name', label: 'Name:', type: 'text',value: options ? options.address_obj["name"] : "", help: 'Required' },
                            { name: 'institution', label: 'Institution:', type: 'text', value: options ? options.address_obj["institution"] : "",
                              help: 'Required' },
@@ -20,26 +20,25 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                              help: 'Required' },
                            { name: 'country', label: 'Country:', type: 'text', value: options ? options.address_obj["country"] : "",
                              help: 'Required' },
-                           { name: 'phone', label: 'Phone:', type: 'text', value: options ? options.address_obj["phone"] : "" }
-                          ],
-                operations : {
-                    'back' : new Ui.ButtonIcon({
-                        icon    : 'fa-caret-left',
-                        tooltip : 'Return to manage user information',
-                        title   : 'Return to manage user information',
-                        onclick : function() {
+                           { name: 'phone', label: 'Phone:', type: 'text', value: options ? options.address_obj["phone"] : "" }],
+                operations: {
+                    'back': new Ui.ButtonIcon({
+                        icon: 'fa-caret-left',
+                        tooltip: 'Return to manage user information',
+                        title: 'Return to manage user information',
+                        onclick: function() {
                             self.addressform.$el.remove();
                             app.callManageInfo();
                         }
                     })
                 },
-                buttons : {
-                    'save' : new Ui.Button({
-                        tooltip : 'Save',
-                        title   : 'Save',
-                        cls     : 'ui-button btn btn-primary',
+                buttons: {
+                    'save': new Ui.Button({
+                        tooltip: 'Save',
+                        title: 'Save',
+                        cls: 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick : function() { self._saveAddress( self, app, options ) }
+                        onclick: function() { self._saveAddress( self, app, options ) }
                     })
                 }
             });

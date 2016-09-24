@@ -5,15 +5,15 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
-                title   : 'Enable real-time communication with other Galaxy users',
-                icon    : 'fa-child',
-                inputs  : [ { name: 'change-communication', type: 'boolean', label: 'Enable communication', value: options.activated } ],
-                operations      : {
-                    'back'  : new Ui.ButtonIcon({
-                        icon    : 'fa-caret-left',
-                        tooltip : 'Return to user preferences',
-                        title   : 'Preferences',
-                        onclick : function() { self.remove(); app.showPreferences() }
+                title: 'Enable real-time communication with other Galaxy users',
+                icon: 'fa-child',
+                inputs: [ { name: 'change-communication', type: 'boolean', label: 'Enable communication', value: options.activated } ],
+                operations: {
+                    'back': new Ui.ButtonIcon({
+                        icon: 'fa-caret-left',
+                        tooltip: 'Return to user preferences',
+                        title: 'Preferences',
+                        onclick: function() { self.remove(); app.showPreferences() }
                     })
                 },
                 onchange: function() {
@@ -21,7 +21,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                }
             });
             this.setElement( this.form.$el );
-
         },
 
         /** Saves changes */
@@ -30,8 +29,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var data = { 'enable_communication_server': self.form.data.create()[ 'change-communication' ] };
             $.getJSON( Galaxy.root + 'api/user_preferences/change_communication', data, function( response ) {
                 self.form.message.update({
-                   message     : response.message,
-                   status      : response.status === 'error' ? 'danger' : 'success'
+                   message: response.message,
+                   status: response.status === 'error' ? 'danger' : 'success'
                 });
             });
         }

@@ -28,220 +28,225 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, UsesFormDefinitionsMixin ):
+class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
+                            CreatesUsersMixin, CreatesApiKeysMixin,
+                            UsesFormDefinitionsMixin):
 
     @expose_api
-    def index( self, trans, cntrller='user_preferences', **kwd ):
-        return {'user_id': trans.security.encode_id( trans.user.id ),
-                'message': "",
-                'username': trans.user.username,
-                'email': trans.user.email,
-                'webapp': trans.webapp.name,
-                'remote_user': trans.app.config.use_remote_user,
-                'openid': trans.app.config.enable_openid,
-                'enable_quotas': trans.app.config.enable_quotas,
-                'disk_usage': trans.user.get_disk_usage( nice_size=True ),
-                'quota': trans.app.quota_agent.get_quota( trans.user, nice_size=True ),
-               }
+    def index(self, trans, cntrller='user_preferences', **kwd):
+        return {
+            'user_id': trans.security.encode_id(trans.user.id),
+            'message': "",
+            'username': trans.user.username,
+            'email': trans.user.email,
+            'webapp': trans.webapp.name,
+            'remote_user': trans.app.config.use_remote_user,
+            'openid': trans.app.config.enable_openid,
+            'enable_quotas': trans.app.config.enable_quotas,
+            'disk_usage': trans.user.get_disk_usage(nice_size=True),
+            'quota': trans.app.quota_agent.get_quota(trans.user,
+                                                     nice_size=True)
+        }
 
-
-    def __get_user_type_form_definition( self, trans, user=None, **kwd ):
-        #params = util.Params( kwd )
+    def __get_user_type_form_definition(self, trans, user=None, **kwd):
         if user and user.values:
-            user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
+            user_type_fd_id = trans.security.encode_id(user.values.form_definition.id)
         else:
-            user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
-        if user_type_fd_id not in [ 'none' ]:
-            user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
+            user_type_fd_id = kwd.get('user_type_fd_id', 'none')
+        if user_type_fd_id not in ['none']:
+            user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
         else:
             user_type_form_definition = None
         return user_type_form_definition
 
-
     # ===== Methods for building SelectFields  ================================
-    def __build_user_type_fd_id_select_field( self, trans, selected_value ):
+    def __build_user_type_fd_id_select_field(self, trans, selected_value):
         # Get all the user information forms
-        user_info_forms = self.get_all_forms( trans,
-                                              filter=dict( deleted=False ),
-                                              form_type=trans.model.FormDefinition.types.USER_INFO )
-        return build_select_field( trans,
+        user_info_forms = self.get_all_forms(trans,
+                                              filter=dict(deleted=False),
+                                              form_type=trans.model.FormDefinition.types.USER_INFO)
+        return build_select_field(trans,
                                    objs=user_info_forms,
                                    label_attr='name',
                                    select_field_name='user_type_fd_id',
                                    initial_value='none',
                                    selected_value=selected_value,
-                                   refresh_on_change=True )
+                                   refresh_on_change=True)
 
-
-    def __get_widgets( self, trans, user_type_form_definition, user=None, **kwd ):
+    def __get_widgets(self, trans, user_type_form_definition, user=None, **kwd):
         widgets = []
         if user_type_form_definition:
             if user:
                 if user.values:
-                    widgets = user_type_form_definition.get_widgets( user=user,
+                    widgets = user_type_form_definition.get_widgets(user=user,
                                                                      contents=user.values.content,
-                                                                     **kwd )
+                                                                     **kwd)
                 else:
-                    widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
+                    widgets = user_type_form_definition.get_widgets(None, contents={}, **kwd)
             else:
-                widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
+                widgets = user_type_form_definition.get_widgets(None, contents={}, **kwd)
         return widgets
 
-
     def user_info(self, cntrller, trans, kwd):
-        '''Manage a user's login, password, public username, type, addresses, etc.'''
-        #params = util.Params( kwd )
-        user_id = kwd.get( 'id', None )
+        '''
+        Manage a user login, password, public username, type, addresses, etc.
+        '''
+        user_id = kwd.get('id', None)
         if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
         else:
             user = trans.user
         if not user:
-            raise AssertionError("The user id (%s) is not valid" % str( user_id ))
-        email = util.restore_text( kwd.get( 'email', user.email ) )
-        username = util.restore_text( kwd.get( 'username', '' ) )
+            raise AssertionError("The user id (%s) is not valid" % str(user_id))
+        email = util.restore_text(kwd.get('email', user.email))
+        username = util.restore_text(kwd.get('username', ''))
         if not username:
             username = user.username
-        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        status = kwd.get( 'status', 'done' )
+        message = escape(util.restore_text(kwd.get('message', '')))
+        status = kwd.get('status', 'done')
         # build inputs for login form
         user_login_form = list()
         # email input
-        user_login_form.append( dict( id='email_input', name='email', type='text', label='Email address:', value=email, size='40', help='If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.' ) )
+        user_login_form.append(dict(id='email_input', name='email', type='text', label='Email address:', value=email, size='40', help='If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.'))
 
         if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
-            user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
+            user_type_form_definition = self.__get_user_type_form_definition(trans, user=user, **kwd)
+            user_type_fd_id = kwd.get('user_type_fd_id', 'none')
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
+                user_type_fd_id = trans.security.encode_id(user_type_form_definition.id)
+            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field(trans, selected_value=user_type_fd_id)
+            widgets = self.__get_widgets(trans, user_type_form_definition, user=user, **kwd)
             # user's addresses filter
-            show_filter = util.restore_text( kwd.get( 'show_filter', 'All' ) )
+            show_filter = util.restore_text(kwd.get('show_filter', 'All'))
             if show_filter == 'All':
                 addresses = [address for address in user.addresses]
             elif show_filter == 'Deleted':
                 addresses = [address for address in user.addresses if address.deleted]
             else:
                 addresses = [address for address in user.addresses if not address.deleted]
-            user_info_forms = self.get_all_forms( trans,
-                                                  filter=dict( deleted=False ),
-                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO )
+            user_info_forms = self.get_all_forms(trans,
+                                                  filter=dict(deleted=False),
+                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO)
             address_list = dict()
             filter_list = list()
             user_address_list = list()
             user_info_form = list()
             # build filter options
-            filter_list.append( dict( label='All', value='All' ) )
-            filter_list.append( dict( label='Active', value='Active' ) )
-            filter_list.append( dict( label='Deleted', value='Deleted' ) )
+            filter_list.append(dict(label='All', value='All'))
+            filter_list.append(dict(label='Active', value='Active'))
+            filter_list.append(dict(label='Deleted', value='Deleted'))
             # build filter
-            user_address_list.append( dict( name='active_filter', type='select', label='Filter', optional=True, data=filter_list, display='radiobutton' ) )      
+            user_address_list.append(dict(name='active_filter',
+                                          type='select',
+                                          label='Filter',
+                                          optional=True,
+                                          data=filter_list,
+                                          display='radiobutton'))
 
             # build address list inputs
             for item in addresses:
                 address_data = list()
-                address_id = trans.security.encode_id( item.id )
-                user_address_list.append( dict( id=address_id, title='', type='hidden', help=( item.desc + ': <br>' + item.get_html() ) ) )
-                if ( item.deleted ):
-                    address_data.append( dict( label='Undelete', value=( 'undelete_' + address_id ) ) )
-                    user_address_list.append( dict( name=( 'undelete_button_' + address_id ), label='Actions', type='select', optional=True, display='radio', data=address_data ) )
+                address_id = trans.security.encode_id(item.id)
+                user_address_list.append(dict(id=address_id, title='', type='hidden', help=(item.desc + ': <br>' + item.get_html())))
+                if (item.deleted):
+                    address_data.append(dict(label='Undelete', value=('undelete_' + address_id)))
+                    user_address_list.append(dict(name=('undelete_button_' + address_id), label='Actions', type='select', optional=True, display='radio', data=address_data))
                 else:
-                    address_data.append( dict( label='Edit', value=( 'edit_' + address_id ) ) )
-                    address_data.append( dict( label='Delete', value=( 'delete_' + address_id ) ) )
-                    user_address_list.append( dict( name=( 'edit_delete_buttons_' + address_id ), label='Actions', type='select', optional=True, display='radio', data=address_data ) )
-                user_address_list.append( dict( id='horizontal_line', title='', type='hidden', help='<hr class="docutils">' ) )
+                    address_data.append(dict(label='Edit', value=('edit_' + address_id)))
+                    address_data.append(dict(label='Delete', value=('delete_' + address_id)))
+                    user_address_list.append(dict(name=('edit_delete_buttons_' + address_id), label='Actions', type='select', optional=True, display='radio', data=address_data))
+                user_address_list.append(dict(id='horizontal_line', title='', type='hidden', help='<hr class="docutils">'))
 
             # build user info list
-            if( user.values or user_info_forms ):
-                if( user_type_fd_id_select_field.options ):
-                    user_info_forms.append( dict( name='usertype', label='User type:', type='hidden', help=user_type_fd_id_select_field.get_html() ) )
+            if(user.values or user_info_forms):
+                if(user_type_fd_id_select_field.options):
+                    user_info_forms.append(dict(name='usertype', label='User type:', type='hidden', help=user_type_fd_id_select_field.get_html()))
                 else:
-                    user_info_forms.append( dict( name='user_type_fd_id', type='hidden', value=trans.security.encode_id( user_type_fd_id ) ) )
+                    user_info_forms.append(dict(name='user_type_fd_id', type='hidden', value=trans.security.encode_id(user_type_fd_id)))
                 # build widgets inputs
                 for item in widgets:
-                    user_info_forms.append( dict( name=item['label'], label=item['label'], type='hidden', help=item['widget'].get_html(), helptext=item['helptext'] ) )
+                    user_info_forms.append(dict(name=item['label'], label=item['label'], type='hidden', help=item['widget'].get_html(), helptext=item['helptext']))
 
             # build username input
-            user_login_form.append( dict( id='name_input', name='username', type='text', label='Public name:', value=username, size='40', help='Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' ) )
+            user_login_form.append(dict(id='name_input', name='username', type='text', label='Public name:', value=username, size='40', help='Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.'))
 
-            return {'cntrller': cntrller,
-                    'webapp': trans.webapp.name,
-                    'user_id': trans.security.encode_id( trans.user.id ),
-                    'is_admin': trans.user_is_admin(),
-                    'values': user.values,
-                    'email': email,
-                    'username': username,
-                    'user_type_fd_id_select_field_options': user_type_fd_id_select_field.options,
-                    'user_type_fd_id_select_html': user_type_fd_id_select_field.get_html(),
-                    'user_info_forms': user_info_forms,
-                    'user_type_form_definition': user_type_form_definition,
-                    'user_type_fd_id': user_type_fd_id,
-                    'user_type_fd_id_encoded': trans.security.encode_id( user_type_fd_id ),
-                    'show_filter': show_filter,
-                    'message': message,
-                    'status': status,
-                    'user_login_form': user_login_form,
-                    'user_address_list': user_address_list,
-                    'user_info_form': user_info_form,
-                    'active_filter': show_filter
-                   }
+            return {
+                'cntrller': cntrller,
+                'webapp': trans.webapp.name,
+                'user_id': trans.security.encode_id(trans.user.id),
+                'is_admin': trans.user_is_admin(),
+                'values': user.values,
+                'email': email,
+                'username': username,
+                'user_type_fd_id_select_field_options': user_type_fd_id_select_field.options,
+                'user_type_fd_id_select_html': user_type_fd_id_select_field.get_html(),
+                'user_info_forms': user_info_forms,
+                'user_type_form_definition': user_type_form_definition,
+                'user_type_fd_id': user_type_fd_id,
+                'user_type_fd_id_encoded': trans.security.encode_id(user_type_fd_id),
+                'show_filter': show_filter,
+                'message': message,
+                'status': status,
+                'user_login_form': user_login_form,
+                'user_address_list': user_address_list,
+                'user_info_form': user_info_form,
+                'active_filter': show_filter
+            }
         else:
-            if( user.active_repositories ):
+            if(user.active_repositories):
                 # build username input
-                user_login_form.append( dict( id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.' ) )
+                user_login_form.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
-                user_login_form.append( dict( id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.' ) )
+                user_login_form.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
 
-            return {'cntrller': cntrller,
-                    'webapp': trans.webapp.name,
-                    'user_id': trans.security.encode_id( trans.user.id ),
-                    'is_admin': trans.user_is_admin(),
-                    'active_repositories': user.active_repositories,
-                    'email': email,
-                    'username': username,
-                    'message': message,
-                    'status': status,
-                    'user_login_form': user_login_form
-                   }
+            return {
+                'cntrller': cntrller,
+                'webapp': trans.webapp.name,
+                'user_id': trans.security.encode_id(trans.user.id),
+                'is_admin': trans.user_is_admin(),
+                'active_repositories': user.active_repositories,
+                'email': email,
+                'username': username,
+                'message': message,
+                'status': status,
+                'user_login_form': user_login_form
+            }
 
     @expose_api
-    def manage_user_info( self, trans, cntrller='user_preferences', **kwd ):
+    def manage_user_info(self, trans, cntrller='user_preferences', **kwd):
         """ Manage User Info API call """
-        params = util.Params( kwd )
-        call_type = params.get( 'call', 'None' )
+        params = util.Params(kwd)
+        call_type = params.get('call', 'None')
         # Redirect to different method based on the operation
-        if ( call_type == 'edit_info' ):
-            return self.edit_info( trans, cntrller, kwd )
-        elif ( call_type == 'add_address' ):
-            return self.new_address( trans, cntrller, kwd  )
-        elif ( call_type == 'edit_address' ):
-            return self.edit_address( trans, cntrller, kwd )
-        elif ( call_type == 'undelete_address' ):
-            return self.undelete_address( trans, cntrller, kwd )
-        elif( call_type == 'delete_address' ):
-            return self.delete_address( trans, cntrller, kwd )
+        if (call_type == 'edit_info'):
+            return self.edit_info(trans, cntrller, kwd)
+        elif (call_type == 'add_address'):
+            return self.new_address(trans, cntrller, kwd)
+        elif (call_type == 'edit_address'):
+            return self.edit_address(trans, cntrller, kwd)
+        elif (call_type == 'undelete_address'):
+            return self.undelete_address(trans, cntrller, kwd)
+        elif(call_type == 'delete_address'):
+            return self.delete_address(trans, cntrller, kwd)
         else:
-            return self.user_info( cntrller, trans, kwd )
+            return self.user_info(cntrller, trans, kwd)
 
-
-    def edit_info( self, trans, cntrller, kwd ):
+    def edit_info(self, trans, cntrller, kwd):
         """
         Save user information like email and public name
         """
-        params = util.Params( kwd )
+        params = util.Params(kwd)
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text( params.get( 'message', '' ) )
-        status = params.get( 'status', 'done' )
-        user_id = params.get( 'id', None )
-        save_type = params.get( 'save_type', None )
-        
+        message = util.restore_text(params.get('message', ''))
+        status = params.get('status', 'done')
+        user_id = params.get('id', None)
+        save_type = params.get('save_type', None)
         if user_id and is_admin:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        elif user_id and ( not trans.user or trans.user.id != trans.security.decode_id( user_id ) ):
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+        elif user_id and (not trans.user or trans.user.id != trans.security.decode_id(user_id)):
             message = 'Invalid user id'
             status = 'error'
             user = None
@@ -249,110 +254,110 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             user = trans.user
         if user and (save_type == 'login_info'):
             # Editing email and username
-            email = util.restore_text( params.get( 'email', '' ) )
-            username = util.restore_text( params.get( 'username', '' ) ).lower()
+            email = util.restore_text(params.get('email', ''))
+            username = util.restore_text(params.get('username', '')).lower()
 
             # Validate the new values for email and username
-            message = validate_email( trans, email, user )
+            message = validate_email(trans, email, user)
             if not message and username:
-                message = validate_publicname( trans, username, user )
+                message = validate_publicname(trans, username, user)
             if message:
                 status = 'error'
             else:
-                if ( user.email != email ):
-                    # The user's private role name must match the user's login ( email )
-                    private_role = trans.app.security_agent.get_private_user_role( user )
+                if (user.email != email):
+                    # The user's private role name must match the user's login (email)
+                    private_role = trans.app.security_agent.get_private_user_role(user)
                     private_role.name = email
                     private_role.description = 'Private role for ' + email
                     # Change the email itself
                     user.email = email
-                    trans.sa_session.add_all( ( user, private_role ) )
+                    trans.sa_session.add_all((user, private_role))
                     trans.sa_session.flush()
                     if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
                         user.active = False
-                        trans.sa_session.add( user )
+                        trans.sa_session.add(user)
                         trans.sa_session.flush()
-                        is_activation_sent = self.send_verification_email( trans, user.email, user.username )
+                        is_activation_sent = self.send_verification_email(trans, user.email, user.username)
                         if is_activation_sent:
                             message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                         else:
                             message = 'Unable to send activation email, please contact your local Galaxy administrator.'
                             if trans.app.config.error_email_to is not None:
                                 message += ' Contact: %s' % trans.app.config.error_email_to
-                if ( user.username != username ):
+                if (user.username != username):
                     user.username = username
-                    trans.sa_session.add( user )
+                    trans.sa_session.add(user)
                     trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
         elif user and (save_type == 'edit_user_info'):
             # Edit user information - webapp MUST BE 'galaxy'
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id not in [ 'none' ]:
-                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
+            user_type_fd_id = params.get('user_type_fd_id', 'none')
+            if user_type_fd_id not in ['none']:
+                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
             elif user.values:
                 user_type_form_definition = user.values.form_definition
             else:
                 # User was created before any of the user_info forms were created
                 user_type_form_definition = None
             if user_type_form_definition:
-                values = self.get_form_values( trans, user, user_type_form_definition, **kwd )
+                values = self.get_form_values(trans, user,
+                                              user_type_form_definition, **kwd)
             else:
                 values = {}
             flush_needed = False
             if user.values:
                 # Editing the user info of an existing user with existing user info
                 user.values.content = values
-                trans.sa_session.add( user.values )
+                trans.sa_session.add(user.values)
                 flush_needed = True
             elif values:
-                form_values = trans.model.FormValues( user_type_form_definition, values )
-                trans.sa_session.add( form_values )
+                form_values = trans.model.FormValues(user_type_form_definition, values)
+                trans.sa_session.add(form_values)
                 user.values = form_values
                 flush_needed = True
             if flush_needed:
-                trans.sa_session.add( user )
+                trans.sa_session.add(user)
                 trans.sa_session.flush()
             message = "The user information has been updated with the changes."
         if user and trans.webapp.name == 'galaxy' and is_admin:
-            kwd[ 'user_id' ] = trans.security.encode_id( user.id )
-        kwd[ 'id' ] = user_id
+            kwd['user_id'] = trans.security.encode_id(user.id)
+        kwd['id'] = user_id
         if message:
-            kwd[ 'message' ] = util.sanitize_text( message )
+            kwd['message'] = util.sanitize_text(message)
         if status:
-            kwd[ 'status' ] = status
+            kwd['status'] = status
         # Return all data for user information page
         return self.user_info(cntrller, trans, kwd)
 
-
-    def edit_address( self, trans, cntrller, kwd ):
+    def edit_address(self, trans, cntrller, kwd):
         """ Allow user to edit the saved address """
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        params = util.Params(kwd)
+        message = util.restore_text(params.get('message', ''))
+        status = params.get('status', 'done')
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get( 'id', False )
+        user_id = params.get('id', False)
         if is_admin:
             if not user_id:
-                return trans.show_error_message( "You must specify a user to add a new address to." )
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+                return trans.show_error_message("You must specify a user to add a new address to.")
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
         else:
             user = trans.user
-        address_id = params.get( 'address_id', None )
+        address_id = params.get('address_id', None)
         if not address_id:
-            return trans.show_error_message( "Invalid address id." )
-        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
+            return trans.show_error_message("Invalid address id.")
+        address_obj = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(address_id))
         if address_obj.user_id != user.id:
-            return trans.show_error_message( "Invalid address id." )
-        if params.get( 'edit_address', False  ):
-            short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
-            name = util.restore_text( params.get( 'name', ''  ) )
-            institution = util.restore_text( params.get( 'institution', ''  ) )
-            address = util.restore_text( params.get( 'address', ''  ) )
-            city = util.restore_text( params.get( 'city', ''  ) )
-            state = util.restore_text( params.get( 'state', ''  ) )
-            postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
-            country = util.restore_text( params.get( 'country', ''  ) )
-            phone = util.restore_text( params.get( 'phone', ''  ) )
+            return trans.show_error_message("Invalid address id.")
+        if params.get('edit_address', False):
+            short_desc = util.restore_text(params.get('short_desc', ''))
+            name = util.restore_text(params.get('name', ''))
+            institution = util.restore_text(params.get('institution', ''))
+            address = util.restore_text(params.get('address', ''))
+            city = util.restore_text(params.get('city', ''))
+            state = util.restore_text(params.get('state', ''))
+            postal_code = util.restore_text(params.get('postal_code', ''))
+            country = util.restore_text(params.get('country', ''))
+            phone = util.restore_text(params.get('phone', ''))
             ok = True
             if not short_desc:
                 ok = False
@@ -388,12 +393,12 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                 address_obj.postal_code = postal_code
                 address_obj.country = country
                 address_obj.phone = phone
-                trans.sa_session.add( address_obj )
+                trans.sa_session.add(address_obj)
                 trans.sa_session.flush()
-                message = 'Address (%s) has been updated.' % escape( address_obj.desc )
-                new_kwd = dict( message=message, status=status )
+                message = 'Address (%s) has been updated.' % escape(address_obj.desc)
+                new_kwd = dict(message=message, status=status)
                 if is_admin:
-                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
+                    new_kwd['id'] = trans.security.encode_id(user.id)
 
                 return self.user_info(cntrller, trans, new_kwd)
             else:
@@ -403,7 +408,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         address_item = dict()
         address_item["desc"] = address_obj.desc
         address_item["name"] = address_obj.name
-        address_item["institution"] = address_obj.institution 
+        address_item["institution"] = address_obj.institution
         address_item["address"] = address_obj.address
         address_item["city"] = address_obj.city
         address_item["state"] = address_obj.state
@@ -415,80 +420,76 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             'user_id': user_id,
             'address_obj': address_item,
             'address_id': address_id,
-            'message': escape( message ),
+            'message': escape(message),
             'status': status
         }
-    
 
-    def delete_address( self, trans, cntrller, kwd ):
+    def delete_address(self, trans, cntrller, kwd):
         """ Delete an address """
-        address_id = kwd.get( 'address_id', None )
-        return self.__delete_undelete_address( trans, cntrller, 'delete', address_id, kwd )
+        address_id = kwd.get('address_id', None)
+        return self.__delete_undelete_address(trans, cntrller, 'delete', address_id, kwd)
 
-
-    def undelete_address( self, trans, cntrller, kwd ):
+    def undelete_address(self, trans, cntrller, kwd):
         """ Undelete an address """
-        address_id = kwd.get( 'address_id', None )
-        return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id, kwd )
+        address_id = kwd.get('address_id', None)
+        return self.__delete_undelete_address(trans, cntrller, 'undelete', address_id, kwd)
 
-
-    def __delete_undelete_address( self, trans, cntrller, op, address_id, kwd ):
+    def __delete_undelete_address(self, trans, cntrller, op, address_id, kwd):
         """ Delete or undelete an address based on parameter op """
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = kwd.get( 'id', False )
+        user_id = kwd.get('id', False)
         if is_admin:
             if not user_id:
-                return trans.show_error_message( "You must specify a user to %s an address from." % op )
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+                return trans.show_error_message("You must specify a user to %s an address from." % op)
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
         else:
             user = trans.user
         try:
-            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
+            user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(address_id))
         except:
-            return trans.show_error_message( "Invalid address id." )
+            return trans.show_error_message("Invalid address id.")
         if user_address:
             if user_address.user_id != user.id:
-                return trans.show_error_message( "Invalid address id." )
+                return trans.show_error_message("Invalid address id.")
             user_address.deleted = True if op == 'delete' else False
-            trans.sa_session.add( user_address )
+            trans.sa_session.add(user_address)
             trans.sa_session.flush()
-            message = 'Address (%s) %sd' % ( escape( user_address.desc ), op )
+            message = 'Address (%s) %sd' % (escape(user_address.desc), op)
             status = 'done'
 
-        kwd[ 'id' ] = trans.security.encode_id( user.id )
+        kwd['id'] = trans.security.encode_id(user.id)
         if message:
-            kwd[ 'message' ] = util.sanitize_text( message )
+            kwd['message'] = util.sanitize_text(message)
         if status:
-            kwd[ 'status' ] = status
+            kwd['status'] = status
 
         return self.user_info(cntrller, trans, kwd)
 
-
-    def new_address( self, trans, cntrller, kwd ):
+    def new_address(self, trans, cntrller, kwd):
         """ Add new user address """
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        params = util.Params(kwd)
+        message = util.restore_text(params.get('message', ''))
+        status = params.get('status', 'done')
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get( 'id', False )
+        user_id = params.get('id', False)
         if is_admin:
             if not user_id:
-                return trans.show_error_message( "You must specify a user to add a new address to." )
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+                return trans.show_error_message("You must specify a user to add a new address to.")
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
         else:
             user = trans.user
-        short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
-        name = util.restore_text( params.get( 'name', ''  ) )
-        institution = util.restore_text( params.get( 'institution', ''  ) )
-        address = util.restore_text( params.get( 'address', ''  ) )
-        city = util.restore_text( params.get( 'city', ''  ) )
-        state = util.restore_text( params.get( 'state', ''  ) )
-        postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
-        country = util.restore_text( params.get( 'country', ''  ) )
-        phone = util.restore_text( params.get( 'phone', ''  ) )
+        short_desc = util.restore_text(params.get('short_desc', ''))
+        name = util.restore_text(params.get('name', ''))
+        institution = util.restore_text(params.get('institution', ''))
+        address = util.restore_text(params.get('address', ''))
+        city = util.restore_text(params.get('city', ''))
+        state = util.restore_text(params.get('state', ''))
+        postal_code = util.restore_text(params.get('postal_code', ''))
+        country = util.restore_text(params.get('country', ''))
+        phone = util.restore_text(params.get('phone', ''))
         ok = True
         if not trans.app.config.allow_user_creation and not is_admin:
-            return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
+            return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
         if not short_desc:
             ok = False
             message = 'Enter a short description for this address'
@@ -514,7 +515,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             ok = False
             message = 'Enter the country'
         if ok:
-            user_address = trans.model.UserAddress( user=user,
+            user_address = trans.model.UserAddress(user=user,
                                                     desc=short_desc,
                                                     name=name,
                                                     institution=institution,
@@ -523,23 +524,23 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
                                                     state=state,
                                                     postal_code=postal_code,
                                                     country=country,
-                                                    phone=phone )
-            trans.sa_session.add( user_address )
+                                                    phone=phone)
+            trans.sa_session.add(user_address)
             trans.sa_session.flush()
-            message = 'Address (%s) has been added' % escape( user_address.desc )
-            new_kwd = dict( message=message, status=status )
+            message = 'Address (%s) has been added' % escape(user_address.desc)
+            new_kwd = dict(message=message, status=status)
             if is_admin:
-                new_kwd[ 'id' ] = trans.security.encode_id( user.id )
+                new_kwd['id'] = trans.security.encode_id(user.id)
             return self.user_info(cntrller, trans, new_kwd)
         else:
             return {
                 'user_id': user_id,
-                'message': escape( message ),
+                'message': escape(message),
                 'status': 'error'
             }
 
     @expose_api
-    def change_password( self, trans, password=None, confirm=None, current=None, token=None, **kwd):
+    def change_password(self, trans, password=None, confirm=None, current=None, token=None, **kwd):
         """
         Provides a form with which one can change their password. If token is
         provided, don't require current password.
@@ -548,74 +549,89 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         token_result = None
         if token:
             # If a token was supplied, validate and set user
-            token_result = trans.sa_session.query( trans.app.model.PasswordResetToken ).get(token)
+            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
             if token_result and token_result.expiration_time > datetime.utcnow():
                 user = token_result.user
             else:
-                return { message: 'Invalid or expired password reset token, please request a new one.', 'status': 'error' }
+                return {
+                    message: 'Invalid or expired password reset token, please request a new one.',
+                    status: 'error'
+                }
         else:
             # The user is changing their own password, validate their current password
-            ( ok, message ) = trans.app.auth_manager.check_change_password( trans.user, current )
+            (ok, message) = trans.app.auth_manager.check_change_password(trans.user, current)
             if ok:
                 user = trans.user
             else:
-                return { 'message': message, 'status': 'error' }
+                return {
+                    'message': message,
+                    'status': 'error'
+                }
         if user:
             # Validate the new password
-            message = validate_password( trans, password, confirm )
+            message = validate_password(trans, password, confirm)
             if message:
-                return { 'message': message, 'status': 'error' }
+                return {
+                    'message': message,
+                    'status': 'error'
+                }
             else:
                 # Save new password
-                user.set_password_cleartext( password )
+                user.set_password_cleartext(password)
                 # if we used a token, invalidate it and log the user in.
                 if token_result:
-                    trans.handle_user_login( token_result.user )
+                    trans.handle_user_login(token_result.user)
                     token_result.expiration_time = datetime.utcnow()
-                    trans.sa_session.add( token_result )
+                    trans.sa_session.add(token_result)
                 # Invalidate all other sessions
-                for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
-                                                 .filter( and_( trans.app.model.GalaxySession.table.c.user_id == user.id,
+                for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
+                                                 .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
                                                                 trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
+                                                                trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
                     other_galaxy_session.is_valid = False
-                    trans.sa_session.add( other_galaxy_session )
-                trans.sa_session.add( user )
+                    trans.sa_session.add(other_galaxy_session)
+                trans.sa_session.add(user)
                 trans.sa_session.flush()
-                trans.log_event( "User change password" )
-                return { 'message': 'Password has been changed', 'status': 'done' }
-        return { 'message': 'Failed to determine user, access denied', 'status': 'error' }
+                trans.log_event("User change password")
+                return {
+                    'message': 'Password has been changed',
+                    'status': 'done'
+                }
+        return {
+            'message': 'Failed to determine user, access denied',
+            'status': 'error'
+        }
 
     @expose_api
-    def set_default_permissions( self, trans, cntrller='user_preferences', **kwd ):
+    def set_default_permissions(self, trans, cntrller='user_preferences', **kwd):
         """Set the user's default permissions for the new histories"""
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        update_roles = kwd.get( 'update_roles', False )
+        params = util.Params(kwd)
+        message = util.restore_text(params.get('message', ''))
+        status = params.get('status', 'done')
+        update_roles = kwd.get('update_roles', False)
         if trans.user:
             if update_roles:
-                p = util.Params( kwd )
+                p = util.Params(kwd)
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    if p.get( k + '_out', [] ):
-                       in_roles = p.get( k + '_out', [] )
-                       if not isinstance( in_roles, list ):
-                           in_roles = [ in_roles ]
-                       in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
-                       action = trans.app.security_agent.get_action( v.action ).action
-                       permissions[ action ] = in_roles
-                    elif p.get( k + '_in', [] ):
-                       in_roles = p.get( k + '_in', [] )
-                       if not isinstance( in_roles, list ):
-                           in_roles = [ in_roles ]
-                       in_roles = self.get_roles_current( trans, in_roles, v )
-                       action = trans.app.security_agent.get_action( v.action ).action
-                       permissions[ action ] = in_roles
-                trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
+                    if p.get(k + '_out', []):
+                       in_roles = p.get(k + '_out', [])
+                       if not isinstance(in_roles, list):
+                           in_roles = [in_roles]
+                       in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
+                       action = trans.app.security_agent.get_action(v.action).action
+                       permissions[action] = in_roles
+                    elif p.get(k + '_in', []):
+                       in_roles = p.get(k + '_in', [])
+                       if not isinstance(in_roles, list):
+                           in_roles = [in_roles]
+                       in_roles = self.get_roles_current(trans, in_roles, v)
+                       action = trans.app.security_agent.get_action(v.action).action
+                       permissions[action] = in_roles
+                trans.app.security_agent.user_set_default_permissions(trans.user, permissions)
                 message = 'Default new history permissions have been changed.'
 
-            return self.render_permission_form( trans, message, status )
+            return self.render_permission_form(trans, message, status)
         else:
             # User not logged in, history group must be only public
             return {
@@ -628,67 +644,65 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         selected_role = []
         obj = trans.user
         roles = trans.user.all_roles()
-        if isinstance( obj, trans.app.model.User ):
+        if isinstance(obj, trans.app.model.User):
             current_actions = obj.default_permissions
-        elif isinstance( obj, trans.app.model.History ):
+        elif isinstance(obj, trans.app.model.History):
             current_actions = obj.default_permissions
-        elif isinstance( obj, trans.app.model.Dataset ):
+        elif isinstance(obj, trans.app.model.Dataset):
             current_actions = obj.actions
-        elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
+        elif isinstance(obj, trans.app.model.LibraryDatasetDatasetAssociation):
             current_actions = obj.actions + obj.dataset.actions
-        elif isinstance( obj, trans.app.model.Library ):
+        elif isinstance(obj, trans.app.model.Library):
             current_actions = obj.actions
-        elif isinstance( obj, trans.app.model.LibraryDataset ):
+        elif isinstance(obj, trans.app.model.LibraryDataset):
             current_actions = obj.actions
-        elif isinstance( obj, trans.app.model.LibraryFolder ):
+        elif isinstance(obj, trans.app.model.LibraryFolder):
             current_actions = obj.actions
         else:
             current_actions = []
         for a in current_actions:
             if a.action == action.action:
-                if( str(a.role.id) not in in_roles ):
-                    selected_role.append( a.role.id )
+                if(str(a.role.id) not in in_roles):
+                    selected_role.append(a.role.id)
         return selected_role
 
-
-    def render_permission_form( self, trans, message, status, do_not_render=[], all_roles=[] ):
-        ''' 
-        Obtains parameters to build change permission form
-        '''
+    def render_permission_form(self, trans, message, status, do_not_render=[],
+                               all_roles=[]):
+        ''' Obtains parameters to build change permission form '''
         obj = trans.user
         obj_name = trans.user.email
         roles = trans.user.all_roles()
-        if isinstance( obj, trans.app.model.User ):
+        if isinstance(obj, trans.app.model.User):
             current_actions = obj.default_permissions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = 'user %s' % obj_name
             obj_type = 'dataset'
-        elif isinstance( obj, trans.app.model.History ):
+        elif isinstance(obj, trans.app.model.History):
             current_actions = obj.default_permissions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = 'history %s' % obj_name
             obj_type = 'dataset'
-        elif isinstance( obj, trans.app.model.Dataset ):
+        elif isinstance(obj, trans.app.model.Dataset):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items()
             obj_str = obj_name
             obj_type = 'dataset'
-        elif isinstance( obj, trans.app.model.LibraryDatasetDatasetAssociation ):
+        elif isinstance(obj, trans.app.model.LibraryDatasetDatasetAssociation):
             current_actions = obj.actions + obj.dataset.actions
             permitted_actions = trans.app.model.Dataset.permitted_actions.items() + trans.app.model.Library.permitted_actions.items()
             obj_str = obj_name
             obj_type = 'dataset'
-        elif isinstance( obj, trans.app.model.Library ):
+        elif isinstance(obj, trans.app.model.Library):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library %s' % obj_name
             obj_type = 'library'
-        elif isinstance( obj, trans.app.model.LibraryDataset ):
+        elif isinstance(obj, trans.app.model.LibraryDataset):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library dataset %s' % obj_name
             obj_type = 'library'
-        elif isinstance( obj, trans.app.model.LibraryFolder ):
+        elif isinstance(obj, trans.app.model.LibraryFolder):
             current_actions = obj.actions
             permitted_actions = trans.app.model.Library.permitted_actions.items()
             obj_str = 'library folder %s' % obj_name
@@ -711,35 +725,55 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         action_role = list()
         index = 0
         for item, action in permitted_actions:
-            if item not in do_not_render: 
+            if item not in do_not_render:
                 permitted_action_list[index] = dict()
-                if( item == 'LIBRARY_ACCESS' ):
-                    role_list = self.get_roles_action( current_actions, permitted_actions, action, do_not_render, all_roles )
+                if(item == 'LIBRARY_ACCESS'):
+                    role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, all_roles)
                 else:
-                    role_list = self.get_roles_action( current_actions, permitted_actions, action, do_not_render, roles )
+                    role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, roles)
                 # make inputs for the permissions form
-                if( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access' ):
-                    all_permitted_actions.append( dict( name=( action.action.upper() + ':' ), type='hidden', help=( action.description + '<br/> NOTE: Users must have every role associated with this dataset in order to access it' ) ) )
+                if(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access'):
+                    all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=(action.description + '<br/> NOTE: Users must have every role associated with this dataset in order to access it')))
                 else:
-                    all_permitted_actions.append( dict( name=( action.action.upper() + ':' ), type='hidden', help=action.description ) )
+                    all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=action.description))
                 data_options_in = list()
                 data_options_out = list()
-                
                 for role_item_in in role_list["in_role_iterable"]:
                     role_in = role_list["in_role_iterable"][role_item_in]
-                    data_options_in.append( dict( value=role_in['id'], label=role_in['name'] ) )
+                    data_options_in.append(dict(value=role_in['id'], label=role_in['name']))
 
                 for role_item_out in role_list["out_role_iterable"]:
                     role_out = role_list["out_role_iterable"][role_item_out]
-                    data_options_out.append( dict( value=role_out['id'], label=role_out['name'] ) )
-
-                all_permitted_actions.append( dict( name=( item + '_in' ), type='select', data=data_options_in, display='checkboxes',optional=True, label='Roles associated:', multiple=True ) )
-                all_permitted_actions.append( dict( name=( item + '_out' ), type='select', data=data_options_out, display='checkboxes', label='Roles not associated:', multiple=True, optional=True ) )                
-                all_permitted_actions.append( dict( id='horizontal_line', title='', type='hidden', help='<hr class="docutils">' ) )
+                    data_options_out.append(dict(value=role_out['id'],
+                                                 label=role_out['name']))
+                all_permitted_actions.append(dict(name=(item + '_in'),
+                                                  type='select',
+                                                  data=data_options_in,
+                                                  display='checkboxes',
+                                                  optional=True,
+                                                  label='Roles associated:',
+                                                  multiple=True))
+                all_permitted_actions.append(dict(name=(item + '_out'),
+                                                  type='select',
+                                                  data=data_options_out,
+                                                  display='checkboxes',
+                                                  label='Roles not associated:',
+                                                  multiple=True,
+                                                  optional=True))
+                all_permitted_actions.append(dict(id='horizontal_line',
+                                                  title='',
+                                                  type='hidden',
+                                                  help='<hr class="docutils">'))
             index = index + 1
 
-        action_role.append( dict( value="",label='Add or remove roles' ) )
-        all_permitted_actions.append( dict(name=( 'addremove_actionrole' ), type='select', label='Action', display='radiobutton', optional=True, data=action_role, multiple=False ) )
+        action_role.append(dict(value="", label='Add or remove roles'))
+        all_permitted_actions.append(dict(name=('addremove_actionrole'),
+                                          type='select',
+                                          label='Action',
+                                          display='radiobutton',
+                                          optional=True,
+                                          data=action_role,
+                                          multiple=False))
 
         return {
             'userid': trans.user.id,
@@ -754,8 +788,7 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             'role_form': all_permitted_actions
         }
 
-
-    def get_roles_action( self, current_actions, permitted_actions, action, do_not_render, roles ):
+    def get_roles_action(self, current_actions, permitted_actions, action, do_not_render, roles):
         '''
         Fetch in and out roles based on action
         '''
@@ -763,17 +796,16 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
         out_roles = []
         for a in current_actions:
             if a.action == action.action:
-                in_roles.add( a.role )
-        out_roles = filter( lambda x: x not in in_roles, roles )
-        in_role_iterable = self.get_iterable_roles( in_roles )
-        out_role_iterable = self.get_iterable_roles( out_roles )
+                in_roles.add(a.role)
+        out_roles = filter(lambda x: x not in in_roles, roles)
+        in_role_iterable = self.get_iterable_roles(in_roles)
+        out_role_iterable = self.get_iterable_roles(out_roles)
         return {
             'in_role_iterable': in_role_iterable,
             'out_role_iterable': out_role_iterable
         }
 
-
-    def get_iterable_roles( self, role_list ):
+    def get_iterable_roles(self, role_list):
         '''
         Converts list to JSON iterable list
         '''
@@ -786,33 +818,32 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             index = index + 1
         return iterable_roles_list
 
-
     @expose_api
-    def api_keys( self, trans, cntrller='user_preferences', **kwd ):
+    def api_keys(self, trans, cntrller='user_preferences', **kwd):
         """
         Generate API keys
         """
-        params  = util.Params( kwd )
+        params = util.Params(kwd)
         message = 'API key unchanged.'
-        status  = 'done'
-        if params.get( 'new_api_key', False ):
-            self.create_api_key( trans, trans.user )
+        status = 'done'
+        if params.get('new_api_key', False):
+            self.create_api_key(trans, trans.user)
             message = 'Generated a new web API key.'
         return {
-            'message'       : message,
-            'status'        : status,
-            'user_api_key'  : trans.user.api_keys[ 0 ].key if trans.user.api_keys else None,
-            'app_name'      : trans.webapp.name
+            'message': message,
+            'status': status,
+            'user_api_key': trans.user.api_keys[0].key if trans.user.api_keys else None,
+            'app_name': trans.webapp.name
         }
 
-    def tool_filters( self, trans, cntrller='user_preferences', **kwd ):
+    def tool_filters(self, trans, cntrller='user_preferences', **kwd):
         """
             Sets the user's default filters for the toolbox.
             Toolbox filters are specified in galaxy.ini.
             The user can activate them and the choice is stored in user_preferences.
         """
 
-        def get_filter_mapping( db_filters, config_filters, factory ):
+        def get_filter_mapping(db_filters, config_filters, factory):
             """
                 Compare the allowed filters from the galaxy.ini config file with the previously saved or default filters from the database.
                 We need that to toogle the checkboxes for the formular in the right way.
@@ -821,30 +852,30 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             filters = list()
             for filter_name in config_filters:
                 function = factory._build_filter_function(filter_name)
-                doc_string = docstring_trim( function.__doc__ )
+                doc_string = docstring_trim(function.__doc__)
                 split = doc_string.split('\n\n')
                 if split:
                     sdesc = split[0]
                 else:
-                    log.error( 'No description specified in the __doc__ string for %s.' % filter_name )
+                    log.error('No description specified in the __doc__ string for %s.' % filter_name)
                 if len(split) > 1:
                     description = split[1]
                 else:
                     description = ''
 
                 if filter_name in db_filters:
-                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=True ) )
+                    filters.append(dict(filterpath=filter_name, short_desc=sdesc, desc=description, checked=True))
                 else:
-                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=False ) )
+                    filters.append(dict(filterpath=filter_name, short_desc=sdesc, desc=description, checked=False))
             return filters
 
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        params = util.Params(kwd)
+        message = util.restore_text(params.get('message', ''))
+        status = params.get('status', 'done')
 
-        user_id = params.get( 'user_id', False )
+        user_id = params.get('user_id', False)
         if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
         else:
             user = trans.user
 
@@ -855,22 +886,22 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
 
             for name, value in user.preferences.items():
                 if name == 'toolbox_tool_filters':
-                    saved_user_tool_filters = listify( value, do_strip=True )
+                    saved_user_tool_filters = listify(value, do_strip=True)
                 elif name == 'toolbox_section_filters':
-                    saved_user_section_filters = listify( value, do_strip=True )
+                    saved_user_section_filters = listify(value, do_strip=True)
                 elif name == 'toolbox_label_filters':
-                    saved_user_label_filters = listify( value, do_strip=True )
+                    saved_user_label_filters = listify(value, do_strip=True)
 
             ff = FilterFactory(trans.app.toolbox)
-            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters, ff )
-            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters, ff )
-            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters, ff )
+            tool_filters = get_filter_mapping(saved_user_tool_filters, trans.app.config.user_tool_filters, ff)
+            section_filters = get_filter_mapping(saved_user_section_filters, trans.app.config.user_section_filters, ff)
+            label_filters = get_filter_mapping(saved_user_label_filters, trans.app.config.user_label_filters, ff)
             return {
                 'message': message,
                 'status': status,
-                'tool_filters': json.dumps( tool_filters ),
-                'section_filters': json.dumps( section_filters ),
-                'label_filters': json.dumps( label_filters ),
+                'tool_filters': json.dumps(tool_filters),
+                'section_filters': json.dumps(section_filters),
+                'label_filters': json.dumps(label_filters),
             }
         else:
             # User not logged in, history group must be only public
@@ -880,104 +911,73 @@ class UserPreferencesAPIController( BaseAPIController, BaseUIController, UsesTag
             }
 
     @expose_api
-    def toolbox_filters( self, trans, cntrller='user_preferences', **kwd ):
+    def toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
         """
         API call for fetching toolbox filters data
         """
-        return self.tool_filters( trans, **kwd )
+        return self.tool_filters(trans, **kwd)
 
     @expose_api
-    def edit_toolbox_filters( self, trans, cntrller='user_preferences', **kwd ):
+    def edit_toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
         """
         Saves the changes made to the toolbox filters
         """
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', '' ) )
-        checked_filters = kwd.get( 'checked_filters', {} )
-        checked_filters = json.loads( checked_filters )
-        if params.get( 'edit_toolbox_filter_button', False ):
+        params = util.Params(kwd)
+        message = util.restore_text(params.get('message', ''))
+        checked_filters = kwd.get('checked_filters', {})
+        checked_filters = json.loads(checked_filters)
+        if params.get('edit_toolbox_filter', False):
             tool_filters = list()
             section_filters = list()
             label_filters = list()
             for name in checked_filters:
-                if( checked_filters[name] == True or checked_filters[name] == 'true'  ): 
-                    name = name.split( "|" )[1]
-                    if name.startswith( 't_' ):
-                        tool_filters.append( name[2:] )
-                    elif name.startswith( 'l_' ):
-                        label_filters.append( name[2:] )
-                    elif name.startswith( 's_' ):
-                        section_filters.append( name[2:] )
+                if(checked_filters[name] == True or checked_filters[name] == 'true'):
+                    name = name.split("|")[1]
+                    if name.startswith('t_'):
+                        tool_filters.append(name[2:])
+                    elif name.startswith('l_'):
+                        label_filters.append(name[2:])
+                    elif name.startswith('s_'):
+                        section_filters.append(name[2:])
 
-            trans.user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
-            trans.user.preferences['toolbox_section_filters'] = ','.join( section_filters )
-            trans.user.preferences['toolbox_label_filters'] = ','.join( label_filters )
+            trans.user.preferences['toolbox_tool_filters'] = ','.join(tool_filters)
+            trans.user.preferences['toolbox_section_filters'] = ','.join(section_filters)
+            trans.user.preferences['toolbox_label_filters'] = ','.join(label_filters)
 
-            trans.sa_session.add( trans.user )
+            trans.sa_session.add(trans.user)
             trans.sa_session.flush()
             message = 'ToolBox filters have been updated.'
-            kwd = dict( message=message, status='done' )
+            kwd = dict(message=message, status='done')
 
         # Display the ToolBox filters form with the current values filled in
-        return self.tool_filters( trans, **kwd )
+        return self.tool_filters(trans, **kwd)
 
     @expose_api
-    def change_communication( self, trans, cntrller='user_preferences', **kwd):
+    def change_communication(self, trans, cntrller='user_preferences', **kwd):
         """
         Allows the user to activate/deactivate the commnication server.
         """
-        params = util.Params( kwd )
+        params = util.Params(kwd)
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         message = 'Communication server settings unchanged.'
-        status  = 'done'
-        user_id = params.get( 'user_id', None )
+        status = 'done'
+        user_id = params.get('user_id', None)
         if user_id and is_admin:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
         else:
             user = trans.user
-        enabled_comm = params.get( 'enable_communication_server', None )
+        enabled_comm = params.get('enable_communication_server', None)
         if user and enabled_comm is not None:
             if enabled_comm == 'true':
                 message = 'Your communication server has been activated.'
             else:
                 message = 'Your communication server has been disabled.'
-            user.preferences[ 'communication_server' ] = enabled_comm
-            trans.sa_session.add( user )
+            user.preferences['communication_server'] = enabled_comm
+            trans.sa_session.add(user)
             trans.sa_session.flush()
         return {
-            'message'   : message,
-            'status'    : status,
-            'activated' : user.preferences.get( 'communication_server', 'false' )
+            'message': message,
+            'status': status,
+            'activated': user.preferences.get('communication_server', 'false')
         }
 
-    '''@expose_api
-    def logout( self, trans, logout_all=False ):
-        if trans.webapp.name == 'galaxy':
-            if trans.app.config.require_login:
-                refresh_frames = [ 'masthead', 'history', 'tools' ]
-            else:
-                refresh_frames = [ 'masthead', 'history' ]
-            # Since logging an event requires a session, we'll log prior to ending the session
-            trans.log_event( "User logged out" )
-        else:
-            refresh_frames = [ 'masthead' ]
-        trans.handle_user_logout( logout_all=logout_all )
-        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % \
-            ( url_for( '/' ) )
-        if biostar.biostar_logged_in( trans ):
-            biostar_url = biostar.biostar_logout( trans )
-            if biostar_url:
-                # TODO: It would be better if we automatically logged this user out of biostar
-                message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % ( biostar_url )
-        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
-            trans.response.send_redirect(trans.app.config.remote_user_logout_href)
-        else:
-            return {
-                'message': message,
-                'status': 'done'
-            }
-            return trans.fill_template('/user/logout.mako',
-                                       refresh_frames=refresh_frames,
-                                       message=message,
-                                       status='done',
-                                       active_view="user" )'''

@@ -13,7 +13,7 @@ var UserPreferences = Backbone.View.extend({
         this.getUserPreferencesData();
     },
 
-    /** redirects to manage user information view */
+    /** Redirect to manage user information view */
     callManageInfo: function( message ) {
         var userInfo = null,
             url = Galaxy.root + 'api/user_preferences/manage_user_info',
@@ -25,7 +25,7 @@ var UserPreferences = Backbone.View.extend({
         });
     },
   
-    /** redirects to change password view */
+    /** Redirect to change password view */
     callChangePassword: function( e ) {
         var self = this;
         $( '.user-pref' ).hide();
@@ -35,23 +35,23 @@ var UserPreferences = Backbone.View.extend({
         });
     },
 
+    /** Show preferences */
     showPreferences: function() {
         this.$( '.user-pref' ).show();
     },
 
-    /** redirects to change permissions view */
+    /** Redirect to change permissions view */
     callChangePermissions: function( e ) {
         var url = Galaxy.root + 'api/user_preferences/set_default_permissions',
             self = this,
-            $el = $( '.user-preferences-all' );;
+            $el = $( '.user-preferences-all' );
         $( '.user-pref' ).hide();
         $.getJSON( url, function( data ) {
-            changePermissions = new Permissions.ChangePermissions( self, data, $el );  
-            //self.$( '.user-preferences-all' ).append( changePermissions.$el );   
+            changePermissions = new Permissions.ChangePermissions( self, data, $el );
         });
     },
 
-    /** redirects to API keys view */
+    /** Redirect to API keys view */
     callApiKeys: function( e ) {
         var url = Galaxy.root + 'api/user_preferences/api_keys',
             data = {},
@@ -59,12 +59,12 @@ var UserPreferences = Backbone.View.extend({
         $( '.user-pref' ).hide();
         data = { 'message': "", 'status': "" };
         $.getJSON( url, data, function( response ) {
-            apiKey = new Keys.APIKeys( self, response );   
+            apiKey = new Keys.APIKeys( self, response );
             self.$( '.user-preferences-all' ).append( apiKey.$el );
         });
     },
 
-    /** redirects to manage toolbox filters */
+    /** Redirect to manage toolbox filters */
     callManageToolboxFilter: function( e ) {
         var url = Galaxy.root + 'api/user_preferences/toolbox_filters',
             data = {},
@@ -76,7 +76,7 @@ var UserPreferences = Backbone.View.extend({
         });
     },
 
-    /** redirects to change communication setting view */
+    /** Redirect to change communication setting view */
     callChangeCommunication: function( e ) {
         $( '.user-pref' ).hide();
         var self = this;
@@ -87,27 +87,18 @@ var UserPreferences = Backbone.View.extend({
         });
     },
 
-    /** logouts the user */
-    callLogout: function( e ) {
-        /*$( '.user-pref' ).hide();
-        var url = Galaxy.root + 'api/user_preferences/logout',
-            data = {};
-        $.getJSON( url, function( response ) {
-        });*/
-    },
-
-    /** fetch data for user preferences */
+    /** Fetch data for user preferences */
     getUserPreferencesData: function() {
         var url = Galaxy.root + 'api/user_preferences',
             self = this;
         $.getJSON( url, function( data ) {
-              self.render(data);  
+              self.render(data);
         });
     },
 
-    /** renders the user preferences list */
+    /** Render the user preferences list */
     render: function( data ) {
-        var template = "", 
+        var template = "",
             self = this;
         if( data["id"] !== null ) {
             template = "<div class='user-preferences-all'>"
@@ -130,16 +121,13 @@ var UserPreferences = Backbone.View.extend({
                     template = template + 
                            "<li><a target='galaxy_main' class='manage-openid'>Manage OpenIDs</a> linked to your account </li>";
                 }
-                template = template + 
-                           "<li><a target='galaxy_main' class='logout-user'>Logout</a> of all user sessions </li>";
             }
             else {
                 template = template + 
                            "<li><a target='galaxy_main' class='manage-userinfo'> Manage your information </a> for new histories </li>" + 
                            "<li><a target='galaxy_main' class='change-password'> Change your password </a> </li>" + 
                            "<li><a target='galaxy_main' class='manage-api-keys'> Manage your API keys </a> </li>" + 
-                           "<li><a target='galaxy_main' class='manage-email-alert'> Manage your email alerts </a> </li>" + 
-                           "<li><a target='galaxy_main' class='logout-user'> Logout </a> of all user sessions </li>";
+                           "<li><a target='galaxy_main' class='manage-email-alert'> Manage your email alerts </a> </li>";
             }
             template = template + "</ul>";
 
@@ -149,7 +137,7 @@ var UserPreferences = Backbone.View.extend({
                 if( data["enable_quotas"] ) {
                     template = template + 'Your disk quota is: <strong>' + data['quota'] + '</strong>.';
                 }
-                template = template + 'Is your usage more than expected?  See the ' + 
+                template = template + 'Is your usage more than expected?  See the ' +
                            '<a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> ' + 
                            'for tips on how to find all of the data in your account.'
 
@@ -165,7 +153,7 @@ var UserPreferences = Backbone.View.extend({
                        "</ul>";
         }
         template = template + "</div></div>";
-        // adds this markup to the center section of the Galaxy
+        // add this markup to the middle section of the Galaxy
         this.$el.empty().append( template );
         $( ".manage-userinfo" ).on( "click", function() { self.callManageInfo() } );
         $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
@@ -173,7 +161,6 @@ var UserPreferences = Backbone.View.extend({
         $( ".manage-api-keys" ).on( "click", function() { self.callApiKeys() } );
         $( ".manage-toolbox-filters" ).on( "click", function() { self.callManageToolboxFilter() } );
         $( ".change-communication-setting" ).on( "click", function() { self.callChangeCommunication() } );
-        $( ".logout-user" ).on( "click", self.callLogout );
     }
 });
 

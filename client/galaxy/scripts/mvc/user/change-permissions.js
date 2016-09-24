@@ -8,14 +8,14 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             $el.append( this.form.$el );
         },
 
-        /** Builds the form for changing permissions */
+        /** Build the form for changing permissions */
         _buildForm: function( options, app, self, $el ) {
             return new Form({
-                title   : 'Manage ' + options["obj_type"] + ' permissions on ' + options["obj_str"],
-                icon    : 'fa-universal-access',
-                inputs  : options['role_form'],
-                operations      : {
-                    'back'  : new Ui.ButtonIcon({
+                title: 'Manage ' + options["obj_type"] + ' permissions on ' + options["obj_str"],
+                icon: 'fa-universal-access',
+                inputs: options['role_form'],
+                operations: {
+                    'back': new Ui.ButtonIcon({
                         icon    : 'fa-caret-left',
                         tooltip : 'Return to user preferences',
                         title   : 'Preferences',
@@ -39,7 +39,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         },
 
-        /** Saves the permissions */
+        /** Save the permissions */
         _savePermissions: function( self, app, $el ) {
             var objects = self.form.data.create(),
                 save = false,

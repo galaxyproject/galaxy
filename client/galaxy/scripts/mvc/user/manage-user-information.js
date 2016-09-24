@@ -19,7 +19,7 @@ function( Form, Ui, Address ) {
                         title   : 'Preferences',
                         onclick : function() {
                             self.loginform.$el.remove();
-                            self.addressform.$el.remove(); 
+                            self.addressform.$el.remove();
                             app.showPreferences();
                         }
                     })
@@ -59,15 +59,15 @@ function( Form, Ui, Address ) {
         /* Build User Information Form */
         _buildUserInfoForm: function( self, options, app, $el ) {
             return new Form({
-                title   : 'User Information',
-                inputs  : options['user_info_form'],
-                buttons : {
-                    'save'  : new Ui.Button({
-                        tooltip : 'Save',
-                        title   : 'Save',
-                        cls     : 'ui-button btn btn-primary',
+                title: 'User Information',
+                inputs: options['user_info_form'],
+                buttons: {
+                    'save': new Ui.Button({
+                        tooltip: 'Save',
+                        title: 'Save',
+                        cls: 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick : function() { self._saveEmailName( options, self, 'edit_user_info' ) }
+                        onclick: function() { self._saveEmailName( options, self, 'edit_user_info' ) }
                     })
                 }
             });
@@ -76,18 +76,18 @@ function( Form, Ui, Address ) {
         /** Build form for user addresses */
         _buildAddressForm: function( self, options, app, $el ) {
             return new Form({
-                title   : 'User Addresses',
-                inputs  : options['user_address_list'],
-                buttons : {
+                title: 'User Addresses',
+                inputs: options['user_address_list'],
+                buttons: {
                     'addaddress': new Ui.ButtonIcon({
-                        id          : 'add-address',
-                        type        : 'submit',
-                        cls         : 'ui-button-icon',
-                        tooltip     : 'Add new address',
-                        title       : 'Add new address',
-                        icon        : 'fa-plus',
-                        floating    : 'clear',
-                        onclick     : function() { self._addAddress( self, $el, app ); }
+                        id: 'add-address',
+                        type: 'submit',
+                        cls: 'ui-button-icon',
+                        tooltip: 'Add new address',
+                        title: 'Add new address',
+                        icon: 'fa-plus',
+                        floating: 'clear',
+                        onclick: function() { self._addAddress( self, $el, app ); }
                     })
                 },
                 onchange: function() {
@@ -238,7 +238,7 @@ function( Form, Ui, Address ) {
                 nothing_changed = ( data["email"] === email && data["username"] === name );
             // Client side validations
             if ( data["email"] !== email ) {
-                if ( email.length > 255 ) { 
+                if ( email.length > 255 ) {
                     self._renderMessage( self.loginform, error_text_email_long, 'danger' );
                     validForm = false;
                 }
@@ -265,7 +265,7 @@ function( Form, Ui, Address ) {
                     data.user_type_fd_id = self.userinfoform.data.create()['user_type_fd_id'];
                 }
                 $.getJSON( url, data, function( response ) {
-                    // renders the user info again with the messages and updated data
+                    // render the user info again with the messages and updated data
                     self.original_email = email;
                     self.original_username = name;
                     self.loginform.message.update({
