@@ -27,6 +27,7 @@ from galaxy.exceptions import MessageException
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util import safe_str_cmp
+from galaxy.util.postfork import process_is_uwsgi
 from galaxy.util.sanitize_html import sanitize_html
 
 from galaxy.managers import context
@@ -918,6 +919,27 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         template = Template( source=template_string,
                              searchList=[context or kwargs, dict(caller=self)] )
         return str(template)
+
+
+def build_native_uwsgi_app( paste_factory, config_section ):
+    """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
+
+    In particular these are useful with --yaml or --json for config."""
+    if not process_is_uwsgi:
+        return None
+    else:
+        import uwsgi
+        uwsgi_opt = uwsgi.opt
+        config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
+        if not config_file:
+            # Probably loaded via --ini-paste - expect paste app.
+            return None
+
+        uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds={
+            "config_file": config_file,
+            "config_section": config_section,
+        })
+        return uwsgi_app
 
 
 def build_url_map( app, global_conf, local_conf ):
