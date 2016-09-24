@@ -359,6 +359,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             country = util.restore_text(params.get('country', ''))
             phone = util.restore_text(params.get('phone', ''))
 
+            error_status = True
             if not short_desc:
                 message = 'Enter a short description for this address'
             elif not name:
@@ -376,6 +377,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             elif not country:
                 message = 'Enter the country'
             else:
+                error_status = False
                 address_obj.desc = short_desc
                 address_obj.name = name
                 address_obj.institution = institution
@@ -393,7 +395,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                     new_kwd['id'] = trans.security.encode_id(user.id)
 
                 return self.user_info(cntrller, trans, new_kwd)
-            else:
+
+            if error_status:
                 status = 'error'
 
         # Display the address form with the current values filled in
@@ -483,6 +486,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         if not trans.app.config.allow_user_creation and not is_admin:
             return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
 
+        error_status = True
         if not short_desc:
             message = 'Enter a short description for this address'
         elif not name:
@@ -500,6 +504,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         elif not country:
             message = 'Enter the country'
         else:
+            error_status = False
             user_address = trans.model.UserAddress(user=user,
                                                     desc=short_desc,
                                                     name=name,
@@ -517,7 +522,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             if is_admin:
                 new_kwd['id'] = trans.security.encode_id(user.id)
             return self.user_info(cntrller, trans, new_kwd)
-        else:
+
+        if error_status:
             return {
                 'user_id': user_id,
                 'message': escape(message),
