@@ -44,8 +44,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             'openid': trans.app.config.enable_openid,
             'enable_quotas': trans.app.config.enable_quotas,
             'disk_usage': trans.user.get_disk_usage(nice_size=True),
-            'quota': trans.app.quota_agent.get_quota(trans.user,
-                                                     nice_size=True)
+            'quota': trans.app.quota_agent.get_quota(trans.user, nice_size=True)
         }
 
     def __get_user_type_form_definition(self, trans, user=None, **kwd):
