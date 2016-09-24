@@ -2,31 +2,28 @@
 API operations on User Preferences objects.
 """
 
-import sys
-import logging
 import sets
 import json
+import logging
+import datetime
 
 from markupsafe import escape
-from sqlalchemy import false, and_, or_, true, func
+from sqlalchemy import and_, true
 
-from galaxy import exceptions, util, web
-from galaxy.managers import users
+from galaxy import util
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.tools.toolbox.filters import FilterFactory
-from galaxy.util import biostar, hash_util, docstring_trim, listify
+from galaxy.util import docstring_trim, listify
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import string_as_bool
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.base.controller import CreatesUsersMixin
 from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
-from galaxy.web.form_builder import build_select_field, CheckboxField
+from galaxy.web.form_builder import build_select_field
 
 log = logging.getLogger(__name__)
 
@@ -66,15 +63,15 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
     def __build_user_type_fd_id_select_field(self, trans, selected_value):
         # Get all the user information forms
         user_info_forms = self.get_all_forms(trans,
-                                              filter=dict(deleted=False),
-                                              form_type=trans.model.FormDefinition.types.USER_INFO)
+                                             filter=dict(deleted=False),
+                                             form_type=trans.model.FormDefinition.types.USER_INFO)
         return build_select_field(trans,
-                                   objs=user_info_forms,
-                                   label_attr='name',
-                                   select_field_name='user_type_fd_id',
-                                   initial_value='none',
-                                   selected_value=selected_value,
-                                   refresh_on_change=True)
+                                  objs=user_info_forms,
+                                  label_attr='name',
+                                  select_field_name='user_type_fd_id',
+                                  initial_value='none',
+                                  selected_value=selected_value,
+                                  refresh_on_change=True)
 
     def __get_widgets(self, trans, user_type_form_definition, user=None, **kwd):
         widgets = []
@@ -82,8 +79,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             if user:
                 if user.values:
                     widgets = user_type_form_definition.get_widgets(user=user,
-                                                                     contents=user.values.content,
-                                                                     **kwd)
+                                                                    contents=user.values.content,
+                                                                    **kwd)
                 else:
                     widgets = user_type_form_definition.get_widgets(None, contents={}, **kwd)
             else:
@@ -128,9 +125,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             else:
                 addresses = [address for address in user.addresses if not address.deleted]
             user_info_forms = self.get_all_forms(trans,
-                                                  filter=dict(deleted=False),
-                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO)
-            address_list = dict()
+                                                 filter=dict(deleted=False),
+                                                 form_type=trans.app.model.FormDefinition.types.USER_INFO)
             filter_list = list()
             user_address_list = list()
             user_info_form = list()
@@ -400,7 +396,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 status = 'error'
 
         # Display the address form with the current values filled in
-        address_item = dict("desc": address_obj.desc,
+        address_item = dict({
+            "desc": address_obj.desc,
             "name": address_obj.name,
             "institution": address_obj.institution,
             "address": address_obj.address,
@@ -408,8 +405,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             "state": address_obj.state,
             "postal_code": address_obj.postal_code,
             "country": address_obj.country,
-            "phone": address_obj.phone
-        )
+            "phone": address_obj.phone})
 
         return {
             'user_id': user_id,
@@ -506,15 +502,15 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         else:
             error_status = False
             user_address = trans.model.UserAddress(user=user,
-                                                    desc=short_desc,
-                                                    name=name,
-                                                    institution=institution,
-                                                    address=address,
-                                                    city=city,
-                                                    state=state,
-                                                    postal_code=postal_code,
-                                                    country=country,
-                                                    phone=phone)
+                                                   desc=short_desc,
+                                                   name=name,
+                                                   institution=institution,
+                                                   address=address,
+                                                   city=city,
+                                                   state=state,
+                                                   postal_code=postal_code,
+                                                   country=country,
+                                                   phone=phone)
             trans.sa_session.add(user_address)
             trans.sa_session.flush()
             message = 'Address (%s) has been added' % escape(user_address.desc)
@@ -545,8 +541,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 user = token_result.user
             else:
                 return {
-                    message: 'Invalid or expired password reset token, please request a new one.',
-                    status: 'error'
+                    'message': 'Invalid or expired password reset token, please request a new one.',
+                    'status': 'error'
                 }
         else:
             # The user is changing their own password, validate their current password
@@ -577,8 +573,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 # Invalidate all other sessions
                 for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
                                                  .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
                     other_galaxy_session.is_valid = False
                     trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
@@ -606,19 +602,19 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
                     if p.get(k + '_out', []):
-                       in_roles = p.get(k + '_out', [])
-                       if not isinstance(in_roles, list):
-                           in_roles = [in_roles]
-                       in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                       action = trans.app.security_agent.get_action(v.action).action
-                       permissions[action] = in_roles
+                        in_roles = p.get(k + '_out', [])
+                        if not isinstance(in_roles, list):
+                            in_roles = [in_roles]
+                        in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
+                        action = trans.app.security_agent.get_action(v.action).action
+                        permissions[action] = in_roles
                     elif p.get(k + '_in', []):
-                       in_roles = p.get(k + '_in', [])
-                       if not isinstance(in_roles, list):
-                           in_roles = [in_roles]
-                       in_roles = self.get_roles_current(trans, in_roles, v)
-                       action = trans.app.security_agent.get_action(v.action).action
-                       permissions[action] = in_roles
+                        in_roles = p.get(k + '_in', [])
+                        if not isinstance(in_roles, list):
+                            in_roles = [in_roles]
+                        in_roles = self.get_roles_current(trans, in_roles, v)
+                        action = trans.app.security_agent.get_action(v.action).action
+                        permissions[action] = in_roles
                 trans.app.security_agent.user_set_default_permissions(trans.user, permissions)
                 message = 'Default new history permissions have been changed.'
 
@@ -634,7 +630,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         """ Filter the role based on the selection """
         selected_role = []
         obj = trans.user
-        roles = trans.user.all_roles()
+
         if isinstance(obj, trans.app.model.User):
             current_actions = obj.default_permissions
         elif isinstance(obj, trans.app.model.History):
@@ -922,7 +918,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             section_filters = list()
             label_filters = list()
             for name in checked_filters:
-                if(checked_filters[name] == True or checked_filters[name] == 'true'):
+                if checked_filters[name] or checked_filters[name] == 'true':
                     name = name.split("|")[1]
                     if name.startswith('t_'):
                         tool_filters.append(name[2:])
@@ -971,4 +967,3 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             'status': status,
             'activated': user.preferences.get('communication_server', 'false')
         }
-
