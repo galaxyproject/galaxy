@@ -405,16 +405,16 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 status = 'error'
 
         # Display the address form with the current values filled in
-        address_item = dict()
-        address_item["desc"] = address_obj.desc
-        address_item["name"] = address_obj.name
-        address_item["institution"] = address_obj.institution
-        address_item["address"] = address_obj.address
-        address_item["city"] = address_obj.city
-        address_item["state"] = address_obj.state
-        address_item["postal_code"] = address_obj.postal_code
-        address_item["country"] = address_obj.country
-        address_item["phone"] = address_obj.phone
+        address_item = dict("desc": address_obj.desc,
+            "name": address_obj.name,
+            "institution": address_obj.institution,
+            "address": address_obj.address,
+            "city": address_obj.city,
+            "state": address_obj.state,
+            "postal_code": address_obj.postal_code,
+            "country": address_obj.country,
+            "phone": address_obj.phone
+        )
 
         return {
             'user_id': user_id,
