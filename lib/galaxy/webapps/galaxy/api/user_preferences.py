@@ -358,32 +358,24 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             postal_code = util.restore_text(params.get('postal_code', ''))
             country = util.restore_text(params.get('country', ''))
             phone = util.restore_text(params.get('phone', ''))
-            ok = True
+
             if not short_desc:
-                ok = False
                 message = 'Enter a short description for this address'
             elif not name:
-                ok = False
                 message = 'Enter the name'
             elif not institution:
-                ok = False
                 message = 'Enter the institution associated with the user'
             elif not address:
-                ok = False
                 message = 'Enter the address'
             elif not city:
-                ok = False
                 message = 'Enter the city'
             elif not state:
-                ok = False
                 message = 'Enter the state/province/region'
             elif not postal_code:
-                ok = False
                 message = 'Enter the postal code'
             elif not country:
-                ok = False
                 message = 'Enter the country'
-            if ok:
+            else:
                 address_obj.desc = short_desc
                 address_obj.name = name
                 address_obj.institution = institution
@@ -487,34 +479,27 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         postal_code = util.restore_text(params.get('postal_code', ''))
         country = util.restore_text(params.get('country', ''))
         phone = util.restore_text(params.get('phone', ''))
-        ok = True
+
         if not trans.app.config.allow_user_creation and not is_admin:
             return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
+
         if not short_desc:
-            ok = False
             message = 'Enter a short description for this address'
         elif not name:
-            ok = False
             message = 'Enter the name'
         elif not institution:
-            ok = False
             message = 'Enter the institution associated with the user'
         elif not address:
-            ok = False
             message = 'Enter the address'
         elif not city:
-            ok = False
             message = 'Enter the city'
         elif not state:
-            ok = False
             message = 'Enter the state/province/region'
         elif not postal_code:
-            ok = False
             message = 'Enter the postal code'
         elif not country:
-            ok = False
             message = 'Enter the country'
-        if ok:
+        else:
             user_address = trans.model.UserAddress(user=user,
                                                     desc=short_desc,
                                                     name=name,
