@@ -1,8 +1,9 @@
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+import logging
 import time
 
-import logging
+from ..instrumenters import InstrumentPlugin
+from ...metrics import formatting
+
 log = logging.getLogger( __name__ )
 
 GALAXY_SLOTS_KEY = "galaxy_slots"

@@ -18,7 +18,7 @@ from galaxy import web
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
-from galaxy.util import unicodify
+from galaxy.util import unicodify, FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
@@ -815,9 +815,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # This workflow has a tool that's missing from the distribution
             trans.response.status = 400
             return "Workflow cannot be exported due to missing tools."
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         sname = stored.name
-        sname = ''.join(c in valid_chars and c or '_' for c in sname)[0:150]
+        sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % ( sname )
         trans.response.set_content_type( 'application/galaxy-archive' )
         return stored_dict
@@ -994,7 +993,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     myexperiment_target_url=myexperiment_target_url )
 
     @web.expose
-    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
+    def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):
         user = trans.get_user()
         history = trans.get_history()
         if not user:
@@ -1015,7 +1014,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 job_ids=job_ids,
                 dataset_ids=dataset_ids,
                 dataset_collection_ids=dataset_collection_ids,
-                workflow_name=workflow_name
+                workflow_name=workflow_name,
+                dataset_names=dataset_names,
+                dataset_collection_names=dataset_collection_names
             )
             # Index page with message
             workflow_id = trans.security.encode_id( stored_workflow.id )
@@ -1135,7 +1136,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
                 for step in workflow.steps:
                     try:
-                        module_injector.inject( step )
+                        module_injector.inject( step, steps=workflow.steps )
                     except MissingToolException:
                         if step.tool_id not in missing_tools:
                             missing_tools.append(step.tool_id)

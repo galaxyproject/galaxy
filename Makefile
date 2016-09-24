@@ -13,6 +13,9 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
+DOCS_DIR=doc
+OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
+
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
@@ -21,19 +24,32 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
+docs-schema-ready: ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
+	python $(DOCS_DIR)/parse_gx_xsd.py > $(DOCS_DIR)/schema.md
+
+docs-schema-html: docs-schema-ready ## Convert Galaxy Tool XSD Markdown docs into HTML (expects pandoc in environment)
+	pandoc $(DOCS_DIR)/schema.md -f markdown_github -s -o $(DOCS_DIR)/schema.html
+
+open-docs-schema: docs-schema-html ## Open HTML generated from Galaxy Tool XSD.
+	$(OPEN_RESOURCE) $(DOCS_DIR)/schema.html
+
 _open-docs:
-	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
+	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
 
 open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in browser
 
 open-project: ## open project on github
-	open $(PROJECT_URL) || xdg-open $(PROJECT_URL)
+	$(OPEN_RESOURCE) $(PROJECT_URL)
 
 lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
-	if [ ! `git remote -v | grep -q $(RELEASE_UPSTREAM)` ]; then git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git; fi
+ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
+	git remote add $(RELEASE_UPSTREAM) git@github.com:galaxyproject/galaxy.git
+else
+	@echo "Remote $(RELEASE_UPSTREAM) already exists."
+endif
 
 release-merge-stable-to-next: release-ensure-upstream ## Merge last release into dev
 	git fetch $(RELEASE_UPSTREAM) && git checkout dev && git merge --ff-only $(RELEASE_UPSTREAM)/dev && git merge $(RELEASE_UPSTREAM)/$(RELEASE_PREVIOUS)
@@ -79,6 +95,18 @@ grunt-docker: grunt-docker-image ## Run grunt inside docker
 clean-grunt-docker-image: ## Remove grunt docker image
 	docker rmi ${GRUNT_DOCKER_NAME}
 
+grunt-watch-style: npm-deps ## Execute watching style builder for dev purposes
+	cd client && $(GRUNT_EXEC) watch-style
+
+grunt-watch-develop: npm-deps ## Execute watching grunt builder for dev purposes (unpacked, allows debugger statements)
+	cd client && $(GRUNT_EXEC) watch --develop
+
+webpack-watch: npm-deps ## Execute watching webpack for dev purposes
+	cd client && ./node_modules/webpack/bin/webpack.js --watch	
+
+client-develop: grunt-watch-style grunt-watch-develop webpack-watch  ## A useful target for parallel development building.
+	@echo "Remember to rerun `make client` before committing!"
+
 
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch
@@ -89,14 +117,16 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git push $(MY_UPSTREAM) release_$(RELEASE_CURR)
 	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR)
 	git checkout -b version-$(RELEASE_CURR)
-	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_CURR)\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = \"rc1\"/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR).rc1"
 	git checkout dev
 
 	git checkout -b version-$(RELEASE_NEXT).dev
-	sed -i "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_NEXT)\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MAJOR = .*/VERSION_MAJOR = \"$(RELEASE_NEXT)\"/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_NEXT).dev"
 
@@ -106,6 +136,7 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git commit -m "Merge branch 'version-$(RELEASE_CURR)' into version-$(RELEASE_NEXT).dev"
 	git push $(MY_UPSTREAM) version-$(RELEASE_CURR):version-$(RELEASE_CURR)
 	git push $(MY_UPSTREAM) version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
+	git checkout dev
 	git branch -d version-$(RELEASE_CURR)
 	git branch -d version-$(RELEASE_NEXT).dev
 	# TODO: Use hub to automate these PR creations or push directly.
@@ -125,7 +156,8 @@ release-create: release-ensure-upstream ## Create a release branch
 	# Test run of merging. If there are conflicts, it will fail here.
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = None/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR)"
 	git tag -m "Tag version $(RELEASE_CURR)" v$(RELEASE_CURR)
@@ -137,10 +169,10 @@ release-create: release-ensure-upstream ## Create a release branch
 	git commit -m "Merge branch 'release_$(RELEASE_CURR)' into dev"
 	git checkout master
 	git merge release_$(RELEASE_CURR)
-	#git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR):release_$(RELEASE_CURR)
-	#git push $(RELEASE_UPSTREAM) dev:dev
-	#git push $(RELEASE_UPSTREAM) master:master
-	#git push $(RELEASE_UPSTREAM) --tags
+	git push $(RELEASE_UPSTREAM) release_$(RELEASE_CURR):release_$(RELEASE_CURR)
+	git push $(RELEASE_UPSTREAM) dev:dev
+	git push $(RELEASE_UPSTREAM) master:master
+	git push $(RELEASE_UPSTREAM) --tags
 
 release-create-point: ## Create a point release
 	git pull --ff-only $(RELEASE_UPSTREAM) master
@@ -153,7 +185,8 @@ release-create-point: ## Create a point release
 	#git push $(MY_UPSTREAM) $(RELEASE_NEXT_BRANCH)
 	git merge release_$(RELEASE_CURR)
 	git checkout release_$(RELEASE_CURR)
-	sed -i "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py
+	sed -i.bak -e "s/^VERSION_MINOR = .*/VERSION_MINOR = \"$(RELEASE_CURR_MINOR_NEXT)\"/" lib/galaxy/version.py
+	rm -f lib/galaxy/version.py.bak
 	git add lib/galaxy/version.py
 	git commit -m "Update version to $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)"
 	git tag -m "Tag version $(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)" v$(RELEASE_CURR).$(RELEASE_CURR_MINOR_NEXT)

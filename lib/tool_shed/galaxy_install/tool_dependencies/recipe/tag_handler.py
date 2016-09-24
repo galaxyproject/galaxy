@@ -2,18 +2,17 @@ import logging
 import os
 import tempfile
 
-from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
+from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.util import listify, url_get
+from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
+from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
+from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
-
-from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
-from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
-from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 
 log = logging.getLogger( __name__ )
 
@@ -206,7 +205,8 @@ class Package( RecipeTag ):
                 log.debug( "Skipping installation of tool dependency package %s because tool shed dependency resolver not enabled." %
                     str( package_name ) )
                 # Tool dependency resolves have been configured and they do not include the tool shed. Do not install package.
-                if self.app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package') != INDETERMINATE_DEPENDENCY:
+                dep = self.app.toolbox.dependency_manager.find_dep( package_name, package_version, type='package')
+                if not isinstance( dep, NullDependency ):
                     # TODO: Do something here such as marking it installed or configured externally.
                     pass
                 tool_dependency = \
@@ -419,9 +419,9 @@ class Repository( RecipeTag, SyncDatabase ):
                                                                                                         dependent_install_dir,
                                                                                                         tool_dependency_type='package' )
                     if not can_install_tool_dependency:
-                        log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), " %
-                            ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
-                        log.debug( "so appending it to the list of handled tool dependencies." )
+                        log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), "
+                                   "so appending it to the list of handled tool dependencies.",
+                                   str( tool_dependency.name), str( tool_dependency.version ) )
                         handled_tool_dependencies.append( tool_dependency )
             else:
                 can_install_tool_dependency = True

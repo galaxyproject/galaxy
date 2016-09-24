@@ -1,20 +1,61 @@
-from os import listdir
-from os.path import join, islink, realpath, basename, exists
+import logging
 
-from ..resolvers import (
-    DependencyResolver,
-    INDETERMINATE_DEPENDENCY,
-    Dependency,
-    ListableDependencyResolver,
+from os import listdir
+from os.path import (
+    basename,
+    exists,
+    isdir,
+    islink,
+    join,
+    realpath,
 )
+
 from .resolver_mixins import UsesToolDependencyDirMixin
 
-import logging
+from ..resolvers import (
+    Dependency,
+    DependencyResolver,
+    ListableDependencyResolver,
+    NullDependency,
+)
+
 log = logging.getLogger( __name__ )
+
+
+class GalaxyPackageDependency(Dependency):
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version', 'name']
+    dependency_type = 'galaxy_package'
+
+    def __init__( self, script, path, version, name, exact=True ):
+        self.script = script
+        self.path = path
+        self.version = version
+        self.name = name
+        self._exact = exact
+
+    @property
+    def exact(self):
+        return self._exact
+
+    def shell_commands( self, requirement ):
+        base_path = self.path
+        if self.script is None and base_path is None:
+            log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
+            commands = None
+        elif requirement.type == 'package' and self.script is None:
+            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path )
+        else:
+            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, self.script )
+        return commands
+
+
+class ToolShedDependency(GalaxyPackageDependency):
+    dependency_type = 'tool_shed_package'
 
 
 class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirMixin):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'versionless']
+    dependency_type = GalaxyPackageDependency
 
     def __init__(self, dependency_manager, **kwds):
         # Galaxy tool shed requires explicit versions on XML elements,
@@ -39,7 +80,7 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         base_path = self.base_path
         path = join( base_path, name, version )
-        return self._galaxy_package_dep(path, version, True)
+        return self._galaxy_package_dep(path, version, name, True)
 
     def _find_dep_default( self, name, type='package', exact=True, **kwds ):
         base_path = self.base_path
@@ -47,17 +88,17 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         if islink( path ):
             real_path = realpath( path )
             real_version = basename( real_path )
-            return self._galaxy_package_dep(real_path, real_version, exact)
+            return self._galaxy_package_dep(real_path, real_version, name, exact)
         else:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=None, name=name)
 
-    def _galaxy_package_dep( self, path, version, exact ):
+    def _galaxy_package_dep( self, path, version, name, exact ):
         script = join( path, 'env.sh' )
         if exists( script ):
-            return GalaxyPackageDependency(script, path, version, exact)
+            return self.dependency_type(script, path, version, name, exact)
         elif exists( join( path, 'bin' ) ):
-            return GalaxyPackageDependency(None, path, version, exact)
-        return INDETERMINATE_DEPENDENCY
+            return self.dependency_type(None, path, version, name, exact)
+        return NullDependency(version=version, name=name)
 
 
 class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver):
@@ -67,42 +108,18 @@ class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Lista
         base_path = self.base_path
         for package_name in listdir(base_path):
             package_dir = join(base_path, package_name)
-            for version in listdir(package_dir):
-                version_dir = join(package_dir, version)
-                if version == "default":
-                    version = None
-                valid_dependency = _is_dependency_directory(version_dir)
-                if valid_dependency:
-                    yield self._to_requirement(package_name, version)
+            if isdir(package_dir):
+                for version in listdir(package_dir):
+                    version_dir = join(package_dir, version)
+                    if version == "default":
+                        version = None
+                    valid_dependency = _is_dependency_directory(version_dir)
+                    if valid_dependency:
+                        yield self._to_requirement(package_name, version)
 
 
 def _is_dependency_directory(directory):
     return exists(join(directory, 'env.sh')) or exists(join(directory, 'bin'))
 
 
-class GalaxyPackageDependency(Dependency):
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version']
-    dependency_type = 'galaxy_package'
-
-    def __init__( self, script, path, version, exact=True ):
-        self.script = script
-        self.path = path
-        self.version = version
-        self._exact = exact
-
-    @property
-    def exact(self):
-        return self._exact
-
-    def shell_commands( self, requirement ):
-        base_path = self.path
-        if self.script is None and base_path is None:
-            log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
-            commands = None
-        elif requirement.type == 'package' and self.script is None:
-            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % ( base_path, base_path )
-        else:
-            commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, self.script )
-        return commands
-
-__all__ = ['GalaxyPackageDependencyResolver', 'GalaxyPackageDependency']
+__all__ = ['GalaxyPackageDependencyResolver', 'GalaxyPackageDependency', 'ToolShedDependency']

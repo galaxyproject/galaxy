@@ -42,7 +42,8 @@ define(['utils/utils',
                 message     : null,
                 status      : 'info',
                 cls         : '',
-                persistent  : false
+                persistent  : false,
+                fade        : true
             }).set( options );
             this.listenTo( this.model, 'change', this.render, this );
             this.render();
@@ -62,7 +63,7 @@ define(['utils/utils',
             }
             if ( this.model.get( 'message' ) ) {
                 this.$el.html( this.model.get( 'message' ) );
-                this.$el.fadeIn();
+                this.$el[ this.model.get( 'fade' ) ? 'fadeIn' : 'show' ]();
                 this.timeout && window.clearTimeout( this.timeout );
                 if ( !this.model.get( 'persistent' ) ) {
                     var self = this;

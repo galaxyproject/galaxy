@@ -73,6 +73,8 @@ define([], function() {
                 help_text += ' (' + help_argument + ')';
             }
             this.$info.html( help_text );
+            // render visibility
+            this.$el[ this.model.get( 'hidden' ) ? 'hide' : 'show' ]();
             // render preview view for collapsed fields
             this.$preview[ ( this.field.collapsed && this.model.get( 'collapsible_preview' ) || this.model.get( 'disabled' ) ) ? 'show' : 'hide' ]()
                          .html( _.escape( this.model.get( 'text_value' ) ) );
@@ -84,7 +86,7 @@ define([], function() {
             // render backdrop
             this.$backdrop[ this.model.get( 'backdrop' ) ? 'show' : 'hide' ]();
             // render input field
-            this.field.collapsed || this.model.get( 'disabled' ) ? this.$field.hide() : this.$field.fadeIn( 'fast' );
+            this.field.collapsed || this.model.get( 'disabled' ) ? this.$field.hide() : this.$field.show();
             // render input field color and style
             this.field.model && this.field.model.set( { 'color': this.model.get( 'color' ), 'style': this.model.get( 'style' ) } );
             // render collapsible options

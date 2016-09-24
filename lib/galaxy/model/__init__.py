@@ -215,6 +215,16 @@ class User( object, Dictifiable ):
                     roles.append( role )
         return roles
 
+    def all_roles_exploiting_cache( self ):
+        """
+        """
+        roles = [ ura.role for ura in self.roles ]
+        for group in [ uga.group for uga in self.groups ]:
+            for role in [ gra.role for gra in group.roles ]:
+                if role not in roles:
+                    roles.append( role )
+        return roles
+
     def get_disk_usage( self, nice_size=False ):
         """
         Return byte count of disk space used by user or a human-readable
@@ -383,6 +393,7 @@ class Job( object, JobLike, Dictifiable ):
         self.tool_id = None
         self.tool_version = None
         self.command_line = None
+        self.dependencies = []
         self.param_filename = None
         self.parameters = []
         self.input_datasets = []
@@ -439,6 +450,9 @@ class Job( object, JobLike, Dictifiable ):
 
     def get_command_line( self ):
         return self.command_line
+
+    def get_dependencies(self):
+        return self.dependencies
 
     def get_param_filename( self ):
         return self.param_filename
@@ -519,6 +533,9 @@ class Job( object, JobLike, Dictifiable ):
 
     def set_command_line( self, command_line ):
         self.command_line = command_line
+
+    def set_dependencies( self, dependencies ):
+        self.dependencies = dependencies
 
     def set_param_filename( self, param_filename ):
         self.param_filename = param_filename
@@ -2024,7 +2041,7 @@ class DatasetInstance( object ):
             depends_list = []
         return dict([ (dep, self.get_converted_dataset(trans, dep)) for dep in depends_list ])
 
-    def get_converted_dataset(self, trans, target_ext):
+    def get_converted_dataset(self, trans, target_ext, target_context=None):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -2063,13 +2080,15 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass  # No deps
-        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True ).values()))
+        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True, target_context=target_context ).values()))
+        new_dataset.hid = self.hid
+        new_dataset.name = self.name
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
         session = trans.sa_session
         session.add( new_dataset )
         session.add( assoc )
         session.flush()
-        return None
+        return new_dataset
 
     def get_metadata_dataset( self, dataset_ext ):
         """
@@ -3298,6 +3317,15 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, UsesAnnota
     def type_id( cls ):
         return (( type_coerce( cls.content_type, types.Unicode ) + u'-' +
                   type_coerce( cls.id, types.Unicode ) ).label( 'type_id' ))
+
+    def to_hda_representative( self, multiple=False ):
+        rval = []
+        for dataset in self.collection.dataset_elements:
+            rval.append( dataset.dataset_instance )
+            if multiple is False:
+                break
+        if len( rval ) > 0:
+            return rval if multiple else rval[ 0 ]
 
     def to_dict( self, view='collection' ):
         dict_value = dict(

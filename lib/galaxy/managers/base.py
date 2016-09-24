@@ -699,6 +699,7 @@ class ModelSerializer( HasAModelManager ):
             no `view` or `keys`: use the `default_view` if any
             `view` and `keys`: combine both into one list of keys
         """
+
         # TODO: default view + view makes no sense outside the API.index context - move default view there
         all_keys = []
         keys = keys or []

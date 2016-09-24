@@ -1,0 +1,180 @@
+html, body {
+    height: 100%;
+    font-size: 12px;
+}
+
+body {
+    overflow: hidden;
+}
+
+.body-container {
+    opacity: 0;
+    transition: opacity 1s;
+}
+
+.body-container-loaded {
+    opacity: 1;
+}
+
+/* Styles for message text box */
+.message-textarea {
+    height: 50px !important;
+    width: 99.5%;
+    padding: 6px 3px;
+    font-size: inherit;
+}
+
+/* Styles for top right icons */
+.right_icons {
+    margin-left: 95%;
+}
+
+.chat-room-textbx {
+    width: 34%;
+    height: 10%;
+    padding: 6px 3px;
+    font-size: inherit;
+}
+
+ul, li,
+.anchor {
+    cursor: pointer;
+    color: black;
+}
+
+.nav>li>a:hover, .nav>li>a:focus {
+    background-color: #F7F8FA; 
+}
+
+.messages {
+    overflow-y: auto;
+    height: 100%;
+    overflow-x: hidden;
+    /*background-color: #F7F8FA;*/
+}
+
+.send_message {
+    margin-top: 5px;
+    margin-left: 2px;
+}
+
+.user_message {
+    background-color: #F7F8FA;
+    margin: 2px 0px 4px 2px;
+    padding: 2px;
+    box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5);
+    border-radius: 2px;
+}
+
+.user_name {
+    font-weight: 900;
+    padding-left: 0px;
+}
+
+.date_time {
+    font-style: italic;
+    padding-right: 0px;
+    font-size: 11px;
+}
+
+.message {
+    padding-top: 2px;
+}
+
+.tab-content {
+    height: 64%;
+}
+
+.tab-pane {
+    height: 100%;
+    padding: 5px 20px 5px 5px;
+    
+}
+
+#chat_room_tab {
+    margin-left: 2%;
+}
+
+.row {
+    /* Override the margins, otherwise goes outside of bounds */
+    margin-right: 0px;
+    margin-left: 0px;
+}
+
+.nav li a {
+    padding: 7px 7px;
+}
+
+ul > li i {
+    padding-left: 4px;
+}
+
+.join-room {
+    margin-left: -2.3%;
+}
+
+.global-rooms {
+    overflow-y: auto;
+    height: 200px;
+    margin-top: 1%;
+}
+
+.global-room {
+    margin: 0px 2px 2px 0px;
+    padding: 3px 6px;
+    font-size: inherit; 
+}
+
+a:hover, a:visited {
+    text-decoration: none;
+}
+
+/****styles for overflow tabs****/
+.wrapper {
+    position: relative;
+    margin: 0 auto;
+    overflow: hidden;
+    height: 45px;
+}
+
+.list {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    min-width: 3000px;
+    margin-top: 0px;
+}
+
+.list li {
+    display: table-cell;
+    position: relative;
+    text-align: center;
+    color: #efefef;
+    vertical-align: middle;
+}
+
+.scroller {
+    text-align: center;
+    cursor: pointer;
+    display: none;
+    padding: 5px;
+    padding-top: 9px;
+    vertical-align: middle;
+    background-color: #fff;
+}
+
+.scroller-right {
+    float: right;
+}
+
+.scroller-left {
+    float: left;
+}
+
+.message-height, 
+.notification-padding {
+    padding-right: 0px;
+}
+
+
+

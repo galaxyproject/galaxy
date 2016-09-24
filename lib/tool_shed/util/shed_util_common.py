@@ -10,11 +10,9 @@ from sqlalchemy import and_, false, true
 
 import tool_shed.util.repository_util
 from galaxy import util
-from galaxy.web import url_for
 from galaxy.util import checkers
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
+from galaxy.web import url_for
+from tool_shed.util import basic_util, common_util, hg_util
 
 log = logging.getLogger( __name__ )
 
@@ -178,6 +176,63 @@ def get_category_by_name( app, name ):
         return sa_session.query( app.model.Category ).filter_by( name=name ).one()
     except sqlalchemy.orm.exc.NoResultFound:
         return None
+
+
+def get_tool_shed_repo_requirements(app, tool_shed_url, repository):
+    """
+    Contact tool_shed_url for a list of requirements for a repository or a list of repositories.
+    Returns a list of requirements, where each requirement is a dictionary with name and version as keys.
+    """
+    if not isinstance(repository, list):
+        repositories = [repository]
+    else:
+        repositories = repository
+    pathspec = ["api", "repositories", "get_repository_revision_install_info"]
+    tools = []
+    for repository in repositories:
+        params = {"name": repository.name,
+                  "owner": repository.owner,
+                  "changeset_revision": repository.changeset_revision}
+        response = util.url_get(tool_shed_url,
+                                password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ),
+                                pathspec=pathspec,
+                                params=params
+                                )
+        json_response = json.loads(response)
+        valid_tools = json_response[1].get('valid_tools', [])
+        if valid_tools:
+            tools.extend(valid_tools)
+    return get_unique_requirements_from_tools(tools)
+
+
+def get_unique_requirements_from_tools(tools):
+    requirements = []
+    for tool in tools:
+        if tool['requirements']:
+            requirements.append(tool['requirements'])
+    return get_unique_requirements(requirements)
+
+
+def get_unique_requirements(requirements):
+    uniq_reqs = dict()
+    for tool_requirements in requirements:
+        for req in tool_requirements:
+            name = req.get("name", None)
+            if not name:
+                continue  # A requirement without a name can't be resolved, so let's skip those
+            version = req.get("version", "versionless")
+            type = req.get("type", None)
+            if not type == "package":
+                continue
+            uniq_reqs["%s_%s" % (name, version)] = {'name': name, 'version': version, 'type': type}
+    return list(uniq_reqs.values())
+
+
+def get_unique_requirements_from_repository(repository):
+    if not repository.includes_tools:
+        return []
+    else:
+        return get_unique_requirements_from_tools(repository.metadata.get('tools', []))
 
 
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):

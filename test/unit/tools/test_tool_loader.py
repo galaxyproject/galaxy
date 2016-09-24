@@ -1,9 +1,10 @@
-from tempfile import mkdtemp
-from shutil import rmtree
 import os
 
+from shutil import rmtree
+from tempfile import mkdtemp
+
+from galaxy.tools.loader import load_tool, template_macro_params
 from galaxy.util import parse_xml
-from galaxy.tools.loader import template_macro_params, load_tool
 
 
 def test_loader():

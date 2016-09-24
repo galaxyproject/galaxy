@@ -6,14 +6,16 @@ This is a community contributed feature and the core Galaxy team does utilize
 it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
+import logging
+
 from os import environ, pathsep
 from os.path import exists, isdir, join
+from subprocess import PIPE, Popen
+
 from six import StringIO
-from subprocess import Popen, PIPE
 
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
+from ..resolvers import Dependency, DependencyResolver, NullDependency
 
-import logging
 log = logging.getLogger( __name__ )
 
 DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
@@ -52,14 +54,14 @@ class ModuleDependencyResolver(DependencyResolver):
 
     def resolve( self, name, version, type, **kwds ):
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version, exact=True)
         elif self.versionless and self.__has_module(name, None):
             return ModuleDependency(self, name, None, exact=False)
 
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
     def __has_module(self, name, version):
         return self.module_checker.has_module(name, version)

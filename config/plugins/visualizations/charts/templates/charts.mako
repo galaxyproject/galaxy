@@ -12,6 +12,7 @@
 
         ## install shared libraries
         ${h.js( 'libs/jquery/jquery',
+                'libs/jquery/jquery-ui',
                 'libs/jquery/select2',
                 'libs/bootstrap',
                 'libs/underscore',
@@ -20,7 +21,7 @@
                 'libs/require')}
 
         ## shared css
-        ${h.css( 'base' )}
+        ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui' )}
 
         ## crossfilter
         ${h.javascript_link( app_root + "plugins/crossfilter/crossfilter.js" )}
@@ -46,21 +47,13 @@
 
     <body>
         <script type="text/javascript">
-            // get configuration
-            var config = {
-                root     : '${root}',
-                app_root : '${app_root}'
-            };
-
-            // link galaxy
+            var app_root = '${app_root}';
             var Galaxy = Galaxy || parent.Galaxy || {
                 root    : '${root}',
                 emit    : {
                     debug: function() {}
                 }
             };
-
-            // console protection
             window.console = window.console || {
                 log     : function(){},
                 debug   : function(){},
@@ -69,10 +62,8 @@
                 error   : function(){},
                 assert  : function(){}
             };
-
-            // configure require
             require.config({
-                baseUrl: config.root + "static/scripts/",
+                baseUrl: Galaxy.root + "static/scripts/",
                 paths: {
                     "plugin"        : "${app_root}",
                     "d3"            : "libs/d3"
@@ -87,22 +78,15 @@
             window.onbeforeunload = function() {
                 return 'You are leaving Charts.';
             };
-            // application
             var app = null;
             $(function() {
-                // request application script
-                require(['plugin/app'], function(App) {
-                    // load options
+                require( [ 'plugin/app' ], function( App ) {
                     var options = {
                         id      : ${h.dumps( visualization_id )} || undefined,
                         config  : ${h.dumps( config )}
                     }
-
-                    // create application
-                    app = new App(options);
-
-                    // add to body
-                    $('body').append(app.$el);
+                    app = new App( options );
+                    $( 'body' ).append( app.$el );
                 });
             });
 

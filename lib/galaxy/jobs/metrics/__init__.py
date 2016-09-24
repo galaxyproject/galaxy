@@ -1,12 +1,12 @@
 import collections
+import logging
 import os
 
-from galaxy.util import plugin_config
 from galaxy import util
+from galaxy.util import plugin_config
 
 from ..metrics import formatting
 
-import logging
 log = logging.getLogger( __name__ )
 
 

@@ -1,14 +1,14 @@
 """ This module is responsible for converting between Galaxy's tool
 input description and the CWL description for a job json. """
 
-from six import string_types
 import json
+import logging
 import os
 
-import logging
+from six import string_types
 
-from galaxy.util import string_as_bool, safe_makedirs
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.util import safe_makedirs, string_as_bool
 
 log = logging.getLogger(__name__)
 

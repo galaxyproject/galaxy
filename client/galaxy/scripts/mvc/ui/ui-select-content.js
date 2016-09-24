@@ -219,6 +219,7 @@ var View = Backbone.View.extend({
             _.each( items, function( item ) {
                 select_options[ src ].push({
                     hid  : item.hid,
+                    keep : item.keep,
                     label: item.hid + ': ' + item.name,
                     value: item.id
                 });

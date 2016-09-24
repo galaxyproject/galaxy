@@ -4,7 +4,7 @@
       <requirement type="package">samtools</requirement>
   </requirements>
   <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
-  <command>python "${set_metadata}" ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}</command>
+  <command>"\${GALAXY_PYTHON:-python}" "${set_metadata}" ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}</command>
   <inputs>
     <param format="data" name="input1" type="data" label="File to set metadata on."/>
     <param name="__ORIGINAL_DATASET_STATE__" type="hidden" value=""/>

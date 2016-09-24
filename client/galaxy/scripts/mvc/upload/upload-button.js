@@ -1,5 +1,5 @@
+/** View for upload/progress bar button */
 define( [], function() {
-    /** View for upload/progress bar button */
     var View = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -45,6 +45,5 @@ define( [], function() {
                     '</div>';
         }
     });
-
     return { View : View };
 });

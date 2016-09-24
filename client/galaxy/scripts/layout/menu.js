@@ -1,5 +1,8 @@
 /** Masthead Collection **/
-define(['mvc/tours', 'mvc/user/user-preferences'], function( Tours, Preferences ) {
+define(['mvc/tours',
+        'layout/generic-nav-view',
+        'mvc/user/user-preferences'],
+function( Tours, GenericNav, Preferences ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -10,6 +13,12 @@ var Collection = Backbone.Collection.extend({
     fetch: function( options ){
         options = options || {};
         this.reset();
+
+        //
+        // Chat server tab
+        //
+        var extendedNavItem = new GenericNav.GenericNavView();
+        this.add(extendedNavItem.render()); 
 
         //
         // Analyze data tab.
@@ -183,15 +192,17 @@ var Collection = Backbone.Collection.extend({
                 cls             : 'loggedout-only',
                 tooltip         : 'Account registration or login',
                 menu            : [{
-                    title       : 'Login',
-                    url         : 'user/login',
-                    target      : 'galaxy_main'
+                    title           : 'Login',
+                    url             : 'user/login',
+                    target          : 'galaxy_main',
+                    noscratchbook   : true
                 }]
             };
             options.allow_user_creation && userTab.menu.push({
-                title   : 'Register',
-                url     : 'user/create',
-                target  : 'galaxy_main'
+                title           : 'Register',
+                url             : 'user/create',
+                target          : 'galaxy_main',
+                noscratchbook   : true
             });
             this.add( userTab );
         } else {
@@ -326,9 +337,10 @@ var Tab = Backbone.View.extend({
     _buildMenuItem: function ( options ) {
         var self = this;
         options = _.defaults( options || {}, {
-            title       : '',
-            url         : '',
-            target      : '_parent'
+            title           : '',
+            url             : '',
+            target          : '_parent',
+            noscratchbook   : false
         });
         options.url = self._formatUrl( options.url );
         return $( '<li/>' ).append(

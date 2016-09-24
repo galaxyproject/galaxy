@@ -50,17 +50,17 @@ class ToolParameter( object, Dictifiable ):
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
     """
-    dict_collection_visible_keys = ( 'name', 'argument', 'type', 'label', 'help' )
+    dict_collection_visible_keys = ( 'name', 'argument', 'type', 'label', 'help', 'refresh_on_change' )
 
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source(input_source)
         self.tool = tool
-        self.refresh_on_change = False
         self.refresh_on_change_values = []
         self.argument = input_source.get("argument")
         self.name = ToolParameter.parse_name( input_source )
         self.type = input_source.get("type")
         self.hidden = input_source.get("hidden", False)
+        self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
         self.label = input_source.parse_label()
@@ -114,16 +114,6 @@ class ToolParameter( object, Dictifiable ):
         """
         return None
 
-    def get_initial_value_from_history_prevent_repeats( self, trans, other_values, already_used ):
-        """
-        Get the starting value for the parameter, but if fetching from the history, try
-        to find a value that has not yet been used. already_used is a list of objects that
-        tools must manipulate (by adding to it) to store a memento that they can use to detect
-        if a value has already been chosen from the history. This is to support the capability to
-        choose each dataset once
-        """
-        return self.get_initial_value( trans, other_values )
-
     def get_required_enctype( self ):
         """
         If this parameter needs the form to have a specific encoding
@@ -138,7 +128,7 @@ class ToolParameter( object, Dictifiable ):
         """
         return []
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         """Convert a value to a string representation suitable for persisting"""
         return unicodify( value )
 
@@ -146,13 +136,13 @@ class ToolParameter( object, Dictifiable ):
         """Convert a value created with to_json back to an object representation"""
         return value
 
-    def value_to_basic( self, value, app ):
+    def value_to_basic( self, value, app, use_security=False ):
         if isinstance( value, RuntimeValue ):
             return { '__class__': 'RuntimeValue' }
         elif isinstance( value, dict ):
             if value.get('__class__') == 'RuntimeValue':
                 return value
-        return self.to_json( value, app )
+        return self.to_json( value, app, use_security )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         # Handle Runtime values (valid for any parameter?)
@@ -259,7 +249,7 @@ class TextToolParameter( ToolParameter ):
         else:
             return form_builder.TextField( self.name, self.size, value )
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         """Convert a value to a string representation suitable for persisting"""
         if value is None:
             rval = ''
@@ -481,7 +471,7 @@ class BooleanToolParameter( ToolParameter ):
     def to_python( self, value, app=None ):
         return ( value in [ True, 'True', 'true' ] )
 
-    def to_json( self, value, app=None ):
+    def to_json( self, value, app, use_security ):
         if self.to_python( value, app ):
             return 'true'
         else:
@@ -556,7 +546,7 @@ class FileToolParameter( ToolParameter ):
         """
         return "multipart/form-data"
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         if value in [ None, '' ]:
             return None
         elif isinstance( value, string_types ):
@@ -626,7 +616,7 @@ class FTPFileToolParameter( ToolParameter ):
     def from_json( self, value, trans=None, other_values={} ):
         return self.to_python( value, trans.app, validate=True )
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         return self.to_python( value, app )
 
     def to_python( self, value, app, validate=False ):
@@ -964,7 +954,7 @@ class SelectToolParameter( ToolParameter ):
             value = value_map( value )
         return value
 
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         return value
 
     def get_initial_value( self, trans, other_values ):
@@ -1202,10 +1192,12 @@ class ColumnListParameter( SelectToolParameter ):
             return []
         column_list = None
         for dataset in util.listify( dataset ):
+            # Use representative dataset if a dataset collection is parsed
+            if isinstance( dataset, trans.app.model.HistoryDatasetCollectionAssociation ):
+                dataset = dataset.to_hda_representative()
             # Columns can only be identified if metadata is available
             if not hasattr( dataset, 'metadata' ) or not hasattr( dataset.metadata, 'columns' ) or not dataset.metadata.columns:
                 return []
-
             # Build up possible columns for this dataset
             this_column_list = []
             if self.numerical:
@@ -1216,7 +1208,6 @@ class ColumnListParameter( SelectToolParameter ):
             else:
                 for i in range( 0, dataset.metadata.columns ):
                     this_column_list.append( str( i + 1 ) )
-
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
@@ -1608,6 +1599,7 @@ class BaseDataToolParameter( ToolParameter ):
 
     def __init__( self, tool, input_source, trans ):
         super(BaseDataToolParameter, self).__init__( tool, input_source )
+        self.refresh_on_change = True
 
     def _get_history( self, trans ):
         class_name = self.__class__.__name__
@@ -1667,7 +1659,26 @@ class BaseDataToolParameter( ToolParameter ):
             self.options_filter_attribute = options_elem.get(  'options_filter_attribute', None )
         self.is_dynamic = self.options is not None
 
-    def to_json( self, value, app ):
+    def get_initial_value( self, trans, other_values ):
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
+            return RuntimeValue()
+        if self.optional:
+            return None
+        history = trans.history
+        if history is not None:
+            dataset_matcher = DatasetMatcher( trans, self, None, other_values )
+            if isinstance( self, DataToolParameter ):
+                for hda in reversed( history.active_datasets_children_and_roles ):
+                    match = dataset_matcher.hda_match( hda, check_security=False )
+                    if match:
+                        return match.hda
+            else:
+                dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+                for hdca in reversed( history.active_dataset_collections ):
+                    if dataset_collection_matcher.hdca_match( hdca, reduction=self.multiple ):
+                        return hdca
+
+    def to_json( self, value, app, use_security ):
         def single_to_json( value ):
             src = None
             if isinstance( value, dict ) and 'src' in value and 'id' in value:
@@ -1679,8 +1690,7 @@ class BaseDataToolParameter( ToolParameter ):
             elif hasattr( value, 'id' ):
                 src = 'hda'
             if src is not None:
-                return { 'id' : app.security.encode_id( value.id ), 'src' : src }
-
+                return { 'id' : app.security.encode_id( value.id ) if use_security else value.id, 'src' : src }
         if value not in [ None, '', 'None' ]:
             if isinstance( value, list ) and len( value ) > 0:
                 values = [ single_to_json( v ) for v in value ]
@@ -1692,7 +1702,7 @@ class BaseDataToolParameter( ToolParameter ):
     def to_python( self, value, app ):
         def single_to_python( value ):
             if isinstance( value, dict ) and 'src' in value:
-                id = app.security.decode_id( value[ 'id' ] )
+                id = value[ 'id' ] if isinstance( value[ 'id' ], int ) else app.security.decode_id( value[ 'id' ] )
                 if value[ 'src' ] == 'dce':
                     return app.model.context.query( app.model.DatasetCollectionElement ).get( id )
                 elif value[ 'src' ] == 'hdca':
@@ -1716,7 +1726,7 @@ class BaseDataToolParameter( ToolParameter ):
             decoded_id = str( value )[ len( "__collection_reduce__|" ): ]
             if not decoded_id.isdigit():
                 decoded_id = app.security.decode_id( decoded_id )
-            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( app.security.decode_id( decoded_id ) )
+            return app.model.context.query( app.model.HistoryDatasetCollectionAssociation ).get( int( decoded_id ) )
         elif str( value ).startswith( "dce:" ):
             return app.model.context.query( app.model.DatasetCollectionElement ).get( int( value[ len( "dce:" ): ] ) )
         elif str( value ).startswith( "hdca:" ):
@@ -1828,44 +1838,6 @@ class DataToolParameter( BaseDataToolParameter ):
 
         for item in dataset_collector( history.active_datasets_children_and_roles, None ):
             yield item
-
-    def get_initial_value( self, trans, other_values ):
-        return self.get_initial_value_from_history_prevent_repeats(trans, other_values, None )
-
-    def get_initial_value_from_history_prevent_repeats( self, trans, other_values, already_used ):
-        """
-        NOTE: This is wasteful since dynamic options and dataset collection
-              happens twice (here and when generating HTML).
-        """
-        # Can't look at history in workflow mode. Tool shed has no histories.
-        if trans.workflow_building_mode is workflow_building_modes.ENABLED or trans.app.name == 'tool_shed':
-            return RuntimeValue()
-        history = self._get_history( trans )
-        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        if self.optional:
-            return None
-        most_recent_dataset = []
-
-        def dataset_collector( datasets ):
-            for data in datasets:
-                if data.visible and dataset_matcher.hda_accessible( data, check_security=False ):
-                    match = dataset_matcher.valid_hda_match( data, check_security=False )
-                    if not match or dataset_matcher.filter( match.hda ):
-                        continue
-                    data = match.hda
-                    most_recent_dataset.append(data)
-                # Also collect children via association object
-                dataset_collector( data.children )
-        dataset_collector( history.active_datasets_children_and_roles )
-        most_recent_dataset.reverse()
-        if already_used is not None:
-            for val in most_recent_dataset:
-                if val is not None and val not in already_used:
-                    already_used.append(val)
-                    return val
-        if len(most_recent_dataset) > 0:
-            return most_recent_dataset[0]
-        return ''
 
     def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
@@ -2059,20 +2031,21 @@ class DataToolParameter( BaseDataToolParameter ):
         multiple = self.multiple
 
         # build and append a new select option
-        def append( list, id, hid, name, src ):
-            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src } )
+        def append( list, id, hid, name, src, keep=False ):
+            return list.append( { 'id' : trans.security.encode_id( id ), 'hid' : hid, 'name' : name, 'src' : src, 'keep': keep } )
 
         # add datasets
         visible_hda = other_values.get( self.name )
         has_matched = False
         for hda in history.active_datasets_children_and_roles:
-            match = dataset_matcher.hda_match( hda )
+            match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m.name if m.visible else '(hidden) %s' % m.name, 'hda' )
+                m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
+                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name if m.visible else '(hidden) %s' % m_name, 'hda' )
         if not has_matched and isinstance( visible_hda, trans.app.model.HistoryDatasetAssociation ):
-            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda' )
+            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
@@ -2207,6 +2180,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
+        other_values = other_values or {}
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
@@ -2214,7 +2188,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # return dictionary without options if context is unavailable
         history = trans.history
-        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED or other_values is None:
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return d
 
         # prepare dataset/collection matching
@@ -2294,25 +2268,25 @@ class LibraryDatasetToolParameter( ToolParameter ):
 
     # converts values to json representation:
     #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
-    def to_json( self, value, app ):
+    def to_json( self, value, app, use_security ):
         if not isinstance( value, list ):
             value = [value]
         lst = []
         for item in value:
-            encoded_id = encoded_name = None
+            lda_id = lda_name = None
             if isinstance(item, app.model.LibraryDatasetDatasetAssociation):
-                encoded_id = app.security.encode_id( item.id )
-                encoded_name = item.name
+                lda_id = app.security.encode_id( item.id ) if use_security else item.id
+                lda_name = item.name
             elif isinstance(item, dict):
-                encoded_id = item.get('id')
-                encoded_name = item.get('name')
+                lda_id = item.get('id')
+                lda_name = item.get('name')
             else:
                 lst = []
                 break
-            if encoded_id is not None:
+            if lda_id is not None:
                 lst.append( {
-                    'id'   : encoded_id,
-                    'name' : encoded_name,
+                    'id'   : lda_id,
+                    'name' : lda_name,
                     'src'  : 'ldda'
                 } )
         if len( lst ) == 0:
@@ -2334,15 +2308,15 @@ class LibraryDatasetToolParameter( ToolParameter ):
             if isinstance(item, app.model.LibraryDatasetDatasetAssociation):
                 lst.append(item)
             else:
-                encoded_id = None
+                lda_id = None
                 if isinstance(item, dict):
-                    encoded_id = item.get('id')
+                    lda_id = item.get('id')
                 elif isinstance(item, string_types):
-                    encoded_id = item
+                    lda_id = item
                 else:
                     lst = []
                     break
-                lda = app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( app.security.decode_id( encoded_id ) )
+                lda = app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( lda_id if isinstance( lda_id, int ) else app.security.decode_id( lda_id ) )
                 if lda is not None:
                     lst.append( lda )
                 elif validate:

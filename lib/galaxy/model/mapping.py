@@ -445,6 +445,7 @@ model.Job.table = Table(
     Column( "state", String( 64 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "command_line", TEXT ),
+    Column( "dependencies", JSONType, nullable=True),
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),
@@ -2546,7 +2547,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
 
     model_modules = [model]
     if map_install_models:
-        import galaxy.model.tool_shed_install.mapping  # noqa
+        import galaxy.model.tool_shed_install.mapping  # noqa: F401
         from galaxy.model import tool_shed_install
         model_modules.append(tool_shed_install)
 

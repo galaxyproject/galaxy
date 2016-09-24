@@ -187,6 +187,10 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         return self.create_api_key( self, user )
 
     # ---- preferences
+    def preferences( self, user ):
+        log.warn(dict( (key, value) for key, value in user.preferences.items() ))
+        return dict( (key, value) for key, value in user.preferences.items() )
+
     # ---- roles and permissions
     def private_role( self, user ):
         return self.app.security_agent.get_private_user_role( user )
@@ -263,7 +267,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'purged',
             # 'active',
 
-            # 'preferences',
+            'preferences',
             #  all tags
             'tags_used',
             # all annotations
@@ -279,6 +283,8 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
             'is_admin'      : lambda i, k, **c: self.user_manager.is_admin( i ),
+
+            'preferences'   : lambda i, k, **c: self.user_manager.preferences( i ),
 
             'total_disk_usage' : lambda i, k, **c: float( i.total_disk_usage ),
             'quota_percent' : lambda i, k, **c: self.user_manager.quota( i ),
