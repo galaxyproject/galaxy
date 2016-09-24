@@ -701,17 +701,15 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             obj_type = ''
 
         # converts the list to JSON iterable
-        index = 0
         current_action_list = dict()
-        for item in current_actions:
+        for index, item in enumerate(current_actions):
             current_action_list[index] = dict()
             current_action_list[index]["action"] = item.action
-            index = index + 1
+
         all_permitted_actions = list()
         permitted_action_list = dict()
         action_role = list()
-        index = 0
-        for item, action in permitted_actions:
+        for index, (item, action) in permitted_actions:
             if item not in do_not_render:
                 permitted_action_list[index] = dict()
                 if(item == 'LIBRARY_ACCESS'):
@@ -751,7 +749,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                                                   title='',
                                                   type='hidden',
                                                   help='<hr class="docutils">'))
-            index = index + 1
 
         action_role.append(dict(value="", label='Add or remove roles'))
         all_permitted_actions.append(dict(name=('addremove_actionrole'),
