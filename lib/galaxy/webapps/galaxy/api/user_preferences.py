@@ -157,8 +157,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 user_address_list.append(dict(id='horizontal_line', title='', type='hidden', help='<hr class="docutils">'))
 
             # build user info list
-            if(user.values or user_info_forms):
-                if(user_type_fd_id_select_field.options):
+            if user.values or user_info_forms:
+                if user_type_fd_id_select_field.options:
                     user_info_forms.append(dict(name='usertype', label='User type:', type='hidden', help=user_type_fd_id_select_field.get_html()))
                 else:
                     user_info_forms.append(dict(name='user_type_fd_id', type='hidden', value=trans.security.encode_id(user_type_fd_id)))
@@ -192,7 +192,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 'active_filter': show_filter
             }
         else:
-            if(user.active_repositories):
+            if user.active_repositories:
                 # build username input
                 user_login_form.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
@@ -225,7 +225,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             return self.edit_address(trans, cntrller, kwd)
         elif (call_type == 'undelete_address'):
             return self.undelete_address(trans, cntrller, kwd)
-        elif(call_type == 'delete_address'):
+        elif call_type == 'delete_address':
             return self.delete_address(trans, cntrller, kwd)
         else:
             return self.user_info(cntrller, trans, kwd)
@@ -649,7 +649,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             current_actions = []
         for a in current_actions:
             if a.action == action.action:
-                if(str(a.role.id) not in in_roles):
+                if str(a.role.id) not in in_roles:
                     selected_role.append(a.role.id)
         return selected_role
 
@@ -712,12 +712,12 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         for index, (item, action) in permitted_actions:
             if item not in do_not_render:
                 permitted_action_list[index] = dict()
-                if(item == 'LIBRARY_ACCESS'):
+                if item == 'LIBRARY_ACCESS':
                     role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, all_roles)
                 else:
                     role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, roles)
                 # make inputs for the permissions form
-                if(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access'):
+                if trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access':
                     all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=(action.description + '<br/> NOTE: Users must have every role associated with this dataset in order to access it')))
                 else:
                     all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=action.description))
