@@ -81,7 +81,6 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/user_preferences/edit_toolbox_filters' )
     webapp.add_client_route( '/user_preferences/change_communication' )
     webapp.add_client_route( '/user_preferences/logout' )
-    
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
@@ -471,7 +470,7 @@ def populate_api_routes( webapp, app ):
     # ================================
     # ===== USER PREFERENCES API =====
     # ================================
-    
+
     webapp.mapper.connect( 'index',
                            '/api/user_preferences',
                            controller='user_preferences',

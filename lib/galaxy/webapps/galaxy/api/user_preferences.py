@@ -2,31 +2,28 @@
 API operations on User Preferences objects.
 """
 
-import sys
-import logging
 import sets
 import json
+import logging
+import datetime
 
 from markupsafe import escape
-from sqlalchemy import false, and_, or_, true, func
+from sqlalchemy import and_, true
 
-from galaxy import exceptions, util, web
-from galaxy.managers import users
+from galaxy import util
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.tools.toolbox.filters import FilterFactory
-from galaxy.util import biostar, hash_util, docstring_trim, listify
+from galaxy.util import docstring_trim, listify
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import string_as_bool
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.base.controller import CreatesUsersMixin
 from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
-from galaxy.web.form_builder import build_select_field, CheckboxField
+from galaxy.web.form_builder import build_select_field
 
 log = logging.getLogger(__name__)
 
@@ -47,8 +44,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             'openid': trans.app.config.enable_openid,
             'enable_quotas': trans.app.config.enable_quotas,
             'disk_usage': trans.user.get_disk_usage(nice_size=True),
-            'quota': trans.app.quota_agent.get_quota(trans.user,
-                                                     nice_size=True)
+            'quota': trans.app.quota_agent.get_quota(trans.user, nice_size=True)
         }
 
     def __get_user_type_form_definition(self, trans, user=None, **kwd):
@@ -66,15 +62,15 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
     def __build_user_type_fd_id_select_field(self, trans, selected_value):
         # Get all the user information forms
         user_info_forms = self.get_all_forms(trans,
-                                              filter=dict(deleted=False),
-                                              form_type=trans.model.FormDefinition.types.USER_INFO)
+                                             filter=dict(deleted=False),
+                                             form_type=trans.model.FormDefinition.types.USER_INFO)
         return build_select_field(trans,
-                                   objs=user_info_forms,
-                                   label_attr='name',
-                                   select_field_name='user_type_fd_id',
-                                   initial_value='none',
-                                   selected_value=selected_value,
-                                   refresh_on_change=True)
+                                  objs=user_info_forms,
+                                  label_attr='name',
+                                  select_field_name='user_type_fd_id',
+                                  initial_value='none',
+                                  selected_value=selected_value,
+                                  refresh_on_change=True)
 
     def __get_widgets(self, trans, user_type_form_definition, user=None, **kwd):
         widgets = []
@@ -82,8 +78,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             if user:
                 if user.values:
                     widgets = user_type_form_definition.get_widgets(user=user,
-                                                                     contents=user.values.content,
-                                                                     **kwd)
+                                                                    contents=user.values.content,
+                                                                    **kwd)
                 else:
                     widgets = user_type_form_definition.get_widgets(None, contents={}, **kwd)
             else:
@@ -128,9 +124,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             else:
                 addresses = [address for address in user.addresses if not address.deleted]
             user_info_forms = self.get_all_forms(trans,
-                                                  filter=dict(deleted=False),
-                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO)
-            address_list = dict()
+                                                 filter=dict(deleted=False),
+                                                 form_type=trans.app.model.FormDefinition.types.USER_INFO)
             filter_list = list()
             user_address_list = list()
             user_info_form = list()
@@ -161,8 +156,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 user_address_list.append(dict(id='horizontal_line', title='', type='hidden', help='<hr class="docutils">'))
 
             # build user info list
-            if(user.values or user_info_forms):
-                if(user_type_fd_id_select_field.options):
+            if user.values or user_info_forms:
+                if user_type_fd_id_select_field.options:
                     user_info_forms.append(dict(name='usertype', label='User type:', type='hidden', help=user_type_fd_id_select_field.get_html()))
                 else:
                     user_info_forms.append(dict(name='user_type_fd_id', type='hidden', value=trans.security.encode_id(user_type_fd_id)))
@@ -196,7 +191,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 'active_filter': show_filter
             }
         else:
-            if(user.active_repositories):
+            if user.active_repositories:
                 # build username input
                 user_login_form.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
@@ -229,7 +224,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             return self.edit_address(trans, cntrller, kwd)
         elif (call_type == 'undelete_address'):
             return self.undelete_address(trans, cntrller, kwd)
-        elif(call_type == 'delete_address'):
+        elif call_type == 'delete_address':
             return self.delete_address(trans, cntrller, kwd)
         else:
             return self.user_info(cntrller, trans, kwd)
@@ -358,32 +353,26 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             postal_code = util.restore_text(params.get('postal_code', ''))
             country = util.restore_text(params.get('country', ''))
             phone = util.restore_text(params.get('phone', ''))
-            ok = True
+
+            error_status = True
             if not short_desc:
-                ok = False
                 message = 'Enter a short description for this address'
             elif not name:
-                ok = False
                 message = 'Enter the name'
             elif not institution:
-                ok = False
                 message = 'Enter the institution associated with the user'
             elif not address:
-                ok = False
                 message = 'Enter the address'
             elif not city:
-                ok = False
                 message = 'Enter the city'
             elif not state:
-                ok = False
                 message = 'Enter the state/province/region'
             elif not postal_code:
-                ok = False
                 message = 'Enter the postal code'
             elif not country:
-                ok = False
                 message = 'Enter the country'
-            if ok:
+            else:
+                error_status = False
                 address_obj.desc = short_desc
                 address_obj.name = name
                 address_obj.institution = institution
@@ -401,20 +390,21 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                     new_kwd['id'] = trans.security.encode_id(user.id)
 
                 return self.user_info(cntrller, trans, new_kwd)
-            else:
+
+            if error_status:
                 status = 'error'
 
         # Display the address form with the current values filled in
-        address_item = dict()
-        address_item["desc"] = address_obj.desc
-        address_item["name"] = address_obj.name
-        address_item["institution"] = address_obj.institution
-        address_item["address"] = address_obj.address
-        address_item["city"] = address_obj.city
-        address_item["state"] = address_obj.state
-        address_item["postal_code"] = address_obj.postal_code
-        address_item["country"] = address_obj.country
-        address_item["phone"] = address_obj.phone
+        address_item = dict({
+            "desc": address_obj.desc,
+            "name": address_obj.name,
+            "institution": address_obj.institution,
+            "address": address_obj.address,
+            "city": address_obj.city,
+            "state": address_obj.state,
+            "postal_code": address_obj.postal_code,
+            "country": address_obj.country,
+            "phone": address_obj.phone})
 
         return {
             'user_id': user_id,
@@ -487,44 +477,39 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         postal_code = util.restore_text(params.get('postal_code', ''))
         country = util.restore_text(params.get('country', ''))
         phone = util.restore_text(params.get('phone', ''))
-        ok = True
+
         if not trans.app.config.allow_user_creation and not is_admin:
             return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
+
+        error_status = True
         if not short_desc:
-            ok = False
             message = 'Enter a short description for this address'
         elif not name:
-            ok = False
             message = 'Enter the name'
         elif not institution:
-            ok = False
             message = 'Enter the institution associated with the user'
         elif not address:
-            ok = False
             message = 'Enter the address'
         elif not city:
-            ok = False
             message = 'Enter the city'
         elif not state:
-            ok = False
             message = 'Enter the state/province/region'
         elif not postal_code:
-            ok = False
             message = 'Enter the postal code'
         elif not country:
-            ok = False
             message = 'Enter the country'
-        if ok:
+        else:
+            error_status = False
             user_address = trans.model.UserAddress(user=user,
-                                                    desc=short_desc,
-                                                    name=name,
-                                                    institution=institution,
-                                                    address=address,
-                                                    city=city,
-                                                    state=state,
-                                                    postal_code=postal_code,
-                                                    country=country,
-                                                    phone=phone)
+                                                   desc=short_desc,
+                                                   name=name,
+                                                   institution=institution,
+                                                   address=address,
+                                                   city=city,
+                                                   state=state,
+                                                   postal_code=postal_code,
+                                                   country=country,
+                                                   phone=phone)
             trans.sa_session.add(user_address)
             trans.sa_session.flush()
             message = 'Address (%s) has been added' % escape(user_address.desc)
@@ -532,7 +517,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             if is_admin:
                 new_kwd['id'] = trans.security.encode_id(user.id)
             return self.user_info(cntrller, trans, new_kwd)
-        else:
+
+        if error_status:
             return {
                 'user_id': user_id,
                 'message': escape(message),
@@ -554,8 +540,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 user = token_result.user
             else:
                 return {
-                    message: 'Invalid or expired password reset token, please request a new one.',
-                    status: 'error'
+                    'message': 'Invalid or expired password reset token, please request a new one.',
+                    'status': 'error'
                 }
         else:
             # The user is changing their own password, validate their current password
@@ -586,8 +572,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 # Invalidate all other sessions
                 for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
                                                  .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
                     other_galaxy_session.is_valid = False
                     trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
@@ -615,19 +601,19 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
                     if p.get(k + '_out', []):
-                       in_roles = p.get(k + '_out', [])
-                       if not isinstance(in_roles, list):
-                           in_roles = [in_roles]
-                       in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                       action = trans.app.security_agent.get_action(v.action).action
-                       permissions[action] = in_roles
+                        in_roles = p.get(k + '_out', [])
+                        if not isinstance(in_roles, list):
+                            in_roles = [in_roles]
+                        in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
+                        action = trans.app.security_agent.get_action(v.action).action
+                        permissions[action] = in_roles
                     elif p.get(k + '_in', []):
-                       in_roles = p.get(k + '_in', [])
-                       if not isinstance(in_roles, list):
-                           in_roles = [in_roles]
-                       in_roles = self.get_roles_current(trans, in_roles, v)
-                       action = trans.app.security_agent.get_action(v.action).action
-                       permissions[action] = in_roles
+                        in_roles = p.get(k + '_in', [])
+                        if not isinstance(in_roles, list):
+                            in_roles = [in_roles]
+                        in_roles = self.get_roles_current(trans, in_roles, v)
+                        action = trans.app.security_agent.get_action(v.action).action
+                        permissions[action] = in_roles
                 trans.app.security_agent.user_set_default_permissions(trans.user, permissions)
                 message = 'Default new history permissions have been changed.'
 
@@ -643,7 +629,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
         """ Filter the role based on the selection """
         selected_role = []
         obj = trans.user
-        roles = trans.user.all_roles()
+
         if isinstance(obj, trans.app.model.User):
             current_actions = obj.default_permissions
         elif isinstance(obj, trans.app.model.History):
@@ -662,7 +648,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             current_actions = []
         for a in current_actions:
             if a.action == action.action:
-                if(str(a.role.id) not in in_roles):
+                if str(a.role.id) not in in_roles:
                     selected_role.append(a.role.id)
         return selected_role
 
@@ -714,25 +700,23 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             obj_type = ''
 
         # converts the list to JSON iterable
-        index = 0
         current_action_list = dict()
-        for item in current_actions:
+        for index, item in enumerate(current_actions):
             current_action_list[index] = dict()
             current_action_list[index]["action"] = item.action
-            index = index + 1
+
         all_permitted_actions = list()
         permitted_action_list = dict()
         action_role = list()
-        index = 0
-        for item, action in permitted_actions:
+        for index, (item, action) in permitted_actions:
             if item not in do_not_render:
                 permitted_action_list[index] = dict()
-                if(item == 'LIBRARY_ACCESS'):
+                if item == 'LIBRARY_ACCESS':
                     role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, all_roles)
                 else:
                     role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, roles)
                 # make inputs for the permissions form
-                if(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access'):
+                if trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access':
                     all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=(action.description + '<br/> NOTE: Users must have every role associated with this dataset in order to access it')))
                 else:
                     all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=action.description))
@@ -764,7 +748,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
                                                   title='',
                                                   type='hidden',
                                                   help='<hr class="docutils">'))
-            index = index + 1
 
         action_role.append(dict(value="", label='Add or remove roles'))
         all_permitted_actions.append(dict(name=('addremove_actionrole'),
@@ -931,7 +914,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             section_filters = list()
             label_filters = list()
             for name in checked_filters:
-                if(checked_filters[name] == True or checked_filters[name] == 'true'):
+                if checked_filters[name] or checked_filters[name] == 'true':
                     name = name.split("|")[1]
                     if name.startswith('t_'):
                         tool_filters.append(name[2:])
@@ -980,4 +963,3 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
             'status': status,
             'activated': user.preferences.get('communication_server', 'false')
         }
-
