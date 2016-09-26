@@ -2530,6 +2530,16 @@ def db_next_hid( self, n=1 ):
 model.History._next_hid = db_next_hid
 
 
+def _workflow_invocation_update( self ):
+    conn = object_session( self ).connection()
+    table = self.table
+    now_val = now()
+    stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
+    conn.execute(stmt)
+
+model.WorkflowInvocation.update = _workflow_invocation_update
+
+
 def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True ):
     """Connect mappings to the database"""
