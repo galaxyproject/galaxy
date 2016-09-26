@@ -205,7 +205,7 @@ def build_workflow_run_config( trans, workflow, payload ):
             run_configs.append( WorkflowRunConfig(
                 target_history=history,
                 replacement_dict=payload.get( 'replacement_params', {} ),
-                param_map=workflow_args,
+                param_map={ int( key ) : value for ( key, value ) in workflow_args.iteritems() },
                 allow_tool_state_corrections=allow_tool_state_corrections ) )
         return run_configs
     else:
