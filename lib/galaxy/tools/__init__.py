@@ -1143,7 +1143,8 @@ class Tool( object, Dictifiable ):
                 validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
                     validate_input( request_context, errors, params, self.inputs )
-            all_errors.append( errors )
+            if errors:
+                all_errors.append( errors )
             all_params.append( params )
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
