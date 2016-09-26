@@ -1053,14 +1053,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         else:
             decoded_dataset_collection_ids = []
             decoded_dataset_ids = []
-        if target_history_id:
-            target_history_ids = [ self.decode_id(target_history_id) ]
-        elif target_history_ids:
-            if not isinstance( target_history_ids, list ):
-                target_history_ids = target_history_ids.split(",")
-            target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
-        else:
+        if new_history_name:
             target_history_ids = []
+        else:
+            if target_history_id:
+                target_history_ids = [ self.decode_id(target_history_id) ]
+            elif target_history_ids:
+                if not isinstance( target_history_ids, list ):
+                    target_history_ids = target_history_ids.split(",")
+                target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
+            else:
+                target_history_ids = []
         done_msg = error_msg = ""
         new_history = None
         if do_copy:

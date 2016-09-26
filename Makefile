@@ -13,6 +13,9 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
+DOCS_DIR=doc
+OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
+
 
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
@@ -21,13 +24,22 @@ docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
+docs-schema-ready: ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
+	python $(DOCS_DIR)/parse_gx_xsd.py > $(DOCS_DIR)/schema.md
+
+docs-schema-html: docs-schema-ready ## Convert Galaxy Tool XSD Markdown docs into HTML (expects pandoc in environment)
+	pandoc $(DOCS_DIR)/schema.md -f markdown_github -s -o $(DOCS_DIR)/schema.html
+
+open-docs-schema: docs-schema-html ## Open HTML generated from Galaxy Tool XSD.
+	$(OPEN_RESOURCE) $(DOCS_DIR)/schema.html
+
 _open-docs:
-	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
+	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
 
 open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in browser
 
 open-project: ## open project on github
-	open $(PROJECT_URL) || xdg-open $(PROJECT_URL)
+	$(OPEN_RESOURCE) $(PROJECT_URL)
 
 lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
