@@ -15,7 +15,8 @@ from tool_shed.util import encoding_util
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.managers import workflows
+from galaxy import exceptions
+from galaxy.managers import workflows, histories
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.util import unicodify, FILENAME_VALID_CHARS
@@ -26,13 +27,9 @@ from galaxy.web.framework.formbuilder import form
 from galaxy.web.framework.helpers import grids, time_ago, to_unicode
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.extract import summarize
-from galaxy.workflow.modules import MissingToolException
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
-from galaxy.workflow.run import invoke
-from galaxy.workflow.run import WorkflowRunConfig
-from galaxy.tools.parameters.basic import workflow_building_modes
 
 log = logging.getLogger( __name__ )
 
@@ -1026,154 +1023,24 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                            url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
-    def run( self, trans, id, history_id=None, hide_fixed_params=False, **kwargs ):
-        stored = self.get_stored_workflow( trans, id, check_ownership=False )
-        user = trans.get_user()
-        if stored.user != user:
-            if trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
-                    .filter_by( user=user, stored_workflow=stored ).count() == 0:
-                error( "Workflow is not owned by or shared with current user" )
-        # Get the latest revision
-        workflow = stored.latest_workflow
-        # It is possible for a workflow to have 0 steps
-        if len( workflow.steps ) == 0:
-            error( "Workflow cannot be run because it does not have any steps" )
-        if workflow.has_cycles:
-            error( "Workflow cannot be run because it contains cycles" )
-        if workflow.has_errors:
-            error( "Workflow cannot be run because of validation errors in some steps" )
-        # Build the state for each step
-        errors = {}
-        has_upgrade_messages = False
-        step_version_changes = []
-        # has_errors is never used
-        # has_errors = False
-        saved_history = None
-        if history_id is not None:
-            saved_history = trans.get_history()
-            try:
-                decoded_history_id = trans.security.decode_id( history_id )
-                history = trans.sa_session.query(trans.app.model.History).get(decoded_history_id)
-                if history.user != trans.user and not trans.user_is_admin():
-                    if trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=trans.user, history=history).count() == 0:
-                        error("History is not owned by or shared with current user")
-                trans.set_history(history)
-            except TypeError:
-                error("Malformed history id ( %s ) specified, unable to decode." % str( history_id ))
-            except:
-                error("That history does not exist.")
-        try:  # use a try/finally block to restore the user's current history
-            default_target_history = trans.get_history()
-            module_injector = WorkflowModuleInjector( trans )
-            scheduled = True
-            if kwargs:
-                # If kwargs were provided, the states for each step should have
-                # been POSTed
-                # List to gather values for the template
-                invocations = []
-                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs):
-                    for step in workflow.steps:
-                        # Extract just the arguments for this step by prefix
-                        p = "%s|" % step.id
-                        l = len(p)
-                        step_args = dict( ( k[l:], v ) for ( k, v ) in kwargs.iteritems() if k.startswith( p ) )
-                        step_errors = module_injector.inject( step, step_args )
-                        if step.upgrade_messages:
-                            has_upgrade_messages = True
-                        if step_errors:
-                            errors[step.id] = step.state.inputs["__errors__"] = step_errors
-                    if 'run_workflow' in kwargs and not errors:
-                        new_history = None
-                        if 'new_history' in kwargs:
-                            if 'new_history_name' in kwargs and kwargs['new_history_name'] != '':
-                                nh_name = kwargs['new_history_name']
-                            else:
-                                nh_name = "History from %s workflow" % workflow.name
-                            instance_inputs = [kwargs[multi_input_key] for multi_input_key in multi_input_keys]
-                            instance_ds_names = [trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( instance_input ).name
-                                                 for instance_input in instance_inputs]
-                            nh_name = '%s%s' % (nh_name, _build_workflow_on_str( instance_ds_names ))
-                            new_history = trans.app.model.History( user=trans.user, name=nh_name )
-                            new_history.copy_tags_from(trans.user, trans.get_history())
-                            trans.sa_session.add( new_history )
-                            target_history = new_history
-                        else:
-                            target_history = default_target_history
-
-                        # Build replacement dict for this workflow execution.
-                        replacement_dict = {}
-                        for k, v in kwargs.iteritems():
-                            if k.startswith('wf_parm|'):
-                                replacement_dict[k[8:]] = v
-
-                        run_config = WorkflowRunConfig(
-                            target_history=target_history,
-                            replacement_dict=replacement_dict,
-                            copy_inputs_to_history=new_history is not None
-                        )
-
-                        outputs, invocation = invoke(
-                            trans=trans,
-                            workflow=workflow,
-                            workflow_run_config=run_config
-                        )
-                        invocation_state = invocation.state
-                        # Just use last invocation - right now not really
-                        # possible to have some invocations scheduled and not
-                        # others.
-                        scheduled = invocation_state == model.WorkflowInvocation.states.SCHEDULED
-                        invocations.append({'outputs': outputs,
-                                            'new_history': new_history})
-                        trans.sa_session.flush()
-                if invocations:
-                    return trans.fill_template( "workflow/run_complete.mako",
-                                                workflow=stored,
-                                                scheduled=scheduled,
-                                                invocations=invocations )
+    def run( self, trans, id, history_id=None, **kwargs ):
+        history = None
+        try:
+            if history_id is not None:
+                history_manager = histories.HistoryManager( trans.app )
+                history = history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
             else:
-                # Prepare each step
-                missing_tools = []
-                trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
-                for step in workflow.steps:
-                    try:
-                        module_injector.inject( step, steps=workflow.steps )
-                    except MissingToolException:
-                        if step.tool_id not in missing_tools:
-                            missing_tools.append(step.tool_id)
-                        continue
-                    if step.upgrade_messages:
-                        has_upgrade_messages = True
-                    if step.type == 'tool' or step.type is None:
-                        if step.module.version_changes:
-                            step_version_changes.extend(step.module.version_changes)
-                        # Error dict
-                        if step.tool_errors:
-                            errors[step.id] = step.tool_errors
-                if missing_tools:
-                    stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
-                    return trans.fill_template(
-                        "workflow/missing_tools.mako",
-                        workflow=stored,
-                        missing_tools=missing_tools
-                    )
-            # Render the form
-            stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
-            return trans.fill_template(
-                "workflow/run.mako",
-                steps=workflow.steps,
-                workflow=stored,
-                has_upgrade_messages=has_upgrade_messages,
-                step_version_changes=step_version_changes,
-                errors=errors,
-                incoming=kwargs,
-                history_id=history_id,
-                hide_fixed_params=hide_fixed_params,
-                enable_unique_defaults=trans.app.config.enable_unique_workflow_defaults
-            )
-        finally:
-            # restore the active history
-            if saved_history is not None:
-                trans.set_history(saved_history)
+                history = trans.get_history()
+            if history is None:
+                raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
+        except Exception as e:
+            raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
+        trans.history = history
+        workflow_manager = workflows.WorkflowsManager( trans.app )
+        workflow_contents_manager = workflows.WorkflowContentsManager( trans.app )
+        stored = workflow_manager.get_stored_accessible_workflow( trans, id )
+        workflow_dict = workflow_contents_manager.workflow_to_dict( trans, stored, style='run' )
+        return trans.fill_template( 'workflow/run.mako', workflow_dict=workflow_dict )
 
     def get_item( self, trans, id ):
         return self.get_stored_workflow( trans, id )

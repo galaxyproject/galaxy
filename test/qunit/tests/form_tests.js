@@ -12,8 +12,9 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-dat
     } );
 
     test( 'tool-form', function() {
-        var form = new ToolForm.View( { id: 'test' } );
-        $( 'body' ).prepend( form.$el );
+        var toolform = new ToolForm.View( { id: 'test' } );
+        var form = toolform.form;
+        $( 'body' ).prepend( toolform.$el );
         window.fakeserver.respond();
         ok( form.$( '.portlet-title-text' ).html() == '<b>_name</b> _description (Galaxy Version _version)', 'Title correct' );
         var tour_ids = [];

@@ -196,6 +196,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     fade        : false
                 } ).$el );
             }
+            var step_version_changes = this.model.get( 'step_version_changes' );
+            if ( step_version_changes && step_version_changes.length > 0 ) {
+                this.$message.append( new Ui.Message( {
+                    message     : 'Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this Galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.',
+                    status      : 'warning',
+                    persistent  : true,
+                    fade        : false
+                } ).$el );
+            }
         },
 
         /** Render workflow parameters */
@@ -347,7 +356,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _submit: function() {
             var self = this;
             var job_def = {
-                new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
+                new_history_name    : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
                 replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
                 inputs              : {}
             };
@@ -430,14 +439,14 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Append new dom to body */
         _append: function( $container, $el ) {
-            $container.append( '<p/>' ).addClass( 'ui-margin-top' ).append( $el );
+            $container.append( '<p/>' ).append( $el );
         },
 
         /** Set enabled/disabled state */
         _enabled: function( enabled ) {
             this.execute_btn.model.set( { wait: !enabled, wait_text: 'Sending...', percentage: -1 } );
             this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
-            this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
+            this.history_form && this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
             _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
         },
 
