@@ -187,7 +187,7 @@ def build_workflow_run_config( trans, workflow, payload ):
                     nh_name = payload[ 'new_history_name' ]
                 else:
                     nh_name = 'History from %s workflow' % workflow.name
-                if index in param_keys:
+                if len( param_keys ) > index:
                     ids = param_keys[ index ]
                     nids = len( ids )
                     if nids == 1:
