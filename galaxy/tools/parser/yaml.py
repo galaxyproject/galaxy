@@ -3,9 +3,9 @@ from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
 
 from .interface import InputSource
-from .interface import ToolSource
 from .interface import PageSource
 from .interface import PagesSource
+from .interface import ToolSource
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_list
 from .output_objects import (

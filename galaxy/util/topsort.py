@@ -38,13 +38,14 @@ a good deal more code than topsort itself!
 """
 
 from six import PY3
+
+from galaxy.util.odict import odict as OrderedDict
+
 if PY3:
     def list_filter(f, lst):
         return list(filter(f, lst))
 else:
     list_filter = filter
-
-from galaxy.util.odict import odict as OrderedDict
 
 
 class CycleError(Exception):
