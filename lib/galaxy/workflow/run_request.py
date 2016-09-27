@@ -197,13 +197,13 @@ def build_workflow_run_config( trans, workflow, payload ):
                 new_history = trans.app.model.History( user=trans.user, name=nh_name )
                 new_history.copy_tags_from( trans.user, trans.history )
                 trans.sa_session.add( new_history )
-                history = new_history
+                target_history = new_history
             elif 'history_id' in payload:
-                history = history_manager.get_owned( trans.security.decode_id( payload.get( 'history_id' ), trans.user, current_history=trans.history ) )
+                target_history = history_manager.get_owned( trans.security.decode_id( payload.get( 'history_id' ) ), trans.user, current_history=trans.history )
             else:
-                history = trans.history
+                target_history = trans.history
             run_configs.append( WorkflowRunConfig(
-                target_history=history,
+                target_history=target_history,
                 replacement_dict=payload.get( 'replacement_params', {} ),
                 param_map={ int( key ) : value for ( key, value ) in workflow_args.iteritems() },
                 allow_tool_state_corrections=allow_tool_state_corrections ) )
