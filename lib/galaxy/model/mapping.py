@@ -9,15 +9,15 @@ from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, Fore
     MetaData, not_, Numeric, select, String, Table, Text, TEXT, true, Unicode, UniqueConstraint )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.types import BigInteger
-from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper, deferred
+from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.types import BigInteger
 
 from galaxy import model
+from galaxy.model.base import ModelMapping
+from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
-from galaxy.model.base import ModelMapping
 from galaxy.security import GalaxyRBACAgent
 
 log = logging.getLogger( __name__ )
@@ -2439,7 +2439,7 @@ tag_mapping( model.ToolTagAssociation, "tagged_tools" )
 
 # Annotation tables.
 def annotation_mapping( annotation_class, **kwds ):
-    kwds = dict( [ (key, relation( value ) ) for key, value in kwds.iteritems() ] )
+    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( annotation_class, **dict(user=relation( model.User ), **kwds ) )
 
 annotation_mapping( model.HistoryAnnotationAssociation, history=model.History )
@@ -2456,7 +2456,7 @@ annotation_mapping( model.LibraryDatasetCollectionAnnotationAssociation,
 
 # Rating tables.
 def rating_mapping( rating_class, **kwds ):
-    kwds = dict( [ (key, relation( value ) ) for key, value in kwds.iteritems() ] )
+    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( rating_class, **dict(user=relation( model.User ), **kwds ) )
 
 rating_mapping( model.HistoryRatingAssociation, history=model.History )
