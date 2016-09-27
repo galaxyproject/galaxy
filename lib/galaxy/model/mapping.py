@@ -2302,8 +2302,7 @@ mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dic
         uselist=True,
     ),
     steps=relation( model.WorkflowInvocationStep,
-        backref='workflow_invocation',
-        lazy=False ),
+        backref='workflow_invocation' ),
     workflow=relation( model.Workflow )
 ) )
 
