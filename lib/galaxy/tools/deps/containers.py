@@ -11,9 +11,9 @@ import six
 
 from galaxy.util import asbool
 
-from ..deps import docker_util
 from .requirements import ContainerDescription
 from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
+from ..deps import docker_util
 
 log = logging.getLogger(__name__)
 
