@@ -12,7 +12,8 @@ import six
 from galaxy.util import asbool
 from galaxy.util import plugin_config
 
-from .container_resolvers import ExplicitContainerResolver
+from .container_resolvers.explicit import ExplicitContainerResolver
+from .container_resolvers.mulled import CachedMulledContainerResolver, MulledContainerResolver
 from .requirements import ContainerDescription
 from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 from ..deps import docker_util
@@ -180,10 +181,11 @@ class ContainerRegistry(object):
 
     def __init__(self, app_info):
         self.resolver_classes = self.__resolvers_dict()
+        self.enable_beta_mulled_containers = app_info.enable_beta_mulled_containers
         self.container_resolvers = self.__build_container_resolvers(app_info)
 
     def __build_container_resolvers( self, app_info ):
-        conf_file = app_info.containers_resolvers_config_file
+        conf_file = getattr(app_info, 'containers_resolvers_config_file', None)
         if not conf_file:
             return self.__default_containers_resolvers()
         if not os.path.exists( conf_file ):
@@ -197,9 +199,15 @@ class ContainerRegistry(object):
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
     def __default_containers_resolvers( self ):
-        return [
+        default_resolvers = [
             ExplicitContainerResolver(),
         ]
+        if self.enable_beta_mulled_containers:
+            default_resolvers.extend([
+                CachedMulledContainerResolver(),
+                MulledContainerResolver("mulled"),
+            ])
+        return default_resolvers
 
     def __resolvers_dict( self ):
         import galaxy.tools.deps.container_resolvers
@@ -225,7 +233,9 @@ class AppInfo(object):
         default_file_path=None,
         outputs_to_working_directory=False,
         container_image_cache_path=None,
-        library_import_dir=None
+        library_import_dir=None,
+        enable_beta_mulled_containers=False,
+        containers_resolvers_config_file=None,
     ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
@@ -233,6 +243,8 @@ class AppInfo(object):
         self.outputs_to_working_directory = outputs_to_working_directory
         self.container_image_cache_path = container_image_cache_path
         self.library_import_dir = library_import_dir
+        self.enable_beta_mulled_containers = enable_beta_mulled_containers
+        self.containers_resolvers_config_file = containers_resolvers_config_file
 
 
 class ToolInfo(object):
