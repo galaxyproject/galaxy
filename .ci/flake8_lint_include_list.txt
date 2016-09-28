@@ -101,6 +101,7 @@ lib/galaxy/managers/libraries.py
 lib/galaxy/managers/secured.py
 lib/galaxy/managers/taggable.py
 lib/galaxy/model/__init__.py
+lib/galaxy/model/mapping.py
 lib/galaxy/model/migrate/__init__.py
 lib/galaxy/model/migrate/versions/0001_initial_tables.py
 lib/galaxy/model/migrate/versions/0002_metadata_file_table.py

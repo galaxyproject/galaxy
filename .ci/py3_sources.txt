@@ -26,6 +26,7 @@ lib/galaxy/forms/
 lib/galaxy/jobs/
 lib/galaxy/managers/
 lib/galaxy/model/__init__.py
+lib/galaxy/model/mapping.py
 lib/galaxy/model/migrate/
 lib/galaxy/objectstore/
 lib/galaxy/openid/
