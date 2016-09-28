@@ -146,22 +146,9 @@ ecdsa==0.13 --hash:sha256=89f149066e4a1e419892cef830fd0db85c227d5d427f7075422ace
 # pycrypto, but it is a direct Galaxy dependency as well
 
 # Flexible BAM/tabix index naming
-pysam==0.8.4+gx1 --hash:sha256=9a548c88dbc928b64292ffa4a7697a4ee8c6653f998ef75c717c6dd37c8f67d3 \
-                 --hash:sha256=bc2ba93bdf9228aaf479eae953a2d9012c9f69ee753446eec3edbdd5c55e8bd4 \
-                 --hash:sha256=55e06fa6ce2df2e2bdb0705a14eefc6ad433effc79ab53d30642d8d0b33a98ff \
-                 --hash:sha256=dd8600bee61cca3005c0e95b29aefa3611c452d980055799c3999e1c3cc044bb \
-                 --hash:sha256=e4cc2b4b24d84b71c82f3194815b986e4f450ab62b96d7f28a453f5a47afdc24 \
-                 --hash:sha256=f4eb92138ac871fe4db2e5a70ddbc2d6ffcf0c77314b4866b013b7a4d3a52aa6 \
-                 --hash:sha256=c388728ec37d979c84980f662e9329452f90acf5e2e34c3afb1f66403e063b3f \
-                 --hash:sha256=001620b7ea051fd2c868ef4f83a07838177a28c42839d76a86f653e124f9830b \
-                 --hash:sha256=c27e705259d74dba190a2d729c326384ee9949e73478d7dca8e9e2aa593b54c1 \
-                 --hash:sha256=4c3dae36124646a3bed6bc7e6fd2c979a4430aa290b61da1a611d3cf7e9b38e5 \
-                 --hash:sha256=73124bec6d2699a30396c6eb63584230c8fdc0dce563391c217b9b57777d0d14 \
-                 --hash:sha256=8db6bde296f6a34b584dddaeac1dc53f5819d0f63b0cded014a143366c64307f \
-                 --hash:sha256=a40617160ba503ba31c297de24007e189cbb54325ea11265fa1b96e7d3f32625 \
-                 --hash:sha256=2045ceb8f733dc787b5fa23293330d8f669a42952be14014d91b2d1d4db99c9e \
-                 --hash:sha256=f140cd6c2c7b78be20f207e86be79772496a770c0d132604db0f632d54564ff8 \
-                 --hash:sha256=d35cb62c382bda70552878069d7cc0321b41ec6095838332a15c44a14736b8aa \
-                 --hash:sha256=2fae280fecfa6547b7c8291bc3966a940ce80400d79cdbc612cefb2bc399f5fd \
-                 --hash:sha256=a85c470c3ae9d77f13b9fd57fcfdddf26b176d69840eb6654112fd711c86c243 \
-                 --hash:sha256=9028099e40c45a3959add2c091b8817454b41c8aaa192e72d9c3ee9a5a1c5f8b
+pysam==0.8.4+gx5 --hash:sha256=76d7d0780fc7075583ae6fe358d2b1a513a1ddb0fe33abd8620d44f4854d7ebb \
+                 --hash:sha256=a051b7df7eefb8a30d30bb78043a098d54615e2d7afbbe3300bbaeb29fb8098f \
+                 --hash:sha256=640adc36798a73359f55069f84700e9d2355a1fef0840e9e11d33ffec3ee72a7 \
+                 --hash:sha256=8afcc3420ac5c5f71d80fdedfa658760af593c3213b9d3d96f76b37749e947c5 \
+                 --hash:sha256=b93b66e8b0395fc4fde9eb79a733fba361a2e785d8cb7d6a36527ffd64ea1673 \
+                 --hash:sha256=bcc1b107dbbfee1a9ee740f1e3c5dd13b48e7b8f68032923a681fb82390d6683
