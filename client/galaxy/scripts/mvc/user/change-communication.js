@@ -40,4 +40,3 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         ChangeCommunication: ChangeCommunication
     };
 });
-
