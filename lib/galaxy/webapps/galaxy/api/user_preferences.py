@@ -21,69 +21,58 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.base.controller import CreatesUsersMixin
 from galaxy.web.base.controller import UsesTagsMixin
-from galaxy.web.base.controller import (BaseUIController,
-                                        UsesFormDefinitionsMixin)
+from galaxy.web.base.controller import ( BaseUIController, UsesFormDefinitionsMixin )
 from galaxy.web.form_builder import build_select_field
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
 
-class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin,
-                            CreatesUsersMixin, CreatesApiKeysMixin,
-                            UsesFormDefinitionsMixin):
+class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, UsesFormDefinitionsMixin ):
 
     @expose_api
-    def index(self, trans, cntrller='user_preferences', **kwd):
+    def index( self, trans, cntrller='user_preferences', **kwd ):
         return {
-            'user_id': trans.security.encode_id(trans.user.id),
-            'message': "",
-            'username': trans.user.username,
-            'email': trans.user.email,
-            'webapp': trans.webapp.name,
-            'remote_user': trans.app.config.use_remote_user,
-            'openid': trans.app.config.enable_openid,
-            'enable_quotas': trans.app.config.enable_quotas,
-            'disk_usage': trans.user.get_disk_usage(nice_size=True),
-            'quota': trans.app.quota_agent.get_quota(trans.user, nice_size=True)
+            'user_id'       : trans.security.encode_id( trans.user.id ),
+            'message'       : '',
+            'username'      : trans.user.username,
+            'email'         : trans.user.email,
+            'webapp'        : trans.webapp.name,
+            'remote_user'   : trans.app.config.use_remote_user,
+            'openid'        : trans.app.config.enable_openid,
+            'enable_quotas' : trans.app.config.enable_quotas,
+            'disk_usage'    : trans.user.get_disk_usage( nice_size=True ),
+            'quota'         : trans.app.quota_agent.get_quota( trans.user, nice_size=True )
         }
 
-    def __get_user_type_form_definition(self, trans, user=None, **kwd):
+    def __get_user_type_form_definition( self, trans, user=None, **kwd ):
         if user and user.values:
-            user_type_fd_id = trans.security.encode_id(user.values.form_definition.id)
+            user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
         else:
-            user_type_fd_id = kwd.get('user_type_fd_id', 'none')
-        if user_type_fd_id not in ['none']:
-            user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
+            user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
+        if user_type_fd_id not in [ 'none' ]:
+            user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
         else:
             user_type_form_definition = None
         return user_type_form_definition
 
-    # ===== Methods for building SelectFields  ================================
-    def __build_user_type_fd_id_select_field(self, trans, selected_value):
-        # Get all the user information forms
-        user_info_forms = self.get_all_forms(trans,
-                                             filter=dict(deleted=False),
-                                             form_type=trans.model.FormDefinition.types.USER_INFO)
-        return build_select_field(trans,
-                                  objs=user_info_forms,
-                                  label_attr='name',
-                                  select_field_name='user_type_fd_id',
-                                  initial_value='none',
-                                  selected_value=selected_value,
-                                  refresh_on_change=True)
+    # Get all the user information forms
+    def __build_user_type_fd_id_select_field( self, trans, selected_value ):
+        user_info_forms = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.model.FormDefinition.types.USER_INFO )
+        return build_select_field( trans,
+                                   objs=user_info_forms,
+                                   label_attr='name',
+                                   select_field_name='user_type_fd_id',
+                                   initial_value='none',
+                                   selected_value=selected_value,
+                                   refresh_on_change=True )
 
-    def __get_widgets(self, trans, user_type_form_definition, user=None, **kwd):
+    def __get_widgets( self, trans, user_type_form_definition, user=None, **kwd ):
         widgets = []
         if user_type_form_definition:
-            if user:
-                if user.values:
-                    widgets = user_type_form_definition.get_widgets(user=user,
-                                                                    contents=user.values.content,
-                                                                    **kwd)
-                else:
-                    widgets = user_type_form_definition.get_widgets(None, contents={}, **kwd)
+            if user and user.values:
+                widgets = user_type_form_definition.get_widgets( user=user, contents=user.values.content, **kwd)
             else:
-                widgets = user_type_form_definition.get_widgets(None, contents={}, **kwd)
+                widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
         return widgets
 
     def user_info(self, cntrller, trans, kwd):
