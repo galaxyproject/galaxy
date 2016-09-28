@@ -1,4 +1,4 @@
-<tool id="functional_test_metadata_columns" name="functional_test_metadata_columns" version="1.0.0">
+<tool id="metadata_columns" name="metadata_columns" version="1.0.0">
     <description>Tests whether metadata is being set correctly.</description>
     <command><![CDATA[
         cp '$input' '$output'
@@ -16,7 +16,6 @@
     <tests>
         <test>
             <param name="input" value="2.tabular" />
-
             <output name="output">
                 <metadata name="column_names" value="First,2.tabular"/>
             </output>
