@@ -70,12 +70,8 @@ class GenomesController( BaseAPIController ):
         This is a wrapper for accepting sequence requests that
         want a raw return, not json
         """
-        # import pdb
-        # pdb.set_trace()
-
         id = get_id( id, kwd.get( 'format', None ) )
         reference = is_true( kwd.get( 'reference', False ) )
-        if reference:
-            region = self.app.genomes.reference( trans, dbkey=id, chrom=chrom, low=low, high=high )
-            rval = { 'dataset_type': 'refseq', 'data': region.sequence }
-        return rval['data']
+        assert reference
+        region = self.app.genomes.reference( trans, dbkey=id, chrom=chrom, low=low, high=high )
+        return region.sequence
