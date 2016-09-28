@@ -4,6 +4,7 @@
 # Usage:
 # python gff_filter_by_attribute_values.py <gff_file> <attribute_name> <ids_file> <output_file>
 #
+from __future__ import print_function
 
 import sys
 
@@ -45,7 +46,7 @@ def parse_gff_attributes( attr_str ):
     return attributes
 
 
-def filter( gff_file, attribute_name, ids_file, output_file ):
+def gff_filter( gff_file, attribute_name, ids_file, output_file ):
     # Put ids in dict for quick lookup.
     ids_dict = {}
     for line in open( ids_file ):
@@ -63,7 +64,7 @@ def filter( gff_file, attribute_name, ids_file, output_file ):
 if __name__ == "__main__":
     # Handle args.
     if len( sys.argv ) != 5:
-        print >> sys.stderr, "usage: python %s <gff_file> <attribute_name> <ids_file> <output_file>" % sys.argv[0]
+        print("usage: python %s <gff_file> <attribute_name> <ids_file> <output_file>" % sys.argv[0], file=sys.stderr)
         sys.exit( -1 )
     gff_file, attribute_name, ids_file, output_file = sys.argv[1:]
-    filter( gff_file, attribute_name, ids_file, output_file )
+    gff_filter( gff_file, attribute_name, ids_file, output_file )
