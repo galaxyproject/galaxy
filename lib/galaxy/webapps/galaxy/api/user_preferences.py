@@ -11,17 +11,11 @@ from markupsafe import escape
 from sqlalchemy import and_, true
 
 from galaxy import util
-from galaxy.security.validate_user_input import validate_email
-from galaxy.security.validate_user_input import validate_password
-from galaxy.security.validate_user_input import validate_publicname
+from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import docstring_trim, listify
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import CreatesApiKeysMixin
-from galaxy.web.base.controller import CreatesUsersMixin
-from galaxy.web.base.controller import UsesTagsMixin
-from galaxy.web.base.controller import ( BaseUIController, UsesFormDefinitionsMixin )
+from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin, CreatesUsersMixin, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import build_select_field
 
 log = logging.getLogger( __name__ )
@@ -30,10 +24,9 @@ log = logging.getLogger( __name__ )
 class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, UsesFormDefinitionsMixin ):
 
     @expose_api
-    def index( self, trans, cntrller='user_preferences', **kwd ):
+    def index( self, trans, **kwd ):
         return {
             'user_id'       : trans.security.encode_id( trans.user.id ),
-            'message'       : '',
             'username'      : trans.user.username,
             'email'         : trans.user.email,
             'webapp'        : trans.webapp.name,
