@@ -14,8 +14,13 @@ from binascii import hexlify
 
 log = logging.getLogger(__name__)
 
-
 class BaseField(object):
+    def __init__( self, name, value=None, disabled=False, optional=True, **kwds ):
+        self.name = name
+        self.value = value
+        self.disabled = disabled
+        self.optional = optional
+
     def get_html( self, prefix="" ):
         """Returns the html widget corresponding to the parameter"""
         raise TypeError( "Abstract Method" )
@@ -25,6 +30,14 @@ class BaseField(object):
             return ' disabled="disabled"'
         else:
             return ''
+
+    def to_dict( self ):
+        return {
+            'name'      : self.name,
+            'disabled'  : self.disabled,
+            'optional'  : self.optional,
+            'value'     : escape( unicodify( self.value ), quote=True ) if isinstance( self.value, basestring ) else self.value
+        }
 
 
 class TextField(BaseField):
@@ -36,19 +49,22 @@ class TextField(BaseField):
     >>> print TextField( "bins", size=4, value="default" ).get_html()
     <input type="text" name="bins" size="4" value="default">
     """
-    def __init__( self, name, size=None, value=None ):
-        self.name = name
+    def __init__( self, name, size=None, value=None, **kwds ):
+        super( TextField, self ).__init__( name, value, **kwds )
         self.size = int( size or 10 )
-        self.value = value or ""
 
     def get_html( self, prefix="", disabled=False ):
-        value = self.value
-        value = unicodify( value )
+        value = unicodify( self.value or "" )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>'
                           % ( prefix, self.name, self.size, escape( value, quote=True ), self.get_disabled_str( disabled ) ) )
 
     def set_size(self, size):
         self.size = int( size )
+
+    def to_dict( self ):
+        d = super( TextField, self ).to_dict()
+        d[ 'type' ] = 'text'
+        return d
 
 
 class PasswordField(BaseField):
@@ -60,7 +76,8 @@ class PasswordField(BaseField):
     >>> print PasswordField( "bins", size=4, value="default" ).get_html()
     <input type="password" name="bins" size="4" value="default">
     """
-    def __init__( self, name, size=None, value=None ):
+    def __init__( self, name, size=None, value=None, **kwds ):
+        super( PasswordField, self ).__init__( name, value, **kwds )
         self.name = name
         self.size = int( size or 10 )
         self.value = value or ""
@@ -71,6 +88,11 @@ class PasswordField(BaseField):
 
     def set_size(self, size):
         self.size = int( size )
+
+    def to_dict( self ):
+        d = super( PasswordField, self ).to_dict()
+        d[ 'type' ] = 'text'
+        return d
 
 
 class TextArea(BaseField):
@@ -84,7 +106,8 @@ class TextArea(BaseField):
     """
     _DEFAULT_SIZE = "5x25"
 
-    def __init__( self, name, size=None, value=None ):
+    def __init__( self, name, size=None, value=None, **kwds ):
+        super( TextArea, self ).__init__( name, value, **kwds )
         self.name = name
         size = size or self._DEFAULT_SIZE
         self.size = size.split("x")
@@ -100,6 +123,12 @@ class TextArea(BaseField):
         self.rows = rows
         self.cols = cols
 
+    def to_dict( self ):
+        d = super( TextArea, self ).to_dict()
+        d[ 'type'  ] = 'text'
+        d[ 'area'  ] = True,
+        return d
+
 
 class CheckboxField(BaseField):
     """
@@ -111,7 +140,8 @@ class CheckboxField(BaseField):
     <input type="checkbox" id="bar" name="bar" value="__CHECKED__" checked="checked"><input type="hidden" name="bar" value="__NOTHING__">
     """
 
-    def __init__( self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None ):
+    def __init__( self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None, value=None, **kwds ):
+        super( CheckboxField, self ).__init__( name, value, **kwds )
         self.name = name
         self.checked = ( checked is True ) or ( isinstance( checked, string_types ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
         self.refresh_on_change = refresh_on_change
@@ -144,6 +174,12 @@ class CheckboxField(BaseField):
         else:
             self.checked = value
 
+    def to_dict( self ):
+        d = super( TextArea, self ).to_dict()
+        d[ 'type'    ] = 'select'
+        d[ 'display' ] = 'checkbox',
+        return d
+
 
 class FileField(BaseField):
     """
@@ -155,7 +191,8 @@ class FileField(BaseField):
     <input type="file" name="foo" galaxy-ajax-upload="true">
     """
 
-    def __init__( self, name, value=None, ajax=False ):
+    def __init__( self, name, value=None, ajax=False, **kwds ):
+        super( FileField, self ).__init__( name, value, **kwds )
         self.name = name
         self.ajax = ajax
         self.value = value
@@ -205,7 +242,8 @@ class FTPFileField(BaseField):
         </table>
     '''
 
-    def __init__( self, name, dir, ftp_site, value=None ):
+    def __init__( self, name, dir, ftp_site, value=None, **kwds ):
+        super( FTPFileField, self ).__init__( name, value, **kwds )
         self.name = name
         self.dir = dir
         self.ftp_site = ftp_site
@@ -243,12 +281,19 @@ class HiddenField(BaseField):
     >>> print HiddenField( "foo", 100 ).get_html()
     <input type="hidden" name="foo" value="100">
     """
-    def __init__( self, name, value=None ):
+    def __init__( self, name, value=None, **kwds ):
+        super( HiddenField, self ).__init__( name, value, **kwds )
         self.name = name
         self.value = value or ""
 
     def get_html( self, prefix="" ):
         return unicodify( '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, escape( str( self.value ), quote=True ) ) )
+
+    def to_dict( self ):
+        d = super( HiddenField, self ).to_dict()
+        d[ 'type'    ] = 'hidden'
+        d[ 'hidden'  ] = True,
+        return d
 
 
 class SelectField(BaseField):
@@ -288,10 +333,12 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, **kwds ):
+        super( SelectField, self ).__init__( name, value, **kwds )
         self.name = name
         self.field_id = field_id
         self.multiple = multiple or False
+        self.value = None
         self.size = size
         self.options = list()
         if display == "checkboxes":
@@ -432,11 +479,9 @@ class SelectField(BaseField):
         return None
 
     def to_dict( self ):
-        return dict(
-            name=self.name,
-            multiple=self.multiple,
-            options=self.options
-        )
+        d = super( SelectField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        return d
 
 
 class DrillDownField( BaseField ):
@@ -507,7 +552,8 @@ class DrillDownField( BaseField ):
     </div>
     """
 
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, options=[], value=[], refresh_on_change_values=[] ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, options=[], value=[], refresh_on_change_values=[], **kwds ):
+        super( DrillDownField, self ).__init__( name, value, **kwds )
         self.name = name
         self.multiple = multiple or False
         self.options = options
@@ -571,6 +617,11 @@ class DrillDownField( BaseField ):
         rval.append( '</div>' )
         return unicodify( '\n'.join( rval ) )
 
+    def to_dict( self ):
+        d = super( DrillDown, self ).to_dict()
+        d[ 'type' ] = 'drilldown'
+        return d
+
 
 class AddressField(BaseField):
     @staticmethod
@@ -585,7 +636,8 @@ class AddressField(BaseField):
                   ( "country", "Country", "Required" ),
                   ( "phone", "Phone", "" )  ]
 
-    def __init__(self, name, user=None, value=None, params=None):
+    def __init__(self, name, user=None, value=None, params=None, **kwds):
+        super( AddressField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
@@ -643,9 +695,15 @@ class AddressField(BaseField):
             self.select_address.add_option( 'Add a new address', 'new' )
         return self.select_address.get_html( disabled=disabled ) + address_html
 
+    def to_dict( self ):
+        d = super( AddressField, self ).to_dict()
+        d[ 'type' ] = 'text'
+        return d
+
 
 class WorkflowField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None ):
+    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+        super( WorkflowField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
@@ -667,9 +725,15 @@ class WorkflowField( BaseField ):
                         self.select_workflow.add_option( a.name, str( a.id ) )
         return self.select_workflow.get_html( disabled=disabled )
 
+    def to_dict( self ):
+        d = super( WorkflowField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        return d
 
-class WorkflowMappingField( BaseField):
-    def __init__( self, name, user=None, value=None, params=None, **kwd ):
+
+class WorkflowMappingField( BaseField ):
+    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+        super( WorkflowMappingField, self ).__init__( name, value, **kwds )
         # DBTODO integrate this with the new __build_workflow approach in requests_common.  As it is, not particularly useful.
         self.name = name
         self.user = user
@@ -709,9 +773,15 @@ class WorkflowMappingField( BaseField):
         else:
             return '-'
 
+    def to_dict( self ):
+        d = super( WorkflowMappingField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        return d
+
 
 class HistoryField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None ):
+    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+        super( HistoryField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
@@ -744,9 +814,15 @@ class HistoryField( BaseField ):
         else:
             return '-'
 
+    def to_dict( self ):
+        d = super( HistoryField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        return d
+
 
 class LibraryField( BaseField ):
-    def __init__( self, name, value=None, trans=None ):
+    def __init__( self, name, value=None, trans=None, **kwds ):
+        super( LibraryField, self ).__init__( name, value, **kwds )
         self.name = name
         self.lddas = value
         self.trans = trans
@@ -767,6 +843,10 @@ class LibraryField( BaseField ):
         else:
             return 'None'
 
+    def to_dict( self ):
+        d = super( LibraryField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        return d
 
 def get_suite():
     """Get unittest suite for this module"""

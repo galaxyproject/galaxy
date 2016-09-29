@@ -37,147 +37,68 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'quota'         : trans.app.quota_agent.get_quota( trans.user, nice_size=True )
         }
 
-    def __get_user_type_form_definition( self, trans, user=None, **kwd ):
-        if user and user.values:
-            user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
-        else:
-            user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
-        if user_type_fd_id not in [ 'none' ]:
-            user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
-        else:
-            user_type_form_definition = None
-        return user_type_form_definition
-
-    # Get all the user information forms
-    def __build_user_type_fd_id_select_field( self, trans, selected_value ):
-        user_info_forms = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.model.FormDefinition.types.USER_INFO )
-        return build_select_field( trans,
-                                   objs=user_info_forms,
-                                   label_attr='name',
-                                   select_field_name='user_type_fd_id',
-                                   initial_value='none',
-                                   selected_value=selected_value,
-                                   refresh_on_change=True )
-
-    def __get_widgets( self, trans, user_type_form_definition, user=None, **kwd ):
-        widgets = []
-        if user_type_form_definition:
-            if user and user.values:
-                widgets = user_type_form_definition.get_widgets( user=user, contents=user.values.content, **kwd)
-            else:
-                widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
-        return widgets
-
-    def user_info(self, cntrller, trans, kwd):
+    def user_info( self, trans, kwd ):
         '''
         Manage a user login, password, public username, type, addresses, etc.
         '''
-        user_id = kwd.get('id', None)
+        user_id = kwd.get( 'id', None )
         if user_id:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.query( trans.app.model.User ).get(trans.security.decode_id( user_id ) )
         else:
             user = trans.user
         if not user:
-            raise AssertionError("The user id (%s) is not valid" % str(user_id))
-        email = util.restore_text(kwd.get('email', user.email))
-        username = util.restore_text(kwd.get('username', ''))
-        if not username:
-            username = user.username
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = kwd.get('status', 'done')
-        # build inputs for login form
-        user_login_form = list()
-        # email input
-        user_login_form.append(dict(id='email_input', name='email', type='text', label='Email address:', value=email, size='40', help='If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.'))
+            raise AssertionError( "The user id (%s) is not valid" % str( user_id ) )
+        email = util.restore_text( kwd.get( 'email', user.email ) )
+        username = util.restore_text( kwd.get( 'username', user.username ) )
+        form = list()
+        form.append( {
+            'id'    : 'email_input',
+            'name'  : 'email',
+            'type'  : 'text',
+            'label' : 'Email address',
+            'value' : email,
+            'help'  : 'If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.' } )
 
         if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition(trans, user=user, **kwd)
-            user_type_fd_id = kwd.get('user_type_fd_id', 'none')
-            if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id(user_type_form_definition.id)
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field(trans, selected_value=user_type_fd_id)
-            widgets = self.__get_widgets(trans, user_type_form_definition, user=user, **kwd)
-            # user's addresses filter
-            show_filter = util.restore_text(kwd.get('show_filter', 'All'))
-            if show_filter == 'All':
-                addresses = [address for address in user.addresses]
-            elif show_filter == 'Deleted':
-                addresses = [address for address in user.addresses if address.deleted]
+            if user and user.values:
+                custom_form_id = trans.security.encode_id( user.values.form_definition.id )
             else:
-                addresses = [address for address in user.addresses if not address.deleted]
-            user_info_forms = self.get_all_forms(trans,
-                                                 filter=dict(deleted=False),
-                                                 form_type=trans.app.model.FormDefinition.types.USER_INFO)
-            filter_list = list()
-            user_address_list = list()
-            user_info_form = list()
-            # build filter options
-            filter_list.append(dict(label='All', value='All'))
-            filter_list.append(dict(label='Active', value='Active'))
-            filter_list.append(dict(label='Deleted', value='Deleted'))
-            # build filter
-            user_address_list.append(dict(name='active_filter',
-                                          type='select',
-                                          label='Filter',
-                                          optional=True,
-                                          data=filter_list,
-                                          display='radiobutton'))
-
-            # build address list inputs
-            for item in addresses:
-                address_data = list()
-                address_id = trans.security.encode_id(item.id)
-                user_address_list.append(dict(id=address_id, title='', type='hidden', help=(item.desc + ': <br>' + item.get_html())))
-                if (item.deleted):
-                    address_data.append(dict(label='Undelete', value=('undelete_' + address_id)))
-                    user_address_list.append(dict(name=('undelete_button_' + address_id), label='Actions', type='select', optional=True, display='radio', data=address_data))
-                else:
-                    address_data.append(dict(label='Edit', value=('edit_' + address_id)))
-                    address_data.append(dict(label='Delete', value=('delete_' + address_id)))
-                    user_address_list.append(dict(name=('edit_delete_buttons_' + address_id), label='Actions', type='select', optional=True, display='radio', data=address_data))
-                user_address_list.append(dict(id='horizontal_line', title='', type='hidden', help='<hr class="docutils">'))
-
-            # build user info list
-            if user.values or user_info_forms:
-                if user_type_fd_id_select_field.options:
-                    user_info_forms.append(dict(name='usertype', label='User type:', type='hidden', help=user_type_fd_id_select_field.get_html()))
-                else:
-                    user_info_forms.append(dict(name='user_type_fd_id', type='hidden', value=trans.security.encode_id(user_type_fd_id)))
-                # build widgets inputs
-                for item in widgets:
-                    user_info_forms.append(dict(name=item['label'], label=item['label'], type='hidden', help=item['widget'].get_html(), helptext=item['helptext']))
-
-            # build username input
-            user_login_form.append(dict(id='name_input', name='username', type='text', label='Public name:', value=username, size='40', help='Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.'))
-
+                custom_form_id = kwd.get( 'custom_form_id', None )
+            custom_form = None
+            custom_form_model = None
+            if custom_form_id:
+                custom_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( custom_form_id ) )
+            if custom_form_id is None and custom_form_model is not None:
+                custom_form_id = trans.security.encode_id( custom_form_model.id )
+                custom_form = custom_form_model.to_dict()
+            info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
+            info_forms = [ f.to_dict() for f in info_form_models ]
+            form.append( {
+                'id'    : 'name_input',
+                'name'  : 'username',
+                'type'  : 'text',
+                'label' : 'Public name',
+                'value' : username,
+                'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
             return {
-                'cntrller': cntrller,
-                'webapp': trans.webapp.name,
-                'user_id': trans.security.encode_id(trans.user.id),
-                'is_admin': trans.user_is_admin(),
-                'values': user.values,
-                'email': email,
-                'username': username,
-                'user_type_fd_id_select_field_options': user_type_fd_id_select_field.options,
-                'user_type_fd_id_select_html': user_type_fd_id_select_field.get_html(),
-                'user_info_forms': user_info_forms,
-                'user_type_form_definition': user_type_form_definition,
-                'user_type_fd_id': user_type_fd_id,
-                'user_type_fd_id_encoded': trans.security.encode_id(user_type_fd_id),
-                'show_filter': show_filter,
-                'message': message,
-                'status': status,
-                'user_login_form': user_login_form,
-                'user_address_list': user_address_list,
-                'user_info_form': user_info_form,
-                'active_filter': show_filter
+                'webapp'            : trans.webapp.name,
+                'user_id'           : trans.security.encode_id( trans.user.id ),
+                'is_admin'          : trans.user_is_admin(),
+                'values'            : user.values,
+                'email'             : email,
+                'username'          : username,
+                'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
+                'info_forms'        : info_forms,
+                'custom_form_id'    : custom_form_id,
+                'custom_form'       : custom_form,
+                'form'              : form,
             }
         else:
             if user.active_repositories:
                 # build username input
-                user_login_form.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
+                form.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
-                user_login_form.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
+                form.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
 
             return {
                 'cntrller': cntrller,
@@ -189,27 +110,28 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'username': username,
                 'message': message,
                 'status': status,
-                'user_login_form': user_login_form
+                'form': form
             }
 
     @expose_api
-    def manage_user_info(self, trans, cntrller='user_preferences', **kwd):
+    def manage_user_info( self, trans, **kwd ):
         """ Manage User Info API call """
-        params = util.Params(kwd)
-        call_type = params.get('call', 'None')
+        return self.user_info( trans, kwd )
+        #params = util.Params(kwd)
+        #call_type = params.get('call', 'None')
         # Redirect to different method based on the operation
-        if (call_type == 'edit_info'):
-            return self.edit_info(trans, cntrller, kwd)
-        elif (call_type == 'add_address'):
-            return self.new_address(trans, cntrller, kwd)
-        elif (call_type == 'edit_address'):
-            return self.edit_address(trans, cntrller, kwd)
-        elif (call_type == 'undelete_address'):
-            return self.undelete_address(trans, cntrller, kwd)
-        elif call_type == 'delete_address':
-            return self.delete_address(trans, cntrller, kwd)
-        else:
-            return self.user_info(cntrller, trans, kwd)
+        #if (call_type == 'edit_info'):
+        #    return self.edit_info(trans, cntrller, kwd)
+        #elif (call_type == 'add_address'):
+        #    return self.new_address(trans, cntrller, kwd)
+        #elif (call_type == 'edit_address'):
+        #    return self.edit_address(trans, cntrller, kwd)
+        #elif (call_type == 'undelete_address'):
+        #    return self.undelete_address(trans, cntrller, kwd)
+        #elif call_type == 'delete_address':
+        #    return self.delete_address(trans, cntrller, kwd)
+        #else:
+        #    return self.user_info(cntrller, trans, kwd)
 
     def edit_info(self, trans, cntrller, kwd):
         """
@@ -304,7 +226,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         if status:
             kwd['status'] = status
         # Return all data for user information page
-        return self.user_info(cntrller, trans, kwd)
+        return self.user_info( trans, kwd )
 
     def edit_address(self, trans, cntrller, kwd):
         """ Allow user to edit the saved address """
@@ -371,7 +293,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 if is_admin:
                     new_kwd['id'] = trans.security.encode_id(user.id)
 
-                return self.user_info(cntrller, trans, new_kwd)
+                return self.user_info( trans, new_kwd )
 
             if error_status:
                 status = 'error'
@@ -435,7 +357,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         if status:
             kwd['status'] = status
 
-        return self.user_info(cntrller, trans, kwd)
+        return self.user_info( trans, kwd )
 
     def new_address(self, trans, cntrller, kwd):
         """ Add new user address """
@@ -498,7 +420,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             new_kwd = dict(message=message, status=status)
             if is_admin:
                 new_kwd['id'] = trans.security.encode_id(user.id)
-            return self.user_info(cntrller, trans, new_kwd)
+            return self.user_info( trans, new_kwd )
 
         if error_status:
             return {

@@ -4199,6 +4199,21 @@ class FormDefinition( object, Dictifiable ):
         self.type = form_type
         self.layout = layout
 
+    def to_dict( self ):
+        form_def = { 'name': self.name, 'fields': [] }
+        for field in self.fields:
+            FieldClass = ( { 'AddressField'         : AddressField,
+                             'CheckboxField'        : CheckboxField,
+                             'HistoryField'         : HistoryField,
+                             'PasswordFiled'        : PasswordField,
+                             'SelectField'          : SelectField,
+                             'TextArea'             : TextArea,
+                             'TextField'            : TextField,
+                             'WorkflowField'        : WorkflowField,
+                             'WorkflowMappingField' : WorkflowMappingField } ).get( field[ 'type' ], TextField )
+            form_def[ 'fields' ].append( FieldClass( **field ).to_dict() )
+        return form_def
+
     def grid_fields( self, grid_index ):
         # Returns a dictionary whose keys are integers corresponding to field positions
         # on the grid and whose values are the field.
@@ -4822,6 +4837,18 @@ class UserAddress( object ):
         self.postal_code = postal_code
         self.country = country
         self.phone = phone
+
+    def to_dict( self, trans ):
+        return { 'id'           : trans.security.encode_id( self.id ),
+                 'name'         : sanitize_html( self.name ),
+                 'institution'  : sanitize_html( self.institution ),
+                 'address'      : sanitize_html( self.address ),
+                 'city'         : sanitize_html( self.city ),
+                 'state'        : sanitize_html( self.state ),
+                 'postal_code'  : sanitize_html( self.postal_code ),
+                 'country'      : sanitize_html( self.country ),
+                 'phone'        : sanitize_html( self.phone )
+        }
 
     def get_html(self):
         # This should probably be deprecated eventually.  It should currently
