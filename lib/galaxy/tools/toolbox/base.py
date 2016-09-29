@@ -276,7 +276,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                     new_tool_id=tool_id,
                     tool=tool,
                 )
-                log.debug("Loaded tool id: %s, version: %s into tool panel." % (tool.id, tool.version))
         else:
             inserted = False
             index = self._integrated_tool_panel.index_of_tool_id(tool_id)
@@ -307,7 +306,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         # integrated_tool_panel.xml, so append it to the tool
                         # panel.
                         panel_dict.append_tool(tool)
-                        log.debug("Loaded tool id: %s, version: %s into tool panel.." % (tool.id, tool.version))
                     else:
                         # We are in the process of installing the tool.
                         tool_lineage = self._lineage_map.get(tool_id)
@@ -315,7 +313,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict.append_tool(tool)
-                            log.debug("Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version))
 
     def _load_tool_panel( self ):
         start = time.time()
