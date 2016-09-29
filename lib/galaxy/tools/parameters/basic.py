@@ -1598,7 +1598,7 @@ class DataToolParameter( BaseDataToolParameter ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
-            raise ValueError( "History does not include a dataset of the required format / build" )
+            raise ValueError( "Specify a dataset of the required format / build." )
         if value in [ None, "None", '' ]:
             return None
         if isinstance( value, dict ) and 'values' in value:
@@ -1865,7 +1865,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
-            raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
+            raise ValueError( "Specify a dataset collection of the correct type." )
         if value in [None, "None"]:
             return None
         if isinstance( value, dict ) and 'values' in value:
