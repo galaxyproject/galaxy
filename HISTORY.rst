@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.10.1.dev0
+16.10.1 (2016-09-29)
 ---------------------
 
 * Updates for recents changes to Galaxy and initial mulled scripts and container resolver.
