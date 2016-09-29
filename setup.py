@@ -57,6 +57,7 @@ ENTRY_POINTS = '''
         mulled-build=galaxy.tools.deps.mulled.mulled_build:main
         mulled-build-channel=galaxy.tools.deps.mulled.mulled_build_channel:main
         mulled-search=galaxy.tools.deps.mulled.mulled_search:main
+        mulled-build-tool=galaxy.tools.deps.mulled.mulled_build_tool:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
