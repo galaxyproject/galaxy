@@ -9,13 +9,13 @@ History
 16.10.1.dev0
 ---------------------
 
-    
+* Updates for recents changes to Galaxy and initial mulled scripts and container resolver.
 
 ---------------------
 16.10.0 (2016-08-31)
 ---------------------
 
-* Updates for recent change to Galaxy.
+* Updates for recent changes to Galaxy.
 
 ---------------------
 16.7.10 (2016-08-04)
