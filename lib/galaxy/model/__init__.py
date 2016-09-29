@@ -4200,7 +4200,7 @@ class FormDefinition( object, Dictifiable ):
         self.layout = layout
 
     def to_dict( self ):
-        form_def = { 'name': self.name, 'fields': [] }
+        form_def = { 'name': self.name, 'inputs': [] }
         for field in self.fields:
             FieldClass = ( { 'AddressField'         : AddressField,
                              'CheckboxField'        : CheckboxField,
@@ -4211,7 +4211,7 @@ class FormDefinition( object, Dictifiable ):
                              'TextField'            : TextField,
                              'WorkflowField'        : WorkflowField,
                              'WorkflowMappingField' : WorkflowMappingField } ).get( field[ 'type' ], TextField )
-            form_def[ 'fields' ].append( FieldClass( **field ).to_dict() )
+            form_def[ 'inputs' ].append( FieldClass( **field ).to_dict() )
         return form_def
 
     def grid_fields( self, grid_index ):

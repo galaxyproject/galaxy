@@ -638,9 +638,7 @@ class AddressField(BaseField):
 
     def __init__(self, name, user=None, value=None, params=None, **kwds):
         super( AddressField, self ).__init__( name, value, **kwds )
-        self.name = name
         self.user = user
-        self.value = value
         self.select_address = None
         self.params = params
 
@@ -696,9 +694,15 @@ class AddressField(BaseField):
         return self.select_address.get_html( disabled=disabled ) + address_html
 
     def to_dict( self ):
-        d = super( AddressField, self ).to_dict()
-        d[ 'type' ] = 'text'
-        return d
+        inputs = []
+        for field in self.fields():
+            inputs.append( {
+                'type'  : 'text',
+                'name'  : field[ 0 ],
+                'label' : field[ 1 ],
+                'help'  : field[ 2 ],
+                'value' : self.value.get( field[ 0 ] ) if self.value else None } )
+        return { 'title'   : 'Address', 'type': 'section', 'inputs': inputs }
 
 
 class WorkflowField( BaseField ):

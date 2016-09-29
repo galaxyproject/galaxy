@@ -16,7 +16,7 @@ from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import docstring_trim, listify
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin, CreatesUsersMixin, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin
-from galaxy.web.form_builder import build_select_field
+from galaxy.web.form_builder import build_select_field, AddressField
 
 log = logging.getLogger( __name__ )
 
@@ -50,20 +50,28 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             raise AssertionError( "The user id (%s) is not valid" % str( user_id ) )
         email = util.restore_text( kwd.get( 'email', user.email ) )
         username = util.restore_text( kwd.get( 'username', user.username ) )
-        form = list()
-        form.append( {
+        inputs = list()
+        inputs.append( {
             'id'    : 'email_input',
             'name'  : 'email',
             'type'  : 'text',
             'label' : 'Email address',
             'value' : email,
             'help'  : 'If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.' } )
-
         if trans.webapp.name == 'galaxy':
+            inputs.append( {
+                'id'    : 'name_input',
+                'name'  : 'username',
+                'type'  : 'text',
+                'label' : 'Public name',
+                'value' : username,
+                'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
+
             if user and user.values:
                 custom_form_id = trans.security.encode_id( user.values.form_definition.id )
             else:
                 custom_form_id = kwd.get( 'custom_form_id', None )
+
             custom_form = None
             custom_form_model = None
             if custom_form_id:
@@ -71,15 +79,21 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if custom_form_id is None and custom_form_model is not None:
                 custom_form_id = trans.security.encode_id( custom_form_model.id )
                 custom_form = custom_form_model.to_dict()
+
             info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
             info_forms = [ f.to_dict() for f in info_form_models ]
-            form.append( {
-                'id'    : 'name_input',
-                'name'  : 'username',
-                'type'  : 'text',
-                'label' : 'Public name',
-                'value' : username,
-                'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
+
+            address_field = AddressField( '' ).to_dict()
+            address_values = [ address.to_dict( trans ) for address in user.addresses ]
+            address_repeat = { 'title': 'Address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
+            for address in address_values:
+                address_inputs = []
+                for input in address_repeat[ 'inputs' ]:
+                    input_copy = input.copy()
+                    input_copy[ 'value' ] = address.get( input[ 'name' ], None )
+                    address_inputs.append( input_copy )
+                address_repeat[ 'cache' ].append( address_inputs )
+            inputs.append( address_repeat )
             return {
                 'webapp'            : trans.webapp.name,
                 'user_id'           : trans.security.encode_id( trans.user.id ),
@@ -91,7 +105,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'info_forms'        : info_forms,
                 'custom_form_id'    : custom_form_id,
                 'custom_form'       : custom_form,
-                'form'              : form,
+                'inputs'            : inputs,
             }
         else:
             if user.active_repositories:
