@@ -382,8 +382,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             form.highlight( input_id );
                             break;
                         }
-                        job_def.input_params[ step_id ] = job_def.input_params[ step_id ] || {};
-                        job_def.input_params[ step_id ][ job_input_id ] = job_inputs[ job_input_id ];
+                        job_def.input_params[ i ] = job_def.input_params[ i ] || {};
+                        job_def.input_params[ i ][ job_input_id ] = job_inputs[ job_input_id ];
                     }
                 }
                 if ( !validated ) {

@@ -202,10 +202,18 @@ def build_workflow_run_config( trans, workflow, payload ):
                 target_history = history_manager.get_owned( trans.security.decode_id( payload.get( 'history_id' ) ), trans.user, current_history=trans.history )
             else:
                 target_history = trans.history
+            param_map = {}
+            for step_index, step_args in workflow_args.iteritems():
+                step_order_index = int( step_index )
+                if step_order_index < len( workflow.steps ):
+                    step = workflow.steps[ step_order_index ]
+                    param_map[ step.id ] = step_args
+                else:
+                    raise exceptions.RequestParameterInvalidException( "Workflow %s does not contain step %s." % ( workflow.name, step_index ) )
             run_configs.append( WorkflowRunConfig(
                 target_history=target_history,
                 replacement_dict=payload.get( 'replacement_params', {} ),
-                param_map={ int( key ) : value for ( key, value ) in workflow_args.iteritems() },
+                param_map=param_map,
                 allow_tool_state_corrections=allow_tool_state_corrections ) )
         return run_configs
     else:
