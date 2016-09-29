@@ -1422,7 +1422,7 @@ test_data:
         hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
         workflow_request = {
             "history_id"   : history_id,
-            "input_params" : dumps( { "1": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": 1, "src": "hda" }, { "id" : hda2.get( "id" ), "hid": 2, "src": "hda" } ] } }, "2": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": 1, "src": "hda" } ] }, "exp": "2" } } )
+            "input_params" : dumps( { "1": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" }, { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } }, "2": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } } )
         }
         invocation_response = self._post( "workflows/%s/usage" % workflow_id, data=workflow_request )
         self._assert_status_code_is( invocation_response, 200 )
