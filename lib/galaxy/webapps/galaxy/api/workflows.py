@@ -450,9 +450,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 workflow_run_config=run_config,
                 request_params=work_request_params
             )
-            invocations.append( self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True ) )
-        if len( invocations ) == 1:
-            return invocations[ 0 ]
+            invocation = self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
+            if payload.get( 'input_params' ):
+                invocations.append( invocation )
+            else:
+                return invocation
         return invocations
 
     @expose_api
