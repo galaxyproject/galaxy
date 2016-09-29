@@ -421,7 +421,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         } else {
                             self.modal.show({
                                 title   : 'Job submission failed',
-                                body    : self._templateError( response && response.err_msg || job_def ),
+                                body    : self._templateError( job_def, response && response.err_msg ),
                                 buttons : {
                                     'Close' : function() {
                                         self.modal.hide();
@@ -471,18 +471,19 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Templates */
         _templateSuccess: function( response ) {
-            if ( response ) {
-                response = $.isArray( response ) ? response : [ response ];
-                return $( '<div/>' ).addClass( 'donemessagelarge' ).append( $( '<p/>' ).html( 'Successfully invoked workflow <b>' + Utils.sanitize( this.model.get( 'name' ) ) + '</b>' + ( response.length > 1 ? ' <b>' + response.length + ' times</b>' : '' ) + '. Datasets will appear as jobs are created.' ) );
+            if ( $.isArray( response ) && response.length > 0 ) {
+                return $( '<div/>' ).addClass( 'donemessagelarge' )
+                                    .append( $( '<p/>' ).html( 'Successfully invoked workflow <b>' + Utils.sanitize( this.model.get( 'name' ) ) + '</b>' + ( response.length > 1 ? ' <b>' + response.length + ' times</b>' : '' ) + '.' ) )
+                                    .append( $( '<p/>' ).append( '<b/>' ).text( 'You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from \'running\' to \'finished\' if completed successfully or \'error\' if problems were encountered.' ) );
             } else {
-                return this._templateError( response );
+                return this._templateError( response, 'Invalid success response. No invocations found.' );
             }
         },
 
-        _templateError: function( response ) {
+        _templateError: function( response, err_msg ) {
             return  $( '<div/>' ).addClass( 'errormessagelarge' )
-                .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists.' ) )
-                .append( $( '<pre/>' ).text( JSON.stringify( response, null, 4 ) ) );
+                                 .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists. ' + ( err_msg || '' ) ) )
+                                 .append( $( '<pre/>' ).text( JSON.stringify( response, null, 4 ) ) );
         }
     });
     return {
