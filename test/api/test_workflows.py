@@ -1420,7 +1420,6 @@ test_data:
         history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
         hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         workflow_request = {
             "history_id"   : history_id,
             "input_params" : dumps( { "1": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": 1, "src": "hda" }, { "id" : hda2.get( "id" ), "hid": 2, "src": "hda" } ] } }, "2": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": 1, "src": "hda" } ] }, "exp": "2" } } )
