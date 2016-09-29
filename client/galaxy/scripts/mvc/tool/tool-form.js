@@ -88,7 +88,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     var input_found = false;
                     if ( response && response.err_data ) {
                         var error_messages = self.form.data.matchResponse( response.err_data );
-                        for (var input_id in error_messages) {
+                        for ( var input_id in error_messages ) {
                             self.form.highlight( input_id, error_messages[ input_id ]);
                             input_found = true;
                             break;

@@ -1143,13 +1143,13 @@ class Tool( object, Dictifiable ):
                 validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
                     validate_input( request_context, errors, params, self.inputs )
-            if errors:
-                all_errors.append( errors )
+            all_errors.append( errors )
             all_params.append( params )
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
-            raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
+            err_data = { key: value for d in all_errors for ( key, value ) in d.iteritems() }
+            raise exceptions.MessageException( ', '.join( [ msg for msg in err_data.itervalues() ] ), err_data=err_data )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
