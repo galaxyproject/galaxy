@@ -1,0 +1,213 @@
+#!/usr/bin/env python
+"""Build a mulled image for specified conda targets.
+
+Examples
+
+Build a mulled image with:
+
+    mulled-build build 'samtools=1.3.1,bedtools=2.22'
+
+"""
+from __future__ import print_function
+
+import json
+import os
+import string
+import subprocess
+
+from galaxy.tools.deps import commands
+
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+from ._cli import arg_parser
+from .util import build_target, conda_build_target_str, image_name
+from ..conda_compat import MetaData
+
+DIRNAME = os.path.dirname(__file__)
+
+
+def get_tests(args, pkg_path):
+    """Extract test cases given a recipe's meta.yaml file."""
+    recipes_dir = args.recipes_dir
+
+    tests = ""
+    input_dir = os.path.dirname(os.path.join(recipes_dir, pkg_path))
+    recipe_meta = MetaData(input_dir)
+
+    tests_commands = recipe_meta.get_value('test/commands')
+    tests_imports = recipe_meta.get_value('test/imports')
+    requirements = recipe_meta.get_value('requirements/run')
+
+    if tests_imports or tests_commands:
+        if tests_commands:
+            tests = ' && '.join(tests_commands)
+        elif tests_imports and 'python' in requirements:
+            tests = ' && '.join('python -c "import %s"' % imp for imp in tests_imports)
+        elif tests_imports and ('perl' in requirements or 'perl-threaded' in requirements):
+            tests = ' && '.join('''perl -e "use %s;"''' % imp for imp in tests_imports)
+        tests = tests.replace('$R ', 'Rscript ')
+    else:
+        pass
+    return tests
+
+
+def get_pkg_name(args, pkg_path):
+    """Extract the package name from a given meta.yaml file."""
+    recipes_dir = args.recipes_dir
+
+    input_dir = os.path.dirname(os.path.join(recipes_dir, pkg_path))
+    recipe_meta = MetaData(input_dir)
+    return recipe_meta.get_value('package/name')
+
+
+def get_affected_packages(args):
+    """Return a list of all meta.yaml file that where modified/created recently.
+
+    Length of time to check for indicated by the ``hours`` parameter.
+    """
+    recipes_dir = args.recipes_dir
+    hours = args.diff_hours
+    cmd = """cd '%s' && git log --diff-filter=ACMRTUXB --name-only --pretty="" --since="%s hours ago" | grep -E '^recipes/.*/meta.yaml' | sort | uniq""" % (recipes_dir, hours)
+    pkg_list = check_output(cmd, shell=True)
+    ret = list()
+    for pkg in pkg_list.strip().split('\n'):
+        if pkg and os.path.exists(os.path.join( recipes_dir, pkg )):
+            ret.append( (get_pkg_name(args, pkg), get_tests(args, pkg)) )
+    return ret
+
+
+def check_output(cmd, shell=True):
+    return subprocess.check_output(cmd, shell=shell)
+
+
+def conda_versions(pkg_name, file_name):
+    """Return all conda version strings for a specified package name."""
+    j = json.load(open(file_name))
+    ret = list()
+    for pkg in j['packages'].values():
+        if pkg['name'] == pkg_name:
+            ret.append('%s--%s' % (pkg['version'], pkg['build']))
+    return ret
+
+
+def mull_targets(args, targets, test='true', context=None, image_build=None, name_override=None):
+    # TODO: Convert args entirely to kwds.
+    if context is None:
+        context = context_from_args(args)
+
+    repo_template_kwds = {
+        "namespace": args.namespace,
+        "image": image_name(targets, image_build=image_build, name_override=name_override)
+    }
+    repo = string.Template(args.repository_template).safe_substitute(repo_template_kwds)
+
+    build_command = args.command
+    channels = args.channel + "," + args.extra_channels
+    target_str = ",".join(map(conda_build_target_str, targets))
+    involucro_args = [
+        '-f', '%s/invfile.lua' % DIRNAME,
+        '-set', "CHANNELS='%s'" % channels,
+        '-set', "TEST='%s'" % test,
+        '-set', "TARGETS='%s'" % target_str,
+        '-set', "REPO='%s'" % repo,
+        build_command,
+    ]
+    print(" ".join(context.build_command(involucro_args)))
+    if not args.dry_run:
+        context.exec_command(involucro_args)
+
+
+def context_from_args(args):
+    return InvolucroContext(involucro_bin=args.involucro_path)
+
+
+class InvolucroContext(object):
+
+    def __init__(self, involucro_bin=None, shell_exec=None, verbose="3"):
+        if involucro_bin is None:
+            if os.path.exists("./involucro"):
+                self.involucro_bin = "./involucro"
+            else:
+                self.involucro_bin = "involucro"
+        else:
+            self.involucro_bin = involucro_bin
+        self.shell_exec = shell_exec or commands.shell
+        self.verbose = verbose
+
+    def build_command(self, involucro_args):
+        return [self.involucro_bin, "-v=%s" % self.verbose] + involucro_args
+
+    def exec_command(self, involucro_args):
+        cmd = self.build_command(involucro_args)
+        return self.shell_exec(" ".join(cmd))
+
+
+def add_build_arguments(parser):
+    """Base arguments describing how to 'mull'."""
+    parser.add_argument('--involucro-path', dest="involucro_path", default=None,
+                        help="Path to involucro (if not set will look in working directory and on PATH).")
+    parser.add_argument('--force-rebuild', dest="force_rebuild", action="store_true",
+                        help="Rebuild package even if already published.")
+    parser.add_argument('--dry-run', dest='dry_run', action="store_true",
+                        help='Just print commands instead of executing them.')
+    parser.add_argument('-n', '--namespace', dest='namespace', default="mulled",
+                        help='quay.io namespace.')
+    parser.add_argument('-r', '--repository_template', dest='repository_template', default="quay.io/${namespace}/${image}",
+                        help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
+    parser.add_argument('-c', '--channel', dest='channel', default="bioconda",
+                        help='Target conda channel')
+    parser.add_argument('--extra-channels', dest='extra_channels', default="conda-forge,r",
+                        help='Dependent conda channels.')
+
+
+def add_single_image_arguments(parser):
+    parser.add_argument("--name-override", dest="name_override", default=None,
+                        help="Override mulled image name - this is not recommended since metadata will not be detectable from the name of resulting images")
+    parser.add_argument("--image-build", dest="image_build", default=None,
+                        help="Build a versioned variant of this image.")
+
+
+def target_str_to_targets(targets_raw):
+    def parse_target(target_str):
+        if "=" in target_str:
+            package_name, version = target_str.split("=", 1)
+            target = build_target(package_name, version)
+        else:
+            target = build_target(target_str)
+        return target
+
+    targets = map(parse_target, targets_raw.split(","))
+    return targets
+
+
+def args_to_mull_targets_kwds(argv):
+    kwds = {}
+    if hasattr(argv, "image_build"):
+        kwds["image_build"] = argv.image_build
+    if hasattr(argv, "name_override"):
+        kwds["name_override"] = argv.name_override
+    return kwds
+
+
+def main(argv=None):
+    """Main entry-point for the CLI tool."""
+    parser = arg_parser(argv, globals())
+    add_build_arguments(parser)
+    add_single_image_arguments(parser)
+    parser.add_argument('command', metavar='COMMAND', help='Command (build-and-test, build, all)')
+    parser.add_argument('targets', metavar="TARGETS", default=None, help="Build a single container with specific package(s).")
+    parser.add_argument('--repository-name', dest="repository_name", default=None, help="Name of mulled container (leave blank to auto-generate based on packages - recommended).")
+    args = parser.parse_args()
+    targets = target_str_to_targets(argv.targets)
+    mull_targets(args, targets, **args_to_mull_targets_kwds(argv))
+
+
+__all__ = ["main"]
+
+
+if __name__ == '__main__':
+    main()
