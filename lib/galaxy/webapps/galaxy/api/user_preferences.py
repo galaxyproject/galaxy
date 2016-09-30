@@ -118,9 +118,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'inputs'            : inputs,
         }
 
-    def user_info( self, trans, kwd ):
-        return {}
-
     def edit_info(self, trans, cntrller, kwd):
         """
         Save user information like email and public name
