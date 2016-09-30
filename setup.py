@@ -4,7 +4,6 @@
 import ast
 import os
 import re
-import sys
 try:
     from setuptools import setup
 except ImportError:
@@ -33,13 +32,13 @@ TEST_DIR = 'tests'
 PROJECT_DESCRIPTION = 'Subset of Galaxy (http://galaxyproject.org/) core code base designed to be used a library.'
 PACKAGES = [
     'galaxy',
-    'galaxy.jobs', # Incomplete
+    'galaxy.jobs',  # Incomplete
     'galaxy.exceptions',
     'galaxy.jobs.metrics',
     'galaxy.jobs.metrics.collectl',
     'galaxy.jobs.metrics.instrumenters',
     'galaxy.objectstore',
-    'galaxy.tools', # Incomplete
+    'galaxy.tools',  # Incomplete
     'galaxy.tools.cwl',
     'galaxy.tools.parser',
     'galaxy.tools.toolbox',
@@ -47,10 +46,12 @@ PACKAGES = [
     'galaxy.tools.toolbox.lineages',
     'galaxy.tools.linters',
     'galaxy.tools.deps',
+    'galaxy.tools.deps.container_resolvers',
+    'galaxy.tools.deps.mulled',
     'galaxy.tools.deps.resolvers',
     'galaxy.tools.verify',
     'galaxy.tools.verify.asserts',
-    'galaxy.util', # Incomplete
+    'galaxy.util',  # Incomplete
 ]
 ENTRY_POINTS = '''
         [console_scripts]
@@ -58,7 +59,7 @@ ENTRY_POINTS = '''
         mulled-build-channel=galaxy.tools.deps.mulled.mulled_build_channel:main
         mulled-search=galaxy.tools.deps.mulled.mulled_search:main
         mulled-build-tool=galaxy.tools.deps.mulled.mulled_build_tool:main
-        mulled-build-files=galaxy.tools.deps.mulled.mulled_build_files:main 
+        mulled-build-files=galaxy.tools.deps.mulled.mulled_build_files:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
@@ -114,8 +115,9 @@ setup(
         'Topic :: Software Development :: Testing',
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
     test_suite=TEST_DIR,
     tests_require=test_requirements
