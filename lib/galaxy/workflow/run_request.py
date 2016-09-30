@@ -176,33 +176,56 @@ def build_workflow_run_configs( trans, workflow, payload ):
     if workflow.has_errors:
         raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
+    def get_target_history(payload, param_keys=[], index=0):
+        new_history = None
+        history_id = None
+        history_name = None
+
+        history_name = payload.get('new_history_name', None)
+        history_id = payload.get('history_id', None)
+        history_param = payload.get('history', None)
+        if history_param:
+            if history_name is not None or history_param is not None:
+                raise exceptions.RequestParameterInvalidException("Specified workflow target history multiple ways.")
+            # Get target history.
+            if history_param.startswith('hist_id='):
+                # Passing an existing history to use.
+                history_id = history_param[ 8: ]
+            else:
+                history_name = history_param
+
+        if history_name is not None and history_id is not None:
+            raise exceptions.RequestParameterInvalidException("Specified workflow target history multiple ways.")
+
+        if history_name is not None:
+            if history_name:
+                nh_name = history_name
+            else:
+                nh_name = 'History from %s workflow' % workflow.name
+            if len( param_keys ) > 0:
+                ids = param_keys[ index ]
+                nids = len( ids )
+                if nids == 1:
+                    nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
+                elif nids > 1:
+                    nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
+            new_history = trans.app.model.History( user=trans.user, name=nh_name )
+            trans.sa_session.add( new_history )
+            target_history = new_history
+        elif history_id:
+            target_history = history_manager.get_owned( trans.security.decode_id( payload.get(history_id), trans.user, current_history=trans.history )
+        else:
+            target_history = trans.history
+
+        return target_history
+
     run_configs = []
     if 'parameters' in payload and payload.get( 'batch' ):
         # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
         params, param_keys = expand_workflow_inputs( payload.get( 'parameters', {} ) )
 
         for index, workflow_args in enumerate( params ):
-            new_history = None
-            if 'new_history_name' in payload:
-                if payload[ 'new_history_name' ]:
-                    nh_name = payload[ 'new_history_name' ]
-                else:
-                    nh_name = 'History from %s workflow' % workflow.name
-                if len( param_keys ) > index:
-                    ids = param_keys[ index ]
-                    nids = len( ids )
-                    if nids == 1:
-                        nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
-                    elif nids > 1:
-                        nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
-                new_history = trans.app.model.History( user=trans.user, name=nh_name )
-                new_history.copy_tags_from( trans.user, trans.history )
-                trans.sa_session.add( new_history )
-                target_history = new_history
-            elif 'history_id' in payload:
-                target_history = history_manager.get_owned( trans.security.decode_id( payload.get( 'history_id' ) ), trans.user, current_history=trans.history )
-            else:
-                target_history = trans.history
+            target_history = get_target_history(payload, param_keys, index)
             param_map = {}
             for step_index, step_args in workflow_args.iteritems():
                 step_order_index = int( step_index )
@@ -222,18 +245,7 @@ def build_workflow_run_configs( trans, workflow, payload ):
         if 'inputs' in payload and 'ds_map' in payload:
             raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy ds_map and input attributes." )
         add_to_history = 'no_add_to_history' not in payload
-        history_param = payload.get( 'history', '' )
-        # Get target history.
-        if history_param.startswith( 'hist_id=' ):
-            # Passing an existing history to use.
-            encoded_history_id = history_param[ 8: ]
-            history_id = __decode_id( trans, encoded_history_id, model_type='history' )
-            history = history_manager.get_owned( history_id, trans.user, current_history=trans.history )
-        else:
-            # Send workflow outputs to new history.
-            history = app.model.History(name=history_param, user=trans.user)
-            trans.sa_session.add(history)
-            trans.sa_session.flush()
+        history = get_target_history(payload, param_keys, index)
         param_map = payload.get( 'parameters', {} )
         legacy = payload.get( 'legacy', False )
         param_map = _normalize_step_parameters( workflow.steps, param_map, legacy=legacy )
