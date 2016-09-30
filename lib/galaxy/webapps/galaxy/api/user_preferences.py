@@ -66,16 +66,11 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'label' : 'Public name',
                 'value' : username,
                 'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
-            custom_form = None
-            custom_form_model = None
-            custom_form_id = trans.security.encode_id( user.values.form_definition.id ) if user and user.values else kwd.get( 'custom_form_id', None )
-            if custom_form_id:
-                custom_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( custom_form_id ) )
-            if custom_form_id is None and custom_form_model is not None:
-                custom_form_id = trans.security.encode_id( custom_form_model.id )
-                custom_form = custom_form_model.to_dict()
-            if custom_form:
-                inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': custom_form } )
+            type_form_id = trans.security.encode_id( user.values.form_definition.id ) if user and user.values else kwd.get( 'type_form_id', None )
+            if type_form_id:
+                type_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( type_form_id ) )
+                if type_form_model:
+                    inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': custom_form_model.to_dict() } )
             info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
             info_forms = [ f.to_dict() for f in info_form_models ]
             info_field = { 'type'   : 'conditional',
