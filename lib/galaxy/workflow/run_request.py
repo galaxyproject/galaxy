@@ -202,13 +202,13 @@ def build_workflow_run_configs( trans, workflow, payload ):
                 nh_name = history_name
             else:
                 nh_name = 'History from %s workflow' % workflow.name
-            if len( param_keys ) > 0:
-                ids = param_keys[ index ]
-                nids = len( ids )
-                if nids == 1:
-                    nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
-                elif nids > 1:
-                    nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
+            assert len( param_keys ) > index
+            ids = param_keys[ index ]
+            nids = len( ids )
+            if nids == 1:
+                nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
+            elif nids > 1:
+                nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
             new_history = trans.app.model.History( user=trans.user, name=nh_name )
             trans.sa_session.add( new_history )
             target_history = new_history
