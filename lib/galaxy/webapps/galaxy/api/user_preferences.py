@@ -73,22 +73,23 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': custom_form_model.to_dict() } )
             info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
             info_forms = [ f.to_dict() for f in info_form_models ]
-            info_field = {
-                'type'   : 'conditional',
-                'name'   : 'user_info',
-                'cases'  : [],
-                'test_param' : {
-                    'name'  : 'selected',
-                    'label' : 'User information',
-                    'type'  : 'select',
-                    'help'  : '',
-                    'data'  : []
+            if info_forms:
+                info_field = {
+                    'type'   : 'conditional',
+                    'name'   : 'user_info',
+                    'cases'  : [],
+                    'test_param' : {
+                        'name'  : 'selected',
+                        'label' : 'User information',
+                        'type'  : 'select',
+                        'help'  : '',
+                        'data'  : []
+                    }
                 }
-            }
-            for i, d in enumerate( info_forms ):
-                info_field[ 'test_param' ][ 'data' ].append( { 'label' : d[ 'name' ], 'value': i } )
-                info_field[ 'cases' ].append( { 'value': i, 'inputs' : d[ 'inputs' ] } )
-            inputs.append( info_field )
+                for i, d in enumerate( info_forms ):
+                    info_field[ 'test_param' ][ 'data' ].append( { 'label' : d[ 'name' ], 'value': i } )
+                    info_field[ 'cases' ].append( { 'value': i, 'inputs' : d[ 'inputs' ] } )
+                inputs.append( info_field )
             address_field = AddressField( '' ).to_dict()
             address_values = [ address.to_dict( trans ) for address in user.addresses ]
             address_repeat = { 'title': 'Address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
