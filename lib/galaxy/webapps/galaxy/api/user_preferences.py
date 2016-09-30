@@ -67,11 +67,11 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'value' : username,
                 'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
 
+            # TODO >>>
             if user and user.values:
                 custom_form_id = trans.security.encode_id( user.values.form_definition.id )
             else:
                 custom_form_id = kwd.get( 'custom_form_id', None )
-
             custom_form = None
             custom_form_model = None
             if custom_form_id:
@@ -79,10 +79,25 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if custom_form_id is None and custom_form_model is not None:
                 custom_form_id = trans.security.encode_id( custom_form_model.id )
                 custom_form = custom_form_model.to_dict()
+            # <<< TODO
 
             info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
             info_forms = [ f.to_dict() for f in info_form_models ]
-
+            info_field = { 'type'   : 'conditional',
+                           'name'   : 'user_info',
+                           'cases'  : [],
+                           'test_param' : {
+                                'name'  : 'selected',
+                                'label' : 'User information',
+                                'type'  : 'select',
+                                'help'  : '',
+                                'data'  : []
+                            }
+                         }
+            for i, d in enumerate( info_forms ):
+                info_field[ 'test_param' ][ 'data' ].append( { 'label' : d[ 'name' ], 'value': i } )
+                info_field[ 'cases' ].append( { 'value': i, 'inputs' : d[ 'inputs' ] } )
+            inputs.append( info_field )
             address_field = AddressField( '' ).to_dict()
             address_values = [ address.to_dict( trans ) for address in user.addresses ]
             address_repeat = { 'title': 'Address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
@@ -102,14 +117,12 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'email'             : email,
                 'username'          : username,
                 'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
-                'info_forms'        : info_forms,
                 'custom_form_id'    : custom_form_id,
                 'custom_form'       : custom_form,
                 'inputs'            : inputs,
             }
         else:
             if user.active_repositories:
-                # build username input
                 form.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
                 form.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
