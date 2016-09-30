@@ -1,5 +1,5 @@
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
-    output_data = out_data.items()[0][1]
+    output_data = next(iter(out_data.values()))
     new_stdout = ""
     split_stdout = stdout.split("\n")
     for line in split_stdout:

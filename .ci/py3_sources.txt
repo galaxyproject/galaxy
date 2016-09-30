@@ -72,8 +72,4 @@ scripts/db_shell.py
 scripts/drmaa_external_runner.py
 test/
 tool_list.py
-tools/data_source/
-tools/evolution/
-tools/sr_mapping/
-tools/stats/aggregate_scores_in_intervals.py
-tools/visualization/
+tools/
