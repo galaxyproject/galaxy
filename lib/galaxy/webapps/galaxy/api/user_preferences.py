@@ -66,21 +66,16 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'label' : 'Public name',
                 'value' : username,
                 'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
-
-            # TODO >>>
-            if user and user.values:
-                custom_form_id = trans.security.encode_id( user.values.form_definition.id )
-            else:
-                custom_form_id = kwd.get( 'custom_form_id', None )
             custom_form = None
             custom_form_model = None
+            custom_form_id = trans.security.encode_id( user.values.form_definition.id ) if user and user.values else kwd.get( 'custom_form_id', None )
             if custom_form_id:
                 custom_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( custom_form_id ) )
             if custom_form_id is None and custom_form_model is not None:
                 custom_form_id = trans.security.encode_id( custom_form_model.id )
                 custom_form = custom_form_model.to_dict()
-            # <<< TODO
-
+            if custom_form:
+                inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': custom_form } )
             info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
             info_forms = [ f.to_dict() for f in info_form_models ]
             info_field = { 'type'   : 'conditional',
@@ -144,21 +139,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
     def manage_user_info( self, trans, **kwd ):
         """ Manage User Info API call """
         return self.user_info( trans, kwd )
-        #params = util.Params(kwd)
-        #call_type = params.get('call', 'None')
-        # Redirect to different method based on the operation
-        #if (call_type == 'edit_info'):
-        #    return self.edit_info(trans, cntrller, kwd)
-        #elif (call_type == 'add_address'):
-        #    return self.new_address(trans, cntrller, kwd)
-        #elif (call_type == 'edit_address'):
-        #    return self.edit_address(trans, cntrller, kwd)
-        #elif (call_type == 'undelete_address'):
-        #    return self.undelete_address(trans, cntrller, kwd)
-        #elif call_type == 'delete_address':
-        #    return self.delete_address(trans, cntrller, kwd)
-        #else:
-        #    return self.user_info(cntrller, trans, kwd)
 
     def edit_info(self, trans, cntrller, kwd):
         """
