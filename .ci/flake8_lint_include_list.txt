@@ -13,6 +13,7 @@ lib/galaxy/dataset_collections/structure.py
 lib/galaxy/dataset_collections/subcollections.py
 lib/galaxy/dataset_collections/type_description.py
 lib/galaxy/datatypes/assembly.py
+lib/galaxy/datatypes/binary.py
 lib/galaxy/datatypes/constructive_solid_geometry.py
 lib/galaxy/datatypes/converters/bcf_bgzip_to_bcf_converter.py
 lib/galaxy/datatypes/converters/bcf_to_bcf_bgzip_converter.py
@@ -39,6 +40,7 @@ lib/galaxy/datatypes/converters/maf_to_interval_converter.py
 lib/galaxy/datatypes/converters/pbed_to_lped_converter.py
 lib/galaxy/datatypes/converters/picard_interval_list_to_bed6_converter.py
 lib/galaxy/datatypes/converters/pileup_to_interval_index_converter.py
+lib/galaxy/datatypes/converters/tabular_to_dbnsfp.py
 lib/galaxy/datatypes/converters/vcf_to_vcf_bgzip.py
 lib/galaxy/datatypes/converters/wiggle_to_array_tree_converter.py
 lib/galaxy/datatypes/coverage.py
@@ -99,6 +101,7 @@ lib/galaxy/managers/libraries.py
 lib/galaxy/managers/secured.py
 lib/galaxy/managers/taggable.py
 lib/galaxy/model/__init__.py
+lib/galaxy/model/mapping.py
 lib/galaxy/model/migrate/__init__.py
 lib/galaxy/model/migrate/versions/0001_initial_tables.py
 lib/galaxy/model/migrate/versions/0002_metadata_file_table.py
