@@ -37,7 +37,8 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'quota'         : trans.app.quota_agent.get_quota( trans.user, nice_size=True )
         }
 
-    def user_info( self, trans, kwd ):
+    @expose_api
+    def manage_user_info( self, trans, **kwd ):
         '''
         Manage a user login, password, public username, type, addresses, etc.
         '''
@@ -101,39 +102,24 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     address_inputs.append( input_copy )
                 address_repeat[ 'cache' ].append( address_inputs )
             inputs.append( address_repeat )
-            return {
-                'webapp'            : trans.webapp.name,
-                'user_id'           : trans.security.encode_id( trans.user.id ),
-                'is_admin'          : trans.user_is_admin(),
-                'values'            : user.values,
-                'email'             : email,
-                'username'          : username,
-                'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
-                'inputs'            : inputs,
-            }
         else:
             if user.active_repositories:
-                form.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
+                inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
-                form.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
+                inputs.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
+        return {
+            'webapp'            : trans.webapp.name,
+            'user_id'           : trans.security.encode_id( trans.user.id ),
+            'is_admin'          : trans.user_is_admin(),
+            'values'            : user.values,
+            'email'             : email,
+            'username'          : username,
+            'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
+            'inputs'            : inputs,
+        }
 
-            return {
-                'cntrller': cntrller,
-                'webapp': trans.webapp.name,
-                'user_id': trans.security.encode_id(trans.user.id),
-                'is_admin': trans.user_is_admin(),
-                'active_repositories': user.active_repositories,
-                'email': email,
-                'username': username,
-                'message': message,
-                'status': status,
-                'form': form
-            }
-
-    @expose_api
-    def manage_user_info( self, trans, **kwd ):
-        """ Manage User Info API call """
-        return self.user_info( trans, kwd )
+    def user_info( self, trans, kwd ):
+        return {}
 
     def edit_info(self, trans, cntrller, kwd):
         """
