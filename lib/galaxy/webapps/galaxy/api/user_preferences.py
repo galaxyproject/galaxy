@@ -827,7 +827,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
     @expose_api
     def change_communication(self, trans, cntrller='user_preferences', **kwd):
         """
-        Allows the user to activate/deactivate the commnication server.
+        Allows the user to activate/deactivate the communication server.
         """
         params = util.Params(kwd)
         is_admin = cntrller == 'admin' and trans.user_is_admin()
