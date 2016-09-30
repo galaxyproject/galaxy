@@ -176,9 +176,9 @@ def build_workflow_run_config( trans, workflow, payload ):
     if workflow.has_errors:
         raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
-    if 'input_params' in payload:
-        # payload = { input_params: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
-        params, param_keys = expand_workflow_inputs( payload.get( 'input_params', [] ) )
+    if 'parameters' in payload and payload.get( 'batch' ):
+        # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
+        params, param_keys = expand_workflow_inputs( payload.get( 'parameters', {} ) )
         run_configs = []
         for index, workflow_args in enumerate( params ):
             new_history = None

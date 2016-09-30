@@ -451,7 +451,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 request_params=work_request_params
             )
             invocation = self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
-            if payload.get( 'input_params' ):
+            if payload.get( 'batch' ):
                 invocations.append( invocation )
             else:
                 return invocation

@@ -358,7 +358,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var job_def = {
                 new_history_name    : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
                 replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
-                input_params        : {}
+                parameters          : {},
+                batch               : true
             };
             var validated = true;
             for ( var i in this.forms ) {
@@ -382,8 +383,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             form.highlight( input_id );
                             break;
                         }
-                        job_def.input_params[ i ] = job_def.input_params[ i ] || {};
-                        job_def.input_params[ i ][ job_input_id ] = job_inputs[ job_input_id ];
+                        job_def.parameters[ i ] = job_def.parameters[ i ] || {};
+                        job_def.parameters[ i ][ job_input_id ] = job_inputs[ job_input_id ];
                     }
                 }
                 if ( !validated ) {

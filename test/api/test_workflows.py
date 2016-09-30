@@ -1414,15 +1414,16 @@ test_data:
 
     @skip_without_tool( "cat1" )
     @skip_without_tool( "addValue" )
-    def test_run_input_params( self ):
+    def test_run_batch( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_input_params" )
         workflow_id = self.workflow_populator.create_workflow( workflow )
         history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
         hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
         workflow_request = {
-            "history_id"   : history_id,
-            "input_params" : dumps( { "0": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" }, { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } }, "1": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } } )
+            "history_id" : history_id,
+            "batch"      : True,
+            "parameters" : dumps( { "0": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" }, { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } }, "1": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } } )
         }
         invocation_response = self._post( "workflows/%s/usage" % workflow_id, data=workflow_request )
         self._assert_status_code_is( invocation_response, 200 )
