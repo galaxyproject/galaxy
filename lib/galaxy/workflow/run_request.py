@@ -163,7 +163,7 @@ def _flatten_step_params( param_dict, prefix="" ):
     return new_params
 
 
-def build_workflow_run_config( trans, workflow, payload ):
+def build_workflow_run_configs( trans, workflow, payload ):
     app = trans.app
     history_manager = histories.HistoryManager( app )
     allow_tool_state_corrections = payload.get( 'allow_tool_state_corrections', False )
@@ -176,10 +176,11 @@ def build_workflow_run_config( trans, workflow, payload ):
     if workflow.has_errors:
         raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
+    run_configs = []
     if 'parameters' in payload and payload.get( 'batch' ):
         # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
         params, param_keys = expand_workflow_inputs( payload.get( 'parameters', {} ) )
-        run_configs = []
+
         for index, workflow_args in enumerate( params ):
             new_history = None
             if 'new_history_name' in payload:
@@ -215,7 +216,6 @@ def build_workflow_run_config( trans, workflow, payload ):
                 replacement_dict=payload.get( 'replacement_params', {} ),
                 param_map=param_map,
                 allow_tool_state_corrections=allow_tool_state_corrections ) )
-        return run_configs
     else:
         if 'step_parameters' in payload and 'parameters' in payload:
             raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
@@ -308,13 +308,15 @@ def build_workflow_run_config( trans, workflow, payload ):
                 normalized_inputs[ key ] = value[ 'content' ]
             else:
                 normalized_inputs[ key ] = value
-        return WorkflowRunConfig(
+        run_configs.append(WorkflowRunConfig(
             target_history=history,
             replacement_dict=payload.get( 'replacement_params', {} ),
             inputs=normalized_inputs,
             param_map=param_map,
             allow_tool_state_corrections=allow_tool_state_corrections
-        )
+        ))
+
+    return run_configs
 
 
 def workflow_run_config_to_request( trans, run_config, workflow ):

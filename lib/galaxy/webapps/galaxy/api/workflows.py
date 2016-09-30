@@ -16,9 +16,8 @@ from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWor
 from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke, queue_invoke
-from galaxy.workflow.run_request import build_workflow_run_config
+from galaxy.workflow.run_request import build_workflow_run_configs
 from galaxy.workflow.modules import module_factory
-from galaxy.util import listify
 
 
 log = logging.getLogger(__name__)
@@ -194,7 +193,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
         workflow = stored_workflow.latest_workflow
 
-        run_config = build_workflow_run_config( trans, workflow, payload )
+        run_configs = build_workflow_run_configs( trans, workflow, payload )
+        assert len(run_configs) == 1
+        run_config = run_configs[0]
         history = run_config.target_history
 
         # invoke may throw MessageExceptions on tool erors, failure
@@ -436,26 +437,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # /usage is awkward in this context but is consistent with the rest of
         # this module. Would prefer to redo it all to use /invocation(s).
         # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow
-        run_config_list = build_workflow_run_config( trans, workflow, payload )
+        run_config_list = build_workflow_run_configs(trans, workflow, payload)
+        is_batch = payload.get('batch')
+        if not is_batch and len(run_config_list) != 1:
+            raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
+
         invocations = []
-        for run_config in listify( run_config_list ):
-            workflow_scheduler_id = payload.get( 'scheduler', None )
+        for run_config in run_configs:
+            workflow_scheduler_id = payload.get('scheduler', None)
             # TODO: workflow scheduler hints
-            work_request_params = dict( scheduler=workflow_scheduler_id )
+            work_request_params = dict(scheduler=workflow_scheduler_id)
             workflow_invocation = queue_invoke(
                 trans=trans,
                 workflow=workflow,
                 workflow_run_config=run_config,
                 request_params=work_request_params
             )
-            invocation = self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
-            if payload.get( 'batch' ):
-                invocations.append( invocation )
-            else:
-                return invocation
-        return invocations
+            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
+            invocations.append(invocation)
+
+        if is_batch:
+            return invocations
+        else:
+            return invocations[0]
 
     @expose_api
     def index_invocations(self, trans, workflow_id, **kwd):
