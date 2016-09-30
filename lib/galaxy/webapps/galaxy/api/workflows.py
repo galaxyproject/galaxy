@@ -439,9 +439,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow
-        run_config_list = build_workflow_run_configs(trans, workflow, payload)
+        run_configs = build_workflow_run_configs(trans, workflow, payload)
         is_batch = payload.get('batch')
-        if not is_batch and len(run_config_list) != 1:
+        if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 
         invocations = []

@@ -214,7 +214,7 @@ def build_workflow_run_configs( trans, workflow, payload ):
             trans.sa_session.add( new_history )
             target_history = new_history
         elif history_id:
-            target_history = history_manager.get_owned( trans.security.decode_id( payload.get(history_id), trans.user, current_history=trans.history )
+            target_history = history_manager.get_owned( trans.security.decode_id(history_id), trans.user, current_history=trans.history )
         else:
             target_history = trans.history
 
