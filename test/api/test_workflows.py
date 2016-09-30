@@ -1415,7 +1415,7 @@ test_data:
     @skip_without_tool( "cat1" )
     @skip_without_tool( "addValue" )
     def test_run_batch( self ):
-        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_input_params" )
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_batch" )
         workflow_id = self.workflow_populator.create_workflow( workflow )
         history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
