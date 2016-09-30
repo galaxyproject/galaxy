@@ -202,7 +202,8 @@ def build_workflow_run_configs( trans, workflow, payload ):
                 nh_name = history_name
             else:
                 nh_name = 'History from %s workflow' % workflow.name
-            assert len( param_keys ) > index
+            if len( param_keys ) <= index:
+                raise exceptions.MessageException("Galaxy logic error - incorrect expansion of workflow batch parameters.")
             ids = param_keys[ index ]
             nids = len( ids )
             if nids == 1:
