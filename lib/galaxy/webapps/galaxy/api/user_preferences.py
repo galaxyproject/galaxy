@@ -107,8 +107,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'email'             : email,
                 'username'          : username,
                 'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
-                'custom_form_id'    : custom_form_id,
-                'custom_form'       : custom_form,
                 'inputs'            : inputs,
             }
         else:
