@@ -194,6 +194,8 @@ def build_workflow_run_config( trans, workflow, payload ):
                         nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
                     elif nids > 1:
                         nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
+                else:
+                    raise exceptions.MessageException( "Workflow parameter expansion result invalid." )
                 new_history = trans.app.model.History( user=trans.user, name=nh_name )
                 trans.sa_session.add( new_history )
                 target_history = new_history
