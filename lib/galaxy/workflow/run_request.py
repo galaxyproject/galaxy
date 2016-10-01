@@ -236,12 +236,12 @@ def build_workflow_run_configs( trans, workflow, payload ):
 
     run_configs = []
     if raw_parameters and payload.get( 'batch' ):
-        # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
-        params, param_keys = expand_workflow_inputs( raw_parameters )
+        unexpanded_param_map = _normalize_step_parameters( workflow.steps, raw_parameters, legacy=legacy, already_normalized=True )
 
-        for index, workflow_args in enumerate( params ):
+        # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
+        params, param_keys = expand_workflow_inputs( unexpanded_param_map )
+        for index, param_map in enumerate( params ):
             target_history = get_target_history(payload, param_keys, index)
-            param_map = _normalize_step_parameters( workflow.steps, workflow_args, legacy=legacy, already_normalized=True )
             run_configs.append( WorkflowRunConfig(
                 target_history=target_history,
                 replacement_dict=payload.get( 'replacement_params', {} ),
