@@ -234,24 +234,14 @@ def build_workflow_run_configs( trans, workflow, payload ):
 
     add_to_history = 'no_add_to_history' not in payload
     legacy = payload.get( 'legacy', False )
+    already_normalized = payload.get( 'parameters_normalized', False )
     raw_parameters = payload.get( 'parameters', {} )
 
     run_configs = []
-    if raw_parameters and payload.get( 'batch' ):
-        unexpanded_param_map = _normalize_step_parameters( workflow.steps, raw_parameters, legacy=legacy, already_normalized=True )
-
-        # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
-        params, param_keys = expand_workflow_inputs( unexpanded_param_map )
-        for index, param_map in enumerate( params ):
-            target_history = get_target_history(payload, param_keys, index)
-            run_configs.append( WorkflowRunConfig(
-                target_history=target_history,
-                replacement_dict=payload.get( 'replacement_params', {} ),
-                param_map=param_map,
-                allow_tool_state_corrections=allow_tool_state_corrections ) )
-    else:
-        history = get_target_history(payload, param_keys, index)
-        param_map = _normalize_step_parameters( workflow.steps, raw_parameters, legacy=legacy )
+    unexpanded_param_map = _normalize_step_parameters( workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized )
+    expanded_params, expanded_param_keys = expand_workflow_inputs( unexpanded_param_map )
+    for index, param_map in enumerate( expanded_params ):
+        history = get_target_history(payload, expanded_param_keys, index)
         inputs = payload.get( 'inputs', None )
         inputs_by = payload.get( 'inputs_by', None )
         # New default is to reference steps by index of workflow step
@@ -268,7 +258,13 @@ def build_workflow_run_configs( trans, workflow, payload ):
         else:
             inputs = inputs or {}
         inputs_by = inputs_by or default_inputs_by
-        normalized_inputs = _normalize_inputs( workflow.steps, inputs, inputs_by )
+        if inputs or not already_normalized:
+            normalized_inputs = _normalize_inputs( workflow.steps, inputs, inputs_by )
+        else:
+            # Only allow dumping IDs directly into JSON database instead of properly recording the
+            # inputs with referential integrity if parameters are already normalized (coming from tool form).
+            normalized_inputs = {}
+
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
         for key, input_dict in normalized_inputs.iteritems():
