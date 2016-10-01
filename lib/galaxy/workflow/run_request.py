@@ -82,7 +82,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
     return normalized_inputs
 
 
-def _normalize_step_parameters(steps, param_map, legacy=False):
+def _normalize_step_parameters(steps, param_map, legacy=False, already_normalized=False):
     """ Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
     per tep fashion or by tool id and normalize the parameters so
@@ -90,9 +90,14 @@ def _normalize_step_parameters(steps, param_map, legacy=False):
     """
     normalized_param_map = {}
     for step in steps:
-        param_dict = _step_parameters(step, param_map, legacy=legacy)
+        if already_normalized:
+            param_dict = param_map.get(str(step.order_index), {})
+        else:
+            param_dict = _step_parameters(step, param_map, legacy=legacy)
+
         if param_dict:
             normalized_param_map[step.id] = param_dict
+
     return normalized_param_map
 
 
@@ -227,14 +232,7 @@ def build_workflow_run_configs( trans, workflow, payload ):
 
         for index, workflow_args in enumerate( params ):
             target_history = get_target_history(payload, param_keys, index)
-            param_map = {}
-            for step_index, step_args in workflow_args.iteritems():
-                step_order_index = int( step_index )
-                if step_order_index < len( workflow.steps ):
-                    step = workflow.steps[ step_order_index ]
-                    param_map[ step.id ] = step_args
-                else:
-                    raise exceptions.RequestParameterInvalidException( "Workflow %s does not contain step %s." % ( workflow.name, step_index ) )
+            param_map = _normalize_step_parameters( workflow.steps, workflow_args, legacy=False, already_normalized=True )
             run_configs.append( WorkflowRunConfig(
                 target_history=target_history,
                 replacement_dict=payload.get( 'replacement_params', {} ),
