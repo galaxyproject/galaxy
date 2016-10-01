@@ -181,6 +181,11 @@ def build_workflow_run_configs( trans, workflow, payload ):
     if workflow.has_errors:
         raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
+    if 'step_parameters' in payload and 'parameters' in payload:
+        raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
+    if 'inputs' in payload and 'ds_map' in payload:
+        raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy ds_map and input attributes." )
+
     def get_target_history(payload, param_keys=[], index=0):
         new_history = None
         history_id = None
@@ -225,29 +230,26 @@ def build_workflow_run_configs( trans, workflow, payload ):
 
         return target_history
 
+    add_to_history = 'no_add_to_history' not in payload
+    legacy = payload.get( 'legacy', False )
+    raw_parameters = payload.get( 'parameters', {} )
+
     run_configs = []
-    if 'parameters' in payload and payload.get( 'batch' ):
+    if raw_parameters and payload.get( 'batch' ):
         # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
-        params, param_keys = expand_workflow_inputs( payload.get( 'parameters', {} ) )
+        params, param_keys = expand_workflow_inputs( raw_parameters )
 
         for index, workflow_args in enumerate( params ):
             target_history = get_target_history(payload, param_keys, index)
-            param_map = _normalize_step_parameters( workflow.steps, workflow_args, legacy=False, already_normalized=True )
+            param_map = _normalize_step_parameters( workflow.steps, workflow_args, legacy=legacy, already_normalized=True )
             run_configs.append( WorkflowRunConfig(
                 target_history=target_history,
                 replacement_dict=payload.get( 'replacement_params', {} ),
                 param_map=param_map,
                 allow_tool_state_corrections=allow_tool_state_corrections ) )
     else:
-        if 'step_parameters' in payload and 'parameters' in payload:
-            raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
-        if 'inputs' in payload and 'ds_map' in payload:
-            raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy ds_map and input attributes." )
-        add_to_history = 'no_add_to_history' not in payload
         history = get_target_history(payload, param_keys, index)
-        param_map = payload.get( 'parameters', {} )
-        legacy = payload.get( 'legacy', False )
-        param_map = _normalize_step_parameters( workflow.steps, param_map, legacy=legacy )
+        param_map = _normalize_step_parameters( workflow.steps, raw_parameters, legacy=legacy )
         inputs = payload.get( 'inputs', None )
         inputs_by = payload.get( 'inputs_by', None )
         # New default is to reference steps by index of workflow step
