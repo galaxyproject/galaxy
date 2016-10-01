@@ -170,6 +170,51 @@ def _flatten_step_params( param_dict, prefix="" ):
     return new_params
 
 
+def _get_target_history(payload, param_keys=[], index=0):
+    new_history = None
+    history_id = None
+    history_name = None
+
+    history_name = payload.get('new_history_name', None)
+    history_id = payload.get('history_id', None)
+    history_param = payload.get('history', None)
+    if history_param:
+        if (history_name is not None or history_id is not None) and history_param is not None:
+            raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
+        # Get target history.
+        if history_param.startswith('hist_id='):
+            # Passing an existing history to use.
+            history_id = history_param[ 8: ]
+        else:
+            history_name = history_param
+
+    if history_name is not None and history_id is not None:
+        raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
+
+    if history_name is not None:
+        if history_name:
+            nh_name = history_name
+        else:
+            nh_name = 'History from %s workflow' % workflow.name
+        if len( param_keys ) <= index:
+            raise exceptions.MessageException("Galaxy logic error - incorrect expansion of workflow batch parameters.")
+        ids = param_keys[ index ]
+        nids = len( ids )
+        if nids == 1:
+            nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
+        elif nids > 1:
+            nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
+        new_history = trans.app.model.History( user=trans.user, name=nh_name )
+        trans.sa_session.add( new_history )
+        target_history = new_history
+    elif history_id:
+        target_history = history_manager.get_owned( trans.security.decode_id(history_id), trans.user, current_history=trans.history )
+    else:
+        target_history = trans.history
+
+    return target_history
+
+
 def build_workflow_run_configs( trans, workflow, payload ):
     app = trans.app
     history_manager = histories.HistoryManager( app )
@@ -188,50 +233,6 @@ def build_workflow_run_configs( trans, workflow, payload ):
     if 'inputs' in payload and 'ds_map' in payload:
         raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy ds_map and input attributes." )
 
-    def get_target_history(payload, param_keys=[], index=0):
-        new_history = None
-        history_id = None
-        history_name = None
-
-        history_name = payload.get('new_history_name', None)
-        history_id = payload.get('history_id', None)
-        history_param = payload.get('history', None)
-        if history_param:
-            if (history_name is not None or history_id is not None) and history_param is not None:
-                raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
-            # Get target history.
-            if history_param.startswith('hist_id='):
-                # Passing an existing history to use.
-                history_id = history_param[ 8: ]
-            else:
-                history_name = history_param
-
-        if history_name is not None and history_id is not None:
-            raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
-
-        if history_name is not None:
-            if history_name:
-                nh_name = history_name
-            else:
-                nh_name = 'History from %s workflow' % workflow.name
-            if len( param_keys ) <= index:
-                raise exceptions.MessageException("Galaxy logic error - incorrect expansion of workflow batch parameters.")
-            ids = param_keys[ index ]
-            nids = len( ids )
-            if nids == 1:
-                nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
-            elif nids > 1:
-                nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
-            new_history = trans.app.model.History( user=trans.user, name=nh_name )
-            trans.sa_session.add( new_history )
-            target_history = new_history
-        elif history_id:
-            target_history = history_manager.get_owned( trans.security.decode_id(history_id), trans.user, current_history=trans.history )
-        else:
-            target_history = trans.history
-
-        return target_history
-
     add_to_history = 'no_add_to_history' not in payload
     legacy = payload.get( 'legacy', False )
     already_normalized = payload.get( 'parameters_normalized', False )
@@ -241,7 +242,7 @@ def build_workflow_run_configs( trans, workflow, payload ):
     unexpanded_param_map = _normalize_step_parameters( workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized )
     expanded_params, expanded_param_keys = expand_workflow_inputs( unexpanded_param_map )
     for index, param_map in enumerate( expanded_params ):
-        history = get_target_history(payload, expanded_param_keys, index)
+        history = _get_target_history(payload, expanded_param_keys, index)
         inputs = payload.get( 'inputs', None )
         inputs_by = payload.get( 'inputs_by', None )
         # New default is to reference steps by index of workflow step
