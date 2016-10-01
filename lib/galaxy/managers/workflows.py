@@ -388,12 +388,12 @@ class WorkflowContentsManager(UsesAnnotations):
                     'name'   : step.module.name,
                     'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
                 }
-            step_model[ 'step_id' ] = step.id
+            step_model[ 'step_id' ] = trans.app.security.encode_id( step.id )
             step_model[ 'step_type' ] = step.type
             step_model[ 'step_order_index' ] = step.order_index
             step_model[ 'output_connections' ] = [ {
-                'input_step_id'     : oc.input_step_id,
-                'output_step_id'    : oc.output_step_id,
+                'input_step_id'     : trans.app.security.encode_id( oc.input_step_id ),
+                'output_step_id'    : trans.app.security.encode_id( oc.output_step_id ),
                 'input_name'        : oc.input_name,
                 'output_name'       : oc.output_name
             } for oc in step.output_connections ]
