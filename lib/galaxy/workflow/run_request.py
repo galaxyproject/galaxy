@@ -11,6 +11,8 @@ INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input', 'parameter_input' ]
 import logging
 log = logging.getLogger( __name__ )
 
+HISTORY_SPECIFIED_MULTIPLE_MESSAGE = "Specified workflow target history multiple ways - at most one of 'history', 'history_id', and 'new_history_name' may be specified."
+
 
 class WorkflowRunConfig( object ):
     """ Wrapper around all the ways a workflow execution can be parameterized.
@@ -195,8 +197,8 @@ def build_workflow_run_configs( trans, workflow, payload ):
         history_id = payload.get('history_id', None)
         history_param = payload.get('history', None)
         if history_param:
-            if history_name is not None or history_param is not None:
-                raise exceptions.RequestParameterInvalidException("Specified workflow target history multiple ways.")
+            if (history_name is not None or history_id is not None) and history_param is not None:
+                raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
             # Get target history.
             if history_param.startswith('hist_id='):
                 # Passing an existing history to use.
@@ -205,7 +207,7 @@ def build_workflow_run_configs( trans, workflow, payload ):
                 history_name = history_param
 
         if history_name is not None and history_id is not None:
-            raise exceptions.RequestParameterInvalidException("Specified workflow target history multiple ways.")
+            raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
 
         if history_name is not None:
             if history_name:
