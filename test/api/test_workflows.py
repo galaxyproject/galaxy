@@ -1423,6 +1423,7 @@ test_data:
         workflow_request = {
             "history_id" : history_id,
             "batch"      : True,
+            "parameters_normalized": True,
             "parameters" : dumps( { "0": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" }, { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } }, "1": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } } )
         }
         invocation_response = self._post( "workflows/%s/usage" % workflow_id, data=workflow_request )

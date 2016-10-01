@@ -11,6 +11,8 @@ INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input', 'parameter_input' ]
 import logging
 log = logging.getLogger( __name__ )
 
+HISTORY_SPECIFIED_MULTIPLE_MESSAGE = "Specified workflow target history multiple ways - at most one of 'history', 'history_id', and 'new_history_name' may be specified."
+
 
 class WorkflowRunConfig( object ):
     """ Wrapper around all the ways a workflow execution can be parameterized.
@@ -82,7 +84,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
     return normalized_inputs
 
 
-def _normalize_step_parameters(steps, param_map, legacy=False):
+def _normalize_step_parameters(steps, param_map, legacy=False, already_normalized=False):
     """ Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
     per tep fashion or by tool id and normalize the parameters so
@@ -90,9 +92,14 @@ def _normalize_step_parameters(steps, param_map, legacy=False):
     """
     normalized_param_map = {}
     for step in steps:
-        param_dict = _step_parameters(step, param_map, legacy=legacy)
+        if already_normalized:
+            param_dict = param_map.get(str(step.order_index), {})
+        else:
+            param_dict = _step_parameters(step, param_map, legacy=legacy)
+
         if param_dict:
             normalized_param_map[step.id] = param_dict
+
     return normalized_param_map
 
 
@@ -163,7 +170,7 @@ def _flatten_step_params( param_dict, prefix="" ):
     return new_params
 
 
-def build_workflow_run_config( trans, workflow, payload ):
+def build_workflow_run_configs( trans, workflow, payload ):
     app = trans.app
     history_manager = histories.HistoryManager( app )
     allow_tool_state_corrections = payload.get( 'allow_tool_state_corrections', False )
@@ -176,68 +183,65 @@ def build_workflow_run_config( trans, workflow, payload ):
     if workflow.has_errors:
         raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
-    if 'parameters' in payload and payload.get( 'batch' ):
-        # payload = { batch: True, parameters: { step_0: { parameter_0|parameter_1 : value_0, ... }, ... } }
-        params, param_keys = expand_workflow_inputs( payload.get( 'parameters', {} ) )
-        run_configs = []
-        for index, workflow_args in enumerate( params ):
-            new_history = None
-            if 'new_history_name' in payload:
-                if payload[ 'new_history_name' ]:
-                    nh_name = payload[ 'new_history_name' ]
-                else:
-                    nh_name = 'History from %s workflow' % workflow.name
-                if len( param_keys ) > index:
-                    ids = param_keys[ index ]
-                    nids = len( ids )
-                    if nids == 1:
-                        nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
-                    elif nids > 1:
-                        nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
-                else:
-                    raise exceptions.MessageException( "Workflow parameter expansion result invalid." )
-                new_history = trans.app.model.History( user=trans.user, name=nh_name )
-                trans.sa_session.add( new_history )
-                target_history = new_history
-            elif 'history_id' in payload:
-                target_history = history_manager.get_owned( trans.security.decode_id( payload.get( 'history_id' ) ), trans.user, current_history=trans.history )
+    if 'step_parameters' in payload and 'parameters' in payload:
+        raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
+    if 'inputs' in payload and 'ds_map' in payload:
+        raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy ds_map and input attributes." )
+
+    def get_target_history(payload, param_keys=[], index=0):
+        new_history = None
+        history_id = None
+        history_name = None
+
+        history_name = payload.get('new_history_name', None)
+        history_id = payload.get('history_id', None)
+        history_param = payload.get('history', None)
+        if history_param:
+            if (history_name is not None or history_id is not None) and history_param is not None:
+                raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
+            # Get target history.
+            if history_param.startswith('hist_id='):
+                # Passing an existing history to use.
+                history_id = history_param[ 8: ]
             else:
-                target_history = trans.history
-            param_map = {}
-            for step_index, step_args in workflow_args.iteritems():
-                step_order_index = int( step_index )
-                if step_order_index < len( workflow.steps ):
-                    step = workflow.steps[ step_order_index ]
-                    param_map[ step.id ] = step_args
-                else:
-                    raise exceptions.RequestParameterInvalidException( "Workflow %s does not contain step %s." % ( workflow.name, step_index ) )
-            run_configs.append( WorkflowRunConfig(
-                target_history=target_history,
-                replacement_dict=payload.get( 'replacement_params', {} ),
-                param_map=param_map,
-                allow_tool_state_corrections=allow_tool_state_corrections ) )
-        return run_configs
-    else:
-        if 'step_parameters' in payload and 'parameters' in payload:
-            raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
-        if 'inputs' in payload and 'ds_map' in payload:
-            raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy ds_map and input attributes." )
-        add_to_history = 'no_add_to_history' not in payload
-        history_param = payload.get( 'history', '' )
-        # Get target history.
-        if history_param.startswith( 'hist_id=' ):
-            # Passing an existing history to use.
-            encoded_history_id = history_param[ 8: ]
-            history_id = __decode_id( trans, encoded_history_id, model_type='history' )
-            history = history_manager.get_owned( history_id, trans.user, current_history=trans.history )
+                history_name = history_param
+
+        if history_name is not None and history_id is not None:
+            raise exceptions.RequestParameterInvalidException(HISTORY_SPECIFIED_MULTIPLE_MESSAGE)
+
+        if history_name is not None:
+            if history_name:
+                nh_name = history_name
+            else:
+                nh_name = 'History from %s workflow' % workflow.name
+            if len( param_keys ) <= index:
+                raise exceptions.MessageException("Galaxy logic error - incorrect expansion of workflow batch parameters.")
+            ids = param_keys[ index ]
+            nids = len( ids )
+            if nids == 1:
+                nh_name = '%s on %s' % ( nh_name, ids[ 0 ] )
+            elif nids > 1:
+                nh_name = '%s on %s and %s' % ( nh_name, ', '.join( ids[ 0:-1 ] ), ids[ -1 ] )
+            new_history = trans.app.model.History( user=trans.user, name=nh_name )
+            trans.sa_session.add( new_history )
+            target_history = new_history
+        elif history_id:
+            target_history = history_manager.get_owned( trans.security.decode_id(history_id), trans.user, current_history=trans.history )
         else:
-            # Send workflow outputs to new history.
-            history = app.model.History(name=history_param, user=trans.user)
-            trans.sa_session.add(history)
-            trans.sa_session.flush()
-        param_map = payload.get( 'parameters', {} )
-        legacy = payload.get( 'legacy', False )
-        param_map = _normalize_step_parameters( workflow.steps, param_map, legacy=legacy )
+            target_history = trans.history
+
+        return target_history
+
+    add_to_history = 'no_add_to_history' not in payload
+    legacy = payload.get( 'legacy', False )
+    already_normalized = payload.get( 'parameters_normalized', False )
+    raw_parameters = payload.get( 'parameters', {} )
+
+    run_configs = []
+    unexpanded_param_map = _normalize_step_parameters( workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized )
+    expanded_params, expanded_param_keys = expand_workflow_inputs( unexpanded_param_map )
+    for index, param_map in enumerate( expanded_params ):
+        history = get_target_history(payload, expanded_param_keys, index)
         inputs = payload.get( 'inputs', None )
         inputs_by = payload.get( 'inputs_by', None )
         # New default is to reference steps by index of workflow step
@@ -254,7 +258,13 @@ def build_workflow_run_config( trans, workflow, payload ):
         else:
             inputs = inputs or {}
         inputs_by = inputs_by or default_inputs_by
-        normalized_inputs = _normalize_inputs( workflow.steps, inputs, inputs_by )
+        if inputs or not already_normalized:
+            normalized_inputs = _normalize_inputs( workflow.steps, inputs, inputs_by )
+        else:
+            # Only allow dumping IDs directly into JSON database instead of properly recording the
+            # inputs with referential integrity if parameters are already normalized (coming from tool form).
+            normalized_inputs = {}
+
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
         for key, input_dict in normalized_inputs.iteritems():
@@ -309,13 +319,15 @@ def build_workflow_run_config( trans, workflow, payload ):
                 normalized_inputs[ key ] = value[ 'content' ]
             else:
                 normalized_inputs[ key ] = value
-        return WorkflowRunConfig(
+        run_configs.append(WorkflowRunConfig(
             target_history=history,
             replacement_dict=payload.get( 'replacement_params', {} ),
             inputs=normalized_inputs,
             param_map=param_map,
             allow_tool_state_corrections=allow_tool_state_corrections
-        )
+        ))
+
+    return run_configs
 
 
 def workflow_run_config_to_request( trans, run_config, workflow ):

@@ -356,10 +356,16 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         _submit: function() {
             var self = this;
             var job_def = {
-                new_history_name    : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
-                replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
-                parameters          : {},
-                batch               : true
+                new_history_name      : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
+                replacement_params    : this.wp_form ? this.wp_form.data.create() : {},
+                parameters            : {},
+                // Tool form will submit flat maps for each parameter
+                // (e.g. "repeat_0|cond|param": "foo" instead of nested
+                // data structures).
+                parameters_normalized : true,
+                // Tool form always wants a list of invocations back
+                // so that inputs can be batched.
+                batch                 : true
             };
             var validated = true;
             for ( var i in this.forms ) {
