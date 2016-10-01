@@ -390,6 +390,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 }
             step_model[ 'step_id' ] = step.id
             step_model[ 'step_type' ] = step.type
+            step_model[ 'step_order_index' ] = step.order_index
             step_model[ 'output_connections' ] = [ {
                 'input_step_id'     : oc.input_step_id,
                 'output_step_id'    : oc.output_step_id,
