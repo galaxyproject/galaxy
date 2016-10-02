@@ -9,7 +9,7 @@ History
 16.10.3.dev0
 ---------------------
 
-    
+* Small mulled and Conda related fix and enhancements.
 
 ---------------------
 16.10.2 (2016-09-30)
