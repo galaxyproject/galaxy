@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.10.3.dev0
+16.10.3 (2016-10-02)
 ---------------------
 
 * Small mulled and Conda related fix and enhancements.
