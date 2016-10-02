@@ -7,6 +7,7 @@ import re
 import shutil
 import tempfile
 
+from distutils.version import LooseVersion
 from sys import platform as _platform
 
 import six
@@ -339,23 +340,55 @@ def cleanup_failed_install(conda_target, conda_context=None):
         conda_context.exec_remove([conda_target.install_environment])
 
 
-def is_target_available(conda_target, conda_context=None):
-    """ Checks if a specified target is available for installation.
-        If the package name exists return "True". If in addition the version matches exactly return "exact".
-        Otherwise return False.
+def best_search_result(conda_target, conda_context=None, channels_override=None):
+    """Find best "conda search" result for specified target.
+
+    Return ``None`` if no results match.
     """
     conda_context = _ensure_conda_context(conda_context)
-    conda_context.ensure_channels_configured()
-    search_cmd = [conda_context.conda_exec, "search", "--full-name", "--json", conda_target.package]
+    if not channels_override:
+        conda_context.ensure_channels_configured()
+
+    search_cmd = [conda_context.conda_exec, "search", "--full-name", "--json"]
+    if channels_override:
+        search_cmd.append("--override-channels")
+        for channel in channels_override:
+            search_cmd.extend(["--channel", channel])
+    search_cmd.append(conda_target.package)
     res = commands.execute(search_cmd)
     hits = json.loads(res).get(conda_target.package, [])
+    hits = sorted(hits, key=lambda hit: LooseVersion(hit['version']), reverse=True)
 
-    if len(hits) > 0:
-        if conda_target.version:
-            for hit in hits:
-                if hit['version'] == conda_target.version:
-                    return 'exact'
-        return True
+    if len(hits) == 0:
+        return (None, None)
+
+    best_result = (hits[0], False)
+
+    for hit in hits:
+        if is_search_hit_exact(conda_target, hit):
+            best_result = (hit, True)
+            break
+
+    return best_result
+
+
+def is_search_hit_exact(conda_target, search_hit):
+    target_version = conda_target.version
+    # It'd be nice to make request verson of 1.0 match available
+    # version of 1.0.3 or something like that.
+    return not target_version or search_hit['version'] == target_version
+
+
+def is_target_available(conda_target, conda_context=None, channels_override=None):
+    """Check if a specified target is available for installation.
+
+    If the package name exists return ``True`` (the ``bool``). If in addition
+    the version matches exactly return "exact" (a string). Otherwise return
+    ``False``.
+    """
+    (best_hit, exact) = best_search_result(conda_target, conda_context, channels_override)
+    if best_hit:
+        return 'exact' if exact else True
     else:
         return False
 
