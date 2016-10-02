@@ -42,7 +42,7 @@ class _Memoized(object):
 
 def _parse(data, cfg):
     """Parse metadata YAML."""
-    assert cfg is not None, "Conda utilities for evaluating cfg are not available."
+    assert cfg is None, "Conda utilities for evaluating cfg are not available."
     return dict(yamlize(data))
 
 
