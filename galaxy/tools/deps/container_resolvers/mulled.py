@@ -69,6 +69,9 @@ class CachedMulledContainerResolver(ContainerResolver):
 
     def resolve(self, enabled_container_types, tool_info):
         targets = mulled_targets(tool_info)
+        if len(targets) == 0:
+            return None
+
         cached_images = list_cached_mulled_images(self.namespace)
 
         image = None
@@ -109,6 +112,8 @@ class MulledContainerResolver(ContainerResolver):
 
     def resolve(self, enabled_container_types, tool_info):
         targets = mulled_targets(tool_info)
+        if len(targets) == 0:
+            return None
 
         name = None
 
