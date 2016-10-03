@@ -614,34 +614,6 @@ class HistoryField( BaseField ):
         return d
 
 
-class LibraryField( BaseField ):
-    def __init__( self, name, value=None, trans=None, **kwds ):
-        super( LibraryField, self ).__init__( name, value, **kwds )
-        self.name = name
-        self.lddas = value
-        self.trans = trans
-
-    def get_html( self, prefix="", disabled=False ):
-        if not self.lddas:
-            ldda_ids = ""
-            text = "Select library dataset(s)"
-        else:
-            ldda_ids = "||".join( [ self.trans.security.encode_id( ldda.id ) for ldda in self.lddas ] )
-            text = "<br />".join( [ "%s. %s" % (i + 1, ldda.name) for i, ldda in enumerate(self.lddas)] )
-        return unicodify( '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
-                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda_ids), quote=True ) ) )
-
-    def get_display_text(self):
-        if self.ldda:
-            return self.ldda.name
-        else:
-            return 'None'
-
-    def to_dict( self ):
-        d = super( LibraryField, self ).to_dict()
-        d[ 'type' ] = 'select'
-        return d
-
 def get_suite():
     """Get unittest suite for this module"""
     import doctest
