@@ -413,6 +413,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     },
                     error   : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission failed.', response );
+                        var input_found = false;
                         if ( response && response.err_data ) {
                             for ( var i in self.forms ) {
                                 var form = self.forms[ i ];
@@ -421,11 +422,13 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {
                                         form.highlight( input_id, error_messages[ input_id ] );
+                                        input_found = true;
                                         break;
                                     }
                                 }
                             }
-                        } else {
+                        }
+                        if ( !input_found ) {
                             self.modal.show({
                                 title   : 'Workflow submission failed',
                                 body    : self._templateError( job_def, response && response.err_msg ),
