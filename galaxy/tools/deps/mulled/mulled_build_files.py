@@ -35,7 +35,7 @@ def main(argv=None):
                         help="Path to directory (or single file) of TSV files describing composite recipes.")
     args = parser.parse_args()
     for targets in generate_targets(args.files):
-        mull_targets(args, targets, **args_to_mull_targets_kwds(args))
+        mull_targets(targets, **args_to_mull_targets_kwds(args))
 
 
 def generate_targets(target_source):

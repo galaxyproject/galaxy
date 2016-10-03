@@ -16,6 +16,23 @@ class ContainerResolver(Dictifiable, object):
 
     __metaclass__ = ABCMeta
 
+    def __init__(self, app_info=None, **kwds):
+        """Default initializer for ``ContainerResolver`` subclasses."""
+        self.app_info = app_info
+        self.resolver_kwds = kwds
+
+    def _get_config_option(self, key, default=None, config_prefix=None, **kwds):
+        """Look in resolver-specific settings for option and then fallback to
+        global settings.
+        """
+        global_key = "%s_%s" % (config_prefix, key)
+        if key in kwds:
+            return kwds.get(key)
+        elif self.app_info and hasattr(self.app_info, global_key):
+            return getattr(self.app_info, global_key)
+        else:
+            return default
+
     @abstractmethod
     def resolve(self, tool_info):
         """Find a container matching all supplied requirements for tool.

@@ -13,7 +13,11 @@ from galaxy.util import asbool
 from galaxy.util import plugin_config
 
 from .container_resolvers.explicit import ExplicitContainerResolver
-from .container_resolvers.mulled import CachedMulledContainerResolver, MulledContainerResolver
+from .container_resolvers.mulled import (
+    BuildMulledContainerResolver,
+    CachedMulledContainerResolver,
+    MulledContainerResolver,
+)
 from .requirements import ContainerDescription
 from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 from ..deps import docker_util
@@ -182,6 +186,7 @@ class ContainerRegistry(object):
     def __init__(self, app_info):
         self.resolver_classes = self.__resolvers_dict()
         self.enable_beta_mulled_containers = app_info.enable_beta_mulled_containers
+        self.app_info = app_info
         self.container_resolvers = self.__build_container_resolvers(app_info)
 
     def __build_container_resolvers( self, app_info ):
@@ -198,14 +203,15 @@ class ContainerRegistry(object):
         extra_kwds = {}
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
-    def __default_containers_resolvers( self ):
+    def __default_containers_resolvers(self):
         default_resolvers = [
-            ExplicitContainerResolver(),
+            ExplicitContainerResolver(self.app_info),
         ]
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
-                CachedMulledContainerResolver(),
-                MulledContainerResolver("mulled"),
+                CachedMulledContainerResolver(self.app_info),
+                MulledContainerResolver(self.app_info, namespace="mulled"),
+                BuildMulledContainerResolver(self.app_info),
             ])
         return default_resolvers
 
@@ -236,6 +242,8 @@ class AppInfo(object):
         library_import_dir=None,
         enable_beta_mulled_containers=False,
         containers_resolvers_config_file=None,
+        involucro_path=None,
+        involucro_auto_init=True,
     ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
@@ -245,6 +253,8 @@ class AppInfo(object):
         self.library_import_dir = library_import_dir
         self.enable_beta_mulled_containers = enable_beta_mulled_containers
         self.containers_resolvers_config_file = containers_resolvers_config_file
+        self.involucro_path = involucro_path
+        self.involucro_auto_init = involucro_auto_init
 
 
 class ToolInfo(object):

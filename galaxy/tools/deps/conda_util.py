@@ -14,6 +14,7 @@ import six
 import yaml
 
 from ..deps import commands
+from ..deps import installable
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +49,8 @@ def find_conda_prefix(conda_prefix=None):
     return conda_prefix
 
 
-class CondaContext(object):
+class CondaContext(installable.InstallableContext):
+    installable_description = "Conda"
 
     def __init__(self, conda_prefix=None, conda_exec=None,
                  shell_exec=None, debug=False, ensure_channels='',
@@ -230,6 +232,16 @@ class CondaContext(object):
     @property
     def activate(self):
         return self._bin("activate")
+
+    def is_installed(self):
+        return self.is_conda_installed()
+
+    def can_install(self):
+        return self.can_install_conda()
+
+    @property
+    def parent_path(self):
+        return os.path.dirname(os.path.abspath(self.conda_prefix))
 
     def _bin(self, name):
         return os.path.join(self.conda_prefix, "bin", name)

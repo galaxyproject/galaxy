@@ -32,7 +32,7 @@ def main(argv=None):
     tool_source = get_tool_source(args.tool)
     requirements, _ = tool_source.parse_requirements_and_containers()
     targets = requirements_to_mulled_targets(requirements)
-    mull_targets(args, targets, **args_to_mull_targets_kwds(argv))
+    mull_targets(targets, **args_to_mull_targets_kwds(args))
 
 
 def requirements_to_mulled_targets(requirements):
