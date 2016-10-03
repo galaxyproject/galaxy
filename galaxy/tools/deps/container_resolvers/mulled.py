@@ -168,7 +168,10 @@ class BuildMulledContainerResolver(ContainerResolver):
 
     def __init__(self, app_info=None, namespace="local", **kwds):
         super(BuildMulledContainerResolver, self).__init__(app_info)
-        self._involucro_context_kwds = self._get_config_option("involucro_path", None)
+        self._involucro_context_kwds = {
+            'involucro_bin': self._get_config_option("involucro_path", None)
+        }
+        self.namespace = namespace
         self._mulled_kwds = {
             'namespace': namespace,
             'channels': self._get_config_option("channels", DEFAULT_CHANNELS, prefix="mulled"),
@@ -182,7 +185,7 @@ class BuildMulledContainerResolver(ContainerResolver):
 
         mull_targets(
             targets,
-            involucro_context=self.get_involucro_context(),
+            involucro_context=self._get_involucro_context(),
             **self._mulled_kwds
         )
         return cached_container_description(targets, self.namespace)
