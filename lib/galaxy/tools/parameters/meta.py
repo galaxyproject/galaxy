@@ -2,6 +2,7 @@ from galaxy.util import permutations
 from galaxy import model
 from galaxy import util
 from galaxy import exceptions
+from galaxy.util.odict import odict
 import itertools
 import copy
 import logging
@@ -25,15 +26,17 @@ def expand_workflow_inputs( inputs ):
     ['13', '23', '14', '24', '15', '25']
     >>> params, param_keys = expand_workflow_inputs( {'1': {'input': {'batch': True, 'product': True, 'values': [{'hid': '1'}, {'hid': '2'}] }}, '2': {'input': {'batch': True, 'product': True, 'values': [{'hid': '3'}, {'hid': '4'}, {'hid': '5'}] }}, '3': {'input': {'batch': True, 'product': True, 'values': [{'hid': '6'}, {'hid': '7'}, {'hid': '8'}] }}} )
     >>> print [ "%s%s%s" % ( p[ '1' ][ 'input' ][ 'hid' ], p[ '2' ][ 'input' ][ 'hid' ], p[ '3' ][ 'input' ][ 'hid' ] ) for p in params ]
-    ['136', '146', '156', '137', '147', '157', '138', '148', '158', '236', '246', '256', '237', '247', '257', '238', '248', '258']
+    ['136', '137', '138', '146', '147', '148', '156', '157', '158', '236', '237', '238', '246', '247', '248', '256', '257', '258']
     """
     linked_n = None
     linked = []
     product = []
     linked_keys = []
     product_keys = []
-    for step_id, step in inputs.items():
-        for key, value in step.items():
+    ordered_inputs = odict( sorted( inputs.items() ) )
+    for step_id, step in ordered_inputs.items():
+        ordered_step = odict( sorted( step.items() ) )
+        for key, value in ordered_step.items():
             if isinstance( value, dict ) and 'batch' in value and value[ 'batch' ] is True and 'values' in value and isinstance( value[ 'values' ], list ):
                 nval = len( value[ 'values' ] )
                 if 'product' in value and value[ 'product' ] is True:
