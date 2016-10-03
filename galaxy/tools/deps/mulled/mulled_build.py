@@ -28,6 +28,10 @@ from .util import build_target, conda_build_target_str, image_name
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
+DEFAULT_CHANNEL = "bioconda"
+DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
+DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
+DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 
 
 def get_tests(args, pkg_path):
@@ -94,19 +98,22 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
-def mull_targets(args, targets, test='true', context=None, image_build=None, name_override=None):
-    # TODO: Convert args entirely to kwds.
-    if context is None:
-        context = context_from_args(args)
+def mull_targets(
+    targets, involucro_context=None,
+    command="build", channels=DEFAULT_CHANNELS, namespace="",
+    test='true', image_build=None, name_override=None,
+    repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False
+):
+    if involucro_context is None:
+        involucro_context = InvolucroContext()
 
     repo_template_kwds = {
-        "namespace": args.namespace,
+        "namespace": namespace,
         "image": image_name(targets, image_build=image_build, name_override=name_override)
     }
-    repo = string.Template(args.repository_template).safe_substitute(repo_template_kwds)
+    repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
 
-    build_command = args.command
-    channels = args.channel + "," + args.extra_channels
+    channels = ",".join(channels)
     target_str = ",".join(map(conda_build_target_str, targets))
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
@@ -114,11 +121,11 @@ def mull_targets(args, targets, test='true', context=None, image_build=None, nam
         '-set', "TEST='%s'" % test,
         '-set', "TARGETS='%s'" % target_str,
         '-set', "REPO='%s'" % repo,
-        build_command,
+        command,
     ]
-    print(" ".join(context.build_command(involucro_args)))
-    if not args.dry_run:
-        context.exec_command(involucro_args)
+    print(" ".join(involucro_context.build_command(involucro_args)))
+    if not dry_run:
+        involucro_context.exec_command(involucro_args)
 
 
 def context_from_args(args):
@@ -156,11 +163,11 @@ def add_build_arguments(parser):
                         help='Just print commands instead of executing them.')
     parser.add_argument('-n', '--namespace', dest='namespace', default="mulled",
                         help='quay.io namespace.')
-    parser.add_argument('-r', '--repository_template', dest='repository_template', default="quay.io/${namespace}/${image}",
+    parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
                         help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
-    parser.add_argument('-c', '--channel', dest='channel', default="bioconda",
+    parser.add_argument('-c', '--channel', dest='channel', default=DEFAULT_CHANNEL,
                         help='Target conda channel')
-    parser.add_argument('--extra-channels', dest='extra_channels', default="conda-forge,r",
+    parser.add_argument('--extra-channels', dest='extra_channels', default=",".join(DEFAULT_EXTRA_CHANNELS),
                         help='Dependent conda channels.')
 
 
@@ -184,12 +191,28 @@ def target_str_to_targets(targets_raw):
     return targets
 
 
-def args_to_mull_targets_kwds(argv):
+def args_to_mull_targets_kwds(args):
     kwds = {}
-    if hasattr(argv, "image_build"):
-        kwds["image_build"] = argv.image_build
-    if hasattr(argv, "name_override"):
-        kwds["name_override"] = argv.name_override
+    if hasattr(args, "image_build"):
+        kwds["image_build"] = args.image_build
+    if hasattr(args, "name_override"):
+        kwds["name_override"] = args.name_override
+    if hasattr(args, "namespace"):
+        kwds["namespace"] = args.namespace
+    if hasattr(args, "dry_run"):
+        kwds["dry_run"] = args.dry_run
+    if hasattr(args, "channel"):
+        channels = [args.channel]
+        if hasattr(args, "extra_channels"):
+            channels += args.extra_channels
+        kwds["channels"] = channels
+    if hasattr(args, "command"):
+        kwds["command"] = args.command
+    if hasattr(args, "repository_template"):
+        kwds["repository_template"] = args.repository_template
+
+    kwds["involucro_context"] = context_from_args(args)
+
     return kwds
 
 
@@ -203,7 +226,7 @@ def main(argv=None):
     parser.add_argument('--repository-name', dest="repository_name", default=None, help="Name of mulled container (leave blank to auto-generate based on packages - recommended).")
     args = parser.parse_args()
     targets = target_str_to_targets(argv.targets)
-    mull_targets(args, targets, **args_to_mull_targets_kwds(argv))
+    mull_targets(targets, **args_to_mull_targets_kwds(args))
 
 
 __all__ = ["main"]

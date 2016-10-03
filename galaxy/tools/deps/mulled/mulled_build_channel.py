@@ -70,7 +70,7 @@ def run_channel(args, build_last_n_versions=1):
         for tag in versions:
             target = build_target(pkg_name, tag=tag)
             targets = [target]
-            mull_targets(args, targets, pkg_tests, **args_to_mull_targets_kwds(args))
+            mull_targets(targets, pkg_tests, **args_to_mull_targets_kwds(args))
 
 
 def get_pkg_names(args):
