@@ -49,14 +49,18 @@ Below we answer some common questions (collected by Lance Parsons):
 1. How do I enable Conda dependency resolution for existing Galaxy installations?
 *********************************************************************************
 
-Most Galaxy administrators have not set up a dependency resolvers
-configuration file ( ``dependency_resolvers_conf.xml`` ) which means they
-are using Galaxy's default ( ``dependency_resolvers_conf.xml.sample`` ).
-Galaxy has enabled Conda dependency resolution by default since release
-16.04 (if Conda was installed already), so many existing installations
-can use Conda dependencies. Having Conda enabled in ``dependency_resolvers_conf.xml`` means that Galaxy will
-look for dependencies using the Conda system when it attempts to run
-tools. If ``conda_auto_install`` is True , and a dependency is not found,
+Most Galaxy administrators should be using Galaxy's default dependency resolvers
+configuration file ( ``dependency_resolvers_conf.xml.sample`` ).
+Galaxy has enabled Conda dependency resolution since release 16.04 (if Conda was present),
+so many existing installations can use Conda dependencies. Having Conda enabled in ``dependency_resolvers_conf.xml``
+means that Galaxy can look for dependencies using the Conda system when it attempts to run
+tools.
+
+Note that the order of resolvers in the file matters and the ``<tool_shed_packages />``
+entry should remain first. This means that tools that have specified Tool Shed packages
+as their dependencies will work without a change.
+
+If ``conda_auto_install`` is True , and a dependency is not found,
 Galaxy will attempt to install it using the configured Conda channels. A
 graphical user interface that allows administrators install Conda
 packages directly from Galaxy when tools are installed from the Tool
