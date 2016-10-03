@@ -124,11 +124,25 @@ class GalaxyInteractorApi( object ):
             for key, value in metadata.items():
                 try:
                     dataset_value = dataset.get( key, None )
-                    if text_type(dataset_value) != text_type(value):
-                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
-                        msg_params = ( key, value, dataset_value, dataset )
-                        msg = msg % msg_params
-                        raise Exception( msg )
+
+                    def compare(val, expected):
+                        if text_type(val) != text_type(expected):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+
+                    if isinstance(dataset_value, list):
+                        value = text_type(value).split(",")
+                        if len(value) != len(dataset_value):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s], lists differ in length. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+                        for val, expected in zip(dataset_value, value):
+                            compare(val, expected)
+                    else:
+                        compare(dataset_value, value)
                 except KeyError:
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )

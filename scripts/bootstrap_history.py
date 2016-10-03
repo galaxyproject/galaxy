@@ -160,6 +160,8 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
       - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
 
+      - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version.
+
       - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `{version}` so it properly tags new PRs.
 
 - [ ] **Deploy and Test Release**

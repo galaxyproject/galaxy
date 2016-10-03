@@ -4,14 +4,14 @@
 import os
 import socket
 import sys
-from json import loads, dumps
+from json import dumps, loads
 
 from six.moves.urllib.parse import urlencode
 from six.moves.urllib.request import urlopen
 
-from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
+from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
 from galaxy.util import get_charset_from_http_headers
 
 GALAXY_PARAM_PREFIX = 'GALAXY'

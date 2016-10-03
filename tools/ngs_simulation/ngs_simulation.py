@@ -19,6 +19,9 @@ usage: %prog [options]
 # removed output of all simulation results on request (not working)
 #   -r, --sim_results=r: Output all tabular simulation results (number of polymorphisms times number of detection thresholds)
 #   -o, --output=o: Base name for summary output for each run
+from __future__ import print_function
+
+import itertools
 import os
 import random
 import sys
@@ -101,7 +104,7 @@ def __main__():
 #    else:
 #        out_name_template = tempfile.NamedTemporaryFile().name + '_%s'
     out_name_template = tempfile.NamedTemporaryFile().name + '_%s'
-    print 'out_name_template:', out_name_template
+    print('out_name_template:', out_name_template)
 
     # set up output files
     outputs = {}
@@ -120,24 +123,24 @@ def __main__():
             sim_count = 0
             while sim_count < num_sims:
                 # randomly pick heteroplasmic base index
-                hbase = random.choice( range( 0, seq_len ) )
+                hbase = random.randrange( seq_len )
                 # hbase = seq_len/2#random.randrange( 0, seq_len )
                 # create 2D quasispecies list
-                qspec = map( lambda x: [], [0] * seq_len )
+                qspec = [[] for _ in range(seq_len)]
                 # simulate read indices and assign to quasispecies
                 i = 0
                 while i < ( avg_coverage * ( seq_len / read_len ) ):  # number of reads (approximates coverage)
-                    start = random.choice( range( 0, seq_len ) )
+                    start = random.randrange( seq_len )
                     if random.random() < 0.5:  # positive sense read
                         end = start + read_len  # assign read end
                         if end > seq_len:  # overshooting origin
-                            read = range( start, seq_len ) + range( 0, ( end - seq_len ) )
+                            read = itertools.chain(range( start, seq_len ), range( 0, end - seq_len ))
                         else:  # regular read
                             read = range( start, end )
                     else:  # negative sense read
                         end = start - read_len  # assign read end
                         if end < -1:  # overshooting origin
-                            read = range( start, -1, -1) + range( ( seq_len - 1 ), ( seq_len + end ), -1 )
+                            read = itertools.chain(range( start, -1, -1 ), range( seq_len - 1, seq_len + end, -1))
                         else:  # regular read
                             read = range( start, end, -1 )
                     # assign read to quasispecies list by index

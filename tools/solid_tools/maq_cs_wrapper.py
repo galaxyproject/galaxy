@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Guruprasad Ananda
 # MAQ mapper for SOLiD colourspace-reads
+from __future__ import print_function
 
 import os
 import subprocess
@@ -101,7 +102,7 @@ def __main__():
             cmdpileup = "maq pileup -m %s -q %s %s %s > %s" % (max_mismatch, min_mapqual, ref_bfa.name, tmpcsmap.name, tmppileup.name)
             os.system(cmdpileup)
             tmppileup.seek(0)
-            print >> out_f2, "#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count"
+            print("#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count", file=out_f2)
             for line in open(tmppileup.name):
                 elems = line.strip().split()
                 ref_nt = elems[2].capitalize()
@@ -127,8 +128,8 @@ def __main__():
                         else:
                             c += 1
                     except ValueError as we:
-                        print >>sys.stderr, we
-                print >> out_f2, "%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c)
+                        print(we, file=sys.stderr)
+                print("%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c), file=out_f2)
         except Exception as er2:
             stop_err("Encountered error while mapping: %s" % (str(er2)))
 
@@ -177,7 +178,7 @@ def __main__():
             cmdpileup = "maq pileup -m %s -q %s %s %s > %s" % (max_mismatch, min_mapqual, ref_bfa.name, tmpcsmap.name, tmppileup.name)
             os.system(cmdpileup)
             tmppileup.seek(0)
-            print >> out_f2, "#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count"
+            print("#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count", file=out_f2)
             for line in open(tmppileup.name):
                 elems = line.strip().split()
                 ref_nt = elems[2].capitalize()
@@ -204,7 +205,7 @@ def __main__():
                             c += 1
                     except:
                         pass
-                print >> out_f2, "%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c)
+                print("%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c), file=out_f2)
         except Exception as er2:
             stop_err("Encountered error while mapping: %s" % (str(er2)))
 

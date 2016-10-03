@@ -11,6 +11,8 @@ import six
 
 from galaxy.util import asbool
 
+from .requirements import ContainerDescription
+from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 from ..deps import docker_util
 
 log = logging.getLogger(__name__)
@@ -57,9 +59,17 @@ class ContainerFinder(object):
                 container_type,
                 tool_info,
                 destination_info,
-                job_info
+                job_info,
+                container_description,
             )
             return container
+
+        if "container_override" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container_override"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
 
         # Is destination forcing Galaxy to use a particular container do it,
         # this is likely kind of a corner case. For instance if deployers
@@ -92,6 +102,13 @@ class ContainerFinder(object):
 
         # If we still don't have a container, check to see if any container
         # types define a default container id and use that.
+        if "container" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
+
         for container_type in CONTAINER_CLASSES.keys():
             container_id = self.__default_container_id(container_type, destination_info)
             if container_id:
@@ -137,7 +154,7 @@ class ContainerFinder(object):
             return self.__build_container_id_from_parts(container_type, destination_info, mode="default")
         return None
 
-    def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info):
+    def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info, container_description=None):
         # TODO: ensure destination_info is dict-like
         if not self.__container_type_enabled(container_type, destination_info):
             return NULL_CONTAINER
@@ -146,7 +163,7 @@ class ContainerFinder(object):
         # container type is - there should be more thought put into this.
         # Checking which are availalbe - settings policies for what can be
         # auto-fetched, etc....
-        return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info)
+        return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info, container_description)
 
     def __container_type_enabled(self, container_type, destination_info):
         return asbool(destination_info.get("%s_enabled" % container_type, False))
@@ -211,12 +228,21 @@ class JobInfo(object):
 class Container( object ):
     __metaclass__ = ABCMeta
 
-    def __init__(self, container_id, app_info, tool_info, destination_info, job_info):
+    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
         self.destination_info = destination_info
         self.job_info = job_info
+        self.container_description = container_description
+
+    @property
+    def resolve_dependencies(self):
+        return DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES if not self.container_description else self.container_description.resolve_dependencies
+
+    @property
+    def shell(self):
+        return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
 
     @abstractmethod
     def containerize_command(self, command):

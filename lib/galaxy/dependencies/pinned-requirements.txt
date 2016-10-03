@@ -2,7 +2,7 @@
 bx-python==0.7.3
 MarkupSafe==0.23
 PyYAML==3.11
-SQLAlchemy==1.0.8
+SQLAlchemy==1.0.15
 mercurial==3.7.3
 numpy==1.9.2
 pycrypto==2.6.1
@@ -67,5 +67,5 @@ paramiko==1.15.2
 ecdsa==0.13
 
 # Flexible BAM index naming
-pysam==0.8.4+gx1
+pysam==0.8.4+gx5
 
