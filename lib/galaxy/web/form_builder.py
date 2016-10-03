@@ -333,12 +333,13 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, **kwds ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, selectlist=None, **kwds ):
         super( SelectField, self ).__init__( name, value, **kwds )
         self.name = name
         self.field_id = field_id
         self.multiple = multiple or False
-        self.value = None
+        self.selectlist = selectlist or []
+        self.value = value
         self.size = size
         self.options = list()
         if display == "checkboxes":
@@ -481,6 +482,11 @@ class SelectField(BaseField):
     def to_dict( self ):
         d = super( SelectField, self ).to_dict()
         d[ 'type' ] = 'select'
+        d[ 'display' ] = self.display
+        d[ 'multiple' ] = self.multiple
+        d[ 'data' ] = []
+        for value in self.selectlist:
+            d[ 'data' ].append( { 'label': unicodify( value ), 'value': escape( unicodify( value ), quote=True ) } )
         return d
 
 
@@ -776,11 +782,6 @@ class WorkflowMappingField( BaseField ):
             return self.value
         else:
             return '-'
-
-    def to_dict( self ):
-        d = super( WorkflowMappingField, self ).to_dict()
-        d[ 'type' ] = 'select'
-        return d
 
 
 class HistoryField( BaseField ):
