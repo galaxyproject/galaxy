@@ -77,7 +77,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             _.each( this.steps, function( step, i ) {
                 _.each( step.output_connections, function( output_connection ) {
                     _.each( self.steps, function( sub_step, j ) {
-                        sub_step.step_id === output_connection.input_step_id && self.links[ i ].push( sub_step );
+                        sub_step.step_index === output_connection.input_step_index && self.links[ i ].push( sub_step );
                     });
                 });
             });
@@ -88,7 +88,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 _.each( self.steps, function( sub_step, j ) {
                     var connections_by_name = {};
                     _.each( step.output_connections, function( connection ) {
-                        sub_step.step_id === connection.input_step_id && ( connections_by_name[ connection.input_name ] = connection );
+                        sub_step.step_index === connection.input_step_index && ( connections_by_name[ connection.input_name ] = connection );
                     });
                     _.each( self.parms[ j ], function( input, name ) {
                         var connection = connections_by_name[ name ];
@@ -372,7 +372,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 var form = this.forms[ i ];
                 var job_inputs  = form.data.create();
                 var step        = self.steps[ i ];
-                var step_id     = step.step_id;
+                var step_index  = step.step_index;
                 form.trigger( 'reset' );
                 for ( var job_input_id in job_inputs ) {
                     var input_value = job_inputs[ job_input_id ];
@@ -389,8 +389,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             form.highlight( input_id );
                             break;
                         }
-                        job_def.parameters[ step_id ] = job_def.parameters[ step_id ] || {};
-                        job_def.parameters[ step_id ][ job_input_id ] = job_inputs[ job_input_id ];
+                        job_def.parameters[ step_index ] = job_def.parameters[ step_index ] || {};
+                        job_def.parameters[ step_index ][ job_input_id ] = job_inputs[ job_input_id ];
                     }
                 }
                 if ( !validated ) {
