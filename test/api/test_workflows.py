@@ -1430,11 +1430,8 @@ test_data:
         self._assert_status_code_is( invocation_response, 200 )
         time.sleep( 5 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        r1 = self.dataset_populator.get_history_dataset_content( history_id, hid=5 )
-        r2 = self.dataset_populator.get_history_dataset_content( history_id, hid=8 )
-        t1 = "1 2 3\t1\n1 2 3\t2\n"
-        t2 = "4 5 6\t1\n1 2 3\t2\n"
-        assert ( r1 == t1 and r2 == t2 ) or ( r1 == t2 and r2 == t1 )
+        self.assertEqual( "1 2 3\t1\n1 2 3\t2\n", self.dataset_populator.get_history_dataset_content( history_id, hid=5 ) )
+        self.assertEqual( "4 5 6\t1\n1 2 3\t2\n", self.dataset_populator.get_history_dataset_content( history_id, hid=8 ) )
 
     @skip_without_tool( "validation_default" )
     def test_parameter_substitution_sanitization( self ):

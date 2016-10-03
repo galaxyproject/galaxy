@@ -2,7 +2,6 @@ from galaxy.util import permutations
 from galaxy import model
 from galaxy import util
 from galaxy import exceptions
-from galaxy.util.odict import odict
 import itertools
 import copy
 import logging
@@ -33,10 +32,8 @@ def expand_workflow_inputs( inputs ):
     product = []
     linked_keys = []
     product_keys = []
-    ordered_inputs = odict( sorted( inputs.items() ) )
-    for step_id, step in ordered_inputs.items():
-        ordered_step = odict( sorted( step.items() ) )
-        for key, value in ordered_step.items():
+    for step_id, step in sorted( inputs.items() ):
+        for key, value in sorted( step.items() ):
             if isinstance( value, dict ) and 'batch' in value and value[ 'batch' ] is True and 'values' in value and isinstance( value[ 'values' ], list ):
                 nval = len( value[ 'values' ] )
                 if 'product' in value and value[ 'product' ] is True:
