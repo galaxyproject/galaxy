@@ -108,24 +108,21 @@
             revision_label_str = ' '
     %>
     <div class="form-row">
-        <p>By default Galaxy will install all needed dependencies. See the <a target="_blank" href="https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html">dependency resolver documentation</a>.</p>
+        <p>By default Galaxy will install all needed dependencies for${revision_label_str}the repository. See the <a target="_blank" href="https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html">dependency resolver documentation</a>.</p>
         <p>You can fine control the installation if you know what you are doing. <button class="toggle-deps-section">Display Dependencies</button></p>
     </div>
-    <div class="deps-section">
+    %if export:
     <div class="form-row">
         <div class="toolParamHelp" style="clear: both;">
             <p>
-                %if export:
-                    The following additional repositories are required by${revision_label_str}the <b>${repository.name|h}</b> repository
-                    and they can be exported as well.
-                %else:
-                    These dependencies can be automatically handled with${revision_label_str}the installed repository, providing significant
-                    benefits, and Galaxy includes various features to manage them.
-                %endif
+            The following additional repositories are required by${revision_label_str}the <b>${repository.name|h}</b> repository
+            and they can be exported as well.
             </p>
         </div>
     </div>
+    %endif
     <div style="clear: both"></div>
+    <div class="deps-section">
     %if repository_dependencies_root_folder or missing_repository_dependencies_root_folder:
         %if repository_dependencies_check_box:
             <div class="form-row">
@@ -139,7 +136,7 @@
                     %if export:
                         Un-check to skip exporting the following additional repositories that are required by this repository.
                     %else:
-                        Un-check to skip automatic installation of these additional repositories required by this repository.
+                        Un-check to skip automatic installation of these additional Tool Shed repositories required by this repository.
                     %endif
                 </div>
             </div>
@@ -169,14 +166,14 @@
     %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         %if install_tool_dependencies_check_box is not None:
             <div class="form-row">
-                <label>When available, install Tool Shed managed dependencies?</label>
+                <label>When available, install Tool Shed managed tool dependencies?</label>
                 <% disabled = trans.app.config.tool_dependency_dir is None %>
                 ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
                 <div class="toolParamHelp" style="clear: both;">
                     %if disabled:
                         Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
                     %else:
-                        Un-check to skip automatic handling of these tool dependencies.
+                        Un-check to skip automatic handling of these tool dependencies via Tool Shed.
                     %endif
                 </div>
             <div style="clear: both"></div>
@@ -206,10 +203,10 @@
     <div style="clear: both"></div>
     %if install_resolver_dependencies_check_box:
     <div class="form-row">
-        <label>When available, install externally managed dependencies (e.g. conda)? <i>Beta</i></label>
+        <label>When available, install <a href="https://docs.galaxyproject.org/en/master/admin/conda_faq.html" target="_blank">Conda</a> managed tool dependencies?</label>
         ${install_resolver_dependencies_check_box.get_html()}
         <div class="toolParamHelp" style="clear: both;">
-            Un-check to skip automatic installation of tool dependencies.
+            Un-check to skip automatic installation of tool dependencies via Conda.
         </div>
     </div>
     %endif
