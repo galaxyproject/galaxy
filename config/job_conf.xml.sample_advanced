@@ -206,6 +206,8 @@
                  to failed) -->
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
+            <!-- Go-Docker is a batch computing/cluster management tool using Docker
+                 See https://bitbucket.org/osallou/go-docker for more details.  -->
             <!--  REST based runner , submits jobs to godocker -->
             <param id="godocker_master">GODOCKER_URL</param>
             <!-- Specify the instance of GoDocker -->
