@@ -63,6 +63,7 @@ def _get_new_toolbox(app):
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
     """
     from galaxy import tools
+    from galaxy.tools.special_tools import load_lib_tools
     from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
     app.tool_version_cache = ToolVersionCache(app)  # Load new tools into version cache
     tool_configs = app.config.tool_configs
@@ -71,6 +72,8 @@ def _get_new_toolbox(app):
     start = time.time()
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
+    load_lib_tools(new_toolbox)
+    new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     end = time.time() - start
     log.debug("Toolbox reload took %d seconds", end)
