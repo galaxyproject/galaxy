@@ -4300,10 +4300,7 @@ class FormDefinition( object, Dictifiable ):
                 helptext = '%s (%s)' % ( field[ 'helptext' ], req )
             else:
                 helptext = '(%s)' % req
-            widgets.append( dict( label=field[ 'label' ],
-
-                                  widget=field_widget,
-                                  helptext=helptext ) )
+            widgets.append( dict( label=field[ 'label' ], widget=field_widget, helptext=helptext ) )
         return widgets
 
     def field_as_html( self, field ):
