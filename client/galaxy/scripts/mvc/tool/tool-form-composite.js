@@ -373,7 +373,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 var job_inputs  = form.data.create();
                 var step        = self.steps[ i ];
                 var step_id     = step.step_id;
-                var step_index  = step.step_order_index
                 form.trigger( 'reset' );
                 for ( var job_input_id in job_inputs ) {
                     var input_value = job_inputs[ job_input_id ];
@@ -390,8 +389,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             form.highlight( input_id );
                             break;
                         }
-                        job_def.parameters[ step_index ] = job_def.parameters[ step_index ] || {};
-                        job_def.parameters[ step_index ][ job_input_id ] = job_inputs[ job_input_id ];
+                        job_def.parameters[ step_id ] = job_def.parameters[ step_id ] || {};
+                        job_def.parameters[ step_id ][ job_input_id ] = job_inputs[ job_input_id ];
                     }
                 }
                 if ( !validated ) {
