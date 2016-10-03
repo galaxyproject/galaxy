@@ -416,7 +416,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ( response && response.err_data ) {
                             for ( var i in self.forms ) {
                                 var form = self.forms[ i ];
-                                var step_related_errors = response.err_data[ form.options.step_id ];
+                                var step_related_errors = response.err_data[ form.options.step_index ];
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {
@@ -427,7 +427,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             }
                         } else {
                             self.modal.show({
-                                title   : 'Job submission failed',
+                                title   : 'Workflow submission failed',
                                 body    : self._templateError( job_def, response && response.err_msg ),
                                 buttons : {
                                     'Close' : function() {
@@ -489,7 +489,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         _templateError: function( response, err_msg ) {
             return  $( '<div/>' ).addClass( 'errormessagelarge' )
-                                 .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists. ' + ( err_msg || '' ) ) )
+                                 .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists. ' + ( JSON.stringify( err_msg ) || '' ) ) )
                                  .append( $( '<pre/>' ).text( JSON.stringify( response, null, 4 ) ) );
         }
     });

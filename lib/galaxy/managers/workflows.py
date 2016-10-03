@@ -391,7 +391,6 @@ class WorkflowContentsManager(UsesAnnotations):
                     'name'   : step.module.name,
                     'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
                 }
-            step_model[ 'step_id' ] = step.id
             step_model[ 'step_type' ] = step.type
             step_model[ 'step_index' ] = step.order_index
             step_model[ 'output_connections' ] = [ {
