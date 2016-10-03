@@ -85,6 +85,9 @@ class CachedMulledContainerResolver(ContainerResolver):
         else:
             name = image_name(targets)
             for cached_image in cached_images:
+                if not cached_image.multi_target:
+                    continue
+
                 if name == cached_image.hash:
                     image = cached_image
                     break
