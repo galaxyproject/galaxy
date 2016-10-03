@@ -4284,13 +4284,11 @@ class FormDefinition( object, Dictifiable ):
                 field_widget.params = params
             elif field_type == 'SelectField':
                 for option in field[ 'selectlist' ]:
-
                     if option == value:
                         field_widget.add_option( option, option, selected=True )
                     else:
                         field_widget.add_option( option, option )
             elif field_type == 'CheckboxField':
-
                 field_widget.set_checked( value )
             if field[ 'required' ] == 'required':
                 req = 'Required'
