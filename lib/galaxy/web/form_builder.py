@@ -91,7 +91,7 @@ class PasswordField(BaseField):
 
     def to_dict( self ):
         d = super( PasswordField, self ).to_dict()
-        d[ 'type' ] = 'text'
+        d[ 'type' ] = 'password'
         return d
 
 
