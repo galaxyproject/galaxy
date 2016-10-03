@@ -47,3 +47,6 @@ docs/_build
 
 # Download of involucro
 involucro
+
+# Bioconda recipes for auto update.
+bioconda-recipes/
