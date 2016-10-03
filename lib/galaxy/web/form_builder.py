@@ -175,9 +175,9 @@ class CheckboxField(BaseField):
             self.checked = value
 
     def to_dict( self ):
-        d = super( TextArea, self ).to_dict()
-        d[ 'type'    ] = 'select'
-        d[ 'display' ] = 'checkbox',
+        d = super( CheckboxField, self ).to_dict()
+        d[ 'type' ] = 'boolean'
+        d[ 'value' ] = 'true' if self.checked else 'false'
         return d
 
 
