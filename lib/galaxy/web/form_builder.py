@@ -126,7 +126,7 @@ class TextArea(BaseField):
     def to_dict( self ):
         d = super( TextArea, self ).to_dict()
         d[ 'type'  ] = 'text'
-        d[ 'area'  ] = True,
+        d[ 'area'  ] = True
         return d
 
 
@@ -292,7 +292,7 @@ class HiddenField(BaseField):
     def to_dict( self ):
         d = super( HiddenField, self ).to_dict()
         d[ 'type'    ] = 'hidden'
-        d[ 'hidden'  ] = True,
+        d[ 'hidden'  ] = True
         return d
 
 
