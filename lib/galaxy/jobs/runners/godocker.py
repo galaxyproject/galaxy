@@ -31,8 +31,6 @@ class Godocker(object):
     def http_post_request(self, query, data, header):
         """ post request with query """
 
-        # remove warnings if using --no-certificate
-        requests.packages.urllib3.disable_warnings()
         verify_ssl = not self.noCert
         try:
             url = self.server + query
