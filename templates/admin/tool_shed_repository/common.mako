@@ -13,7 +13,7 @@
                 onPostInit: function(isReloading, isError) {
                     // Re-fire onActivate, so the text is updated
                     this.reactivate();
-                }, 
+                },
                 fx: { height: "toggle", duration: 200 },
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='admin_toolshed', action='open_folder' )}",
@@ -71,11 +71,21 @@
                            width:100%;
                            overflow-wrap:normal;
                            overflow:hidden;
-                           border:0px; 
+                           border:0px;
                            word-break:keep-all;
                            word-wrap:break-word;
                            line-break:strict; }
     </style>
+    <script type="text/javascript">
+        $(function(){
+            $(".deps-section").hide();
+            $(".toggle-deps-section").click(function(e){
+                e.preventDefault();
+                $(".deps-section").toggle();
+            })
+        });
+    </script>
+
     <%
         from markupsafe import escape
         class RowCounter( object ):
@@ -97,6 +107,11 @@
         else:
             revision_label_str = ' '
     %>
+    <div class="form-row">
+        <p>By default Galaxy will install all needed dependencies. See the <a target="_blank" href="https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html">dependency resolver documentation</a>.</p>
+        <p>You can fine control the installation if you know what you are doing. <button class="toggle-deps-section">Display Dependencies</button></p>
+    </div>
+    <div class="deps-section">
     <div class="form-row">
         <div class="toolParamHelp" style="clear: both;">
             <p>
@@ -154,7 +169,7 @@
     %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         %if install_tool_dependencies_check_box is not None:
             <div class="form-row">
-                <label>When available, install tool shed managed dependencies?</label>
+                <label>When available, install Tool Shed managed dependencies?</label>
                 <% disabled = trans.app.config.tool_dependency_dir is None %>
                 ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
                 <div class="toolParamHelp" style="clear: both;">
@@ -198,6 +213,7 @@
         </div>
     </div>
     %endif
+    </div>
 </%def>
 
 <%def name="render_readme_section( containers_dict )">
@@ -225,8 +241,8 @@
 
 <%def name="dependency_status_updater()">
     <script type="text/javascript">
-        // Tool dependency status updater - used to update the installation status on the Tool Dependencies Grid. 
-        // Looks for changes in tool dependency installation status using an async request. Keeps calling itself 
+        // Tool dependency status updater - used to update the installation status on the Tool Dependencies Grid.
+        // Looks for changes in tool dependency installation status using an async request. Keeps calling itself
         // (via setTimeout) until dependency installation status is neither 'Installing' nor 'Building'.
         var tool_dependency_status_updater = function( dependency_status_list ) {
             // See if there are any items left to track
@@ -264,7 +280,7 @@
                         cell1.html( val[ 'html_status' ] );
                         dependency_status_list[ index ] = val;
                     });
-                    tool_dependency_status_updater( dependency_status_list ); 
+                    tool_dependency_status_updater( dependency_status_list );
                 },
             });
         };
@@ -273,7 +289,7 @@
 
 <%def name="repository_installation_status_updater()">
     <script type="text/javascript">
-        // Tool shed repository status updater - used to update the installation status on the Repository Installation Grid. 
+        // Tool shed repository status updater - used to update the installation status on the Repository Installation Grid.
         // Looks for changes in repository installation status using an async request. Keeps calling itself (via setTimeout) until
         // repository installation status is not one of: 'New', 'Cloning', 'Setting tool versions', 'Installing tool dependencies',
         // 'Loading proprietary datatypes'.
@@ -319,7 +335,7 @@
                         cell1.html( val[ 'html_status' ] );
                         repository_status_list[ index ] = val;
                     });
-                    tool_shed_repository_status_updater( repository_status_list ); 
+                    tool_shed_repository_status_updater( repository_status_list );
                 },
             });
         };
@@ -327,7 +343,7 @@
 </%def>
 
 <%def name="tool_dependency_installation_updater()">
-    <% 
+    <%
         can_update = False
         if query.count():
             # Get the first tool dependency to get to the tool shed repository.
