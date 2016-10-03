@@ -164,6 +164,32 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         return getattr( self.input, key )
 
 
+class FilenameWrapper( ToolParameterValueWrapper ):
+
+    def __init__( self, file_name, dataset_path=None, identifier=None ):
+        self.file_name = file_name
+        self.false_path = getattr( dataset_path, "false_path", None )
+        self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
+        self._element_identifier = identifier
+
+    def __str__( self ):
+        if self.false_path is not None:
+            return self.false_path
+        else:
+            return self.file_name
+
+    @property
+    def element_identifier( self ):
+        identifier = self._element_identifier
+        if identifier is None:
+            identifier = self.name
+        return identifier
+
+    @property
+    def is_collection( self ):
+        return False
+
+
 class DatasetFilenameWrapper( ToolParameterValueWrapper ):
     """
     Wraps a dataset so that __str__ returns the filename, but all other

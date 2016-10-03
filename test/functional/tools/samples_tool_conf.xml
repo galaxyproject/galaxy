@@ -54,6 +54,7 @@
   <tool file="parallelism.xml" />
   <tool file="parallelism_optional.xml" />
   <tool file="implicit_default_conds.xml" />
+  <tool file="optional_data_param.xml" />
   <tool file="multi_data_param.xml" />
   <tool file="multi_data_repeat.xml" />
   <tool file="paths_as_file.xml" />
