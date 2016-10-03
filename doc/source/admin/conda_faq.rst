@@ -66,6 +66,16 @@ graphical user interface that allows administrators install Conda
 packages directly from Galaxy when tools are installed from the Tool
 Shed is available since the 16.07 version of Galaxy.
 
+During the tool installation admin has control over what system will be used to
+install the tool's requirements. The default settings will trigger installation
+of both TS package and Conda package (if Conda is present) thus depending on the
+dependency resolvers configuration with regards to what will be actually used during
+the tool's runtime. See `resolver docs`_ for detailed documentation.
+
+We recommend to use Conda exclusively on tool per tool basis by unchecking the checkbox
+for TS dependencies during the tool installation or in cases of tools where there
+are no TS dependencies existing anymore.
+
 The most important configuration settings related to Conda are listed in Table 1.
 
 +--------------------------+--------------------------+---------------------------+
@@ -107,7 +117,7 @@ The most important configuration settings related to Conda are listed in Table 1
 2. How do Conda dependencies work? Where do things get installed?
 *********************************************************************************
 
-In contrast to the old dependency system, which was used exclusively by
+In contrast to the TS dependency system, which was used exclusively by
 Galaxy, Conda is a pre-existing, independent project. With Conda it
 is possible for an admin to install packages without touching Galaxy at
 all – managing your dependencies independently from Galaxy. Galaxy can
@@ -177,10 +187,11 @@ systems newer than 2007.
 
 The Galaxy log will tell you which dependency resolution system is used
 to satisfy each tool dependency and you can specify priorities using the
-``config/dependency_resolution_conf.xml`` file. If you put Conda on
-top, Galaxy will at first try to use Conda to resolve a tool dependency;
+``config/dependency_resolvers_conf.xml`` file. By default (as specified in the
+``config/dependency_resolvers_conf.xml,sample`` file) the ``<tool_shed_packages />``
+entry is on top, so Galaxy will at first try to use Tool Shed packages to resolve a tool dependency;
 if this does not work, the following dependency resolvers is used, as
-specified. See `resolver docs`_ for detailed documentation. Starting from galaxy release 16.07, you can
+specified. See `resolver docs`_ for detailed documentation. Starting from Galaxy release 16.07, you can
 see which dependency will be used (“resolved”) in the admin panel.
 
 
