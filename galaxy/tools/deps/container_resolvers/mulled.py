@@ -7,7 +7,13 @@ from ..container_resolvers import (
     ContainerResolver,
 )
 from ..docker_util import build_docker_images_command
-from ..mulled.mulled_build import check_output
+from ..mulled.mulled_build import (
+    check_output,
+    DEFAULT_CHANNELS,
+    ensure_installed,
+    InvolucroContext,
+    mull_targets,
+)
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
     image_name,
@@ -60,46 +66,53 @@ def get_filter(namespace):
     return lambda name: name.startswith(prefix) and name.count("/") == 2
 
 
+def cached_container_description(targets, namespace):
+    if len(targets) == 0:
+        return None
+
+    cached_images = list_cached_mulled_images(namespace)
+    image = None
+    if len(targets) == 1:
+        target = targets[0]
+        for cached_image in cached_images:
+            if cached_image.multi_target:
+                continue
+            if not cached_image.package_name == target.package_name:
+                continue
+            if not target.version or target.version == cached_image.version:
+                image = cached_image
+                break
+    else:
+        name = image_name(targets)
+        for cached_image in cached_images:
+            if not cached_image.multi_target:
+                continue
+
+            if name == cached_image.hash:
+                image = cached_image
+                break
+
+    container = None
+    if image:
+        container = ContainerDescription(
+            image.image_identifier,
+            type="docker",
+        )
+
+    return container
+
+
 class CachedMulledContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled"
 
-    def __init__(self, namespace=None):
+    def __init__(self, app_info=None, namespace=None):
+        super(CachedMulledContainerResolver, self).__init__(app_info)
         self.namespace = namespace
 
     def resolve(self, enabled_container_types, tool_info):
         targets = mulled_targets(tool_info)
-        if len(targets) == 0:
-            return None
-
-        cached_images = list_cached_mulled_images(self.namespace)
-
-        image = None
-        if len(targets) == 1:
-            target = targets[0]
-            for cached_image in cached_images:
-                if cached_image.multi_target:
-                    continue
-                if not cached_image.package_name == target.package_name:
-                    continue
-                if not target.version or target.version == cached_image.version:
-                    image = cached_image
-                    break
-        else:
-            name = image_name(targets)
-            for cached_image in cached_images:
-                if not cached_image.multi_target:
-                    continue
-
-                if name == cached_image.hash:
-                    image = cached_image
-                    break
-
-        if image:
-            return ContainerDescription(
-                image.image_identifier,
-                type="docker",
-            )
+        return cached_container_description(targets, self.namespace)
 
 
 class MulledContainerResolver(ContainerResolver):
@@ -107,7 +120,8 @@ class MulledContainerResolver(ContainerResolver):
 
     resolver_type = "mulled"
 
-    def __init__(self, namespace="mulled"):
+    def __init__(self, app_info=None, namespace="mulled"):
+        super(MulledContainerResolver, self).__init__(app_info)
         self.namespace = namespace
 
     def resolve(self, enabled_container_types, tool_info):
@@ -147,6 +161,38 @@ class MulledContainerResolver(ContainerResolver):
             )
 
 
+class BuildMulledContainerResolver(ContainerResolver):
+    """Look for mulled images matching tool dependencies."""
+
+    resolver_type = "build_mulled"
+
+    def __init__(self, app_info=None, namespace="local", **kwds):
+        super(BuildMulledContainerResolver, self).__init__(app_info)
+        self._involucro_context_kwds = self._get_config_option("involucro_path", None)
+        self._mulled_kwds = {
+            'namespace': namespace,
+            'channels': self._get_config_option("channels", DEFAULT_CHANNELS, prefix="mulled"),
+        }
+        self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
+
+    def resolve(self, enabled_container_types, tool_info):
+        targets = mulled_targets(tool_info)
+        if len(targets) == 0:
+            return None
+
+        mull_targets(
+            targets,
+            involucro_context=self.get_involucro_context(),
+            **self._mulled_kwds
+        )
+        return cached_container_description(targets, self.namespace)
+
+    def _get_involucro_context(self):
+        involucro_context = InvolucroContext(**self._involucro_context_kwds)
+        self.enabled = ensure_installed(involucro_context, self.auto_init)
+        return involucro_context
+
+
 def mulled_targets(tool_info):
     return requirements_to_mulled_targets(tool_info.requirements)
 
@@ -154,4 +200,5 @@ def mulled_targets(tool_info):
 __all__ = [
     "CachedMulledContainerResolver",
     "MulledContainerResolver",
+    "BuildMulledContainerResolver",
 ]

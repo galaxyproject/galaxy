@@ -66,6 +66,7 @@ PACKAGE_DATA = {
     'galaxy': [
         'util/docutils_template.txt',
         'exceptions/error_codes.json',
+        'tools/deps/mulled/invfile.lua',
     ],
 }
 PACKAGE_DIR = {

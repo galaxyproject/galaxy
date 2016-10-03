@@ -15,8 +15,10 @@ import os
 import string
 import subprocess
 
-from galaxy.tools.deps import commands
+from sys import platform as _platform
 
+from galaxy.tools.deps import commands
+from galaxy.tools.deps import installable
 
 try:
     import yaml
@@ -32,6 +34,16 @@ DEFAULT_CHANNEL = "bioconda"
 DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
 DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
+IS_OS_X = _platform == "darwin"
+INVOLUCRO_VERSION = "1.1.2"
+
+
+def involucro_link():
+    if IS_OS_X:
+        url = "https://github.com/involucro/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
+    else:
+        url = "https://github.com/involucro/involucro/releases/download/v%s/involucro" % INVOLUCRO_VERSION
+    return url
 
 
 def get_tests(args, pkg_path):
@@ -100,7 +112,7 @@ def conda_versions(pkg_name, file_name):
 
 def mull_targets(
     targets, involucro_context=None,
-    command="build", channels=DEFAULT_CHANNELS, namespace="",
+    command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
     test='true', image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False
 ):
@@ -125,6 +137,7 @@ def mull_targets(
     ]
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
+        ensure_installed(involucro_context, True)
         involucro_context.exec_command(involucro_args)
 
 
@@ -132,7 +145,9 @@ def context_from_args(args):
     return InvolucroContext(involucro_bin=args.involucro_path)
 
 
-class InvolucroContext(object):
+class InvolucroContext(installable.InstallableContext):
+
+    installable_description = "Involucro"
 
     def __init__(self, involucro_bin=None, shell_exec=None, verbose="3"):
         if involucro_bin is None:
@@ -151,6 +166,27 @@ class InvolucroContext(object):
     def exec_command(self, involucro_args):
         cmd = self.build_command(involucro_args)
         return self.shell_exec(" ".join(cmd))
+
+    def is_installed(self):
+        return os.path.exists(self.involucro_bin)
+
+    def can_install(self):
+        return True
+
+    @property
+    def parent_path(self):
+        return os.path.dirname(os.path.abspath(self.involucro_bin))
+
+
+def ensure_installed(involucro_context, auto_init):
+    return installable.ensure_installed(involucro_context, install_involucro, auto_init)
+
+
+def install_involucro(involucro_context=None, to_path=None):
+    to_path = involucro_context.involucro_bin
+    download_cmd = " ".join(commands.download_command(involucro_link(), to=to_path, quote_url=True))
+    full_cmd = "%s && chmod +x %s" % (download_cmd, to_path)
+    return involucro_context.shell_exec(full_cmd)
 
 
 def add_build_arguments(parser):
@@ -204,7 +240,7 @@ def args_to_mull_targets_kwds(args):
     if hasattr(args, "channel"):
         channels = [args.channel]
         if hasattr(args, "extra_channels"):
-            channels += args.extra_channels
+            channels += args.extra_channels.split(",")
         kwds["channels"] = channels
     if hasattr(args, "command"):
         kwds["command"] = args.command
