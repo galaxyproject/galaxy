@@ -362,6 +362,12 @@
                a fallback. -->
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
+          <!-- If the destination should be secured to only allow containerized jobs
+               the following parameter may be set for the job destination. Not all,
+               or even most, tools available in Galaxy core or in the Tool Shed
+               support Docker yet so this option may require a lot of extra work for
+               the deployer. -->
+          <!-- <param id="require_container">true</param> -->
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
