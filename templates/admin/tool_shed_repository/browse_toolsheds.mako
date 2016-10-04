@@ -593,9 +593,6 @@ function bind_workflow_events() {
         });
     });
 }
-function bind_wf_button() {
-    $('#from_workflow').click(load_from_workflow);
-}
 function changeset_metadata() {
     repository_data.current_changeset = get_current_changeset();
     repository_data.current_metadata = repository_data.repository.metadata[changeset];
@@ -1049,7 +1046,7 @@ $(document).ready(function() {
     }
     $('#shed_list_tab').click();
     check_queue();
-    $('#repository_installation_queue').click(bind_wf_button);
+    $(document).on('click', '#from_workflow', load_from_workflow);
 });
 </script>
 <div class="container" role="navigation">
