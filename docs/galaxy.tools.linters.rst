@@ -20,6 +20,14 @@ galaxy.tools.linters.command module
     :undoc-members:
     :show-inheritance:
 
+galaxy.tools.linters.cwl module
+-------------------------------
+
+.. automodule:: galaxy.tools.linters.cwl
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.tools.linters.general module
 -----------------------------------
 

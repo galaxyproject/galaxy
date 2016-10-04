@@ -36,18 +36,26 @@ galaxy.util.dictifiable module
     :undoc-members:
     :show-inheritance:
 
-galaxy.util.directory_hash module
----------------------------------
-
-.. automodule:: galaxy.util.directory_hash
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.util.expressions module
 ------------------------------
 
 .. automodule:: galaxy.util.expressions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.filelock module
+---------------------------
+
+.. automodule:: galaxy.util.filelock
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.hash_util module
+----------------------------
+
+.. automodule:: galaxy.util.hash_util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -104,6 +112,14 @@ galaxy.util.plugin_config module
 --------------------------------
 
 .. automodule:: galaxy.util.plugin_config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.postfork module
+---------------------------
+
+.. automodule:: galaxy.util.postfork
     :members:
     :undoc-members:
     :show-inheritance:
