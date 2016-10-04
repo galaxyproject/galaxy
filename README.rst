@@ -2,7 +2,7 @@
 .. image:: https://readthedocs.org/projects/pip/badge/?version=latest
    :target: https://galaxy-lib.readthedocs.org
 
-.. image:: https://badge.fury.io/py/planemo.svg
+.. image:: https://badge.fury.io/py/galaxy-lib.svg
    :target: https://pypi.python.org/pypi/galaxy-lib/
 
 .. image:: https://travis-ci.org/galaxyproject/galaxy-lib.png?branch=master
