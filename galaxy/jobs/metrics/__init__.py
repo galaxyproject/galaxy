@@ -1,4 +1,4 @@
-"""This module defines the job metrics collection framework for Galxay jobs.
+"""This module defines the job metrics collection framework for Galaxy jobs.
 
 The framework consists of two parts - the :class:`JobMetrics` class and
 individual :class:`JobInstrumenter` plugins.
@@ -6,7 +6,7 @@ individual :class:`JobInstrumenter` plugins.
 A :class:`JobMetrics` object reads any number of plugins from a configuration
 source such as an XML file, a YAML file, or dictionary.
 
-The :class:`JobInstrumenter` plugin objects each describes how to inject a bits
+Each :class:`JobInstrumenter` plugin object describes how to inject a bits
 of shell code into a job scripts (before and after tool commands run) and then
 collect the output of these from a job directory.
 """
