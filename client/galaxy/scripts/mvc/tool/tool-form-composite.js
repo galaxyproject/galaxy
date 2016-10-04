@@ -408,7 +408,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     data    : job_def,
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
-                        self.$el.empty().append( self._templateSuccess( response ) );
+                        self.$el.children().hide();
+                        self.$el.append( self._templateSuccess( response ) );
                         self._refreshHistory();
                     },
                     error   : function( response ) {
