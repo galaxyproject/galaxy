@@ -17,9 +17,17 @@ def quay_versions(namespace, pkg_name):
     if requests is None:
         raise Exception("requets library is unavailable, functionality not available.")
 
+    assert namespace is not None
+    assert pkg_name is not None
     url = 'https://quay.io/api/v1/repository/%s/%s' % (namespace, pkg_name)
     response = requests.get(url, timeout=None)
     data = response.json()
+    if 'error_type' in data and data['error_type'] == "invalid_token":
+        return []
+
+    if 'tags' not in data:
+        raise Exception("Unexpected response from quay.io - not tags description found [%s]" % data)
+
     return [tag for tag in data['tags'] if tag != 'latest']
 
 
