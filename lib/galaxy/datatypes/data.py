@@ -521,7 +521,7 @@ class Data( object ):
         # add potentially required/common internal tool parameters e.g. '__job_resource'
         if target_context:
             for key, value in target_context.items():
-                if key.startsWith( '__' ):
+                if key.startswith( '__' ):
                     params[ key ] = value
         params[input_name] = original_dataset
 

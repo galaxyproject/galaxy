@@ -9,6 +9,8 @@ usage: %prog $input $out_file1
     -F, --fasta=<genomic_sequences>: genomic sequences to use for extraction
     -G, --gff: input and output file, when it is interval, coordinates are treated as GFF format (1-based, half-open) rather than 'traditional' 0-based, closed format.
 """
+from __future__ import print_function
+
 import os
 import subprocess
 import sys
@@ -17,7 +19,7 @@ import tempfile
 import bx.seq.nib
 import bx.seq.twobit
 from bx.cookbook import doc_optparse
-from bx.intervals.io import Header, Comment
+from bx.intervals.io import Comment, Header
 
 from galaxy.datatypes.util import gff_util
 from galaxy.tools.util.galaxyops import parse_cols_arg
@@ -45,7 +47,7 @@ def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
         if line and not line.startswith( "#" ) and line.startswith( 'seq' ):
             fields = line.split( '\t' )
             if len( fields) >= 3 and fields[1] == dbkey:
-                print "Using *.nib genomic reference files"
+                print("Using *.nib genomic reference files")
                 return fields[2].strip()
 
     # If no entry in aligseq.loc was found, check for the presence of a *.2bit file in twobit.loc
@@ -55,7 +57,7 @@ def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
         if line and not line.startswith( "#" ) and line.endswith( '.2bit' ):
             fields = line.split( '\t' )
             if len(fields) >= 2 and fields[0] == dbkey:
-                print "Using a *.2bit genomic reference file"
+                print("Using a *.2bit genomic reference file")
                 return fields[1].strip()
 
     return ''
@@ -299,10 +301,10 @@ def __main__():
     if warnings:
         warn_msg = "%d warnings, 1st is: " % len( warnings )
         warn_msg += warnings[0]
-        print warn_msg
+        print(warn_msg)
     if skipped_lines:
         # Error message includes up to the first 10 skipped lines.
-        print 'Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, '\n'.join( invalid_lines[:10] ) )
+        print('Skipped %d invalid lines, 1st is #%d, "%s"' % ( skipped_lines, first_invalid_line, '\n'.join( invalid_lines[:10] ) ))
 
     # Clean up temp file.
     if fasta_file:

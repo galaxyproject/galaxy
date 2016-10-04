@@ -2,6 +2,8 @@
 """
 Read a maf and split blocks by unique species combinations
 """
+from __future__ import print_function
+
 import sys
 
 from bx.align import maf
@@ -35,9 +37,9 @@ def __main__():
     out.close()
 
     if end_count:
-        print "%i alignment blocks created from %i original blocks." % ( end_count, start_count + 1 )
+        print("%i alignment blocks created from %i original blocks." % ( end_count, start_count + 1 ))
     else:
-        print "No alignment blocks were created."
+        print("No alignment blocks were created.")
 
 if __name__ == "__main__":
     __main__()

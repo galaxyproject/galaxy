@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import os
 import sys
 import tempfile
@@ -78,7 +80,7 @@ def __main__():
     info_msg = "%i lines converted to BEDGraph.  " % ( i + 1 - skipped_lines )
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
-    print info_msg
+    print(info_msg)
 
 if __name__ == "__main__":
     __main__()

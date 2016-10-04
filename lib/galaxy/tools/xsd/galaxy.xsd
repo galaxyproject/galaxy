@@ -1663,7 +1663,7 @@ the [Bowtie 2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/
     </param>
   </when>
   <when value="history">
-    <param name="own_file" type="data" format="fasta" metadata_name="dbkey" label="Select reference genome" />
+    <param name="own_file" type="data" format="fasta" label="Select reference genome" />
   </when>
 </conditional>
 ```
@@ -2664,7 +2664,7 @@ alternative to local reference data.
     </param>
   </when>
   <when value="history">
-    <param name="own_file" type="data" format="fasta" metadata_name="dbkey" label="Select reference genome" />
+    <param name="own_file" type="data" format="fasta" label="Select reference genome" />
   </when>
 </conditional>
 ```
@@ -3834,6 +3834,55 @@ based on inputs, as shown below:
         </conditional>
     </actions>
 </data>
+```
+
+### Unconditional Actions and Column Names
+
+For a static file that contains a fixed number of columns, it is straight forward:
+
+```xml
+<outputs>
+    <data format="tabular" name="table">
+        <actions>
+            <action name="column_names" type="metadata" default="Firstname,Lastname,Age" />
+        </actions>
+    </data>
+</outputs>
+```
+
+It may also be necessary to use column names based on a variable from another
+input file. This is implemented in the
+[htseq-count](https://github.com/galaxyproject/tools-iuc/blob/master/tools/htseq_count/htseq-count.xml)
+and
+[featureCounts](https://github.com/galaxyproject/tools-iuc/blob/master/tools/featurecounts/featurecounts.xml)
+wrappers:
+
+```xml
+<inputs>
+    <data name="input_file" type="data" multiple="false">
+</inputs>
+<outputs>
+    <data format="tabular" name="output_short">
+        <actions>
+            <action name="column_names" type="metadata" default="Geneid,${input_file.name}" />
+        </actions>
+    </data>
+</outputs>
+```
+
+Or in case of multiple files:
+
+```xml
+<inputs>
+    <data name="input_files" type="data" multiple="true">
+</inputs>
+<outputs>
+    <data format="tabular" name="output_short">
+        <actions>
+            <action name="column_names" type="metadata" default="Geneid,${','.join([ a.name for a in $input_files ])}" />
+        </actions>
+    </data>
+</outputs>
 ```
 
 ### Unconditional Actions - An Older Example

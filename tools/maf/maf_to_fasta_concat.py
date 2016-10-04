@@ -5,6 +5,8 @@ Read a maf and output a single block fasta file, concatenating blocks
 usage %prog species1,species2 maf_file out_file
 """
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 from bx.align import maf
@@ -27,9 +29,9 @@ def __main__():
         maf_utilities.tool_fail( "Error opening file for output: %s" % e )
 
     if species:
-        print "Restricted to species: %s" % ', '.join( species )
+        print("Restricted to species: %s" % ', '.join( species ))
     else:
-        print "Not restricted to species."
+        print("Not restricted to species.")
 
     if not species:
         try:

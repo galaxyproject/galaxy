@@ -1,0 +1,24 @@
+<tool id="metadata_columns" name="metadata_columns" version="1.0.0">
+    <description>Tests whether metadata is being set correctly.</description>
+    <command><![CDATA[
+        cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" multiple="false" />
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output">
+            <actions>
+                <action name="column_names" type="metadata" default="First,${input.name}" />
+            </actions>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="2.tabular" />
+            <output name="output">
+                <metadata name="column_names" value="First,2.tabular"/>
+            </output>
+        </test>
+    </tests>
+</tool>
