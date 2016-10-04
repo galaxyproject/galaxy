@@ -2,8 +2,9 @@ define([
     "mvc/ui/popup-menu",
     "mvc/history/copy-dialog",
     "mvc/base-mvc",
-    "utils/localization"
-], function( PopupMenu, historyCopyDialog, BASE_MVC, _l ){
+    "utils/localization",
+    "mvc/webhooks"
+], function( PopupMenu, historyCopyDialog, BASE_MVC, _l, Webhooks ){
 
 'use strict';
 
@@ -167,6 +168,31 @@ var menu = [
         href    : 'history/import_archive',
     }
 ];
+
+
+// Webhooks
+
+var webhooks = new Webhooks.Webhooks();
+webhooks.url = Galaxy.root + 'api/webhooks/history-menu/all';
+webhooks.fetch({
+    async: false,   // slows down History Panel loading
+    success: function() {
+        if (webhooks.length > 0) {
+            menu.push({
+                html   : _l( 'Webhooks' ),
+                header : true
+            });
+
+            $.each(webhooks.models, function(index, model) {
+                var webhook = model.toJSON();
+                menu.push({
+                    html : _l( webhook.config.title ),
+                    anon : true
+                });
+            });
+        }
+    }
+});
 
 function buildMenu( isAnon, purgeAllowed, urlRoot ){
     return _.clone( menu ).filter( function( menuOption ){

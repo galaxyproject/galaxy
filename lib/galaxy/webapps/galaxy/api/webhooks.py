@@ -42,6 +42,18 @@ class WebhooksController(BaseAPIController):
         return random.choice(webhooks).to_dict() if webhooks else {}
 
     @expose_api_anonymous_and_sessionless
+    def get_all_by_type(self, trans, webhook_type, **kwd):
+        """
+        *GET /api/webhooks/{webhook_type}/all
+        Returns all webhooks for a given type
+        """
+        return [
+            webhook.to_dict()
+            for webhook in self.app.webhooks_registry.webhooks
+            if webhook_type in webhook.type
+        ]
+
+    @expose_api_anonymous_and_sessionless
     def get_data(self, trans, webhook_name, **kwd):
         """
         *GET /api/webhooks/{webhook_name}/get_data
