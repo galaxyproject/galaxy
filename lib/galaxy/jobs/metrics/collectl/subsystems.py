@@ -1,3 +1,7 @@
+"""Abstractions describing collectl subsystems (specified with the collectl ``-s`` parameter).
+
+Subsystems are essentially monitoring plugins available within collectl.
+"""
 from abc import ABCMeta
 from abc import abstractmethod
 
