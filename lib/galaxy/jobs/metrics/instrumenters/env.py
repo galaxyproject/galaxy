@@ -1,3 +1,4 @@
+"""The module describes the ``env`` job metrics plugin."""
 import logging
 import re
 
