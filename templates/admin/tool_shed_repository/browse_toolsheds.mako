@@ -478,8 +478,9 @@ function bind_repository_events() {
         check_queue();
     });
     $('#create_new').click(show_global_tps_create);
-    $('#install_repository').click(function() {
+    $('#install_repository').click(function(ev) {
         var form = $('#repository_installation');
+        ev.preventDefault();
         var params = {};
         params.repositories = JSON.stringify([[$('#install_repository').attr('data-tsrid'), $('#changeset').find("option:selected").val()]]);
         params.tool_shed_repository_ids = JSON.stringify([$('#install_repository').attr('data-tsrid')]);
