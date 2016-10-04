@@ -7,6 +7,7 @@ env:
   - TOX_ENV=py27-lint-readme
   - TOX_ENV=py27
   - TOX_ENV=py34
+  - TOX_ENV=py27-lint-docstring-include-list
 
 install:
   # Setup git to allow git operations.

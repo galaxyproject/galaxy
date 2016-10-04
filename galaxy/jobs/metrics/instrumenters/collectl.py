@@ -1,3 +1,4 @@
+"""The module describes the ``collectl`` job metrics plugin."""
 import logging
 import os
 import shutil

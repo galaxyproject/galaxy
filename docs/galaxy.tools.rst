@@ -11,6 +11,7 @@ Subpackages
     galaxy.tools.linters
     galaxy.tools.parser
     galaxy.tools.toolbox
+    galaxy.tools.verify
 
 Submodules
 ----------
