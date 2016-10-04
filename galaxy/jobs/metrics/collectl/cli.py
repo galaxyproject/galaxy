@@ -1,3 +1,4 @@
+"""This module describes :class:`CollectlCli` - an asbtraction for building collectl command lines."""
 import logging
 import subprocess
 

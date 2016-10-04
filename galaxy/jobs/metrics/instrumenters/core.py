@@ -1,3 +1,4 @@
+"""The module describes the ``core`` job metrics plugin."""
 import logging
 import time
 
