@@ -20,7 +20,7 @@ from ..exceptions import error_codes
 
 
 class MessageException( Exception ):
-    """Most generic Galaxy exception - indicates merely that some exceptional condition happend."""
+    """Most generic Galaxy exception - indicates merely that some exceptional condition happened."""
     # status code to be set when used with API.
     status_code = 400
     # Error code information embedded into API json responses.

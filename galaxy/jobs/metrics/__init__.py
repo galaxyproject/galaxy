@@ -4,7 +4,7 @@ The framework consists of two parts - the :class:`JobMetrics` class and
 individual :class:`JobInstrumenter` plugins.
 
 A :class:`JobMetrics` object reads any number of plugins from a configuration
-source such as an XML file, a YAML file, or dictionary.
+source such as an XML file, a YAML file, or a dictionary.
 
 Each :class:`JobInstrumenter` plugin object describes how to inject a bits
 of shell code into a job scripts (before and after tool commands run) and then
