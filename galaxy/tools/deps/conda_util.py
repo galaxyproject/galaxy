@@ -286,6 +286,8 @@ class CondaTarget(object):
 
         return "CondaTarget[%s]" % attributes
 
+    __repr__ = __str__
+
     @property
     def package_specifier(self):
         """ Return a package specifier as consumed by conda install/create.
@@ -305,6 +307,17 @@ class CondaTarget(object):
             return "__%s@%s" % (self.package, self.version)
         else:
             return "__%s@_uv_" % (self.package)
+
+    def __hash__(self):
+        return hash((self.package, self.version, self.channel))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return (self.package, self.version, self.channel) == (other.package, other.version, other.channel)
+        return False
+
+    def __ne__(self, other):
+        return not(self == other)
 
 
 def hash_conda_packages(conda_packages, conda_target=None):
