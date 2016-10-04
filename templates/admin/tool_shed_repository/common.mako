@@ -78,10 +78,17 @@
     </style>
     <script type="text/javascript">
         $(function(){
-            $(".deps-section").hide();
-            $(".toggle-deps-section").click(function(e){
+            $(".detail-section").hide();
+            var hidden = true;
+            $(".toggle-detail-section").click(function(e){
                 e.preventDefault();
-                $(".deps-section").toggle();
+                hidden = !hidden;
+                if (hidden === true){
+                    $(".toggle-detail-section").text('Display Details');
+                } else{
+                    $(".toggle-detail-section").text('Hide Details');
+                }
+                $(".detail-section").toggle();
             })
         });
     </script>
@@ -109,7 +116,7 @@
     %>
     <div class="form-row">
         <p>By default Galaxy will install all needed dependencies for${revision_label_str}the repository. See the <a target="_blank" href="https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html">dependency resolver documentation</a>.</p>
-        <p>You can fine control the installation if you know what you are doing. <button class="toggle-deps-section">Display Dependencies</button></p>
+        <p>You can fine control the installation if you know what you are doing. <button class="toggle-detail-section">Display Details</button></p>
     </div>
     %if export:
     <div class="form-row">
@@ -122,7 +129,7 @@
     </div>
     %endif
     <div style="clear: both"></div>
-    <div class="deps-section">
+    <div class="detail-section">
     %if repository_dependencies_root_folder or missing_repository_dependencies_root_folder:
         %if repository_dependencies_check_box:
             <div class="form-row">

@@ -100,7 +100,7 @@
                         <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
                     </table>
                 </div>
-                <div class="deps-section">
+                <div class="detail-section">
                 <%
                     if len( shed_tool_conf_select_field.options ) == 1:
                         select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "
