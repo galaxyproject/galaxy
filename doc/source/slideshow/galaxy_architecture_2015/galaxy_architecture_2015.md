@@ -45,11 +45,6 @@ Contribution guidelines: http://bit.ly/gx-CONTRIBUTING-md
 
 ---
 
-class: white
-background-image: url(images/family/team.png)
-
----
-
 github.com/galaxyproject/**galaxy**
 
 The main Galaxy application. Web interface, database model, job running, etc. Also includes other web applications including the **ToolShed** and **Reports**
@@ -174,7 +169,7 @@ Many flavors available.
 ---
 
 class: white
-background-image: url(images/docker-chart.png)
+![Docker](images/docker-chart.png)
 
 ---
 
@@ -251,7 +246,7 @@ So by default Galaxy does not require:
 
 ---
 
-background-image: url(images/server_client.plantuml.svg)
+![Client-Server Communications](images/server_client.plantuml.svg)
 
 ???
 
@@ -262,13 +257,13 @@ Many Grids
 
 class: white
 
-background-image: url(images/backbone-model-view.svg)
+![Backbone MVC](images/backbone-model-view.svg)
 
 ### Backbone MVC
 
 ---
 
-background-image: url(images/server_client_old.plantuml.svg)
+![Client-Server Communications (old)](images/server_client_old.plantuml.svg)
 
 ???
 
@@ -277,7 +272,7 @@ Webapp
 
 ---
 
-background-image: url(images/wsgi_app.svg)
+![WSGI Application](images/wsgi_app.svg)
 
 ### Galaxy WSGI
 
@@ -292,7 +287,7 @@ background-image: url(images/wsgi_app.svg)
 
 ---
 
-background-image: url(images/wsgi_request.svg)
+![WSGI Request](images/wsgi_request.svg)
 
 ---
 
@@ -418,9 +413,9 @@ def handle_request(self, environ, start_response):
 
 ---
 
-class: white
+class: white, widen_image
 
-background-image: url(images/sqla_arch_small.png)
+![SQLAlchemy Architecture](images/sqla_arch_small.png)
 
 ---
 
@@ -437,8 +432,8 @@ background-image: url(images/sqla_arch_small.png)
 
 ---
 
-class: white
-background-image: url(images/galaxy_schema.png)
+class: white, narrow_image
+![Galaxy Schema](images/galaxy_schema.png)
 
 ### Database Diagram
 
@@ -446,11 +441,11 @@ https://wiki.galaxyproject.org/Admin/Internals/DataModel
 
 ---
 
-background-image: url(images/hda.svg)
+![HDA](images/hda.svg)
 
 ---
 
-background-image: url(images/hda_dataset.plantuml.svg)
+![HDA Dataset](images/hda_dataset.plantuml.svg)
 
 ---
 
@@ -466,27 +461,27 @@ Slides for datatypes, example of meta data definitions...
 
 ---
 
-background-image: url(images/hda_hdca.plantuml.svg)
+![HDAs and HDCAs](images/hda_hdca.plantuml.svg)
 
 ---
 
-background-image: url(images/workflow_definition.svg)
+![Workflows](images/workflow_definition.svg)
 
 ---
 
-background-image: url(images/workflow_run.svg)
+![Workflow Running](images/workflow_run.svg)
 
 ---
 
-background-image: url(images/libraries.svg)
+![Libraries](images/libraries.svg)
 
 ---
 
-background-image: url(images/library_permissions.svg)
+![Library Permissions](images/library_permissions.svg)
 
 ---
 
-background-image: url(images/data_managers.svg)
+![Data Managers](images/data_managers.svg)
 
 ---
 
@@ -711,7 +706,7 @@ define(['utils/utils', 'mvc/tool/tool-form-base'],
 ---
 
 class: white
-background-image: url(images/what-is-webpack.svg)
+![What is Webpack](images/what-is-webpack.svg)
 
 ---
 
@@ -725,7 +720,7 @@ background-image: url(images/what-is-webpack.svg)
 ---
 
 class: white
-background-image: url(images/jsload.png)
+![Webpack in Action](images/jsload.png)
 
 ---
 
@@ -1327,17 +1322,17 @@ This used to be an important detail - but uWSGI makes things a lot easier.
 
 ---
 
-background-image: url(images/cluster_support.svg)
+![Cluster Support](images/cluster_support.svg)
 
 ### Cluster Support
 
 ---
 
-background-image: url(images/usegalaxy_webservers.svg)
+![usegalaxy.org web servers](images/usegalaxy_webservers.svg)
 
 ---
 
-background-image: url(images/usegalaxyorg.svg)
+![usegalaxy.org servers](images/usegalaxyorg.svg)
 
 ---
 

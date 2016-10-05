@@ -31,7 +31,18 @@ h2 { font-size: 2em; }
     text-align: center;
 }
 
+img {
+    max-width: 100%;
+}
 
+.widen_image img {
+    max-width: 100%;
+    width: 100%;
+}
+
+.narrow_image img {
+    height: 500px;
+}
 
 h3 {
     font-size: 1.8em;
