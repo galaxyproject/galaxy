@@ -1700,7 +1700,7 @@ class DataToolParameter( BaseDataToolParameter ):
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
 
-    def _options_filter_attribute( self, value ):
+    def get_options_filter_attribute( self, value ):
         # HACK to get around current hardcoded limitation of when a set of dynamic options is defined for a DataToolParameter
         # it always causes available datasets to be filtered by dbkey
         # this behavior needs to be entirely reworked (in a backwards compatible manner)
