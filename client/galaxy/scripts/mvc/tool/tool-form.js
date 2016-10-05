@@ -1,10 +1,9 @@
 /**
     This is the regular tool form.
 */
-define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base' ],
-    function( Utils, Ui, Modal, ToolFormBase ) {
-define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/tool/tool-form-base', 'mvc/webhooks' ],
-    function( Utils, Ui, ToolFormBase, Webhooks ) {
+define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base', 'mvc/webhooks' ],
+    function( Utils, Ui, Modal, ToolFormBase, Webhooks ) {
+
     var View = ToolFormBase.extend({
         initialize: function( options ) {
             var self = this;
