@@ -173,9 +173,10 @@ def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
             history_id = history_param[ 8: ]
         else:
             history_name = history_param
-
-    trans_history = trans.history
-    if history_name is not None or (history_id is None and trans_history is None):
+    if history_id:
+        history_manager = histories.HistoryManager( trans.app )
+        target_history = history_manager.get_owned( trans.security.decode_id(history_id), trans.user, current_history=trans.history )
+    else:
         if history_name:
             nh_name = history_name
         else:
@@ -191,12 +192,6 @@ def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
         new_history = trans.app.model.History( user=trans.user, name=nh_name )
         trans.sa_session.add( new_history )
         target_history = new_history
-    elif history_id:
-        history_manager = histories.HistoryManager( trans.app )
-        target_history = history_manager.get_owned( trans.security.decode_id(history_id), trans.user, current_history=trans_history )
-    else:
-        target_history = trans_history
-
     return target_history
 
 
