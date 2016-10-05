@@ -1,6 +1,8 @@
 """
 Add the ExtendedMetadata and ExtendedMetadataIndex tables
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, TEXT
@@ -27,11 +29,11 @@ extended_metadata_ldda_col = Column( "extended_metadata_id", Integer, ForeignKey
 
 
 def display_migration_details():
-    print "This migration script adds a ExtendedMetadata tables"
+    print("This migration script adds a ExtendedMetadata tables")
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
@@ -47,8 +49,8 @@ def upgrade(migrate_engine):
         ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
         extended_metadata_ldda_col.create( ldda_table )
         assert extended_metadata_ldda_col is ldda_table.c.extended_metadata_id
-    except Exception, e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         log.error( "Adding column 'extended_metadata_id' to library_dataset_dataset_association table failed: %s" % str( e ) )
 
 
@@ -57,12 +59,12 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         ExtendedMetadataIndex_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'extended_metadata_index' table failed: %s" % ( str( e ) ) )
 
     try:
         ExtendedMetadata_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'extended_metadata' table failed: %s" % ( str( e ) ) )
 
     # Drop the LDDA table's extended metadata ID column.
@@ -70,5 +72,5 @@ def downgrade(migrate_engine):
         ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
         extended_metadata_id = ldda_table.c.extended_metadata_id
         extended_metadata_id.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed: %s" % ( str( e ) ) )

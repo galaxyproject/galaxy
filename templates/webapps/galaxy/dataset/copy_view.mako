@@ -7,7 +7,7 @@
 
     ${parent.javascripts()}
 
-    ${handle_refresh_frames}
+    ${handle_refresh_frames()}
     
     <script type="text/javascript">
         $(function() {
@@ -17,27 +17,41 @@
                 $("#multiple-destination").show();
             });
         });
+        $(function() {
+            $("#source-content-all").click(function() {
+                $("input[name='source_content_ids']").each(function() {
+                    this.checked = true;
+                });
+            });
+        });
+        $(function() {
+            $("#source-content-none").click(function() {
+                $("input[name='source_content_ids']").each(function() {
+                    this.checked = false;
+                });
+            });
+        });
     </script>
     
 </%def>
 
 %if error_msg:
-    <p>
+    <div>
         <div class="errormessage">${error_msg}</div>
         <div style="clear: both"></div>
-    </p>
+    </div>
 %endif
 %if done_msg:
-    <p>
+    <div>
         <div class="donemessage">${done_msg}</div>
         <div style="clear: both"></div>
-    </p>
+    </div>
 %endif
-<p>
+<div>
     <div class="infomessage">Copy any number of history items from one history to another.</div>
     <div style="clear: both"></div>
-</p>
-<p>
+</div>
+<div>
     <form method="post">
         <div class="toolForm" style="float: left; width: 45%; padding: 0px;">
             <div class="toolFormTitle">Source History:<br />
@@ -59,21 +73,30 @@
                 </select>
             </div>
             <div class="toolFormBody">
-                %if source_contents:
-                    %for data in source_contents:
-                        <%
-                            checked = ""
-                            encoded_id = trans.security.encode_id(data.id)
-                            input_id = "%s|%s" % ( data.history_content_type, encoded_id )
-                            if input_id in source_content_ids:
-                                checked = " checked='checked'"
-                        %>
+                <% has_source_contents = False %>
+                %for data in source_contents:
+                    %if not has_source_contents:
                         <div class="form-row">
-                            <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
-                            <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
+                            <div class="btn-group">
+                                <span class="select-all btn btn-default" name="source-content-all" id="source-content-all">All</span>
+                                <span class="deselect-all btn btn-default" name="source-content-none" id="source-content-none">None</span>
+                            </div>
                         </div>
-                    %endfor
-                %else:
+                    %endif
+                    <%
+                        has_source_contents = True
+                        checked = ""
+                        encoded_id = trans.security.encode_id(data.id)
+                        input_id = "%s|%s" % ( data.history_content_type, encoded_id )
+                        if input_id in source_content_ids:
+                            checked = " checked='checked'"
+                    %>
+                    <div class="form-row">
+                        <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
+                        <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
+                    </div>
+                %endfor
+                %if not has_source_contents:
                     <div class="form-row">This history has no datasets.</div>
                 %endif
             </div>
@@ -84,7 +107,6 @@
             <div class="toolFormBody">
                 <div class="form-row" id="single-destination">
                     <select id="single-dest-select" name="target_history_id">
-                        <option value=""></option>
                         %for i, hist in enumerate(target_histories):
                             <%
                                 encoded_id = trans.security.encode_id(hist.id)
@@ -124,15 +146,14 @@
                     <div style="text-align: center; color: #888;">&mdash; OR &mdash;</div>
                     <div class="form-row">
                         <label for="new_history_name" style="display: inline; font-weight:normal;">New history named:</label>
-                        <input type="textbox" name="new_history_name" />
+                        <input id="new_history_name" type="text" name="new_history_name" />
                     </div>
                 %endif
             </div>
         </div>
-            <div style="clear: both"></div>
-            <div class="form-row" align="center">
-                <input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/>
-            </div>
-        </form>
-    </div>
-</p>
+        <div style="clear: both"></div>
+        <div class="form-row" style="text-align: center;">
+            <input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/>
+        </div>
+    </form>
+</div>

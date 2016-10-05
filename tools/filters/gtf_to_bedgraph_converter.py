@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import os
 import sys
 import tempfile
@@ -23,7 +25,7 @@ def __main__():
 
     # Write track data to temporary file.
     i = 0
-    for i, line in enumerate( file( input_name ) ):
+    for i, line in enumerate( open( input_name ) ):
         line = line.rstrip( '\r\n' )
 
         if line and not line.startswith( '#' ):
@@ -62,7 +64,7 @@ def __main__():
     try:
         os.system(cmd)
         os.remove(tmp_name1)
-    except Exception, ex:
+    except Exception as ex:
         sys.stderr.write( "%s\n" % ex )
         sys.exit(1)
 
@@ -71,14 +73,14 @@ def __main__():
     try:
         os.system(cmd)
         os.remove(tmp_name2)
-    except Exception, ex:
+    except Exception as ex:
         sys.stderr.write( "%s\n" % ex )
         sys.exit(1)
 
     info_msg = "%i lines converted to BEDGraph.  " % ( i + 1 - skipped_lines )
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
-    print info_msg
+    print(info_msg)
 
 if __name__ == "__main__":
     __main__()

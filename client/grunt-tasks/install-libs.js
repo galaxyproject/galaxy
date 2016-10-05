@@ -12,7 +12,6 @@ module.exports = function( grunt ){
         libraryLocations = {
             'jquery':         [ 'dist/jquery.js', 'jquery/jquery.js' ],
             'jquery-migrate': [ 'jquery-migrate.js', 'jquery/jquery.migrate.js' ],
-            'traceKit':       [ 'tracekit.js', 'tracekit.js' ],
             'ravenjs':        [ 'dist/raven.js', 'raven.js' ],
             'underscore':     [ 'underscore.js', 'underscore.js' ],
             'backbone':       [ 'backbone.js', 'backbone.js' ],
@@ -23,6 +22,7 @@ module.exports = function( grunt ){
             'farbtastic':     [ 'src/farbtastic.js', 'farbtastic.js' ],
             'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
             'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],
+            'jquery.complexify':     [ 'jquery.complexify.js', 'jquery.complexify.js' ],
 
             // these need to be updated and tested
             //'jquery-form': [ 'jquery.form.js', 'jquery/jquery.form.js' ],

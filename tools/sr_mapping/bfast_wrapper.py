@@ -161,7 +161,7 @@ def __main__():
                     all_index_cmds += " -R"
 
                 if options.indexContigOptions:
-                    index_contig_options = map( int, options.indexContigOptions.split( ',' ) )
+                    index_contig_options = [ int(_) for _ in options.indexContigOptions.split( ',' ) ]
                     if index_contig_options[0] >= 0:
                         all_index_cmds += ' -s "%s"' % index_contig_options[0]
                     if index_contig_options[1] >= 0:
@@ -326,8 +326,8 @@ def __main__():
                     shutil.move( options.output, tmp_out_name )
                 except Exception as e:
                     raise Exception('Error moving output file before removing headers. \n' + str( e ))
-                fout = file( options.output, 'w' )
-                for line in file( tmp_out.name, 'r' ):
+                fout = open( options.output, 'w' )
+                for line in open( tmp_out.name, 'r' ):
                     if len( line ) < 3 or line[0:3] not in [ '@HD', '@SQ', '@RG', '@PG', '@CO' ]:
                         fout.write( line )
                 fout.close()

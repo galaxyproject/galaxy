@@ -11,7 +11,7 @@ from tool_shed.tools import data_table_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import hg_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import repository_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
@@ -244,13 +244,13 @@ class ToolValidator( object ):
         searching backwards.
         """
         original_tool_data_path = self.app.config.tool_data_path
-        repository = suc.get_repository_in_tool_shed( self.app, repository_id )
+        repository = repository_util.get_repository_in_tool_shed( self.app, repository_id )
         repo_files_dir = repository.repo_path( self.app )
         repo = hg_util.get_repo_for_repository( self.app, repository=None, repo_path=repo_files_dir, create=False )
         message = ''
         tool = None
         can_use_disk_file = False
-        tool_config_filepath = suc.get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
+        tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
         work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-ltfcr" )
         can_use_disk_file = self.can_use_tool_config_disk_file( repository,
                                                                 repo,
@@ -295,13 +295,13 @@ class ToolValidator( object ):
             tool = self.app.toolbox.load_tool( full_path, repository_id=repository_id, allow_code_files=False, use_cached=False )
             valid = True
             error_message = None
-        except KeyError, e:
+        except KeyError as e:
             tool = None
             valid = False
             error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
             error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
             error_message += 'this error.  '
-        except Exception, e:
+        except Exception as e:
             tool = None
             valid = False
             error_message = str( e )

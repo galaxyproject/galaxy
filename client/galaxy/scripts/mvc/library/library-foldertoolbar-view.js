@@ -1156,10 +1156,10 @@ var FolderToolbarView = Backbone.View.extend({
       // toolbar end
       '<div id="folder_items_element">',
       '</div>',
+      // paginator will append here
+      '<div class="folder-paginator paginator-bottom"></div>',
     // container end
     '</div>',
-    // paginator will append here
-    '<div class="folder-paginator paginator-bottom"></div>'
     ].join(''));
   },
 

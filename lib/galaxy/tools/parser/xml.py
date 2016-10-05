@@ -1,33 +1,35 @@
 import logging
 import re
-import traceback
 import sys
+import traceback
 import uuid
+
 from math import isinf
 
-from .interface import (
-    ToolSource,
-    PagesSource,
-    PageSource,
-    InputSource,
-    ToolStdioExitCode,
-    ToolStdioRegex,
-    TestCollectionDef,
-    TestCollectionOutputDef,
-)
-from .util import (
-    error_on_exit_code,
-    aggressive_error_checks,
-)
-from .output_collection_def import dataset_collector_descriptions_from_elem
-from .output_actions import ToolOutputActionGroup
+from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
-from galaxy.tools.deps import requirements
+
+from .interface import (
+    InputSource,
+    PageSource,
+    PagesSource,
+    TestCollectionDef,
+    TestCollectionOutputDef,
+    ToolSource,
+    ToolStdioExitCode,
+    ToolStdioRegex,
+)
+from .output_actions import ToolOutputActionGroup
+from .output_collection_def import dataset_collector_descriptions_from_elem
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure
+)
+from .util import (
+    aggressive_error_checks,
+    error_on_exit_code,
 )
 
 
@@ -38,8 +40,9 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
-    def __init__(self, root, source_path=None):
-        self.root = root
+    def __init__(self, xml_tree, source_path=None):
+        self.xml_tree = xml_tree
+        self.root = xml_tree.getroot()
         self._source_path = source_path
         self.legacy_defaults = self.parse_profile() == "16.01"
 
@@ -76,6 +79,18 @@ class XmlToolSource(ToolSource):
 
     def parse_name(self):
         return self.root.get( "name" )
+
+    def parse_edam_operations(self):
+        edam_ops = self.root.find("edam_operations")
+        if edam_ops is None:
+            return []
+        return [ edam_op.text for edam_op in edam_ops.findall("edam_operation") ]
+
+    def parse_edam_topics(self):
+        edam_topics = self.root.find("edam_topics")
+        if edam_topics is None:
+            return []
+        return [ edam_topic.text for edam_topic in edam_topics.findall("edam_topic") ]
 
     def parse_description(self):
         return xml_text(self.root, "description")
@@ -116,7 +131,7 @@ class XmlToolSource(ToolSource):
         command_el = self._command_el
         interpreter = (command_el is not None) and command_el.get("interpreter", None)
         if not self.legacy_defaults:
-            log.warn("Deprecated interpeter attribute on command element is now ignored.")
+            log.warning("Deprecated interpeter attribute on command element is now ignored.")
             interpreter = None
 
         return interpreter
@@ -378,15 +393,7 @@ def __parse_output_elem( output_elem ):
     if name is None:
         raise Exception( "Test output does not have a 'name'" )
 
-    file, attributes = __parse_test_attributes( output_elem, attrib )
-    primary_datasets = {}
-    for primary_elem in ( output_elem.findall( "discovered_dataset" ) or [] ):
-        primary_attrib = dict( primary_elem.attrib )
-        designation = primary_attrib.pop( 'designation', None )
-        if designation is None:
-            raise Exception( "Test primary dataset does not have a 'designation'" )
-        primary_datasets[ designation ] = __parse_test_attributes( primary_elem, primary_attrib )
-    attributes[ "primary_datasets" ] = primary_datasets
+    file, attributes = __parse_test_attributes( output_elem, attrib, parse_discovered_datasets=True )
     return name, file, attributes
 
 
@@ -423,9 +430,13 @@ def __parse_element_tests( parent_element ):
     return element_tests
 
 
-def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
+def __parse_test_attributes( output_elem, attrib, parse_elements=False, parse_discovered_datasets=False ):
     assert_list = __parse_assert_list( output_elem )
-    file = attrib.pop( 'file', None )
+
+    # Allow either file or value to specify a target file to compare result with
+    # file was traditionally used by outputs and value by extra files.
+    file = attrib.pop( 'file', attrib.pop( 'value', None ) )
+
     # File no longer required if an list of assertions was present.
     attributes = {}
     # Method of comparison
@@ -444,17 +455,31 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
     md5sum = attrib.get("md5", None)
+    checksum = attrib.get("checksum", None)
     element_tests = {}
     if parse_elements:
         element_tests = __parse_element_tests( output_elem )
 
-    if not (assert_list or file or extra_files or metadata or md5sum or element_tests):
-        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
+    primary_datasets = {}
+    if parse_discovered_datasets:
+        for primary_elem in ( output_elem.findall( "discovered_dataset" ) or [] ):
+            primary_attrib = dict( primary_elem.attrib )
+            designation = primary_attrib.pop( 'designation', None )
+            if designation is None:
+                raise Exception( "Test primary dataset does not have a 'designation'" )
+            primary_datasets[ designation ] = __parse_test_attributes( primary_elem, primary_attrib )
+
+    has_checksum = md5sum or checksum
+    has_nested_tests = extra_files or element_tests or primary_datasets
+    if not (assert_list or file or metadata or has_checksum or has_nested_tests):
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
     attributes['md5'] = md5sum
+    attributes['checksum'] = checksum
     attributes['elements'] = element_tests
+    attributes['primary_datasets'] = primary_datasets
     return file, attributes
 
 
@@ -483,20 +508,15 @@ def __parse_assert_list_from_elem( assert_elem ):
     return assert_list
 
 
-def __parse_extra_files_elem( extra ):
+def __parse_extra_files_elem(extra):
     # File or directory, when directory, compare basename
     # by basename
-    extra_type = extra.get( 'type', 'file' )
-    extra_name = extra.get( 'name', None )
+    attrib = dict(extra.attrib)
+    extra_type = attrib.pop('type', 'file')
+    extra_name = attrib.pop('name', None)
     assert extra_type == 'directory' or extra_name is not None, \
         'extra_files type (%s) requires a name attribute' % extra_type
-    extra_value = extra.get( 'value', None )
-    assert extra_value is not None, 'extra_files requires a value attribute'
-    extra_attributes = {}
-    extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
-    extra_attributes['delta'] = extra.get( 'delta', '0' )
-    extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
-    extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
+    extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
     return extra_type, extra_value, extra_name, extra_attributes
 
 

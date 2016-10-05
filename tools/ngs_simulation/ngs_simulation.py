@@ -19,6 +19,9 @@ usage: %prog [options]
 # removed output of all simulation results on request (not working)
 #   -r, --sim_results=r: Output all tabular simulation results (number of polymorphisms times number of detection thresholds)
 #   -o, --output=o: Base name for summary output for each run
+from __future__ import print_function
+
+import itertools
 import os
 import random
 import sys
@@ -42,7 +45,7 @@ def __main__():
         read_len = int( options.read_len )
         if read_len <= 0:
             raise Exception(' greater than 0')
-    except TypeError, e:
+    except TypeError as e:
         error = ': %s' % str( e )
     if error:
         stop_err( 'Make sure your number of reads is an integer value%s' % error )
@@ -51,7 +54,7 @@ def __main__():
         avg_coverage = int( options.avg_coverage )
         if avg_coverage <= 0:
             raise Exception(' greater than 0')
-    except Exception, e:
+    except Exception as e:
         error = ': %s' % str( e )
     if error:
         stop_err( 'Make sure your average coverage is an integer value%s' % error )
@@ -62,13 +65,13 @@ def __main__():
             error_rate = 10 ** ( -error_rate / 10.0 )
         elif error_rate < 0:
             raise Exception(' between 0 and 1')
-    except Exception, e:
+    except Exception as e:
         error = ': %s' % str( e )
     if error:
         stop_err( 'Make sure the error rate is a decimal value%s or the quality score is at least 1' % error )
     try:
         num_sims = int( options.num_sims )
-    except TypeError, e:
+    except TypeError as e:
         stop_err( 'Make sure the number of simulations is an integer value: %s' % str( e ) )
     if options.polymorphism != 'None':
         polymorphisms = [ float( p ) for p in options.polymorphism.split( ',' ) ]
@@ -101,7 +104,7 @@ def __main__():
 #    else:
 #        out_name_template = tempfile.NamedTemporaryFile().name + '_%s'
     out_name_template = tempfile.NamedTemporaryFile().name + '_%s'
-    print 'out_name_template:', out_name_template
+    print('out_name_template:', out_name_template)
 
     # set up output files
     outputs = {}
@@ -120,24 +123,24 @@ def __main__():
             sim_count = 0
             while sim_count < num_sims:
                 # randomly pick heteroplasmic base index
-                hbase = random.choice( range( 0, seq_len ) )
+                hbase = random.randrange( seq_len )
                 # hbase = seq_len/2#random.randrange( 0, seq_len )
                 # create 2D quasispecies list
-                qspec = map( lambda x: [], [0] * seq_len )
+                qspec = [[] for _ in range(seq_len)]
                 # simulate read indices and assign to quasispecies
                 i = 0
                 while i < ( avg_coverage * ( seq_len / read_len ) ):  # number of reads (approximates coverage)
-                    start = random.choice( range( 0, seq_len ) )
+                    start = random.randrange( seq_len )
                     if random.random() < 0.5:  # positive sense read
                         end = start + read_len  # assign read end
                         if end > seq_len:  # overshooting origin
-                            read = range( start, seq_len ) + range( 0, ( end - seq_len ) )
+                            read = itertools.chain(range( start, seq_len ), range( 0, end - seq_len ))
                         else:  # regular read
                             read = range( start, end )
                     else:  # negative sense read
                         end = start - read_len  # assign read end
                         if end < -1:  # overshooting origin
-                            read = range( start, -1, -1) + range( ( seq_len - 1 ), ( seq_len + end ), -1 )
+                            read = itertools.chain(range( start, -1, -1 ), range( seq_len - 1, seq_len + end, -1))
                         else:  # regular read
                             read = range( start, end, -1 )
                     # assign read to quasispecies list by index
@@ -272,5 +275,5 @@ def __main__():
     dev.off()
     ''' )
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     __main__()

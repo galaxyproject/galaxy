@@ -1,8 +1,8 @@
 import logging
 import os
 
-import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -67,11 +67,11 @@ class EnvManager( object ):
         if toolshed and repository_name and repository_owner and changeset_revision:
             # The protocol is not stored, but the port is if it exists.
             toolshed = common_util.remove_protocol_from_tool_shed_url( toolshed )
-            repository = suc.get_repository_for_dependency_relationship( self.app,
-                                                                         toolshed,
-                                                                         repository_name,
-                                                                         repository_owner,
-                                                                         changeset_revision )
+            repository = repository_util.get_repository_for_dependency_relationship( self.app,
+                                                                                     toolshed,
+                                                                                     repository_name,
+                                                                                     repository_owner,
+                                                                                     changeset_revision )
             if repository:
                 for sub_elem in elem:
                     tool_dependency_type = sub_elem.tag

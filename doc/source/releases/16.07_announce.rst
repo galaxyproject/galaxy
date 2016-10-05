@@ -1,0 +1,59 @@
+
+===========================================================
+July 2016 Galaxy Release (v 16.07)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Shift of Galaxy tool dependencies to Conda**
+  Galaxy admins obtained the ability to install Galaxy tool's
+  dependencies using the Conda package manager. This is a Beta feature
+  and we encourage interested deployers to opt-in by modifying configuration.
+  Documentation that explains this switch and answers FAQ is `available <https://docs.galaxyproject.org/en/master/admin/conda_faq.html>`__.
+
+**Dynamic tool destinations**
+  Our friends from Canada National Microbiology Laboratory enhanced
+  Galaxy with feature that allows dynamic mapping of tools to destinations
+  based on finer grained admin-specified rules. Please see the
+  `wiki <https://wiki.galaxyproject.org/Admin/Config/Jobs#Dynamic_Destination_Mapping>`__.
+  Implemented in `PR #2579 <https://github.com/galaxyproject/galaxy/pull/2579>`__
+
+**Galaxy chat**
+  Admins can now plug in the included communication server to enable
+  users of their instance to use real-time chat within the Galaxy interface.
+  Please see the `documentation <https://docs.galaxyproject.org/en/master/admin/chat.html>`__
+  to learn how to activate and use this feature.
+  Implemented in `PR #2515 <https://github.com/galaxyproject/galaxy/pull/2515>`__
+
+`Github <https://github.com/galaxyproject/galaxy>`__
+===========================================================
+
+New Galaxy repository
+  .. code-block:: shell
+
+      $ git clone -b release_16.07 https://github.com/galaxyproject/galaxy.git
+
+Update of existing Galaxy repository
+  .. code-block:: shell
+
+      $ git checkout release_16.07 && git pull --ff-only origin release_16.07
+
+See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+
+Deprecation Notices
+===========================================================
+
+The following URLs will be removed and should be considered deprecated:
+ * ``<galaxy>\history\as_xml``
+ * ``<galaxy>\history\list_as_xml``
+
+Release Notes
+===========================================================
+
+.. include:: 16.07.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

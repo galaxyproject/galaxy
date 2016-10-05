@@ -2,18 +2,16 @@
 Galaxy web framework helpers
 """
 
-import time
+from ..base import server_starttime
 from datetime import datetime, timedelta
 
 from galaxy.util import hash_util
 from galaxy.util import unicodify
-from galaxy.util.json import safe_dumps as dumps  # noqa (used by mako templates)
+from galaxy.util.json import safe_dumps as dumps  # Used by mako templates # noqa: F401
 from webhelpers import date
 from webhelpers.html.tags import stylesheet_link, javascript_link
 
 from routes import url_for
-
-server_starttime = int(time.time())
 
 
 def time_ago( x ):

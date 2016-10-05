@@ -1,7 +1,10 @@
-from string import Template
+"""This module describes :class:`CollectlCli` - an abstraction for building collectl command lines."""
+import logging
 import subprocess
 
-import logging
+from string import Template
+
+
 log = logging.getLogger( __name__ )
 
 COMMAND_LINE_TEMPLATE = Template(

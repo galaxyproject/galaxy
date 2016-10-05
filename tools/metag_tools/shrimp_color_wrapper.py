@@ -80,26 +80,26 @@ def __main__():
 
     try:
         os.system(command)
-    except Exception, e:
+    except Exception as e:
         stop_err(str(e))
 
     # check SHRiMP output: count number of lines
     num_hits = 0
     if shrimp_outfile:
-        for i, line in enumerate(file(shrimp_outfile)):
+        for i, line in enumerate(open(shrimp_outfile)):
             line = line.rstrip('\r\n')
             if not line or line.startswith('#'):
                 continue
             try:
                 line.split()
                 num_hits += 1
-            except Exception, e:
+            except Exception as e:
                 stop_err(str(e))
 
     if num_hits == 0:   # no hits generated
         err_msg = ''
         if shrimp_log:
-            for i, line in enumerate(file(shrimp_log)):
+            for i, line in enumerate(open(shrimp_log)):
                 if line.startswith('error'):            # deal with memory error:
                     err_msg += line                     # error: realloc failed: Cannot allocate memory
                 if re.search('Reads Matched', line):    # deal with zero hits

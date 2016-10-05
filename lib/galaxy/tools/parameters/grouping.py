@@ -49,9 +49,8 @@ class Group( object, Dictifiable ):
         """
         raise TypeError( "Not implemented" )
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        # TODO: need to to_dict conditions.
-        group_dict = super( Group, self ).to_dict( view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        group_dict = super( Group, self ).to_dict()
         return group_dict
 
 
@@ -106,7 +105,7 @@ class Repeat( Group ):
                     else:
                         rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
                 rval.append( rval_dict )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval
@@ -120,11 +119,11 @@ class Repeat( Group ):
             rval.append( rval_dict )
         return rval
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        repeat_dict = super( Repeat, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        repeat_dict = super( Repeat, self ).to_dict( trans )
 
         def input_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         repeat_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return repeat_dict
@@ -161,7 +160,7 @@ class Section( Group ):
             for input in self.inputs.itervalues():
                 if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval
@@ -173,11 +172,11 @@ class Section( Group ):
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        section_dict = super( Section, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        section_dict = super( Section, self ).to_dict( trans )
 
         def input_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         section_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return section_dict
@@ -283,7 +282,7 @@ class UploadDataset( Group ):
         return rval
 
     def get_uploaded_datasets( self, trans, context, override_name=None, override_info=None ):
-        def get_data_file_filename( data_file, override_name=None, override_info=None ):
+        def get_data_file_filename( data_file, override_name=None, override_info=None, purge=True ):
             dataset_name = override_name
             dataset_info = override_info
 
@@ -297,7 +296,7 @@ class UploadDataset( Group ):
                     dataset_name = get_file_name( data_file['filename'] )
                 if not dataset_info:
                     dataset_info = 'uploaded file'
-                return Bunch( type='file', path=data_file['local_filename'], name=dataset_name )
+                return Bunch( type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge )
             except:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch( type=None, path=None, name=None )
@@ -364,7 +363,13 @@ class UploadDataset( Group ):
                                 if not os.path.islink( os.path.join( dirpath, filename ) ):
                                     ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, path ) ),
                                                       'filename' : os.path.basename( path ) }
-                                    file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info )
+                                    purge = getattr(trans.app.config, 'ftp_upload_purge', True)
+                                    file_bunch = get_data_file_filename(
+                                        ftp_data_file,
+                                        override_name=name,
+                                        override_info=info,
+                                        purge=purge,
+                                    )
                                     if file_bunch.path:
                                         break
                         if file_bunch.path:
@@ -432,7 +437,8 @@ class UploadDataset( Group ):
                     # TODO: warning to the user (could happen if file is already imported)
                 ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, ftp_file ) ),
                                   'filename' : os.path.basename( ftp_file ) }
-                file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info )
+                purge = getattr(trans.app.config, 'ftp_upload_purge', True)
+                file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info, purge=purge )
                 if file_bunch.path:
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
@@ -557,7 +563,7 @@ class Conditional( Group ):
                 # conditional's values dictionary.
                 if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
-        except Exception, e:
+        except Exception as e:
             if not ignore_errors:
                 raise e
         return rval
@@ -579,11 +585,11 @@ class Conditional( Group ):
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        cond_dict = super( Conditional, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        cond_dict = super( Conditional, self ).to_dict( trans )
 
         def nested_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         cond_dict[ "cases" ] = map( nested_to_dict, self.cases )
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
@@ -597,11 +603,11 @@ class ConditionalWhen( object, Dictifiable ):
         self.value = None
         self.inputs = None
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        when_dict = super( ConditionalWhen, self ).to_dict( view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        when_dict = super( ConditionalWhen, self ).to_dict()
 
         def input_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         when_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return when_dict

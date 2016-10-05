@@ -4,6 +4,8 @@ library_info_association, library_folder_info_association.
 Also, in case of sqlite check if the previous migration script deleted the
 request table and if so, restore the table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -25,7 +27,7 @@ def get_false_value(migrate_engine):
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
 
     #
     # In case of sqlite, check if the previous migration script deleted the
@@ -48,7 +50,7 @@ def upgrade(migrate_engine):
                                    Column( "deleted", Boolean, index=True, default=False ) )
             try:
                 Request_table.create()
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Creating request table failed: %s" % str( e ) )
 
     metadata.reflect()
@@ -60,7 +62,7 @@ def upgrade(migrate_engine):
     cmd = "UPDATE library_info_association SET inheritable = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Setting value of column inheritable to false in library_info_association failed: %s" % ( str( e ) ) )
 
     LibraryFolderInfoAssociation_table = Table( "library_folder_info_association", metadata, autoload=True )
@@ -70,7 +72,7 @@ def upgrade(migrate_engine):
     cmd = "UPDATE library_folder_info_association SET inheritable = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Setting value of column inheritable to false in library_folder_info_association failed: %s" % ( str( e ) ) )
 
 

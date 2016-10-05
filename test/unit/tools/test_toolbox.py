@@ -3,13 +3,19 @@ import os
 import string
 import unittest
 
-from galaxy.tools import ToolBox
+import routes
+
+from six import string_types
+
+import tools_support
+
 from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
-import tools_support
+from galaxy.tools import ToolBox
+from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
+from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
 
-import routes
 
 from .test_toolbox_filters import mock_trans
 
@@ -72,6 +78,7 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         repository.uninstalled = False
         self.app.install_model.context.add( repository )
         self.app.install_model.context.flush( )
+        self.app.tool_version_cache = ToolVersionCache(self.app)
         return repository
 
     def _setup_two_versions( self ):
@@ -96,6 +103,7 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
 
         self.app.install_model.context.add( version_association )
         self.app.install_model.context.flush( )
+        self.app.tool_version_cache = ToolVersionCache(self.app)
 
     def _setup_two_versions_in_config( self, section=False ):
         if section:
@@ -122,7 +130,7 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         is_json = name.endswith(".json")
         path = self._tool_conf_path( name=name )
         with open( path, "w" ) as f:
-            if not is_json or isinstance(content, basestring):
+            if not is_json or isinstance(content, string_types):
                 f.write( content )
             else:
                 json.dump(content, f)
@@ -239,7 +247,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         # Assert only newer version of the tool loaded into the panel.
         section = self.toolbox._tool_panel["tid"]
         assert len(section.elems) == 1
-        assert section.elems.values()[0].id == "github.com/galaxyproject/example/test_tool/0.2"
+        assert next(iter(section.elems.values())).id == "github.com/galaxyproject/example/test_tool/0.2"
 
     def test_group_tools_out_of_section( self ):
         self._init_tool()
@@ -249,19 +257,6 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
 
         # Assert tools merged in tool panel.
         assert len( self.toolbox._tool_panel ) == 1
-
-    def test_update_shed_conf(self):
-        self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config( { "config_filename": "tool_conf.xml" } )
-        assert self.reindexed
-        self.assert_integerated_tool_panel(exists=True)
-
-    def test_update_shed_conf_deactivate_only(self):
-        self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config(  { "config_filename": "tool_conf.xml" }, integrated_panel_changes=False )
-        assert self.reindexed
-        # No changes, should be regenerated
-        self.assert_integerated_tool_panel(exists=False)
 
     def test_get_tool_id( self ):
         self._init_tool()
@@ -294,7 +289,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         encoded_id = self.app.security.encode_id( stored_workflow.id )
         self._add_config( """<toolbox><workflow id="%s" /></toolbox>""" % encoded_id )
         assert len( self.toolbox._tool_panel ) == 1
-        panel_workflow = self.toolbox._tool_panel.values()[ 0 ]
+        panel_workflow = next(iter(self.toolbox._tool_panel.values()))
         assert panel_workflow == stored_workflow.latest_workflow
         # TODO: test to_dict with workflows
 
@@ -305,7 +300,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         assert len( self.toolbox._tool_panel ) == 1
         section = self.toolbox._tool_panel[ 'tid' ]
         assert len( section.elems ) == 1
-        panel_workflow = section.elems.values()[ 0 ]
+        panel_workflow = next(iter(section.elems.values()))
         assert panel_workflow == stored_workflow.latest_workflow
 
     def test_label_in_panel( self ):
@@ -334,8 +329,8 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
             self._add_config({"items": [section]}, name="tool_conf.json")
 
     def __check_test_labels( self, panel_dict ):
-        assert panel_dict.keys() == ["label_lab1", "label_lab2"]
-        label1 = panel_dict.values()[ 0 ]
+        assert list(panel_dict.keys()) == ["label_lab1", "label_lab2"]
+        label1 = next(iter(panel_dict.values()))
         assert label1.id == "lab1"
         assert label1.text == "Label 1"
 
@@ -446,3 +441,8 @@ class SimplifiedToolBox( ToolBox ):
             tool_root_dir,
             app,
         )
+        self._tool_conf_watcher = get_tool_conf_watcher(dummy_callback)
+
+
+def dummy_callback():
+    pass

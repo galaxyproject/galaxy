@@ -4,7 +4,7 @@
   "description": "A dynamic reverse proxy for use within Galaxy",
   "main": "index.js",
   "author": "John Chilton",
-  "license": "AFL v3",
+  "license": "AFL-3.0",
   "readmeFilename": "README.md",
   "repository": {
     "type": "mercurial",
@@ -14,6 +14,6 @@
     "eventemitter3": "0.1.6",
     "http-proxy": "1.6.0",
     "commander": "~2.2",
-    "sqlite3": "3.0.5"
+    "sqlite3": "3.1.3"
   }
 }

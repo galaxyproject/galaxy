@@ -5,6 +5,7 @@ import sys
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
+from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from .rule_helper import RuleHelper
 
 log = logging.getLogger( __name__ )
@@ -33,6 +34,7 @@ STOCK_RULES = dict(
     choose_one=stock_rules.choose_one,
     burst=stock_rules.burst,
     docker_dispatch=stock_rules.docker_dispatch,
+    dtd=map_tool_to_destination,
 )
 
 
@@ -66,7 +68,7 @@ class JobRunnerMapper( object ):
                 for comp in rule_module_name.split( "." )[1:]:
                     module = getattr( module, comp )
                 modules.append( module )
-            except BaseException, exception:
+            except BaseException as exception:
                 exception_str = str( exception )
                 message = "%s rule module could not be loaded: %s" % ( rule_module_name, exception_str )
                 log.debug( message )

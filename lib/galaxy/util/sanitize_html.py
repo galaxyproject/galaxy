@@ -5,8 +5,9 @@ HTML Sanitizer (ripped from feedparser)
 import re
 import sgmllib
 
-from galaxy.util import unicodify
 from six import unichr
+
+from galaxy.util import unicodify
 
 
 # reversable htmlentitydefs mappings for Python 2.2

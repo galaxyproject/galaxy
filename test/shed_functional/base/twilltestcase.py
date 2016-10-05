@@ -6,11 +6,11 @@ import string
 import tarfile
 import tempfile
 import time
-import urllib
 from json import loads
 
 import twill.commands as tc
 from mercurial import commands, hg, ui
+from six.moves.urllib.parse import quote_plus, urlencode
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -260,7 +260,7 @@ class ShedTwillTestCase( TwillTestCase ):
         commands.commit( ui.ui(), hgrepo, **options )
         #  Try pushing multiple times as it transiently fails on Jenkins.
         #  TODO: Figure out why that happens
-        for i in range(2):
+        for i in range(5):
             try:
                 commands.push( ui.ui(), hgrepo, dest=url )
             except Exception as e:
@@ -412,7 +412,7 @@ class ShedTwillTestCase( TwillTestCase ):
             for data_manager_name in data_manager_names:
                 assert data_manager_name in data_managers, "The requested Data Manager '%s' was not found in repository metadata." % data_manager_name
         else:
-            data_manager_name = data_managers.keys()
+            data_manager_name = list(data_managers.keys())
         for data_manager_name in data_manager_names:
             url = '/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
             self.visit_galaxy_url( url )
@@ -427,7 +427,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         strings_displayed.append( str( installed_repository.installed_changeset_revision ) )
         # Every place Galaxy's XXXX tool appears in attribute - need to quote.
-        strings_displayed = map( lambda x: x.replace("'", "&#39;"), strings_displayed )
+        strings_displayed = [x.replace("'", "&#39;") for x in strings_displayed]
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None ):
@@ -628,7 +628,7 @@ class ShedTwillTestCase( TwillTestCase ):
         dependency_template = string.Template( common.complex_repository_dependency_template )
         repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
-        file( file_path, 'w' ).write( repository_dependency_xml )
+        open( file_path, 'w' ).write( repository_dependency_xml )
 
     def generate_simple_dependency_xml( self,
                                         repository_tuples,
@@ -661,7 +661,7 @@ class ShedTwillTestCase( TwillTestCase ):
         repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
         full_path = os.path.join( filepath, filename )
-        file( full_path, 'w' ).write( repository_dependency_xml )
+        open( full_path, 'w' ).write( repository_dependency_xml )
 
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
         temp_path = os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )
@@ -699,6 +699,12 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             last_review = None
         return last_review
+
+    def get_repositories_category_api( self, categories, strings_displayed=None, strings_not_displayed=None ):
+        for category in categories:
+            url = '/api/categories/%s/repositories' % self.security.encode_id( category.id )
+            self.visit_url( url )
+            self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def get_tool_dependency_path( self, tool_dependency_name, tool_dependency_version, repository ):
         '''Return the absolute path for an installed tool dependency.'''
@@ -812,7 +818,7 @@ class ShedTwillTestCase( TwillTestCase ):
 
     def get_tool_panel_section_from_api( self, metadata ):
         tool_metadata = metadata[ 'tools' ]
-        tool_guid = urllib.quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
+        tool_guid = quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
         api_url = '/%s' % '/'.join( [ 'api', 'tools', tool_guid ] )
         self.visit_galaxy_url( api_url )
         tool_dict = loads( self.last_page() )
@@ -941,7 +947,7 @@ class ShedTwillTestCase( TwillTestCase ):
         repository_ids = self.initiate_installation_process()
         self.wait_for_repository_installation( repository_ids )
 
-    def install_repository( self, name, owner, category_name, install_tool_dependencies=False,
+    def install_repository( self, name, owner, category_name, install_resolver_dependencies=False, install_tool_dependencies=False,
                             install_repository_dependencies=True, changeset_revision=None,
                             strings_displayed=None, strings_not_displayed=None, preview_strings_displayed=None,
                             post_submit_strings_displayed=None, new_tool_panel_section_label=None, includes_tools_for_display_in_tool_panel=True,
@@ -965,6 +971,7 @@ class ShedTwillTestCase( TwillTestCase ):
         assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
         kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
         kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
+        kwd = self.set_form_value( form, kwd, 'install_resolver_dependencies', install_resolver_dependencies )
         kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
         if new_tool_panel_section_label is not None:
             kwd = self.set_form_value( form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label )
@@ -1014,12 +1021,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def load_checkable_revisions( self, strings_displayed=None, strings_not_displayed=None ):
-        params = urllib.urlencode( dict( do_not_test='false',
-                                         downloadable='true',
-                                         includes_tools='true',
-                                         malicious='false',
-                                         missing_test_components='false',
-                                         skip_tool_test='false' ) )
+        params = urlencode( dict( do_not_test='false',
+                                  downloadable='true',
+                                  includes_tools='true',
+                                  malicious='false',
+                                  missing_test_components='false',
+                                  skip_tool_test='false' ) )
         api_url = '%s?%s' % ( '/'.join( [ self.url, 'api', 'repository_revisions' ] ), params )
         self.visit_url( api_url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
@@ -1209,7 +1216,7 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ field_name ] = str( field_value )
         else:
             if field_name in kwd:
-                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
+                log.debug( 'No field %s in form %s, discarding from return value.', field_name, form_id )
                 del( kwd[ field_name ] )
         return kwd
 
@@ -1320,7 +1327,7 @@ class ShedTwillTestCase( TwillTestCase ):
         #    try:
         #        self.check_for_strings( strings_displayed, strings_not_displayed )
         #        break
-        #    except Exception, e:
+        #    except Exception as e:
         #        if i == 4:
         #            raise e
         #        else:

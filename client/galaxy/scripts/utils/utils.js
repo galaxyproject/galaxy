@@ -25,6 +25,11 @@ function deepeach( dict, callback ) {
     }
 }
 
+/** Clone */
+function clone( obj ) {
+    return JSON.parse( JSON.stringify( obj ) || null );
+}
+
 /**
  * Check if a string is a json string
  * @param{String}   text - Content to be validated
@@ -44,23 +49,23 @@ function sanitize(content) {
 };
 
 /**
- * Validate atomic values or list of values
+ * Checks if a value or list of values is `empty`
  * usually used for selectable options
  * @param{String}   value - Value or list to be validated
  */
-function validate ( value ) {
+function isEmpty ( value ) {
     if ( !( value instanceof Array ) ) {
         value = [ value ];
     }
     if ( value.length === 0 ) {
-        return false;
+        return true;
     }
     for( var i in value ) {
         if ( [ '__null__', '__undefined__', null, undefined ].indexOf( value[ i ] ) > -1 ) {
-            return false;
+            return true;
         }
     }
-    return true;
+    return false;
 };
 
 /**
@@ -88,19 +93,20 @@ function textify( lst ) {
  */
 function get (options) {
     top.__utils__get__ = top.__utils__get__ || {};
-    if (options.cache && top.__utils__get__[options.url]) {
-        options.success && options.success(top.__utils__get__[options.url]);
-        console.debug('utils.js::get() - Fetching from cache [' + options.url + '].');
+    var cache_key = JSON.stringify( options );
+    if (options.cache && top.__utils__get__[cache_key]) {
+        options.success && options.success(top.__utils__get__[cache_key]);
+        window.console.debug('utils.js::get() - Fetching from cache [' + options.url + '].');
     } else {
         request({
             url     : options.url,
             data    : options.data,
             success : function(response) {
-                top.__utils__get__[options.url] = response;
+                top.__utils__get__[cache_key] = response;
                 options.success && options.success(response);
             },
-            error : function(response) {
-                options.error && options.error(response);
+            error : function(response, status) {
+                options.error && options.error(response, status);
             }
         });
     }
@@ -153,7 +159,7 @@ function request (options) {
         } catch (e) {
             response_text = response.responseText;
         }
-        options.error && options.error(response_text, response);
+        options.error && options.error(response_text, response.status);
     }).always(function() {
         options.complete && options.complete();
     });
@@ -272,9 +278,10 @@ return {
     request: request,
     sanitize: sanitize,
     textify: textify,
-    validate: validate,
+    isEmpty: isEmpty,
     deepeach: deepeach,
-    isJSON: isJSON
+    isJSON: isJSON,
+    clone: clone
 };
 
 });

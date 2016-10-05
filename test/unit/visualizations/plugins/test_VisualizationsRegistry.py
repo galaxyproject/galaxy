@@ -1,17 +1,19 @@
 """
 Test lib/galaxy/visualization/plugins/registry.
 """
-import os
 import imp
+import os
 import re
+
+from six import string_types
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), os.pardir, os.pardir, 'unittest_utils', 'utility.py' ) )
 import galaxy_mock
 
 from galaxy import model
-from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.visualization.plugins import plugin
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
 
 # -----------------------------------------------------------------------------
 glx_dir = test_utils.get_galaxy_root()
@@ -50,7 +52,7 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 
         expected_plugins_path = os.path.join( glx_dir, vis_reg_path )
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
 
         scatterplot = plugin_mgr.plugins[ 'scatterplot' ]
         self.assertEqual( scatterplot.name, 'scatterplot' )
@@ -73,36 +75,36 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
     def test_plugin_load( self ):
         """"""
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins'   : {
-                'vis1'          : {
-                    'config' : {
-                        'vis1.xml' : config1
+            'plugins': {
+                'vis1': {
+                    'config': {
+                        'vis1.xml': config1
                     },
-                    'static'    : {},
-                    'templates' : {},
+                    'static': {},
+                    'templates': {},
                 },
-                'vis2'          : {
-                    'config' : {
-                        'vis2.xml' : config1
+                'vis2': {
+                    'config': {
+                        'vis2.xml': config1
                     }
                 },
-                'not_a_vis1'    : {
-                    'config' : {
-                        'vis1.xml' : 'blerbler'
+                'not_a_vis1': {
+                    'config': {
+                        'vis1.xml': 'blerbler'
                     },
                 },
-                'not_a_vis1'    : {
+                'not_a_vis1': {
                     # no config
-                    'static'    : {},
-                    'templates' : {},
+                    'static': {},
+                    'templates': {},
                 },
                 # empty
-                'not_a_vis2'    : {},
-                'not_a_vis3'    : 'blerbler',
+                'not_a_vis2': {},
+                'not_a_vis3': 'blerbler',
                 # bad config
-                'not_a_vis4'          : {
-                    'config' : {
-                        'not_a_vis4.xml' : 'blerbler'
+                'not_a_vis4': {
+                    'config': {
+                        'not_a_vis4.xml': 'blerbler'
                     }
                 },
             }
@@ -116,8 +118,8 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         expected_plugin_names = [ 'vis1', 'vis2' ]
 
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), expected_plugin_names )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), expected_plugin_names )
 
         vis1 = plugin_mgr.plugins[ 'vis1' ]
         self.assertEqual( vis1.name, 'vis1' )
@@ -163,12 +165,12 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         """ )
 
         mock_app_dir = {
-            'plugins'   : {
-                'ipython' : {
-                    'config' : {
-                        'ipython.xml' : ipython_config
+            'plugins': {
+                'ipython': {
+                    'config': {
+                        'ipython.xml': ipython_config
                     },
-                    'templates' : {}
+                    'templates': {}
                 },
             },
         }
@@ -191,8 +193,8 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         expected_plugin_names = [ 'ipython' ]
 
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), expected_plugin_names )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), expected_plugin_names )
 
         ipython = plugin_mgr.plugins[ 'ipython' ]
         config = ipython.config
@@ -209,7 +211,7 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         # should return the (new) api key for the above user (see the template above)
         response = ipython._render( {}, trans=trans )
         response.strip()
-        self.assertIsInstance( response, basestring )
+        self.assertIsInstance( response, string_types )
         self.assertTrue( '-' in response )
         ie_request, api_key = response.split( '-' )
 
@@ -236,12 +238,12 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         """ )
 
         mock_app_dir = galaxy_mock.MockDir({
-            'plugins' : {
-                'jstest' : {
-                    'config' : {
-                        'jstest.xml' : script_entry_config
+            'plugins': {
+                'jstest': {
+                    'config': {
+                        'jstest.xml': script_entry_config
                     },
-                    'static' : {}
+                    'static': {}
                 },
             }
         })

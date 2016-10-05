@@ -159,9 +159,9 @@ def get_repository_dependencies( app, tool_shed_url, repository_name, repository
     try:
         raw_text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         tool_shed_accessible = True
-    except Exception, e:
+    except Exception as e:
         tool_shed_accessible = False
-        log.warn( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
+        log.warning( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
     if tool_shed_accessible:
         if len( raw_text ) > 2:
             encoded_text = json.loads( raw_text )
@@ -174,7 +174,7 @@ def get_protocol_from_tool_shed_url( tool_shed_url ):
     try:
         if tool_shed_url.find( '://' ) > 0:
             return tool_shed_url.split( '://' )[0].lower()
-    except Exception, e:
+    except Exception as e:
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if tool_shed_url is not None:
@@ -191,9 +191,9 @@ def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner
     try:
         text = util.url_get( tool_shed_url, password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ), pathspec=pathspec, params=params )
         tool_shed_accessible = True
-    except Exception, e:
+    except Exception as e:
         tool_shed_accessible = False
-        log.warn( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
+        log.warning( "The URL\n%s\nraised the exception:\n%s\n", util.build_url( tool_shed_url, pathspec=pathspec, params=params ), e )
     if tool_shed_accessible:
         if text:
             tool_dependencies_dict = encoding_util.tool_shed_decode( text )
@@ -242,6 +242,18 @@ def get_tool_shed_url_from_tool_shed_registry( app, tool_shed ):
     return None
 
 
+def get_user_by_username( app, username ):
+    """Get a user from the database by username."""
+    sa_session = app.model.context.current
+    try:
+        user = sa_session.query( app.model.User ) \
+                         .filter( app.model.User.table.c.username == username ) \
+                         .one()
+        return user
+    except Exception:
+        return None
+
+
 def handle_galaxy_url( trans, **kwd ):
     galaxy_url = kwd.get( 'galaxy_url', None )
     if galaxy_url:
@@ -260,7 +272,7 @@ def handle_tool_shed_url_protocol( app, shed_url ):
         else:
             tool_shed_url = str( url_for( '/', qualified=True ) ).rstrip( '/' )
         return tool_shed_url
-    except Exception, e:
+    except Exception as e:
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if shed_url is not None:
@@ -301,7 +313,7 @@ def remove_port_from_tool_shed_url( tool_shed_url ):
         else:
             new_tool_shed_url = tool_shed_url
         return new_tool_shed_url.rstrip( '/' )
-    except Exception, e:
+    except Exception as e:
         # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
         # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
         if tool_shed_url is not None:

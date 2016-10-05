@@ -1,6 +1,8 @@
 """
 Migration script to add the run and sample_run_association tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -31,19 +33,19 @@ SampleRunAssociation_table = Table( "sample_run_association", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         Run_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating Run_table table failed: %s" % str( e ) )
     try:
         RequestTypeRunAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating RequestTypeRunAssociation table failed: %s" % str( e ) )
     try:
         SampleRunAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating SampleRunAssociation table failed: %s" % str( e ) )
 
 
@@ -53,13 +55,13 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         SampleRunAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping SampleRunAssociation table failed: %s" % str( e ) )
     try:
         RequestTypeRunAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping RequestTypeRunAssociation table failed: %s" % str( e ) )
     try:
         Run_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping Run_table table failed: %s" % str( e ) )

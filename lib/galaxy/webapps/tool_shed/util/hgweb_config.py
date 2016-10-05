@@ -33,7 +33,7 @@ class HgWebConfigManager( object ):
             self.in_memory_config.set( 'paths', lhs, rhs )
             # Persist our in-memory configuration.
             self.write_config()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Exception in HgWebConfigManager.add_entry(): %s" % str( e ) )
         finally:
             lock.release()
@@ -50,7 +50,7 @@ class HgWebConfigManager( object ):
             self.in_memory_config.set( 'paths', new_lhs, new_rhs )
             # Persist our in-memory configuration.
             self.write_config()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Exception in HgWebConfigManager.change_entry(): %s" % str( e ) )
         finally:
             lock.release()

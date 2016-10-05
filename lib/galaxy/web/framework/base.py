@@ -9,11 +9,11 @@ import socket
 import tarfile
 import tempfile
 import types
+import time
 
 import routes
 import webob
 
-from six import string_types
 from Cookie import SimpleCookie
 
 # We will use some very basic HTTP/wsgi utilities from the paste library
@@ -21,8 +21,12 @@ from paste.request import get_cookies
 from paste import httpexceptions
 from paste.response import HeaderDict
 
+from galaxy.util import smart_str
 
 log = logging.getLogger( __name__ )
+
+#: time of the most recent server startup
+server_starttime = int( time.time() )
 
 
 def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
@@ -134,7 +138,7 @@ class WebApplication( object ):
             if self.trace_logger:
                 self.trace_logger.context_remove( "request_id" )
 
-    def handle_request( self, environ, start_response ):
+    def handle_request( self, environ, start_response, body_renderer=None ):
         # Grab the request_id (should have been set by middleware)
         request_id = environ.get( 'request_id', 'unknown' )
         # Map url using routes
@@ -188,10 +192,14 @@ class WebApplication( object ):
         kwargs.pop( '_', None )
         try:
             body = method( trans, **kwargs )
-        except Exception, e:
+        except Exception as e:
             body = self.handle_controller_exception( e, trans, **kwargs )
             if not body:
                 raise
+        body_renderer = body_renderer or self._render_body
+        return body_renderer( trans, body, environ, start_response )
+
+    def _render_body( self, trans, body, environ, start_response ):
         # Now figure out what we got back and try to get it to the browser in
         # a smart way
         if callable( body ):
@@ -215,15 +223,12 @@ class WebApplication( object ):
         if isinstance( body, ( types.GeneratorType, list, tuple ) ):
             # Recursively stream the iterable
             return flatten( body )
-        elif isinstance( body, string_types ):
-            # Wrap the string so it can be iterated
-            return [ body ]
         elif body is None:
             # Returns an empty body
             return []
         else:
             # Worst case scenario
-            return [ str( body ) ]
+            return [ smart_str( body ) ]
 
     def handle_controller_exception( self, e, trans, **kwargs ):
         """
@@ -464,6 +469,6 @@ def flatten( seq ):
     for x in seq:
         if isinstance( x, ( types.GeneratorType, list, tuple ) ):
             for y in flatten( x ):
-                yield y
+                yield smart_str( y )
         else:
-            yield x
+            yield smart_str( x )

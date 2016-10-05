@@ -7,6 +7,8 @@ import shutil
 
 from galaxy.web import security
 from galaxy import objectstore
+from galaxy import model
+from galaxy.datatypes import registry
 from galaxy.model import mapping
 from galaxy.util.bunch import Bunch
 
@@ -59,6 +61,12 @@ class MockApp( object ):
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagManager( self )
         self.quota_agent = quota.QuotaAgent( self.model )
+        self.init_datatypes()
+
+    def init_datatypes( self ):
+        datatypes_registry = registry.Registry()
+        datatypes_registry.load_datatypes()
+        model.set_datatypes_registry( datatypes_registry )
 
 
 class MockAppConfig( Bunch ):
@@ -102,6 +110,7 @@ class MockTrans( object ):
         self.model = self.app.model
         self.webapp = MockWebapp( **kwargs )
         self.sa_session = self.app.model.session
+        self.workflow_building_mode = False
 
         self.galaxy_session = None
         self.__user = user

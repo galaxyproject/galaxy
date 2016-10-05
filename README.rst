@@ -22,7 +22,7 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
 Galaxy Quickstart
 =================
 
-Galaxy requires Python 2.6 or 2.7. To check your python version, run:
+Galaxy requires Python 2.7 To check your python version, run:
 
 .. code:: console
 

@@ -1,6 +1,6 @@
 # converter for ldreduced rgenetics datatype
 # used for grr and eigenstrat - shellfish if we get around to it
-#
+from __future__ import print_function
 
 import os
 import sys
@@ -40,12 +40,11 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
     alog.append('## Rgenetics: http://rgenetics.org Galaxy Tools rgQC.py Plink pruneLD runner\n')
     for task in plinktasks:  # each is a list
         vcl = vclbase + task
-        sto = file(plog, 'w')
-        x = subprocess.Popen(' '.join(vcl), shell=True, stdout=sto, stderr=sto, cwd=cd)
-        x.wait()
-        sto.close()
+        with open(plog, 'w') as sto:
+            x = subprocess.Popen(' '.join(vcl), shell=True, stdout=sto, stderr=sto, cwd=cd)
+            x.wait()
         try:
-            lplog = file(plog, 'r').readlines()
+            lplog = open(plog, 'r').readlines()
             lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]
             alog += lplog
             alog.append('\n')
@@ -100,17 +99,16 @@ def main():
     plink = sys.argv[7]
     makeLDreduced(base_name, infpath=inpedfilepath, outfpath=outfilepath, plinke=plink, forcerebuild=False, returnFname=False,
                   winsize=winsize, winmove=winmove, r2thresh=r2thresh)
-    f = file(outhtmlname, 'w')
-    f.write(galhtmlprefix % prog)
     flist = os.listdir(outfilepath)
-    s1 = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
-    s2 = 'Input %s, winsize=%s, winmove=%s, r2thresh=%s' % (base_name, winsize, winmove, r2thresh)
-    print '%s %s' % (s1, s2)
-    f.write('<div>%s\n%s\n<ol>' % (s1, s2))
-    for i, data in enumerate( flist ):
-        f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
-    f.write("</div></body></html>")
-    f.close()
+    with open(outhtmlname, 'w') as f:
+        f.write(galhtmlprefix % prog)
+        s1 = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
+        s2 = 'Input %s, winsize=%s, winmove=%s, r2thresh=%s' % (base_name, winsize, winmove, r2thresh)
+        print('%s %s' % (s1, s2))
+        f.write('<div>%s\n%s\n<ol>' % (s1, s2))
+        for i, data in enumerate( flist ):
+            f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
+        f.write("</div></body></html>")
 
 
 if __name__ == "__main__":

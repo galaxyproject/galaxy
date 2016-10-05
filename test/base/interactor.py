@@ -1,10 +1,13 @@
+from __future__ import print_function
+
 import os
 import re
 from json import dumps
 from logging import getLogger
-from StringIO import StringIO
 
 from requests import get, post, delete, patch
+from six import StringIO
+from six import text_type
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -64,7 +67,7 @@ class GalaxyInteractorApi( object ):
             job_id = self._dataset_provenance( history_id, hid )[ "job_id" ]
             outputs = self._get( "jobs/%s/outputs" % ( job_id ) ).json()
 
-        for designation, ( primary_outfile, primary_attributes ) in primary_datasets.iteritems():
+        for designation, ( primary_outfile, primary_attributes ) in primary_datasets.items():
             primary_output = None
             for output in outputs:
                 if output[ "name" ] == '__new_primary_file_%s|%s__' % ( name, designation ):
@@ -85,29 +88,61 @@ class GalaxyInteractorApi( object ):
 
     def verify_output_dataset( self, history_id, hda_id, outfile, attributes, shed_tool_id ):
         fetcher = self.__dataset_fetcher( history_id )
-        self.twill_test_case.verify_hid( outfile, hda_id=hda_id, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        self.twill_test_case.verify_hid(
+            outfile,
+            hda_id=hda_id,
+            attributes=attributes,
+            dataset_fetcher=fetcher,
+            shed_tool_id=shed_tool_id
+        )
         self._verify_metadata( history_id, hda_id, attributes )
 
     def _verify_metadata( self, history_id, hid, attributes ):
+        """Check dataset metadata.
+
+        ftype on output maps to `file_ext` on the hda's API description, `name`, `info`,
+        and `dbkey` all map to the API description directly. Other metadata attributes
+        are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
+        """
         metadata = attributes.get( 'metadata', {} ).copy()
-        for key, value in metadata.copy().iteritems():
-            new_key = "metadata_%s" % key
-            metadata[ new_key ] = metadata[ key ]
-            del metadata[ key ]
+        for key, value in metadata.copy().items():
+            if key not in ['name', 'info']:
+                new_key = "metadata_%s" % key
+                metadata[ new_key ] = metadata[ key ]
+                del metadata[ key ]
+            elif key == "info":
+                metadata[ "misc_info" ] = metadata[ "info" ]
+                del metadata[ "info" ]
         expected_file_type = attributes.get( 'ftype', None )
         if expected_file_type:
             metadata[ "file_ext" ] = expected_file_type
 
         if metadata:
+            import time
+            time.sleep(5)
             dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
-            for key, value in metadata.iteritems():
+            for key, value in metadata.items():
                 try:
                     dataset_value = dataset.get( key, None )
-                    if dataset_value != value:
-                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]."
-                        msg_params = ( key, value, dataset_value )
-                        msg = msg % msg_params
-                        raise Exception( msg )
+
+                    def compare(val, expected):
+                        if text_type(val) != text_type(expected):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+
+                    if isinstance(dataset_value, list):
+                        value = text_type(value).split(",")
+                        if len(value) != len(dataset_value):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s], lists differ in length. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+                        for val, expected in zip(dataset_value, value):
+                            compare(val, expected)
+                    else:
+                        compare(dataset_value, value)
                 except KeyError:
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )
@@ -189,7 +224,7 @@ class GalaxyInteractorApi( object ):
         # tool will have uncompressed it on the fly.
 
         inputs_tree = testdef.inputs.copy()
-        for key, value in inputs_tree.iteritems():
+        for key, value in inputs_tree.items():
             values = [value] if not isinstance(value, list) else value
             new_values = []
             for value in values:
@@ -203,7 +238,7 @@ class GalaxyInteractorApi( object ):
             inputs_tree[ key ] = new_values
 
         # HACK: Flatten single-value lists. Required when using expand_grouping
-        for key, value in inputs_tree.iteritems():
+        for key, value in inputs_tree.items():
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
@@ -306,11 +341,11 @@ class GalaxyInteractorApi( object ):
     def _summarize_history_errors( self, history_id ):
         if history_id is None:
             raise ValueError("_summarize_history_errors passed empty history_id")
-        print "History with id %s in error - summary of datasets in error below." % history_id
+        print("History with id %s in error - summary of datasets in error below." % history_id)
         try:
             history_contents = self.__contents( history_id )
         except Exception:
-            print "*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*"
+            print("*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*")
 
         for history_content in history_contents:
             if history_content[ 'history_content_type'] != 'dataset':
@@ -320,27 +355,27 @@ class GalaxyInteractorApi( object ):
             if dataset[ 'state' ] != 'error':
                 continue
 
-            print ERROR_MESSAGE_DATASET_SEP
+            print(ERROR_MESSAGE_DATASET_SEP)
             dataset_id = dataset.get( 'id', None )
-            print "| %d - %s (HID - NAME) " % ( int( dataset['hid'] ), dataset['name'] )
+            print("| %d - %s (HID - NAME) " % ( int( dataset['hid'] ), dataset['name'] ))
             try:
                 dataset_info = self._dataset_info( history_id, dataset_id )
-                print "| Dataset Blurb:"
-                print self.format_for_error( dataset_info.get( "misc_blurb", "" ), "Dataset blurb was empty." )
-                print "| Dataset Info:"
-                print self.format_for_error( dataset_info.get( "misc_info", "" ), "Dataset info is empty." )
+                print("| Dataset Blurb:")
+                print(self.format_for_error( dataset_info.get( "misc_blurb", "" ), "Dataset blurb was empty." ))
+                print("| Dataset Info:")
+                print(self.format_for_error( dataset_info.get( "misc_info", "" ), "Dataset info is empty." ))
             except Exception:
-                print "| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*"
+                print("| *TEST FRAMEWORK ERROR FETCHING DATASET DETAILS*")
             try:
                 provenance_info = self._dataset_provenance( history_id, dataset_id )
-                print "| Dataset Job Standard Output:"
-                print self.format_for_error( provenance_info.get( "stdout", "" ), "Standard output was empty." )
-                print "| Dataset Job Standard Error:"
-                print self.format_for_error( provenance_info.get( "stderr", "" ), "Standard error was empty." )
+                print("| Dataset Job Standard Output:")
+                print(self.format_for_error( provenance_info.get( "stdout", "" ), "Standard output was empty." ))
+                print("| Dataset Job Standard Error:")
+                print(self.format_for_error( provenance_info.get( "stderr", "" ), "Standard error was empty." ))
             except Exception:
-                print "| *TEST FRAMEWORK ERROR FETCHING JOB DETAILS*"
-            print "|"
-        print ERROR_MESSAGE_DATASET_SEP
+                print("| *TEST FRAMEWORK ERROR FETCHING JOB DETAILS*")
+            print("|")
+        print(ERROR_MESSAGE_DATASET_SEP)
 
     def format_for_error( self, blob, empty_message, prefix="|  " ):
         contents = "\n".join([ "%s%s" % (prefix, line.strip()) for line in StringIO(blob).readlines() if line.rstrip("\n\r") ] )
@@ -382,7 +417,11 @@ class GalaxyInteractorApi( object ):
         except IndexError:
             username = re.sub('[^a-z-]', '--', email.lower())
             password = password or 'testpass'
+            # If remote user middleware is enabled - this endpoint consumes
+            # ``remote_user_email`` otherwise it requires ``email``, ``password``
+            # and ``username``.
             data = dict(
+                remote_user_email=email,
                 email=email,
                 password=password,
                 username=username,

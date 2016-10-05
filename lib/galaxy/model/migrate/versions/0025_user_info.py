@@ -1,6 +1,8 @@
 """
 This script adds a foreign key to the form_values table in the galaxy_user table
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -22,9 +24,9 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script adds a foreign key to the form_values table in the galaxy_user table"
-    print "========================================"
+    print("========================================")
+    print("This script adds a foreign key to the form_values table in the galaxy_user table")
+    print("========================================")
 
 
 def upgrade(migrate_engine):
@@ -42,7 +44,7 @@ def upgrade(migrate_engine):
             col = Column( "form_values_id", Integer, index=True )
             col.create( User_table, index_name='ix_user_form_values_id')
             assert col is User_table.c.form_values_id
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding column 'form_values_id' to galaxy_user table failed: %s" % ( str( e ) ) )
         try:
             FormValues_table = Table( "form_values", metadata, autoload=True )
@@ -58,7 +60,7 @@ def upgrade(migrate_engine):
                                                  name='user_form_values_id_fk' )
                     # Create the constraint
                     cons.create()
-                except Exception, e:
+                except Exception as e:
                     log.debug( "Adding foreign key constraint 'user_form_values_id_fk' to table 'galaxy_user' failed: %s" % ( str( e ) ) )
 
 

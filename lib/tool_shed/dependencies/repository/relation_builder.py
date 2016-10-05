@@ -1,9 +1,9 @@
 import logging
 
+import tool_shed.util.repository_util
 from galaxy.util import asbool, listify
-
-from tool_shed.util import common_util, container_util, hg_util, metadata_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import (common_util, container_util, hg_util, metadata_util,
+    shed_util_common as suc)
 
 log = logging.getLogger( __name__ )
 
@@ -27,11 +27,11 @@ class RelationBuilder( object ):
 
     def can_add_to_key_rd_dicts( self, key_rd_dict, key_rd_dicts ):
         """Handle the case where an update to the changeset revision was done."""
-        k = key_rd_dict.keys()[ 0 ]
+        k = next(iter(key_rd_dict))
         rd = key_rd_dict[ k ]
         partial_rd = rd[ 0:3 ]
         for kr_dict in key_rd_dicts:
-            key = kr_dict.keys()[ 0 ]
+            key = next(iter(kr_dict))
             if key == k:
                 repository_dependency = kr_dict[ key ]
                 if repository_dependency[ 0:3 ] == partial_rd:
@@ -80,10 +80,10 @@ class RelationBuilder( object ):
             current_changeset_revision = str( self.repository_metadata.changeset_revision )
             # Get the changeset revision to which the current value of required_repository_changeset_revision
             # should be updated if it's not current.
-            text = suc.get_updated_changeset_revisions( self.app,
-                                                        name=str( self.repository.name ),
-                                                        owner=str( self.repository.user.username ),
-                                                        changeset_revision=current_changeset_revision )
+            text = metadata_util.get_updated_changeset_revisions( self.app,
+                                                                  name=str( self.repository.name ),
+                                                                  owner=str( self.repository.user.username ),
+                                                                  changeset_revision=current_changeset_revision )
             if text:
                 valid_changeset_revisions = listify( text )
                 if current_changeset_revision not in valid_changeset_revisions:
@@ -174,14 +174,14 @@ class RelationBuilder( object ):
     def get_updated_changeset_revisions_for_repository_dependencies( self, key_rd_dicts ):
         updated_key_rd_dicts = []
         for key_rd_dict in key_rd_dicts:
-            key = key_rd_dict.keys()[ 0 ]
+            key = next(iter(key_rd_dict))
             repository_dependency = key_rd_dict[ key ]
             rd_toolshed, rd_name, rd_owner, rd_changeset_revision, \
                 rd_prior_installation_required, \
                 rd_only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple( repository_dependency )
             if suc.tool_shed_is_this_tool_shed( rd_toolshed ):
-                repository = suc.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
+                repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( self.app, rd_name, rd_owner )
                 if repository:
                     repository_id = self.app.security.encode_id( repository.id )
                     repository_metadata = \
@@ -196,11 +196,12 @@ class RelationBuilder( object ):
                     else:
                         # The repository changeset_revision is no longer installable, so see if there's been an update.
                         repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
-                        changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
-                        repository_metadata = \
-                            metadata_util.get_repository_metadata_by_repository_id_changeset_revision( self.app,
-                                                                                                       repository_id,
-                                                                                                       changeset_revision )
+                        changeset_revision = metadata_util.get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
+                        if changeset_revision != rd_changeset_revision:
+                            repository_metadata = \
+                                metadata_util.get_repository_metadata_by_repository_id_changeset_revision( self.app,
+                                                                                                           repository_id,
+                                                                                                           changeset_revision )
                         if repository_metadata:
                             new_key_rd_dict = {}
                             new_key_rd_dict[ key ] = \
@@ -214,7 +215,7 @@ class RelationBuilder( object ):
                             updated_key_rd_dicts.append( new_key_rd_dict )
                         else:
                             repository_components_tuple = container_util.get_components_from_key( key )
-                            components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                            components_list = tool_shed.util.repository_util.extract_components_from_tuple( repository_components_tuple )
                             toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                             # For backward compatibility to the 12/20/12 Galaxy release.
                             if len( components_list ) in (4, 5):
@@ -225,7 +226,7 @@ class RelationBuilder( object ):
                             log.debug( message )
                 else:
                     repository_components_tuple = container_util.get_components_from_key( key )
-                    components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                    components_list = tool_shed.util.repository_util.extract_components_from_tuple( repository_components_tuple )
                     toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[ 0:4 ]
                     message = "The revision %s defined for repository %s owned by %s is invalid, so repository " % \
                         ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ) )
@@ -259,7 +260,7 @@ class RelationBuilder( object ):
         toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
         if suc.tool_shed_is_this_tool_shed( toolshed ):
-            required_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+            required_repository = tool_shed.util.repository_util.get_repository_by_name_and_owner( self.app, name, owner )
             self.repository = required_repository
             repository_id = self.app.security.encode_id( required_repository.id )
             required_repository_metadata = \
@@ -291,7 +292,7 @@ class RelationBuilder( object ):
     def handle_next_repository_dependency( self ):
         next_repository_key_rd_dict = self.key_rd_dicts_to_be_processed.pop( 0 )
         next_repository_key_rd_dicts = [ next_repository_key_rd_dict ]
-        next_repository_key = next_repository_key_rd_dict.keys()[ 0 ]
+        next_repository_key = next(iter(next_repository_key_rd_dict))
         self.handle_key_rd_dicts_for_repository( next_repository_key, next_repository_key_rd_dicts )
         return self.get_repository_dependencies_for_changeset_revision()
 
@@ -324,7 +325,7 @@ class RelationBuilder( object ):
 
     def in_key_rd_dicts( self, key_rd_dict, key_rd_dicts ):
         """Return True if key_rd_dict is contained in the list of key_rd_dicts."""
-        k = key_rd_dict.keys()[ 0 ]
+        k = next(iter(key_rd_dict))
         v = key_rd_dict[ k ]
         for key_rd_dict in key_rd_dicts:
             for key, val in key_rd_dict.items():
@@ -434,11 +435,11 @@ class RelationBuilder( object ):
 
     def remove_from_key_rd_dicts( self, key_rd_dict, key_rd_dicts ):
         """Eliminate the key_rd_dict from the list of key_rd_dicts if it is contained in the list."""
-        k = key_rd_dict.keys()[ 0 ]
+        k = next(iter(key_rd_dict))
         v = key_rd_dict[ k ]
         clean_key_rd_dicts = []
         for krd_dict in key_rd_dicts:
-            key = krd_dict.keys()[ 0 ]
+            key = next(iter(krd_dict))
             val = krd_dict[ key ]
             if key == k and val == v:
                 continue
@@ -448,7 +449,7 @@ class RelationBuilder( object ):
     def remove_repository_dependency_reference_to_self( self, key_rd_dicts ):
         """Remove all repository dependencies that point to a revision within its own repository."""
         clean_key_rd_dicts = []
-        key = key_rd_dicts[ 0 ].keys()[ 0 ]
+        key = next(iter(key_rd_dicts[ 0 ]))
         repository_tup = key.split( container_util.STRSEP )
         rd_toolshed, rd_name, rd_owner, rd_changeset_revision, \
             rd_prior_installation_required, \
@@ -456,7 +457,7 @@ class RelationBuilder( object ):
             common_util.parse_repository_dependency_tuple( repository_tup )
         cleaned_rd_toolshed = common_util.remove_protocol_from_tool_shed_url( rd_toolshed )
         for key_rd_dict in key_rd_dicts:
-            k = key_rd_dict.keys()[ 0 ]
+            k = next(iter(key_rd_dict))
             repository_dependency = key_rd_dict[ k ]
             toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                 common_util.parse_repository_dependency_tuple( repository_dependency )

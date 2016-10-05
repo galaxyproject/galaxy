@@ -1,11 +1,11 @@
 """
 NGS indexes
 """
-import os
 import logging
+import os
 
-from metadata import MetadataElement
-from text import Html
+from .metadata import MetadataElement
+from .text import Html
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,6 @@ class BowtieIndex( Html ):
     MetadataElement( name="base_name", desc="base name for this index set", default='galaxy_generated_bowtie_index', set_in_upload=True, readonly=True )
     MetadataElement( name="sequence_space", desc="sequence_space for this index set", default='unknown', set_in_upload=True, readonly=True )
 
-    file_ext = 'bowtie_index'
     is_binary = True
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
@@ -41,10 +40,9 @@ class BowtieIndex( Html ):
             sfname = os.path.split(fname)[-1]
             rval.append( '<li><a href="%s">%s</a>' % ( sfname, sfname ) )
         rval.append( '</ul></html>' )
-        f = file(dataset.file_name, 'w')
-        f.write("\n".join( rval ))
-        f.write('\n')
-        f.close()
+        with open(dataset.file_name, 'w') as f:
+            f.write("\n".join( rval ))
+            f.write('\n')
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
@@ -59,9 +57,6 @@ class BowtieIndex( Html ):
             return dataset.peek
         except:
             return "Bowtie index file"
-
-    def sniff( self, filename ):
-        return False
 
 
 class BowtieColorIndex( BowtieIndex ):

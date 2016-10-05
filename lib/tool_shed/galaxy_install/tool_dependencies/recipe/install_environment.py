@@ -1,6 +1,5 @@
 import logging
 import os
-import Queue
 import shutil
 import subprocess
 import tempfile
@@ -9,8 +8,9 @@ import time
 from contextlib import contextmanager
 
 # TODO: eliminate the use of fabric here.
-from fabric.operations import _AttributeString
 from fabric import state
+from fabric.operations import _AttributeString
+from six.moves import queue
 
 from galaxy.util import DATABASE_MAX_STRING_SIZE
 from galaxy.util import DATABASE_MAX_STRING_SIZE_PRETTY
@@ -59,14 +59,14 @@ class InstallEnvironment( object ):
             try:
                 fd.close()
                 break
-            except IOError, e:
+            except IOError as e:
                 # Undoubtedly close() was called during a concurrent operation on the same file object.
                 log.debug( 'Error closing file descriptor: %s' % str( e ) )
                 time.sleep( .5 )
-            current_wait_time = time.time() - start_timer
-            if current_wait_time >= 600:
-                error = 'Error closing file descriptor: %s' % str( e )
-                break
+                current_wait_time = time.time() - start_timer
+                if current_wait_time >= 600:
+                    error = 'Error closing file descriptor: %s' % str( e )
+                    break
         return error
 
     def enqueue_output( self, stdout, stdout_queue, stderr, stderr_queue ):
@@ -119,10 +119,10 @@ class InstallEnvironment( object ):
         stdout = output.stdout
         stderr = output.stderr
         if len( stdout ) > DATABASE_MAX_STRING_SIZE:
-            log.warn( "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            log.warning( "Length of stdout > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
             stdout = shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if len( stderr ) > DATABASE_MAX_STRING_SIZE:
-            log.warn( "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
+            log.warning( "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY ) )
             stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if output.return_code not in [ 0 ]:
             status = self.app.install_model.ToolDependency.installation_status.ERROR
@@ -169,10 +169,10 @@ class InstallEnvironment( object ):
                                            cwd=state.env[ 'lcwd' ] )
         pid = process_handle.pid
         # Launch the asynchronous readers of the process' stdout and stderr.
-        stdout_queue = Queue.Queue()
+        stdout_queue = queue.Queue()
         stdout_reader = asynchronous_reader.AsynchronousReader( process_handle.stdout, stdout_queue )
         stdout_reader.start()
-        stderr_queue = Queue.Queue()
+        stderr_queue = queue.Queue()
         stderr_reader = asynchronous_reader.AsynchronousReader( process_handle.stderr, stderr_queue )
         stderr_reader.start()
         # Place streamed stdout and stderr into a threaded IPC queue target so it can
@@ -192,7 +192,7 @@ class InstallEnvironment( object ):
             while not stdout_queue.empty():
                 try:
                     line = stdout_queue.get()
-                except Queue.Empty:
+                except queue.Empty:
                     line = None
                     break
                 if line:
@@ -204,7 +204,7 @@ class InstallEnvironment( object ):
             while not stderr_queue.empty():
                 try:
                     line = stderr_queue.get()
-                except Queue.Empty:
+                except queue.Empty:
                     line = None
                     break
                 if line:
@@ -265,7 +265,7 @@ class InstallEnvironment( object ):
         if os.path.exists( work_dir ):
             try:
                 shutil.rmtree( work_dir )
-            except Exception, e:
+            except Exception as e:
                 log.exception( str( e ) )
 
     def __setup_environment( self ):

@@ -3,34 +3,37 @@ This is still an experimental module and there will almost certainly be backward
 incompatible changes coming.
 """
 
-
+import logging
 import os
 
-from galaxy.exceptions import NotImplemented
-
-from ..resolvers import (
-    DependencyResolver,
-    INDETERMINATE_DEPENDENCY,
-    Dependency,
-    ListableDependencyResolver,
-    InstallableDependencyResolver,
+from galaxy.util.filelock import (
+    FileLock,
+    FileLockException
 )
 from ..conda_util import (
+    build_isolated_environment,
+    cleanup_failed_install,
     CondaContext,
     CondaTarget,
     install_conda,
-    is_conda_target_installed,
     install_conda_target,
-    build_isolated_environment,
     installed_conda_targets,
+    is_conda_target_installed,
     USE_PATH_EXEC_DEFAULT,
 )
+from ..resolvers import (
+    Dependency,
+    DependencyResolver,
+    InstallableDependencyResolver,
+    ListableDependencyResolver,
+    NullDependency,
+)
+
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "r,bioconda"
+DEFAULT_ENSURE_CHANNELS = "r,bioconda,iuc"
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -40,6 +43,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
     def __init__(self, dependency_manager, **kwds):
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
+        self.dependency_manager = dependency_manager
 
         def get_option(name):
             return self._get_config_option(name, dependency_manager, config_prefix="conda", **kwds)
@@ -51,6 +55,13 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
 
+        self.conda_prefix_parent = os.path.dirname(conda_prefix)
+
+        # warning is related to conda problem discussed in https://github.com/galaxyproject/galaxy/issues/2537, remove when that is resolved
+        conda_prefix_warning_length = 50
+        if len(conda_prefix) >= conda_prefix_warning_length:
+            log.warning("Conda install prefix '%s' is %d characters long, this can cause problems with package installation, consider setting a shorter prefix (conda_prefix in galaxy.ini)" % (conda_prefix, len(conda_prefix)))
+
         condarc_override = get_option("condarc_override")
         if condarc_override is None:
             condarc_override = os.path.join(
@@ -59,6 +70,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
+        verbose_install_check = _string_as_bool(get_option("verbose_install_check"))
         ensure_channels = get_option("ensure_channels")
         use_path_exec = get_option("use_path_exec")
         if use_path_exec is None:
@@ -79,31 +91,56 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.ensure_channels = ensure_channels
 
         # Conda operations options (these define how resolution will occur)
-        auto_init = _string_as_bool(get_option("auto_init"))
         auto_install = _string_as_bool(get_option("auto_install"))
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
-
-        if auto_init and not os.path.exists(conda_context.conda_prefix):
-            if install_conda(conda_context):
-                raise Exception("Conda installation requested and failed.")
-
+        self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
+        self.ensure_conda_installed()
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
+        self.verbose_install_check = verbose_install_check
+
+    def ensure_conda_installed(self):
+        """
+        Make sure that conda is installed, and if conda can't be installed, mark resolver as disabled.
+        We acquire a lock, so that multiple handlers do not attempt to install conda simultaneously.
+        """
+        target_path = self.conda_prefix_parent
+
+        def _check():
+            if not self.conda_context.is_conda_installed():
+                if self.auto_init:
+                    if self.conda_context.can_install_conda():
+                        if install_conda(self.conda_context):
+                            self.disabled = True
+                            log.warning("Conda installation requested and failed.")
+                    else:
+                        self.disabled = True
+                else:
+                    self.disabled = True
+                    log.warning("Conda not installed and auto-installation disabled.")
+            else:
+                self.disabled = False
+
+        if not os.path.exists(target_path):
+            os.mkdir(target_path)
+        try:
+            if self.auto_init and os.access(target_path, os.W_OK):
+                with FileLock(os.path.join(target_path, 'conda')):
+                    _check()
+            else:
+                _check()
+        except FileLockException:
+            self.ensure_conda_installed()
 
     def resolve(self, name, version, type, **kwds):
         # Check for conda just not being there, this way we can enable
         # conda by default and just do nothing in not configured.
         if not os.path.isdir(self.conda_context.conda_prefix):
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
-
-        job_directory = kwds.get("job_directory", None)
-        if job_directory is None:
-            log.warn("Conda dependency resolver not sent job directory.")
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         exact = not self.versionless or version is None
         if self.versionless:
@@ -111,34 +148,57 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         conda_target = CondaTarget(name, version=version)
         is_installed = is_conda_target_installed(
-            conda_target, conda_context=self.conda_context
+            conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
         )
-        if not is_installed and self.auto_install:
-            install_conda_target(conda_target, conda_context=self.conda_context)
 
-            # Recheck if installed
-            is_installed = is_conda_target_installed(
-                conda_target, conda_context=self.conda_context
-            )
+        job_directory = kwds.get("job_directory", None)
+        if job_directory is None:  # Job directory is None when resolve() called by find_dep()
+            if is_installed:
+                return CondaDependency(
+                    False,
+                    os.path.join(self.conda_context.envs_path, conda_target.install_environment),
+                    exact,
+                    name=name,
+                    version=version
+                )
+            else:
+                log.warning("Conda dependency resolver not sent job directory.")
+                return NullDependency(version=version, name=name)
+
+        if not is_installed and self.auto_install:
+            is_installed = self.install_dependency(name=name, version=version, type=type)
 
         if not is_installed:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         # Have installed conda_target and job_directory to send it too.
-        conda_environment = os.path.join(job_directory, "conda-env")
+        # If dependency is for metadata generation, store environment in conda-metadata-env
+        if kwds.get("metadata", False):
+            conda_env = "conda-metadata-env"
+        else:
+            conda_env = "conda-env"
+        conda_environment = os.path.join(job_directory, conda_env)
         env_path, exit_code = build_isolated_environment(
             conda_target,
             path=conda_environment,
             copy=self.copy_dependencies,
             conda_context=self.conda_context,
         )
+
         if not exit_code:
-            return CondaDepenency(
+            return CondaDependency(
                 self.conda_context.activate,
                 conda_environment,
                 exact,
+                name,
+                version
             )
         else:
+            if len(conda_environment) > 79:
+                # TODO: remove this once conda_build version 2 is released and packages have been rebuilt.
+                raise Exception("Conda dependency failed to build job environment. "
+                                "This is most likely a limitation in conda. "
+                                "You can try to shorten the path to the job_working_directory.")
             raise Exception("Conda dependency seemingly installed but failed to build job environment.")
 
     def list_dependencies(self):
@@ -148,33 +208,64 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             yield self._to_requirement(name, version)
 
     def install_dependency(self, name, version, type, **kwds):
+        "Returns True on (seemingly) successfull installation"
         if type != "package":
-            raise NotImplemented("Can only install dependencies of type '%s'" % type)
+            log.warning("Cannot install dependencies of type '%s'" % type)
+            return False
 
         if self.versionless:
             version = None
+
         conda_target = CondaTarget(name, version=version)
 
-        if install_conda_target(conda_target, conda_context=self.conda_context):
-            raise Exception("Failed to install conda recipe.")
+        is_installed = is_conda_target_installed(
+            conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
+        )
+
+        if is_installed:
+            return is_installed
+
+        return_code = install_conda_target(conda_target, conda_context=self.conda_context)
+        if return_code != 0:
+            is_installed = False
+        else:
+            # Recheck if installed
+            is_installed = is_conda_target_installed(
+                conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
+            )
+        if not is_installed:
+            log.debug("Removing failed conda install of {}, version '{}'".format(name, version))
+            cleanup_failed_install(conda_target, conda_context=self.conda_context)
+
+        return is_installed
 
     @property
     def prefix(self):
         return self.conda_context.conda_prefix
 
 
-class CondaDepenency(Dependency):
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path']
+class CondaDependency(Dependency):
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path', 'name', 'version']
     dependency_type = 'conda'
 
-    def __init__(self, activate, environment_path, exact):
+    def __init__(self, activate, environment_path, exact, name=None, version=None):
         self.activate = activate
         self.environment_path = environment_path
         self._exact = exact
+        self._name = name
+        self._version = version
 
     @property
     def exact(self):
         return self._exact
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def version(self):
+        return self._version
 
     def shell_commands(self, requirement):
         return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' 2>&1 """ % (

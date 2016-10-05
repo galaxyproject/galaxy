@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from __future__ import with_statement
+from __future__ import print_function
 
 import sys
 
@@ -7,7 +7,7 @@ from bx.bbi.bigwig_file import BigWigFile
 
 
 def die( message ):
-    print >> sys.stderr, message
+    print(message, file=sys.stderr)
     sys.exit(1)
 
 
@@ -16,7 +16,7 @@ def open_or_die( filename, mode='r', message=None ):
         message = 'Error opening %s' % filename
     try:
         fh = open( filename, mode )
-    except IOError, err:
+    except IOError as err:
         die( '%s: %s' % ( message, err.strerror ) )
     return fh
 
@@ -51,7 +51,7 @@ class LocationFile( object ):
                                     die( 'Location file %s line %d: duplicate key "%s"' % ( self.filename, line_number, key ) )
                             else:
                                 self._map[key] = elems
-        except IOError, err:
+        except IOError as err:
             die( 'Error opening location file %s: %s' % ( self.filename, err.strerror ) )
 
     def get_values( self, key ):
@@ -100,9 +100,9 @@ def main():
                 score_val = 'NA'
             else:
                 die( '%s line %d: chrom=%s, start=%d, score_list_len = %d' % ( input_filename, line_number, chrom, start, score_list_len ) )
-            print >> ofh, '\t'.join( [line, score_val] )
+            print('\t'.join( [line, score_val] ), file=ofh)
         else:
-            print >> ofh, line
+            print(line, file=ofh)
 
     bwfh.close()
     ifh.close()

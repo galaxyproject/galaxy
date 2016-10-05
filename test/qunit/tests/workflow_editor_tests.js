@@ -273,6 +273,7 @@ define([
 
     module( "Input collection terminal model test", {
         setup: function( ) {
+            testApp.create();
             this.node = new Node(  create_app(), {  } );
             this.input = { extensions: [ "txt" ], collection_types: ["list"] };
             this.input_terminal = new Terminals.InputCollectionTerminal( { input: this.input } );
@@ -305,6 +306,7 @@ define([
 
     module( "Node unit test", {
         setup: function() {
+            testApp.create();
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.app = create_app();

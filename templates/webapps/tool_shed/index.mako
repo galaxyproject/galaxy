@@ -3,7 +3,7 @@
 
 <%def name="stylesheets()">
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
+    ${h.css( "base", "autocomplete_tagging" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
@@ -44,7 +44,7 @@
 <%def name="left_panel()">
     <% can_review_repositories = trans.app.security_agent.user_can_review_repositories( trans.user ) %>
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>${trans.app.shed_counter.unique_valid_tools | h} valid tools on ${trans.app.shed_counter.generation_time | h}</div>
+        <div class='unified-panel-header-inner'>${trans.app.shed_counter.unique_valid_tools | h} valid tools on ${util.unicodify( trans.app.shed_counter.generation_time ) | h}</div>
     </div>
     <div class="unified-panel-body">
         <div class="toolMenu">
@@ -128,18 +128,6 @@
                             </div>
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_missing_tool_test_components' )}">Latest revision: missing tool tests</a>
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_install_errors' )}">Latest revision: installation errors</a>
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_failing_tool_tests' )}">Latest revision: failing tool tests</a>
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_skip_tool_test_checked' )}">Latest revision: skip tool tests</a>
-                            </div>
-                            <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_no_failing_tool_tests' )}">Latest revision: all tool tests pass</a>
                             </div>
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_invalid_tools' )}">Latest revision: invalid tools</a>
@@ -229,7 +217,7 @@
                     %endif
                 %endif
             </div>
-        </div>    
+        </div>
     </div>
 </%def>
 

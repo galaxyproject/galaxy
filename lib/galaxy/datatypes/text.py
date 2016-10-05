@@ -127,19 +127,17 @@ class Ipynb( Json ):
             except:
                 return False
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         config = trans.app.config
         trust = getattr( config, 'trust_ipython_notebook_conversion', False )
         if trust:
-            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd)
+            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
         else:
-            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd )
+            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd )
 
-    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         preview = string_as_bool( preview )
-        if chunk:
-            return self.get_chunk(trans, dataset, chunk)
-        elif to_ext or not preview:
+        if to_ext or not preview:
             return self._serve_raw(trans, dataset, to_ext)
         else:
             ofile_handle = tempfile.NamedTemporaryFile(delete=False)
@@ -260,6 +258,7 @@ class Obo( Text ):
         OBO file format description
         http://www.geneontology.org/GO.format.obo-1_2.shtml
     """
+    edam_data = "data_0582"
     edam_format = "format_2549"
     file_ext = "obo"
 
@@ -295,6 +294,7 @@ class Arff( Text ):
         An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes.
         http://weka.wikispaces.com/ARFF
     """
+    edam_format = "format_3581"
     file_ext = "arff"
 
     """Add metadata elements"""
@@ -393,6 +393,7 @@ class Arff( Text ):
 
 class SnpEffDb( Text ):
     """Class describing a SnpEff genome build"""
+    edam_format = "format_3624"
     file_ext = "snpeffdb"
     MetadataElement( name="genome_version", default=None, desc="Genome Version", readonly=True, visible=True, no_value=None )
     MetadataElement( name="snpeff_version", default="SnpEff4.0", desc="SnpEff Version", readonly=True, visible=True, no_value=None )
@@ -423,7 +424,7 @@ class SnpEffDb( Text ):
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
         #  annotation files that are included in snpEff by a flag
-        annotations_dict = {'nextProt.bin' : '-nextprot', 'motif.bin': '-motif'}
+        annotations_dict = {'nextProt.bin': '-nextprot', 'motif.bin': '-motif'}
         regulations = []
         annotations = []
         genome_version = None
@@ -451,21 +452,20 @@ class SnpEffDb( Text ):
             dataset.metadata.regulation = regulations
             dataset.metadata.annotation = annotations
             try:
-                fh = file(dataset.file_name, 'w')
-                fh.write("%s\n" % genome_version if genome_version else 'Genome unknown')
-                fh.write("%s\n" % snpeff_version if snpeff_version else 'SnpEff version unknown')
-                if annotations:
-                    fh.write("annotations: %s\n" % ','.join(annotations))
-                if regulations:
-                    fh.write("regulations: %s\n" % ','.join(regulations))
-                fh.close()
+                with open(dataset.file_name, 'w') as fh:
+                    fh.write("%s\n" % genome_version if genome_version else 'Genome unknown')
+                    fh.write("%s\n" % snpeff_version if snpeff_version else 'SnpEff version unknown')
+                    if annotations:
+                        fh.write("annotations: %s\n" % ','.join(annotations))
+                    if regulations:
+                        fh.write("regulations: %s\n" % ','.join(regulations))
             except:
                 pass
 
 
 class SnpSiftDbNSFP( Text ):
     """Class describing a dbNSFP database prepared fpr use by SnpSift dbnsfp """
-    MetadataElement( name='reference_name', default='dbSNFP' , desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP' )
+    MetadataElement( name='reference_name', default='dbSNFP', desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP' )
     MetadataElement( name="bgzip", default=None, desc="dbNSFP bgzip", readonly=True, visible=True, no_value=None )
     MetadataElement( name="index", default=None, desc="Tabix Index File", readonly=True, visible=True, no_value=None)
     MetadataElement( name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[] )
@@ -526,14 +526,14 @@ class SnpSiftDbNSFP( Text ):
                             headers = lines[0].split('\t')
                             dataset.metadata.annotation = headers[4:]
                         except Exception as e:
-                            log.warn("set_meta fname: %s  %s" % (fname, str(e)))
+                            log.warning("set_meta fname: %s  %s" % (fname, str(e)))
                         finally:
                             fh.close()
                     if fname.endswith('.tbi'):
                         dataset.metadata.index = fname
             self.regenerate_primary_file(dataset)
         except Exception as e:
-            log.warn("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+            log.warning("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
 
         def set_peek( self, dataset, is_multi_byte=False ):
             if not dataset.dataset.purged:

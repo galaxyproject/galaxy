@@ -1,6 +1,8 @@
 """
 Migration script to add the cleanup_event* tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -83,7 +85,7 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table( "cle
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         CleanupEvent_table.create()
@@ -96,7 +98,7 @@ def upgrade(migrate_engine):
         CleanupEventLibraryDatasetAssociation_table.create()
         CleanupEventLibraryDatasetDatasetAssociationAssociation_table.create()
         CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating table failed: %s" % str( e ) )
 
 
@@ -114,5 +116,5 @@ def downgrade(migrate_engine):
         CleanupEventMetadataFileAssociation_table.drop()
         CleanupEventDatasetAssociation_table.drop()
         CleanupEvent_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping table failed: %s" % str( e ) )

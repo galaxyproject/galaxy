@@ -1,11 +1,12 @@
-import re
 import bz2
 import gzip
-import zipfile
-import binascii
 import imghdr
-from galaxy import util
+import re
+import zipfile
+
 from six import StringIO
+
+from galaxy import util
 
 HTML_CHECK_LINES = 100
 
@@ -93,7 +94,7 @@ def check_gzip( file_path ):
     # for sff format.
     try:
         header = gzip.open( file_path ).read(4)
-        if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
+        if header == b'.sff':
             return ( True, True )
     except:
         return( False, False )
@@ -140,3 +141,15 @@ def is_bz2( file_path ):
 def is_gzip( file_path ):
     is_gzipped, is_valid = check_gzip( file_path )
     return is_gzipped
+
+
+__all__ = [
+    'check_binary',
+    'check_bz2',
+    'check_gzip',
+    'check_html',
+    'check_image',
+    'check_zip',
+    'is_gzip',
+    'is_bz2',
+]

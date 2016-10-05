@@ -176,7 +176,7 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
             # the uploaded archive.
             try:
                 hg_util.remove_file( repo.ui, repo, repo_file, force=True )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
                 relative_selected_file = repo_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
                 repo.dirstate.remove( relative_selected_file )
@@ -185,7 +185,7 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
                 if os.path.isdir( absolute_selected_file ):
                     try:
                         os.rmdir( absolute_selected_file )
-                    except OSError, e:
+                    except OSError as e:
                         # The directory is not empty.
                         pass
                 elif os.path.isfile( absolute_selected_file ):
@@ -193,7 +193,7 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
                     dir = os.path.split( absolute_selected_file )[0]
                     try:
                         os.rmdir( dir )
-                    except OSError, e:
+                    except OSError as e:
                         # The directory is not empty.
                         pass
     # See if any admin users have chosen to receive email alerts when a repository is updated.
@@ -235,7 +235,7 @@ def handle_gzip( repository, uploaded_file_name ):
     while 1:
         try:
             chunk = gzipped_file.read( basic_util.CHUNK_SIZE )
-        except IOError, e:
+        except IOError as e:
             os.close( fd )
             os.remove( uncompressed )
             log.exception( 'Problem uncompressing gz data "%s": %s' % ( uploaded_file_name, str( e ) ) )

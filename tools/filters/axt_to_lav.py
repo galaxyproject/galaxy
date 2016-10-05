@@ -9,6 +9,8 @@ Application to convert AXT file to LAV file
 The application reads an AXT file from standard input and writes a LAV file to
 standard out;  some statistics are written to standard error.
 """
+from __future__ import print_function
+
 import sys
 
 import bx.align.axt
@@ -114,13 +116,13 @@ def main():
         primary_c = axtBlock.get_component_by_src_start(primary)
         secondary_c = axtBlock.get_component_by_src_start(secondary)
 
-        print >>seq_file1, ">%s_%s_%s_%s" % (primary_c.src, secondary_c.strand, primary_c.start, primary_c.start + primary_c.size)
-        print >>seq_file1, primary_c.text
-        print >>seq_file1
+        print(">%s_%s_%s_%s" % (primary_c.src, secondary_c.strand, primary_c.start, primary_c.start + primary_c.size), file=seq_file1)
+        print(primary_c.text, file=seq_file1)
+        print(file=seq_file1)
 
-        print >>seq_file2, ">%s_%s_%s_%s" % (secondary_c.src, secondary_c.strand, secondary_c.start, secondary_c.start + secondary_c.size)
-        print >>seq_file2, secondary_c.text
-        print >>seq_file2
+        print(">%s_%s_%s_%s" % (secondary_c.src, secondary_c.strand, secondary_c.start, secondary_c.start + secondary_c.size), file=seq_file2)
+        print(secondary_c.text, file=seq_file2)
+        print(file=seq_file2)
         axtsWritten += 1
 
     out.close()
@@ -145,7 +147,7 @@ def parse_spec(spec):
 def read_lengths(fileName):
     chromToLength = {}
 
-    f = file(fileName, "r")
+    f = open(fileName, "r")
 
     for lineNumber, line in enumerate(f):
         line = line.strip()
@@ -156,17 +158,16 @@ def read_lengths(fileName):
 
         fields = line.split()
         if len(fields) != 2:
-            raise "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line)
+            raise Exception( "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line) )
 
         chrom = fields[0]
         try:
             length = int(fields[1])
         except:
-            raise "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line)
+            raise Exception( "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line) )
 
         if chrom in chromToLength:
-            raise "%s appears more than once (%s:%d): %s" \
-                % (chrom, fileName, lineNumber)
+            raise Exception( "%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber) )
 
         chromToLength[chrom] = length
 

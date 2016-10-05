@@ -42,7 +42,7 @@ steps:
         - ".upload-button"
 
     - title: "Insert URLs"
-      element: "textarea#text-content"
+      element: ".upload-text-content:first"
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       position: "top"
       textinsert: |
@@ -103,7 +103,7 @@ steps:
 
     - title: "Tool help"
       element: 'div.ui-form-help'
-      intro: "Every Galaxy tool has a help section with detailed information about the tool and its parameters. 
+      intro: "Every Galaxy tool has a help section with detailed information about the tool and its parameters.
               Have a look and study your tool in depth by reading it."
       position: "top"
 
@@ -130,25 +130,25 @@ steps:
         - "#current-history-panel > div.controls > div.title > div"
 
     - title: "View dataset"
-      element: ".fa-eye:eq(0)"
+      element: "#current-history-panel .fa-eye:eq(0)"
       intro: "View your dataset by clicking the eye button."
       position: "left"
       #preclick:
-      #  - ".fa-eye:eq(0)"
+      #  - "#current-history-panel .fa-eye:eq(0)"
 
     - title: "Rename dataset"
-      element: ".fa-pencil:eq(0)"
+      element: "#current-history-panel .fa-pencil:eq(0)"
       intro: "Rename your dataset by clicking the pencil button."
       position: "left"
       #preclick:
-      #  - ".fa-pencil:eq(0)"
+      #  - "#current-history-panel .fa-pencil:eq(0)"
 
     - title: "Remove dataset"
-      element: ".fa-times:eq(0)"
+      element: "#current-history-panel .fa-times:eq(0)"
       intro: "Delete your dataset by clicking the x-button."
       position: "left"
       #postclick:
-      #  - ".fa-times:eq(0)"
+      #  - "#current-history-panel .fa-times:eq(0)"
 
     - title: "Dataset information"
       element: "div.title-bar.clear:eq(0)"

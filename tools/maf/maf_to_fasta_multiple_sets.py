@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-
 """
 Read a maf and output a multiple block fasta file.
 """
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 from bx.align import maf
@@ -14,11 +15,11 @@ from galaxy.tools.util import maf_utilities
 def __main__():
     try:
         maf_reader = maf.Reader( open( sys.argv[1] ) )
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error opening input MAF: %s" % e )
     try:
         file_out = open( sys.argv[2], 'w' )
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error opening file for output: %s" % e )
     try:
         species = maf_utilities.parse_species_option( sys.argv[3] )
@@ -26,17 +27,17 @@ def __main__():
             num_species = len( species )
         else:
             num_species = 0
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error determining species value: %s" % e )
     try:
         partial = sys.argv[4]
-    except Exception, e:
+    except Exception as e:
         maf_utilities.tool_fail( "Error determining keep partial value: %s" % e )
 
     if species:
-        print "Restricted to species: %s" % ', '.join( species )
+        print("Restricted to species: %s" % ', '.join( species ))
     else:
-        print "Not restricted to species."
+        print("Not restricted to species.")
 
     for block_num, block in enumerate( maf_reader ):
         if species:

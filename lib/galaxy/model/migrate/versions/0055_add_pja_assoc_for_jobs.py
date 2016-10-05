@@ -1,6 +1,8 @@
 """
 Migration script to add the post_job_action_association table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -18,11 +20,11 @@ PostJobActionAssociation_table = Table("post_job_action_association", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         PostJobActionAssociation_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating PostJobActionAssociation table failed: %s" % str( e ) )
 
 
@@ -32,5 +34,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         PostJobActionAssociation_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping PostJobActionAssociation table failed: %s" % str( e ) )

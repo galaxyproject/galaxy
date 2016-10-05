@@ -251,15 +251,16 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
-            'id', 'name',
+            'id',
             'type_id',
+            'name',
             'history_id', 'hid',
-            # why include if model_class is there?
             'history_content_type',
             'dataset_id',
             'state', 'extension',
             'deleted', 'purged', 'visible',
-            'type', 'url'
+            'type', 'url',
+            'create_time', 'update_time',
         ])
         self.add_view( 'detailed', [
             'model_class',
@@ -273,7 +274,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'genome_build', 'misc_info', 'misc_blurb',
             'file_ext', 'file_size',
 
-            'create_time', 'update_time',
             'resubmitted',
             'metadata', 'meta_files', 'data_type',
             'peek',
@@ -303,6 +303,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
         # keyset returned to create show a dataset where the owner has no access
         self.add_view( 'inaccessible', [
+            'accessible',
             'id', 'name', 'history_id', 'hid', 'history_content_type',
             'state', 'deleted', 'visible'
         ])
@@ -345,10 +346,20 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                                                               history_id=self.app.security.encode_id( i.history.id ),
                                                               history_content_id=self.app.security.encode_id( i.id ) ),
             'parent_id'     : self.serialize_id,
-            'accessible'    : lambda *a, **c: True,
+            # TODO: to DatasetAssociationSerializer
+            'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible( i, user ),
             'api_type'      : lambda *a, **c: 'file',
             'type'          : lambda *a, **c: 'file'
         })
+
+    def serialize( self, hda, keys, user=None, **context ):
+        """
+        Override to hide information to users not able to access.
+        """
+        # TODO: to DatasetAssociationSerializer
+        if not self.manager.is_accessible( hda, user, **context ):
+            keys = self._view_to_keys( 'inaccessible' )
+        return super( HDASerializer, self ).serialize( hda, keys, user=user, **context )
 
     def serialize_display_apps( self, hda, key, trans=None, **context ):
         """

@@ -5,6 +5,8 @@ Extract features from GFF file.
 
 usage: %prog input1 out_file1 column features
 """
+from __future__ import print_function
+
 import sys
 
 from bx.cookbook import doc_optparse
@@ -32,7 +34,7 @@ def main():
         stop_err( "Column %d has no features to display, select another column." % ( column + 1 ) )
 
     fo = open( out_file, 'w' )
-    for i, line in enumerate( file( inp_file ) ):
+    for i, line in enumerate( open( inp_file ) ):
         line = line.rstrip( '\r\n' )
         if line and line.startswith( '#' ):
             # Keep valid comment lines in the output
@@ -45,7 +47,7 @@ def main():
                 pass
     fo.close()
 
-    print 'Column %d features: %s' % ( column + 1, features )
+    print('Column %d features: %s' % ( column + 1, features ))
 
 if __name__ == "__main__":
     main()

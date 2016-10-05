@@ -21,17 +21,12 @@ var _super = HISTORY_VIEW.HistoryView;
  *      datasets displayed in a table:
  *          datasets in left cells, dataset annotations in the right
  */
-var AnnotatedHistoryView = _super.extend(
-/** @lends AnnotatedHistoryView.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
+var AnnotatedHistoryView = _super.extend(/** @lends AnnotatedHistoryView.prototype */{
 
     className    : _super.prototype.className + ' annotated-history-panel',
 
     // ------------------------------------------------------------------------ panel rendering
-    /** In this override, add the history annotation
-     */
+    /** In this override, add the history annotation */
     _buildNewRender : function(){
         //TODO: shouldn't this display regardless (on all non-current panels)?
         var $newRender = _super.prototype._buildNewRender.call( this );
@@ -43,58 +38,41 @@ var AnnotatedHistoryView = _super.extend(
     renderHistoryAnnotation : function( $newRender ){
         var annotation = this.model.get( 'annotation' );
         if( !annotation ){ return; }
-        $newRender.find( '.controls .annotation-display' ).text( annotation );
+        $newRender.find( '> .controls .subtitle' ).text( annotation );
     },
 
-    /** In this override, convert the list-items tag to a table
-     *      and add table header cells to indicate the dataset, annotation columns
-     */
+    /** override to add headers to indicate the dataset, annotation columns */
     renderItems : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
+        _super.prototype.renderItems.call( this, $whereTo );
 
-        // convert to table
-        $whereTo.find( '.list-items' )
-            .replaceWith( $( '<table/>' ).addClass( 'list-items' ) );
+        var $controls = $whereTo.find( '> .controls' );
+        $controls.find( '.contents-container.headers' ).remove();
 
-        // render rows/contents and prepend headers
-        var views = _super.prototype.renderItems.call( this, $whereTo );
-        this.$list( $whereTo )
-            .prepend( $( '<tr/>' ).addClass( 'headers' ).append([
-                $( '<th/>' ).text( _l( 'Dataset' ) ),
-                $( '<th/>' ).text( _l( 'Annotation' ) )
-            ]));
-        return views;
+        var $headers = $( '<div class="contents-container headers"/>' )
+            .append([
+                $( '<div class="history-content header"/>' ).text( _l( 'Dataset' ) ),
+                $( '<div class="additional-info header"/>' ).text( _l( 'Annotation' ) )
+            ]).appendTo( $controls );
+
+        return self.views;
     },
 
     // ------------------------------------------------------------------------ sub-views
-    /** In this override, wrap the content view in a table row
-     *      with the content in the left td and annotation/extra-info in the right
-     */
-    _attachItems : function( $whereTo ){
-        this.$list( $whereTo ).append( this.views.map( function( view ){
-            //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
-            // build a row around the dataset with the std itemView in the first cell and the annotation in the next
-            var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); }),
-                annotation = view.model.get( 'annotation' ) || '',
-                $tr = $( '<tr/>' ).append([
-                    $( '<td/>' ).addClass( 'contents-container' ).append( view.$el )
-                        // visually match the cell bg to the dataset at runtime (prevents the empty space)
-                        // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
-                        //.css( 'background-color', view.$el.css( 'background-color' ) ),
-                        .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
-                    $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
-                ]);
-            return $tr;
-        }));
-        return this;
+    /** override to wrap each subview */
+    _renderItemView$el : function( view ){
+        return $( '<div class="contents-container"/>' ).append([
+            view.render(0).$el,
+            $( '<div class="additional-info"/>' ).text( view.model.get( 'annotation' ) || '' )
+        ]);
     },
 
     // ------------------------------------------------------------------------ panel events
-    /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
         // clicking on any part of the row will expand the items
-        'click tr' : function( ev ){
-            $( ev.currentTarget ).find( '.title-bar' ).click();
+        'click .contents-container' : function( ev ){
+            ev.stopPropagation();
+            $( ev.currentTarget ).find( '.list-item .title-bar' ).click();
         },
         // prevent propagation on icon btns so they won't bubble up to tr and toggleBodyVisibility
         'click .icon-btn' : function( ev ){
@@ -102,11 +80,16 @@ var AnnotatedHistoryView = _super.extend(
             // stopProp will prevent bootstrap from getting the click needed to open a dropdown
             //  in the case of metafile download buttons - workaround here
             var $currTarget = $( ev.currentTarget );
-            if( $currTarget.size() && $currTarget.attr( 'data-toggle' ) === 'dropdown' ){
+            if( $currTarget.length && $currTarget.attr( 'data-toggle' ) === 'dropdown' ){
                 $currTarget.dropdown( 'toggle' );
             }
         }
     }),
+
+    _clickSectionLink : function( ev ){
+        var sectionNumber = $( ev.currentTarget ).parent().parent().data( 'section' );
+        this.openSection( sectionNumber );
+    },
 
     // ........................................................................ misc
     /** Return a string rep of the history */

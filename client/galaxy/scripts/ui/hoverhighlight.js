@@ -12,7 +12,7 @@
     jQuery.fn.extend({
         hoverhighlight : function $hoverhighlight( scope, color ){
             scope = scope || 'body';
-            if( !this.size() ){ return this; }
+            if( !this.length ){ return this; }
 
             $( this ).each( function(){
                 var $this = $( this ),

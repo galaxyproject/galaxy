@@ -2,6 +2,8 @@
 Migration script to modify the 'file_path' field type in 'sample_dataset' table
 to 'TEXT' so that it can support large file paths exceeding 255 characters
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -15,11 +17,11 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     try:
         SampleDataset_table = Table( "sample_dataset", metadata, autoload=True )
-    except NoSuchTableError, e:
+    except NoSuchTableError:
         SampleDataset_table = None
         log.debug( "Failed loading table 'sample_dataset'" )
 
@@ -33,14 +35,14 @@ def upgrade(migrate_engine):
         # remove the 'file_path' column
         try:
             SampleDataset_table.c.file_path.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Deleting column 'file_path' from the 'sample_dataset' table failed: %s" % ( str( e ) ) )
         # create the column again
         try:
             col = Column( "file_path", TEXT )
             col.create( SampleDataset_table )
             assert col is SampleDataset_table.c.file_path
-        except Exception, e:
+        except Exception as e:
             log.debug( "Creating column 'file_path' in the 'sample_dataset' table failed: %s" % ( str( e ) ) )
 
         for id, file_path in filepath_dict.items():

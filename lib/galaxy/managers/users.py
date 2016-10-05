@@ -11,6 +11,7 @@ from galaxy import util
 from galaxy.managers import base
 from galaxy.managers import deletable
 from galaxy.managers import api_keys
+from galaxy.security import validate_user_input
 
 import logging
 log = logging.getLogger( __name__ )
@@ -26,7 +27,6 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorp CreatesUsersMixin
     # TODO: incorp CreatesApiKeysMixin
-    # TODO: incorporate security/validate_user_input.py
     # TODO: incorporate UsesFormDefinitionsMixin?
 
     def create( self, webapp_name=None, **kwargs ):
@@ -52,7 +52,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         try:
             self.session().flush()
             # TODO:?? flush needed for permissions below? If not, make optional
-        except sqlalchemy.exc.IntegrityError, db_err:
+        except sqlalchemy.exc.IntegrityError as db_err:
             raise exceptions.Conflict( db_err.message )
 
         # can throw an sqlalx.IntegrityError if username not unique
@@ -187,6 +187,10 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         return self.create_api_key( self, user )
 
     # ---- preferences
+    def preferences( self, user ):
+        log.warn(dict( (key, value) for key, value in user.preferences.items() ))
+        return dict( (key, value) for key, value in user.preferences.items() )
+
     # ---- roles and permissions
     def private_role( self, user ):
         return self.app.security_agent.get_private_user_role( user )
@@ -263,7 +267,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'purged',
             # 'active',
 
-            # 'preferences',
+            'preferences',
             #  all tags
             'tags_used',
             # all annotations
@@ -280,12 +284,36 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'update_time'   : self.serialize_date,
             'is_admin'      : lambda i, k, **c: self.user_manager.is_admin( i ),
 
+            'preferences'   : lambda i, k, **c: self.user_manager.preferences( i ),
+
             'total_disk_usage' : lambda i, k, **c: float( i.total_disk_usage ),
             'quota_percent' : lambda i, k, **c: self.user_manager.quota( i ),
 
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used( i ),
             'has_requests'  : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )
         })
+
+
+class UserDeserializer( base.ModelDeserializer ):
+    """
+    Service object for validating and deserializing dictionaries that
+    update/alter users.
+    """
+    model_manager_class = UserManager
+
+    def add_deserializers( self ):
+        super( UserDeserializer, self ).add_deserializers()
+        self.deserializers.update({
+            'username'  : self.deserialize_username,
+        })
+
+    def deserialize_username( self, item, key, username, trans=None, **context ):
+        # TODO: validate_user_input requires trans and should(?) raise exceptions
+        # move validation to UserValidator and use self.app, exceptions instead
+        validation_error = validate_user_input.validate_publicname( trans, username, user=item )
+        if validation_error:
+            raise base.ModelDeserializingError( validation_error )
+        return self.default_deserializer( item, key, username, trans=trans, **context )
 
 
 class CurrentUserSerializer( UserSerializer ):

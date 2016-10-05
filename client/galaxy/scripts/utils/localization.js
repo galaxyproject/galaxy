@@ -13,7 +13,7 @@ if( localeStrings.hasOwnProperty( '__root' ) ){
         typeof navigator === 'undefined' ? '__root'
             : ( navigator.language || navigator.userLanguage || '__root' ).toLowerCase()
     );
-    localeStrings = localeStrings[ '__' + locale ] || localeStrings.__root;
+    localeStrings = localeStrings[ '__' + locale ] || localeStrings[ '__' + locale.split('-')[0] ] ||localeStrings.__root;
 
 // } else {
 //     console.debug( 'i18n+requirejs localization for ' + locale + ' loaded' );

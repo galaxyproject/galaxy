@@ -1,12 +1,14 @@
 """
 Constructive Solid Geometry file formats.
 """
+import abc
+
+from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy import util
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -20,6 +22,7 @@ class Ply(object):
     normal direction that can be attached to these elements.  A PLY
     file contains the description of exactly one object.
     """
+    subtype = ''
     # Add metadata elements.
     MetadataElement(name="file_format", default=None, desc="File format",
                     readonly=True, optional=True, visible=True, no_value=None)
@@ -30,13 +33,17 @@ class Ply(object):
     MetadataElement(name="other_elements", default=[], desc="Other elements",
                     readonly=True, optional=True, visible=True, no_value=[])
 
-    def sniff(self, filename, subtype):
+    @abc.abstractmethod
+    def __init__(self, **kwd):
+        raise NotImplementedError
+
+    def sniff(self, filename):
         """
         The structure of a typical PLY file:
         Header, Vertex List, Face List, (lists of other elements)
         """
         with open(filename, "r") as fh:
-            if not self._is_ply_header(fh, subtype):
+            if not self._is_ply_header(fh, self.subtype):
                 return False
             return True
         return False
@@ -109,25 +116,19 @@ class Ply(object):
 
 
 class PlyAscii(Ply, data.Text):
-
     file_ext = "plyascii"
+    subtype = 'ascii'
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def sniff(self, filename):
-        return super(PlyAscii, self).sniff(filename, subtype='ascii')
-
 
 class PlyBinary(Ply, Binary):
-
     file_ext = "plybinary"
+    subtype = 'binary'
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-
-    def sniff(self, filename):
-        return super(PlyBinary, self).sniff(filename, subtype='binary')
 
 Binary.register_sniffable_binary_format("plybinary", "plybinary", PlyBinary)
 
@@ -156,6 +157,7 @@ class Vtk(object):
     TODO: only legacy formats are currently supported and support for XML formats
     should be added.
     """
+    subtype = ''
     # Add metadata elements.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version",
                     readonly=True, optional=True, visible=True, no_value=None)
@@ -196,14 +198,18 @@ class Vtk(object):
     MetadataElement(name="field_components", default={}, desc="Field names and components",
                     readonly=True, optional=True, visible=True, no_value={})
 
-    def sniff(self, filename, subtype):
+    @abc.abstractmethod
+    def __init__(self, **kwd):
+        raise NotImplementedError
+
+    def sniff(self, filename):
         """
         VTK files can be either ASCII or binary, with two different
         styles of file formats: legacy or XML.  We'll assume if the
         file contains a valid VTK header, then it is a valid VTK file.
         """
         with open(filename, "r") as fh:
-            if self._is_vtk_header(fh, subtype):
+            if self._is_vtk_header(fh, self.subtype):
                 return True
             return False
         return False
@@ -436,25 +442,19 @@ class Vtk(object):
 
 
 class VtkAscii(Vtk, data.Text):
-
     file_ext = "vtkascii"
+    subtype = 'ASCII'
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def sniff(self, filename):
-        return super(VtkAscii, self).sniff(filename, subtype='ASCII')
-
 
 class VtkBinary(Vtk, Binary):
-
     file_ext = "vtkbinary"
+    subtype = 'BINARY'
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-
-    def sniff(self, filename):
-        return super(VtkBinary, self).sniff(filename, subtype='BINARY')
 
 Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
 

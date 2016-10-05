@@ -1,10 +1,11 @@
-define([], function() {
-return {
+define([], function() { return {
     'api/datatypes/mapping': {
         data: '{"ext_to_class_name" : {"txt" : "Text", "data":"Data","tabular":"Tabular", "binary": "Binary", "bam": "Bam" }, "class_to_classes": { "Data": { "Data": true }, "Text": { "Text": true, "Data": true }, "Tabular": { "Tabular": true, "Text": true, "Data": true }, "Binary": { "Data": true, "Binary": true }, "Bam": { "Data": true, "Binary": true, "Bam": true }}}'
     },
     'api/datatypes': {
         data: '["RData", "ab1", "affybatch", "txt"]'
+    },
+    'api/tools/test/build': {
+        data: '{ "id": "test", "name": "_name", "version": "_version", "description": "_description", "display": "true", "requirements": [ { "name": "req_name_a", "version": "req_version_a" }, { "name": "req_name_b", "version": "req_version_b" } ], "inputs": [ { "name": "a", "type": "text" }, { "name": "b",  "type": "conditional", "test_param": { "name": "c",  "type": "select", "value": "h", "options": [ [ "d", "d", false ], [ "h", "h", false ] ] }, "cases": [ { "name": "d", "value": "d", "inputs": [ { "name": "f", "type": "text", "value": "f" }, { "name": "g",  "type": "text", "value": "g" } ] }, { "name": "h", "value": "h", "inputs": [ { "name": "i",  "type": "text", "value": "i" }, { "name": "j",  "type": "text", "value": "j" } ] } ] }, { "name": "k",  "min": 1, "max": 2, "type": "repeat", "cache": [[ { "name": "l", "type": "text", "value": "l"}, { "name": "m",  "type": "conditional", "test_param": { "name": "n",  "type": "select", "value": "r", "options": [ [ "o", "o", false ], [ "r", "r", false ] ] }, "cases": [ { "name": "o", "value": "o", "inputs": [ { "name": "p",  "type": "text", "value": "p" }, { "name": "q",  "type": "text", "value": "q" } ] }, { "name": "r", "value": "r", "inputs": [ { "name": "s",  "type": "text", "value": "s" }, { "name": "t",  "type": "text", "value": "t"  } ] } ] } ] ], "inputs" : [ { "name": "l",  "type": "text", "value": "l" }, { "name": "m",  "type": "conditional", "test_param": { "name": "n",  "type": "select", "value": "o", "options": [ [ "o", "o", false ], [ "r", "r", false ] ] }, "cases": [ { "name": "o", "value": "o", "inputs": [ { "name": "p",  "type": "text", "value": "p" }, { "name": "q",  "type": "text", "value": "q" } ] }, { "name": "r", "value": "r", "inputs": [ { "name": "s",  "type": "text", "value": "s" }, { "name": "t",  "type": "text", "value": "t" } ] } ] } ] } ] }'
     }
-}
-});
+}});

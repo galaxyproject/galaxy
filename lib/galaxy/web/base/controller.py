@@ -80,7 +80,7 @@ class BaseController( object ):
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
     #   but *don't* then becomes difficult
     # def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
-    #    log.warn( 'BaseController.security_check: %s, %b, %b', str( item ), check_ownership, check_accessible )
+    #    log.warning( 'BaseController.security_check: %s, %b, %b', str( item ), check_ownership, check_accessible )
     #    # meant to be overridden in SharableSecurityMixin
     #    return item
 
@@ -177,11 +177,11 @@ class BaseAPIController( BaseController ):
             return BaseController.get_object( self, trans, id, class_name,
                                               check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
-        except ItemDeletionException, e:
+        except ItemDeletionException as e:
             raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified: %s" % ( class_name, str( id ), str( e ) ) )
-        except MessageException, e:
+        except MessageException as e:
             raise HTTPBadRequest( detail=e.err_msg )
-        except Exception, e:
+        except Exception as e:
             log.exception( "Exception in get_object check for %s %s." % ( class_name, str( id ) ) )
             raise HTTPInternalServerError( comment=str( e ) )
 
@@ -238,7 +238,7 @@ class JSAppLauncher( BaseUIController ):
     DEFAULT_ENTRY_FN = "app"
     #: keys used when serializing current user for bootstrapped data
     USER_BOOTSTRAP_KEYS = ( 'id', 'email', 'username', 'is_admin', 'tags_used', 'requests',
-                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent' )
+                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent', 'preferences' )
 
     def __init__( self, app ):
         super( JSAppLauncher, self ).__init__( app )
@@ -271,7 +271,7 @@ class JSAppLauncher( BaseUIController ):
             if self.user_manager.is_admin( trans.user ):
                 serializer = self.admin_config_serializer
             return serializer.serialize_to_view( self.app.config, view='all' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( exc )
             return {}
 
@@ -656,12 +656,12 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         """
         return {
             'model_class': 'Visualization',
-            'id'        : visualization.id,
-            'title'     : visualization.title,
-            'type'      : visualization.type,
-            'user_id'   : visualization.user.id,
-            'dbkey'     : visualization.dbkey,
-            'slug'      : visualization.slug,
+            'id'         : visualization.id,
+            'title'      : visualization.title,
+            'type'       : visualization.type,
+            'user_id'    : visualization.user.id,
+            'dbkey'      : visualization.dbkey,
+            'slug'       : visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
             'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
             'revisions' : [ r.id for r in visualization.revisions ],
@@ -673,12 +673,12 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         NOTE: that encoding ids isn't done here should happen at the caller level.
         """
         return {
-            'model_class': 'VisualizationRevision',
-            'id'        : revision.id,
+            'model_class'      : 'VisualizationRevision',
+            'id'               : revision.id,
             'visualization_id' : revision.visualization.id,
-            'title'     : revision.title,
-            'dbkey'     : revision.dbkey,
-            'config'    : revision.config,
+            'title'            : revision.title,
+            'dbkey'            : revision.dbkey,
+            'config'           : revision.config,
         }
 
     def import_visualization( self, trans, id, user=None ):
@@ -797,7 +797,7 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
                 return {
                     "obj_type": collection_json[ 'obj_type' ],
                     "drawables": unpacked_drawables,
-                    "prefs": collection_json.get( 'prefs' , [] ),
+                    "prefs": collection_json.get( 'prefs', [] ),
                     "filters": collection_json.get( 'filters', None )
                 }
 

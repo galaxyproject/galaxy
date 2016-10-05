@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 TODO
 1. decrease memory usage
@@ -42,8 +41,8 @@ SHRiMP output:
 >7:2:1147:982/1 chr3    +   36586562    36586595    2   35  36  2900    3G16G13
 >7:2:1147:982/1 chr3    +   95338194    95338225    4   35  36  2700    9T7C14
 >7:2:587:93/1   chr3    +   14913541    14913577    1   35  36  2960    19--16
-
 """
+from __future__ import print_function
 
 import os
 import os.path
@@ -60,7 +59,7 @@ def stop_err( msg ):
 
 
 def reverse_complement(s):
-    complement_dna = {"A": "T", "T": "A", "C": "G", "G": "C", "a": "t", "t": "a", "c": "g", "g": "c", "N": "N", "n": "n" , ".": ".", "-": "-"}
+    complement_dna = {"A": "T", "T": "A", "C": "G", "G": "C", "a": "t", "t": "a", "c": "g", "g": "c", "N": "N", "n": "n", ".": ".", "-": "-"}
     reversed_s = []
     for i in s:
         reversed_s.append(complement_dna[i])
@@ -86,7 +85,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
     seq = ''
     title = None
 
-    for i, line in enumerate(file(ref_file)):
+    for i, line in enumerate(open(ref_file)):
         line = line.rstrip()
         if not line or line.startswith('#'):
             continue
@@ -109,7 +108,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
     # find hits: one end and/or the other
     hits = {}
-    for i, line in enumerate(file(result_file)):
+    for i, line in enumerate(open(result_file)):
         line = line.rstrip()
         if not line or line.startswith('#'):
             continue
@@ -145,7 +144,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
     score = ''
     for num_score_file in range(len(all_score_file)):
         score_file = all_score_file[num_score_file]
-        for i, line in enumerate(file(score_file)):
+        for i, line in enumerate(open(score_file)):
             line = line.rstrip()
             if not line or line.startswith('#'):
                 continue
@@ -375,7 +374,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
         os.remove(temp_table_name)
 
     if invalid_editstring_char:
-        print 'Skip ', invalid_editstring_char, ' invalid characters in editstrings'
+        print('Skip ', invalid_editstring_char, ' invalid characters in editstrings')
 
     return True
 
@@ -390,7 +389,7 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
     default_coding_value = 64  # Solexa ascii-code
     fastq_block_lines = 0
 
-    for i, line in enumerate( file( infile_name ) ):
+    for i, line in enumerate( open( infile_name ) ):
         line = line.rstrip()
         if not line or line.startswith( '#' ):
             continue
@@ -564,7 +563,7 @@ def __main__():
 
         try:
             os.system(command)
-        except Exception, e:
+        except Exception as e:
             if os.path.exists(query_fasta):
                 os.remove(query_fasta)
             if os.path.exists(query_qual):
@@ -578,7 +577,7 @@ def __main__():
         try:
             os.system(command_end1)
             os.system(command_end2)
-        except Exception, e:
+        except Exception as e:
             if os.path.exists(query_fasta_end1):
                 os.remove(query_fasta_end1)
             if os.path.exists(query_fasta_end2):
@@ -592,20 +591,20 @@ def __main__():
     # check SHRiMP output: count number of lines
     num_hits = 0
     if shrimp_outfile:
-        for i, line in enumerate(file(shrimp_outfile)):
+        for i, line in enumerate(open(shrimp_outfile)):
             line = line.rstrip('\r\n')
             if not line or line.startswith('#'):
                 continue
             try:
                 line.split()
                 num_hits += 1
-            except Exception, e:
+            except Exception as e:
                 stop_err(str(e))
 
     if num_hits == 0:   # no hits generated
         err_msg = ''
         if shrimp_log:
-            for i, line in enumerate(file(shrimp_log)):
+            for i, line in enumerate(open(shrimp_log)):
                 if line.startswith('error'):            # deal with memory error:
                     err_msg += line                     # error: realloc failed: Cannot allocate memory
                 if re.search('Reads Matched', line):    # deal with zero hits

@@ -1,14 +1,11 @@
 import logging
 
+from markupsafe import escape
 from sqlalchemy import and_
 
-from markupsafe import escape
-
-from galaxy.web.framework.helpers import grids
-from galaxy.web.framework.helpers import time_ago
+from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.webapps.tool_shed import model
-from tool_shed.grids.repository_grids import CategoryGrid
-from tool_shed.grids.repository_grids import RepositoryGrid
+from tool_shed.grids.repository_grids import CategoryGrid, RepositoryGrid
 from tool_shed.util import hg_util
 
 log = logging.getLogger( __name__ )

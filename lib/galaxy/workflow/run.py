@@ -110,10 +110,7 @@ def queue_invoke( trans, workflow, workflow_run_config, request_params={}, popul
         modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections )
     workflow_invocation = workflow_run_config_to_request( trans, workflow_run_config, workflow )
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(
-        workflow_invocation,
-        request_params
-    )
+    return trans.app.workflow_scheduling_manager.queue( workflow_invocation, request_params )
 
 
 class WorkflowInvoker( object ):
@@ -166,7 +163,10 @@ class WorkflowInvoker( object ):
                     workflow_invocation_step = model.WorkflowInvocationStep()
                     workflow_invocation_step.workflow_invocation = workflow_invocation
                     workflow_invocation_step.workflow_step = step
-                    workflow_invocation_step.job = job
+                    # Job may not be generated in this thread if bursting is enabled
+                    # https://github.com/galaxyproject/galaxy/issues/2259
+                    if job:
+                        workflow_invocation_step.job_id = job.id
             except modules.DelayedWorkflowEvaluation:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed( step )

@@ -16,8 +16,9 @@ from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWor
 from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke, queue_invoke
-from galaxy.workflow.run_request import build_workflow_run_config
+from galaxy.workflow.run_request import build_workflow_run_configs
 from galaxy.workflow.modules import module_factory
+
 
 log = logging.getLogger(__name__)
 
@@ -192,7 +193,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
         workflow = stored_workflow.latest_workflow
 
-        run_config = build_workflow_run_config( trans, workflow, payload )
+        run_configs = build_workflow_run_configs( trans, workflow, payload )
+        assert len(run_configs) == 1
+        run_config = run_configs[0]
         history = run_config.target_history
 
         # invoke may throw MessageExceptions on tool erors, failure
@@ -251,7 +254,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
-        except Exception, e:
+        except Exception as e:
             trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
 
@@ -334,7 +337,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         } )
 
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json( trans, tool_inputs, workflow_mode=True )
+        tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
         module.update_state( tool_model[ 'state_inputs' ] )
         return {
             'tool_model'        : tool_model,
@@ -434,21 +437,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # /usage is awkward in this context but is consistent with the rest of
         # this module. Would prefer to redo it all to use /invocation(s).
         # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow
+        run_configs = build_workflow_run_configs(trans, workflow, payload)
+        is_batch = payload.get('batch')
+        if not is_batch and len(run_configs) != 1:
+            raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 
-        run_config = build_workflow_run_config( trans, workflow, payload )
-        workflow_scheduler_id = payload.get( "scheduler", None )
-        # TODO: workflow scheduler hints
-        work_request_params = dict( scheduler=workflow_scheduler_id )
+        invocations = []
+        for run_config in run_configs:
+            workflow_scheduler_id = payload.get('scheduler', None)
+            # TODO: workflow scheduler hints
+            work_request_params = dict(scheduler=workflow_scheduler_id)
+            workflow_invocation = queue_invoke(
+                trans=trans,
+                workflow=workflow,
+                workflow_run_config=run_config,
+                request_params=work_request_params
+            )
+            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
+            invocations.append(invocation)
 
-        workflow_invocation = queue_invoke(
-            trans=trans,
-            workflow=workflow,
-            workflow_run_config=run_config,
-            request_params=work_request_params
-        )
-        return self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
+        if is_batch:
+            return invocations
+        else:
+            return invocations[0]
 
     @expose_api
     def index_invocations(self, trans, workflow_id, **kwd):
@@ -462,7 +475,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        stored_workflow = self.__get_stored_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_workflow( trans, workflow_id )
         results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:

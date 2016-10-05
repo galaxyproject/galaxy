@@ -100,7 +100,7 @@ class ToolParameterSanitizer( object ):
             if split_name.startswith( 'string.' ):
                 try:
                     value = eval( split_name )
-                except NameError, e:
+                except NameError as e:
                     log.debug( 'Invalid string preset specified: %s' % e )
             elif split_name in cls.VALID_PRESET:
                 value = cls.VALID_PRESET[ split_name ]

@@ -4,6 +4,7 @@
 <%!
     from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
     from galaxy.web import form_builder
+    import cgi
 %>
 
 <%def name="stylesheets()">
@@ -63,7 +64,7 @@
                     <i>select at runtime</i>
                 %endif
             %else:
-                ${param.value_to_display_text( value, app )}
+                ${cgi.escape( param.value_to_display_text( value, app ) or 'Unavailable.' )}
             %endif
         </div>
         %if hasattr( step, 'upgrade_messages' ) and step.upgrade_messages and param.name in step.upgrade_messages:
@@ -89,7 +90,7 @@
     <%
         # HACK: Rendering workflow steps requires that trans have a history; however, if its user's first visit to Galaxy is here, he won't have a history
         # and an error will occur. To prevent this error, make sure user has a history. 
-        trans.get_history( create=True ) 
+        trans.get_history( most_recent=True, create=True )
     %>
     <table class="annotated-item">
         <tr><th>Step</th><th class="annotation">Annotation</th></tr>

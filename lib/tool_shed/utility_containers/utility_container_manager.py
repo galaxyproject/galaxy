@@ -3,7 +3,7 @@ import logging
 from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import repository_util
 
 log = logging.getLogger( __name__ )
 
@@ -20,23 +20,18 @@ class Folder( object ):
         self.current_repository_successful_installations = []
         self.description = None
         self.datatypes = []
-        self.failed_tests = []
         self.folders = []
         self.invalid_data_managers = []
         self.invalid_repository_dependencies = []
         self.invalid_tool_dependencies = []
         self.invalid_tools = []
         self.missing_test_components = []
-        self.not_tested = []
-        self.passed_tests = []
         self.readme_files = []
         self.repository_dependencies = []
         self.repository_installation_errors = []
         self.repository_successful_installations = []
         self.test_environments = []
         self.tool_dependencies = []
-        self.tool_dependency_installation_errors = []
-        self.tool_dependency_successful_installations = []
         self.valid_tools = []
         self.valid_data_managers = []
         self.workflows = []
@@ -217,13 +212,13 @@ class UtilityContainerManager( object ):
                                         version='Version',
                                         data_tables='Data Tables' )
             folder.valid_data_managers.append( data_manager )
-            for data_manager_dict in data_managers.itervalues():
+            for data_manager_dict in data_managers.values():
                 data_manager_id += 1
                 try:
                     name = data_manager_dict.get( 'name', '' )
                     version = data_manager_dict.get( 'version', '' )
                     data_tables = ", ".join( data_manager_dict.get( 'data_tables', '' ) )
-                except Exception, e:
+                except Exception as e:
                     name = str( e )
                     version = 'unknown'
                     data_tables = 'unknown'
@@ -282,7 +277,7 @@ class UtilityContainerManager( object ):
                     subclass = datatypes_dict.get( 'subclass', '' )
                     converters = num_converters
                     display_app_containers = num_display_app_containers
-                except Exception, e:
+                except Exception as e:
                     extension = str( e )
                     type = 'unknown'
                     mimetype = 'unknown'
@@ -471,7 +466,7 @@ class UtilityContainerManager( object ):
                         try:
                             requirement_name = str( requirement_dict.get( 'name', 'unknown' ) )
                             requirement_type = str( requirement_dict.get( 'type', 'unknown' ) )
-                        except Exception, e:
+                        except Exception as e:
                             requirement_name = str( e )
                             requirement_type = 'unknown'
                         requirements_str += '%s (%s), ' % ( requirement_name, requirement_type )
@@ -484,7 +479,7 @@ class UtilityContainerManager( object ):
                     name = str( tool_dict.get( 'name', 'unknown' ) )
                     description = str( tool_dict.get( 'description', '' ) )
                     version = str( tool_dict.get( 'version', 'unknown' ) )
-                except Exception, e:
+                except Exception as e:
                     tool_config = str( e )
                     tool_id = 'unknown'
                     name = 'unknown'
@@ -557,7 +552,7 @@ class UtilityContainerManager( object ):
                             type = set_environment_dict[ 'type' ]
                             repository_id = set_environment_dict.get( 'repository_id', None )
                             td_id = set_environment_dict.get( 'tool_dependency_id', None )
-                        except Exception, e:
+                        except Exception as e:
                             name = str( e )
                             type = 'unknown'
                             repository_id = 'unknown'
@@ -565,7 +560,7 @@ class UtilityContainerManager( object ):
                         if self.app.name == 'galaxy':
                             try:
                                 installation_status = set_environment_dict.get( 'status', 'Never installed' )
-                            except Exception, e:
+                            except Exception as e:
                                 installation_status = str( e )
                         else:
                             installation_status = None
@@ -585,7 +580,7 @@ class UtilityContainerManager( object ):
                         type = requirements_dict[ 'type' ]
                         repository_id = requirements_dict.get( 'repository_id', None )
                         td_id = requirements_dict.get( 'tool_dependency_id', None )
-                    except Exception, e:
+                    except Exception as e:
                         name = str( e )
                         version = 'unknown'
                         type = 'unknown'
@@ -594,7 +589,7 @@ class UtilityContainerManager( object ):
                     if self.app.name == 'galaxy':
                         try:
                             installation_status = requirements_dict.get( 'status', 'Never installed' )
-                        except Exception, e:
+                        except Exception as e:
                             installation_status = str( e )
                     else:
                         installation_status = None
@@ -706,8 +701,8 @@ class UtilityContainerManager( object ):
             tool_shed_repository_id = None
             installation_status = 'unknown'
         if tool_shed_repository_id:
-            tool_shed_repository = suc.get_tool_shed_repository_by_id( self.app,
-                                                                       self.app.security.encode_id( tool_shed_repository_id ) )
+            tool_shed_repository = repository_util.get_tool_shed_repository_by_id( self.app,
+                                                                                   self.app.security.encode_id( tool_shed_repository_id ) )
             if tool_shed_repository:
                 if tool_shed_repository.missing_repository_dependencies:
                     installation_status = '%s, missing repository dependencies' % installation_status
@@ -725,7 +720,7 @@ class UtilityContainerManager( object ):
     def handle_repository_dependencies_container_entry( self, repository_dependencies_folder, rd_key, rd_value, folder_id,
                                                         repository_dependency_id, folder_keys ):
         repository_components_tuple = container_util.get_components_from_key( rd_key )
-        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+        components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
         toolshed, repository_name, repository_owner, changeset_revision = components_list[ 0:4 ]
         # For backward compatibility to the 12/20/12 Galaxy release.
         if len( components_list ) == 4:
@@ -807,7 +802,7 @@ class UtilityContainerManager( object ):
     def key_is_current_repositorys_key( self, repository_name, repository_owner, changeset_revision,
                                         prior_installation_required, only_if_compiling_contained_td, key ):
         repository_components_tuple = container_util.get_components_from_key( key )
-        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+        components_list = repository_util.extract_components_from_tuple( repository_components_tuple )
         toolshed, key_name, key_owner, key_changeset_revision = components_list[ 0:4 ]
         # For backward compatibility to the 12/20/12 Galaxy release.
         if len( components_list ) == 4:

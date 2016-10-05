@@ -3,6 +3,8 @@ This script fixes a problem introduced in 0010_hda_display_at_atuhz_table.py.  M
 name length limit and thus the index "ix_hdadaa_history_dataset_association_id" has to be
 manually created.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -24,11 +26,11 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script fixes a problem introduced in the previous migration script ( 9->10 ).  MySQL"
-    print "has a name length limit and thus the index 'ix_hdadaa_history_dataset_association_id' has"
-    print "to be manually created."
-    print "========================================"
+    print("========================================")
+    print("This script fixes a problem introduced in the previous migration script ( 9->10 ).  MySQL")
+    print("has a name length limit and thus the index 'ix_hdadaa_history_dataset_association_id' has")
+    print("to be manually created.")
+    print("========================================")
 
 HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_association_display_at_authorization", metadata,
                                                                Column( "id", Integer, primary_key=True ),
@@ -48,7 +50,7 @@ def upgrade(migrate_engine):
         i = Index( "ix_hdadaa_history_dataset_association_id", HistoryDatasetAssociationDisplayAtAuthorization_table.c.history_dataset_association_id )
         try:
             i.create()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )
 
 
@@ -60,5 +62,5 @@ def downgrade(migrate_engine):
         i = Index( "ix_hdadaa_history_dataset_association_id", HistoryDatasetAssociationDisplayAtAuthorization_table.c.history_dataset_association_id )
         try:
             i.drop()
-        except Exception, e:
+        except Exception as e:
             log.debug( "Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )

@@ -1,16 +1,16 @@
+"""The module describes the ``collectl`` job metrics plugin."""
+import logging
 import os
 import shutil
 
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+from galaxy import util
+
 from ..collectl import subsystems
 from ..collectl import cli
 from ..collectl import processes
+from ..instrumenters import InstrumentPlugin
+from ...metrics import formatting
 
-from galaxy import util
-from galaxy.util import directory_hash
-
-import logging
 log = logging.getLogger( __name__ )
 
 # By default, only grab statistics for user processes (as identified by
@@ -109,7 +109,7 @@ class CollectlPlugin( InstrumentPlugin ):
         )
 
         if self.saved_logs_path:
-            destination_rel_dir = os.path.join( *directory_hash.directory_hash_id( job_id ) )
+            destination_rel_dir = os.path.join( *util.directory_hash_id( job_id ) )
             destination_rel_path = os.path.join( destination_rel_dir, rel_path )
             destination_path = os.path.join( self.saved_logs_path, destination_rel_path )
             destination_dir = os.path.dirname( destination_path )

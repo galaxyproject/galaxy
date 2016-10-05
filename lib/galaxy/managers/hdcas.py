@@ -42,6 +42,27 @@ class HDCAManager(
         """
         super( HDCAManager, self ).__init__( app )
 
+    def map_datasets( self, content, fn, *parents ):
+        """
+        Iterate over the datasets of a given collection, recursing into collections, and
+        calling fn on each dataset.
+
+        Uses the same kwargs as `contents` above.
+        """
+        returned = []
+        # lots of nesting going on within the nesting
+        collection = content.collection if hasattr( content, 'collection' ) else content
+        this_parents = ( content, ) + parents
+        for element in collection.elements:
+            next_parents = ( element, ) + this_parents
+            if element.is_collection:
+                processed_list = self.map_datasets( element.child_collection, fn, *next_parents )
+                returned.extend( processed_list )
+            else:
+                processed = fn( element.dataset_instance, *next_parents )
+                returned.append( processed )
+        return returned
+
     # TODO: un-stub
 
 
@@ -108,7 +129,8 @@ class DCSerializer( base.ModelSerializer ):
         super( DCSerializer, self ).add_serializers()
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'DatasetCollection',
-            'elements'      : self.serialize_elements
+            'elements'      : self.serialize_elements,
+            'element_count' : self.serialize_element_count
         })
 
     def serialize_elements( self, item, key, **context ):
@@ -117,6 +139,14 @@ class DCSerializer( base.ModelSerializer ):
             serialized = self.dce_serializer.serialize_to_view( element, view='summary', **context )
             returned.append( serialized )
         return returned
+
+    def serialize_element_count( self, item, key, **context ):
+        """Return the count of elements for this collection."""
+        # TODO: app.model.context -> session
+        # TODO: to the container interface (dataset_collection_contents)
+        return ( self.app.model.context.query( model.DatasetCollectionElement )
+            .filter( model.DatasetCollectionElement.dataset_collection_id == item.id )
+            .count() )
 
 
 class DCASerializer( base.ModelSerializer ):
@@ -131,6 +161,7 @@ class DCASerializer( base.ModelSerializer ):
         self.default_view = 'summary'
         self.add_view( 'summary', [
             'id',
+            'create_time', 'update_time',
             'collection_type',
             'populated',
             'populated_state',
@@ -152,7 +183,8 @@ class DCASerializer( base.ModelSerializer ):
             'populated',
             'populated_state',
             'populated_state_message',
-            'elements'
+            'elements',
+            'element_count'
         ]
         for key in collection_keys:
             self.serializers[ key ] = self._proxy_to_dataset_collection( key=key )
@@ -182,19 +214,27 @@ class HDCASerializer(
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
-            'id', 'name',
+            'id',
             'type_id',
+            'name',
             'history_id', 'hid',
             'history_content_type',
+
             'collection_type',
             'populated',
             'populated_state',
             'populated_state_message',
+
+            'name',
+            'type_id',
+            'history_id',
+            'hid',
+            'history_content_type',
             'deleted',
             # 'purged',
             'visible',
-            'type',
-            'url'
+            'type', 'url',
+            'create_time', 'update_time',
         ])
         self.add_view( 'detailed', [
             'elements'
@@ -207,6 +247,7 @@ class HDCASerializer(
 
         self.serializers.update({
             'model_class'               : lambda *a, **c: self.hdca_manager.model_class.__class__.__name__,
+            # TODO: remove
             'type'                      : lambda *a, **c: 'collection',
             # part of a history and container
             'history_id'                : self.serialize_id,

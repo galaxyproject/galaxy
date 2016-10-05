@@ -1,6 +1,8 @@
 """
 Migration script to add status and error_message columns to the tool_dependency table and drop the uninstalled column from the tool_dependency table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -24,7 +26,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
     if migrate_engine.name == 'sqlite':
@@ -34,22 +36,22 @@ def upgrade(migrate_engine):
     try:
         col.create( ToolDependency_table )
         assert col is ToolDependency_table.c.status
-    except Exception, e:
-        print "Adding status column to the tool_dependency table failed: %s" % str( e )
+    except Exception as e:
+        print("Adding status column to the tool_dependency table failed: %s" % str( e ))
     col = Column( "error_message", TEXT )
     try:
         col.create( ToolDependency_table )
         assert col is ToolDependency_table.c.error_message
-    except Exception, e:
-        print "Adding error_message column to the tool_dependency table failed: %s" % str( e )
+    except Exception as e:
+        print("Adding error_message column to the tool_dependency table failed: %s" % str( e ))
 
     if migrate_engine.name != 'sqlite':
         # This breaks in sqlite due to failure to drop check constraint.
         # TODO move to alembic.
         try:
             ToolDependency_table.c.uninstalled.drop()
-        except Exception, e:
-            print "Dropping uninstalled column from the tool_dependency table failed: %s" % str( e )
+        except Exception as e:
+            print("Dropping uninstalled column from the tool_dependency table failed: %s" % str( e ))
 
 
 def downgrade(migrate_engine):
@@ -58,15 +60,15 @@ def downgrade(migrate_engine):
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
     try:
         ToolDependency_table.c.status.drop()
-    except Exception, e:
-        print "Dropping column status from the tool_dependency table failed: %s" % str( e )
+    except Exception as e:
+        print("Dropping column status from the tool_dependency table failed: %s" % str( e ))
     try:
         ToolDependency_table.c.error_message.drop()
-    except Exception, e:
-        print "Dropping column error_message from the tool_dependency table failed: %s" % str( e )
+    except Exception as e:
+        print("Dropping column error_message from the tool_dependency table failed: %s" % str( e ))
     col = Column( "uninstalled", Boolean, default=False )
     try:
         col.create( ToolDependency_table )
         assert col is ToolDependency_table.c.uninstalled
-    except Exception, e:
-        print "Adding uninstalled column to the tool_dependency table failed: %s" % str( e )
+    except Exception as e:
+        print("Adding uninstalled column to the tool_dependency table failed: %s" % str( e ))

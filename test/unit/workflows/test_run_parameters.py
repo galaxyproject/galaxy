@@ -1,8 +1,8 @@
 from .workflow_support import MockTrans
 
 from galaxy import model
-from galaxy.workflow.run_request import normalize_step_parameters
-from galaxy.workflow.run_request import normalize_inputs
+from galaxy.workflow.run_request import _normalize_step_parameters
+from galaxy.workflow.run_request import _normalize_inputs
 
 STEP_ID_OFFSET = 4  # Offset a little so ids and order index are different.
 
@@ -67,7 +67,6 @@ def test_inputs_by_name():
         "input1": input1,
         "input2": input2
     }, inputs_by="name" )
-    print normalized_inputs
     assert normalized_inputs[ STEP_ID_OFFSET + 1 ]['content'] == input1[ 'content' ]
     assert normalized_inputs[ STEP_ID_OFFSET + 2 ]['content'] == input2[ 'content' ]
 
@@ -79,7 +78,7 @@ def __normalize_parameters_against_fixture( params ):
     __workflow_fixure( trans )
 
     workflow = __workflow_fixure( trans )
-    normalized_params = normalize_step_parameters( workflow.steps, params, legacy=True )
+    normalized_params = _normalize_step_parameters( workflow.steps, params, legacy=True )
     return normalized_params
 
 
@@ -90,7 +89,7 @@ def __normalize_inputs_against_fixture( inputs, inputs_by ):
     __workflow_fixure( trans )
 
     workflow = __workflow_fixure( trans )
-    normalized_inputs = normalize_inputs( workflow.steps, inputs, inputs_by )
+    normalized_inputs = _normalize_inputs( workflow.steps, inputs, inputs_by )
     return normalized_inputs
 
 
@@ -110,7 +109,7 @@ def __workflow_fixure( trans ):
 
     def add_step( **kwds ):
         workflow_step = model.WorkflowStep()
-        for key, value in kwds.iteritems():
+        for key, value in kwds.items():
             setattr(workflow_step, key, value)
         workflow.steps.append( workflow_step )
 

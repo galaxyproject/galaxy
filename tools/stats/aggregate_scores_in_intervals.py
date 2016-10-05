@@ -7,7 +7,7 @@ usage: %prog score_file interval_file chrom start stop [out_file] [options]
     -c, --chrom_buffer=INT: number of chromosomes (default is 3) to keep in memory when using a user supplied score file
 """
 
-from __future__ import division
+from __future__ import division, print_function
 
 import os
 import os.path
@@ -42,7 +42,7 @@ class PositionalScoresOnDisk:
         try:
             self.file.seek( i * self.fmt_size )
             return struct.unpack( self.fmt, self.file.read( self.fmt_size ) )[0]
-        except Exception, e:
+        except Exception as e:
             raise IndexError(e)
 
     def __setitem__( self, i, value ):
@@ -63,7 +63,7 @@ class PositionalScoresOnDisk:
     def __repr__( self ):
         i = 0
         repr = "[ "
-        for i in xrange( self.length ):
+        for i in range( self.length ):
             repr = "%s %s," % ( repr, self[i] )
         return "%s ]" % ( repr )
 
@@ -113,7 +113,7 @@ def load_scores_wiggle( fname, chrom_buffer_size=3 ):
             scores_by_chrom[chrom][pos] = val
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
-        print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
+        print('Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.')
     except IndexError:
         stop_err('Data error: one or more column data values is missing in "%s"' % fname)
     except ValueError:
@@ -230,7 +230,7 @@ def main():
                 out_line.append(min_score)
                 out_line.append(max_score)
 
-                print >> out_file, "\t".join( map( str, out_line ) )
+                print("\t".join( map( str, out_line ) ), file=out_file)
             else:
                 skipped_lines += 1
                 if not invalid_line:
@@ -238,14 +238,14 @@ def main():
                     invalid_line = line
         elif line.startswith( '#' ):
             # We'll save the original comments
-            print >> out_file, line
+            print(line, file=out_file)
 
     out_file.close()
 
     if skipped_lines > 0:
-        print 'Data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+        print('Data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line ))
         if skipped_lines == i:
-            print 'Consider changing the metadata for the input dataset by clicking on the pencil icon in the history item.'
+            print('Consider changing the metadata for the input dataset by clicking on the pencil icon in the history item.')
 
 if __name__ == "__main__":
     main()

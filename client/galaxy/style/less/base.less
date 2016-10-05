@@ -30,6 +30,7 @@
 @import "toastr.less";
 @import "jstree.less";
 @import "tour.less";
+@import "flex.less";
 
 // Mixins
 .unselectable {
@@ -253,6 +254,7 @@ body.has-message-box.has-inactivity-box {
         content:'\f054';
     }
     z-index: 201;
+    cursor: pointer;
     display: block;
     position: fixed;
     left: 0;
@@ -292,8 +294,9 @@ div.unified-panel-body {
     width: 100%;
     padding: 0px;
 }
+@panel-bg-color: #DFE5F9;
 div.unified-panel-body-background {
-    background: none repeat scroll 0 0 #DFE5F9;
+    background: none repeat scroll 0 0 @panel-bg-color;
 }
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
@@ -757,6 +760,9 @@ input[type="submit"], button {
     background-image: url(error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 8px;
+    .messagerow {
+        padding: 10px 20px;
+    }
 }
 
 .errormessagelarge {
@@ -874,7 +880,6 @@ table.tabletip tbody tr:hover td {
     background-color: #eee;
 }
 
-
 table.colored {
     border-top: solid @table-border-color 1px;
     border-bottom: solid @table-border-color 1px;
@@ -916,16 +921,13 @@ div.debug {
 .grid-header {
     padding-bottom: 1em;
 }
-
 .grid-header h2 {
     margin: 0;
     margin-bottom: 0.5em;
 }
-
 .grid-header .title {
     font-weight: bold;
 }
-
 .grid {
     padding-top: 1em;
     border-collapse: collapse;
@@ -1369,6 +1371,10 @@ div.permissionContainer {
 
 }
 
+.preserve-text-breaks {
+    white-space: pre-line;
+}
+
 // Icon buttons.
 
 .icon-button  {
@@ -1448,8 +1454,9 @@ div.permissionContainer {
 // ============================================================================ History
 @import "ui/icon-btn.less";
 @import "list-item.less";
+@import "dataset.less";
 @import "history.less";
-@import "collections.less";
+@import "collection.less";
 @import "job.less";
 
 @import "ui/paired-collection-creator.less";
@@ -1458,6 +1465,7 @@ div.permissionContainer {
 @import "ui/dataset-choice.less";
 @import "ui/peek-column-selector.less";
 @import "ui/pagination.less";
+@import "ui/error-modal.less";
 
 
 // ==== Tool menu styles
@@ -1467,7 +1475,7 @@ div.permissionContainer {
     color: @base-text-color;
     background: @side-panel-bg;
     min-height: 100%;
-    padding: 5px 10px;
+    padding: 35px 10px;
 }
 
 div.toolSectionPad
@@ -1535,7 +1543,9 @@ div.toolTitleNoSection
 #tool-search {
     padding-top: 5px;
     padding-bottom: 10px;
-    position: relative;
+    position: fixed;
+    top: 65px;
+    width: 210px;
 }
 
 // Dataset Display Styles
@@ -1716,3 +1726,42 @@ div.toolTitleNoSection
 #for_bears {
     display: none;
 }
+
+// communication channel bootstrap modal 
+
+.chat-modal {
+    overflow: hidden;
+}
+
+.modal-header-body {
+    padding: 2px;
+}
+
+.communication-iframe {
+    width: 100%;
+    height: 100%;
+}
+
+.close-modal {
+    float: right; 
+    cursor: pointer;
+}
+
+.expand-compress-modal {
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 93.2%;
+}
+
+// password complexity monitor
+#change_password,#registrationForm {
+    .progress {
+        width:200px;
+        margin-left: 20px;
+    }
+    .progress-bar {
+        color:black;
+        text-align:left;
+    }
+}
+

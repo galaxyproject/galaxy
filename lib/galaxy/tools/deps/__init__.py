@@ -2,16 +2,17 @@
 Dependency management for tools.
 """
 
+import logging
 import os.path
 
-import logging
-log = logging.getLogger( __name__ )
+from galaxy.util import plugin_config
 
-from .resolvers import INDETERMINATE_DEPENDENCY
+from .resolvers import NullDependency
+from .resolvers.conda import CondaDependencyResolver
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
-from .resolvers.conda import CondaDependencyResolver
-from galaxy.util import plugin_config
+
+log = logging.getLogger( __name__ )
 
 # TODO: Load these from the plugins. Would require a two step initialization of
 # DependencyManager - where the plugins are loaded first and then the config
@@ -20,7 +21,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_prefix': None,
     'conda_exec': None,
     'conda_debug': None,
-    'conda_channels': 'r,bioconda',
+    'conda_ensure_channels': 'r,bioconda,iuc',
     'conda_auto_install': False,
     'conda_auto_init': False,
 }
@@ -58,7 +59,7 @@ class NullDependencyManager( object ):
         return []
 
     def find_dep( self, name, version=None, type='package', **kwds ):
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
 
 class DependencyManager( object ):
@@ -78,30 +79,34 @@ class DependencyManager( object ):
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
         """
         if not os.path.exists( default_base_path ):
-            log.warn( "Path '%s' does not exist, ignoring", default_base_path )
+            log.warning( "Path '%s' does not exist, ignoring", default_base_path )
         if not os.path.isdir( default_base_path ):
-            log.warn( "Path '%s' is not directory, ignoring", default_base_path )
+            log.warning( "Path '%s' is not directory, ignoring", default_base_path )
         self.extra_config = extra_config
         self.default_base_path = os.path.abspath( default_base_path )
         self.resolver_classes = self.__resolvers_dict()
         self.dependency_resolvers = self.__build_dependency_resolvers( conf_file )
 
     def dependency_shell_commands( self, requirements, **kwds ):
-        commands = []
+        requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
+        return [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
+
+    def requirements_to_dependencies(self, requirements, **kwds):
+        """
+        Takes a list of requirements and returns a dictionary
+        with requirements as key and dependencies as value.
+        """
+        requirement_to_dependency = dict()
         for requirement in requirements:
-            log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = INDETERMINATE_DEPENDENCY
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,
                                             type=requirement.type,
                                             **kwds )
-            dependency_commands = dependency.shell_commands( requirement )
-            if not dependency_commands:
-                log.warn( "Failed to resolve dependency on '%s', ignoring", requirement.name )
-            else:
-                commands.append( dependency_commands )
-        return commands
+                log.debug(dependency.resolver_msg)
+                if dependency.dependency_type:
+                    requirement_to_dependency[requirement] = dependency
+        return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
         return any( map( lambda r: isinstance( r, ToolShedPackageDependencyResolver ), self.dependency_resolvers ) )
@@ -113,15 +118,12 @@ class DependencyManager( object ):
         for i, resolver in enumerate(self.dependency_resolvers):
             if index is not None and i != index:
                 continue
-
             dependency = resolver.resolve( name, version, type, **kwds )
-            log.debug('Resolver %s returned %s (isnull? %s)' % (resolver.resolver_type, dependency,
-                                                                dependency == INDETERMINATE_DEPENDENCY))
             if require_exact and not dependency.exact:
-                dependency = INDETERMINATE_DEPENDENCY
-            if dependency != INDETERMINATE_DEPENDENCY:
+                continue
+            if not isinstance(dependency, NullDependency):
                 return dependency
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
     def __build_dependency_resolvers( self, conf_file ):
         if not conf_file:

@@ -7,6 +7,11 @@ from galaxy.util import which
 
 STDOUT_INDICATOR = "-"
 
+try:
+    from shlex import quote as shell_quote
+except ImportError:
+    from pipes import quote as shell_quote
+
 
 def redirecting_io(sys=_sys):
     """Predicate to determine if we are redicting I/O in process."""
@@ -70,14 +75,27 @@ def execute(cmds):
 
     Return the standard output if the commands are successful
     """
-    return _wait(cmds, shell=False)
+    return _wait(cmds, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+
+def argv_to_str(command_argv, quote=True):
+    """Convert an argv command list to a string for shell subprocess.
+
+    If None appears in the command list it is simply excluded.
+
+    Arguments are quoted with shlex.quote. That said, this method is not meant to be
+    used in security critical paths of code and should not be used to sanitize
+    code.
+    """
+    map_func = shell_quote if quote else lambda x: x
+    return " ".join([map_func(c) for c in command_argv if c is not None])
 
 
 def _wait(cmds, **popen_kwds):
     p = subprocess.Popen(cmds, **popen_kwds)
     stdout, stderr = p.communicate()
     if p.returncode != 0:
-        raise CommandLineException(" ".join(cmds), stdout, stderr)
+        raise CommandLineException(argv_to_str(cmds), stdout, stderr)
     return stdout
 
 
@@ -94,9 +112,9 @@ def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
     if which("wget"):
         download_cmd = ["wget", "-q"]
         if to == STDOUT_INDICATOR:
-            download_cmd += ["-O" , STDOUT_INDICATOR, url]
+            download_cmd += ["-O", STDOUT_INDICATOR, url]
         else:
-            download_cmd += ["--recursive", "-O" , to, url]
+            download_cmd += ["--recursive", "-O", to, url]
     else:
         download_cmd = ["curl", "-L", url]
         if to != STDOUT_INDICATOR:
@@ -127,6 +145,7 @@ class CommandLineException(Exception):
 
 
 __all__ = [
+    'argv_to_str',
     'CommandLineException',
     'download_command',
     'execute',
@@ -134,5 +153,6 @@ __all__ = [
     'redirecting_io',
     'shell',
     'shell_process',
+    'shell_quote',
     'which',
 ]

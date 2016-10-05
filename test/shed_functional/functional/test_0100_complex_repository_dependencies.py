@@ -193,7 +193,7 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
         new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
         xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
         # Generate a tool_dependencies.xml file that points to an arbitrary file in the local filesystem.
-        file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
+        open( xml_filename, 'w' ).write( open( old_tool_dependency, 'r' )
                                  .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
         self.upload_file( tool_repository,
                           filename=xml_filename,

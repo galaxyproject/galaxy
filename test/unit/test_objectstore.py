@@ -1,10 +1,12 @@
 import os
+
+from contextlib import contextmanager
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
+
 from galaxy import objectstore
 from galaxy.exceptions import ObjectInvalid
-from contextlib import contextmanager
 
 DISK_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="disk">
@@ -77,8 +79,8 @@ def test_disk_store_alt_name_relpath():
     """
     with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
         empty_dataset = MockDataset(1)
-        directory.write(b"", "files1/000/dataset_1.dat")
-        directory.write(b"foo", "foo.txt")
+        directory.write("", "files1/000/dataset_1.dat")
+        directory.write("foo", "foo.txt")
         try:
             assert object_store.get_data(
                 empty_dataset,
@@ -94,10 +96,10 @@ def test_disk_store_alt_name_abspath():
     """
     with TestConfig(DISK_TEST_CONFIG) as (directory, object_store):
         empty_dataset = MockDataset(1)
-        directory.write(b"", "files1/000/dataset_1.dat")
+        directory.write("", "files1/000/dataset_1.dat")
         absfoo = os.path.abspath(os.path.join(directory.temp_directory, "foo.txt"))
         with open(absfoo, 'w') as f:
-            f.write(b"foo")
+            f.write("foo")
         try:
             assert object_store.get_data(
                 empty_dataset,
@@ -201,7 +203,8 @@ class TestConfig(object):
         directory = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
-        expanded_contents = Template(contents).safe_substitute(temp_directory=self.temp_directory)
+        contents_template = Template(contents)
+        expanded_contents = contents_template.safe_substitute(temp_directory=self.temp_directory)
         open(path, "w").write(expanded_contents)
         return path
 

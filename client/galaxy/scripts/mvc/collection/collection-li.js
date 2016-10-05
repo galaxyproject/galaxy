@@ -13,10 +13,6 @@ var FoldoutListItemView = LIST_ITEM.FoldoutListItemView,
  */
 var DCListItemView = FoldoutListItemView.extend(
 /** @lends DCListItemView.prototype */{
-//TODO: may not be needed
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     className   : FoldoutListItemView.prototype.className + " dataset-collection",
     id          : function(){
@@ -33,30 +29,23 @@ var DCListItemView = FoldoutListItemView.extend(
     /** event listeners */
     _setUpListeners : function(){
         FoldoutListItemView.prototype._setUpListeners.call( this );
-        // re-rendering on deletion
         this.listenTo( this.model, 'change', function( model, options ){
-            if( _.isEqual( _.keys( model.changed ), [ 'deleted' ] ) ){
+            // if the model has changed deletion status render it entirely
+            if( _.has( model.changed, 'deleted' ) ){
                 this.render();
+
+            // if the model has been decorated after the fact with the element count,
+            // render the subtitle where the count is displayed
+            } else if( _.has( model.changed, 'element_count' ) ){
+                this.$( '> .title-bar .subtitle' ).replaceWith( this._renderSubtitle() );
             }
         });
     },
 
     // ......................................................................... rendering
-    //TODO:?? possibly move to listItem
     /** render a subtitle to show the user what sort of collection this is */
     _renderSubtitle : function(){
-        var $subtitle = $( '<div class="subtitle"></div>' );
-        //TODO: would be good to get this in the subtitle
-        //var len = this.model.elements.length;
-        switch( this.model.get( 'collection_type' ) ){
-            case 'list':
-                return $subtitle.text( _l( 'a list of datasets' ) );
-            case 'paired':
-                return $subtitle.text( _l( 'a pair of datasets' ) );
-            case 'list:paired':
-                return $subtitle.text( _l( 'a list of paired datasets' ) );
-        }
-        return $subtitle;
+        return $( this.templates.subtitle( this.model.toJSON(), this ) );
     },
 
     // ......................................................................... foldout
@@ -122,9 +111,26 @@ DCListItemView.prototype.templates = (function(){
         '</div>'
     ], 'collection' );
 
+    // use element identifier
+    var subtitleTemplate = BASE_MVC.wrapTemplate([
+        '<div class="subtitle">',
+            '<% var countText = collection.element_count? ( collection.element_count + " " ) : ""; %>',
+            '<%        if( collection.collection_type === "list" ){ %>',
+                _l( 'a list of <%- countText %>datasets' ),
+            '<% } else if( collection.collection_type === "paired" ){ %>',
+                _l( 'a pair of datasets' ),
+            '<% } else if( collection.collection_type === "list:paired" ){ %>',
+                _l( 'a list of <%- countText %>dataset pairs' ),
+            '<% } else if( collection.collection_type === "list:list" ){ %>',
+                _l( 'a list of <%- countText %>dataset lists' ),
+            '<% } %>',
+        '</div>'
+    ], 'collection' );
+
     return _.extend( {}, FoldoutListItemView.prototype.templates, {
-        warnings : warnings,
-        titleBar : titleBarTemplate
+        warnings    : warnings,
+        titleBar    : titleBarTemplate,
+        subtitle    : subtitleTemplate
     });
 }());
 
@@ -134,10 +140,6 @@ DCListItemView.prototype.templates = (function(){
  */
 var DCEListItemView = ListItemView.extend(
 /** @lends DCEListItemView.prototype */{
-//TODO: this might be expendable - compacted with HDAListItemView
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     /** add the DCE class to the list item */
     className   : ListItemView.prototype.className + " dataset-collection-element",
@@ -185,9 +187,6 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
 /** @lends DatasetDCEListItemView.prototype */{
 
     className   : DATASET_LI.DatasetListItemView.prototype.className + " dataset-collection-element",
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     /** set up */
     initialize  : function( attributes ){
@@ -245,18 +244,11 @@ var NestedDCDCEListItemView = DCListItemView.extend(
 
     className   : DCListItemView.prototype.className + " dataset-collection-element",
 
-    /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
-    //logger              : console,
-
     /** In this override, add the state as a class for use with state-based CSS */
     _swapNewRender : function( $newRender ){
         DCListItemView.prototype._swapNewRender.call( this, $newRender );
-//TODO: model currently has no state
         var state = this.model.get( 'state' ) || 'ok';
-        //if( this.model.has( 'state' ) ){
         this.$el.addClass( 'state-' + state );
-        //}
         return this.$el;
     },
 

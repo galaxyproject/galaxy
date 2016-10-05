@@ -3,6 +3,7 @@
 
 # WARNING: Changes in this tool (particularly as related to parsing) may need
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
+from __future__ import print_function
 
 import codecs
 import gzip
@@ -10,9 +11,10 @@ import os
 import shutil
 import sys
 import tempfile
-import urllib
 import zipfile
 from json import dumps, loads
+
+from six.moves.urllib.request import urlopen
 
 from galaxy import util
 from galaxy.datatypes import sniff
@@ -63,7 +65,7 @@ def safe_dict(d):
     http://mellowmachines.com/blog/2009/06/exploding-dictionary-with-unicode-keys-as-python-arguments/
     """
     if isinstance(d, dict):
-        return dict([(k.encode('utf-8'), safe_dict(v)) for k, v in d.iteritems()])
+        return dict([(k.encode('utf-8'), safe_dict(v)) for k, v in d.items()])
     elif isinstance(d, list):
         return [safe_dict(x) for x in d]
     else:
@@ -85,7 +87,7 @@ def add_file( dataset, registry, json_file, output_path ):
     stdout = None
     link_data_only = dataset.get( 'link_data_only', 'copy_files' )
     in_place = dataset.get( 'in_place', True )
-
+    purge_source = dataset.get( 'purge_source', True )
     try:
         ext = dataset.file_type
     except AttributeError:
@@ -94,9 +96,9 @@ def add_file( dataset, registry, json_file, output_path ):
 
     if dataset.type == 'url':
         try:
-            page = urllib.urlopen( dataset.path )  # page will be .close()ed by sniff methods
+            page = urlopen( dataset.path )  # page will be .close()ed by sniff methods
             temp_name, dataset.is_multi_byte = sniff.stream_to_file( page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers( page.headers ) )
-        except Exception, e:
+        except Exception as e:
             file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
             return
         dataset.path = temp_name
@@ -111,7 +113,7 @@ def add_file( dataset, registry, json_file, output_path ):
         # Already set is_multi_byte above if type == 'url'
         try:
             dataset.is_multi_byte = multi_byte.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError as e:
             dataset.is_multi_byte = False
     # Is dataset an image?
     image = check_image( dataset.path )
@@ -168,7 +170,7 @@ def add_file( dataset, registry, json_file, output_path ):
                         dataset.path = uncompressed
                     else:
                         shutil.move( uncompressed, dataset.path )
-                    os.chmod(dataset.path, 0644)
+                    os.chmod(dataset.path, 0o644)
                 dataset.name = dataset.name.rstrip( '.gz' )
                 data_type = 'gzip'
             if not data_type and bz2 is not None:
@@ -201,7 +203,7 @@ def add_file( dataset, registry, json_file, output_path ):
                             dataset.path = uncompressed
                         else:
                             shutil.move( uncompressed, dataset.path )
-                        os.chmod(dataset.path, 0644)
+                        os.chmod(dataset.path, 0o644)
                     dataset.name = dataset.name.rstrip( '.bz2' )
                     data_type = 'bz2'
             if not data_type:
@@ -258,7 +260,7 @@ def add_file( dataset, registry, json_file, output_path ):
                                 dataset.path = uncompressed
                             else:
                                 shutil.move( uncompressed, dataset.path )
-                            os.chmod(dataset.path, 0644)
+                            os.chmod(dataset.path, 0o644)
                             dataset.name = uncompressed_name
                     data_type = 'zip'
             if not data_type:
@@ -329,7 +331,10 @@ def add_file( dataset, registry, json_file, output_path ):
             # This should not happen, but it's here just in case
             shutil.copy( dataset.path, output_path )
     elif link_data_only == 'copy_files':
-        shutil.move( dataset.path, output_path )
+        if purge_source:
+            shutil.move( dataset.path, output_path )
+        else:
+            shutil.copy( dataset.path, output_path )
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type
     info = dict( type='dataset',
@@ -350,7 +355,7 @@ def add_file( dataset, registry, json_file, output_path ):
 def add_composite_file( dataset, json_file, output_path, files_path ):
         if dataset.composite_files:
             os.mkdir( files_path )
-            for name, value in dataset.composite_files.iteritems():
+            for name, value in dataset.composite_files.items():
                 value = util.bunch.Bunch( **value )
                 if dataset.composite_file_paths[ value.name ] is None and not value.optional:
                     file_err( 'A required composite data file was not provided (%s)' % name, dataset, json_file )
@@ -360,8 +365,8 @@ def add_composite_file( dataset, json_file, output_path, files_path ):
                     isurl = dp.find('://') != -1  # todo fixme
                     if isurl:
                         try:
-                            temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dp ), prefix='url_paste' )
-                        except Exception, e:
+                            temp_name, dataset.is_multi_byte = sniff.stream_to_file( urlopen( dp ), prefix='url_paste' )
+                        except Exception as e:
                             file_err( 'Unable to fetch %s\n%s' % ( dp, str( e ) ), dataset, json_file )
                             return
                         dataset.path = temp_name
@@ -394,7 +399,7 @@ def output_adjacent_tmpdir( output_path ):
 def __main__():
 
     if len( sys.argv ) < 4:
-        print >>sys.stderr, 'usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...'
+        print('usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...', file=sys.stderr)
         sys.exit( 1 )
 
     output_paths = parse_outputs( sys.argv[4:] )
@@ -409,7 +414,7 @@ def __main__():
         try:
             output_path = output_paths[int( dataset.dataset_id )][0]
         except:
-            print >>sys.stderr, 'Output path for dataset %s not found on command line' % dataset.dataset_id
+            print('Output path for dataset %s not found on command line' % dataset.dataset_id, file=sys.stderr)
             sys.exit( 1 )
         if dataset.type == 'composite':
             files_path = output_paths[int( dataset.dataset_id )][1]

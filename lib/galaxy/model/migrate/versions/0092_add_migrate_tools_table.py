@@ -1,6 +1,8 @@
 """
 Migration script to create the migrate_tools table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -29,7 +31,7 @@ MigrateTools_table = Table( "migrate_tools", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
 
     metadata.reflect()
     # Create the table.
@@ -37,7 +39,7 @@ def upgrade(migrate_engine):
         MigrateTools_table.create()
         cmd = "INSERT INTO migrate_tools VALUES ('GalaxyTools', 'lib/galaxy/tool_shed/migrate', %d)" % 1
         migrate_engine.execute( cmd )
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating migrate_tools table failed: %s" % str( e ) )
 
 
@@ -46,5 +48,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         MigrateTools_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping migrate_tools table failed: %s" % str( e ) )

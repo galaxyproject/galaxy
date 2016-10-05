@@ -81,7 +81,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             raise exceptions.InconsistentDatabase( 'Multiple libraries found with the same id.' )
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException( 'No library found with the id provided.' )
-        except Exception, e:
+        except Exception as e:
             raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
         if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             raise exceptions.RequestParameterInvalidException( 'No library found with the id provided.' )
@@ -202,7 +202,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         try:
             # security is checked in the downstream controller
             parent = self.get_library_folder( trans, folder_id, check_ownership=False, check_accessible=False )
-        except Exception, e:
+        except Exception as e:
             return str( e )
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id( parent.id )
@@ -319,7 +319,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             ldda_dict = ldda.to_dict()
             rval = trans.security.encode_dict_ids( ldda_dict )
 
-        except Exception, exc:
+        except Exception as exc:
             # TODO: grrr...
             if 'not accessible to the current user' in str( exc ):
                 trans.response.status = 403
@@ -430,13 +430,13 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             trans.sa_session.flush()
             rval[ 'deleted' ] = True
 
-        except exceptions.httpexceptions.HTTPInternalServerError, http_server_err:
+        except exceptions.httpexceptions.HTTPInternalServerError as http_server_err:
             log.exception( 'Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s\n%s',
                            id, str( kwd ), str( http_server_err ) )
             raise
         except exceptions.httpexceptions.HTTPException:
             raise
-        except Exception, exc:
+        except Exception as exc:
             log.exception( 'library_contents API, delete: uncaught exception: %s, %s\n%s',
                            id, str( kwd ), str( exc ) )
             trans.response.status = 500

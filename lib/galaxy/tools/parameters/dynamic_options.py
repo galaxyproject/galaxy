@@ -7,7 +7,7 @@ import logging
 import os
 import validation
 from galaxy.util import string_as_bool
-from galaxy.model import User
+from galaxy.model import User, HistoryDatasetAssociation, HistoryDatasetCollectionAssociation
 import galaxy.tools
 
 log = logging.getLogger(__name__)
@@ -124,12 +124,13 @@ class DataMetaFilter( Filter ):
             if self.multiple:
                 return dataset_value in file_value.split( self.separator )
             return file_value == dataset_value
-        assert self.ref_name in other_values or ( trans is not None and trans.workflow_building_mode), "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
+        if isinstance( ref, HistoryDatasetCollectionAssociation ):
+            ref = ref.to_hda_representative( self.multiple )
         is_data = isinstance( ref, galaxy.tools.wrappers.DatasetFilenameWrapper )
         is_data_list = isinstance( ref, galaxy.tools.wrappers.DatasetListWrapper ) or isinstance( ref, list )
         is_data_or_data_list = is_data or is_data_list
-        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not is_data_or_data_list:
+        if not isinstance( ref, HistoryDatasetAssociation ) and not is_data_or_data_list:
             return []  # not a valid dataset
 
         if is_data_list:
@@ -146,7 +147,7 @@ class DataMetaFilter( Filter ):
         else:
             meta_value = ref.metadata.get( self.key, None )
 
-        if meta_value is None:  # assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
+        if meta_value is None:
             return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options ]
 
         if self.column is not None:
@@ -208,7 +209,6 @@ class ParamValueFilter( Filter ):
     def filter_options( self, options, trans, other_values ):
         if trans is not None and trans.workflow_building_mode:
             return []
-        assert self.ref_name in other_values, "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
         for ref_attribute in self.ref_attribute:
             if not hasattr( ref, ref_attribute ):
@@ -381,7 +381,6 @@ class RemoveValueFilter( Filter ):
     def filter_options( self, options, trans, other_values ):
         if trans is not None and trans.workflow_building_mode:
             return options
-        assert self.value is not None or ( self.ref_name is not None and self.ref_name in other_values ) or (self.meta_ref is not None and self.meta_ref in other_values ) or ( trans is not None and trans.workflow_building_mode), Exception( "Required dependency '%s' or '%s' not found in incoming values" % ( self.ref_name, self.meta_ref ) )
 
         def compare_value( option_value, filter_value ):
             if isinstance( filter_value, list ):
@@ -401,7 +400,9 @@ class RemoveValueFilter( Filter ):
                 value = other_values.get( self.ref_name )
             else:
                 data_ref = other_values.get( self.meta_ref )
-                if not isinstance( data_ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not isinstance( data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper ):
+                if isinstance( data_ref, HistoryDatasetCollectionAssociation ):
+                    data_ref = data_ref.to_hda_representative()
+                if not isinstance( data_ref, HistoryDatasetAssociation ) and not isinstance( data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper ):
                     return options  # cannot modify options
                 value = data_ref.metadata.get( self.metadata_key, None )
         return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options if not compare_value( optval, value ) ]
@@ -494,7 +495,7 @@ class DynamicOptions( object ):
                     self.missing_index_file = self.tool_data_table.missing_index_file
             else:
                 self.missing_tool_data_table_name = tool_data_table_name
-                log.warn( "Data table named '%s' is required by tool but not configured" % tool_data_table_name )
+                log.warning( "Data table named '%s' is required by tool but not configured" % tool_data_table_name )
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
         elif data_file is not None or dataset_file is not None or from_parameter is not None:
@@ -559,7 +560,7 @@ class DynamicOptions( object ):
                         except AttributeError:
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
-                        log.warn( "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
+                        log.warning( "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
                                   ( field_count, len( fields ), name, self.separator, line ) )
                     rval.append( fields )
         return rval
@@ -582,7 +583,6 @@ class DynamicOptions( object ):
         if self.dataset_ref_name:
             dataset = other_values.get( self.dataset_ref_name, None )
             if not dataset or not hasattr( dataset, 'file_name' ):
-                log.warn( "Required dataset '%s' missing from input" % self.dataset_ref_name )
                 return []  # no valid dataset in history
             # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
             path = dataset.file_name
@@ -591,7 +591,7 @@ class DynamicOptions( object ):
             else:
                 # Pass just the first megabyte to parse_file_fields.
                 import StringIO
-                log.warn( "Attempting to load options from large file, reading just first megabyte" )
+                log.warning( "Attempting to load options from large file, reading just first megabyte" )
                 contents = open( path, 'r' ).read( 1048576 )
                 options = self.parse_file_fields( StringIO.StringIO( contents ) )
         elif self.tool_data_table:

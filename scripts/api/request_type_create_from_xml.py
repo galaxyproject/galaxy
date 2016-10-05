@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import sys
 
@@ -11,7 +12,7 @@ try:
     data[ 'sequencer_id' ] = sys.argv[5]
     data[ 'xml_text' ] = open( sys.argv[6] ).read()
 except IndexError:
-    print 'usage: %s key url request_form_id sample_form_id request_type_xml_description_file [access_role_ids,]' % os.path.basename( sys.argv[0] )
+    print('usage: %s key url request_form_id sample_form_id request_type_xml_description_file [access_role_ids,]' % os.path.basename( sys.argv[0] ))
     sys.exit( 1 )
 try:
     data[ 'role_ids' ] = [ i for i in sys.argv[7].split( ',' ) if i ]

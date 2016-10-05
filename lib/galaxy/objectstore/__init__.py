@@ -5,22 +5,29 @@ all providers ensure that data can be accessed on the filesystem for running
 tools
 """
 
+import logging
 import os
 import random
 import shutil
-import logging
 import threading
+
 from xml.etree import ElementTree
 
-from galaxy.util import umask_fix_perms, force_symlink, safe_makedirs, safe_relpath
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util.sleeper import Sleeper
-from galaxy.util.directory_hash import directory_hash_id
-from galaxy.util.odict import odict
 try:
     from sqlalchemy.orm import object_session
 except ImportError:
     object_session = None
+
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import (
+    directory_hash_id,
+    force_symlink,
+    safe_makedirs,
+    safe_relpath,
+    umask_fix_perms,
+)
+from galaxy.util.odict import odict
+from galaxy.util.sleeper import Sleeper
 
 NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."
 
@@ -722,6 +729,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 'irods':
         from .rods import IRODSObjectStore
         return IRODSObjectStore(config=config, config_xml=config_xml)
+    elif store == 'azure_blob':
+        from .azure_blob import AzureBlobObjectStore
+        return AzureBlobObjectStore(config=config, config_xml=config_xml)
     # Disable the Pulsar object store for now until it receives some attention
     # elif store == 'pulsar':
     #    from .pulsar import PulsarObjectStore

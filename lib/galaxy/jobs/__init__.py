@@ -16,6 +16,8 @@ from abc import ABCMeta, abstractmethod
 from json import loads
 from xml.etree import ElementTree
 
+import six
+
 import galaxy
 from galaxy import model, util
 from galaxy.datatypes import metadata, sniff
@@ -28,11 +30,9 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
 
+from .datasets import (DatasetPath, NullDatasetPathRewriter,
+    OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
 from .output_checker import check_output
-from .datasets import TaskPathRewriter
-from .datasets import OutputsToWorkingDirectoryPathRewriter
-from .datasets import NullDatasetPathRewriter
-from .datasets import DatasetPath
 
 log = logging.getLogger( __name__ )
 
@@ -207,7 +207,7 @@ class JobConfiguration( object ):
         if not self.handlers:
             raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
-        self.default_handler_id = self.__get_default(handlers, self.handlers.keys())
+        self.default_handler_id = self.__get_default(handlers, list(self.handlers.keys()))
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -238,7 +238,7 @@ class JobConfiguration( object ):
                     self.destinations[tag].append(job_destination)
 
         # Determine the default destination
-        self.default_destination_id = self.__get_default(destinations, self.destinations.keys())
+        self.default_destination_id = self.__get_default(destinations, list(self.destinations.keys()))
 
         # Parse resources...
         resources = root.find('resources')
@@ -413,7 +413,15 @@ class JobConfiguration( object ):
 
         :returns: str -- id or tag representing the default.
         """
+
         rval = parent.get('default')
+        if 'default_from_environ' in parent.attrib:
+            environ_var = parent.attrib['default_from_environ']
+            rval = os.environ.get(environ_var, rval)
+        elif 'default_from_config' in parent.attrib:
+            config_val = parent.attrib['default_from_config']
+            rval = self.app.config.config_dict.get(config_val, rval)
+
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if rval not in names:
@@ -461,13 +469,20 @@ class JobConfiguration( object ):
         rval = {}
         for param in parent.findall('param'):
             key = param.get('id')
-            param_value = param.text
+            if key in ["container", "container_override"]:
+                from galaxy.tools.deps import requirements
+                containers = map(requirements.container_from_element, list(param))
+                param_value = map(lambda c: c.to_dict(), containers)
+            else:
+                param_value = param.text
+
             if 'from_environ' in param.attrib:
                 environ_var = param.attrib['from_environ']
                 param_value = os.environ.get(environ_var, param_value)
             elif 'from_config' in param.attrib:
                 config_val = param.attrib['from_config']
                 param_value = self.app.config.config_dict.get(config_val, param_value)
+
             rval[key] = param_value
         return rval
 
@@ -747,6 +762,7 @@ class JobWrapper( object ):
         self.sa_session = self.app.model.context
         self.extra_filenames = []
         self.command_line = None
+        self.dependencies = []
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
@@ -769,7 +785,7 @@ class JobWrapper( object ):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
-        self.__commands_in_new_shell = self.app.config.commands_in_new_shell
+        self.__commands_in_new_shell = True
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
@@ -894,6 +910,7 @@ class JobWrapper( object ):
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
+        job.dependencies = self.tool.dependencies
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files
@@ -996,7 +1013,7 @@ class JobWrapper( object ):
                     try:
                         shutil.move( dataset_path.false_path, dataset_path.real_path )
                         log.debug( "fail(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
-                    except ( IOError, OSError ), e:
+                    except ( IOError, OSError ) as e:
                         log.error( "fail(): Missing output file in working directory: %s" % e )
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
@@ -1125,12 +1142,21 @@ class JobWrapper( object ):
             self.app.config, key, default
         )
 
-    def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
+    def finish(
+        self,
+        stdout,
+        stderr,
+        tool_exit_code=None,
+        remote_working_directory=None,
+        remote_metadata_directory=None,
+    ):
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        # remote_working_directory not used with updated (7.0+ pulsar and 16.04+
+        # originated Galaxy job - keep for a few releases for older jobs)
         finish_timer = util.ExecutionTimer()
 
         # default post job setup
@@ -1202,7 +1228,7 @@ class JobWrapper( object ):
                         os.stat( dataset.dataset.file_name )
                         os.chown( dataset.dataset.file_name, os.getuid(), -1 )
                         trynum = self.app.config.retry_job_output_collection
-                    except ( OSError, ObjectNotFound ), e:
+                    except ( OSError, ObjectNotFound ) as e:
                         trynum += 1
                         log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
                         time.sleep( 2 )
@@ -1258,12 +1284,15 @@ class JobWrapper( object ):
                         output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
 
                         def path_rewriter( path ):
-                            if not remote_working_directory or not path:
+                            if not path:
                                 return path
-                            normalized_remote_working_directory = os.path.normpath( remote_working_directory )
+                            normalized_remote_working_directory = remote_working_directory and os.path.normpath( remote_working_directory )
+                            normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath( remote_metadata_directory )
                             normalized_path = os.path.normpath( path )
-                            if normalized_path.startswith( normalized_remote_working_directory ):
+                            if remote_working_directory and normalized_path.startswith( normalized_remote_working_directory ):
                                 return normalized_path.replace( normalized_remote_working_directory, self.working_directory, 1 )
+                            if remote_metadata_directory and normalized_path.startswith( normalized_remote_metadata_directory ):
+                                return normalized_path.replace( normalized_remote_metadata_directory, self.working_directory, 1 )
                             return path
 
                         dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
@@ -1278,11 +1307,10 @@ class JobWrapper( object ):
                             dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
-                    try:
-                        # set the name if provided by the tool
-                        dataset.name = context['name']
-                    except:
-                        pass
+                    for context_key in ['name', 'info', 'dbkey']:
+                        if context_key in context:
+                            context_value = context[context_key]
+                            setattr(dataset, context_key, context_value)
                 else:
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
@@ -1388,7 +1416,7 @@ class JobWrapper( object ):
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
-            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+            util.umask_fix_perms( path, self.app.config.umask, 0o666, self.app.config.gid )
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -1442,7 +1470,7 @@ class JobWrapper( object ):
                         create=True,
                         preserve_symlinks=True
                     )
-        except Exception, e:
+        except Exception as e:
             log.debug( "Error in collect_associated_files: %s" % ( e ) )
 
     def _collect_metrics( self, has_metrics ):
@@ -1450,8 +1478,8 @@ class JobWrapper( object ):
         per_plugin_properties = self.app.job_metrics.collect_properties( job.destination_id, self.job_id, self.working_directory )
         if per_plugin_properties:
             log.info( "Collecting metrics for %s %s" % ( type(has_metrics).__name__, getattr( has_metrics, 'id', None ) ) )
-        for plugin, properties in per_plugin_properties.iteritems():
-            for metric_name, metric_value in properties.iteritems():
+        for plugin, properties in per_plugin_properties.items():
+            for metric_name, metric_value in properties.items():
                 if metric_value is not None:
                     has_metrics.add_metric( plugin, metric_name, metric_value )
 
@@ -1535,7 +1563,7 @@ class JobWrapper( object ):
     def get_mutable_output_fnames( self ):
         if self.output_paths is None:
             self.compute_outputs()
-        return filter( lambda dsp: dsp.mutable, self.output_paths )
+        return [dsp for dsp in self.output_paths if dsp.mutable]
 
     def get_output_hdas_and_fnames( self ):
         if self.output_hdas_and_paths is None:
@@ -1665,7 +1693,7 @@ class JobWrapper( object ):
             if metadata_tool is not None:
                 # Due to tool shed hacks for migrate and installed tool tests...
                 # see (``setup_shed_tools_for_test`` in test/base/driver_util.py).
-                dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory)
+                dependency_shell_commands = metadata_tool.build_dependency_shell_commands(job_directory=self.working_directory, metadata=True)
                 if dependency_shell_commands:
                     dependency_shell_commands = "; ".join(dependency_shell_commands)
                     command = "%s; %s" % (dependency_shell_commands, command)
@@ -1715,7 +1743,7 @@ class JobWrapper( object ):
                 self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
             except:
                 log.exception( '(%s) Failed to change ownership of %s, making world-writable instead' % ( job.id, self.working_directory ) )
-                os.chmod( self.working_directory, 0777 )
+                os.chmod( self.working_directory, 0o777 )
 
     def reclaim_ownership( self ):
         job = self.get_job()
@@ -1966,11 +1994,11 @@ class TaskWrapper(JobWrapper):
         return os.path.join( self.working_directory, os.path.basename( output_path ) )
 
 
+@six.add_metaclass(ABCMeta)
 class ComputeEnvironment( object ):
     """ Definition of the job as it will be run on the (potentially) remote
     compute server.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def output_paths( self ):
@@ -2078,7 +2106,7 @@ class ParallelismInfo(object):
     def __init__(self, tag):
         self.method = tag.get('method')
         if isinstance(tag, dict):
-            items = tag.iteritems()
+            items = tag.items()
         else:
             items = tag.attrib.items()
         self.attributes = dict( [ item for item in items if item[ 0 ] != 'method' ])

@@ -41,19 +41,19 @@ def __main__():
     # common temp file setup
     tmpf = tempfile.NamedTemporaryFile()  # forward reads
     tmpqf = tempfile.NamedTemporaryFile()
-    tmpqf = replaceNeg1(file(options.input2, 'r'), tmpqf)
+    tmpqf = replaceNeg1(open(options.input2, 'r'), tmpqf)
     # if paired-end data (have reverse input files)
     if options.input3 != "None" and options.input4 != "None":
         tmpr = tempfile.NamedTemporaryFile()  # reverse reads
         # replace the -1 in the qualities file
         tmpqr = tempfile.NamedTemporaryFile()
-        tmpqr = replaceNeg1(file(options.input4, 'r'), tmpqr)
+        tmpqr = replaceNeg1(open(options.input4, 'r'), tmpqr)
         cmd1 = "%s/bwa_solid2fastq_modified.pl 'yes' %s %s %s %s %s %s 2>&1" % (os.path.split(sys.argv[0])[0], tmpf.name, tmpr.name, options.input1, tmpqf.name, options.input3, tmpqr.name)
         try:
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))
             os.system('gunzip -c %s >> %s' % (tmpr.name, options.output2))
-        except Exception, eq:
+        except Exception as eq:
             stop_err("Error converting data to fastq format.\n" + str(eq))
         tmpr.close()
         tmpqr.close()
@@ -63,7 +63,7 @@ def __main__():
         try:
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, options.output1))
-        except Exception, eq:
+        except Exception as eq:
             stop_err("Error converting data to fastq format.\n" + str(eq))
     tmpqf.close()
     tmpf.close()

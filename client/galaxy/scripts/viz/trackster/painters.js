@@ -168,12 +168,6 @@ Painter.prototype._chrom_pos_to_draw_pos = function(chrom_pos, w_scale, offset) 
 
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
-    if ( this.prefs.min_value === undefined ) {
-        this.prefs.min_value = _.min( _.map(this.data, function(d) { return d[1]; }) ) || 0;
-    }
-    if ( this.prefs.max_value === undefined ) {
-        this.prefs.max_value = _.max( _.map(this.data, function(d) { return d[1]; }) ) || 0;
-    }
 };
 
 LinePainter.prototype.default_prefs = { min_value: undefined, max_value: undefined, mode: "Histogram", color: "#000", overflow_color: "#F66" };
@@ -200,12 +194,14 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     }
 
     ctx.beginPath();
-    var x_scaled, y, delta_x_px;
+    var x_scaled, y, delta_x_pxs;
     if (data.length > 1) {
-        delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
+        delta_x_pxs = _.map(data.slice(0,-1), function(d, i) {
+            return Math.ceil((data[i+1][0] - data[i][0]) * w_scale);
+        });
     }
     else {
-        delta_x_px = 10;
+        delta_x_pxs = [10];
     }
 
     // Painter color can be in either block_color (FeatureTrack) or color pref (LineTrack).
@@ -220,12 +216,14 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
 
 
     // Paint track.
+    var delta_x_px;
     for (var i = 0, len = data.length; i < len; i++) {
         // Reset attributes for next point.
         ctx.fillStyle = ctx.strokeStyle = painter_color;
         top_overflow = bot_overflow = false;
+        delta_x_px = delta_x_pxs[i];
 
-        x_scaled = Math.ceil((data[i][0] - view_start) * w_scale);
+        x_scaled = Math.floor((data[i][0] - view_start - 0.5) * w_scale);
         y = data[i][1];
 
         // Process Y (scaler) value.

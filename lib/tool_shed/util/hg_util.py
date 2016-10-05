@@ -31,7 +31,7 @@ def archive_repository_revision( app, repository, archive_dir, changeset_revisio
     return_code = None
     try:
         return_code = commands.archive( get_configured_ui, repo, archive_dir, **options_dict )
-    except Exception, e:
+    except Exception as e:
         error_message = "Error attempting to archive revision <b>%s</b> of repository %s: %s\nReturn code: %s\n" % \
             ( str( changeset_revision ), str( repository.name ), str( e ), str( return_code ) )
         log.exception( error_message )
@@ -62,7 +62,7 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
                         noupdate=False,
                         rev=listify( str( ctx_rev ) ) )
         return True, None
-    except Exception, e:
+    except Exception as e:
         error_message = 'Error cloning repository: %s' % str( e )
         log.debug( error_message )
         return False, error_message
@@ -201,7 +201,7 @@ def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
         possible = possible[0]
     if len( possible ) != 1:
         raise Exception('unable to find mercurial command "%s"' % command)
-    default_options_dict = dict( ( r[1].replace( '-', '_' ), r[2] ) for r in possible.values()[0][1][1] )
+    default_options_dict = dict( ( r[1].replace( '-', '_' ), r[2] ) for r in next(iter(possible.values()))[1][1] )
     for option in kwd:
         default_options_dict[ option ] = kwd[ option ]
     return default_options_dict

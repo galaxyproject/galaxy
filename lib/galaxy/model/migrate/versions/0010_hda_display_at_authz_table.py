@@ -8,6 +8,8 @@ history_dataset_association_display_at_authorization table failed:  (Operational
 (1059, "Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'
 is too long
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -29,15 +31,15 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This migration script adds the history_dataset_association_display_at_authorization table, which"
-    print "allows 'private' datasets to be displayed at external sites without making them public."
-    print ""
-    print "If using mysql, this script will display the following error, which is corrected in the next migration"
-    print "script: history_dataset_association_display_at_authorization table failed:  (OperationalError)"
-    print "(1059, 'Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'"
-    print "is too long."
-    print "========================================"
+    print("========================================")
+    print("This migration script adds the history_dataset_association_display_at_authorization table, which")
+    print("allows 'private' datasets to be displayed at external sites without making them public.")
+    print("")
+    print("If using mysql, this script will display the following error, which is corrected in the next migration")
+    print("script: history_dataset_association_display_at_authorization table failed:  (OperationalError)")
+    print("(1059, 'Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'")
+    print("is too long.")
+    print("========================================")
 
 HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_association_display_at_authorization", metadata,
                                                                Column( "id", Integer, primary_key=True ),
@@ -55,7 +57,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.create()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Creating history_dataset_association_display_at_authorization table failed: %s" % str( e ) )
 
 
@@ -65,5 +67,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.drop()
-    except Exception, e:
+    except Exception as e:
         log.debug( "Dropping history_dataset_association_display_at_authorization table failed: %s" % str( e ) )

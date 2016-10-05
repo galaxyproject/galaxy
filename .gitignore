@@ -20,6 +20,7 @@ database/pbs
 database/tmp
 database/*.sqlite
 database/openid_consumer_cache
+database/dependencies
 
 # Python bytecode
 *.pyc
@@ -126,9 +127,12 @@ bower_components
 
 # Documentation build files.
 doc/build
+doc/schema.html
+doc/schema.md
 
 # Misc
 *.orig
 .DS_Store
 *.rej
 *~
+.idea/

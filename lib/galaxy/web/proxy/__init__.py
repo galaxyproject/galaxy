@@ -2,7 +2,7 @@ import logging
 import os
 import json
 
-from .filelock import FileLock
+from galaxy.util.filelock import FileLock
 from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
 from galaxy.util import sqlite
@@ -22,14 +22,14 @@ class ProxyManager(object):
 
     def __init__( self, config ):
         for option in ["manage_dynamic_proxy", "dynamic_proxy_bind_port",
-                "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
-                "dynamic_proxy_external_proxy", "dynamic_proxy_prefix",
-                "proxy_session_map",
-                "dynamic_proxy", "cookie_path",
-                "dynamic_proxy_golang_noaccess",
-                "dynamic_proxy_golang_clean_interval",
-                "dynamic_proxy_golang_docker_address",
-                "dynamic_proxy_golang_api_key"]:
+                       "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
+                       "dynamic_proxy_external_proxy", "dynamic_proxy_prefix",
+                       "proxy_session_map",
+                       "dynamic_proxy", "cookie_path",
+                       "dynamic_proxy_golang_noaccess",
+                       "dynamic_proxy_golang_clean_interval",
+                       "dynamic_proxy_golang_docker_address",
+                       "dynamic_proxy_golang_api_key"]:
 
             setattr( self, option, getattr( config, option ) )
 
@@ -106,6 +106,7 @@ class NodeProxyLauncher(object):
             "--sessions", config.proxy_session_map,
             "--ip", config.dynamic_proxy_bind_ip,
             "--port", str(config.dynamic_proxy_bind_port),
+            "--reverseProxy",
         ]
         if config.dynamic_proxy_debug:
             args.append("--verbose")
@@ -162,7 +163,7 @@ class ProxyRequests(object):
 
 def proxy_ipc(config):
     proxy_session_map = config.proxy_session_map
-    if config.dynamic_proxy == "nodejs":
+    if config.dynamic_proxy == "node":
         if proxy_session_map.endswith(".sqlite"):
             return SqliteProxyIpc(proxy_session_map)
         else:
@@ -250,7 +251,7 @@ class RestGolangProxyIpc(object):
         # going, so if this fails, re-call ourselves with an increased timeout.
         try:
             urllib2.urlopen(req, json.dumps(values))
-        except urllib2.URLError, err:
+        except urllib2.URLError as err:
             log.debug(err)
             if sleep > 5:
                 excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))

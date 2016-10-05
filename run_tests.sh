@@ -51,7 +51,8 @@ Extra options:
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy
-                       functional tests).
+                       functional tests). If not given, a default filename will
+                       be used, and reported on stderr at the end of the run.
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy
                        functional tests).
  --skip-venv           Do not create .venv (passes this flag to
@@ -206,6 +207,8 @@ then
     exit $?
 fi
 
+# Loop through and consume the main arguments.
+# Some loops will consume more than one argument (there are extra "shift"s in some cases).
 while :
 do
     case "$1" in
@@ -235,7 +238,7 @@ do
               exit 1
           fi
           ;;
-    -a|-api|--api)
+      -a|-api|--api)
           with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_api_tests.html"
@@ -507,6 +510,9 @@ if [ "$driver" = "python" ]; then
         export GALAXY_TEST_TOOL_CONF
     fi
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
+    exit_status=$?
+    echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
+    exit ${exit_status}
 else
     ensure_grunt
     if [ -n "$watch" ]; then

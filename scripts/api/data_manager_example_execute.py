@@ -3,9 +3,10 @@
 # Very simple example of using the API to run Data Managers
 # Script makes the naive assumption that dbkey==sequence id, which in many cases is not true nor desired
 # *** This script is not recommended for use as-is on a production server ***
+from __future__ import print_function
 import optparse
 import time
-import urlparse
+from six.moves.urllib.parse import urljoin
 
 from common import get, post
 
@@ -17,9 +18,9 @@ BUILD_INDEX_TOOLS_ID = [ 'testtoolshed.g2.bx.psu.edu/repos/blankenberg/data_mana
 
 def run_tool( tool_id, history_id, params, api_key, galaxy_url, wait=True, sleep_time=None, **kwargs ):
     sleep_time = sleep_time or DEFAULT_SLEEP_TIME
-    tools_url = urlparse.urljoin( galaxy_url, 'api/tools' )
+    tools_url = urljoin( galaxy_url, 'api/tools' )
     payload = {
-        'tool_id'       : tool_id,
+        'tool_id': tool_id,
     }
     if history_id:
         payload['history_id'] = history_id
@@ -41,7 +42,7 @@ def run_tool( tool_id, history_id, params, api_key, galaxy_url, wait=True, sleep
 
 
 def get_dataset_state( hda_id, api_key, galaxy_url ):
-    datasets_url = urlparse.urljoin( galaxy_url, 'api/datasets/%s' % hda_id )
+    datasets_url = urljoin( galaxy_url, 'api/datasets/%s' % hda_id )
     dataset_info = get( api_key, datasets_url )
     return dataset_info['state']
 
@@ -63,9 +64,9 @@ if __name__ == '__main__':
     assert options.dbkeys, ValueError( 'You must specify at least one dbkey to use.' )
 
     # check user is admin
-    configuration_options = get( options.api_key, urlparse.urljoin( options.base_url, 'api/configuration' ) )
+    configuration_options = get( options.api_key, urljoin( options.base_url, 'api/configuration' ) )
     if 'library_import_dir' not in configuration_options:  # hack to check if is admin user
-        print "Warning: Data Managers are only available to admin users. The API Key provided does not appear to belong to an admin user. Will attempt to run anyway."
+        print("Warning: Data Managers are only available to admin users. The API Key provided does not appear to belong to an admin user. Will attempt to run anyway.")
 
     # Fetch Genomes
     dbkeys = {}
@@ -75,7 +76,7 @@ if __name__ == '__main__':
         else:
             "dbkey (%s) was specified more than once, skipping additional specification." % ( dbkey )
 
-    print 'Genomes Queued for downloading.'
+    print('Genomes Queued for downloading.')
 
     # Start indexers
     indexing_tools = []
@@ -88,16 +89,16 @@ if __name__ == '__main__':
         if dbkeys:
             time.sleep( options.sleep_time )
 
-    print 'All genomes downloaded and indexers now queued.'
+    print('All genomes downloaded and indexers now queued.')
 
     # Wait for indexers to finish
     while indexing_tools:
         for i, indexing_tool_value in enumerate( indexing_tools ):
             if dataset_is_terminal( indexing_tool_value['outputs'][0]['id'], options.api_key, options.base_url ):
-                print 'Finished:', indexing_tool_value
+                print('Finished:', indexing_tool_value)
                 del indexing_tools[i]
                 break
         if indexing_tools:
             time.sleep( options.sleep_time )
 
-    print 'All indexers have been run, please check results.'
+    print('All indexers have been run, please check results.')

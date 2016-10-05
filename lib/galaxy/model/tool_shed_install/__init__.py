@@ -590,26 +590,18 @@ class ToolVersion( object, Dictifiable ):
         self.tool_shed_repository = tool_shed_repository
 
     def get_previous_version( self, app ):
-        context = app.install_model.context
-        tva = context.query( app.install_model.ToolVersionAssociation ) \
-                     .filter( app.install_model.ToolVersionAssociation.table.c.tool_id == self.id ) \
-                     .first()
-        if tva:
-            return context.query( app.install_model.ToolVersion ) \
-                          .filter( app.install_model.ToolVersion.table.c.id == tva.parent_id ) \
-                          .first()
-        return None
+        parent_id = app.tool_version_cache.tool_id_to_parent_id.get(self.id, None)
+        if parent_id:
+            return app.tool_version_cache.tool_version_by_id[parent_id]
+        else:
+            return None
 
     def get_next_version( self, app ):
-        context = app.install_model.context
-        tva = context.query( app.install_model.ToolVersionAssociation ) \
-                     .filter( app.install_model.ToolVersionAssociation.table.c.parent_id == self.id ) \
-                     .first()
-        if tva:
-            return context.query( app.install_model.ToolVersion ) \
-                          .filter( app.install_model.ToolVersion.table.c.id == tva.tool_id ) \
-                          .first()
-        return None
+        child_id = app.tool_version_cache.parent_id_to_tool_id.get(self.id, None)
+        if child_id:
+            return app.tool_version_cache.tool_version_by_id[child_id]
+        else:
+            return None
 
     def get_versions( self, app ):
         tool_versions = []

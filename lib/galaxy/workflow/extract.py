@@ -25,8 +25,8 @@ log = logging.getLogger( __name__ )
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
-def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
-    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids, dataset_collection_ids=dataset_collection_ids )
+def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None ):
+    steps = extract_steps( trans, history=history, job_ids=job_ids, dataset_ids=dataset_ids, dataset_collection_ids=dataset_collection_ids, dataset_names=dataset_names, dataset_collection_names=None )
     # Workflow to populate
     workflow = model.Workflow()
     workflow.name = workflow_name
@@ -52,7 +52,7 @@ def extract_workflow( trans, user, history=None, job_ids=None, dataset_ids=None,
     return stored
 
 
-def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None ):
+def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_collection_ids=None, dataset_names=None, dataset_collection_names=None ):
     # Ensure job_ids and dataset_ids are lists (possibly empty)
     if job_ids is None:
         job_ids = []
@@ -79,25 +79,33 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     steps_by_job_id = {}
     hid_to_output_pair = {}
     # Input dataset steps
-    for hid in dataset_ids:
+    for i, hid in enumerate( dataset_ids ):
         step = model.WorkflowStep()
         step.type = 'data_input'
-        step.tool_inputs = dict( name="Input Dataset" )
+        if dataset_names:
+            name = dataset_names[i]
+        else:
+            name = "Input Dataset"
+        step.tool_inputs = dict( name=name )
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
-    for hid in dataset_collection_ids:
+    for i, hid in enumerate( dataset_collection_ids ):
         step = model.WorkflowStep()
         step.type = 'data_collection_input'
         if hid not in summary.collection_types:
             raise exceptions.RequestParameterInvalidException( "hid %s does not appear to be a collection" % hid )
         collection_type = summary.collection_types[ hid ]
-        step.tool_inputs = dict( name="Input Dataset Collection", collection_type=collection_type )
+        if dataset_collection_names:
+            name = dataset_collection_names[i]
+        else:
+            name = "Input Dataset Collection"
+        step.tool_inputs = dict( name=name, collection_type=collection_type )
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
     # Tool steps
     for job_id in job_ids:
         if job_id not in jobs_by_id:
-            log.warn( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
+            log.warning( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
             raise AssertionError( "Attempt to create workflow with job not connected to current history" )
         job = jobs_by_id[ job_id ]
         tool_inputs, associations = step_inputs( trans, job )
@@ -141,7 +149,7 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
                 if hid is None:
                     template = "Failed to find matching implicit job - job is %s, jobs are %s, assoc_name is %s."
                     message = template % ( job.id, jobs, assoc.name )
-                    log.warn( message )
+                    log.warning( message )
                     raise Exception( "Failed to extract job." )
             else:
                 if hasattr( assoc, "dataset" ):
@@ -220,15 +228,17 @@ class WorkflowSummary( object ):
         dataset_collection = content
         hid = content.hid
         self.collection_types[ hid ] = content.collection.collection_type
-        if content.creating_job_associations:
-            for assoc in content.creating_job_associations:
-                job = assoc.job
-                if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
-                    self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
-                    if content.implicit_output_name:
-                        self.implicit_map_jobs.append( job )
-                else:
-                    self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
+        cja = content.creating_job_associations
+        if cja:
+            # Use the first job to represent all mapped jobs.
+            representive_job_assoc = content.creating_job_associations[0]
+            job = representive_job_assoc.job
+            if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
+                self.jobs[ job ] = [ ( representive_job_assoc.name, dataset_collection ) ]
+                if content.implicit_output_name:
+                    self.implicit_map_jobs.append( job )
+            else:
+                self.jobs[ job ].append( ( representive_job_assoc.name, dataset_collection ) )
         # This whole elif condition may no longer be needed do to additional
         # tracking with creating_job_associations. Will delete at some point.
         elif content.implicit_output_name:
@@ -241,7 +251,7 @@ class WorkflowSummary( object ):
 
             job_hda = self.__original_hda( dataset_instance )
             if not job_hda.creating_job_associations:
-                log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                log.warning( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
                 job = DatasetCollectionCreationJob( dataset_collection )
                 self.jobs[ job ] = [ ( None, dataset_collection ) ]
 

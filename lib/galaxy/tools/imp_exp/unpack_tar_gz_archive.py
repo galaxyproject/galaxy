@@ -39,7 +39,7 @@ def url_to_file( url, dest_file ):
                 break
         fp.close()
         return dest_file
-    except Exception, e:
+    except Exception as e:
         print "Exception getting file from URL: %s" % e, sys.stderr
         return None
 
@@ -98,5 +98,5 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
     try:
         main(options, args)
-    except Exception, e:
+    except Exception as e:
         print "Error unpacking tar/gz archive: %s" % e, sys.stderr

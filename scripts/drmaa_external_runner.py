@@ -5,7 +5,7 @@ Submit a DRMAA job given a user id and a job template file (in JSON format)
 defining any or all of the following: args, remoteCommand, outputPath,
 errorPath, nativeSpecification, name, email, project
 """
-
+from __future__ import print_function
 import errno
 import json
 import os
@@ -96,7 +96,7 @@ def set_user(uid, assign_all_groups):
             os.setgroups(groups)
         os.setuid(uid)
 
-    except OSError, e:
+    except OSError as e:
         if e.errno == errno.EPERM:
             sys.stderr.write( "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid )
             exit(1)
@@ -129,7 +129,7 @@ def main():
     s.exit()
 
     # Print the Job-ID and exit. Galaxy will pick it up from there.
-    print jobId
+    print(jobId)
 
 if __name__ == "__main__":
     main()

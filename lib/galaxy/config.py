@@ -4,7 +4,6 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
-import ConfigParser
 import logging
 import logging.config
 import os
@@ -15,28 +14,22 @@ import string
 import sys
 import tempfile
 import threading
+import time
+
 from datetime import timedelta
+
 from six import string_types
+from six.moves import configparser
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.postfork import register_postfork_function
 from galaxy.web.formatting import expand_pretty_datetime_format
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
-
-# The uwsgi module is automatically injected by the parent uwsgi
-# process and only exists that way.  If anything works, this is a
-# uwsgi-managed process.
-try:
-    import uwsgi
-    if uwsgi.numproc:
-        process_is_uwsgi = True
-except ImportError:
-    # This is not a uwsgi process, or something went horribly wrong.
-    process_is_uwsgi = False
 
 
 def resolve_path( path, root ):
@@ -57,7 +50,7 @@ class Configuration( object ):
         self.__parse_config_file_options( kwargs )
 
         # Collect the umask and primary gid from the environment
-        self.umask = os.umask( 077 )  # get the current umask
+        self.umask = os.umask( 0o77 )  # get the current umask
         os.umask( self.umask )  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
@@ -112,6 +105,7 @@ class Configuration( object ):
 
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
+        self.password_expiration_period = timedelta( days=int( kwargs.get( "password_expiration_period", 0 ) ) )
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
@@ -151,7 +145,8 @@ class Configuration( object ):
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.max_metadata_value_size = int( kwargs.get( "max_metadata_value_size", 5242880 ) )
-        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
+        self.single_user = kwargs.get( "single_user", None )
+        self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) ) or self.single_user
         self.normalize_remote_user_email = string_as_bool( kwargs.get( "normalize_remote_user_email", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
@@ -160,7 +155,7 @@ class Configuration( object ):
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
-        self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "False" ) )
+        self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "True" ) )
         self.allow_user_impersonation = string_as_bool( kwargs.get( "allow_user_impersonation", "False" ) )
         self.new_user_dataset_access_role_default_private = string_as_bool( kwargs.get( "new_user_dataset_access_role_default_private", "False" ) )
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
@@ -194,8 +189,10 @@ class Configuration( object ):
         activation_email = kwargs.get( 'activation_email', None )
         self.email_from = kwargs.get( 'email_from', activation_email )
         self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
-        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
-        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.activation_grace_period = int( kwargs.get( 'activation_grace_period', 3 ) )
+        default_inactivity_box_content = ( "Your account has not been activated yet. Feel free to browse around and see what's available, but"
+                                           " you won't be able to upload data or run jobs until you have verified your email address." )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', default_inactivity_box_content )
         self.terms_url = kwargs.get( 'terms_url', None )
         self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
@@ -218,12 +215,15 @@ class Configuration( object ):
         self.track_jobs_in_database = string_as_bool( kwargs.get( 'track_jobs_in_database', 'True') )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
+        self.enable_communication_server = string_as_bool( kwargs.get( 'enable_communication_server', 'False' ) )
+        self.communication_server_host = kwargs.get( 'communication_server_host', 'http://localhost' )
+        self.communication_server_port = int( kwargs.get( 'communication_server_port', '7070' ) )
+        self.persistent_communication_rooms = listify( kwargs.get( "persistent_communication_rooms", [] ), do_strip=True )
         # External Service types used in sample tracking
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
-        self.commands_in_new_shell = string_as_bool( kwargs.get( 'enable_beta_tool_command_isolation', "True" ) )
         self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
         self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
         # Enable new interface for API installations from TS.
@@ -292,6 +292,8 @@ class Configuration( object ):
         self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
+        self.ftp_upload_dir_template = kwargs.get( 'ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep )
+        self.ftp_upload_purge = string_as_bool(  kwargs.get( 'ftp_upload_purge', 'True' ) )
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
@@ -302,11 +304,18 @@ class Configuration( object ):
         self.tool_name_boost = kwargs.get( "tool_name_boost", 9 )
         self.tool_section_boost = kwargs.get( "tool_section_boost", 3 )
         self.tool_description_boost = kwargs.get( "tool_description_boost", 2 )
+        self.tool_labels_boost = kwargs.get( "tool_labels_boost", 1 )
+        self.tool_stub_boost = kwargs.get( "tool_stub_boost", 5 )
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
-        if 'tool_dependency_dir' in kwargs:
-            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
+        # Location for tool dependencies.
+        tool_dependency_dir = kwargs.get( "tool_dependency_dir", "database/dependencies" )
+        if tool_dependency_dir.lower() == "none":
+            tool_dependency_dir = None
+
+        if tool_dependency_dir is not None:
+            self.tool_dependency_dir = resolve_path( tool_dependency_dir, self.root )
             # Setting the following flag to true will ultimately cause tool dependencies
             # to be located in the shell environment and used by the job that is executing
             # the tool.
@@ -351,7 +360,7 @@ class Configuration( object ):
         self.irods_default_resource = kwargs.get( 'irods_default_resource', None )
         # Parse global_conf and save the parser
         global_conf = kwargs.get( 'global_conf', None )
-        global_conf_parser = ConfigParser.ConfigParser()
+        global_conf_parser = configparser.ConfigParser()
         self.config_file = None
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
@@ -410,7 +419,7 @@ class Configuration( object ):
         self.amqp = {}
         try:
             amqp_config = global_conf_parser.items("galaxy_amqp")
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             amqp_config = {}
         for k, v in amqp_config:
             self.amqp[k] = v
@@ -446,6 +455,7 @@ class Configuration( object ):
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get( 'statsd_host', '')
         self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
+        self.statsd_prefix = kwargs.get( 'statsd_prefix', 'galaxy' )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
@@ -513,6 +523,7 @@ class Configuration( object ):
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
+            tool_destinations_config_file=[ 'config/tool_destinations.yml', 'config/tool_destinations.yml.sample' ],
             job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
@@ -607,7 +618,7 @@ class Configuration( object ):
                 rval[ tool ].append( runner_dict )
 
             return rval
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             return {}
 
     def get( self, key, default ):
@@ -626,7 +637,7 @@ class Configuration( object ):
         if path not in [ None, False ] and not os.path.isdir( path ):
             try:
                 os.makedirs( path )
-            except Exception, e:
+            except Exception as e:
                 raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
 
     def check( self ):
@@ -636,7 +647,7 @@ class Configuration( object ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
                     os.makedirs( path )
-                except Exception, e:
+                except Exception as e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
         if self.object_store_config_file is None:
@@ -679,7 +690,7 @@ class Configuration( object ):
 
     def guess_galaxy_port(self):
         # Code derived from IPython work ie.mako
-        config = ConfigParser.SafeConfigParser({'port': '8080'})
+        config = configparser.SafeConfigParser({'port': '8080'})
         if self.config_file:
             config.read( self.config_file )
 
@@ -728,7 +739,7 @@ def get_database_engine_options( kwargs, model_prefix='' ):
     prefix = "%sdatabase_engine_option_" % model_prefix
     prefix_len = len( prefix )
     rval = {}
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         if key.startswith( prefix ):
             key = key[prefix_len:]
             if key in conversions:
@@ -755,9 +766,14 @@ def configure_logging( config ):
         log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
         # Set level
         root.setLevel( level )
-        # Turn down paste httpserver logging
-        if level <= logging.DEBUG:
-            logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
+
+        disable_chatty_loggers = string_as_bool( config.get( "auto_configure_logging_disable_chatty", "True" ) )
+        if disable_chatty_loggers:
+            # Turn down paste httpserver logging
+            if level <= logging.DEBUG:
+                for chatty_logger in ["paste.httpserver.ThreadPool", "routes.middleware"]:
+                    logging.getLogger( chatty_logger ).setLevel( logging.WARN )
+
         # Remove old handlers
         for h in root.handlers[:]:
             root.removeHandler(h)
@@ -776,7 +792,7 @@ def configure_logging( config ):
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
-        root.addHandler( sentry_handler )
+        register_postfork_function(root.addHandler, sentry_handler)
 
 
 class ConfiguresGalaxyMixin:
@@ -786,6 +802,15 @@ class ConfiguresGalaxyMixin:
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
+    def wait_for_toolbox_reload(self, old_toolbox):
+        while True:
+            # Wait till toolbox reload has been triggered
+            # and make sure toolbox has finished reloading)
+            if self.toolbox.has_reloaded(old_toolbox):
+                break
+
+            time.sleep(1)
+
     def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
 
@@ -794,21 +819,22 @@ class ConfiguresGalaxyMixin:
             tool_configs.append( self.config.migrated_tools_config )
 
         from galaxy import tools
-        with self._toolbox_lock:
-            old_toolbox = self.toolbox
-            self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-            self.reindex_tool_search()
-            if old_toolbox:
-                old_toolbox.shutdown()
+        old_toolbox = self.toolbox
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        self.reindex_tool_search()
+        if old_toolbox:
+            old_toolbox.shutdown()
 
     def _configure_toolbox( self ):
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager( self )
 
         from galaxy.tools.toolbox.cache import ToolCache
+        from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
         self.tool_cache = ToolCache()
+        self.tool_version_cache = ToolVersionCache(self)
 
-        self._toolbox_lock = threading.Lock()
+        self._toolbox_lock = threading.RLock()
         self.toolbox = None
         self.reload_toolbox()
 
@@ -816,18 +842,21 @@ class ConfiguresGalaxyMixin:
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
         app_info = containers.AppInfo(
-            galaxy_root_dir,
+            galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
+            library_import_dir=self.config.library_import_dir
         )
         self.container_finder = containers.ContainerFinder(app_info)
 
-    def reindex_tool_search( self ):
+    def reindex_tool_search( self, toolbox=None ):
         # Call this when tools are added or removed.
         import galaxy.tools.search
         index_help = getattr( self.config, "index_tool_help", True )
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
+        if not toolbox:
+            toolbox = self.toolbox
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager
