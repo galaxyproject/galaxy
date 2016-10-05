@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.10.5.dev0
+16.10.5 (2016-10-04)
 ---------------------
 
 * Some docstring cleanup and minor tweaks to Conda support for downstream planemo mulled work.
