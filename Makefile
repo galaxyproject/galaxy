@@ -30,11 +30,11 @@ docs: ## generate Sphinx HTML documentation, including API docs
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
-	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/plantuml_options.txt -tsvg $(SLIDESHOW_DIR)/galaxy_architecture_2015/images/ *.plantuml.txt
-	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' $(SLIDESHOW_DIR)/galaxy_architecture_2015/galaxy_architecture_2015.md
+	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/architecture/images/plantuml_options.txt -tsvg $(SLIDESHOW_DIR)/architecture/images/ *.plantuml.txt
+	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' $(SLIDESHOW_DIR)/architecture/galaxy_architecture.md
 
 docs-slides-export: docs-slides-ready
-	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture_2015/galaxy_architecture_2015.html
+	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
 
 docs-schema-ready: ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
 	python $(DOCS_DIR)/parse_gx_xsd.py > $(DOCS_DIR)/schema.md
