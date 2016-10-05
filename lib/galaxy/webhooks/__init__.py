@@ -13,9 +13,10 @@ log = logging.getLogger(__name__)
 
 <<<<<<< HEAD
 class Webhook(object):
-    def __init__(self, w_name, w_type, w_path):
+    def __init__(self, w_name, w_type, w_activate, w_path):
         self.name = w_name
         self.type = w_type
+        self.activate = w_activate
         self.path = w_path
         self.styles = ''
         self.script = ''
@@ -26,6 +27,7 @@ class Webhook(object):
         return {
             'name': self.name,
             'type': self.type,
+            'activate': self.activate,
             'styles': self.styles,
             'script': self.script,
             'config': self.config
@@ -67,7 +69,12 @@ class WebhooksRegistry(object):
             with open(os.path.join(config_dir, config_file)) as f:
                 config = yaml.load(f)
                 path = os.path.normpath(os.path.join(config_dir, '..'))
-                webhook = Webhook(config['name'], config['type'], path)
+                webhook = Webhook(
+                    config['name'],
+                    config['type'],
+                    config['activate'],
+                    path,
+                )
 
                 # Read styles into a string, assuming all styles are in a
                 # single file

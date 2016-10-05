@@ -85,7 +85,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     if ( response.jobs && response.jobs.length > 0 ) {
                         self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
                         var WebhookApp = new Webhooks.WebhookView({
-                            urlRoot: Galaxy.root + 'api/webhooks/tools'
+                            urlRoot: Galaxy.root + 'api/webhooks/tool'
                         });
                     }
 

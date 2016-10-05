@@ -1,4 +1,5 @@
 name: xkcd
 type:
-  - tools
+  - tool
   - workflow
+activate: true
