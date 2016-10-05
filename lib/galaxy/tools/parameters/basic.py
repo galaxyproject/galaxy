@@ -41,6 +41,7 @@ def contains_workflow_parameter( value, search=False ):
         return True
     return False
 
+
 def parse_dynamic_options( param, input_source ):
     options_elem = input_source.parse_dynamic_options_elem()
     if options_elem is not None:
