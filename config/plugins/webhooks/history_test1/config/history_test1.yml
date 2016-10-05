@@ -2,3 +2,4 @@ name: history_test1
 title: History Menu Webhook Item 1
 type: 
   - history-menu
+activate: false

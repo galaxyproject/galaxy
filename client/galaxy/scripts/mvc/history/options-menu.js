@@ -169,30 +169,9 @@ var menu = [
     }
 ];
 
-
 // Webhooks
+Webhooks.addToHistoryMenu(_l, menu);
 
-var webhooks = new Webhooks.Webhooks();
-webhooks.url = Galaxy.root + 'api/webhooks/history-menu/all';
-webhooks.fetch({
-    async: false,   // slows down History Panel loading
-    success: function() {
-        if (webhooks.length > 0) {
-            menu.push({
-                html   : _l( 'Webhooks' ),
-                header : true
-            });
-
-            $.each(webhooks.models, function(index, model) {
-                var webhook = model.toJSON();
-                menu.push({
-                    html : _l( webhook.config.title ),
-                    anon : true
-                });
-            });
-        }
-    }
-});
 
 function buildMenu( isAnon, purgeAllowed, urlRoot ){
     return _.clone( menu ).filter( function( menuOption ){
