@@ -251,9 +251,7 @@ So by default Galaxy does not require:
 
 ---
 
-class: white
-
-background-image: url(images/server_client.mermaid.svg)
+background-image: url(images/server_client.plantuml.svg)
 
 ???
 
@@ -270,8 +268,7 @@ background-image: url(images/backbone-model-view.svg)
 
 ---
 
-class: white
-background-image: url(images/server_client_old.mermaid.svg)
+background-image: url(images/server_client_old.plantuml.svg)
 
 ???
 
