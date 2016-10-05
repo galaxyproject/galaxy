@@ -41,6 +41,12 @@ def contains_workflow_parameter( value, search=False ):
         return True
     return False
 
+def parse_dynamic_options( param, input_source ):
+    options_elem = input_source.parse_dynamic_options_elem()
+    if options_elem is not None:
+        return dynamic_options.DynamicOptions( options_elem, param )
+    return None
+
 
 class ToolParameter( object, Dictifiable ):
     """
@@ -666,19 +672,6 @@ class BaseURLToolParameter( HiddenToolParameter ):
         return d
 
 
-def DEFAULT_VALUE_MAP(x):
-    return x
-
-
-def parse_dynamic_options(param, input_source):
-    options_elem = input_source.parse_dynamic_options_elem()
-    if options_elem is None:
-        options = None
-    else:
-        options = dynamic_options.DynamicOptions( options_elem, param )
-    return options
-
-
 class SelectToolParameter( ToolParameter ):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -812,7 +805,7 @@ class SelectToolParameter( ToolParameter ):
                 raise ValueError( "An invalid option was selected for %s, %r, please verify." % ( self.name, value ) )
             return value
 
-    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
+    def to_param_dict_string( self, value, other_values={} ):
         if value is None:
             return "None"
         if isinstance( value, list ):
@@ -827,9 +820,7 @@ class SelectToolParameter( ToolParameter ):
             else:
                 value = sanitize_param( value )
         if isinstance( value, list ):
-            value = self.separator.join( map( value_map, value ) )
-        else:
-            value = value_map( value )
+            value = self.separator.join( value )
         return value
 
     def to_json( self, value, app, use_security ):
@@ -1268,7 +1259,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval.append( val )
         return rval
 
-    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
+    def to_param_dict_string( self, value, other_values={} ):
         def get_options_list( value ):
             def get_base_option( value, options ):
                 for option in options:
@@ -1300,7 +1291,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 rval.extend( options )
         if len( rval ) > 1 and not self.multiple:
             raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
-        rval = self.separator.join( map( value_map, rval ) )
+        rval = self.separator.join( rval )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
                 rval = self.sanitizer.sanitize_param( rval )
