@@ -224,34 +224,31 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Render workflow parameters */
         _renderHistory: function() {
-            this.history_form = null;
-            if ( !this.model.get( 'history_id' ) ) {
-                this.history_form = new Form({
-                    cls    : 'ui-portlet-narrow',
-                    title  : '<b>History Options</b>',
-                    inputs : [{
-                        type        : 'conditional',
-                        name        : 'new_history',
-                        test_param  : {
-                            name        : 'check',
-                            label       : 'Send results to a new history',
-                            type        : 'boolean',
-                            value       : 'false',
-                            help        : ''
-                        },
-                        cases       : [{
-                            value   : 'true',
-                            inputs  : [{
-                                name    : 'name',
-                                label   : 'History name',
-                                type    : 'text',
-                                value   : this.model.get( 'name' )
-                            }]
+            this.history_form = new Form({
+                cls    : 'ui-portlet-narrow',
+                title  : '<b>History Options</b>',
+                inputs : [{
+                    type        : 'conditional',
+                    name        : 'new_history',
+                    test_param  : {
+                        name        : 'check',
+                        label       : 'Send results to a new history',
+                        type        : 'boolean',
+                        value       : 'false',
+                        help        : ''
+                    },
+                    cases       : [{
+                        value   : 'true',
+                        inputs  : [{
+                            name    : 'name',
+                            label   : 'History name',
+                            type    : 'text',
+                            value   : this.model.get( 'name' )
                         }]
                     }]
-                });
-                this._append( this.$steps, this.history_form.$el );
-            }
+                }]
+            });
+            this._append( this.$steps, this.history_form.$el );
         },
 
         /** Render step */
@@ -355,8 +352,10 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         /** Validate and submit workflow */
         _submit: function() {
             var self = this;
+            var history_form_data = this.history_form.data.create();
             var job_def = {
-                new_history_name      : this.history_form ? this.history_form.data.create()[ 'new_history|name' ] : {},
+                new_history_name      : history_form_data[ 'new_history|name' ] ? history_form_data[ 'new_history|name' ] : null,
+                history_id            : !history_form_data[ 'new_history|name' ] ? this.model.get( 'history_id' ) : null,
                 replacement_params    : this.wp_form ? this.wp_form.data.create() : {},
                 parameters            : {},
                 // Tool form will submit flat maps for each parameter

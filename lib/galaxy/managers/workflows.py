@@ -406,6 +406,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_models.append( step_model )
         return {
             'id'                    : trans.app.security.encode_id( stored.id ),
+            'history_id'            : trans.app.security.encode_id( trans.history.id ) if trans.history else None,
             'name'                  : stored.name,
             'steps'                 : step_models,
             'step_version_changes'  : step_version_changes,
