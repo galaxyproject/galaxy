@@ -9,7 +9,7 @@ History
 16.10.5.dev0
 ---------------------
 
-    
+* Some docstring cleanup and minor tweaks to Conda support for downstream planemo mulled work.
 
 ---------------------
 16.10.4 (2016-10-03)
