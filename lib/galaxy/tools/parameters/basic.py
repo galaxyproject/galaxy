@@ -1368,25 +1368,6 @@ class BaseDataToolParameter( ToolParameter ):
         super(BaseDataToolParameter, self).__init__( tool, input_source )
         self.refresh_on_change = True
 
-    def _get_history( self, trans ):
-        class_name = self.__class__.__name__
-        assert trans is not None, "%s requires a trans" % class_name
-        assert trans.history is not None, "%s requires a history" % class_name
-        return trans.history
-
-    def _ensure_selection( self, field ):
-        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
-        # Ensure than an item is always selected
-        if self.optional:
-            if set_selected:
-                field.add_option( "Selection is Optional", 'None', False )
-            else:
-                field.add_option( "Selection is Optional", 'None', True )
-        elif not set_selected and bool( field.options ):
-            # Select the last item
-            a, b, c = field.options[-1]
-            field.options[-1] = a, b, True
-
     def _datatypes_registery( self, trans, tool ):
         # Find datatypes_registry
         if tool is None:
