@@ -1,4 +1,4 @@
-from galaxy.util import xml_text
+from galaxy.util import asbool, xml_text
 
 DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
@@ -27,22 +27,44 @@ class ToolRequirement( object ):
 
 
 DEFAULT_CONTAINER_TYPE = "docker"
+DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES = False
+DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are usually thinner.
 
 
 class ContainerDescription( object ):
 
-    def __init__( self, identifier=None, type="docker" ):
+    def __init__(
+        self,
+        identifier=None,
+        type=DEFAULT_CONTAINER_TYPE,
+        resolve_dependencies=DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
+        shell=DEFAULT_CONTAINER_SHELL,
+    ):
         self.identifier = identifier
         self.type = type
+        self.resolve_dependencies = resolve_dependencies
+        self.shell = shell
 
     def to_dict( self ):
-        return dict(identifier=self.identifier, type=self.type)
+        return dict(
+            identifier=self.identifier,
+            type=self.type,
+            resolve_dependencies=self.resolve_dependencies,
+            shell=self.shell,
+        )
 
     @staticmethod
     def from_dict( dict ):
         identifier = dict["identifier"]
         type = dict.get("type", DEFAULT_CONTAINER_TYPE)
-        return ContainerDescription( identifier=identifier, type=type )
+        resolve_dependencies = dict.get("resolve_dependencies", DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES)
+        shell = dict.get("shell", DEFAULT_CONTAINER_SHELL)
+        return ContainerDescription(
+            identifier=identifier,
+            type=type,
+            resolve_dependencies=resolve_dependencies,
+            shell=shell,
+        )
 
 
 def parse_requirements_from_dict( root_dict ):
@@ -92,11 +114,20 @@ def parse_requirements_from_xml( xml_root ):
     if requirements_elem is not None:
         container_elems = requirements_elem.findall( 'container' )
 
-    containers = []
-    for container_elem in container_elems:
-        identifier = xml_text( container_elem )
-        type = container_elem.get( "type", DEFAULT_CONTAINER_TYPE )
-        container = ContainerDescription( identifier=identifier, type=type )
-        containers.append( container )
+    containers = map(container_from_element, container_elems)
 
     return requirements, containers
+
+
+def container_from_element(container_elem):
+    identifier = xml_text(container_elem)
+    type = container_elem.get("type", DEFAULT_CONTAINER_TYPE)
+    resolve_dependencies = asbool(container_elem.get("resolve_dependencies", DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES))
+    shell = container_elem.get("shell", DEFAULT_CONTAINER_SHELL)
+    container = ContainerDescription(
+        identifier=identifier,
+        type=type,
+        resolve_dependencies=resolve_dependencies,
+        shell=shell,
+    )
+    return container

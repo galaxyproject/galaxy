@@ -26,6 +26,7 @@ lib/galaxy/forms/
 lib/galaxy/jobs/
 lib/galaxy/managers/
 lib/galaxy/model/__init__.py
+lib/galaxy/model/mapping.py
 lib/galaxy/model/migrate/
 lib/galaxy/objectstore/
 lib/galaxy/openid/
@@ -71,8 +72,4 @@ scripts/db_shell.py
 scripts/drmaa_external_runner.py
 test/
 tool_list.py
-tools/data_source/
-tools/evolution/
-tools/sr_mapping/
-tools/stats/aggregate_scores_in_intervals.py
-tools/visualization/
+tools/

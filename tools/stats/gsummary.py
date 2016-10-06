@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import re
 import sys
@@ -116,7 +117,7 @@ def main():
         outfile.close()
 
         if skipped_lines:
-            print "Skipped %d invalid lines beginning with line #%d.  See tool tips for data requirements." % ( skipped_lines, first_invalid_line )
+            print("Skipped %d invalid lines beginning with line #%d.  See tool tips for data requirements." % ( skipped_lines, first_invalid_line ))
 
 if __name__ == "__main__":
     main()

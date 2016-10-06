@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Reads a LAV file and writes two BED files.
+from __future__ import print_function
+
 import sys
 
 import bx.align.lav
@@ -38,13 +40,13 @@ def main():
         bedsWritten += 1
 
     for spec, file in species.items():
-        print "#FILE\t%s\t%s" % (file.name, spec)
+        print("#FILE\t%s\t%s" % (file.name, spec))
 
     lav_file.close()
     bed_file1.close()
     bed_file2.close()
 
-    print "%d lav blocks read, %d regions written\n" % (lavsRead, bedsWritten)
+    print("%d lav blocks read, %d regions written\n" % (lavsRead, bedsWritten))
 
 if __name__ == "__main__":
     main()

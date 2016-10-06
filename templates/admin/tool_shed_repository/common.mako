@@ -122,9 +122,9 @@
                 ${repository_dependencies_check_box.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
                     %if export:
-                        Un-check to skip exporting the following additional repositories that are required by this repository.
+                        Select to export the following additional repositories that are required by this repository.
                     %else:
-                        Un-check to skip automatic installation of these additional repositories required by this repository.
+                        Select to automatically install these additional repositories required by this repository.
                     %endif
                 </div>
             </div>
@@ -161,7 +161,7 @@
                     %if disabled:
                         Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
                     %else:
-                        Un-check to skip automatic handling of these tool dependencies.
+                        Select to automatically handle tool dependencies.
                     %endif
                 </div>
             <div style="clear: both"></div>
@@ -194,7 +194,7 @@
         <label>When available, install externally managed dependencies (e.g. conda)? <i>Beta</i></label>
         ${install_resolver_dependencies_check_box.get_html()}
         <div class="toolParamHelp" style="clear: both;">
-            Un-check to skip automatic installation of tool dependencies.
+            Select to automatically install tool dependencies.
         </div>
     </div>
     %endif

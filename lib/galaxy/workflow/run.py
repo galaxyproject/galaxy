@@ -110,10 +110,7 @@ def queue_invoke( trans, workflow, workflow_run_config, request_params={}, popul
         modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections )
     workflow_invocation = workflow_run_config_to_request( trans, workflow_run_config, workflow )
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(
-        workflow_invocation,
-        request_params
-    )
+    return trans.app.workflow_scheduling_manager.queue( workflow_invocation, request_params )
 
 
 class WorkflowInvoker( object ):

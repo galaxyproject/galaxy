@@ -33,14 +33,14 @@ def __main__():
     while True:
         chunk = input.read( CHUNK_SIZE )
         if chunk:
-            for algorithm in algorithms.itervalues():
+            for algorithm in algorithms.values():
                 algorithm.update( chunk )
         else:
             break
 
     output = open( options.output, 'wb' )
     output.write( '#%s\n' % ( '\t'.join( algorithms.keys() ) ) )
-    output.write( '%s\n' % ( '\t'.join( map( lambda x: x.hexdigest(), algorithms.values() ) ) ) )
+    output.write( '%s\n' % ( '\t'.join( x.hexdigest() for x in algorithms.values() ) ) )
     output.close()
 
 if __name__ == "__main__":

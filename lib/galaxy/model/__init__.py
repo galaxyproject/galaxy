@@ -393,6 +393,7 @@ class Job( object, JobLike, Dictifiable ):
         self.tool_id = None
         self.tool_version = None
         self.command_line = None
+        self.dependencies = []
         self.param_filename = None
         self.parameters = []
         self.input_datasets = []
@@ -449,6 +450,9 @@ class Job( object, JobLike, Dictifiable ):
 
     def get_command_line( self ):
         return self.command_line
+
+    def get_dependencies(self):
+        return self.dependencies
 
     def get_param_filename( self ):
         return self.param_filename
@@ -529,6 +533,9 @@ class Job( object, JobLike, Dictifiable ):
 
     def set_command_line( self, command_line ):
         self.command_line = command_line
+
+    def set_dependencies( self, dependencies ):
+        self.dependencies = dependencies
 
     def set_param_filename( self, param_filename ):
         self.param_filename = param_filename

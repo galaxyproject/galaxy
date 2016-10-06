@@ -5,6 +5,8 @@ Classes for wrapping Objects and Sanitizing string output.
 import inspect
 import logging
 import string
+import sys
+
 from numbers import Number
 try:
     from types import NoneType
@@ -39,12 +41,21 @@ except ImportError:
     BufferType = SliceType
     DictProxyType = SliceType
 
-from types import ( FunctionType, MethodType, GeneratorType, CodeType,
-                    BuiltinFunctionType, BuiltinMethodType, ModuleType, TracebackType, FrameType,
-                    GetSetDescriptorType, MemberDescriptorType )
-from six.moves import UserDict
+from types import (
+    BuiltinFunctionType,
+    BuiltinMethodType,
+    CodeType,
+    FrameType,
+    FunctionType,
+    GeneratorType,
+    GetSetDescriptorType,
+    MemberDescriptorType,
+    MethodType,
+    ModuleType,
+    TracebackType,
+)
 from six.moves import copyreg as copy_reg
-import sys
+from six.moves import UserDict
 
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 

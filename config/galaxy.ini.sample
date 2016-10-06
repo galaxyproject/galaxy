@@ -956,7 +956,7 @@ use_interactive = True
 # -- Beta features
 
 # Enable new run workflow form
-#run_workflow_toolform_upgrade = False
+#run_workflow_toolform_upgrade = True
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False

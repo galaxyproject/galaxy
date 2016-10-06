@@ -178,6 +178,10 @@ def populate_api_routes( webapp, app ):
                             parent_resources=dict( member_name='history', collection_name='histories' ),
                             )
 
+    contents_archive_mapper = webapp.mapper.submapper( action='archive', controller='history_contents' )
+    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive' )
+    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}' )
+
     # Legacy access to HDA details via histories/{history_id}/contents/{hda_id}
     webapp.mapper.resource( 'content',
                             'contents',
@@ -273,7 +277,6 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.connect( '/api/workflows/build_module', action='build_module', controller="workflows" )
-    webapp.mapper.connect( '/api_internal/workflows/{workflow_id}/run', action='run', controller="workflows", conditions=dict( method=['POST'] ) )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )

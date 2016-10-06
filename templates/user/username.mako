@@ -17,7 +17,7 @@
             <div class="toolParamHelp" style="clear: both;">
                 Your public name is an identifier that will be used to generate addresses for information
                 you share publicly. Public names must be at least four characters in length and contain only lower-case
-                letters, numbers, and the '-' character.
+                letters, numbers, dots, underscores, and dashes ('.', '_', '-').
             </div>
         </div>
         <div class="form-row">
