@@ -11,6 +11,7 @@ env:
   - TOX_ENV=py27-lint-imports
   - TOX_ENV=py27-lint-imports-include-list
   - TOX_ENV=validate-test-tools
+  - TOX_ENV=py27-lint-docstring-include-list
 
 matrix:
   include:
