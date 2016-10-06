@@ -173,6 +173,27 @@ class CompressedZipArchive( CompressedArchive ):
 
 Binary.register_unsniffable_binary_ext("zip")
 
+class JarArchive( CompressedZipArchive ):
+    """
+        Class describing a java jar archive  https://en.wikipedia.org/wiki/JAR_(file_format) 
+    """
+    file_ext = "jar"
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Compressed jar file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Jar file (%s)" % ( nice_size( dataset.get_size() ) )
+
+
+Binary.register_unsniffable_binary_ext("jar")
 
 class GenericAsn1Binary( Binary ):
     """Class for generic ASN.1 binary format"""
