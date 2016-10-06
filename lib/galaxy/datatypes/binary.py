@@ -173,11 +173,13 @@ class CompressedZipArchive( CompressedArchive ):
 
 Binary.register_unsniffable_binary_ext("zip")
 
+
 class JarArchive( CompressedZipArchive ):
     """
-        Class describing a java jar archive  https://en.wikipedia.org/wiki/JAR_(file_format) 
+        Class describing a java jar archive  https://en.wikipedia.org/wiki/JAR_(file_format)
     """
     file_ext = "jar"
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = "Compressed jar file"
@@ -194,6 +196,7 @@ class JarArchive( CompressedZipArchive ):
 
 
 Binary.register_unsniffable_binary_ext("jar")
+
 
 class GenericAsn1Binary( Binary ):
     """Class for generic ASN.1 binary format"""
