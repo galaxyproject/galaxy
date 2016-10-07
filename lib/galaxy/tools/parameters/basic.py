@@ -624,16 +624,34 @@ class ColorToolParameter( ToolParameter ):
     >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff"/>' ) )
     >>> print p.name
     _name
+    >>> print p.to_param_dict_string( "#fdeada" )
+    #fdeada
     >>> sorted( p.to_dict( trans ).items() )
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', '#ffffff')]
+    >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff" rgb="True"/>' ) )
+    >>> print p.to_param_dict_string( "#fdeada" )
+    (253, 234, 218)
+    >>> print p.to_param_dict_string( None )
+    Traceback (most recent call last):
+        ...
+    ValueError: Failed to convert 'None' to RGB.
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.value = input_source.get( 'value', '#fdeada' )
+        self.rgb = input_source.get( 'rgb', False )
 
     def get_initial_value( self, trans, other_values ):
         return self.value.lower()
+
+    def to_param_dict_string( self, value, other_values={} ):
+        if self.rgb:
+            try:
+                return str( tuple( int( value.lstrip( '#' )[ i : i + 2 ], 16 ) for i in ( 0, 2, 4 ) ) )
+            except:
+                raise ValueError( "Failed to convert \'%s\' to RGB." % value )
+        return str( value )
 
 
 class BaseURLToolParameter( HiddenToolParameter ):
