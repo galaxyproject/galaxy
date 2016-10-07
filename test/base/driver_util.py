@@ -13,14 +13,13 @@ import tempfile
 import threading
 import time
 
-from six.moves.urllib.request import urlretrieve
-
 import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
 
 from paste import httpserver
+import requests
 
 from .api_util import get_master_api_key, get_user_api_key
 from .tool_shed_util import parse_tool_panel_config
@@ -258,7 +257,9 @@ def copy_database_template( source, db_path ):
         shutil.copy(source, db_path)
         assert os.path.exists(db_path)
     elif source.lower().startswith(("http://", "https://", "ftp://")):
-        urlretrieve(source, db_path)
+        r = requests.get(source)
+        with open(db_path, 'w') as f:
+            f.write(r.content)
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
 
