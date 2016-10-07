@@ -11,8 +11,6 @@ from galaxy import exceptions, util
 from galaxy.managers import histories
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, SharableMixin, url_for, UsesStoredWorkflowMixin
 from galaxy.workflow.extract import extract_workflow
