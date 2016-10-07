@@ -28,12 +28,18 @@ for i = 1, #targets do
     target_args = target_args .. " " .. targets[i]
 end
 
+local bind_args = {"build/dist:/usr/local/"}
+local binds_table = VAR.BINDS:split(",")
+for i = 1, #binds_table do
+    table.insert(bind_args, binds_table[i])
+end
+
 inv.task('build')
     .using('continuumio/miniconda:latest')
         .withHostConfig({binds = {"build:/data"}})
         .run('rm', '-rf', '/data/dist')
     .using('continuumio/miniconda:latest')
-        .withHostConfig({binds = {"build/dist:/usr/local/"}})
+        .withHostConfig({binds = bind_args})
         .run('/bin/sh', '-c', 'conda install '
             .. channel_args .. ' '
             .. target_args
