@@ -649,7 +649,7 @@ class ColorToolParameter( ToolParameter ):
         if self.rgb:
             try:
                 return str( tuple( int( value.lstrip( '#' )[ i : i + 2 ], 16 ) for i in ( 0, 2, 4 ) ) )
-            except:
+            except Exception:
                 raise ValueError( "Failed to convert \'%s\' to RGB." % value )
         return str( value )
 

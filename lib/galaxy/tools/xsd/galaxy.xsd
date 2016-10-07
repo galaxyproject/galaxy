@@ -2046,7 +2046,7 @@ in the [planemo documentation](http://planemo.readthedocs.io/en/latest/writing_a
 
 #### ``color``
 
-$attribute_list:value
+$attribute_list:value,rgb
 
 ##### Examples
 
