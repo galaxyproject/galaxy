@@ -520,8 +520,13 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool = self.load_tool_from_cache(os.path.join(tool_path, path))
             from_cache = tool
             if from_cache:
-                log.debug("Loading tool %s from cache", str(tool.id))
-            elif guid:  # tool was not in cache and is a tool shed tool
+                if guid and tool.id != guid:
+                    # In rare cases a tool shed tool is loaded into the cache without guid.
+                    # In that case recreating the tool will correct the cached version.
+                    from_cache = False
+                else:
+                    log.debug("Loading tool %s from cache", str(tool.id))
+            if guid and not from_cache:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
