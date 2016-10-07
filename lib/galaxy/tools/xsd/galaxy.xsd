@@ -3665,7 +3665,6 @@ conditionals are accessed using a hash named after the conditional.
           <filter>options['selection_mode'] == 'advanced' and options['vcf_output']</filter>
       </data>
     </outputs>
-    </outputs>
 ```
 ]]></xs:documentation>
     </xs:annotation>
