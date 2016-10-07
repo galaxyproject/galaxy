@@ -521,8 +521,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         if spec.get("readonly"):
                             continue
                         optional = kwd.get( "is_" + name, None )
-                        if optional and optional == 'true':
-                            # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
+                        if optional and optional == '__NOTHING__':
+                            # optional element... == '__NOTHING__' actually means it is NOT checked (and therefore ommitted)
                             setattr( ldda.metadata, name, None )
                         else:
                             setattr( ldda.metadata, name, spec.unwrap( kwd.get( name, None ) ) )
