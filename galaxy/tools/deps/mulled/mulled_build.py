@@ -34,6 +34,7 @@ DEFAULT_CHANNEL = "bioconda"
 DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
 DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
+DEFAULT_BINDS = []
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 
@@ -114,7 +115,8 @@ def mull_targets(
     targets, involucro_context=None,
     command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
     test='true', image_build=None, name_override=None,
-    repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False
+    repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
+    binds=DEFAULT_BINDS
 ):
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -125,14 +127,21 @@ def mull_targets(
     }
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
 
+    for channel in channels:
+        if channel.startswith('file://'):
+            bind_path = channel.lstrip('file://')
+            binds.append('/%s:/%s' % (bind_path, bind_path))
+
     channels = ",".join(channels)
     target_str = ",".join(map(conda_build_target_str, targets))
+    bind_str = ",".join(binds)
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
         '-set', "CHANNELS='%s'" % channels,
         '-set', "TEST='%s'" % test,
         '-set', "TARGETS='%s'" % target_str,
         '-set', "REPO='%s'" % repo,
+        '-set', "BINDS='%s'" % bind_str,
         command,
     ]
     print(" ".join(involucro_context.build_command(involucro_args)))
@@ -237,6 +246,8 @@ def args_to_mull_targets_kwds(args):
         kwds["namespace"] = args.namespace
     if hasattr(args, "dry_run"):
         kwds["dry_run"] = args.dry_run
+    if hasattr(args, "test"):
+        kwds["test"] = args.test
     if hasattr(args, "channel"):
         channels = [args.channel]
         if hasattr(args, "extra_channels"):
@@ -260,8 +271,9 @@ def main(argv=None):
     parser.add_argument('command', metavar='COMMAND', help='Command (build-and-test, build, all)')
     parser.add_argument('targets', metavar="TARGETS", default=None, help="Build a single container with specific package(s).")
     parser.add_argument('--repository-name', dest="repository_name", default=None, help="Name of mulled container (leave blank to auto-generate based on packages - recommended).")
+    parser.add_argument('--test', help='Provide a test command for the container.')
     args = parser.parse_args()
-    targets = target_str_to_targets(argv.targets)
+    targets = target_str_to_targets(args.targets)
     mull_targets(targets, **args_to_mull_targets_kwds(args))
 
 
