@@ -9,7 +9,8 @@ History
 16.10.7.dev0
 ---------------------
 
-    
+* More mulled enhancements and bug fixes thanks to @bgruening.
+* Fix bioconda support by adding conda-forge to list of default channels.
 
 ---------------------
 16.10.6 (2016-10-07)
