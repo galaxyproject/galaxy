@@ -30,7 +30,7 @@ from ..resolvers import (
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "r,bioconda,iuc"
+DEFAULT_ENSURE_CHANNELS = "conda-forge,r,bioconda,iuc"
 
 log = logging.getLogger(__name__)
 
