@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.10.7.dev0
+16.10.7 (2016-10-08)
 ---------------------
 
 * More mulled enhancements and bug fixes thanks to @bgruening.
