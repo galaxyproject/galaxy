@@ -28,7 +28,7 @@ for i = 1, #targets do
     target_args = target_args .. " " .. targets[i]
 end
 
-local bind_args = {"build/dist:/usr/local/"}
+local bind_args = {}
 local binds_table = VAR.BINDS:split(",")
 for i = 1, #binds_table do
     table.insert(bind_args, binds_table[i])

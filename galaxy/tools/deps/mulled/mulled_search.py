@@ -88,12 +88,14 @@ class QuaySearch():
                     row = [title]
                     row.append(version)
                     out.append(row)
-
-            col_width = max(len(word) for row in out for word in row) + 2  # padding
-            for row in out:
-                name = row[0]
-                version = row[1]
-                sys.stdout.write("".join(word.ljust(col_width) for word in row) + "docker pull quay.io/%s/%s:%s\n" % (self.organization, name, version))
+            if out:
+                col_width = max(len(word) for row in out for word in row) + 2  # padding
+                for row in out:
+                    name = row[0]
+                    version = row[1]
+                    sys.stdout.write("".join(word.ljust(col_width) for word in row) + "docker pull quay.io/%s/%s:%s\n" % (self.organization, name, version))
+            else:
+                sys.stdout.write("No results found for %s in quay.io/%s.\n" % (search_string, self.organization))
 
     def get_additional_repository_information(self, repository_string):
         """
@@ -108,7 +110,7 @@ class QuaySearch():
         return decoded_request['tags']
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(description='Searches in a given quay organization for a repository')
     parser.add_argument('-o', '--organization', dest='organization_string', default="mulled",
                         help='Change organization. Default is mulled.')
@@ -123,3 +125,7 @@ if __name__ == "__main__":
     quay.build_index()
 
     quay.search_repository(args.search, args.non_strict)
+
+
+if __name__ == "__main__":
+    main()

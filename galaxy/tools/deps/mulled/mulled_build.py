@@ -34,7 +34,7 @@ DEFAULT_CHANNEL = "bioconda"
 DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
 DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
-DEFAULT_BINDS = []
+DEFAULT_BINDS = ["build/dist:/usr/local/"]
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 
