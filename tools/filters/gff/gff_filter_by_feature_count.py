@@ -5,6 +5,8 @@ Filter a gff file using a criterion based on feature counts for a transcript.
 Usage:
 %prog input_name output_name feature_name condition
 """
+from __future__ import print_function
+
 import sys
 
 from bx.intervals.io import GenomicInterval
@@ -53,7 +55,7 @@ def __main__():
             except:
                 number = None
             if empty != "" or not number:
-                print >> sys.stderr, "Invalid condition: %s, cannot filter." % condition
+                print("Invalid condition: %s, cannot filter." % condition, file=sys.stderr)
                 return
             break
 
@@ -84,7 +86,7 @@ def __main__():
         ( kept_features, i, float(kept_features) / i * 100.0, feature_name + condition )
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
-    print info_msg
+    print(info_msg)
 
 if __name__ == "__main__":
     __main__()

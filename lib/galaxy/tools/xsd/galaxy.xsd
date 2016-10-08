@@ -2046,7 +2046,7 @@ in the [planemo documentation](http://planemo.readthedocs.io/en/latest/writing_a
 
 #### ``color``
 
-$attribute_list:value
+$attribute_list:value,rgb
 
 ##### Examples
 
@@ -2150,6 +2150,12 @@ parameter.</xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en">If ``false``, parameter must have a
 value. Defaults to "false".</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="rgb" type="xs:string" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">If ``false``, the returned value will be in Hex color code. If ``true``
+it will be a RGB value e.g. 0,0,255. This attribute is only valid when ``type`` is ``color``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:float">
@@ -3658,7 +3664,6 @@ conditionals are accessed using a hash named after the conditional.
       <data format="vcf" label="Variant summary on ${on_string}" name="output_vcf>
           <filter>options['selection_mode'] == 'advanced' and options['vcf_output']</filter>
       </data>
-    </outputs>
     </outputs>
 ```
 ]]></xs:documentation>

@@ -161,7 +161,7 @@ def __main__():
                     all_index_cmds += " -R"
 
                 if options.indexContigOptions:
-                    index_contig_options = map( int, options.indexContigOptions.split( ',' ) )
+                    index_contig_options = [ int(_) for _ in options.indexContigOptions.split( ',' ) ]
                     if index_contig_options[0] >= 0:
                         all_index_cmds += ' -s "%s"' % index_contig_options[0]
                     if index_contig_options[1] >= 0:

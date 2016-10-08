@@ -1412,6 +1412,30 @@ test_data:
         self.__assert_lines_hid_line_count_is( history_id, 2, 4 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 3 )
 
+    @skip_without_tool( "cat1" )
+    @skip_without_tool( "addValue" )
+    def test_run_batch( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_batch" )
+        workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
+        workflow_request = {
+            "history_id" : history_id,
+            "batch"      : True,
+            "parameters_normalized": True,
+            "parameters" : dumps( { "0": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" }, { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } }, "1": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } } )
+        }
+        invocation_response = self._post( "workflows/%s/usage" % workflow_id, data=workflow_request )
+        self._assert_status_code_is( invocation_response, 200 )
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        r1 = "1 2 3\t1\n1 2 3\t2\n"
+        r2 = "4 5 6\t1\n1 2 3\t2\n"
+        t1 = self.dataset_populator.get_history_dataset_content( history_id, hid=5 )
+        t2 = self.dataset_populator.get_history_dataset_content( history_id, hid=8 )
+        assert ( r1 == t1 and r2 == t2 ) or ( r1 == t2 and r2 == t1 )
+
     @skip_without_tool( "validation_default" )
     def test_parameter_substitution_sanitization( self ):
         substitions = dict( input1="\" ; echo \"moo" )

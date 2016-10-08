@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import sys
 
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
@@ -19,7 +21,7 @@ def get_bed_line( chrom, name, strand, blocks ):
     #
 
     # Get transcript start, end.
-    t_start = sys.maxint
+    t_start = sys.maxsize
     t_end = -1
     for block_start, block_end in blocks:
         if block_start < t_start:
@@ -65,8 +67,8 @@ def __main__():
             try:
                 # GFF format: chrom source, name, chromStart, chromEnd, score, strand, attributes
                 elems = line.split( '\t' )
-                start = str( long( elems[3] ) - 1 )
-                coords = [ long( start ), long( elems[4] ) ]
+                start = str( int( elems[3] ) - 1 )
+                coords = [ int( start ), int( elems[4] ) ]
                 strand = elems[6]
                 if strand not in ['+', '-']:
                     strand = '+'
@@ -127,7 +129,7 @@ def __main__():
     info_msg = "%i lines converted to BED.  " % ( i + 1 - skipped_lines )
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
-    print info_msg
+    print(info_msg)
 
 if __name__ == "__main__":
     __main__()

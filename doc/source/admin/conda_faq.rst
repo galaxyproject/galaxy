@@ -50,12 +50,16 @@ Below we answer some common questions (collected by Lance Parsons):
 
 Galaxy's dependency job resolution is managed via
 ``dependency_resolvers_conf.xml`` configuration file. Most Galaxy administrators
-have not set up a dependency resolvers configuration file, which means they are
-using Galaxy's default ( ``dependency_resolvers_conf.xml.sample`` ). With
-release 16.04, Galaxy has enabled Conda dependency resolution by default  when
+should be using Galaxy's default dependency resolvers configuration file
+( ``dependency_resolvers_conf.xml.sample`` ). With
+release 16.04, Galaxy has enabled Conda dependency resolution by default when
 Conda was already installed on the system. Having Conda enabled in
-``dependency_resolvers_conf.xml`` means that Galaxy will look for job
+``dependency_resolvers_conf.xml`` means that Galaxy can look for job
 dependencies using the Conda system when it attempts to run tools.
+
+Note that the order of resolvers in the file matters and the ``<tool_shed_packages />``
+entry should remain first. This means that tools that have specified Tool Shed packages
+as their dependencies will work without a change.
 
 The most common configuration settings related to Conda are listed in Table 1.
 See `galaxy.ini.sample`_ for the complete list.
@@ -101,7 +105,7 @@ See `galaxy.ini.sample`_ for the complete list.
 2. How do Conda dependencies work? Where do things get installed?
 *********************************************************************************
 
-In contrast to the old dependency system, which was used exclusively by Galaxy,
+In contrast to the TS dependency system, which was used exclusively by Galaxy,
 Conda is a pre-existing, independent project. With Conda, it is possible for an
 admin to install and manage packages without touching Galaxy at all. Galaxy can
 handle these dependencies for you, but admins are not required to use Galaxy for
@@ -170,18 +174,27 @@ systems newer than 2007.
 This depends on your ``galaxy.ini`` setting. Starting with release 16.07, Galaxy
 can automatically install the Conda package manager for you if you have enabled
 ``conda_auto_init``. Galaxy can then install Trinity along with its dependencies
-using one of the methods  listed in question 2 above. Further, if
-``conda_auto_install`` is enabled, Galaxy will install Trinity via Conda only
-when a Trinity job is launched and Trinity is not yet installed.
+using one of the methods listed in question 2 above. In particular, if
+``conda_auto_install`` is True and Trinity is not installed yet, Galaxy will try
+to install it via Conda when a Trinity job is launched.
 
 With release 16.07 you can see which dependencies are being used
 in the “Manage installed tools” section of the Admin panel and you can select
 whether or not to install Conda packages or Tool Shed package recipes when you
 install new tools there, even if ``conda_auto_install`` is disabled.
 
-More improvements to the UI will be coming in future releases. To see if Galaxy
-has created a Trinity environment for you have a look at folder under
+During a tool installation, the Galaxy admin has control over which systems will be used to
+install the tool requirements. The default settings will trigger installation
+of both TS and Conda packages (if Conda is present), thus depending on the
+dependency resolvers configuration with regards to what will actually be used during
+the tool execution.
+
+To check if Galaxy has created a Trinity environment, have a look at folders under
 ``<tool_dependency_dir>/_conda/envs/``(or ``<conda_prefix>/envs`` if you have changed `conda_prefix` in your galaxy.ini file).
+
+We recommend to use Conda on a tool-per-tool basis, by unchecking the checkbox
+for TS dependencies during the tool installation, and for tools where there
+are no available TS dependencies.
 
 
 5. Can I mix traditional Galaxy packages and Conda packages?
@@ -198,7 +211,8 @@ The order in which resolvers are tried is listed in the
 -  Packages manually installed by administrators
 -  Conda packages
 
-The first system that satisfies a requirement will be used.
+The first system that satisfies a requirement will be used. See
+`resolver docs`_ for detailed documentation.
 
 
 6. How do I know what system is being used by a given tool?
@@ -206,10 +220,7 @@ The first system that satisfies a requirement will be used.
 
 The Galaxy log will show which dependency resolution system is used
 to satisfy each tool dependency and you can specify priorities using the
-``dependency_resolution_conf.xml`` file. If you put Conda on
-top, Galaxy will first try to use Conda to resolve a tool dependency;
-if this does not work, the following dependency resolver is used, as
-listed. See `resolver docs`_ for detailed documentation. Starting from Galaxy
+``dependency_resolvers_conf.xml`` file (see question 5 above). Starting from Galaxy
 release 16.07, you can see which dependency will be used (“resolved”) in the
 Admin panel.
 

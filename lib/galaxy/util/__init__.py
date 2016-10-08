@@ -570,7 +570,7 @@ def mask_password_from_url( url ):
 
 
 def ready_name_for_url( raw_name ):
-    """ General method to convert a string (i.e. object name) to a URL-ready
+    u""" General method to convert a string (i.e. object name) to a URL-ready
     slug.
 
     >>> ready_name_for_url( "My Cool Object" )

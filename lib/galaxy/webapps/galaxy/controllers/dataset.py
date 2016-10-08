@@ -322,8 +322,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             continue
                         optional = params.get("is_" + name, None)
                         other = params.get("or_" + name, None)
-                        if optional and optional == 'true':
-                            # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
+                        if optional and optional == '__NOTHING__':
+                            # optional element... == '__NOTHING__' actually means it is NOT checked (and therefore omitted)
                             setattr(data.metadata, name, None)
                         else:
                             if other:

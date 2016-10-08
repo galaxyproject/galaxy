@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import optparse
 import sys
@@ -80,7 +81,7 @@ options (listed below) default to 'None' if omitted
         line = line.rstrip( '\r\n' )
         if line:
             if options.fastq and i % 2 == 0:
-                print line
+                print(line)
                 continue
 
             if line[0] not in invalid_starts:
@@ -105,7 +106,7 @@ options (listed below) default to 'None' if omitted
                     else:
                         fields[col - 1] = fields[col - 1][ int( options.start ) - 1: ]
                     line = '\t'.join(fields)
-            print line
+            print(line)
 
 if __name__ == "__main__":
     main()

@@ -3,6 +3,7 @@
 # Selects N random lines from a file and outputs to another file, maintaining original line order
 # allows specifying a seed
 # does two passes to determine line offsets/count, and then to output contents
+from __future__ import print_function
 
 import optparse
 import random
@@ -68,9 +69,9 @@ def __main__():
         writer( readliner() )
     input.close()
     output.close()
-    print "Kept %i of %i total lines." % ( num_lines, total_lines )
+    print("Kept %i of %i total lines." % ( num_lines, total_lines ))
     if options.seed is not None:
-        print 'Used random seed of "%s".' % options.seed
+        print('Used random seed of "%s".' % options.seed)
 
 if __name__ == "__main__":
     __main__()
