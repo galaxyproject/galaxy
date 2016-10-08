@@ -82,6 +82,7 @@ def image_name(targets, image_build=None, name_override=None):
         print("WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result.")
         return name_override
 
+    targets = list(targets)
     if len(targets) == 1:
         target = targets[0]
         suffix = ""
@@ -99,7 +100,7 @@ def image_name(targets, image_build=None, name_override=None):
         targets_order = sorted(targets, key=lambda t: t.package_name)
         requirements_buffer = "\n".join(map(conda_build_target_str, targets_order))
         m = hashlib.sha1()
-        m.update(requirements_buffer)
+        m.update(requirements_buffer.encode())
         suffix = "" if not image_build else ":%s" % image_build
         return "mulled-v1-%s%s" % (m.hexdigest(), suffix)
 
