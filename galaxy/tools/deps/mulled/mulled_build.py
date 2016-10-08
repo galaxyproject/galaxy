@@ -118,6 +118,7 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     binds=DEFAULT_BINDS
 ):
+    targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
 
