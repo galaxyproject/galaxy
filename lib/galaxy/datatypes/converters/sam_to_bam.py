@@ -11,6 +11,7 @@ import optparse
 import tempfile
 import subprocess
 import shutil
+from distutils.version import LooseVersion
 
 CHUNK_SIZE = 2 ** 20  # 1mb
 
@@ -18,6 +19,18 @@ CHUNK_SIZE = 2 ** 20  # 1mb
 def cleanup_before_exit( tmp_dir ):
     if tmp_dir and os.path.exists( tmp_dir ):
         shutil.rmtree( tmp_dir )
+
+def getSamtoolsVersion():
+    cmd = 'samtools --version'
+    proc = subprocess.Popen( args=cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+    stdout, stderr = proc.communicate()
+    if proc.returncode:
+       sys.stderr.write(stderr)
+       return None
+    else:
+       return stdout.split("\n")[0].split()[-1]
+
+
 
 
 def __main__():
@@ -52,7 +65,12 @@ def __main__():
     # sort sam, so indexing will not fail
     sorted_stderr_filename = os.path.join( tmp_dir, 'sorted.stderr' )
     sorting_prefix = os.path.join( tmp_dir, 'sorted_bam' )
-    cmd = 'samtools sort -o "%s" "%s" > "%s"' % ( unsorted_bam_filename, sorting_prefix, output_filename )
+    # samtools changed sort command arguments (starting from version 1.3)
+    samtools_version =  LooseVersion(getSamtoolsVersion())
+    if samtools_version <  LooseVersion('1.3'):
+      cmd = 'samtools sort -o "%s" "%s" > "%s"' % ( unsorted_bam_filename, sorting_prefix, output_filename )
+    else:
+      cmd = 'samtools sort -T "%s" "%s" > "%s"' % ( sorting_prefix, unsorted_bam_filename, output_filename )
     proc = subprocess.Popen( args=cmd, stderr=open( sorted_stderr_filename, 'wb' ), shell=True, cwd=tmp_dir )
     return_code = proc.wait()
 
