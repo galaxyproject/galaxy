@@ -16,6 +16,8 @@ log = logging.getLogger(__name__)
 class WebhooksController(BaseAPIController):
     def __init__(self, app):
         super(WebhooksController, self).__init__(app)
+
+    @expose_api_anonymous_and_sessionless
     def get_all(self, trans, **kwd):
         """
         *GET /api/webhooks/

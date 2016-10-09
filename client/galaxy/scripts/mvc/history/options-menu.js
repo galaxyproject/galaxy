@@ -30,11 +30,15 @@ var menu = [
     },
     {
         html    : _l( 'Create New' ),
-        func    : function(){ Galaxy.currHistoryPanel.createNewHistory(); }
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel ){
+                Galaxy.currHistoryPanel.createNewHistory();
+            }
+        },
     },
     {
         html    : _l( 'Copy History' ),
-        func    : function(){
+        func    : function() {
             historyCopyDialog( Galaxy.currHistoryPanel.model )
                 .done( function(){
                     Galaxy.currHistoryPanel.loadCurrentHistory();
@@ -56,23 +60,15 @@ var menu = [
     },
     {
         html    : _l( 'Delete' ),
-        anon    : true,
-        func    : function() {
-            if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete the current history?' ) ) ){
-                galaxy_main.window.location.href = 'history/delete?id=' + Galaxy.currHistoryPanel.model.id;
-            }
-        },
+        confirm : _l( 'Really delete the current history?' ),
+        href    : 'history/delete_current',
     },
     {
         html    : _l( 'Delete Permanently' ),
+        confirm : _l( 'Really delete the current history permanently? This cannot be undone.' ),
+        href    : 'history/delete_current?purge=True',
         purge   : true,
         anon    : true,
-        func    : function() {
-            if( Galaxy && Galaxy.currHistoryPanel
-            &&  confirm( _l( 'Really delete the current history permanently? This cannot be undone.' ) ) ){
-                galaxy_main.window.location.href = 'history/delete?purge=True&id=' + Galaxy.currHistoryPanel.model.id;
-            }
-        },
     },
 
 
@@ -96,17 +92,48 @@ var menu = [
     },
     {
         html    : _l( 'Collapse Expanded Datasets' ),
-        func    : function(){ Galaxy.currHistoryPanel.collapseAll(); }
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel ){
+                Galaxy.currHistoryPanel.collapseAll();
+            }
+        },
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),
         anon    : true,
-        func    : function(){ Galaxy.currHistoryPanel.unhideHidden(); }
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really unhide all hidden datasets?' ) ) ){
+                var filtered = Galaxy.currHistoryPanel.model.contents.hidden();
+                //TODO: batch
+                filtered.ajaxQueue( Backbone.Model.prototype.save, { visible : true })
+                    .done( function(){
+                        Galaxy.currHistoryPanel.renderItems();
+                    })
+                    .fail( function(){
+                        alert( 'There was an error unhiding the datasets' );
+                        console.error( arguments );
+                    });
+            }
+        },
     },
     {
         html    : _l( 'Delete Hidden Datasets' ),
         anon    : true,
-        func    : function(){ Galaxy.currHistoryPanel.deleteHidden(); }
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete all hidden datasets?' ) ) ){
+                var filtered = Galaxy.currHistoryPanel.model.contents.hidden();
+                //TODO: batch
+                // both delete *and* unhide them
+                filtered.ajaxQueue( Backbone.Model.prototype.save, { deleted : true, visible: true })
+                    .done( function(){
+                        Galaxy.currHistoryPanel.renderItems();
+                    })
+                    .fail( function(){
+                        alert( 'There was an error deleting the datasets' );
+                        console.error( arguments );
+                    });
+            }
+        },
     },
     {
         html    : _l( 'Purge Deleted Datasets' ),
@@ -115,6 +142,7 @@ var menu = [
         purge   : true,
         anon    : true,
     },
+
 
     {
         html    : _l( 'Downloads' ),
@@ -140,7 +168,6 @@ var menu = [
         href    : 'history/import_archive',
     }
 ];
-
 
 // Webhooks
 Webhooks.addToHistoryMenu(_l, menu);
