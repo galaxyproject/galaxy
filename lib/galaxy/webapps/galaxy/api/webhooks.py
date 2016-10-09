@@ -64,5 +64,7 @@ class WebhooksController(BaseAPIController):
             for webhook in self.app.webhooks_registry.webhooks
             if webhook.name == webhook_name
         ]
-        return imp.load_source('helper', webhook[0].helper).main(webhook[0]) \
-            if webhook and webhook[0].helper != '' else {}
+        return imp.load_source('helper', webhook[0].helper).main(
+            trans,
+            webhook[0],
+        ) if webhook and webhook[0].helper != '' else {}

@@ -53,7 +53,7 @@ define([], function() {
                                 icon    : (typeof webhook.config.icon != 'undefined') ? webhook.config.icon : '',
                                 url     : (typeof webhook.config.url != 'undefined') ? webhook.config.url : '',
                                 tooltip : (typeof webhook.config.tooltip != 'undefined') ? webhook.config.tooltip : '',
-                                // onclick : function() {},
+                                onclick : (typeof webhook.config.function != 'undefined') ? new Function(webhook.config.function) : '',
                                 // visible : webhook.activate
                             });
                         }

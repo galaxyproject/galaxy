@@ -3,6 +3,8 @@ type:
   - masthead
 activate: false
 
-icon: fa-repeat
-tooltip: Masthead Plugin Test
+icon: fa-star-half-o
+tooltip: Biostars Galaxy
 
+function: >
+  window.open('https://biostar.usegalaxy.org', '_blank');

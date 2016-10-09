@@ -16,7 +16,7 @@ def get_latest_id():
     ])
 
 
-def main(webhook):
+def main(trans, webhook):
     error = ''
     data = {}
 
