@@ -18,9 +18,7 @@ var Collection = Backbone.Collection.extend({
         this.add(extendedNavItem.render());
 
         // Webhook
-        var webhook = new Webhooks.WebhookView({
-            urlRoot: Galaxy.root + 'api/webhooks/masthead'
-        });
+        Webhooks.addToMastheadMenu();
 
         //
         // Analyze data tab.

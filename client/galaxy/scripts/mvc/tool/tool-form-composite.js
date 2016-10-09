@@ -1,6 +1,6 @@
 /** This is the run workflow tool form view. */
-define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal' ],
-    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal ) {
+define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal', 'mvc/webhooks' ],
+    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal, Webhooks ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -409,6 +409,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.children().hide();
                         self.$el.append( self._templateSuccess( response ) );
+                        
+                        // Show Webhook if job is running
+                        if ($.isArray( response ) && response.length > 0) {
+                            self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
+                            var WebhookApp = new Webhooks.WebhookView({
+                                urlRoot: Galaxy.root + 'api/webhooks/workflow'
+                            });
+                        }
+
                         self._refreshHistory();
                     },
                     error   : function( response ) {
