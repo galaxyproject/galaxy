@@ -2295,65 +2295,73 @@ class MergeCollectionTool( DatabaseOperationTool ):
     tool_type = 'merge_collection'
 
     def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
-        list_one = incoming[ "input" ]
-        list_two = incoming[ "input2" ]
-        dupl_actions = incoming["conflict"]['duplicate_options']
+        input_lists = []
 
-        if dupl_actions == 'suffix':
-            suffix_iden = incoming['conflict']['prefix_suffix']
+        for incoming_repeat in incoming[ "inputs" ]:
+            input_lists.append(incoming_repeat["input"])
 
-        identifier_seen = {}
+        advanced = incoming.get("advanced", None)
+        dupl_actions = "keep_first"
+        suffix_pattern = None
+        if advanced is not None:
+            dupl_actions = advanced["conflict"]['duplicate_options']
 
+            if dupl_actions in ['suffix_conflict', 'suffix_every']:
+                suffix_pattern = advanced['conflict']['suffix_pattern']
+
+        new_element_structure = odict()
+
+        # Which inputs does the identifier appear in.
+        identifiers_map = {}
+        for input_num, input_list in enumerate(input_lists):
+            for dce in input_list.collection.elements:
+                    element_identifier = dce.element_identifier
+                    if element_identifier not in identifiers_map:
+                        identifiers_map[element_identifier] = []
+                    elif dupl_actions == "fail":
+                        raise Exception("Duplicate collection element identifiers found for [%s]" % element_identifier)
+                    identifiers_map[element_identifier].append(input_num)
+
+        for copy, input_list in enumerate(input_lists):
+            for dce in input_list.collection.elements:
+                element = dce.element_object
+                valid = False
+
+                # dealing with a single element
+                if hasattr(element, "is_ok"):
+                    if element.is_ok:
+                        valid = True
+                elif hasattr(element, "dataset_instances"):
+                    # we are probably a list:paired dataset, both need to be in non error state
+                    forward_o, reverse_o = element.dataset_instances
+                    if forward_o.is_ok and reverse_o.is_ok:
+                        valid = True
+
+                if valid:
+                    element_identifier = dce.element_identifier
+                    identifier_seen = element_identifier in new_element_structure
+                    appearances = identifiers_map[element_identifier]
+                    add_suffix = False
+                    if dupl_actions == "suffix_every":
+                        add_suffix = True
+                    elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
+                        add_suffix = True
+
+                    if dupl_actions == "keep_first" and identifier_seen:
+                        continue
+
+                    if add_suffix:
+                        suffix = suffix_pattern.replace("#", str(copy))
+                        effective_identifer = "%s%s" % (element_identifier, suffix)
+                    else:
+                        effective_identifer = element_identifier
+
+                    new_element_structure[effective_identifer] = element
+
+        # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = odict()
-        for dce in list_one.collection.elements:
-            element = dce.element_object
-
-            valid = False
-
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if element.is_ok:
-                    valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
-
-            if valid:
-                element_identifier = dce.element_identifier
-                identifier_seen[element_identifier] = 1
-                new_elements[element_identifier] = element.copy()
-
-        for dce in list_two.collection.elements:
-            element = dce.element_object
-            valid = False
-
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if element.is_ok:
-                    valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
-
-            if valid:
-                element_identifier = dce.element_identifier
-
-                # apply new suffix if identifier already seen
-                if element_identifier in identifier_seen and dupl_actions == 'suffix':
-                    suffix = '%s%i' % (suffix_iden , identifier_seen[element_identifier])
-                    identifier_seen[element_identifier] = identifier_seen[element_identifier] + 1
-                    element_identifier = element_identifier + suffix
-                    new_elements[element_identifier] = element.copy()
-                # ignore element if  identifier already seen and user want to keep first instance
-                elif element_identifier in identifier_seen and dupl_actions == 'first':
-                    continue
-                # add  element as is, if the identifier is unique or user wants to keep this one
-                elif element_identifier not in identifier_seen or dupl_actions == 'second':
-                    new_elements[element_identifier] = element.copy()
+        for key, value in new_element_structure.items():
+            new_elements[key] = value.copy()
 
         output_collections.create_collection(
             self.outputs.values()[0], "output", elements=new_elements
