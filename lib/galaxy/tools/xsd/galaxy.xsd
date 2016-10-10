@@ -3661,7 +3661,7 @@ conditionals are accessed using a hash named after the conditional.
     </inputs>
     <outputs>
       <data format="txt" label="Alignment report on ${on_string}" name="output_txt" />
-      <data format="vcf" label="Variant summary on ${on_string}" name="output_vcf>
+      <data format="vcf" label="Variant summary on ${on_string}" name="output_vcf">
           <filter>options['selection_mode'] == 'advanced' and options['vcf_output']</filter>
       </data>
     </outputs>
