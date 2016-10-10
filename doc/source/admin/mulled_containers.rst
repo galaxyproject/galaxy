@@ -6,8 +6,8 @@ Galaxy tools (also called wrappers) are able to use Conda packages
 (see more information in our `Galaxy Conda documentation`_) and Docker containers as dependency resolvers.
 The IUC_ recommends to use Conda packages as primary dependency resolver, mainly because Docker is not
 available on every (HPC-) system. Conda on the other hand can be installed by Galaxy and maintained
-entirely in user-space. Nevertheless, Docker (Containers in general) has some uniq features and
-there are a bunch of use-cases in the Galaxy community that makes containerized systems very appealing.
+entirely in user-space. Nevertheless, Docker (Containers in general) has some unique features and
+there are many use-cases in the Galaxy community which makes containerized systems very appealing.
 
 Since 2014 Galaxy supports running tools in Docker containers via a special `container annotation`_ inside of the 
 requirement field.
@@ -22,26 +22,26 @@ requirement field.
     </requirements>
 
 
-This approach has shown two limitations that slowed down the adoption by Tool developers.
+This approach has shown two limitations that slowed down the adoption by tool developers.
 First, every tool needs to be annotated with a container name (as shown above) and this container needs
 to be created beforehand, usually manually. The second reason is that a Galaxy tool aims to be deployed everywhere,
-independet of the underlying system, meaning if Docker is not availble Galaxy should use Conda packages. 
-This puts an additionl burden to tool developers that needs to take care of two dependency resolvers and can yield to
-different results of your tool depending on the resolver, because both the Conda package and the Docker container is
-usually not created out of the same recipe and maybe was compiled in a different way, uses different sources etc ...
+independet of the underlying system, meaning if Docker is not available Galaxy should use Conda packages. 
+This puts an additional burden on tool developers who need to take care of two dependency resolvers. This setup can cause
+different tool results depending on the resolver, because both the Conda package and the Docker container are
+usually not created out of the same recipe and maybe were compiled in a different way, use different sources etc.
 
 Not an ideal solution and something we wanted to solve.
 
 Here we demonstrate a solution that can create Containers out of Conda packages automatically.
 This can be either used to support communities like BioContainers_ to create Containers
-before deploying a Galaxy tool, or this can be used by Galaxy to create Containers on-demand and on-the-fly if no one
-is available already.
+before deploying a Galaxy tool, or this can be used by Galaxy to create Containers on-demand and on-the-fly if one
+is not available already.
 
 
-Automatic build of linux containers
+Automatic build of Linux containers
 -----------------------------------
 
-We utilize [mulled](https://github.com/mulled/mulled) and with this [involucro](https://github.com/involucro/involucro)
+We utilize [mulled](https://github.com/mulled/mulled) with [involucro](https://github.com/involucro/involucro)
 in an automatic way. This is for example used to convert all packages in bioconda_ into Linux Containers
 (Docker and rkt at the moment) and made available at the `BioContainers Quay.io account`_.
 
@@ -98,7 +98,7 @@ This also demonstrates how you can build a container locally and on-the-fly.
       --extra-channel file://home/bag/miniconda2/conda-bld/ --test 'samtools --help'
 
 The ``--0`` indicates the build version of the conda package. It is recommended to specify this number otherwise
-you will override already exsisting images. For python conda packages this extension might look like this ``--py35_1``.
+you will override already existing images. For Python Conda packages this extension might look like this ``--py35_1``.
 
 Build, test and push a conda-forge package to biocontainers
 ^^^^^^^^^^^^^^^^^^^^^
