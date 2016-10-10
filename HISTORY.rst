@@ -9,7 +9,7 @@ History
 16.10.8.dev0
 ---------------------
 
-    
+* More mulled enhancements and bug fixes thanks to @bgruening and @daler.
 
 ---------------------
 16.10.7 (2016-10-08)
