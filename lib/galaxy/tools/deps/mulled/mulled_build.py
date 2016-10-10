@@ -5,7 +5,7 @@ Examples
 
 Build a mulled image with:
 
-    mulled-build build 'samtools=1.3.1,bedtools=2.22'
+    mulled-build build 'samtools=1.3.1--4,bedtools=2.22'
 
 """
 from __future__ import print_function
@@ -118,6 +118,7 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     binds=DEFAULT_BINDS
 ):
+    targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
 
@@ -227,7 +228,10 @@ def target_str_to_targets(targets_raw):
     def parse_target(target_str):
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
-            target = build_target(package_name, version)
+            build = None
+            if "--" in version:
+                version, build = version.split('--')
+            target = build_target(package_name, version, build)
         else:
             target = build_target(target_str)
         return target
