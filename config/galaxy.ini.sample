@@ -242,12 +242,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # enable_beta_mulled_containers.
 #containers_resolvers_config_file = None
 
-# Container resolvers configuration (beta). Setup a file describing container
-# resolvers to use when discovering containers for Galaxy. If this is set to
-# None, the default containers loaded is determined by
-# enable_beta_mulled_containers.
-#containers_resolvers_config_file = None
-
 # involucro is a tool used to build Docker containers for tools from Conda
 # dependencies referenced in tools as `requirement`s. The following path is
 # the location of involucro on the Galaxy host. This is ignored if the relevant
