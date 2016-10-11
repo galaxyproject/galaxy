@@ -541,7 +541,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Copy.
         new_stored = model.StoredWorkflow()
         if (save_as_name):
-            new_stored.name = save_as_name
+            new_stored.name = '%s' % save_as_name
         else:
             new_stored.name = "Copy of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
