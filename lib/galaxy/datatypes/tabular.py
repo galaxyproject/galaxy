@@ -644,7 +644,7 @@ class Pileup( Tabular ):
         try:
             for hdr in headers:
                 if hdr and not hdr[0].startswith( '#' ):
-                    if len( hdr ) < 3:
+                    if len( hdr ) < 5:
                         return False
                     try:
                         # chrom start in column 1 (with 0-based columns)
