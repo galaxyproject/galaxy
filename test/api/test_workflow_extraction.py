@@ -1,8 +1,9 @@
 from __future__ import print_function
-from collections import namedtuple
+
 import functools
-from json import dumps, loads
 import operator
+from collections import namedtuple
+from json import dumps, loads
 
 from .helpers import skip_without_tool
 from .test_workflows import BaseWorkflowsApiTestCase
