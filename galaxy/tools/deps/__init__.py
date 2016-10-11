@@ -24,6 +24,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_ensure_channels': DEFAULT_ENSURE_CHANNELS,
     'conda_auto_install': False,
     'conda_auto_init': False,
+    'conda_copy_dependencies': False,
 }
 
 CONFIG_VAL_NOT_FOUND = object()
