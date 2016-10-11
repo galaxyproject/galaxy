@@ -228,6 +228,31 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # than the watchdog default.
 #watch_tools = False
 
+# Enable Galaxy to fetch Docker containers registered with quay.io generated
+# from tool requirements resolved through conda. These containers (when
+# available) have been generated using mulled - https://github.com/mulled.
+# These containers are highly beta and availablity will vary by tool.
+# This option will additionally only be used for job destinations with
+# Docker enabled.
+#enable_beta_mulled_containers = False
+
+# Container resolvers configuration (beta). Setup a file describing container
+# resolvers to use when discovering containers for Galaxy. If this is set to
+# None, the default containers loaded is determined by
+# enable_beta_mulled_containers.
+#containers_resolvers_config_file = None
+
+# involucro is a tool used to build Docker containers for tools from Conda
+# dependencies referenced in tools as `requirement`s. The following path is
+# the location of involucro on the Galaxy host. This is ignored if the relevant
+# container resolver isn't enabled, and will install on demand unless
+# involucro_auto_init is set to False.
+#involucro_path = database/dependencies/involucro
+
+# Install involucro as needed to build Docker containers for tools. Ignored if
+# relevant container resolver is not used.
+#involucro_auto_init = True
+
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy
 # server process should be able to check for repository updates.  The
