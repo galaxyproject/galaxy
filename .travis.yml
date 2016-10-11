@@ -17,9 +17,6 @@ matrix:
     env: TOX_ENV=py27-unit
     language: generic
 
-before_install:
-  - if [ `uname` == "Darwin"  ]; then bash -c "brew update && brew install python"; fi
-
 install:
   - pip install tox
   - if [ "$TOX_ENV" == "qunit" ]; then bash -c 'cd test/qunit && npm install'; fi
