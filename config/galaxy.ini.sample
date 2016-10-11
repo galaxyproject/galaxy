@@ -203,7 +203,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Pass debug flag to conda commands.
 #conda_debug = False
 # conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
-#conda_ensure_channels = r,bioconda,iuc
+#conda_ensure_channels = conda-forge,r,bioconda,iuc
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
