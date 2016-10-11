@@ -1,6 +1,5 @@
 /**
  *  The viewport creates and manages the dom elements used by the visualization plugins to draw the chart.
- *  Additionally, this class creates default request strings and request dictionaries parsed to the visualization plugins.
  *  This is the last class of the charts core classes before handing control over to the visualization plugins.
  */
 define( [ 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils' ], function( Portlet, Ui, Utils ) {

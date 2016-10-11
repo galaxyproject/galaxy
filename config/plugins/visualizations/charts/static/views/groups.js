@@ -1,4 +1,4 @@
-/** This class renders the chart configuration form. */
+/** This class renders the chart data selection form with repeats. */
 define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-repeat', 'mvc/form/form-data', 'plugin/views/description' ],
     function( Utils, Ui, Form, Repeat, FormData, Description ) {
     var GroupView = Backbone.View.extend({
