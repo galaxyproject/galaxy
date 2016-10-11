@@ -649,7 +649,8 @@ class Pileup( Tabular ):
                     try:
                         # chrom start in column 1 (with 0-based columns)
                         # and reference base is in column 2
-                        int( hdr[1] )
+                        chrom = int( hdr[1] )
+                        assert chrom >= 0
                         assert hdr[2] in [ 'A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n' ]
                     except:
                         return False
