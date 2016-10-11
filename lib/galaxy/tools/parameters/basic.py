@@ -42,6 +42,13 @@ def contains_workflow_parameter( value, search=False ):
     return False
 
 
+def parse_dynamic_options( param, input_source ):
+    options_elem = input_source.parse_dynamic_options_elem()
+    if options_elem is not None:
+        return dynamic_options.DynamicOptions( options_elem, param )
+    return None
+
+
 class ToolParameter( object, Dictifiable ):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
@@ -617,16 +624,34 @@ class ColorToolParameter( ToolParameter ):
     >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff"/>' ) )
     >>> print p.name
     _name
+    >>> print p.to_param_dict_string( "#fdeada" )
+    #fdeada
     >>> sorted( p.to_dict( trans ).items() )
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', '#ffffff')]
+    >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff" rgb="True"/>' ) )
+    >>> print p.to_param_dict_string( "#fdeada" )
+    (253, 234, 218)
+    >>> print p.to_param_dict_string( None )
+    Traceback (most recent call last):
+        ...
+    ValueError: Failed to convert 'None' to RGB.
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.value = input_source.get( 'value', '#fdeada' )
+        self.rgb = input_source.get( 'rgb', False )
 
     def get_initial_value( self, trans, other_values ):
         return self.value.lower()
+
+    def to_param_dict_string( self, value, other_values={} ):
+        if self.rgb:
+            try:
+                return str( tuple( int( value.lstrip( '#' )[ i : i + 2 ], 16 ) for i in ( 0, 2, 4 ) ) )
+            except Exception:
+                raise ValueError( "Failed to convert \'%s\' to RGB." % value )
+        return str( value )
 
 
 class BaseURLToolParameter( HiddenToolParameter ):
@@ -664,19 +689,6 @@ class BaseURLToolParameter( HiddenToolParameter ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
         d[ 'value' ] = self._get_value()
         return d
-
-
-def DEFAULT_VALUE_MAP(x):
-    return x
-
-
-def parse_dynamic_options(param, input_source):
-    options_elem = input_source.parse_dynamic_options_elem()
-    if options_elem is None:
-        options = None
-    else:
-        options = dynamic_options.DynamicOptions( options_elem, param )
-    return options
 
 
 class SelectToolParameter( ToolParameter ):
@@ -812,7 +824,7 @@ class SelectToolParameter( ToolParameter ):
                 raise ValueError( "An invalid option was selected for %s, %r, please verify." % ( self.name, value ) )
             return value
 
-    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
+    def to_param_dict_string( self, value, other_values={} ):
         if value is None:
             return "None"
         if isinstance( value, list ):
@@ -827,9 +839,7 @@ class SelectToolParameter( ToolParameter ):
             else:
                 value = sanitize_param( value )
         if isinstance( value, list ):
-            value = self.separator.join( map( value_map, value ) )
-        else:
-            value = value_map( value )
+            value = self.separator.join( value )
         return value
 
     def to_json( self, value, app, use_security ):
@@ -1268,7 +1278,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval.append( val )
         return rval
 
-    def to_param_dict_string( self, value, other_values={}, value_map=DEFAULT_VALUE_MAP ):
+    def to_param_dict_string( self, value, other_values={} ):
         def get_options_list( value ):
             def get_base_option( value, options ):
                 for option in options:
@@ -1300,7 +1310,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 rval.extend( options )
         if len( rval ) > 1 and not self.multiple:
             raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
-        rval = self.separator.join( map( value_map, rval ) )
+        rval = self.separator.join( rval )
         if self.tool is None or self.tool.options.sanitize:
             if self.sanitizer:
                 rval = self.sanitizer.sanitize_param( rval )
@@ -1375,25 +1385,6 @@ class BaseDataToolParameter( ToolParameter ):
     def __init__( self, tool, input_source, trans ):
         super(BaseDataToolParameter, self).__init__( tool, input_source )
         self.refresh_on_change = True
-
-    def _get_history( self, trans ):
-        class_name = self.__class__.__name__
-        assert trans is not None, "%s requires a trans" % class_name
-        assert trans.history is not None, "%s requires a history" % class_name
-        return trans.history
-
-    def _ensure_selection( self, field ):
-        set_selected = field.get_selected( return_label=True, return_value=True, multi=False ) is not None
-        # Ensure than an item is always selected
-        if self.optional:
-            if set_selected:
-                field.add_option( "Selection is Optional", 'None', False )
-            else:
-                field.add_option( "Selection is Optional", 'None', True )
-        elif not set_selected and bool( field.options ):
-            # Select the last item
-            a, b, c = field.options[-1]
-            field.options[-1] = a, b, True
 
     def _datatypes_registery( self, trans, tool ):
         # Find datatypes_registry
@@ -1727,7 +1718,7 @@ class DataToolParameter( BaseDataToolParameter ):
         self.tool.visit_inputs( other_values, visitor )
         return False not in converter_safe
 
-    def _options_filter_attribute( self, value ):
+    def get_options_filter_attribute( self, value ):
         # HACK to get around current hardcoded limitation of when a set of dynamic options is defined for a DataToolParameter
         # it always causes available datasets to be filtered by dbkey
         # this behavior needs to be entirely reworked (in a backwards compatible manner)

@@ -205,6 +205,19 @@
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
         </plugin>
+        <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
+            <!-- Go-Docker is a batch computing/cluster management tool using Docker
+                 See https://bitbucket.org/osallou/go-docker for more details.  -->
+            <!--  REST based runner , submits jobs to godocker -->
+            <param id="godocker_master">GODOCKER_URL</param>
+            <!-- Specify the instance of GoDocker -->
+            <param id="user">USERNAME</param>
+            <!-- GoDocker username -->
+            <param id="key">APIKEY</param>
+            <!-- GoDocker API key -->
+            <param id="godocker_project">galaxy</param>
+            <!-- Specify the project present in the GoDocker setup -->
+        </plugin>
 
     </plugins>
     <handlers default="handlers">
@@ -349,6 +362,12 @@
                a fallback. -->
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
+          <!-- If the destination should be secured to only allow containerized jobs
+               the following parameter may be set for the job destination. Not all,
+               or even most, tools available in Galaxy core or in the Tool Shed
+               support Docker yet so this option may require a lot of extra work for
+               the deployer. -->
+          <!-- <param id="require_container">true</param> -->
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
@@ -647,7 +666,24 @@
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
         </destination>
-
+        <destination id="god" runner="godocker">
+            <!-- The following are configurations for the container -->
+            <param id="docker_enabled">true</param>
+            <param id="docker_cpu">1</param>
+            <param id="docker_memory">2</param>
+            <param id="docker_default_container_id">centos:latest</param>
+            <!-- Specify the image on which the jobs have to be executed -->
+            <param id="godocker_volumes"></param>
+            <!-- Mount the godocker volumes 
+                 volumes must be separated by commas.
+                 eg: <param id="godocker_volumes">home,galaxy</param>
+            -->
+            <param id="virtualenv">false</param>
+            <!-- If a tool execution in container requires galaxy virtualenv, 
+                 then enable it by setting the value to true.
+                 Disable venv by setting the value to false.
+            -->
+        </destination>
 
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.

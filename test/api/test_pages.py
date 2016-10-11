@@ -1,8 +1,7 @@
-from galaxy.exceptions import error_codes
-from base import api
 from requests import delete
 
-from operator import itemgetter
+from base import api
+from galaxy.exceptions import error_codes
 
 
 class BasePageApiTestCase( api.ApiTestCase ):
@@ -102,4 +101,4 @@ class PageApiTestCase( BasePageApiTestCase ):
         index_response = self._get( "pages" )
         self._assert_status_code_is( index_response, 200 )
         pages = index_response.json()
-        return id in map( itemgetter( "id" ), pages )
+        return id in ( _["id"] for _ in pages )

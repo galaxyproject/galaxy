@@ -1,11 +1,10 @@
-from base import api
 import json
 
-from .helpers import TestsDatasets
-from .helpers import LibraryPopulator
-from .helpers import DatasetCollectionPopulator
-from requests import delete
-from requests import put
+from requests import delete, put
+
+from base import api
+
+from .helpers import DatasetCollectionPopulator, LibraryPopulator, TestsDatasets
 
 
 # TODO: Test anonymous access.

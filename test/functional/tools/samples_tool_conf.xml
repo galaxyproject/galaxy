@@ -2,6 +2,7 @@
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
+  <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
@@ -109,6 +110,8 @@
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
+
+  <tool file="mulled_example_multi_1.xml" />
 
   <tool file="simple_constructs.yml" />
 
