@@ -526,7 +526,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
-    def copy( self, trans, id ):
+    def copy( self, trans, id, save_as_name=None ):
         # Get workflow to copy.
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
@@ -540,7 +540,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         # Copy.
         new_stored = model.StoredWorkflow()
-        new_stored.name = "Copy of '%s'" % stored.name
+        if (save_as_name):
+            new_stored.name = save_as_name
+        else:
+            new_stored.name = "Copy of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
         # Copy annotation.
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )

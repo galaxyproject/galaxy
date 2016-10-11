@@ -401,6 +401,7 @@ EditorFormView = Backbone.View.extend({
 
             window.make_popupmenu && make_popupmenu( $("#workflow-options-button"), {
                 "Save" : save_current_workflow,
+                "Save As": workflow_save_as,
                 "Run": function() {
                     window.location = self.urls.run_workflow;
                 },
@@ -411,6 +412,26 @@ EditorFormView = Backbone.View.extend({
                 //"Load a Workflow" : load_workflow,
                 "Close": close_editor
             });
+
+            function workflow_save_as() {
+                var body = $('<lable>Save as name: <input type="text" id="workflow_rename"></label>');
+                    window.show_modal("Save As a New Workflow", body, {
+                        "OK": function () {
+                            self.rename_name = $('#workflow_rename').val();
+                            save_current_workflow(null, function() {
+                            $.ajax({
+                                url: self.urls.workflow_save_as + "&save_as_name=" + self.rename_name,
+                                type: "GET",
+                            }).done(function(){
+                                window.location.href = self.urls.workflow_index;
+                            }).fail(function(){
+                                alert("Saving this workflow failed. Please contact this site's administrator.");
+                            })});
+                            hide_modal();
+                        },
+                        "Cancel": hide_modal
+                    });
+            };
 
             function edit_workflow_outputs(){
                 self.workflow.clear_active_node();
