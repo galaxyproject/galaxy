@@ -99,6 +99,7 @@ helper/__init__.py
       error = ''
       data = {}
       try:
+         # Third-party dependencies
          try:
             from bs4 import BeautifulSoup
          except ImportError as e:
