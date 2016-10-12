@@ -34,13 +34,14 @@ For each type there is an example provided:
 .. _XKCD: http://xkcd.com/
 
  .. image:: images_webhooks/tool.png
- ..image:: images_webhooks/workflow.png
+ .. image:: images_webhooks/workflow.png
 - Additional functionality can be added to the top menu. Two dummy buttons are implemented to show the idea:
-  - A button that links to biostars ![](images_webhooks/masthead.png)
+  - A button that links to biostars 
+    .. image:: images_webhooks/masthead.png
   - A button that shows an pop-up with information about an user. 
-..image:: images_webhooks/masthead_trans_object.png
+    .. image:: images_webhooks/masthead_trans_object.png
 - The history menu can be extended. In this case we use two dummy entries 'History Menu Webhook Item 1' and  'History Menu Webhook Item 2'.
-  ..image:: images_webhooks/history-menu.png
+  .. image:: images_webhooks/history-menu.png
 
 Plugin structure
 ----------------
