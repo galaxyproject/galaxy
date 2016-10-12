@@ -71,6 +71,22 @@ The *static* folder contains only two files with the specified above names (othe
 - script.js - all JavaScript code (with all third-party dependencies) must be here
 - styles.css - all CSS styles, used by the plugin
 
+
+Plugin dependencies
+-------------------
+
+Some plugins might have additional dependencies that needs to be installed into the Galaxy environment.
+For example the PhD-Comic plugin requires the library beautifulsoup4. If thses dependencies are not present
+plugins should deactivate themself and issue an error into the Galaxy log.
+
+To install these additional plugin do the following:
+
+.. code-block:: python
+
+  . GALAXY_ROOT/.venv/bin/activate  # activate Galaxy's virtualenv
+  pip install beautifulsoup4        # install the requirements
+
+
 Issues
 ------
 
