@@ -102,12 +102,11 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
         hid_to_output_pair[ hid ] = ( step, 'output' )
         steps.append( step )
     # Tool steps
-    jobs_by_id = dict( ( job.id, job ) for job in jobs.keys() )
     for job_id in job_ids:
-        if job_id not in jobs_by_id:
-            log.warning( "job_id %s not found in jobs_by_id %s" % ( job_id, jobs_by_id ) )
+        if job_id not in summary.job_id2representative_job:
+            log.warning( "job_id %s not found in job_id2representative_job %s" % ( job_id, summary.job_id2representative_job ) )
             raise AssertionError( "Attempt to create workflow with job not connected to current history" )
-        job = jobs_by_id[ job_id ]
+        job = summary.job_id2representative_job[job_id]
         tool_inputs, associations = step_inputs( trans, job )
         step = model.WorkflowStep()
         step.type = 'tool'
@@ -201,6 +200,7 @@ class WorkflowSummary( object ):
         self.history = history
         self.warnings = set()
         self.jobs = odict()
+        self.job_id2representative_job = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs = []
         self.collection_types = {}
 
@@ -237,6 +237,9 @@ class WorkflowSummary( object ):
                     self.implicit_map_jobs.append( representative_job )
             else:
                 self.jobs[ representative_job ].append( ( representative_assoc.name, dataset_collection ) )
+            for assoc in cja:
+                job = assoc.job
+                self.job_id2representative_job[job.id] = representative_job
         # This whole elif condition may no longer be needed do to additional
         # tracking with creating_job_associations. Will delete at some point.
         elif dataset_collection.implicit_output_name:
@@ -257,6 +260,7 @@ class WorkflowSummary( object ):
                 job = assoc.job
                 if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
                     self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
+                    self.job_id2representative_job[job.id] = job
                     self.implicit_map_jobs.append( job )
                 else:
                     self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
@@ -279,6 +283,7 @@ class WorkflowSummary( object ):
                 self.jobs[ job ].append( ( assoc.name, dataset ) )
             else:
                 self.jobs[ job ] = [ ( assoc.name, dataset ) ]
+                self.job_id2representative_job[job.id] = job
 
     def __original_hdca( self, hdca ):
         while hdca.copied_from_history_dataset_collection_association:
