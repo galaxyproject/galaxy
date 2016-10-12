@@ -170,7 +170,32 @@ var menu = [
 ];
 
 // Webhooks
-Webhooks.addToHistoryMenu(_l, menu);
+Webhooks.add({
+    url: 'api/webhooks/history-menu/all',
+    async: false,   // (hypothetically) slows down the performance
+    callback: function(webhooks) {
+        var webhooks_menu = [];
+
+        $.each(webhooks.models, function(index, model) {
+            var webhook = model.toJSON();
+            if (webhook.activate) {
+                webhooks_menu.push({
+                    html : _l( webhook.config.title ),
+                    // func: function() {},
+                    anon : true
+                });
+            }
+        });
+
+        if (webhooks_menu.length > 0) {
+            webhooks_menu.unshift({
+                html   : _l( 'Webhooks' ),
+                header : true
+            });
+            $.merge(menu, webhooks_menu);
+        }
+    }
+});
 
 
 function buildMenu( isAnon, purgeAllowed, urlRoot ){

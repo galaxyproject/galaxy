@@ -21,7 +21,26 @@ define(['mvc/tours', 'layout/generic-nav-view', 'mvc/webhooks'], function( Tours
             //
             // Webhooks
             //
-            Webhooks.addToMastheadMenu();
+            Webhooks.add({
+                url: 'api/webhooks/masthead/all',
+                callback: function(webhooks) {
+                    $(document).ready(function() {
+                        $.each(webhooks.models, function(index, model) {
+                            var webhook = model.toJSON();
+                            if (webhook.activate) {
+                                Galaxy.page.masthead.collection.add({
+                                    id      : webhook.name,
+                                    icon    : (typeof webhook.config.icon != 'undefined') ? webhook.config.icon : '',
+                                    url     : (typeof webhook.config.url != 'undefined') ? webhook.config.url : '',
+                                    tooltip : (typeof webhook.config.tooltip != 'undefined') ? webhook.config.tooltip : '',
+                                    onclick : (typeof webhook.config.function != 'undefined') ? new Function(webhook.config.function) : '',
+                                    // visible : webhook.activate
+                                });
+                            }
+                        });
+                    });
+                }
+            });
 
             //
             // Analyze data tab.
