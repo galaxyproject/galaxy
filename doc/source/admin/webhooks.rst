@@ -38,7 +38,7 @@ For each type there is an example provided:
 
  .. image:: images_webhooks/tool.png
     :scale: 50 %
-    
+
  .. image:: images_webhooks/workflow.png
     :scale: 50 %
 
@@ -54,7 +54,7 @@ For each type there is an example provided:
 
 - The history menu can be extended. In this case we use two dummy entries 'History Menu Webhook Item 1' and  'History Menu Webhook Item 2'.
  .. image:: images_webhooks/history-menu.png
-    :scale: 50 %
+    :scale: 25 %
 
 Plugin structure
 ----------------
