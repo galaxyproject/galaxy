@@ -60,7 +60,7 @@ helper/__init__.py
          error = str(e) 
       return {'success': not error, 'error': error, 'data': data}
 
-As an example please look at the phdcomics example plugin: https://github.com/bgruening/galaxy/blob/feature/plugin-system/config/plugins/webhooks/phdcomics/helper/__init__.py
+As an example please take a look at the *phdcomics* example plugin: https://github.com/bgruening/galaxy/blob/feature/plugin-system/config/plugins/webhooks/phdcomics/helper/__init__.py
 
 
 static
@@ -84,9 +84,9 @@ Such approach is a possible bottleneck if the two files are big (however, this s
 masthead
 ********
 
-Topbar buttons are hard coded, so they’re rendered only after make client.
+Topbar buttons are hard coded, so they’re rendered only after *make client*.
 
-The plugin system is entirely dynamic. All plugins are detected during Galaxy load and their configs and statics are saved. So, every plugin must be shown/rendered dynamically.
+The plugin system is entirely dynamic. All plugins are detected during Galaxy load and their configs and statics are being saved. So, every plugin must be shown/rendered dynamically.
 
 I found a not very optimal way to add buttons to the topbar (masthead):
 
@@ -117,4 +117,4 @@ To add new menu items, I do the following:
     func : function() { ... }
   });
 
-But in order to fetch all plugin menu items before rendering, I get them via API in a synchronous manner. The problem is that History Panel now loads longer.
+But in order to fetch all plugin menu items before rendering, I get them via API in a synchronous manner. The problem is that History Panel now may load a bit longer.
