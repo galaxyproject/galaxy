@@ -40,6 +40,7 @@ define( [ 'utils/utils', 'mvc/visualization/visualization-model' ], function( Ut
         /** Pack and save nested chart model */
         save: function( options ) {
             var self = this;
+            options = options || {};
             var chart_dict = {
                 attributes : this.attributes,
                 settings   : this.settings.attributes,
