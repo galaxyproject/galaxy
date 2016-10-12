@@ -5,15 +5,37 @@ Galaxy webhooks provides a simple way of inserting icons, links, or other HTML e
 For this Galaxy provides some entry points which can be used to extend the client with content. This content
 can consists out of simple HTML, JS or dynamically generated content from a python function.
 
+Plugin activation
+-----------------
+The plugins are deactivate by default. To activate a tool go to:
+.. code-block:: none
+
+  config/plugins/webhooks/{TOOL_NAME}/config/{TOOL_NAME}.yml # path to config file of a plugin
+and set the parameter activate to true:
+.. code-block:: python
+
+  activate: true 
+  
+
 Entry points
 ------------
 
-There are four currently available entry points (types):
+Currently there are four entry points (types) available:
 
 - tool (after tool execution)
 - workflow (after workflow execution)
 - masthead (at the top level masthead)
 - history-menu (inside History Panel menu)
+
+For each type there is an example provided: 
+- Tool and workflow: A comic strip can be shown if a tool or a workflow is running. Right now [PhD](http://phdcomics.com) and [XKCD](http://xkcd.com/)
+ comics are provided. 
+ ![](images_webhooks/tool.png) ![](images_webhooks/workflow.png)
+- Additional functionality can be added to the top menu. Two dummy buttons are implemented to show the idea:
+  - A button that links to biostars ![](images_webhooks/masthead.png)
+  - A button that shows an pop-up with information about an user. ![](images_webhooks/masthead_trans_object.png)
+- The history menu can be extended. In this case we use two dummy entries 'History Menu Webhook Item 1' and  'History Menu Webhook Item 2'.
+  ![](images_webhooks/history-menu.png)
 
 Plugin structure
 ----------------
