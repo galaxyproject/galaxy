@@ -1,8 +1,9 @@
-from bs4 import BeautifulSoup
-
 import urllib
 import re
 import random
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def get_latest_id():
@@ -21,6 +22,13 @@ def main(trans, webhook):
     data = {}
 
     try:
+        # Third-party dependencies
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError as e:
+            log.exception(e)
+            return {}
+
         if 'latest_id' not in webhook.config.keys():
             webhook.config['latest_id'] = get_latest_id()
 
