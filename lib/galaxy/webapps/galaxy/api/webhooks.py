@@ -38,7 +38,7 @@ class WebhooksController(BaseAPIController):
             webhook
             for webhook in self.app.webhooks_registry.webhooks
             if webhook_type in webhook.type \
-            and webhook.activate == 'true'
+            and webhook.activate == True
         ]
         return random.choice(webhooks).to_dict() if webhooks else {}
 
