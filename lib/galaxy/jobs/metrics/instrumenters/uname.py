@@ -1,3 +1,4 @@
+"""The module describes the ``uname`` job metrics plugin."""
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 

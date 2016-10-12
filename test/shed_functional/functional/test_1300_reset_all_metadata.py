@@ -443,7 +443,7 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
         repositories = self.test_db_util.get_all_installed_repositories( actually_installed=True )
         for repository in repositories:
             repository_metadata[ self.security.encode_id( repository.id ) ] = repository.metadata
-        self.reset_metadata_on_selected_installed_repositories( repository_metadata.keys() )
+        self.reset_metadata_on_selected_installed_repositories( list(repository_metadata.keys()) )
         for repository in repositories:
             self.test_db_util.ga_refresh( repository )
             old_metadata = repository_metadata[ self.security.encode_id( repository.id ) ]

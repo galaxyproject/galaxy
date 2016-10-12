@@ -1,8 +1,10 @@
 """ Tests for the tool data API.
 """
 from __future__ import print_function
-from base import api
+
 import operator
+
+from base import api
 
 
 class ToolDataApiTestCase( api.ApiTestCase ):

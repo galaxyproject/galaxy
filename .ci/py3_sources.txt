@@ -1,5 +1,7 @@
+client/galaxy/style/source_material/circle.py
 contrib/
 cron/
+doc/parse_gx_xsd.py
 lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py

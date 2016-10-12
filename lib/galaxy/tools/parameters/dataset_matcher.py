@@ -100,7 +100,7 @@ class DatasetMatcher( object ):
         applicable).
         """
         param = self.param
-        return param.options and param._options_filter_attribute( hda ) != self.filter_value
+        return param.options and param.get_options_filter_attribute( hda ) != self.filter_value
 
     def __can_access_dataset( self, dataset ):
         # Lazily cache current_user_roles.
