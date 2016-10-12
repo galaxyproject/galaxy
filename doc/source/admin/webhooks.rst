@@ -28,14 +28,19 @@ Currently there are four entry points (types) available:
 - history-menu (inside History Panel menu)
 
 For each type there is an example provided: 
-- Tool and workflow: A comic strip can be shown if a tool or a workflow is running. Right now [PhD](http://phdcomics.com) and [XKCD](http://xkcd.com/)
- comics are provided. 
- ![](images_webhooks/tool.png) ![](images_webhooks/workflow.png)
+- Tool and workflow: A comic strip can be shown if a tool or a workflow is running. Right now PhD_ and XKCD_ comics are provided.
+
+.. _PhD: http://phdcomics.com 
+.. _XKCD: http://xkcd.com/
+
+ .. image:: images_webhooks/tool.png
+ ..image:: images_webhooks/workflow.png
 - Additional functionality can be added to the top menu. Two dummy buttons are implemented to show the idea:
   - A button that links to biostars ![](images_webhooks/masthead.png)
-  - A button that shows an pop-up with information about an user. ![](images_webhooks/masthead_trans_object.png)
+  - A button that shows an pop-up with information about an user. 
+..image:: images_webhooks/masthead_trans_object.png
 - The history menu can be extended. In this case we use two dummy entries 'History Menu Webhook Item 1' and  'History Menu Webhook Item 2'.
-  ![](images_webhooks/history-menu.png)
+  ..image:: images_webhooks/history-menu.png
 
 Plugin structure
 ----------------
