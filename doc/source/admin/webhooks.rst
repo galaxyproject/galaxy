@@ -40,12 +40,12 @@ For each type there is an example provided:
 - Additional functionality can be added to the top menu. Two dummy buttons are implemented to show the idea:
 
   - A button that links to biostars 
-    .. image:: images_webhooks/masthead.png
-  - A button that shows an pop-up with information about an user. 
-    .. image:: images_webhooks/masthead_trans_object.png
-    
+   .. image:: images_webhooks/masthead.png
+  - A button that shows a pop-up with information about an user. 
+   .. image:: images_webhooks/masthead_trans_object.png
+
 - The history menu can be extended. In this case we use two dummy entries 'History Menu Webhook Item 1' and  'History Menu Webhook Item 2'.
-  .. image:: images_webhooks/history-menu.png
+ .. image:: images_webhooks/history-menu.png
 
 Plugin structure
 ----------------
