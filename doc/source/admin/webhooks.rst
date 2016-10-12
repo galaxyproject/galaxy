@@ -38,6 +38,7 @@ For each type there is an example provided:
 
  .. image:: images_webhooks/tool.png
     :scale: 50 %
+    
  .. image:: images_webhooks/workflow.png
     :scale: 50 %
 
@@ -46,6 +47,7 @@ For each type there is an example provided:
   - A button that links to biostars 
    .. image:: images_webhooks/masthead.png
       :scale: 50 %
+
   - A button that shows a pop-up with information about an user. 
    .. image:: images_webhooks/masthead_trans_object.png
       :scale: 50 %
