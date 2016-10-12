@@ -8,10 +8,12 @@ can consists out of simple HTML, JS or dynamically generated content from a pyth
 Plugin activation
 -----------------
 The plugins are deactivate by default. To activate a tool go to:
+
 .. code-block:: none
 
   config/plugins/webhooks/{TOOL_NAME}/config/{TOOL_NAME}.yml # path to config file of a plugin
 and set the parameter activate to true:
+
 .. code-block:: python
 
   activate: true 
