@@ -91,11 +91,19 @@ helper/__init__.py
 *__init__.py has* to have the **main()** function with the following (or similar) structure:
 
 .. code-block:: python
+
+   import logging
+   log = logging.getLogger(__name__)
    
    def main(trans, webhook):
       error = ''
       data = {}
       try:
+         try:
+            from bs4 import BeautifulSoup
+         except ImportError as e:
+             log.exception(e)
+             return {}
          # some processing... 
       except Exception as e:
          error = str(e) 
