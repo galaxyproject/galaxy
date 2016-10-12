@@ -1,7 +1,7 @@
 <%
     root            = h.url_for( "/" )
     app_root        = root + "plugins/visualizations/charts/static/client"
-    repository_root = app.config.get( "charts_repository_url", root + "plugins/visualizations/charts/static/repository" )
+    repository_root = root + "plugins/visualizations/charts/static/repository"
 %>
 
 <!DOCTYPE HTML>
