@@ -219,7 +219,7 @@ for i, line in enumerate( open( in_fname ) ):
 
     if i < num_header_lines:
         lines_kept += 1
-        print >> out, line
+        print( line, file=out )
         continue
 
     if not line or line.startswith( '#' ):
@@ -230,7 +230,7 @@ for i, line in enumerate( open( in_fname ) ):
         %s
         if %s:
             lines_kept += 1
-            print >> out, line
+            print( line, file=out )
     except:
         invalid_lines += 1
         if not invalid_line:

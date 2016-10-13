@@ -241,11 +241,11 @@ def _find_tool_files(path, recursive, enable_beta_formats):
                 files = glob.glob(path + "/*.xml")
             else:
                 files = _find_files(path, "*.xml")
-        return map(os.path.abspath, files)
+        return [os.path.abspath(_) for _ in files]
 
 
 def _has_extension(path, extensions):
-    return any(map(lambda e: path.endswith(e), extensions))
+    return any(path.endswith(e) for e in extensions)
 
 
 def _find_files(directory, pattern='*'):
@@ -266,7 +266,7 @@ BETA_TOOL_CHECKERS = {
     'cwl': looks_like_a_tool_cwl,
 }
 
-__all__ = [
+__all__ = (
     "find_possible_tools_from_path",
     "is_a_yaml_with_class",
     "is_tool_load_error",
@@ -276,4 +276,4 @@ __all__ = [
     "looks_like_a_tool_cwl",
     "looks_like_a_tool_xml",
     "looks_like_a_tool_yaml",
-]
+)
