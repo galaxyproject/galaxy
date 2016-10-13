@@ -347,6 +347,7 @@ lib/galaxy/web/framework/middleware/statsd.py
 lib/galaxy/web/framework/middleware/translogger.py
 lib/galaxy/web/framework/middleware/xforwardedhost.py
 lib/galaxy/web/params.py
+lib/galaxy/workflow/extract.py
 lib/galaxy/workflow/__init__.py
 lib/galaxy/workflow/render.py
 lib/galaxy/workflow/schedulers/__init__.py
