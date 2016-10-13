@@ -7,17 +7,11 @@ can consists out of simple HTML, JS or dynamically generated content from a pyth
 
 Plugin activation
 -----------------
-Webhooks are deactivated by default.
-To activate webhooks make sure the path in your `galaxy.ini` it set and that you activate all plugins that you want to use manually by changing the config of each webhook:
-
-.. code-block:: none
-
-  config/plugins/webhooks/{TOOL_NAME}/config/{TOOL_NAME}.yml
-and set the parameter activate to true:
-
-.. code-block:: python
-
-  activate: true 
+All webhooks that are included in the main Galaxy distribution are located in the `config/plugins/webhooks/demo` folder
+and are deactivated by default.
+To activate these demo webhooks make sure this path is added to `webhooks_dir` in your `galaxy.ini`. You can add as many 
+webhook folders as you like as a comma separated list. 
+Webhooks supports one additionl layer of activating/deactivating by changing the `activate: true` in each config of each webhook.
   
 
 Entry points
