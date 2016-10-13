@@ -1,6 +1,6 @@
 """Provides utilities for working with image files."""
-import logging
 import imghdr
+import logging
 
 try:
     import Image as PIL
