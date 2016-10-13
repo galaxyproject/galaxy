@@ -506,10 +506,10 @@ def populate_api_routes( webapp, app ):
                            action='change_api_key',
                            conditions=dict( method=["GET"] ) )
 
-    webapp.mapper.connect( 'toolbox_filters',
+    webapp.mapper.connect( 'change_toolbox_filters',
                            '/api/user_preferences/change_toolbox_filters',
                            controller='user_preferences',
-                           action='toolbox_filters',
+                           action='change_toolbox_filters',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'change_communication',
