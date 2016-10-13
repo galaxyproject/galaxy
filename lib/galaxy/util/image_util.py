@@ -32,8 +32,8 @@ def image_type( filename ):
         return False
 
 
-def check_image_type( filename, types, image=None ):
-    fmt = image_type( filename, image )
+def check_image_type( filename, types ):
+    fmt = image_type( filename )
     if fmt in types:
         return True
     return False
