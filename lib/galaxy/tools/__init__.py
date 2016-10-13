@@ -1538,9 +1538,10 @@ class Tool( object, Dictifiable ):
                 # Add input file tuples to the list.
                 for input in test.inputs:
                     for input_value in test.inputs[ input ]:
-                        input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
+                        input_filename = str( input_value )
+                        input_path = os.path.abspath( os.path.join( 'test-data', input_filename ) )
                         if os.path.exists( input_path ):
-                            td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
+                            td_tup = ( input_path, os.path.join( 'test-data', input_filename ) )
                             tarball_files.append( td_tup )
                 # And add output file tuples to the list.
                 for label, filename, _ in test.outputs:
