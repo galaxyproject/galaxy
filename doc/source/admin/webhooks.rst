@@ -5,15 +5,57 @@ Galaxy webhooks provides a simple way of inserting icons, links, or other HTML e
 For this Galaxy provides some entry points which can be used to extend the client with content. This content
 can consists out of simple HTML, JS or dynamically generated content from a python function.
 
+Plugin activation
+-----------------
+Webhooks are deactivated by default.
+To activate webhooks make sure the path in your `galaxy.ini` it set and that you activate all plugins that you want to use manually by changing the config of each webhook:
+
+.. code-block:: none
+
+  config/plugins/webhooks/{TOOL_NAME}/config/{TOOL_NAME}.yml
+and set the parameter activate to true:
+
+.. code-block:: python
+
+  activate: true 
+  
+
 Entry points
 ------------
 
-There are four currently available entry points (types):
+Currently there are four entry points (types) available:
 
 - tool (after tool execution)
 - workflow (after workflow execution)
 - masthead (at the top level masthead)
 - history-menu (inside History Panel menu)
+
+For each type there is an example provided:
+
+- Tool and workflow: A comic strip can be shown when a tool or a workflow is running. Right now PhD_ and XKCD_ comics are provided.
+
+.. _PhD: http://phdcomics.com 
+.. _XKCD: http://xkcd.com/
+
+ .. image:: images_webhooks/tool.png
+    :scale: 50 %
+
+ .. image:: images_webhooks/workflow.png
+    :scale: 50 %
+
+- Additional functionality can be added to the top menu. Two dummy buttons are implemented to show the idea:
+
+  - A button that links to biostars 
+   .. image:: images_webhooks/masthead.png
+      :scale: 50 %
+
+  - A button that shows a pop-up with information about an user. 
+   .. image:: images_webhooks/masthead_trans_object.png
+      :scale: 50 %
+
+- The history menu can be extended. In this case we use two dummy entries 'History Menu Webhook Item 1' and  'History Menu Webhook Item 2'.
+ .. image:: images_webhooks/history-menu.png
+    :scale: 25 %
 
 Plugin structure
 ----------------
@@ -50,17 +92,26 @@ helper/__init__.py
 *__init__.py has* to have the **main()** function with the following (or similar) structure:
 
 .. code-block:: python
+
+   import logging
+   log = logging.getLogger(__name__)
    
    def main(trans, webhook):
       error = ''
       data = {}
       try:
+         # Third-party dependencies
+         try:
+            from bs4 import BeautifulSoup
+         except ImportError as e:
+             log.exception(e)
+             return {}
          # some processing... 
       except Exception as e:
          error = str(e) 
       return {'success': not error, 'error': error, 'data': data}
 
-As an example please look at the phdcomics example plugin: https://github.com/bgruening/galaxy/blob/feature/plugin-system/config/plugins/webhooks/phdcomics/helper/__init__.py
+As an example please take a look at the *phdcomics* example plugin: https://github.com/bgruening/galaxy/blob/feature/plugin-system/config/plugins/webhooks/phdcomics/helper/__init__.py
 
 
 static
@@ -70,6 +121,22 @@ The *static* folder contains only two files with the specified above names (othe
 
 - script.js - all JavaScript code (with all third-party dependencies) must be here
 - styles.css - all CSS styles, used by the plugin
+
+
+Plugin dependencies
+-------------------
+
+Some plugins might have additional dependencies that needs to be installed into the Galaxy environment.
+For example the PhD-Comic plugin requires the library beautifulsoup4. If thses dependencies are not present
+plugins should deactivate themself and issue an error into the Galaxy log.
+
+To install these additional plugin do the following:
+
+.. code-block:: python
+
+  . GALAXY_ROOT/.venv/bin/activate  # activate Galaxy's virtualenv
+  pip install beautifulsoup4        # install the requirements
+
 
 Issues
 ------
@@ -84,9 +151,9 @@ Such approach is a possible bottleneck if the two files are big (however, this s
 masthead
 ********
 
-Topbar buttons are hard coded, so they’re rendered only after make client.
+Topbar buttons are hard coded, so they’re rendered only after *make client*.
 
-The plugin system is entirely dynamic. All plugins are detected during Galaxy load and their configs and statics are saved. So, every plugin must be shown/rendered dynamically.
+The plugin system is entirely dynamic. All plugins are detected during Galaxy load and their configs and statics are being saved. So, every plugin must be shown/rendered dynamically.
 
 I found a not very optimal way to add buttons to the topbar (masthead):
 
@@ -117,4 +184,4 @@ To add new menu items, I do the following:
     func : function() { ... }
   });
 
-But in order to fetch all plugin menu items before rendering, I get them via API in a synchronous manner. The problem is that History Panel now loads longer.
+But in order to fetch all plugin menu items before rendering, I get them via API in a synchronous manner. The problem is that History Panel now may load a bit longer.

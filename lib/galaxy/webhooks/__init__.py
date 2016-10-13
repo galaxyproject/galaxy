@@ -36,11 +36,12 @@ class Webhook(object):
 class WebhooksRegistry(object):
     def __init__(self, webhooks_directories):
         self.webhooks = []
-        path = os.path.join(galaxy_root_path, webhooks_directories)
-        self.webhooks_directories = [
-            os.path.join(path, name)
-            for name in os.listdir(webhooks_directories)
-        ]
+        self.webhooks_directories = []
+        for webhooks_directory in webhooks_directories:
+            for name in os.listdir(webhooks_directory):
+                self.webhooks_directories.append( os.path.join(webhooks_directory, name) )
+
+
         self.load_webhooks()
 
     def load_webhooks(self):

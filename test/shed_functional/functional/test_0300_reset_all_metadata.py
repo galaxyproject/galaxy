@@ -594,7 +594,7 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             old_metadata[ self.security.encode_id( repository.id ) ] = dict()
             for metadata in self.get_repository_metadata( repository ):
                 old_metadata[ self.security.encode_id( repository.id ) ][ metadata.changeset_revision ] = metadata.metadata
-        self.reset_metadata_on_selected_repositories( old_metadata.keys() )
+        self.reset_metadata_on_selected_repositories( list(old_metadata.keys()) )
         for repository in repositories:
             new_metadata[ self.security.encode_id( repository.id ) ] = dict()
             for metadata in self.get_repository_metadata( repository ):

@@ -1,5 +1,7 @@
 import json
+
 from requests import put
+
 from base import api
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"

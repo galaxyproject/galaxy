@@ -105,6 +105,9 @@ class Configuration( object ):
 
         self.webhooks_dir = resolve_path( kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
 
+        webhooks_dirs = kwargs.get( "webhooks_dir", "config/plugins/webhooks" )
+        self.webhooks_dirs = [resolve_path(d.strip(), self.root) for d in (webhooks_dirs.split(",") if webhooks_dirs else [])]
+
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
         self.password_expiration_period = timedelta( days=int( kwargs.get( "password_expiration_period", 0 ) ) )
@@ -228,6 +231,7 @@ class Configuration( object ):
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
         self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
+
         # Enable new interface for API installations from TS.
         # Admin menu will list both if enabled.
         self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'False' ) )
@@ -325,6 +329,19 @@ class Configuration( object ):
         else:
             self.tool_dependency_dir = None
             self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
+
+        self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
+        containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
+        if containers_resolvers_config_file:
+            containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
+        self.containers_resolvers_config_file = containers_resolvers_config_file
+
+        involucro_path = kwargs.get('involucro_path', None)
+        if involucro_path is None:
+            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+        self.involucro_path = resolve_path(involucro_path, self.root)
+        self.involucro_auto_init = string_as_bool(kwargs.get( 'involucro_auto_init', True))
+
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
@@ -848,7 +865,11 @@ class ConfiguresGalaxyMixin:
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
-            library_import_dir=self.config.library_import_dir
+            library_import_dir=self.config.library_import_dir,
+            enable_beta_mulled_containers=self.config.enable_beta_mulled_containers,
+            containers_resolvers_config_file=self.config.containers_resolvers_config_file,
+            involucro_path=self.config.involucro_path,
+            involucro_auto_init=self.config.involucro_auto_init,
         )
         self.container_finder = containers.ContainerFinder(app_info)
 
