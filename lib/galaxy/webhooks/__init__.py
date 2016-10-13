@@ -6,7 +6,7 @@ import os
 import yaml
 import logging
 
-from galaxy.util import galaxy_root_path
+from galaxy.util import config_directories_from_setting
 
 log = logging.getLogger(__name__)
 
@@ -37,11 +37,9 @@ class WebhooksRegistry(object):
     def __init__(self, webhooks_directories):
         self.webhooks = []
         self.webhooks_directories = []
-        for webhooks_directory in webhooks_directories:
-            for name in os.listdir(webhooks_directory):
-                self.webhooks_directories.append( os.path.join(webhooks_directory, name) )
-
-
+        for webhook_dir in config_directories_from_setting( webhooks_directories ):
+            for plugin_dir in os.listdir( webhook_dir ):
+                self.webhooks_directories.append( os.path.join( webhook_dir, plugin_dir ) )
         self.load_webhooks()
 
     def load_webhooks(self):
