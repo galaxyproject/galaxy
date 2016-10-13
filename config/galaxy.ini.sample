@@ -326,6 +326,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Webhooks directory
 #webhooks_dir = config/plugins/webhooks
+webhooks_dir = config/plugins/webhooks/demo
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
