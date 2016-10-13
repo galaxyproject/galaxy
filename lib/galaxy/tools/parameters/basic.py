@@ -151,7 +151,7 @@ class ToolParameter( object, Dictifiable ):
         Convert a value to a text representation suitable for displaying to
         the user
         """
-        if value:
+        if value is not None:
             return unicodify( value )
         return "Not available."
 
