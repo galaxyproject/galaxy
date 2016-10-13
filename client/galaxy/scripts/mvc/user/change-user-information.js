@@ -1,5 +1,5 @@
 /** Show and edit user information */
-define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/user/add-edit-address' ], function( Form, Ui, Address ) {
+define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     var ManageUserInformation = Backbone.View.extend({
         initialize: function ( app, options, address_message ) {
             var self = this;
@@ -41,7 +41,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/user/add-edit-address' ],
         /** Saves changes */
         _save: function() {
             var self = this;
-            $.getJSON( Galaxy.root + 'api/user_preferences/change_information', self.form.data.create(), function( response ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/set_information', self.form.data.create(), function( response ) {
                 self.form.message.update({
                    message: response.message,
                    status: response.status === 'error' ? 'danger' : 'success'

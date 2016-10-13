@@ -38,7 +38,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         }
 
     @expose_api
-    def manage_user_info( self, trans, **kwd ):
+    def get_information( self, trans, **kwd ):
         '''
         Manage a user login, password, public username, type, addresses, etc.
         '''
@@ -117,6 +117,14 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
             'inputs'            : inputs,
         }
+
+    @expose_api
+    def set_information( self, trans, **kwd ):
+        '''
+        Manage a user login, password, public username, type, addresses, etc.
+        '''
+        print kwd
+        return {}
 
     def edit_info(self, trans, cntrller, kwd):
         """
@@ -478,7 +486,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         }
 
     @expose_api
-    def set_default_permissions(self, trans, cntrller='user_preferences', **kwd):
+    def change_permissions(self, trans, cntrller='user_preferences', **kwd):
         """Set the user's default permissions for the new histories"""
         params = util.Params(kwd)
         message = util.restore_text(params.get('message', ''))
@@ -691,7 +699,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         return iterable_roles_list
 
     @expose_api
-    def api_keys(self, trans, cntrller='user_preferences', **kwd):
+    def change_api_key(self, trans, cntrller='user_preferences', **kwd):
         """
         Generate API keys
         """

@@ -476,10 +476,16 @@ def populate_api_routes( webapp, app ):
                            action='index',
                            conditions=dict( method=["GET"] ) )
 
-    webapp.mapper.connect( 'manage_user_info',
-                           '/api/user_preferences/manage_user_info',
+    webapp.mapper.connect( 'get_information',
+                           '/api/user_preferences/get_information',
                            controller='user_preferences',
-                           action='manage_user_info',
+                           action='get_information',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'set_information',
+                           '/api/user_preferences/set_information',
+                           controller='user_preferences',
+                           action='set_information',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'change_password',
@@ -488,16 +494,16 @@ def populate_api_routes( webapp, app ):
                            action='change_password',
                            conditions=dict( method=["GET"] ) )
 
-    webapp.mapper.connect( 'set_default_permissions',
-                           '/api/user_preferences/set_default_permissions',
+    webapp.mapper.connect( 'change_permissions',
+                           '/api/user_preferences/change_permissions',
                            controller='user_preferences',
-                           action='set_default_permissions',
+                           action='change_permissions',
                            conditions=dict( method=["GET"] ) )
 
-    webapp.mapper.connect( 'api_keys',
-                           '/api/user_preferences/api_keys',
+    webapp.mapper.connect( 'change_api_key',
+                           '/api/user_preferences/change_api_key',
                            controller='user_preferences',
-                           action='api_keys',
+                           action='change_api_key',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'toolbox_filters',

@@ -37,7 +37,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         /** Generate new API key */
         _getNewApiKey: function() {
             var self = this;
-            $.getJSON( Galaxy.root + 'api/user_preferences/api_keys', { 'new_api_key': true }, function( response ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/change_api_key', { 'new_api_key': true }, function( response ) {
                 if( response.user_api_key ) {
                     var input_id = self.form.data.match( 'api-key' );
                     self.form.field_list[ input_id ].value( response.user_api_key );

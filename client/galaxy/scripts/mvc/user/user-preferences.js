@@ -11,7 +11,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
         callManageInfo: function() {
             var self = this;
             $( '.user-pref' ).hide();
-            $.getJSON( Galaxy.root + 'api/user_preferences/manage_user_info', function( data ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/get_information', function( data ) {
                 var userInfo = new Manage.ManageUserInformation( self, data );
                 self.$( '.user-preferences-all' ).append( userInfo.$el );
             });
@@ -34,7 +34,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
 
         /** Redirect to change permissions view */
         callChangePermissions: function( e ) {
-            var url = Galaxy.root + 'api/user_preferences/set_default_permissions',
+            var url = Galaxy.root + 'api/user_preferences/change_permissions',
                 self = this,
                 $el = $( '.user-preferences-all' );
             $( '.user-pref' ).hide();
@@ -45,7 +45,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
 
         /** Redirect to API keys view */
         callApiKeys: function( e ) {
-            var url = Galaxy.root + 'api/user_preferences/api_keys',
+            var url = Galaxy.root + 'api/user_preferences/change_api_key',
                 data = {},
                 self = this;
             $( '.user-pref' ).hide();
