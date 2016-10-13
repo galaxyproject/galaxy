@@ -228,7 +228,7 @@ var DatasetListItemView = _super.extend(
             case STATES.OK:
             case STATES.FAILED_METADATA:
             case STATES.ERROR:
-                return [ this._renderDownloadButton(), this._renderShowParamsButton() ];
+                return [ this._renderToolHelpButton(), this._renderDownloadButton(), this._renderShowParamsButton() ];
         }
         return [ this._renderShowParamsButton() ];
     },
@@ -253,6 +253,52 @@ var DatasetListItemView = _super.extend(
             }
         });
     },
+
+
+    /************************************************************************** 
+     * Render help button to show tool help text without rerunning the tool.
+     * Issue #2100
+     */
+    _renderToolHelpButton : function() {
+        var datasetID = this.model.attributes.dataset_id;
+
+        var parseToolBuild = function(data) {
+            var toolName = data.name;
+            var toolHelp = (data.help) ? data.help : "No help is available for the tool.";
+            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee;"><hr><strong>Tool Help for ' + toolName + '</strong><br/><hr>';
+            helpString += toolHelp;
+            helpString += '</div>';
+            $('#dataset-' + datasetID).append($.parseHTML(helpString));
+        };
+        var parseToolID = function(data) {
+            $.ajax({
+                url: '/api/tools/' + data.tool_id + '/build'
+            }).done(function(data){
+                parseToolBuild(data);
+            }).fail(function(){console.log("Failed in api tools build call")});
+        };
+        return faIconButton({
+            title: 'Tool Help',
+            classes: 'icon-btn',
+            href: '#',
+            faIcon: 'fa-question',
+            onclick: function() {
+                var divString = 'thdiv-' + datasetID;
+                if ($("#" + divString).length > 0)
+                {
+                    $("#" + divString).toggle();     
+                } else {
+                    $.ajax({
+                    url: '/api/jobs/' + datasetID
+                }).done(function(data){
+                    parseToolID(data);
+                }).fail(function(){console.log('Failed on recovering /api/jobs/' + datasetID + ' call.')});
+                }
+            }
+        });
+    },
+    //*************************************************************************
+
 
     /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
      *  @returns {jQuery} rendered DOM
