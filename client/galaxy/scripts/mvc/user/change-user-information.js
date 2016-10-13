@@ -24,7 +24,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 buttons : {
                     'save'  : new Ui.Button({
                         tooltip : 'Save',
-                        title   : 'Save',
+                        title   : 'Save Changes',
+                        icon    : 'fa-save',
                         cls     : 'ui-button btn btn-primary',
                         floating: 'clear',
                         onclick : function() {
