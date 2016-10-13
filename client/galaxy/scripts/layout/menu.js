@@ -34,7 +34,6 @@ define(['mvc/tours', 'layout/generic-nav-view', 'mvc/webhooks'], function( Tours
                                     url     : webhook.config.url,
                                     tooltip : webhook.config.tooltip,
                                     onclick : (typeof webhook.config.function != 'undefined') ? new Function(webhook.config.function) : '',
-                                    // visible : webhook.activate
                                 });
                             }
                         });
