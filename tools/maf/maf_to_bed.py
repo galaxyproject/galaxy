@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-
 """
 Read a maf and output intervals for specified list of species.
 """
+from __future__ import print_function
+
 import os
 import sys
 
@@ -22,25 +23,23 @@ def __main__():
     primary_spec = None
 
     if "None" in species:
-        species = {}
+        species = set()
         try:
             for i, m in enumerate( maf.Reader( open( input_filename, 'r' ) ) ):
                 for c in m.components:
                     spec, chrom = maf.src_split( c.src )
                     if not spec or not chrom:
                         spec = chrom = c.src
-                    species[spec] = ""
-            species = species.keys()
+                    species.add(spec)
         except:
-            print >>sys.stderr, "Invalid MAF file specified"
+            print("Invalid MAF file specified", file=sys.stderr)
             return
 
     if "?" in species:
-        print >>sys.stderr, "Invalid dbkey specified"
+        print("Invalid dbkey specified", file=sys.stderr)
         return
 
-    for i in range( 0, len( species ) ):
-        spec = species[i]
+    for i, spec in enumerate( species ):
         if i == 0:
             out_files[spec] = open( output_filename, 'w' )
             primary_spec = spec
@@ -48,7 +47,7 @@ def __main__():
             out_files[ spec ] = open( os.path.join( database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % ( output_id, spec, spec ) ), 'wb+' )
     num_species = len( species )
 
-    print "Restricted to species:", ",".join( species )
+    print("Restricted to species:", ",".join( species ))
 
     file_in = open( input_filename, 'r' )
     maf_reader = maf.Reader( file_in )
@@ -78,7 +77,7 @@ def __main__():
     for file_out in out_files.keys():
         out_files[file_out].close()
 
-    print "#FILE1_DBKEY\t%s" % ( primary_spec )
+    print("#FILE1_DBKEY\t%s" % ( primary_spec ))
 
 if __name__ == "__main__":
     __main__()

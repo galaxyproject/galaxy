@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+from __future__ import print_function
+
 import base64
 import binascii
-import cookielib
 import datetime
 import hashlib
 import json
@@ -10,9 +11,12 @@ import logging
 import optparse
 import os
 import tempfile
-import urllib
-import urllib2
-from urlparse import urljoin
+
+import six
+from six.moves import http_cookiejar
+from six.moves.urllib.error import HTTPError
+from six.moves.urllib.parse import quote, urlencode, urljoin
+from six.moves.urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
 
 log = logging.getLogger( "tools.genomespace.genomespace_exporter" )
 
@@ -56,19 +60,19 @@ def chunk_write( source_stream, target_stream, source_method="read", target_meth
 
 def get_cookie_opener( gs_username, gs_token, gs_toolname=None ):
     """ Create a GenomeSpace cookie opener """
-    cj = cookielib.CookieJar()
+    cj = http_cookiejar.CookieJar()
     for cookie_name, cookie_value in [ ( 'gs-token', gs_token ), ( 'gs-username', gs_username ) ]:
         # create a super-cookie, valid for all domains
-        cookie = cookielib.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
+        cookie = http_cookiejar.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
         cj.set_cookie( cookie )
-    cookie_opener = urllib2.build_opener( urllib2.HTTPCookieProcessor( cj ) )
+    cookie_opener = build_opener( HTTPCookieProcessor( cj ) )
     cookie_opener.addheaders.append( ( 'gs-toolname', gs_toolname or DEFAULT_GENOMESPACE_TOOLNAME ) )
     return cookie_opener
 
 
 def get_genomespace_site_urls():
     genomespace_sites = {}
-    for line in urllib2.urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
+    for line in urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
         line = line.rstrip()
         if not line or line.startswith( "#" ):
             continue
@@ -86,11 +90,11 @@ def get_directory( url_opener, dm_url, path ):
     dir_dict = {}
     for i, sub_path in enumerate( path ):
         url = "%s/%s" % ( url, sub_path )
-        dir_request = urllib2.Request( url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json' } )
+        dir_request = Request( url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json' } )
         dir_request.get_method = lambda: 'GET'
         try:
             dir_dict = json.loads( url_opener.open( dir_request ).read() )
-        except urllib2.HTTPError:
+        except HTTPError:
             # print "e", e, url #punting, assuming lack of permissions at this low of a level...
             continue
         break
@@ -114,15 +118,15 @@ def create_directory( url_opener, directory_dict, new_dir, dm_url ):
     for dir_slice in new_dir:
         if dir_slice in ( '', '/', None ):
             continue
-        url = '/'.join( ( directory_dict['url'], urllib.quote( dir_slice.replace( '/', '_' ), safe='' ) ) )
-        new_dir_request = urllib2.Request( url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json' }, data=json.dumps( payload ) )
+        url = '/'.join( ( directory_dict['url'], quote( dir_slice.replace( '/', '_' ), safe='' ) ) )
+        new_dir_request = Request( url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json' }, data=json.dumps( payload ) )
         new_dir_request.get_method = lambda: 'PUT'
         directory_dict = json.loads( url_opener.open( new_dir_request ).read() )
     return directory_dict
 
 
 def get_genome_space_launch_apps( atm_url, url_opener, file_url, file_type ):
-    gs_request = urllib2.Request( "%s/%s/webtool/descriptor" % ( atm_url, GENOMESPACE_API_VERSION_STRING ) )
+    gs_request = Request( "%s/%s/webtool/descriptor" % ( atm_url, GENOMESPACE_API_VERSION_STRING ) )
     gs_request.get_method = lambda: 'GET'
     opened_gs_request = url_opener.open( gs_request )
     webtool_descriptors = json.loads( opened_gs_request.read() )
@@ -143,7 +147,7 @@ def get_genome_space_launch_apps( atm_url, url_opener, file_url, file_type ):
                     url_delimiter = "&"
                 else:
                     url_delimiter = "?"
-                launch_url = "%s%s%s" % ( base_url, url_delimiter, urllib.urlencode( [ ( file_param_name, file_url ) ] ) )
+                launch_url = "%s%s%s" % ( base_url, url_delimiter, urlencode( [ ( file_param_name, file_url ) ] ) )
                 webtools.append( ( launch_url, webtool_name ) )
                 break
     return webtools
@@ -153,19 +157,19 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
     if value:
         if isinstance( value, list ):
             value = value[0]  # single select, only 1 value
-        elif not isinstance( value, basestring ):
+        elif not isinstance( value, six.string_types ):
             # unvalidated value
             value = value.value
             if isinstance( value, list ):
                 value = value[0]  # single select, only 1 value
 
     def recurse_directory_dict( url_opener, cur_options, url ):
-        cur_directory = urllib2.Request( url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json, text/plain' } )
+        cur_directory = Request( url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json, text/plain' } )
         cur_directory.get_method = lambda: 'GET'
         # get url to upload to
         try:
             cur_directory = url_opener.open( cur_directory ).read()
-        except urllib2.HTTPError as e:
+        except HTTPError as e:
             log.debug( 'GenomeSpace export tool failed reading a directory "%s": %s' % ( url, e ) )
             return  # bad url, go to next
         cur_directory = json.loads( cur_directory )
@@ -244,11 +248,11 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
                     sizes = [ last_size ]
             else:
                 sizes.append( last_size )
-        print "Performing multi-part upload in %i parts." % ( len( sizes ) )
+        print("Performing multi-part upload in %i parts." % ( len( sizes ) ))
         # get upload url
         upload_url = "uploadinfo"
-        upload_url = "%s/%s/%s%s/%s" % ( dm_url, GENOMESPACE_API_VERSION_STRING, upload_url, target_directory_dict['path'], urllib.quote( target_filename, safe='' ) )
-        upload_request = urllib2.Request( upload_url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json' } )
+        upload_url = "%s/%s/%s%s/%s" % ( dm_url, GENOMESPACE_API_VERSION_STRING, upload_url, target_directory_dict['path'], quote( target_filename, safe='' ) )
+        upload_request = Request( upload_url, headers={ 'Content-Type': 'application/json', 'Accept': 'application/json' } )
         upload_request.get_method = lambda: 'GET'
         upload_info = json.loads( url_opener.open( upload_request ).read() )
         conn = S3Connection( aws_access_key_id=upload_info['amazonCredentials']['accessKey'],
@@ -273,15 +277,15 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
             fh.close()
         upload_result = mp.complete_upload()
     else:
-        print 'Performing simple put upload.'
+        print('Performing simple put upload.')
         upload_url = "uploadurl"
         content_md5 = hashlib.md5()
         chunk_write( input_file, content_md5, target_method="update" )
         input_file.seek( 0 )  # back to start, for uploading
 
         upload_params = { 'Content-Length': content_length, 'Content-MD5': base64.standard_b64encode( content_md5.digest() ), 'Content-Type': content_type }
-        upload_url = "%s/%s/%s%s/%s?%s" % ( dm_url, GENOMESPACE_API_VERSION_STRING, upload_url, target_directory_dict['path'], urllib.quote( target_filename, safe='' ), urllib.urlencode( upload_params ) )
-        new_file_request = urllib2.Request( upload_url )  # , headers = { 'Content-Type': 'application/json', 'Accept': 'application/text' } ) #apparently http://www.genomespace.org/team/specs/updated-dm-rest-api:"Every HTTP request to the Data Manager should include the Accept header with a preference for the media types application/json and application/text." is not correct
+        upload_url = "%s/%s/%s%s/%s?%s" % ( dm_url, GENOMESPACE_API_VERSION_STRING, upload_url, target_directory_dict['path'], quote( target_filename, safe='' ), urlencode( upload_params ) )
+        new_file_request = Request( upload_url )  # , headers = { 'Content-Type': 'application/json', 'Accept': 'application/text' } ) #apparently http://www.genomespace.org/team/specs/updated-dm-rest-api:"Every HTTP request to the Data Manager should include the Accept header with a preference for the media types application/json and application/text." is not correct
         new_file_request.get_method = lambda: 'GET'
         # get url to upload to
         target_upload_url = url_opener.open( new_file_request ).read()
@@ -289,10 +293,10 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
         upload_headers = dict( upload_params )
         # upload_headers[ 'x-amz-meta-md5-hash' ] = content_md5.hexdigest()
         upload_headers[ 'Accept' ] = 'application/json'
-        upload_file_request = urllib2.Request( target_upload_url, headers=upload_headers, data=input_file )
+        upload_file_request = Request( target_upload_url, headers=upload_headers, data=input_file )
         upload_file_request.get_method = lambda: 'PUT'
-        upload_result = urllib2.urlopen( upload_file_request ).read()
-    result_url = "%s/%s" % ( target_directory_dict['url'], urllib.quote( target_filename, safe='' ) )
+        upload_result = urlopen( upload_file_request ).read()
+    result_url = "%s/%s" % ( target_directory_dict['url'], quote( target_filename, safe='' ) )
     # determine available gs launch apps
     web_tools = get_genome_space_launch_apps( genomespace_site_dict['atmServer'], url_opener, result_url, file_type )
     if log_filename:
@@ -326,4 +330,4 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-    send_file_to_genomespace( options.genomespace_site, options.username, options.token, options.dataset, map( binascii.unhexlify, options.subdirectory ), binascii.unhexlify( options.filename ), options.file_type, options.content_type, options.log, options.genomespace_toolname )
+    send_file_to_genomespace( options.genomespace_site, options.username, options.token, options.dataset, [binascii.unhexlify(_) for _ in options.subdirectory], binascii.unhexlify( options.filename ), options.file_type, options.content_type, options.log, options.genomespace_toolname )

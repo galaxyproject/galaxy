@@ -104,7 +104,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             // add parsed/minimum number of repeat blocks
             //
             var n_cache = _.size( input_def.cache );
-            for ( var i = 0; i < Math.max( Math.max( n_cache, input_def.min ), input_def.default || 0 ); i++ ) {
+            for ( var i = 0; i < Math.max( Math.max( n_cache, input_def.min || 0 ), input_def.default || 0 ); i++ ) {
                 create( i < n_cache ? input_def.cache[ i ] : input_def.inputs );
             }
 

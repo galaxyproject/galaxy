@@ -2,14 +2,12 @@
 # TODO: Add examples, tables and best practice links to command
 # TODO: Examples of truevalue, falsevalue
 # TODO: Test param extra_file
-from __future__ import print_function
-
 # Things dropped from TOC (still documented inside schema).
 #  - request_parameter_translation
+from __future__ import print_function
 
 from lxml import etree
-from StringIO import StringIO
-
+from six import StringIO
 
 with open("doc/schema_template.md", "r") as f:
     MARKDOWN_TEMPLATE = f.read()

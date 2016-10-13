@@ -9,7 +9,6 @@ from six import iteritems
 from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import ObjectNotFound
-from galaxy.queue_worker import reload_toolbox
 # Next two are extra tool dependency not used by AbstractToolBox but by
 # BaseGalaxyToolBox.
 from galaxy.tools.deps import build_dependency_manager
@@ -62,7 +61,6 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
-        self._reload_count = 0
         self.data_manager_tools = odict()
         self._lineage_map = LineageMap( app )
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
@@ -75,7 +73,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         if tool_conf_watcher:
             self._tool_conf_watcher = tool_conf_watcher  # Avoids (re-)starting threads in uwsgi
         else:
-            self._tool_conf_watcher = get_tool_conf_watcher( lambda: reload_toolbox(app))
+            self._tool_conf_watcher = get_tool_conf_watcher(lambda: self.handle_reload_toolbox())
         self._filter_factory = FilterFactory( self )
         self._tool_tag_manager = tool_tag_manager( app )
         self._init_tools_from_configs( config_filenames )
@@ -84,8 +82,12 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             self._load_tool_panel()
         self._save_integrated_tool_panel()
 
-    def has_reloaded(self, other_toolbox):
-        return self._reload_count != other_toolbox._reload_count
+    def handle_reload_toolbox(self):
+        """Extension-point for Galaxy-app specific reload logic.
+
+        This abstract representation of the toolbox shouldn't have details about
+        interacting with the rest of the Galaxy app or message queues, etc....
+        """
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         raise NotImplementedError()
@@ -518,15 +520,20 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool = self.load_tool_from_cache(os.path.join(tool_path, path))
             from_cache = tool
             if from_cache:
-                log.debug("Loading tool %s from cache", str(tool.id))
-            elif guid:  # tool was not in cache and is a tool shed tool
+                if guid and tool.id != guid:
+                    # In rare cases a tool shed tool is loaded into the cache without guid.
+                    # In that case recreating the tool will correct the cached version.
+                    from_cache = False
+                else:
+                    log.debug("Loading tool %s from cache", str(tool.id))
+            if guid and not from_cache:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id(tool_shed_repository.id)
                     tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=False)
-            else:  # tool was not in cache and is not a tool shed tool.
+            if not tool:  # tool was not in cache and is not a tool shed tool.
                 tool = self.load_tool(os.path.join(tool_path, path), use_cached=False)
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True

@@ -14,15 +14,15 @@ from galaxy import util
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.workflow import modules
-
 from .base import decode_id
 
 # For WorkflowContentManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule
-from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter
-from galaxy.tools.parameters import visit_input_values
+from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector, MissingToolException
+from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter, workflow_building_modes
+from galaxy.tools.parameters import visit_input_values, params_to_incoming
+from galaxy.jobs.actions.post import ActionBox
 from galaxy.web import url_for
 
 log = logging.getLogger( __name__ )
@@ -334,8 +334,84 @@ class WorkflowContentsManager(UsesAnnotations):
             return self._workflow_to_dict_instance( stored, legacy=True )
         elif style == "instance":
             return self._workflow_to_dict_instance( stored, legacy=False )
+        elif style == "run":
+            return self._workflow_to_dict_run( trans, stored )
         else:
             return self._workflow_to_dict_export( trans, stored )
+
+    def _workflow_to_dict_run( self, trans, stored ):
+        """
+        Builds workflow dictionary used by run workflow form
+        """
+        workflow = stored.latest_workflow
+        trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
+        module_injector = WorkflowModuleInjector( trans )
+        has_upgrade_messages = False
+        step_version_changes = []
+        missing_tools = []
+        errors = {}
+        for step in workflow.steps:
+            try:
+                module_injector.inject( step, steps=workflow.steps )
+            except MissingToolException:
+                if step.tool_id not in missing_tools:
+                    missing_tools.append( step.tool_id )
+                continue
+            if step.upgrade_messages:
+                has_upgrade_messages = True
+            if step.type == 'tool' or step.type is None:
+                if step.module.version_changes:
+                    step_version_changes.extend( step.module.version_changes )
+                if step.tool_errors:
+                    errors[ step.id ] = step.tool_errors
+        if missing_tools:
+            workflow.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, workflow )
+            raise exceptions.MessageException( 'Following tools missing: %s' % missing_tools )
+        workflow.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, workflow )
+        step_order_indices = {}
+        for step in workflow.steps:
+            step_order_indices[ step.id ] = step.order_index
+        step_models = []
+        for i, step in enumerate( workflow.steps ):
+            step_model = None
+            if step.type == 'tool':
+                incoming = {}
+                tool = trans.app.toolbox.get_tool( step.tool_id )
+                params_to_incoming( incoming, tool.inputs, step.state.inputs, trans.app )
+                step_model = tool.to_json( trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY )
+                step_model[ 'post_job_actions' ] = [{
+                    'short_str'         : ActionBox.get_short_str( pja ),
+                    'action_type'       : pja.action_type,
+                    'output_name'       : pja.output_name,
+                    'action_arguments'  : pja.action_arguments
+                } for pja in step.post_job_actions ]
+            else:
+                inputs = step.module.get_runtime_inputs( connections=step.output_connections )
+                step_model = {
+                    'name'   : step.module.name,
+                    'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
+                }
+            step_model[ 'step_type' ] = step.type
+            step_model[ 'step_index' ] = step.order_index
+            step_model[ 'output_connections' ] = [ {
+                'input_step_index'  : step_order_indices.get( oc.input_step_id ),
+                'output_step_index' : step_order_indices.get( oc.output_step_id ),
+                'input_name'        : oc.input_name,
+                'output_name'       : oc.output_name
+            } for oc in step.output_connections ]
+            if step.annotations:
+                step_model[ 'annotation' ] = step.annotations[ 0 ].annotation
+            if step.upgrade_messages:
+                step_model[ 'messages' ] = step.upgrade_messages
+            step_models.append( step_model )
+        return {
+            'id'                    : trans.app.security.encode_id( stored.id ),
+            'history_id'            : trans.app.security.encode_id( trans.history.id ) if trans.history else None,
+            'name'                  : stored.name,
+            'steps'                 : step_models,
+            'step_version_changes'  : step_version_changes,
+            'has_upgrade_messages'  : has_upgrade_messages
+        }
 
     def _workflow_to_dict_editor(self, trans, stored):
         """

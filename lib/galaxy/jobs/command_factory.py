@@ -55,13 +55,13 @@ def build_command(
     # One could imagine also allowing dependencies inside of the container but
     # that is too sophisticated for a first crack at this - build your
     # containers ready to go!
-    if not container:
+    if not container or container.resolve_dependencies:
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
         if container and modify_command_for_container:
             # Many Docker containers do not have /bin/bash.
-            external_command_shell = "/bin/sh"
+            external_command_shell = container.shell
         else:
             external_command_shell = shell
         externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)

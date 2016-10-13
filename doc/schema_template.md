@@ -2,9 +2,11 @@
 
 The XML File for a Galaxy tool, generally referred to as the "tool config
 file" or "wrapper", serves a number of purposes. First, it lays out the user
-interface for the tool ( e.g. form fields, text, help, etc...). Second, it
+interface for the tool (e.g. form fields, text, help, etc.). Second, it
 provides the glue that links your tool to Galaxy by telling Galaxy how to
 invoke it, what options to pass, and what files it will produce as output.
+
+If you find a bug please report it [here](https://github.com/galaxyproject/galaxy/issues/new).
 
 This document serves as reference documentation. If you would like to learn
 how to build tools for Galaxy,

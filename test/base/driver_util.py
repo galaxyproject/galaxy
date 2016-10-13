@@ -13,29 +13,25 @@ import tempfile
 import threading
 import time
 
-from six.moves.urllib.request import urlretrieve
-
 import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
-
+import requests
 from paste import httpserver
 
-from .api_util import get_master_api_key, get_user_api_key
-from .tool_shed_util import parse_tool_panel_config
-from .nose_util import run
-from .instrument import StructuredTestDataPlugin
-
 from functional import database_contexts
-
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.web import buildapp
-from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.web import buildapp
+from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 
-from base.test_logging import logging_config_file
+from .api_util import get_master_api_key, get_user_api_key
+from .instrument import StructuredTestDataPlugin
+from .nose_util import run
+from .test_logging import logging_config_file
+from .tool_shed_util import parse_tool_panel_config
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 DEFAULT_WEB_HOST = "localhost"
@@ -258,7 +254,9 @@ def copy_database_template( source, db_path ):
         shutil.copy(source, db_path)
         assert os.path.exists(db_path)
     elif source.lower().startswith(("http://", "https://", "ftp://")):
-        urlretrieve(source, db_path)
+        r = requests.get(source)
+        with open(db_path, 'w') as f:
+            f.write(r.content)
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
 

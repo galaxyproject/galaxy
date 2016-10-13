@@ -5,6 +5,8 @@ Extract features from GFF file.
 
 usage: %prog input1 out_file1 column features
 """
+from __future__ import print_function
+
 import sys
 
 from bx.cookbook import doc_optparse
@@ -45,7 +47,7 @@ def main():
                 pass
     fo.close()
 
-    print 'Column %d features: %s' % ( column + 1, features )
+    print('Column %d features: %s' % ( column + 1, features ))
 
 if __name__ == "__main__":
     main()

@@ -14,8 +14,13 @@ from binascii import hexlify
 
 log = logging.getLogger(__name__)
 
-
 class BaseField(object):
+    def __init__( self, name, value=None, disabled=False, optional=True, **kwds ):
+        self.name = name
+        self.value = value
+        self.disabled = disabled
+        self.optional = optional
+
     def get_html( self, prefix="" ):
         """Returns the html widget corresponding to the parameter"""
         raise TypeError( "Abstract Method" )
@@ -25,6 +30,14 @@ class BaseField(object):
             return ' disabled="disabled"'
         else:
             return ''
+
+    def to_dict( self ):
+        return {
+            'name'      : self.name,
+            'disabled'  : self.disabled,
+            'optional'  : self.optional,
+            'value'     : escape( unicodify( self.value ), quote=True ) if isinstance( self.value, basestring ) else self.value
+        }
 
 
 class TextField(BaseField):
@@ -36,19 +49,22 @@ class TextField(BaseField):
     >>> print TextField( "bins", size=4, value="default" ).get_html()
     <input type="text" name="bins" size="4" value="default">
     """
-    def __init__( self, name, size=None, value=None ):
-        self.name = name
+    def __init__( self, name, size=None, value=None, **kwds ):
+        super( TextField, self ).__init__( name, value, **kwds )
         self.size = int( size or 10 )
-        self.value = value or ""
 
     def get_html( self, prefix="", disabled=False ):
-        value = self.value
-        value = unicodify( value )
+        value = unicodify( self.value or "" )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>'
                           % ( prefix, self.name, self.size, escape( value, quote=True ), self.get_disabled_str( disabled ) ) )
 
     def set_size(self, size):
         self.size = int( size )
+
+    def to_dict( self ):
+        d = super( TextField, self ).to_dict()
+        d[ 'type' ] = 'text'
+        return d
 
 
 class PasswordField(BaseField):
@@ -60,7 +76,8 @@ class PasswordField(BaseField):
     >>> print PasswordField( "bins", size=4, value="default" ).get_html()
     <input type="password" name="bins" size="4" value="default">
     """
-    def __init__( self, name, size=None, value=None ):
+    def __init__( self, name, size=None, value=None, **kwds ):
+        super( PasswordField, self ).__init__( name, value, **kwds )
         self.name = name
         self.size = int( size or 10 )
         self.value = value or ""
@@ -71,6 +88,11 @@ class PasswordField(BaseField):
 
     def set_size(self, size):
         self.size = int( size )
+
+    def to_dict( self ):
+        d = super( PasswordField, self ).to_dict()
+        d[ 'type' ] = 'password'
+        return d
 
 
 class TextArea(BaseField):
@@ -84,7 +106,8 @@ class TextArea(BaseField):
     """
     _DEFAULT_SIZE = "5x25"
 
-    def __init__( self, name, size=None, value=None ):
+    def __init__( self, name, size=None, value=None, **kwds ):
+        super( TextArea, self ).__init__( name, value, **kwds )
         self.name = name
         size = size or self._DEFAULT_SIZE
         self.size = size.split("x")
@@ -100,6 +123,12 @@ class TextArea(BaseField):
         self.rows = rows
         self.cols = cols
 
+    def to_dict( self ):
+        d = super( TextArea, self ).to_dict()
+        d[ 'type'  ] = 'text'
+        d[ 'area'  ] = True
+        return d
+
 
 class CheckboxField(BaseField):
     """
@@ -111,7 +140,8 @@ class CheckboxField(BaseField):
     <input type="checkbox" id="bar" name="bar" value="__CHECKED__" checked="checked"><input type="hidden" name="bar" value="__NOTHING__">
     """
 
-    def __init__( self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None ):
+    def __init__( self, name, checked=None, refresh_on_change=False, refresh_on_change_values=None, value=None, **kwds ):
+        super( CheckboxField, self ).__init__( name, value, **kwds )
         self.name = name
         self.checked = ( checked is True ) or ( isinstance( checked, string_types ) and ( checked.lower() in ( "yes", "true", "on" ) ) )
         self.refresh_on_change = refresh_on_change
@@ -144,6 +174,12 @@ class CheckboxField(BaseField):
         else:
             self.checked = value
 
+    def to_dict( self ):
+        d = super( CheckboxField, self ).to_dict()
+        d[ 'type' ] = 'boolean'
+        d[ 'value' ] = 'true' if self.checked else 'false'
+        return d
+
 
 class FileField(BaseField):
     """
@@ -155,7 +191,8 @@ class FileField(BaseField):
     <input type="file" name="foo" galaxy-ajax-upload="true">
     """
 
-    def __init__( self, name, value=None, ajax=False ):
+    def __init__( self, name, value=None, ajax=False, **kwds ):
+        super( FileField, self ).__init__( name, value, **kwds )
         self.name = name
         self.ajax = ajax
         self.value = value
@@ -170,72 +207,6 @@ class FileField(BaseField):
         return unicodify( '<input type="file" name="%s%s"%s%s>' % ( prefix, self.name, ajax_text, value_text ) )
 
 
-class FTPFileField(BaseField):
-    """
-    An FTP file upload input.
-    """
-    thead = '''
-        <table id="grid-table" class="grid">
-            <thead id="grid-table-header">
-                <tr>
-                    <th id="select-header"></th>
-                    <th id="name-header">
-                        File
-                    </th>
-                    <th id="size-header">
-                        Size
-                    </th>
-                    <th id="date-header">
-                        Date
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="grid-table-body">
-    '''
-    trow = '''
-                <tr>
-                    <td><input type="checkbox" name="%s%s" value="%s"/></td>
-                    <td>%s</td>
-                    <td>%s</td>
-                    <td>%s</td>
-                </tr>
-    '''
-    tfoot = '''
-            </tbody>
-        </table>
-    '''
-
-    def __init__( self, name, dir, ftp_site, value=None ):
-        self.name = name
-        self.dir = dir
-        self.ftp_site = ftp_site
-        self.value = value
-
-    def get_html( self, prefix="" ):
-        rval = FTPFileField.thead
-        if self.dir is None:
-            rval += '<tr><td colspan="4"><em>Please <a href="%s">create</a> or <a href="%s">log in to</a> a Galaxy account to view files uploaded via FTP.</em></td></tr>' % ( url_for( controller='user', action='create', cntrller='user', referer=url_for( controller='root' ) ), url_for( controller='user', action='login', cntrller='user', referer=url_for( controller='root' ) ) )
-        elif not os.path.exists( self.dir ):
-            rval += '<tr><td colspan="4"><em>Your FTP upload directory contains no files.</em></td></tr>'
-        else:
-            uploads = []
-            for ( dirpath, dirnames, filenames ) in os.walk( self.dir ):
-                for filename in filenames:
-                    path = relpath( os.path.join( dirpath, filename ), self.dir )
-                    statinfo = os.lstat( os.path.join( dirpath, filename ) )
-                    uploads.append( dict( path=path,
-                                          size=nice_size( statinfo.st_size ),
-                                          ctime=time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
-            if not uploads:
-                rval += '<tr><td colspan="4"><em>Your FTP upload directory contains no files.</em></td></tr>'
-            uploads = sorted(uploads, key=itemgetter("path"))
-            for upload in uploads:
-                rval += FTPFileField.trow % ( prefix, self.name, upload['path'], upload['path'], upload['size'], upload['ctime'] )
-        rval += FTPFileField.tfoot
-        rval += '<div class="toolParamHelp">This Galaxy server allows you to upload files via FTP.  To upload some files, log in to the FTP server at <strong>%s</strong> using your Galaxy credentials (email address and password).</div>' % self.ftp_site
-        return rval
-
-
 class HiddenField(BaseField):
     """
     A hidden field.
@@ -243,12 +214,19 @@ class HiddenField(BaseField):
     >>> print HiddenField( "foo", 100 ).get_html()
     <input type="hidden" name="foo" value="100">
     """
-    def __init__( self, name, value=None ):
+    def __init__( self, name, value=None, **kwds ):
+        super( HiddenField, self ).__init__( name, value, **kwds )
         self.name = name
         self.value = value or ""
 
     def get_html( self, prefix="" ):
         return unicodify( '<input type="hidden" name="%s%s" value="%s">' % ( prefix, self.name, escape( str( self.value ), quote=True ) ) )
+
+    def to_dict( self ):
+        d = super( HiddenField, self ).to_dict()
+        d[ 'type'    ] = 'hidden'
+        d[ 'hidden'  ] = True
+        return d
 
 
 class SelectField(BaseField):
@@ -288,10 +266,13 @@ class SelectField(BaseField):
     <div><input type="checkbox" name="bar" value="3" id="bar|3"><label class="inline" for="bar|3">automatic</label></div>
     <div><input type="checkbox" name="bar" value="4" id="bar|4" checked='checked'><label class="inline" for="bar|4">bazooty</label></div>
     """
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None ):
+    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, refresh_on_change_values=None, size=None, field_id=None, value=None, selectlist=None, **kwds ):
+        super( SelectField, self ).__init__( name, value, **kwds )
         self.name = name
         self.field_id = field_id
         self.multiple = multiple or False
+        self.selectlist = selectlist or []
+        self.value = value
         self.size = size
         self.options = list()
         if display == "checkboxes":
@@ -432,144 +413,14 @@ class SelectField(BaseField):
         return None
 
     def to_dict( self ):
-        return dict(
-            name=self.name,
-            multiple=self.multiple,
-            options=self.options
-        )
-
-
-class DrillDownField( BaseField ):
-    """
-    A hierarchical select field, which allows users to 'drill down' a tree-like set of options.
-
-    >>> t = DrillDownField( "foo", multiple=True, display="checkbox", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
-    >>> print t.get_html()
-    <div class="form-row drilldown-container" id="drilldown--666f6f">
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
-    <input type="checkbox" name="foo" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="checkbox" name="foo" value="option1" >Option 1
-    </div>
-    <div class="form-row-input">
-    <input type="checkbox" name="foo" value="option2" >Option 2
-    </div>
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
-    <input type="checkbox" name="foo" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="checkbox" name="foo" value="option3" >Option 3
-    </div>
-    <div class="form-row-input">
-    <input type="checkbox" name="foo" value="option4" >Option 4
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    <div class="form-row-input">
-    <input type="checkbox" name="foo" value="option5" >Option 5
-    </div>
-    </div>
-    >>> t = DrillDownField( "foo", multiple=False, display="radio", options=[{'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 1', 'value': 'option1', 'options': []}, {'name': 'Option 2', 'value': 'option2', 'options': []}, {'name': 'Heading 1', 'value': 'heading1', 'options': [{'name': 'Option 3', 'value': 'option3', 'options': []}, {'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'name': 'Option 5', 'value': 'option5', 'options': []}] )
-    >>> print t.get_html()
-    <div class="form-row drilldown-container" id="drilldown--666f6f">
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
-    <input type="radio" name="foo" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="radio" name="foo" value="option1" >Option 1
-    </div>
-    <div class="form-row-input">
-    <input type="radio" name="foo" value="option2" >Option 2
-    </div>
-    <div class="form-row-input">
-    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
-    <input type="radio" name="foo" value="heading1" >Heading 1
-    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
-    <div class="form-row-input">
-    <input type="radio" name="foo" value="option3" >Option 3
-    </div>
-    <div class="form-row-input">
-    <input type="radio" name="foo" value="option4" >Option 4
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    <div class="form-row-input">
-    <input type="radio" name="foo" value="option5" >Option 5
-    </div>
-    </div>
-    """
-
-    def __init__( self, name, multiple=None, display=None, refresh_on_change=False, options=[], value=[], refresh_on_change_values=[] ):
-        self.name = name
-        self.multiple = multiple or False
-        self.options = options
-        if value and not isinstance( value, list ):
-            value = [ value ]
-        elif not value:
-            value = []
-        self.value = value
-        if display == "checkbox":
-            assert multiple, "Checkbox display only supported for multiple select"
-        elif display == "radio":
-            assert not( multiple ), "Radio display only supported for single select"
-        else:
-            raise Exception( "Unknown display type: %s" % display )
-        self.display = display
-        self.refresh_on_change = refresh_on_change
-        self.refresh_on_change_values = refresh_on_change_values
-        if self.refresh_on_change:
-            self.refresh_on_change_text = ' refresh_on_change="true"'
-            if self.refresh_on_change_values:
-                self.refresh_on_change_text = '%s refresh_on_change_values="%s"' % ( self.refresh_on_change_text, ",".join( self.refresh_on_change_values ) )
-        else:
-            self.refresh_on_change_text = ''
-
-    def get_html( self, prefix="" ):
-        def find_expanded_options( expanded_options, options, parent_options=[] ):
-            for option in options:
-                if option['value'] in self.value:
-                    expanded_options.extend( parent_options )
-                if option['options']:
-                    new_parents = list( parent_options ) + [ option['value'] ]
-                    find_expanded_options( expanded_options, option['options'], new_parents )
-
-        def recurse_options( html, options, base_id, expanded_options=[] ):
-            for option in options:
-                escaped_option_value = escape( str( option['value'] ), quote=True )
-                selected = ( option['value'] in self.value )
-                if selected:
-                    selected = ' checked'
-                else:
-                    selected = ''
-                span_class = 'form-toggle icon-button toggle'
-                if option['value'] not in expanded_options:
-                    span_class = "%s-expand" % ( span_class )
-                html.append( '<div class="form-row-input">')
-                drilldown_group_id = "%s-%s" % ( base_id, hexlify( option['value'] ) )
-                if option['options']:
-                    html.append( '<div><span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
-                html.append( '<input type="%s" name="%s%s" value="%s" %s>%s' % ( self.display, prefix, self.name, escaped_option_value, selected, option['name']) )
-                if option['options']:
-                    html.append( '</div><div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
-                    recurse_options( html, option['options'], drilldown_group_id, expanded_options )
-                    html.append( '</div>')
-                html.append( '</div>')
-        drilldown_id = "drilldown-%s-%s" % ( hexlify( prefix ), hexlify( self.name ) )
-        rval = []
-        rval.append( '<div class="form-row drilldown-container" id="%s">' % ( drilldown_id ) )
-        expanded_options = []
-        find_expanded_options( expanded_options, self.options )
-        recurse_options( rval, self.options, drilldown_id, expanded_options )
-        rval.append( '</div>' )
-        return unicodify( '\n'.join( rval ) )
+        d = super( SelectField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        d[ 'display' ] = self.display
+        d[ 'multiple' ] = self.multiple
+        d[ 'data' ] = []
+        for value in self.selectlist:
+            d[ 'data' ].append( { 'label': unicodify( value ), 'value': escape( unicodify( value ), quote=True ) } )
+        return d
 
 
 class AddressField(BaseField):
@@ -585,10 +436,9 @@ class AddressField(BaseField):
                   ( "country", "Country", "Required" ),
                   ( "phone", "Phone", "" )  ]
 
-    def __init__(self, name, user=None, value=None, params=None):
-        self.name = name
+    def __init__(self, name, user=None, value=None, params=None, **kwds):
+        super( AddressField, self ).__init__( name, value, **kwds )
         self.user = user
-        self.value = value
         self.select_address = None
         self.params = params
 
@@ -643,9 +493,16 @@ class AddressField(BaseField):
             self.select_address.add_option( 'Add a new address', 'new' )
         return self.select_address.get_html( disabled=disabled ) + address_html
 
+    def to_dict( self ):
+        inputs = []
+        for field in self.fields():
+            inputs.append( { 'type': 'text', 'name': field[ 0 ], 'label': field[ 1 ], 'help': field[ 2 ], 'value': self.value.get( field[ 0 ] ) if self.value else None } )
+        return { 'title': 'Address', 'type': 'section', 'inputs': inputs }
+
 
 class WorkflowField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None ):
+    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+        super( WorkflowField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
@@ -667,9 +524,15 @@ class WorkflowField( BaseField ):
                         self.select_workflow.add_option( a.name, str( a.id ) )
         return self.select_workflow.get_html( disabled=disabled )
 
+    def to_dict( self ):
+        d = super( WorkflowField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        return d
 
-class WorkflowMappingField( BaseField):
-    def __init__( self, name, user=None, value=None, params=None, **kwd ):
+
+class WorkflowMappingField( BaseField ):
+    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+        super( WorkflowMappingField, self ).__init__( name, value, **kwds )
         # DBTODO integrate this with the new __build_workflow approach in requests_common.  As it is, not particularly useful.
         self.name = name
         self.user = user
@@ -711,7 +574,8 @@ class WorkflowMappingField( BaseField):
 
 
 class HistoryField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None ):
+    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+        super( HistoryField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
@@ -744,28 +608,10 @@ class HistoryField( BaseField ):
         else:
             return '-'
 
-
-class LibraryField( BaseField ):
-    def __init__( self, name, value=None, trans=None ):
-        self.name = name
-        self.lddas = value
-        self.trans = trans
-
-    def get_html( self, prefix="", disabled=False ):
-        if not self.lddas:
-            ldda_ids = ""
-            text = "Select library dataset(s)"
-        else:
-            ldda_ids = "||".join( [ self.trans.security.encode_id( ldda.id ) for ldda in self.lddas ] )
-            text = "<br />".join( [ "%s. %s" % (i + 1, ldda.name) for i, ldda in enumerate(self.lddas)] )
-        return unicodify( '<a href="javascript:void(0);" class="add-librarydataset">%s</a> \
-                <input type="hidden" name="%s%s" value="%s">' % ( text, prefix, self.name, escape( str(ldda_ids), quote=True ) ) )
-
-    def get_display_text(self):
-        if self.ldda:
-            return self.ldda.name
-        else:
-            return 'None'
+    def to_dict( self ):
+        d = super( HistoryField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        return d
 
 
 def get_suite():
