@@ -5,10 +5,12 @@ Dependency management for tools.
 import logging
 import os.path
 
+from collections import OrderedDict
+
 from galaxy.util import plugin_config
 
 from .resolvers import NullDependency
-from .resolvers.conda import CondaDependencyResolver
+from .resolvers.conda import CondaDependencyResolver, DEFAULT_ENSURE_CHANNELS
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 
@@ -21,7 +23,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_prefix': None,
     'conda_exec': None,
     'conda_debug': None,
-    'conda_ensure_channels': 'r,bioconda,iuc',
+    'conda_ensure_channels': DEFAULT_ENSURE_CHANNELS,
     'conda_auto_install': False,
     'conda_auto_init': False,
     'conda_copy_dependencies': False,
@@ -97,7 +99,7 @@ class DependencyManager( object ):
         Takes a list of requirements and returns a dictionary
         with requirements as key and dependencies as value.
         """
-        requirement_to_dependency = dict()
+        requirement_to_dependency = OrderedDict()
         for requirement in requirements:
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,

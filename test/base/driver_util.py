@@ -17,24 +17,21 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
-
-from paste import httpserver
 import requests
-
-from .api_util import get_master_api_key, get_user_api_key
-from .tool_shed_util import parse_tool_panel_config
-from .nose_util import run
-from .instrument import StructuredTestDataPlugin
+from paste import httpserver
 
 from functional import database_contexts
-
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.web import buildapp
-from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.web import buildapp
+from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 
-from base.test_logging import logging_config_file
+from .api_util import get_master_api_key, get_user_api_key
+from .instrument import StructuredTestDataPlugin
+from .nose_util import run
+from .test_logging import logging_config_file
+from .tool_shed_util import parse_tool_panel_config
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 DEFAULT_WEB_HOST = "localhost"

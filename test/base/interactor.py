@@ -2,12 +2,12 @@ from __future__ import print_function
 
 import os
 import re
+import time
 from json import dumps
 from logging import getLogger
 
-from requests import get, post, delete, patch
-from six import StringIO
-from six import text_type
+from requests import delete, get, patch, post
+from six import StringIO, text_type
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -118,7 +118,6 @@ class GalaxyInteractorApi( object ):
             metadata[ "file_ext" ] = expected_file_type
 
         if metadata:
-            import time
             time.sleep(5)
             dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
             for key, value in metadata.items():

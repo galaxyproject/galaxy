@@ -15,7 +15,6 @@ from xml.etree import ElementTree
 # Be sure to use Galaxy's vanilla pyparsing instead of the older version
 # imported by twill.
 import pyparsing  # noqa: F401
-
 import twill
 import twill.commands as tc
 from markupsafe import escape
@@ -23,17 +22,15 @@ from six import string_types, StringIO
 from six.moves.urllib.parse import unquote, urlencode, urlparse
 from twill.other_packages._mechanize_dist import ClientForm
 
-from galaxy.web import security
-from galaxy.web.framework.helpers import iff
-
-from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.tools.verify import (
-    verify,
     check_command,
     files_diff,
     make_temp_fname,
+    verify,
 )
-
+from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.web import security
+from galaxy.web.framework.helpers import iff
 
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
 buffer = StringIO()
