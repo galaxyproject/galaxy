@@ -4,7 +4,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         initialize: function ( app, options, address_message ) {
             var self = this;
             this.app = app;
-            window.console.log( options );
             this.model = options && options.model || new Backbone.Model( options );
             this.original_email = options.email;
             this.original_username = options.username;

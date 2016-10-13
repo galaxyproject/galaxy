@@ -497,7 +497,7 @@ class AddressField(BaseField):
         inputs = []
         for field in self.fields():
             inputs.append( { 'type': 'text', 'name': field[ 0 ], 'label': field[ 1 ], 'help': field[ 2 ], 'value': self.value.get( field[ 0 ] ) if self.value else None } )
-        return { 'title': 'Address', 'type': 'section', 'inputs': inputs }
+        return { 'title': 'Address', 'name': self.name, 'type': 'section', 'inputs': inputs }
 
 
 class WorkflowField( BaseField ):

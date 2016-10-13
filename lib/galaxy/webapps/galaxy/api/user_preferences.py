@@ -93,7 +93,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 inputs.append( info_field )
             address_field = AddressField( '' ).to_dict()
             address_values = [ address.to_dict( trans ) for address in user.addresses ]
-            address_repeat = { 'title': 'Address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
+            address_repeat = { 'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
             for address in address_values:
                 address_inputs = []
                 for input in address_repeat[ 'inputs' ]:
