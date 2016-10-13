@@ -8,8 +8,8 @@ from six.moves.urllib.parse import quote_plus
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.text import Html as HtmlFromText
-from galaxy.datatypes.util.image_util import check_image_type
 from galaxy.util import nice_size
+from galaxy.util.image_util import check_image_type
 from . import data
 
 log = logging.getLogger(__name__)
