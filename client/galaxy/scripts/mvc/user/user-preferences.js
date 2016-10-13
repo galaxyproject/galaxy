@@ -58,7 +58,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
 
         /** Redirect to manage toolbox filters */
         callManageToolboxFilter: function( e ) {
-            var url = Galaxy.root + 'api/user_preferences/toolbox_filters',
+            var url = Galaxy.root + 'api/user_preferences/change_toolbox_filters',
                 data = {},
                 self = this;
             $( '.user-pref' ).hide();

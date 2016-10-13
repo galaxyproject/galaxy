@@ -107,7 +107,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         /** Save the changes made to the filters */
         _saveToolboxFilter: function() {
-            var url = Galaxy.root + 'api/user_preferences/edit_toolbox_filters',
+            var url = Galaxy.root + 'api/user_preferences/change_toolbox_filters',
                 data = {},
                 self = this;
             data = { 'edit_toolbox_filter': true, 'checked_filters': JSON.stringify( self.form.data.create() ) };

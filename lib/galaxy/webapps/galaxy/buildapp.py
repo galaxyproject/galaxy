@@ -507,27 +507,21 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'toolbox_filters',
-                           '/api/user_preferences/toolbox_filters',
+                           '/api/user_preferences/change_toolbox_filters',
                            controller='user_preferences',
                            action='toolbox_filters',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'edit_toolbox_filters',
-                           '/api/user_preferences/edit_toolbox_filters',
-                           controller='user_preferences',
-                           action='edit_toolbox_filters',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'logout',
-                           '/api/user_preferences/logout',
-                           controller='user_preferences',
-                           action='logout',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'change_communication',
                            '/api/user_preferences/change_communication',
                            controller='user_preferences',
                            action='change_communication',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'logout',
+                           '/api/user_preferences/logout',
+                           controller='user_preferences',
+                           action='logout',
                            conditions=dict( method=["GET"] ) )
 
     # =======================
