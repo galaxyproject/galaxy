@@ -14,16 +14,14 @@ import json
 import os
 import string
 import subprocess
-
 from sys import platform as _platform
-
-from galaxy.tools.deps import commands
-from galaxy.tools.deps import installable
 
 try:
     import yaml
 except ImportError:
     yaml = None
+
+from galaxy.tools.deps import commands, installable
 
 from ._cli import arg_parser
 from .util import build_target, conda_build_target_str, image_name
@@ -236,7 +234,7 @@ def target_str_to_targets(targets_raw):
             target = build_target(target_str)
         return target
 
-    targets = map(parse_target, targets_raw.split(","))
+    targets = [parse_target(_) for _ in targets_raw.split(",")]
     return targets
 
 
@@ -281,7 +279,7 @@ def main(argv=None):
     mull_targets(targets, **args_to_mull_targets_kwds(args))
 
 
-__all__ = ["main"]
+__all__ = ("main", )
 
 
 if __name__ == '__main__':

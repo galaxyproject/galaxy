@@ -6,8 +6,8 @@ PyPI. This module serves as a PyPI capable interface to these utilities.
 """
 import collections
 import os
-import yaml
 
+import yaml
 
 try:
     from conda_build.metadata import MetaData
@@ -15,7 +15,7 @@ except ImportError:
     MetaData = None
 
 try:
-    from anaconda_verify.recipe import render_jinja2, parse
+    from anaconda_verify.recipe import parse, render_jinja2
 except ImportError:
     render_jinja2 = None
     parse = None
@@ -106,7 +106,7 @@ class _MetaData(object):
 if MetaData is None:
     MetaData = _MetaData
 
-__all__ = [
+__all__ = (
     "MetaData",
     "raw_metadata",
-]
+)
