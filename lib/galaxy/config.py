@@ -105,6 +105,9 @@ class Configuration( object ):
 
         self.webhooks_dir = resolve_path( kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
 
+        webhooks_dirs = kwargs.get( "webhooks_dir", "config/plugins/webhooks" )
+        self.webhooks_dirs = [resolve_path(d.strip(), self.root) for d in (webhooks_dirs.split(",") if webhooks_dirs else [])]
+
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
         self.password_expiration_period = timedelta( days=int( kwargs.get( "password_expiration_period", 0 ) ) )
