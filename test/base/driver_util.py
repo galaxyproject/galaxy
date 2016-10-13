@@ -692,7 +692,7 @@ def drive_test(test_driver_class):
     sys.exit(test_driver_class().run())
 
 
-__all__ = [
+__all__ = (
     "copy_database_template",
     "build_logger",
     "drive_test",
@@ -705,4 +705,4 @@ __all__ = [
     "setup_galaxy_config",
     "TestDriver",
     "wait_for_http_server",
-]
+)

@@ -1,20 +1,21 @@
 from galaxy.tools.parameters.basic import (
-    DataToolParameter,
     DataCollectionToolParameter,
+    DataToolParameter,
     SelectToolParameter
 )
-from galaxy.tools.wrappers import (
-    InputValueWrapper,
-    SelectToolParameterWrapper,
-    DatasetFilenameWrapper,
-    DatasetListWrapper,
-    DatasetCollectionWrapper
-)
 from galaxy.tools.parameters.grouping import (
-    Repeat,
     Conditional,
+    Repeat,
     Section
 )
+from galaxy.tools.wrappers import (
+    DatasetCollectionWrapper,
+    DatasetFilenameWrapper,
+    DatasetListWrapper,
+    InputValueWrapper,
+    SelectToolParameterWrapper
+)
+
 PARAMS_UNWRAPPED = object()
 
 
@@ -40,7 +41,7 @@ class WrappedParameters( object ):
         incoming = self.incoming
 
         # Wrap tool inputs as necessary
-        for input in inputs.itervalues():
+        for input in inputs.values():
             if input.name not in input_values and skip_missing_values:
                 continue
             value = input_values[ input.name ]
@@ -112,4 +113,4 @@ def make_list_copy( from_list ):
     return new_list
 
 
-__all__ = [ 'WrappedParameters', 'make_dict_copy' ]
+__all__ = ( 'WrappedParameters', 'make_dict_copy' )

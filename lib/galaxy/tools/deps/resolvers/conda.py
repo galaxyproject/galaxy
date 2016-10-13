@@ -244,4 +244,4 @@ def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
 
-__all__ = ['CondaDependencyResolver']
+__all__ = ('CondaDependencyResolver', )

@@ -105,7 +105,7 @@ def image_name(targets, image_build=None, name_override=None):
         return "mulled-v1-%s%s" % (m.hexdigest(), suffix)
 
 
-__all__ = [
+__all__ = (
     "build_target",
     "conda_build_target_str",
     "image_name",
@@ -114,4 +114,4 @@ __all__ = [
     "split_tag",
     "Target",
     "version_sorted",
-]
+)

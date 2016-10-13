@@ -4,13 +4,15 @@ from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
 import collections
+import logging
+from threading import Thread
+
+from six.moves.queue import Queue
+
+from galaxy.tools.actions import on_text_for_names, ToolExecutionCache
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer
-from galaxy.tools.actions import on_text_for_names, ToolExecutionCache
-from threading import Thread
-from Queue import Queue
 
-import logging
 log = logging.getLogger( __name__ )
 
 EXECUTION_SUCCESS_MESSAGE = "Tool [%s] created job [%s] %s"
@@ -135,7 +137,6 @@ class ToolExecutionTracker( object ):
             return []
 
         structure = self.collection_info.structure
-        collections = self.collection_info.collections.values()
 
         # params is just one sample tool param execution with parallelized
         # collection replaced with a specific dataset. Need to replace this
@@ -143,13 +144,13 @@ class ToolExecutionTracker( object ):
         # label.
         params.update( self.collection_info.collections )  # Replace datasets with source collections for labelling outputs.
 
-        collection_names = map( lambda c: "collection %d" % c.hid, collections )
+        collection_names = ["collection %d" % c.hid for c in self.collection_info.collections.values()]
         on_text = on_text_for_names( collection_names )
 
         collections = {}
 
-        implicit_inputs = list(self.collection_info.collections.iteritems())
-        for output_name, outputs in self.outputs_by_output_name.iteritems():
+        implicit_inputs = list(self.collection_info.collections.items())
+        for output_name, outputs in self.outputs_by_output_name.items():
             if not len( structure ) == len( outputs ):
                 # Output does not have the same structure, if all jobs were
                 # successfully submitted this shouldn't have happened.
@@ -202,4 +203,4 @@ class ToolExecutionTracker( object ):
         trans.sa_session.flush()
         self.implicit_collections = collections
 
-__all__ = [ execute ]
+__all__ = ( 'execute', )

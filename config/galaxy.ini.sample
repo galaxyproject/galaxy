@@ -890,8 +890,7 @@ use_interactive = True
 # Galaxy encodes various internal values when these values will be output in
 # some format (for example, in a URL or cookie).  You should set a key to be
 # used by the algorithm that encodes and decodes these values.  It can be any
-# string.  If left unchanged, anyone could construct a cookie that would grant
-# them access to others' sessions.
+# string.
 # One simple way to generate a value for this is with the shell command:
 #   python -c 'import time; print time.time()' | md5sum | cut -f 1 -d ' '
 #id_secret = USING THE DEFAULT IS NOT SECURE!
