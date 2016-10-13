@@ -1,7 +1,7 @@
 name: masthead_test
 type: 
   - masthead
-activate: false
+activate: true
 
 icon: fa-star-half-o
 tooltip: Biostars Galaxy
