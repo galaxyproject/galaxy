@@ -37,9 +37,14 @@ class WebhooksRegistry(object):
     def __init__(self, webhooks_directories):
         self.webhooks = []
         self.webhooks_directories = []
-        for webhook_dir in config_directories_from_setting( webhooks_directories ):
-            for plugin_dir in os.listdir( webhook_dir ):
-                self.webhooks_directories.append( os.path.join( webhook_dir, plugin_dir ) )
+
+        for webhook_dir in config_directories_from_setting(
+                webhooks_directories):
+            for plugin_dir in os.listdir(webhook_dir):
+                self.webhooks_directories.append(
+                    os.path.join(webhook_dir, plugin_dir)
+                )
+
         self.load_webhooks()
 
     def load_webhooks(self):
