@@ -31,8 +31,8 @@ define(['mvc/tours', 'layout/generic-nav-view', 'mvc/webhooks'], function( Tours
                                 Galaxy.page.masthead.collection.add({
                                     id      : webhook.name,
                                     icon    : webhook.config.icon,
-                                    url     : (typeof webhook.config.url != 'undefined') ? webhook.config.url : '',
-                                    tooltip : (typeof webhook.config.tooltip != 'undefined') ? webhook.config.tooltip : '',
+                                    url     : webhook.config.url,
+                                    tooltip : webhook.config.tooltip,
                                     onclick : (typeof webhook.config.function != 'undefined') ? new Function(webhook.config.function) : '',
                                     // visible : webhook.activate
                                 });
