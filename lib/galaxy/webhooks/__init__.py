@@ -39,7 +39,9 @@ class WebhooksRegistry(object):
         self.webhooks_directories = []
         for webhooks_directory in webhooks_directories:
             for name in os.listdir(webhooks_directory):
-                self.webhooks_directories.append( os.path.join(webhooks_directory, name) )
+                self.webhooks_directories.append(
+                    os.path.join(webhooks_directory, name)
+                )
 
 
         self.load_webhooks()
