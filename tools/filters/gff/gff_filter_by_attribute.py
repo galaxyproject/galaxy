@@ -127,7 +127,7 @@ for i, line in enumerate( open( in_fname ) ):
             lines_kept += 1
             print( line, file=out )
     except Exception as e:
-        print ( e )
+        print( e )
         skipped_lines += 1
         if not invalid_line:
             first_invalid_line = i + 1
