@@ -7,7 +7,7 @@ can consists out of simple HTML, JS or dynamically generated content from a pyth
 
 Plugin activation
 -----------------
-Webhooks are deactivate by default.
+Webhooks are deactivated by default.
 To activate webhooks make sure the path in your `galaxy.ini` it set and that you activate all plugins that you want to use manually by changing the config of each webhook:
 
 .. code-block:: none
