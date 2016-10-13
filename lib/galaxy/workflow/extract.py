@@ -371,4 +371,4 @@ def __cleanup_param_values( inputs, values ):
     cleanup( "", inputs, values )
     return associations
 
-__all__ = [ summarize, extract_workflow ]
+__all__ = ( 'summarize', 'extract_workflow' )

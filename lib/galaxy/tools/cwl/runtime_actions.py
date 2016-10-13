@@ -20,7 +20,7 @@ def handle_outputs(job_directory=None):
     job_proxy = load_job_proxy(job_directory)
     tool_working_directory = os.path.join(job_directory, "working")
     outputs = job_proxy.collect_outputs(tool_working_directory)
-    for output_name, output in outputs.iteritems():
+    for output_name, output in outputs.items():
         target_path = job_proxy.output_path( output_name )
         if isinstance(output, dict) and "path" in output:
             output_path = output["path"]
@@ -48,6 +48,6 @@ def handle_outputs(job_directory=None):
             with open(target_path, "w") as f:
                 f.write(json.dumps(output))
 
-__all__ = [
+__all__ = (
     'handle_outputs',
-]
+)

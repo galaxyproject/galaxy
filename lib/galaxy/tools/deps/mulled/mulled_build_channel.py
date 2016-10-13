@@ -16,7 +16,7 @@ See recent changes that would be built with:
     mulled-build-channel list
 
 """
-
+from __future__ import print_function
 
 import os
 import time
@@ -75,7 +75,7 @@ def run_channel(args, build_last_n_versions=1):
 
 def get_pkg_names(args):
     """Print package names that would be affected."""
-    print('\n'.join([pkg_name for pkg_name, pkg_tests in get_affected_packages(args)]))
+    print('\n'.join(pkg_name for pkg_name, pkg_tests in get_affected_packages(args)))
 
 
 def add_channel_arguments(parser):
@@ -102,7 +102,7 @@ def main(argv=None):
         run_channel(args)
 
 
-__all__ = ["main"]
+__all__ = ("main", )
 
 
 if __name__ == '__main__':
