@@ -1990,6 +1990,33 @@ multiple formats.
        help="The set of aligned reads." />
 ```
 
+Perhaps counter-intuitively, a ``multiple="true"`` data parameter requires at least one
+data input. If ``optional="true"`` is specified, this condition is relaxed and the user
+is allowed to select 0 datasets. Unfortunately, if 0 datasets are selected the resulting
+value for the parameter during Cheetah templating (such as in a ``command`` block) will
+effectively be a list with one ``None``-like entity in it.
+
+The following idiom can be used to iterate over such a list and build a hypothetical ``-B``
+parameter for each file - the ``if`` block is used to handle the case where a ``None``-like
+entity appears in the list because no files were selected: 
+
+```
+#for $input in $input1
+    #if $input
+        -B "$input"
+    #end if
+#end for
+```
+
+Some example tools using ``multiple="true"`` data parameters include:
+
+- [multi_data_param.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_data_param.xml)
+- [multi_data_optional.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_data_optional.xml)
+
+Additionally, a detailed discussion of handling multiple homogenous files can be found in the
+the [Planemo Documentation](http://planemo.readthedocs.io/en/latest/writing_advanced.html#consuming-collections)
+on this topic.
+
 $attribute_list:format,multiple
 
 #### ``select``
