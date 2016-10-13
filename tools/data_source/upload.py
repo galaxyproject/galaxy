@@ -116,12 +116,8 @@ def add_file( dataset, registry, json_file, output_path ):
         except UnicodeDecodeError as e:
             dataset.is_multi_byte = False
     # Is dataset an image?
-    image = check_image( dataset.path )
-    if image:
-        if not PIL:
-            image = None
-        # get_image_ext() returns None if nor a supported Image type
-        ext = get_image_ext( dataset.path, image )
+    if check_image( dataset.path ):
+        ext = get_image_ext( dataset.path )
         data_type = ext
     # Is dataset content multi-byte?
     elif dataset.is_multi_byte:

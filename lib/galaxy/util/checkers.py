@@ -10,28 +10,11 @@ from galaxy import util
 
 HTML_CHECK_LINES = 100
 
-try:
-    import Image as PIL
-except ImportError:
-    try:
-        from PIL import Image as PIL
-    except:
-        PIL = None
-
 
 def check_image( file_path ):
-    if PIL is not None:
-        try:
-            im = PIL.open( file_path )
-        except:
-            return False
-        if im:
-            return im
-        return False
-    else:
-        if imghdr.what( file_path ) is not None:
-            return True
-        return False
+    if imghdr.what( file_path ) is not None:
+        return True
+    return False
 
 
 def check_html( file_path, chunk=None ):

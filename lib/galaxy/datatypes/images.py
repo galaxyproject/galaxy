@@ -12,14 +12,6 @@ from galaxy.datatypes.util.image_util import check_image_type
 from galaxy.util import nice_size
 from . import data
 
-try:
-    import Image as PIL
-except ImportError:
-    try:
-        from PIL import Image as PIL
-    except:
-        PIL = None
-
 log = logging.getLogger(__name__)
 
 # TODO: Uploading image files of various types is supported in Galaxy, but on

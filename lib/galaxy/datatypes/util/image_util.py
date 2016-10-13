@@ -13,66 +13,63 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
-def image_type( filename, image=None ):
-    format = ''
+def image_type( filename ):
+    fmt = None
     if PIL is not None:
-        if image is not None:
-            format = image.format
-        else:
-            try:
-                im = PIL.open( filename )
-                format = im.format
-                im.close()
-            except:
-                return False
+        try:
+            im = PIL.open( filename )
+            fmt = im.format
+            im.close()
+        except:
+            # We continue to try with imghdr, so this is a rare case of an
+            # exception we expect to happen frequently, so we're not logging
+            pass
+    if not fmt:
+        fmt = imghdr.what( filename )
+    if fmt:
+        return fmt.upper()
     else:
-        format = imghdr.what( filename )
-        if format is not None:
-            format = format.upper()
-        else:
-            return False
-    return format
+        return False
 
 
 def check_image_type( filename, types, image=None ):
-    format = image_type( filename, image )
-    # First check if we can  use PIL
-    if format in types:
+    fmt = image_type( filename, image )
+    if fmt in types:
         return True
     return False
 
 
-def get_image_ext( file_path, image ):
+def get_image_ext( file_path ):
     # determine ext
-    format = image_type( file_path, image )
-    if format in [ 'JPG', 'JPEG' ]:
+    fmt = image_type( file_path )
+    if fmt in [ 'JPG', 'JPEG' ]:
         return 'jpg'
-    if format == 'PNG':
+    if fmt == 'PNG':
         return 'png'
-    if format == 'TIFF':
+    if fmt == 'TIFF':
         return 'tiff'
-    if format == 'BMP':
+    if fmt == 'BMP':
         return 'bmp'
-    if format == 'GIF':
+    if fmt == 'GIF':
         return 'gif'
-    if format == 'IM':
+    if fmt == 'IM':
         return 'im'
-    if format == 'PCD':
+    if fmt == 'PCD':
         return 'pcd'
-    if format == 'PCX':
+    if fmt == 'PCX':
         return 'pcx'
-    if format == 'PPM':
+    if fmt == 'PPM':
         return 'ppm'
-    if format == 'PSD':
+    if fmt == 'PSD':
         return 'psd'
-    if format == 'XBM':
+    if fmt == 'XBM':
         return 'xbm'
-    if format == 'XPM':
+    if fmt == 'XPM':
         return 'xpm'
-    if format == 'RGB':
+    if fmt == 'RGB':
         return 'rgb'
-    if format == 'PBM':
+    if fmt == 'PBM':
         return 'pbm'
-    if format == 'PGM':
+    if fmt == 'PGM':
         return 'pgm'
     return None
