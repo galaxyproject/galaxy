@@ -6,17 +6,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def get_latest_id():
-    url = 'http://phdcomics.com/gradfeed.php'
-    content = urllib.urlopen(url).read()
-    soap = BeautifulSoup(content, 'html.parser')
-    pattern = '(?:http://www\.phdcomics\.com/comics\.php\?f=)(\d+)'
-    return max([
-        int(re.search(pattern, link.text).group(1))
-        for link in soap.find_all('link', text=re.compile(pattern))
-    ])
-
-
 def main(trans, webhook):
     error = ''
     data = {}
@@ -29,8 +18,16 @@ def main(trans, webhook):
             log.exception(e)
             return {}
 
+        # Get latest id
         if 'latest_id' not in webhook.config.keys():
-            webhook.config['latest_id'] = get_latest_id()
+            url = 'http://phdcomics.com/gradfeed.php'
+            content = urllib.urlopen(url).read()
+            soap = BeautifulSoup(content, 'html.parser')
+            pattern = '(?:http://www\.phdcomics\.com/comics\.php\?f=)(\d+)'
+            webhook.config['latest_id'] = max([
+                int(re.search(pattern, link.text).group(1))
+                for link in soap.find_all('link', text=re.compile(pattern))
+            ])
 
         random_id = random.randint(1, webhook.config['latest_id'])
         url = 'http://www.phdcomics.com/comics/archive.php?comicid=%d' % \
