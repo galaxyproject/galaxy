@@ -5,6 +5,9 @@ Galaxy webhooks provides a simple way of inserting icons, links, or other HTML e
 For this Galaxy provides some entry points which can be used to extend the client with content. This content
 can consists out of simple HTML, JS or dynamically generated content from a python function.
 
+  Please note that the webhooks interface is new and can change in the coming releases. Consider it as beta as we don't
+  make promises to keep the API stable at the moment.
+
 Plugin activation
 -----------------
 All webhooks that are included in the main Galaxy distribution are located in the `config/plugins/webhooks/demo` folder
