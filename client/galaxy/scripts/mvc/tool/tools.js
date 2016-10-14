@@ -638,7 +638,7 @@ var ToolSearchView = Backbone.View.extend({
         if ($("#messagebox").is(":visible")) {
             this.$el.css("top","95px");
         }
-                                    
+
         this.$el.find('[title]').tooltip();
         return this;
     },
