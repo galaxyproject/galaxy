@@ -252,6 +252,10 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             row.append(this._renderCell(cells.slice(num_columns - 1).join('\t'), num_columns - 1));
         }
         else if (cells.length === 1){
+            // Note intentionally blank line
+            if (line == ''){
+                line = 'Blank line'
+            }
             // Comment line, just return the one cell.
             row.append(this._renderCell(line, 0, num_columns));
         }
@@ -272,13 +276,16 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     },
 
     _renderChunk: function(chunk) {
-        var data_table = this.$el.find('table');
-        _.each(chunk.ck_data.split('\n'), function(line, index) {
-            if (line !== ''){
-                data_table.append(this._renderRow(line));
-            }
-        }, this);
-    }
+        // Revised for 2694 by Scott Szakonyi
+        // Previous code using for each structure caused the addition of a line to the output
+        // when blank lines were not supressed. Switched to a for loop to allow the added line
+        // to be stripped from the output.
+        var data_table = this.$el.find('table'); 
+        var lines = chunk.ck_data.split('\n'); 
+        var numlines = lines.length - 1; 
+        for (i = 0; i < numlines; i++){ 
+            data_table.append(this._renderRow(lines[i]));
+    }},
 });
 
 /**
