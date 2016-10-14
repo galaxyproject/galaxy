@@ -124,6 +124,23 @@ class Idat( Binary ):
 Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 
+class Cel( Binary ):
+    """Binary data in CEL format"""
+    file_ext = "CEL"
+    edam_format = "format_1638"
+
+    def sniff( self, filename ):
+        try:
+            header = open( filename, 'rb' ).read(4)
+            if header == b';\x01\x00\x00':
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("CEL", "CEL", Cel)
+
+
 class CompressedArchive( Binary ):
     """
         Class describing an compressed binary file
