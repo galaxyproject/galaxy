@@ -202,7 +202,7 @@ def update_param( prefixed_name, input_values, new_value ):
     """
     for key in input_values:
         match = re.match( '^' + key + '_(\d+)\|(.+)', prefixed_name )
-        if match:
+        if match and not key.endswith( "|__identifier__" ):
             index = int( match.group( 1 ) )
             if isinstance( input_values[ key ], list ) and len( input_values[ key ] ) > index:
                 update_param( match.group( 2 ), input_values[ key ][ index ], new_value )
