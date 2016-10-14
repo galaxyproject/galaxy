@@ -1,6 +1,7 @@
+from logging import getLogger
+
 import galaxy.model
 
-from logging import getLogger
 log = getLogger( __name__ )
 
 ROLES_UNSET = object()
@@ -179,4 +180,4 @@ class DatasetCollectionMatcher( object ):
                 break
         return valid
 
-__all__ = [ DatasetMatcher, DatasetCollectionMatcher ]
+__all__ = ( 'DatasetMatcher', 'DatasetCollectionMatcher' )

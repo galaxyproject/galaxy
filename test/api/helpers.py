@@ -1,10 +1,11 @@
-from base import api_asserts
+import json
+import time
 from operator import itemgetter
 
-import time
-import json
-from six import StringIO
 from pkg_resources import resource_string
+from six import StringIO
+
+from base import api_asserts
 
 # Simple workflow that takes an input and call cat wrapper on it.
 workflow_str = resource_string( __name__, "test_workflow_1.ga" )

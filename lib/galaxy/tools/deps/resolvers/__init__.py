@@ -1,3 +1,4 @@
+"""The module defines the abstract interface for dealing tool dependency resolution plugins."""
 from abc import (
     ABCMeta,
     abstractmethod,
@@ -10,6 +11,8 @@ from ..requirements import ToolRequirement
 
 
 class DependencyResolver(Dictifiable, object):
+    """Abstract description of a technique for resolving container images for tool execution."""
+
     # Keys for dictification.
     dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies']
     # A "simple" dependency is one that does not depend on the the tool
@@ -23,13 +26,15 @@ class DependencyResolver(Dictifiable, object):
 
     @abstractmethod
     def resolve( self, name, version, type, **kwds ):
-        """
-        Given inputs describing dependency in the abstract, yield tuple of
-        (script, bin, version). Here script is the env.sh file to source
-        before running a job, if that is not found the bin directory will be
-        appended to the path (if it is not None). Finally, version is the
-        resolved tool dependency version (which may differ from requested
-        version for instance if the request version is 'default'.)
+        """Given inputs describing dependency in the abstract yield a Dependency object.
+
+        The Dependency object describes various attributes (script, bin,
+        version) used to build scripts with the dependency availble. Here
+        script is the env.sh file to source before running a job, if that is
+        not found the bin directory will be appended to the path (if it is
+        not ``None``). Finally, version is the resolved tool dependency
+        version (which may differ from requested version for instance if the
+        request version is 'default'.)
         """
 
     def _get_config_option(self, key, dependency_resolver, default=None, config_prefix=None, **kwds):

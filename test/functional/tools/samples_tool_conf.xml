@@ -57,6 +57,7 @@
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
   <tool file="multi_data_repeat.xml" />
+  <tool file="multi_data_optional.xml" />
   <tool file="paths_as_file.xml" />
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
@@ -110,6 +111,8 @@
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
+
+  <tool file="mulled_example_multi_1.xml" />
 
   <tool file="simple_constructs.yml" />
 

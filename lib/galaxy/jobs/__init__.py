@@ -803,6 +803,10 @@ class JobWrapper( object ):
         """
         return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
+    @property
+    def requires_containerization(self):
+        return util.asbool(self.get_destination_configuration("require_container", "False"))
+
     def can_split( self ):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
