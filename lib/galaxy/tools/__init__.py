@@ -2320,7 +2320,7 @@ class MergeCollectionTool( DatabaseOperationTool ):
         if advanced is not None:
             dupl_actions = advanced["conflict"]['duplicate_options']
 
-            if dupl_actions in ['suffix_conflict', 'suffix_every']:
+            if dupl_actions in ['suffix_conflict', 'suffix_every', 'suffix_conflict_rest']:
                 suffix_pattern = advanced['conflict']['suffix_pattern']
 
         new_element_structure = odict()
@@ -2360,12 +2360,14 @@ class MergeCollectionTool( DatabaseOperationTool ):
                         add_suffix = True
                     elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
                         add_suffix = True
+                    elif dupl_actions == "suffix_conflict_rest" and len(appearances) > 1 and appearances[0] != copy:
+                        add_suffix = True
 
                     if dupl_actions == "keep_first" and identifier_seen:
                         continue
 
                     if add_suffix:
-                        suffix = suffix_pattern.replace("#", str(copy))
+                        suffix = suffix_pattern.replace("#", str(copy + 1))
                         effective_identifer = "%s%s" % (element_identifier, suffix)
                     else:
                         effective_identifer = element_identifier
