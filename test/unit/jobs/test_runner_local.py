@@ -105,6 +105,7 @@ class MockJobWrapper( object ):
         os.makedirs( tool_working_directory )
         self.app = app
         self.tool = tool
+        self.requires_containerization = False
         self.state = model.Job.states.QUEUED
         self.command_line = "echo HelloWorld"
         self.environment_variables = []

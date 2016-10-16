@@ -1,10 +1,10 @@
 """Integration tests for conda dependency resolution."""
-
 import os
 import shutil
+from tempfile import mkdtemp
+
 from base import integration_util
 from base.api import ApiTestCase
-from tempfile import mkdtemp
 
 GNUPLOT = {u'version': u'4.6', u'type': u'package', u'name': u'gnuplot'}
 

@@ -306,7 +306,7 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
-            if hasattr(dataset, "element_identifier"):
+            if hasattr(dataset, "dataset_instance"):
                 element = dataset
                 dataset = element.dataset_instance
                 kwargs["identifier"] = element.element_identifier

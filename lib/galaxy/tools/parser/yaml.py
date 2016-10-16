@@ -1,18 +1,19 @@
-from .interface import ToolSource
-from .interface import PagesSource
-from .interface import PageSource
-from .interface import InputSource
-from .util import error_on_exit_code
 
 from galaxy.tools.deps import requirements
-from .output_collection_def import dataset_collector_descriptions_from_list
-from .output_actions import ToolOutputActionGroup
 from galaxy.util.odict import odict
+
+from .interface import InputSource
+from .interface import PageSource
+from .interface import PagesSource
+from .interface import ToolSource
+from .output_actions import ToolOutputActionGroup
+from .output_collection_def import dataset_collector_descriptions_from_list
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
+from .util import error_on_exit_code
 
 
 class YamlToolSource(ToolSource):

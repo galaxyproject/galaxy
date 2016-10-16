@@ -6,8 +6,8 @@ import os
 import os.path
 import sys
 
-from six.moves.configparser import ConfigParser
 from six import iteritems
+from six.moves.configparser import ConfigParser
 
 
 def load_app_properties(

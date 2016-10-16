@@ -18,14 +18,13 @@ At the time of writing July 3 2015 this resolver has to be plugged in.
 See bottom for instructions on how to add this resolver.
 
 """
-
+import logging
 from os import listdir
-from os.path import join, exists, getmtime
+from os.path import exists, getmtime, join
 
 from .galaxy_packages import BaseGalaxyPackageDependencyResolver
-from ..resolvers import NullDependency, Dependency
+from ..resolvers import Dependency, NullDependency
 
-import logging
 log = logging.getLogger( __name__ )
 
 MANUAL = "manual"
@@ -153,7 +152,7 @@ class CandidateDependency(Dependency):
         return self.dependency.shell_commands( requirement )
 
 
-__all__ = ['UnlinkedToolShedPackageDependencyResolver']
+__all__ = ('UnlinkedToolShedPackageDependencyResolver', )
 
 """
 At the time of writing July 3 2015 this resolver has to be plugged in.

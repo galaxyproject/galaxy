@@ -4,6 +4,7 @@
 Reads a list of block numbers and a maf. Produces a new maf containing the
 blocks specified by number.
 """
+from __future__ import print_function
 
 import sys
 
@@ -18,7 +19,7 @@ def __main__():
     output_filename1 = sys.argv[3].strip()
     block_col = int( sys.argv[4].strip() ) - 1
     if block_col < 0:
-        print >> sys.stderr, "Invalid column specified"
+        print("Invalid column specified", file=sys.stderr)
         sys.exit(0)
     species = maf_utilities.parse_species_option( sys.argv[5].strip() )
 
@@ -39,10 +40,10 @@ def __main__():
                     maf_writer.write( block )
                     break
         except:
-            print >>sys.stderr, "Your MAF file appears to be malformed."
+            print("Your MAF file appears to be malformed.", file=sys.stderr)
             sys.exit()
     if len( failed_lines ) > 0:
-        print "Failed to extract from %i lines (%s)." % ( len( failed_lines ), ",".join( failed_lines ) )
+        print("Failed to extract from %i lines (%s)." % ( len( failed_lines ), ",".join( failed_lines ) ))
 
 if __name__ == "__main__":
     __main__()

@@ -115,7 +115,7 @@ This service does not:
 
 - enforce rate-limiting of messages
 - run any sort of text/obscenity filtering rules
-- prevent user spoofing is the user is an administrator and impersonating
+- prevent user spoofing if the user is an administrator and impersonating
   another user
 
 Keeping the Chat Server Running

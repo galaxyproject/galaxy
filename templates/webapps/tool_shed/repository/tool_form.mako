@@ -6,7 +6,7 @@
     from galaxy.util.expressions import ExpressionContext
     from galaxy import util
     from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter, GenomeBuildParameter, SelectToolParameter
-    from galaxy.web.form_builder import SelectField
+    from galaxy.web.form_builder import SelectField, TextField
 %>
 
 <html>
@@ -95,8 +95,8 @@
                         field.add_option( "Dynamically generated from old-style Dynamic Options.", "none" )
                     field_html = field.get_html( prefix )
                 else:
-                    field = param.get_html_field( trans, None, other_values )
-                    field_html = field.get_html( prefix )
+                    field = TextField( param.name, value="Parameter type: %s" % param.type )
+                    field_html = field.get_html( prefix, disabled=True )
             %>
             <div class="form-row">
                 %if label:

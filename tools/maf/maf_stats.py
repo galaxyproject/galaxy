@@ -3,6 +3,8 @@
 """
 Reads a list of intervals and a maf. Outputs a new set of intervals with statistics appended.
 """
+from __future__ import print_function
+
 import sys
 
 import bx.intervals.io
@@ -22,7 +24,7 @@ def __main__():
         start_col = int( sys.argv[6].strip() ) - 1
         end_col = int( sys.argv[7].strip() ) - 1
     except:
-        print >>sys.stderr, "You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file."
+        print("You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file.", file=sys.stderr)
         sys.exit()
     summary = sys.argv[8].strip()
     if summary.lower() == "true":
@@ -40,16 +42,16 @@ def __main__():
         # index maf for use here
         index, index_filename = maf_utilities.open_or_build_maf_index( input_maf_filename, maf_index_filename, species=[dbkey] )
         if index is None:
-            print >>sys.stderr, "Your MAF file appears to be malformed."
+            print("Your MAF file appears to be malformed.", file=sys.stderr)
             sys.exit()
     elif maf_source_type == "cached":
         # access existing indexes
         index = maf_utilities.maf_index_by_uid( input_maf_filename, mafIndexFile )
         if index is None:
-            print >> sys.stderr, "The MAF source specified (%s) appears to be invalid." % ( input_maf_filename )
+            print("The MAF source specified (%s) appears to be invalid." % ( input_maf_filename ), file=sys.stderr)
             sys.exit()
     else:
-        print >>sys.stdout, 'Invalid source type specified: %s' % maf_source_type
+        print('Invalid source type specified: %s' % maf_source_type, file=sys.stdout)
         sys.exit()
 
     out = open(output_filename, 'w')
@@ -91,7 +93,7 @@ def __main__():
             # print coverage for interval
             coverage_sum = coverage[dbkey].count_range()
             out.write( "%s\t%s\t%s\t%s\n" % ( "\t".join( region.fields ), dbkey, coverage_sum, region_length - coverage_sum ) )
-            keys = coverage.keys()
+            keys = list(coverage.keys())
             keys.remove( dbkey )
             keys.sort()
             for key in keys:
@@ -103,9 +105,9 @@ def __main__():
             out.write( "%s\t%s\t%.4f\n" % ( spec, species_summary[spec], float( species_summary[spec] ) / total_length ) )
     out.close()
     if num_region is not None:
-        print "%i regions were processed with a total length of %i." % ( num_region + 1, total_length )
+        print("%i regions were processed with a total length of %i." % ( num_region + 1, total_length ))
     if num_bad_region:
-        print "%i regions were invalid." % ( num_bad_region )
+        print("%i regions were invalid." % ( num_bad_region ))
     maf_utilities.remove_temp_index_file( index_filename )
 
 if __name__ == "__main__":

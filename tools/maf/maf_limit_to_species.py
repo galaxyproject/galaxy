@@ -7,6 +7,8 @@ columns containing only gaps.
 usage: %prog species,species2,... input_maf output_maf allow_partial min_species_per_block
 """
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 import bx.align.maf
@@ -24,7 +26,7 @@ def main():
         maf_reader = bx.align.maf.Reader( open( sys.argv[2], 'r' ) )
         maf_writer = bx.align.maf.Writer( open( sys.argv[3], 'w' ) )
     except:
-        print >>sys.stderr, "Your MAF file appears to be malformed."
+        print("Your MAF file appears to be malformed.", file=sys.stderr)
         sys.exit()
     allow_partial = False
     if int( sys.argv[4] ):
@@ -44,8 +46,8 @@ def main():
     maf_reader.close()
     maf_writer.close()
 
-    print "Restricted to species: %s." % ", ".join( species )
-    print "%i MAF blocks have been kept." % maf_blocks_kept
+    print("Restricted to species: %s." % ", ".join( species ))
+    print("%i MAF blocks have been kept." % maf_blocks_kept)
 
 if __name__ == "__main__":
     main()

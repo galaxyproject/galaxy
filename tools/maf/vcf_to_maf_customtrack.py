@@ -1,23 +1,25 @@
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 from optparse import OptionParser
 
 import bx.align.maf
-
 import galaxy_utils.sequence.vcf
+from six import Iterator
 
 UNKNOWN_NUCLEOTIDE = '*'
 
 
-class PopulationVCFParser( object ):
+class PopulationVCFParser( Iterator ):
     def __init__( self, reader, name ):
         self.reader = reader
         self.name = name
         self.counter = 0
 
-    def next( self ):
+    def __next__( self ):
         rval = []
-        vc = self.reader.next()
+        vc = next(self.reader)
         for i, allele in enumerate( vc.alt ):
             rval.append( ( '%s_%i.%i' % ( self.name, i + 1, self.counter + 1 ), allele ) )
         self.counter += 1
@@ -25,17 +27,17 @@ class PopulationVCFParser( object ):
 
     def __iter__( self ):
         while True:
-            yield self.next()
+            yield next(self)
 
 
-class SampleVCFParser( object ):
+class SampleVCFParser( Iterator ):
     def __init__( self, reader ):
         self.reader = reader
         self.counter = 0
 
-    def next( self ):
+    def __next__( self ):
         rval = []
-        vc = self.reader.next()
+        vc = next(self.reader)
         alleles = [ vc.ref ] + vc.alt
 
         if 'GT' in vc.format:
@@ -55,7 +57,7 @@ class SampleVCFParser( object ):
 
     def __iter__( self ):
         while True:
-            yield self.next()
+            yield next(self)
 
 
 def main():
@@ -69,7 +71,7 @@ def main():
 
     if len( args ) < 3:
         if options.galaxy:
-            print >>sys.stderr, "It appears that you forgot to specify an input VCF file, click 'Add new VCF...' to add at least input.\n"
+            print("It appears that you forgot to specify an input VCF file, click 'Add new VCF...' to add at least input.\n", file=sys.stderr)
         parser.error( "Need to specify an output file, a dbkey and at least one input file" )
 
     if not ( options.population ^ options.sample ):
@@ -154,7 +156,7 @@ def main():
     maf_writer.close()
 
     if non_spec_skipped:
-        print 'Skipped %i non-specification compliant indels.' % non_spec_skipped
+        print('Skipped %i non-specification compliant indels.' % non_spec_skipped)
 
 if __name__ == "__main__":
     main()

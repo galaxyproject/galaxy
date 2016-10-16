@@ -1,6 +1,7 @@
+from logging import getLogger
+
 import galaxy.model
 
-from logging import getLogger
 log = getLogger( __name__ )
 
 ROLES_UNSET = object()
@@ -100,7 +101,7 @@ class DatasetMatcher( object ):
         applicable).
         """
         param = self.param
-        return param.options and param._options_filter_attribute( hda ) != self.filter_value
+        return param.options and param.get_options_filter_attribute( hda ) != self.filter_value
 
     def __can_access_dataset( self, dataset ):
         # Lazily cache current_user_roles.
@@ -179,4 +180,4 @@ class DatasetCollectionMatcher( object ):
                 break
         return valid
 
-__all__ = [ DatasetMatcher, DatasetCollectionMatcher ]
+__all__ = ( 'DatasetMatcher', 'DatasetCollectionMatcher' )
