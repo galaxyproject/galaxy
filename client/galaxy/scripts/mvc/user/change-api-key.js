@@ -11,8 +11,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             label: 'Current API key:',
                             value: options.user_api_key || 'Not available.',
                             readonly: true,
-                            help: ' An API key will allow you to access ' + ( options.app_name === 'galaxy' ? 'Galaxy' : 'the Tool Shed' ) +
-                                  ' via its web API. Please note that this key acts as an alternate means to access your account and should'  	                                + ' be treated with the same care as your login password.' } ],
+                            help: ' An API key will allow you to access ' + ( options.app_name === 'galaxy' ? 'Galaxy' : 'the Tool Shed' ) + ' via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' } ],
                 operations: {
                     'back': new Ui.ButtonIcon({
                         icon: 'fa-caret-left',
