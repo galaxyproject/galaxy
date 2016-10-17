@@ -282,9 +282,13 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         // to be stripped from the output.
         var data_table = this.$el.find('table'); 
         var lines = chunk.ck_data.split('\n'); 
-        var numlines = lines.length - 1; 
+        var numlines = lines.length; 
         for (i = 0; i < numlines; i++){ 
-            data_table.append(this._renderRow(lines[i]));
+            if (i < numlines - 1){
+               data_table.append(this._renderRow(lines[i]));
+            }else if (lines[i] != ''){
+               data_table.append(this._renderRow(lines[i]));
+            }
     }},
 });
 
