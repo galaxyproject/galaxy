@@ -4,7 +4,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
 
         initialize: function ( ) {
             this.setElement( '<div/>' );
-            this.getUserPreferencesData();
+            this.render();
         },
 
         /** Redirect to manage user information view */
@@ -74,24 +74,19 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
             var self = this;
             var url = Galaxy.root + 'api/user_preferences/change_communication';
             $.getJSON( url, function( response ) {
-                changeCommunication = new ChangeCommunication.ChangeCommunication( self, response );
+                changeCommunication = new ChangeCommunication( self, response );
                 self.$( '.user-preferences-all' ).append( changeCommunication.$el );
             });
         },
 
-        /** Fetch data for user preferences */
-        getUserPreferencesData: function() {
-            var url = Galaxy.root + 'api/user_preferences',
-                self = this;
-            $.getJSON( url, function( data ) {
-                  self.render(data);
-            });
-        },
-
         /** Render the user preferences list */
-        render: function( data ) {
-            var template = "",
-                self = this;
+        render: function() {
+            var self = this;
+            $.getJSON( Galaxy.root + 'api/user_preferences', function( data ) {
+                self.render(data);
+            });
+
+            var template = "";
             if( data["id"] !== null ) {
                 template = "<div class='user-preferences-all'>"
                 template = template + '<div class="user-pref"> <h2> User preferences </h2>' + 
