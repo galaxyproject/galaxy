@@ -146,13 +146,29 @@ class ToolParameter( object, Dictifiable ):
         else:
             return self.to_python( value, app )
 
-    def value_to_display_text( self, value, app ):
+    def value_to_display_text( self, value, app=None ):
         """
         Convert a value to a text representation suitable for displaying to
         the user
+        >>> p = ToolParameter( None, XML( '<param name="_name" />' ) )
+        >>> print p.value_to_display_text( None )
+        Not available.
+        >>> print p.value_to_display_text( '' )
+        Empty.
+        >>> print p.value_to_display_text( 'text' )
+        text
+        >>> print p.value_to_display_text( True )
+        True
+        >>> print p.value_to_display_text( False )
+        False
+        >>> print p.value_to_display_text( 0 )
+        0
         """
         if value is not None:
-            return unicodify( value )
+            str_value = unicodify( value )
+            if not str_value:
+                return "Empty."
+            return str_value
         return "Not available."
 
     def to_param_dict_string( self, value, other_values={} ):
