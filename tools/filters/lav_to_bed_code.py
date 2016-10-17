@@ -8,7 +8,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             filename_to_build[fields[1]] = fields[2].strip()
         else:
             new_stdout = "%s%s" % ( new_stdout, line )
-    for name, data in out_data.items():
+    for data in out_data.values():
         try:
             data.info = "%s\n%s" % ( new_stdout, stderr )
             data.dbkey = filename_to_build[data.file_name]

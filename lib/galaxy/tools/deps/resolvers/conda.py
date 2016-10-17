@@ -3,33 +3,35 @@ This is still an experimental module and there will almost certainly be backward
 incompatible changes coming.
 """
 
-
+import logging
 import os
 
-from ..resolvers import (
-    DependencyResolver,
-    NullDependency,
-    Dependency,
-    ListableDependencyResolver,
-    InstallableDependencyResolver,
-)
+import galaxy.tools.deps.installable
+
 from ..conda_util import (
+    build_isolated_environment,
+    cleanup_failed_install,
     CondaContext,
     CondaTarget,
     install_conda,
-    is_conda_target_installed,
-    cleanup_failed_install,
     install_conda_target,
-    build_isolated_environment,
     installed_conda_targets,
+    is_conda_target_installed,
     USE_PATH_EXEC_DEFAULT,
 )
+from ..resolvers import (
+    Dependency,
+    DependencyResolver,
+    InstallableDependencyResolver,
+    ListableDependencyResolver,
+    NullDependency,
+)
+
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "r,bioconda,iuc"
+DEFAULT_ENSURE_CHANNELS = "conda-forge,r,bioconda,iuc"
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -39,6 +41,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
     def __init__(self, dependency_manager, **kwds):
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
+        self.dependency_manager = dependency_manager
 
         def get_option(name):
             return self._get_config_option(name, dependency_manager, config_prefix="conda", **kwds)
@@ -49,6 +52,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_prefix = os.path.join(
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
+
+        self.conda_prefix_parent = os.path.dirname(conda_prefix)
 
         # warning is related to conda problem discussed in https://github.com/galaxyproject/galaxy/issues/2537, remove when that is resolved
         conda_prefix_warning_length = 50
@@ -84,23 +89,11 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.ensure_channels = ensure_channels
 
         # Conda operations options (these define how resolution will occur)
-        auto_init = _string_as_bool(get_option("auto_init"))
         auto_install = _string_as_bool(get_option("auto_install"))
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
-
-        if not conda_context.is_conda_installed():
-            if auto_init:
-                if conda_context.can_install_conda():
-                    if install_conda(conda_context):
-                        self.disabled = True
-                        log.warning("Conda installation requested and failed.")
-                else:
-                    self.disabled = True
-            else:
-                self.disabled = True
-                log.warning("Conda not installed and auto-installation disabled.")
-
+        self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
+        self.disabled = not galaxy.tools.deps.installable.ensure_installed(conda_context, install_conda, self.auto_init)
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
         self.verbose_install_check = verbose_install_check
@@ -251,4 +244,4 @@ def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
 
-__all__ = ['CondaDependencyResolver']
+__all__ = ('CondaDependencyResolver', )

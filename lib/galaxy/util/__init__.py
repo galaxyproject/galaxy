@@ -8,7 +8,6 @@ from __future__ import absolute_import
 import binascii
 import collections
 import errno
-import grp
 import json
 import logging
 import os
@@ -22,13 +21,19 @@ import sys
 import tempfile
 import threading
 import time
+try:
+    import grp
+except ImportError:
+    # For Pulsar on Windows (which does not use the function that uses grp)
+    grp = None
+
 from datetime import datetime
 from hashlib import md5
 from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
 
 from six import binary_type, iteritems, PY3, string_types, text_type
-from six.moves import email_mime_text, email_mime_multipart, xrange, zip
+from six.moves import email_mime_multipart, email_mime_text, xrange, zip
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib import request as urlrequest
 
@@ -565,7 +570,7 @@ def mask_password_from_url( url ):
 
 
 def ready_name_for_url( raw_name ):
-    """ General method to convert a string (i.e. object name) to a URL-ready
+    u""" General method to convert a string (i.e. object name) to a URL-ready
     slug.
 
     >>> ready_name_for_url( "My Cool Object" )

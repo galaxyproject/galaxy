@@ -77,7 +77,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             _.each( this.steps, function( step, i ) {
                 _.each( step.output_connections, function( output_connection ) {
                     _.each( self.steps, function( sub_step, j ) {
-                        sub_step.step_id === output_connection.input_step_id && self.links[ i ].push( sub_step );
+                        sub_step.step_index === output_connection.input_step_index && self.links[ i ].push( sub_step );
                     });
                 });
             });
@@ -88,7 +88,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 _.each( self.steps, function( sub_step, j ) {
                     var connections_by_name = {};
                     _.each( step.output_connections, function( connection ) {
-                        sub_step.step_id === connection.input_step_id && ( connections_by_name[ connection.input_name ] = connection );
+                        sub_step.step_index === connection.input_step_index && ( connections_by_name[ connection.input_name ] = connection );
                     });
                     _.each( self.parms[ j ], function( input, name ) {
                         var connection = connections_by_name[ name ];
@@ -196,6 +196,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     fade        : false
                 } ).$el );
             }
+            var step_version_changes = this.model.get( 'step_version_changes' );
+            if ( step_version_changes && step_version_changes.length > 0 ) {
+                this.$message.append( new Ui.Message( {
+                    message     : 'Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this Galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.',
+                    status      : 'warning',
+                    persistent  : true,
+                    fade        : false
+                } ).$el );
+            }
         },
 
         /** Render workflow parameters */
@@ -215,34 +224,31 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Render workflow parameters */
         _renderHistory: function() {
-            this.history_form = null;
-            if ( !this.model.get( 'history_id' ) ) {
-                this.history_form = new Form({
-                    cls    : 'ui-portlet-narrow',
-                    title  : '<b>History Options</b>',
-                    inputs : [{
-                        type        : 'conditional',
-                        name        : 'new_history',
-                        test_param  : {
-                            name        : 'check',
-                            label       : 'Send results to a new history',
-                            type        : 'boolean',
-                            value       : 'false',
-                            help        : ''
-                        },
-                        cases       : [{
-                            value   : 'true',
-                            inputs  : [{
-                                name    : 'name',
-                                label   : 'History name',
-                                type    : 'text',
-                                value   : this.model.get( 'name' )
-                            }]
+            this.history_form = new Form({
+                cls    : 'ui-portlet-narrow',
+                title  : '<b>History Options</b>',
+                inputs : [{
+                    type        : 'conditional',
+                    name        : 'new_history',
+                    test_param  : {
+                        name        : 'check',
+                        label       : 'Send results to a new history',
+                        type        : 'boolean',
+                        value       : 'false',
+                        help        : ''
+                    },
+                    cases       : [{
+                        value   : 'true',
+                        inputs  : [{
+                            name    : 'name',
+                            label   : 'History name',
+                            type    : 'text',
+                            value   : this.model.get( 'name' )
                         }]
                     }]
-                });
-                this._append( this.$steps, this.history_form.$el );
-            }
+                }]
+            });
+            this._append( this.$steps, this.history_form.$el );
         },
 
         /** Render step */
@@ -346,17 +352,26 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
         /** Validate and submit workflow */
         _submit: function() {
             var self = this;
+            var history_form_data = this.history_form.data.create();
             var job_def = {
-                new_history_name    : this.history_form.data.create()[ 'new_history|name' ],
-                replacement_params  : this.wp_form ? this.wp_form.data.create() : {},
-                inputs              : {}
+                new_history_name      : history_form_data[ 'new_history|name' ] ? history_form_data[ 'new_history|name' ] : null,
+                history_id            : !history_form_data[ 'new_history|name' ] ? this.model.get( 'history_id' ) : null,
+                replacement_params    : this.wp_form ? this.wp_form.data.create() : {},
+                parameters            : {},
+                // Tool form will submit flat maps for each parameter
+                // (e.g. "repeat_0|cond|param": "foo" instead of nested
+                // data structures).
+                parameters_normalized : true,
+                // Tool form always wants a list of invocations back
+                // so that inputs can be batched.
+                batch                 : true
             };
             var validated = true;
             for ( var i in this.forms ) {
                 var form = this.forms[ i ];
                 var job_inputs  = form.data.create();
                 var step        = self.steps[ i ];
-                var step_id     = step.step_id;
+                var step_index  = step.step_index;
                 form.trigger( 'reset' );
                 for ( var job_input_id in job_inputs ) {
                     var input_value = job_inputs[ job_input_id ];
@@ -373,8 +388,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             form.highlight( input_id );
                             break;
                         }
-                        job_def.inputs[ step_id ] = job_def.inputs[ step_id ] || {};
-                        job_def.inputs[ step_id ][ job_input_id ] = job_inputs[ job_input_id ];
+                        job_def.parameters[ step_index ] = job_def.parameters[ step_index ] || {};
+                        job_def.parameters[ step_index ][ job_input_id ] = job_inputs[ job_input_id ];
                     }
                 }
                 if ( !validated ) {
@@ -388,31 +403,35 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 Galaxy.emit.debug( 'tool-form-composite::submit()', 'Validation complete.', job_def );
                 Utils.request({
                     type    : 'POST',
-                    url     : Galaxy.root + 'api_internal/workflows/' + this.model.id + '/run',
+                    url     : Galaxy.root + 'api/workflows/' + this.model.id + '/invocations',
                     data    : job_def,
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
-                        self.$el.empty().append( self._templateSuccess( response ) );
+                        self.$el.children().hide();
+                        self.$el.append( self._templateSuccess( response ) );
                         self._refreshHistory();
                     },
                     error   : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission failed.', response );
+                        var input_found = false;
                         if ( response && response.err_data ) {
                             for ( var i in self.forms ) {
                                 var form = self.forms[ i ];
-                                var step_related_errors = response.err_data[ form.options.step_id ];
+                                var step_related_errors = response.err_data[ form.options.step_index ];
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {
                                         form.highlight( input_id, error_messages[ input_id ] );
+                                        input_found = true;
                                         break;
                                     }
                                 }
                             }
-                        } else {
+                        }
+                        if ( !input_found ) {
                             self.modal.show({
-                                title   : 'Job submission failed',
-                                body    : self._templateError( response && response.err_msg || job_def ),
+                                title   : 'Workflow submission failed',
+                                body    : self._templateError( job_def, response && response.err_msg ),
                                 buttons : {
                                     'Close' : function() {
                                         self.modal.hide();
@@ -430,14 +449,14 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Append new dom to body */
         _append: function( $container, $el ) {
-            $container.append( '<p/>' ).addClass( 'ui-margin-top' ).append( $el );
+            $container.append( '<p/>' ).append( $el );
         },
 
         /** Set enabled/disabled state */
         _enabled: function( enabled ) {
             this.execute_btn.model.set( { wait: !enabled, wait_text: 'Sending...', percentage: -1 } );
             this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
-            this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
+            this.history_form && this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
             _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
         },
 
@@ -462,17 +481,19 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Templates */
         _templateSuccess: function( response ) {
-            if ( response && response.length > 0 ) {
-                return $( '<div/>' ).addClass( 'donemessagelarge' ).append( $( '<p/>' ).html( 'Successfully invoked workflow <b>' + Utils.sanitize( this.model.get( 'name' ) ) + '</b>' + ( response.length > 1 ? ' <b>' + response.length + ' times</b>' : '' ) + '. Datasets will appear as jobs are created.' ) );
+            if ( $.isArray( response ) && response.length > 0 ) {
+                return $( '<div/>' ).addClass( 'donemessagelarge' )
+                                    .append( $( '<p/>' ).html( 'Successfully invoked workflow <b>' + Utils.sanitize( this.model.get( 'name' ) ) + '</b>' + ( response.length > 1 ? ' <b>' + response.length + ' times</b>' : '' ) + '.' ) )
+                                    .append( $( '<p/>' ).append( '<b/>' ).text( 'You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from \'running\' to \'finished\' if completed successfully or \'error\' if problems were encountered.' ) );
             } else {
-                return this._templateError( response );
+                return this._templateError( response, 'Invalid success response. No invocations found.' );
             }
         },
 
-        _templateError: function( response ) {
+        _templateError: function( response, err_msg ) {
             return  $( '<div/>' ).addClass( 'errormessagelarge' )
-                .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists.' ) )
-                .append( $( '<pre/>' ).text( JSON.stringify( response, null, 4 ) ) );
+                                 .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists. ' + ( JSON.stringify( err_msg ) || '' ) ) )
+                                 .append( $( '<pre/>' ).text( JSON.stringify( response, null, 4 ) ) );
         }
     });
     return {

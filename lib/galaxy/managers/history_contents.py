@@ -18,6 +18,7 @@ from galaxy.managers import base
 from galaxy.managers import deletable
 from galaxy.managers import containers
 from galaxy.managers import hdas
+from galaxy.managers import hdcas
 
 import logging
 log = logging.getLogger( __name__ )
@@ -34,7 +35,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     contained_class_type_name = 'dataset'
 
     subcontainer_class = model.HistoryDatasetCollectionAssociation
-    subcontainer_class_manager_class = None
+    subcontainer_class_manager_class = hdcas.HDCAManager
     subcontainer_class_type_name = 'dataset_collection'
 
     #: the columns which are common to both subcontainers and non-subcontainers.
@@ -61,6 +62,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
     def __init__( self, app ):
         self.app = app
         self.contained_manager = self.contained_class_manager_class( app )
+        self.subcontainer_manager = self.subcontainer_class_manager_class( app )
 
     # ---- interface
     def contained( self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs ):
@@ -174,6 +176,24 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
                 returned[ 'hidden' ] += count
             if not deleted and visible:
                 returned[ 'active' ] += count
+        return returned
+
+    def map_datasets( self, history, fn, **kwargs ):
+        """
+        Iterate over the datasets of a given history, recursing into collections, and
+        calling fn on each dataset.
+
+        Uses the same kwargs as `contents` above.
+        """
+        returned = []
+        contents = self.contents( history, **kwargs )
+        for content in contents:
+            if isinstance( content, self.subcontainer_class ):
+                processed_list = self.subcontainer_manager.map_datasets( content, fn )
+                returned.extend( processed_list )
+            else:
+                processed = fn( content )
+                returned.append( processed )
         return returned
 
     # ---- private

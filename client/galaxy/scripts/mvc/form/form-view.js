@@ -86,11 +86,6 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
             }
         },
 
-        /** Modify onchange event handler */
-        setOnChange: function( callback ) {
-            this.options.onchange = callback;
-        },
-
         /** Render tool form */
         render: function() {
             var self = this;

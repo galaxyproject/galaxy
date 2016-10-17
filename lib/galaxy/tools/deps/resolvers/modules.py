@@ -6,14 +6,15 @@ This is a community contributed feature and the core Galaxy team does utilize
 it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
+import logging
 from os import environ, pathsep
 from os.path import exists, isdir, join
+from subprocess import PIPE, Popen
+
 from six import StringIO
-from subprocess import Popen, PIPE
 
-from ..resolvers import DependencyResolver, NullDependency, Dependency
+from ..resolvers import Dependency, DependencyResolver, NullDependency
 
-import logging
 log = logging.getLogger( __name__ )
 
 DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
@@ -178,4 +179,4 @@ class ModuleDependency(Dependency):
 def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
-__all__ = ['ModuleDependencyResolver']
+__all__ = ('ModuleDependencyResolver', )

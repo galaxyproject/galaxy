@@ -162,12 +162,20 @@ class LDAP(AuthProvider):
 
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
+            bind_password = _get_subs(options, 'bind-password', params)
+            if not bind_password:
+                raise RuntimeError('LDAP authenticate: empty password')
             l.simple_bind_s(_get_subs(
-                options, 'bind-user', params), _get_subs(options, 'bind-password', params))
-            whoami = l.whoami_s()
-            log.debug("LDAP authenticate: whoami is %s", whoami)
-            if whoami is None:
-                raise RuntimeError('LDAP authenticate: anonymous bind')
+                options, 'bind-user', params), bind_password)
+            try:
+                whoami = l.whoami_s()
+            except ldap.PROTOCOL_ERROR:
+                # The "Who am I?" extended operation is not supported by this LDAP server
+                pass
+            else:
+                log.debug("LDAP authenticate: whoami is %s", whoami)
+                if whoami is None:
+                    raise RuntimeError('LDAP authenticate: anonymous bind')
         except Exception:
             log.warning('LDAP authenticate: bind exception', exc_info=True)
             return (failure_mode, '', '')

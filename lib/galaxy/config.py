@@ -14,6 +14,8 @@ import string
 import sys
 import tempfile
 import threading
+import time
+
 from datetime import timedelta
 
 from six import string_types
@@ -222,9 +224,9 @@ class Configuration( object ):
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
-        self.commands_in_new_shell = string_as_bool( kwargs.get( 'enable_beta_tool_command_isolation', "True" ) )
         self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
         self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
+
         # Enable new interface for API installations from TS.
         # Admin menu will list both if enabled.
         self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'False' ) )
@@ -322,6 +324,19 @@ class Configuration( object ):
         else:
             self.tool_dependency_dir = None
             self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
+
+        self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
+        containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
+        if containers_resolvers_config_file:
+            containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
+        self.containers_resolvers_config_file = containers_resolvers_config_file
+
+        involucro_path = kwargs.get('involucro_path', None)
+        if involucro_path is None:
+            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+        self.involucro_path = resolve_path(involucro_path, self.root)
+        self.involucro_auto_init = string_as_bool(kwargs.get( 'involucro_auto_init', True))
+
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
@@ -770,7 +785,7 @@ def configure_logging( config ):
         if disable_chatty_loggers:
             # Turn down paste httpserver logging
             if level <= logging.DEBUG:
-                for chatty_logger in ["paste.httpserver.ThreadPool"]:
+                for chatty_logger in ["paste.httpserver.ThreadPool", "routes.middleware"]:
                     logging.getLogger( chatty_logger ).setLevel( logging.WARN )
 
         # Remove old handlers
@@ -801,6 +816,15 @@ class ConfiguresGalaxyMixin:
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
+    def wait_for_toolbox_reload(self, old_toolbox):
+        while True:
+            # Wait till toolbox reload has been triggered
+            # and make sure toolbox has finished reloading)
+            if self.toolbox.has_reloaded(old_toolbox):
+                break
+
+            time.sleep(1)
+
     def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
 
@@ -809,21 +833,22 @@ class ConfiguresGalaxyMixin:
             tool_configs.append( self.config.migrated_tools_config )
 
         from galaxy import tools
-        with self._toolbox_lock:
-            old_toolbox = self.toolbox
-            self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-            self.reindex_tool_search()
-            if old_toolbox:
-                old_toolbox.shutdown()
+        old_toolbox = self.toolbox
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        self.reindex_tool_search()
+        if old_toolbox:
+            old_toolbox.shutdown()
 
     def _configure_toolbox( self ):
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager( self )
 
         from galaxy.tools.toolbox.cache import ToolCache
+        from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
         self.tool_cache = ToolCache()
+        self.tool_version_cache = ToolVersionCache(self)
 
-        self._toolbox_lock = threading.Lock()
+        self._toolbox_lock = threading.RLock()
         self.toolbox = None
         self.reload_toolbox()
 
@@ -835,15 +860,21 @@ class ConfiguresGalaxyMixin:
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
-            library_import_dir=self.config.library_import_dir
+            library_import_dir=self.config.library_import_dir,
+            enable_beta_mulled_containers=self.config.enable_beta_mulled_containers,
+            containers_resolvers_config_file=self.config.containers_resolvers_config_file,
+            involucro_path=self.config.involucro_path,
+            involucro_auto_init=self.config.involucro_auto_init,
         )
         self.container_finder = containers.ContainerFinder(app_info)
 
-    def reindex_tool_search( self ):
+    def reindex_tool_search( self, toolbox=None ):
         # Call this when tools are added or removed.
         import galaxy.tools.search
         index_help = getattr( self.config, "index_tool_help", True )
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
+        if not toolbox:
+            toolbox = self.toolbox
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager

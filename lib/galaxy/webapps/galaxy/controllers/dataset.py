@@ -322,8 +322,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             continue
                         optional = params.get("is_" + name, None)
                         other = params.get("or_" + name, None)
-                        if optional and optional == 'true':
-                            # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
+                        if optional and optional == '__NOTHING__':
+                            # optional element... == '__NOTHING__' actually means it is NOT checked (and therefore omitted)
                             setattr(data.metadata, name, None)
                         else:
                             if other:
@@ -1053,14 +1053,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         else:
             decoded_dataset_collection_ids = []
             decoded_dataset_ids = []
-        if target_history_id:
-            target_history_ids = [ self.decode_id(target_history_id) ]
-        elif target_history_ids:
-            if not isinstance( target_history_ids, list ):
-                target_history_ids = target_history_ids.split(",")
-            target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
-        else:
+        if new_history_name:
             target_history_ids = []
+        else:
+            if target_history_id:
+                target_history_ids = [ self.decode_id(target_history_id) ]
+            elif target_history_ids:
+                if not isinstance( target_history_ids, list ):
+                    target_history_ids = target_history_ids.split(",")
+                target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
+            else:
+                target_history_ids = []
         done_msg = error_msg = ""
         new_history = None
         if do_copy:

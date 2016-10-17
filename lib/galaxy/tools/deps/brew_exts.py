@@ -21,18 +21,15 @@
 
 from __future__ import print_function
 
-try:
-    import argparse
-except ImportError:
-    argparse = None
+import argparse
 import contextlib
-import json
 import glob
+import json
 import os
 import re
-import sys
 import string
 import subprocess
+import sys
 
 WHITESPACE_PATTERN = re.compile("[\s]+")
 

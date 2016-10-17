@@ -1,6 +1,7 @@
 from __future__ import absolute_import
-import xml.etree
+
 import re
+import xml.etree
 
 
 # Helper functions used to work with XML output.

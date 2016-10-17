@@ -1,6 +1,8 @@
 """
 Manager and Serializer for Datasets.
 """
+import glob
+import os
 from six import string_types
 
 from galaxy import model
@@ -313,12 +315,13 @@ class DatasetAssociationManager( base.ModelManager,
         return dataset_assoc
 
     def by_user( self, user ):
-        """
-        """
         raise galaxy.exceptions.NotImplemented( 'Abstract Method' )
 
     # .... associated job
     def creating_job( self, dataset_assoc ):
+        """
+        Return the `Job` that created this dataset or None if not found.
+        """
         # TODO: is this needed? Can't you use the dataset_assoc.creating_job attribute? When is this None?
         # TODO: this would be even better if outputs and inputs were the underlying datasets
         job = None
@@ -347,6 +350,20 @@ class DatasetAssociationManager( base.ModelManager,
                     self.app.job_manager.job_stop_queue.put( job.id )
                     return True
         return False
+
+    def is_composite( self, dataset_assoc ):
+        """
+        Return True if this hda/ldda is a composite type dataset.
+
+        .. note: see also (whereever we keep information on composite datatypes?)
+        """
+        return dataset_assoc.extension in self.app.datatypes_registry.get_composite_extensions()
+
+    def extra_files( self, dataset_assoc ):
+        """Return a list of file paths for composite files, an empty list otherwise."""
+        if not self.is_composite( dataset_assoc ):
+            return []
+        return glob.glob( os.path.join( dataset_assoc.dataset.extra_files_path, '*' ) )
 
 
 class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,

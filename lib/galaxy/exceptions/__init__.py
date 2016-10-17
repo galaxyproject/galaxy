@@ -1,14 +1,26 @@
-"""
-Custom exceptions for Galaxy
+"""This module defines Galaxy's custom exceptions.
+
+A Galaxy exception is an exception that extends :class:`MessageException` which
+defines an HTTP status code (represented by the `status_code` attribute) and a
+default error message.
+
+New exceptions should be defined by adding an entry to `error_codes.json` in this
+directory to define a default error message and a Galaxy "error code". A concrete
+Python class should be added in this file defining an HTTP status code (as
+`status_code`) and error code (`error_code`) object loaded dynamically from
+`error_codes.json`.
+
+Reflecting Galaxy's origins as a web application, these exceptions tend to be a
+bit web-oriented. However this module is a dependency of modules and tools that
+have nothing to do with the web - keep this in mind when defining exception names
+and messages.
 """
 
 from ..exceptions import error_codes
 
 
 class MessageException( Exception ):
-    """
-    Exception to make throwing errors from deep in controllers easier.
-    """
+    """Most generic Galaxy exception - indicates merely that some exceptional condition happened."""
     # status code to be set when used with API.
     status_code = 400
     # Error code information embedded into API json responses.

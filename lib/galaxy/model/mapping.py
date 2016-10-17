@@ -9,15 +9,15 @@ from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, Fore
     MetaData, not_, Numeric, select, String, Table, Text, TEXT, true, Unicode, UniqueConstraint )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.types import BigInteger
-from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper, deferred
+from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.types import BigInteger
 
 from galaxy import model
+from galaxy.model.base import ModelMapping
+from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
-from galaxy.model.base import ModelMapping
 from galaxy.security import GalaxyRBACAgent
 
 log = logging.getLogger( __name__ )
@@ -445,6 +445,7 @@ model.Job.table = Table(
     Column( "state", String( 64 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "command_line", TEXT ),
+    Column( "dependencies", JSONType, nullable=True),
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),
@@ -2301,8 +2302,7 @@ mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dic
         uselist=True,
     ),
     steps=relation( model.WorkflowInvocationStep,
-        backref='workflow_invocation',
-        lazy=False ),
+        backref='workflow_invocation' ),
     workflow=relation( model.Workflow )
 ) )
 
@@ -2439,7 +2439,7 @@ tag_mapping( model.ToolTagAssociation, "tagged_tools" )
 
 # Annotation tables.
 def annotation_mapping( annotation_class, **kwds ):
-    kwds = dict( [ (key, relation( value ) ) for key, value in kwds.iteritems() ] )
+    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( annotation_class, **dict(user=relation( model.User ), **kwds ) )
 
 annotation_mapping( model.HistoryAnnotationAssociation, history=model.History )
@@ -2456,7 +2456,7 @@ annotation_mapping( model.LibraryDatasetCollectionAnnotationAssociation,
 
 # Rating tables.
 def rating_mapping( rating_class, **kwds ):
-    kwds = dict( [ (key, relation( value ) ) for key, value in kwds.iteritems() ] )
+    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( rating_class, **dict(user=relation( model.User ), **kwds ) )
 
 rating_mapping( model.HistoryRatingAssociation, history=model.History )
@@ -2527,6 +2527,16 @@ def db_next_hid( self, n=1 ):
         raise
 
 model.History._next_hid = db_next_hid
+
+
+def _workflow_invocation_update( self ):
+    conn = object_session( self ).connection()
+    table = self.table
+    now_val = now()
+    stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
+    conn.execute(stmt)
+
+model.WorkflowInvocation.update = _workflow_invocation_update
 
 
 def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False,

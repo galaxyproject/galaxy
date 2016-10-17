@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Read a table dump in the UCSC gene table format and print a tab separated
 list of intervals corresponding to requested features of each gene.
@@ -14,9 +13,9 @@ options:
   -i, --input=inputfile       input file
   -o, --output=outputfile     output file
 """
+from __future__ import print_function
 
 import optparse
-import string
 import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
@@ -40,21 +39,21 @@ def main():
     try:
         out_file = open(options.output, "w")
     except:
-        print >> sys.stderr, "Bad output file."
+        print("Bad output file.", file=sys.stderr)
         sys.exit(0)
 
     try:
         in_file = open(options.input)
     except:
-        print >> sys.stderr, "Bad input file."
+        print("Bad input file.", file=sys.stderr)
         sys.exit(0)
 
-    print "Region:", options.region + ";"
-    print "Only overlap with Exons:",
+    print("Region:", options.region + ";")
+    print("Only overlap with Exons:", end=' ')
     if options.exons:
-        print "Yes"
+        print("Yes")
     else:
-        print "No"
+        print("No")
 
     # Read table and handle each gene
     for line in in_file:
@@ -111,7 +110,7 @@ def main():
 
 def print_tab_sep(out_file, *args ):
     """Print items in `l` to stdout separated by tabs"""
-    print >>out_file, string.join( [ str( f ) for f in args ], '\t' )
+    print('\t'.join(str( f ) for f in args), file=out_file)
 
 if __name__ == "__main__":
     main()

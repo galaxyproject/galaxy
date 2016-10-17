@@ -955,7 +955,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         """
         regions = regions or '{}'
         # Need to create history if necessary in order to create tool form.
-        trans.get_history( create=True )
+        trans.get_history( most_recent=True, create=True )
 
         if id:
             # Loading a shared visualization.

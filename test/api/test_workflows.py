@@ -1,25 +1,23 @@
 from __future__ import print_function
 
 import time
-import yaml
-from json import dumps
 from collections import namedtuple
+from json import dumps
 from uuid import uuid4
 
+import yaml
+from requests import delete, put
+
 from base import api
-from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.exceptions import error_codes
-from .helpers import WorkflowPopulator
-from .helpers import DatasetPopulator
-from .helpers import DatasetCollectionPopulator
-from .helpers import skip_without_tool
+from galaxy.tools.verify.test_data import TestDataResolver
+
+from .helpers import (DatasetCollectionPopulator, DatasetPopulator,
+    skip_without_tool, WorkflowPopulator)
 from .workflows_format_2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
-
-from requests import delete
-from requests import put
 
 SIMPLE_NESTED_WORKFLOW_YAML = """
 class: GalaxyWorkflow
@@ -277,7 +275,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         workflow = show_response.json()
         self._assert_looks_like_instance_workflow_representation( workflow )
         assert len(workflow["steps"]) == 3
-        self.assertEqual(sorted([step["id"] for step in workflow["steps"].values()]), [0, 1, 2])
+        self.assertEqual(sorted(step["id"] for step in workflow["steps"].values()), [0, 1, 2])
 
         show_response = self._get( "workflows/%s" % workflow_id, {"legacy": True} )
         workflow = show_response.json()
@@ -285,7 +283,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         assert len(workflow["steps"]) == 3
         # Can't reay say what the legacy IDs are but must be greater than 3 because dummy
         # workflow was created first in this instance.
-        self.assertNotEqual(sorted([step["id"] for step in workflow["steps"].values()]), [0, 1, 2])
+        self.assertNotEqual(sorted(step["id"] for step in workflow["steps"].values()), [0, 1, 2])
 
     def test_show_invalid_key_is_400( self ):
         show_response = self._get( "workflows/%s" % self._random_key() )
@@ -457,7 +455,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         def get_subworkflow_content_id(workflow_id):
             workflow_contents = self._download_workflow(workflow_id, style="editor")
             steps = workflow_contents['steps']
-            subworkflow_step = filter(lambda s: s["type"] == "subworkflow", steps.values())[0]
+            subworkflow_step = next(s for s in steps.values() if s["type"] == "subworkflow")
             return subworkflow_step['content_id']
 
         workflow_id = self._upload_yaml_workflow(SIMPLE_NESTED_WORKFLOW_YAML, publish=True)
@@ -1412,6 +1410,30 @@ test_data:
         self.__assert_lines_hid_line_count_is( history_id, 2, 4 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 3 )
 
+    @skip_without_tool( "cat1" )
+    @skip_without_tool( "addValue" )
+    def test_run_batch( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_batch" )
+        workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
+        workflow_request = {
+            "history_id" : history_id,
+            "batch"      : True,
+            "parameters_normalized": True,
+            "parameters" : dumps( { "0": { "input": { "batch": True, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" }, { "id" : hda2.get( "id" ), "hid": hda2.get( "hid" ), "src": "hda" } ] } }, "1": { "input": { "batch": False, "values": [ { "id" : hda1.get( "id" ), "hid": hda1.get( "hid" ), "src": "hda" } ] }, "exp": "2" } } )
+        }
+        invocation_response = self._post( "workflows/%s/usage" % workflow_id, data=workflow_request )
+        self._assert_status_code_is( invocation_response, 200 )
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        r1 = "1 2 3\t1\n1 2 3\t2\n"
+        r2 = "4 5 6\t1\n1 2 3\t2\n"
+        t1 = self.dataset_populator.get_history_dataset_content( history_id, hid=5 )
+        t2 = self.dataset_populator.get_history_dataset_content( history_id, hid=8 )
+        assert ( r1 == t1 and r2 == t2 ) or ( r1 == t2 and r2 == t1 )
+
     @skip_without_tool( "validation_default" )
     def test_parameter_substitution_sanitization( self ):
         substitions = dict( input1="\" ; echo \"moo" )
@@ -1612,7 +1634,7 @@ steps:
         contents_url = "histories/%s/contents" % history
         history_contents_response = self._get( contents_url )
         self._assert_status_code_is( history_contents_response, 200 )
-        hda_summary = filter( lambda hc: hc[ "hid" ] == hid, history_contents_response.json() )[ 0 ]
+        hda_summary = next(hc for hc in history_contents_response.json() if hc[ "hid" ] == hid)
         hda_info_response = self._get( "%s/%s" % ( contents_url, hda_summary[ "id" ] ) )
         self._assert_status_code_is( hda_info_response, 200 )
         self.assertEqual( hda_info_response.json()[ "metadata_data_lines" ], lines )

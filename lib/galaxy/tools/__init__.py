@@ -24,6 +24,7 @@ from galaxy import model
 from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
+from galaxy.queue_worker import reload_toolbox
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -102,12 +103,20 @@ class ToolBox( BaseGalaxyToolBox ):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app ):
+    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
+        self._reload_count = 0
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            tool_conf_watcher=tool_conf_watcher
         )
+
+    def handle_reload_toolbox(self):
+        reload_toolbox(self.app)
+
+    def has_reloaded(self, other_toolbox):
+        return self._reload_count != other_toolbox._reload_count
 
     @property
     def all_requirements(self):
@@ -303,6 +312,7 @@ class Tool( object, Dictifiable ):
         self.guid = guid
         self.old_id = None
         self.version = None
+        self.dependencies = []
         # Enable easy access to this tool's version lineage.
         self.lineage_ids = []
         # populate toolshed repository info, if available
@@ -1146,7 +1156,8 @@ class Tool( object, Dictifiable ):
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
-            raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
+            err_data = { key: value for d in all_errors for ( key, value ) in d.iteritems() }
+            raise exceptions.MessageException( ', '.join( [ msg for msg in err_data.itervalues() ] ), err_data=err_data )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
@@ -1283,13 +1294,15 @@ class Tool( object, Dictifiable ):
 
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
-        return self.app.toolbox.dependency_manager.dependency_shell_commands(
+        requirements_to_dependencies = self.app.toolbox.dependency_manager.requirements_to_dependencies(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
             metadata=metadata,
         )
+        self.dependencies = [dep.to_dict() for dep in requirements_to_dependencies.values()]
+        return [dep.shell_commands(req) for req, dep in requirements_to_dependencies.items()]
 
     @property
     def installed_tool_dependencies(self):
@@ -1525,9 +1538,10 @@ class Tool( object, Dictifiable ):
                 # Add input file tuples to the list.
                 for input in test.inputs:
                     for input_value in test.inputs[ input ]:
-                        input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
+                        input_filename = str( input_value )
+                        input_path = os.path.abspath( os.path.join( 'test-data', input_filename ) )
                         if os.path.exists( input_path ):
-                            td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
+                            td_tup = ( input_path, os.path.join( 'test-data', input_filename ) )
                             tarball_files.append( td_tup )
                 # And add output file tuples to the list.
                 for label, filename, _ in test.outputs:
@@ -1690,7 +1704,7 @@ class Tool( object, Dictifiable ):
                 else:
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
                         tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )

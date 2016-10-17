@@ -2,6 +2,7 @@ import logging
 import os.path
 import threading
 import time
+from galaxy.util.hash_util import md5_hash_file
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -74,7 +75,7 @@ class ToolConfWatcher(object):
     def start(self):
         if not self._active:
             self._active = True
-            self.thread.start()
+            register_postfork_function(self.thread.start)
 
     def shutdown(self):
         if self._active:
@@ -82,6 +83,7 @@ class ToolConfWatcher(object):
             self.thread.join()
 
     def check(self):
+        hashes = { key: None for key in self.paths.keys() }
         while self._active:
             do_reload = False
             with self._lock:
@@ -90,17 +92,22 @@ class ToolConfWatcher(object):
                 if not os.path.exists(path):
                     continue
                 mod_time = self.paths[path]
+                if not hashes.get(path, None):
+                    hashes[path] = md5_hash_file(path)
                 new_mod_time = None
                 if os.path.exists(path):
                     new_mod_time = time.ctime(os.path.getmtime(path))
                 if new_mod_time != mod_time:
-                    self.paths[path] = new_mod_time
-                    do_reload = True
+                    if hashes[path] != md5_hash_file(path):
+                        self.paths[path] = new_mod_time
+                        log.debug("The file '%s' has changes.", path)
+                        do_reload = True
 
             if do_reload:
-                t = threading.Thread(target=lambda: self.event_handler.on_any_event(None))
-                t.daemon = True
-                t.start()
+                with self._lock:
+                    t = threading.Thread(target=self.event_handler.on_any_event)
+                    t.daemon = True
+                    t.start()
             time.sleep(1)
 
     def monitor(self, path):
@@ -109,9 +116,11 @@ class ToolConfWatcher(object):
             mod_time = time.ctime(os.path.getmtime(path))
         with self._lock:
             self.paths[path] = mod_time
+        self.start()
 
     def watch_file(self, tool_conf_file):
         self.monitor(tool_conf_file)
+        self.start()
 
 
 class NullToolConfWatcher(object):
@@ -134,7 +143,7 @@ class ToolConfFileEventHandler(FileSystemEventHandler):
     def __init__(self, reload_callback):
         self.reload_callback = reload_callback
 
-    def on_any_event(self, event):
+    def on_any_event(self, event=None):
         self._handle(event)
 
     def _handle(self, event):

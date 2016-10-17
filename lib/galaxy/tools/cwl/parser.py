@@ -10,6 +10,8 @@ import logging
 import os
 from abc import ABCMeta, abstractmethod
 
+import six
+
 from galaxy.util import safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
@@ -119,8 +121,8 @@ def check_requirements(rec, tool=True):
             check_requirements(d, tool=tool)
 
 
+@six.add_metaclass(ABCMeta)
 class ToolProxy( object ):
-    __metaclass__ = ABCMeta
 
     def __init__(self, tool, tool_path):
         self._tool = tool
@@ -157,7 +159,7 @@ class ToolProxy( object ):
 class CommandLineToolProxy(ToolProxy):
 
     def description(self):
-        return self._tool.tool.get('description')
+        return self._tool.tool.get('doc')
 
     def label(self):
         return self._tool.tool.get('label')
@@ -176,7 +178,7 @@ class CommandLineToolProxy(ToolProxy):
                 schema = self._tool.schemaDefs[schema_type]
 
             if schema["type"] == "record":
-                return map(_simple_field_to_input, schema["fields"])
+                return [_simple_field_to_input(_) for _ in schema["fields"]]
 
     def output_instances(self):
         outputs_schema = self._tool.outputs_record_schema
@@ -235,12 +237,12 @@ class JobProxy(object):
 
     def _ensure_cwl_job_initialized(self):
         if self._cwl_job is None:
-            self._cwl_job = self._tool_proxy._tool.job(
+            self._cwl_job = next(self._tool_proxy._tool.job(
                 self._input_dict,
                 self._output_callback,
                 basedir=self._job_directory,
                 use_container=False
-            ).next()
+            ))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
 
     @property
@@ -493,7 +495,7 @@ def _field_to_field_type(field):
 def _field_metadata(field):
     name = field["name"]
     label = field.get("label", None)
-    description = field.get("description", None)
+    description = field.get("doc", None)
     return name, label, description
 
 
@@ -536,7 +538,7 @@ class ConditionalInstance(object):
             when=odict(),
         )
         for value, block in self.whens:
-            as_dict["when"][value] = map(lambda i: i.to_dict(), block)
+            as_dict["when"][value] = [i.to_dict() for i in block]
 
         return as_dict
 
@@ -616,7 +618,7 @@ class OutputInstance(object):
         self.path = path
 
 
-__all__ = [
+__all__ = (
     'tool_proxy',
     'load_job_proxy',
-]
+)

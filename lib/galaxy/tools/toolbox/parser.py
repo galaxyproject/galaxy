@@ -3,19 +3,19 @@
 These files define tool lists, sections, labels, etc... the elements of the
 Galaxy tool panel.
 """
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
+
+import six
+import yaml
 
 from galaxy.util import parse_xml, string_as_bool
-import yaml
 
 DEFAULT_MONITOR = False
 
 
+@six.add_metaclass(ABCMeta)
 class ToolConfSource(object):
     """Interface represents a container of tool references."""
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def parse_items(self):
@@ -44,7 +44,7 @@ class XmlToolConfSource(ToolConfSource):
         return self.root.get('tool_path')
 
     def parse_items(self):
-        return map(ensure_tool_conf_item, self.root.getchildren())
+        return [ensure_tool_conf_item(_) for _ in self.root.getchildren()]
 
     def is_shed_tool_conf(self):
         has_tool_path = self.parse_tool_path() is not None
@@ -66,7 +66,7 @@ class YamlToolConfSource(ToolConfSource):
         return self.as_dict.get('tool_path')
 
     def parse_items(self):
-        return map(ToolConfItem.from_dict, self.as_dict.get('items'))
+        return [ToolConfItem.from_dict(_) for _ in self.as_dict.get('items')]
 
     def parse_monitor(self):
         return self.as_dict.get('monitor', DEFAULT_MONITOR)
@@ -93,7 +93,7 @@ class ToolConfItem(object):
         del as_dict['type']
         attributes = as_dict
         if type == 'section':
-            items = map(cls.from_dict, as_dict['items'])
+            items = [cls.from_dict(_) for _ in as_dict['items']]
             del as_dict['items']
             item = ToolConfSection(attributes, items)
         else:
@@ -140,18 +140,18 @@ def ensure_tool_conf_item(xml_or_item):
         if type != "section":
             return ToolConfItem(type, attributes, elem)
         else:
-            items = map(ensure_tool_conf_item, elem.getchildren())
+            items = [ensure_tool_conf_item(_) for _ in elem.getchildren()]
             return ToolConfSection(attributes, items, elem=elem)
 
 
 def get_toolbox_parser(config_filename):
-    is_yaml = any(map(lambda e: config_filename.endswith(e), [".yml", ".yaml", ".json"]))
+    is_yaml = any(config_filename.endswith(e) for e in [".yml", ".yaml", ".json"])
     if is_yaml:
         return YamlToolConfSource(config_filename)
     else:
         return XmlToolConfSource(config_filename)
 
-__all__ = [
+__all__ = (
     "get_toolbox_parser",
     "ensure_tool_conf_item",
-]
+)

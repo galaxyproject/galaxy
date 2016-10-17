@@ -445,7 +445,7 @@ class ToolVersionListGrid( grids.Grid ):
             toolbox = trans.app.toolbox
             if toolbox.has_tool( tool_version.tool_id, exact=True ):
                 link = url_for( controller='tool_runner', tool_id=tool_version.tool_id )
-                link_str = '<a href="%s">' % link
+                link_str = '<a target="_blank" href="%s">' % link
                 return '<div class="count-box state-color-ok">%s%s</a></div>' % ( link_str, tool_version.tool_id )
             return tool_version.tool_id
 
@@ -455,8 +455,8 @@ class ToolVersionListGrid( grids.Grid ):
             toolbox = trans.app.toolbox
             for tool_id in tool_version.get_version_ids( trans.app ):
                 if toolbox.has_tool( tool_id, exact=True ):
-                    link = url_for( controller='tool_runner', tool_id=tool_version.tool_id )
-                    link_str = '<a href="%s">' % link
+                    link = url_for( controller='tool_runner', tool_id=tool_id )
+                    link_str = '<a target="_blank" href="%s">' % link
                     tool_ids_str += '<div class="count-box state-color-ok">%s%s</a></div><br/>' % ( link_str, tool_id )
                 else:
                     tool_ids_str += '%s<br/>' % tool_id

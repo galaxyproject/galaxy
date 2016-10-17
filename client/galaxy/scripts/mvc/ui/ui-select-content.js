@@ -190,7 +190,7 @@ var View = Backbone.View.extend({
         var button_width = 0;
         if ( this.fields.length > 1 ) {
             this.$el.append( this.button_type.$el );
-            button_width = Math.max( 0, this.fields.length * 35 ) + 'px';
+            button_width = Math.max( 0, this.fields.length * 36 ) + 'px';
         }
         _.each( this.fields, function( field ) {
             self.$el.append( field.$el.css( { 'margin-left': button_width } ) );
