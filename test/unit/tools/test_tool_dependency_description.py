@@ -1,6 +1,6 @@
 from galaxy.model import tool_shed_install
-from galaxy.tools.deps import requirements
 from galaxy.tools.deps import dependencies
+from galaxy.tools.deps import requirements
 
 
 def test_serialization():

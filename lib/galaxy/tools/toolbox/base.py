@@ -23,14 +23,14 @@ from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
-from .panel import panel_item_types
 from .panel import ToolPanelElements
 from .panel import ToolSection
 from .panel import ToolSectionLabel
+from .panel import panel_item_types
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
-from .watcher import get_tool_watcher
 from .watcher import get_tool_conf_watcher
+from .watcher import get_tool_watcher
 
 log = logging.getLogger( __name__ )
 
