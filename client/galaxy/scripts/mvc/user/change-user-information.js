@@ -1,6 +1,6 @@
 /** Show and edit user information */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var ManageUserInformation = Backbone.View.extend({
+    return Backbone.View.extend({
         initialize: function ( app, options, address_message ) {
             var self = this;
             this.app = app;
@@ -53,8 +53,4 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         }
     });
-
-    return {
-        ManageUserInformation: ManageUserInformation
-    };
 });

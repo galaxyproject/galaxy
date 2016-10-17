@@ -1,6 +1,6 @@
 /** Get API Keys view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var APIKeys = Backbone.View.extend({
+    return Backbone.View.extend({
         initialize: function ( app, options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
@@ -26,7 +26,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         title: 'Generate a new key',
                         cls: 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick: function() { self._getNewApiKey() }
+                        onclick: function() { self._submit() }
                     })
                 }
             });
@@ -34,7 +34,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** Generate new API key */
-        _getNewApiKey: function() {
+        _submit: function() {
             var self = this;
             $.getJSON( Galaxy.root + 'api/user_preferences/change_api_key', { 'new_api_key': true }, function( response ) {
                 if( response.user_api_key ) {
@@ -48,9 +48,5 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         }
     });
-
-    return {
-        APIKeys: APIKeys
-    };
 });
 

@@ -1,6 +1,6 @@
 /** Save the toolbox filters view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var ToolboxFilter = Backbone.View.extend({
+    return Backbone.View.extend({
         initialize: function ( app, options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
@@ -23,7 +23,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         title: 'Save changes',
                         cls: 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick: function() { self._saveToolboxFilter() }
+                        onclick: function() { self._save() }
                     })
                 }
             });
@@ -106,7 +106,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** Save the changes made to the filters */
-        _saveToolboxFilter: function() {
+        _save: function() {
             var url = Galaxy.root + 'api/user_preferences/change_toolbox_filters',
                 data = {},
                 self = this;
@@ -119,9 +119,5 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         }
     });
-
-    return {
-        ToolboxFilter: ToolboxFilter
-    };
 });
 
