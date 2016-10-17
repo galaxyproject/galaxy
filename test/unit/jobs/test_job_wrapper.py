@@ -1,15 +1,18 @@
 import os
 from contextlib import contextmanager
-
 from unittest import TestCase
-from galaxy.model import Job
-from galaxy.model import Task
-from galaxy.model import User
-from galaxy.jobs import JobWrapper
-from galaxy.jobs import TaskWrapper
-from galaxy.util.bunch import Bunch
 
+from galaxy.jobs import (
+    JobWrapper,
+    TaskWrapper
+)
+from galaxy.model import (
+    Job,
+    Task,
+    User
+)
 from galaxy.tools import evaluation
+from galaxy.util.bunch import Bunch
 
 from tools_support import UsesApp
 

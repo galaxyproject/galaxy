@@ -1,22 +1,32 @@
 # -*- coding: utf-8 -*-
 """
 """
-import imp
 import os
+import sys
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-import galaxy_mock
 
 import sqlalchemy
 from six import string_types
 from sqlalchemy import true
 
-from galaxy import exceptions, model
-from galaxy.managers import base, hdas
-from galaxy.managers.histories import (HistoryDeserializer, HistoryFilters,
-                                       HistoryManager, HistorySerializer)
+from galaxy import (
+    exceptions,
+    model
+)
+from galaxy.managers import (
+    base,
+    hdas
+)
+from galaxy.managers.histories import (
+    HistoryDeserializer,
+    HistoryFilters,
+    HistoryManager,
+    HistorySerializer
+)
+
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock
 
 from .base import BaseTestCase
 

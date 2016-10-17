@@ -4,8 +4,8 @@ import mock
 
 from galaxy import model
 from galaxy.util import bunch
-
 from galaxy.workflow import modules
+
 from .workflow_support import MockTrans, yaml_to_model
 
 
@@ -335,7 +335,7 @@ def __from_step( **kwds ):
 
 def __step( **kwds ):
     step = model.WorkflowStep()
-    for key, value in kwds.iteritems():
+    for key, value in kwds.items():
         setattr( step, key, value )
 
     return step

@@ -2,13 +2,8 @@
 """
 """
 import datetime
-import imp
-import os
 import random
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 from sqlalchemy import column, desc, false, true
 from sqlalchemy.sql import text

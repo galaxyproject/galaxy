@@ -1,22 +1,23 @@
 """
 Test lib/galaxy/visualization/plugins/registry.
 """
-import imp
 import os
 import re
+import sys
+import unittest
 
 from six import string_types
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), os.pardir, os.pardir, 'unittest_utils', 'utility.py' ) )
-import galaxy_mock
 
 from galaxy import model
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock, utility
+
 # -----------------------------------------------------------------------------
-glx_dir = test_utils.get_galaxy_root()
+glx_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, os.pardir ) )
 template_cache_dir = os.path.join( glx_dir, 'database', 'compiled_templates' )
 addtional_templates_dir = os.path.join( glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates' )
 vis_reg_path = 'config/plugins/visualizations'
@@ -41,7 +42,7 @@ config1 = """\
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
+class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
     def test_plugin_load_from_repo( self ):
         """should attempt load if criteria met"""
@@ -145,7 +146,7 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
     def test_interactive_environ_plugin_load( self ):
         """
         """
-        ipython_config = test_utils.clean_multiline_string( """\
+        ipython_config = utility.clean_multiline_string( """\
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
         <interactive_environment name="IPython">
@@ -225,7 +226,7 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 
     def test_script_entry( self ):
         """"""
-        script_entry_config = test_utils.clean_multiline_string( """\
+        script_entry_config = utility.clean_multiline_string( """\
         <?xml version="1.0" encoding="UTF-8"?>
         <visualization name="js-test">
             <data_sources>
@@ -273,4 +274,4 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 # TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':
-    test_utils.unittest.main()
+    unittest.main()

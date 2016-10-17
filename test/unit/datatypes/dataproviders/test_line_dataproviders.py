@@ -2,18 +2,14 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
-
-import imp
-import unittest
-import os.path
 import logging
-log = logging.getLogger( __name__ )
+import unittest
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
+from galaxy.datatypes.dataproviders import line
 
 from . import test_base_dataproviders
-from galaxy.datatypes.dataproviders import line
+
+log = logging.getLogger( __name__ )
 
 
 # TODO: TestCase hierarchy is a bit of mess here.
