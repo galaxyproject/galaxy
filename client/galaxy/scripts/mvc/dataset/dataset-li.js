@@ -261,6 +261,7 @@ var DatasetListItemView = _super.extend(
      */
     _renderToolHelpButton : function() {
         var datasetID = this.model.attributes.dataset_id;
+        var jobID = this.model.attributes.creating_job;
 
         var parseToolBuild = function(data) {
             var toolName = data.name;
@@ -277,6 +278,7 @@ var DatasetListItemView = _super.extend(
                 parseToolBuild(data);
             }).fail(function(){console.log("Failed in api tools build call")});
         };
+        
         return faIconButton({
             title: 'Tool Help',
             classes: 'icon-btn',
@@ -289,10 +291,10 @@ var DatasetListItemView = _super.extend(
                     $("#" + divString).toggle();     
                 } else {
                     $.ajax({
-                    url: '/api/jobs/' + datasetID
+                    url: '/api/jobs/' + jobID
                 }).done(function(data){
                     parseToolID(data);
-                }).fail(function(){console.log('Failed on recovering /api/jobs/' + datasetID + ' call.')});
+                }).fail(function(){console.log('Failed on recovering /api/jobs/' + jobID + ' call.')});
                 }
             }
         });
