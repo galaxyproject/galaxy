@@ -12,9 +12,13 @@ VENV?=.venv
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
+DOC_SOURCE_DIR=doc/source
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
 DOCS_DIR=doc
+DOC_SOURCE_DIR=$(DOCS_DIR)/source
+SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
+SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 
 
 all: help
@@ -23,6 +27,14 @@ all: help
 docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
+
+docs-slides-ready:
+	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
+	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/architecture/images/plantuml_options.txt -tsvg $(SLIDESHOW_DIR)/architecture/images/ *.plantuml.txt
+	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' $(SLIDESHOW_DIR)/architecture/galaxy_architecture.md
+
+docs-slides-export: docs-slides-ready
+	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
 
 docs-schema-ready: ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
 	python $(DOCS_DIR)/parse_gx_xsd.py > $(DOCS_DIR)/schema.md
