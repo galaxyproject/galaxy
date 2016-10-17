@@ -24,6 +24,7 @@ from galaxy import model
 from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
+from galaxy.queue_worker import reload_toolbox
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -102,12 +103,20 @@ class ToolBox( BaseGalaxyToolBox ):
     how to construct them, action types, dependency management, etc....
     """
 
-    def __init__( self, config_filenames, tool_root_dir, app ):
+    def __init__( self, config_filenames, tool_root_dir, app, tool_conf_watcher=None ):
+        self._reload_count = 0
         super( ToolBox, self ).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
+            tool_conf_watcher=tool_conf_watcher
         )
+
+    def handle_reload_toolbox(self):
+        reload_toolbox(self.app)
+
+    def has_reloaded(self, other_toolbox):
+        return self._reload_count != other_toolbox._reload_count
 
     @property
     def all_requirements(self):
@@ -303,6 +312,7 @@ class Tool( object, Dictifiable ):
         self.guid = guid
         self.old_id = None
         self.version = None
+        self.dependencies = []
         # Enable easy access to this tool's version lineage.
         self.lineage_ids = []
         # populate toolshed repository info, if available
@@ -1146,7 +1156,8 @@ class Tool( object, Dictifiable ):
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
-            raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
+            err_data = { key: value for d in all_errors for ( key, value ) in d.iteritems() }
+            raise exceptions.MessageException( ', '.join( [ msg for msg in err_data.itervalues() ] ), err_data=err_data )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
@@ -1283,13 +1294,15 @@ class Tool( object, Dictifiable ):
 
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
-        return self.app.toolbox.dependency_manager.dependency_shell_commands(
+        requirements_to_dependencies = self.app.toolbox.dependency_manager.requirements_to_dependencies(
             self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
             metadata=metadata,
         )
+        self.dependencies = [dep.to_dict() for dep in requirements_to_dependencies.values()]
+        return [dep.shell_commands(req) for req, dep in requirements_to_dependencies.items()]
 
     @property
     def installed_tool_dependencies(self):
@@ -1525,9 +1538,10 @@ class Tool( object, Dictifiable ):
                 # Add input file tuples to the list.
                 for input in test.inputs:
                     for input_value in test.inputs[ input ]:
-                        input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
+                        input_filename = str( input_value )
+                        input_path = os.path.abspath( os.path.join( 'test-data', input_filename ) )
                         if os.path.exists( input_path ):
-                            td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
+                            td_tup = ( input_path, os.path.join( 'test-data', input_filename ) )
                             tarball_files.append( td_tup )
                 # And add output file tuples to the list.
                 for label, filename, _ in test.outputs:
@@ -1690,7 +1704,7 @@ class Tool( object, Dictifiable ):
                 else:
                     try:
                         tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app )
+                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
                         tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
                     except Exception as e:
                         tool_dict = input.to_dict( request_context )
@@ -2295,65 +2309,75 @@ class MergeCollectionTool( DatabaseOperationTool ):
     tool_type = 'merge_collection'
 
     def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
-        list_one = incoming[ "input" ]
-        list_two = incoming[ "input2" ]
-        dupl_actions = incoming["conflict"]['duplicate_options']
+        input_lists = []
 
-        if dupl_actions == 'suffix':
-            suffix_iden = incoming['conflict']['prefix_suffix']
+        for incoming_repeat in incoming[ "inputs" ]:
+            input_lists.append(incoming_repeat["input"])
 
-        identifier_seen = {}
+        advanced = incoming.get("advanced", None)
+        dupl_actions = "keep_first"
+        suffix_pattern = None
+        if advanced is not None:
+            dupl_actions = advanced["conflict"]['duplicate_options']
 
+            if dupl_actions in ['suffix_conflict', 'suffix_every', 'suffix_conflict_rest']:
+                suffix_pattern = advanced['conflict']['suffix_pattern']
+
+        new_element_structure = odict()
+
+        # Which inputs does the identifier appear in.
+        identifiers_map = {}
+        for input_num, input_list in enumerate(input_lists):
+            for dce in input_list.collection.elements:
+                    element_identifier = dce.element_identifier
+                    if element_identifier not in identifiers_map:
+                        identifiers_map[element_identifier] = []
+                    elif dupl_actions == "fail":
+                        raise Exception("Duplicate collection element identifiers found for [%s]" % element_identifier)
+                    identifiers_map[element_identifier].append(input_num)
+
+        for copy, input_list in enumerate(input_lists):
+            for dce in input_list.collection.elements:
+                element = dce.element_object
+                valid = False
+
+                # dealing with a single element
+                if hasattr(element, "is_ok"):
+                    if element.is_ok:
+                        valid = True
+                elif hasattr(element, "dataset_instances"):
+                    # we are probably a list:paired dataset, both need to be in non error state
+                    forward_o, reverse_o = element.dataset_instances
+                    if forward_o.is_ok and reverse_o.is_ok:
+                        valid = True
+
+                if valid:
+                    element_identifier = dce.element_identifier
+                    identifier_seen = element_identifier in new_element_structure
+                    appearances = identifiers_map[element_identifier]
+                    add_suffix = False
+                    if dupl_actions == "suffix_every":
+                        add_suffix = True
+                    elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
+                        add_suffix = True
+                    elif dupl_actions == "suffix_conflict_rest" and len(appearances) > 1 and appearances[0] != copy:
+                        add_suffix = True
+
+                    if dupl_actions == "keep_first" and identifier_seen:
+                        continue
+
+                    if add_suffix:
+                        suffix = suffix_pattern.replace("#", str(copy + 1))
+                        effective_identifer = "%s%s" % (element_identifier, suffix)
+                    else:
+                        effective_identifer = element_identifier
+
+                    new_element_structure[effective_identifer] = element
+
+        # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = odict()
-        for dce in list_one.collection.elements:
-            element = dce.element_object
-
-            valid = False
-
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if element.is_ok:
-                    valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
-
-            if valid:
-                element_identifier = dce.element_identifier
-                identifier_seen[element_identifier] = 1
-                new_elements[element_identifier] = element.copy()
-
-        for dce in list_two.collection.elements:
-            element = dce.element_object
-            valid = False
-
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if element.is_ok:
-                    valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
-
-            if valid:
-                element_identifier = dce.element_identifier
-
-                # apply new suffix if identifier already seen
-                if element_identifier in identifier_seen and dupl_actions == 'suffix':
-                    suffix = '%s%i' % (suffix_iden , identifier_seen[element_identifier])
-                    identifier_seen[element_identifier] = identifier_seen[element_identifier] + 1
-                    element_identifier = element_identifier + suffix
-                    new_elements[element_identifier] = element.copy()
-                # ignore element if  identifier already seen and user want to keep first instance
-                elif element_identifier in identifier_seen and dupl_actions == 'first':
-                    continue
-                # add  element as is, if the identifier is unique or user wants to keep this one
-                elif element_identifier not in identifier_seen or dupl_actions == 'second':
-                    new_elements[element_identifier] = element.copy()
+        for key, value in new_element_structure.items():
+            new_elements[key] = value.copy()
 
         output_collections.create_collection(
             self.outputs.values()[0], "output", elements=new_elements

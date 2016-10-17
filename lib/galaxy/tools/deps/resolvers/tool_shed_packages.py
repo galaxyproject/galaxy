@@ -1,7 +1,7 @@
-from os.path import abspath, join, exists
+from os.path import abspath, exists, join
 
-from .resolver_mixins import UsesInstalledRepositoriesMixin
 from .galaxy_packages import BaseGalaxyPackageDependencyResolver, ToolShedDependency
+from .resolver_mixins import UsesInstalledRepositoriesMixin
 from ..resolvers import NullDependency
 
 
@@ -63,4 +63,4 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
         return NullDependency(version=None, name=name)
 
 
-__all__ = ['ToolShedPackageDependencyResolver']
+__all__ = ('ToolShedPackageDependencyResolver', )

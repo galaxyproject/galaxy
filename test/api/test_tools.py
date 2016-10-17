@@ -1,12 +1,11 @@
 # Test tools API.
-from base import api
 import json
-from operator import itemgetter
-from .helpers import DatasetPopulator
-from .helpers import DatasetCollectionPopulator
-from .helpers import LibraryPopulator
-from .helpers import skip_without_tool
+
+from base import api
 from galaxy.tools.verify.test_data import TestDataResolver
+
+from .helpers import (DatasetCollectionPopulator, DatasetPopulator,
+    LibraryPopulator, skip_without_tool)
 
 
 class ToolsTestCase( api.ApiTestCase ):
@@ -25,7 +24,7 @@ class ToolsTestCase( api.ApiTestCase ):
         tools_index = index.json()
         # No need to flatten out sections, with in_panel=False, only tools are
         # returned.
-        tool_ids = map( itemgetter( "id" ), tools_index )
+        tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
 
     @skip_without_tool( "cat1" )
@@ -195,7 +194,7 @@ class ToolsTestCase( api.ApiTestCase ):
         def get_state(dce):
             return dce["object"]["state"]
 
-        mixed_states = map(get_state, mixed_hdca["elements"])
+        mixed_states = [get_state(_) for _ in mixed_hdca["elements"]]
         assert mixed_states == [u"ok", u"error", u"ok", u"error"], mixed_states
         inputs = {
             "input": { "src": "hdca", "id": mixed_hdca["id"] },
@@ -206,7 +205,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len(filter_output_collections), 1 )
         filtered_hid = filter_output_collections[0]["hid"]
         filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
-        filtered_states = map(get_state, filtered_hdca["elements"])
+        filtered_states = [get_state(_) for _ in filtered_hdca["elements"]]
         assert filtered_states == [u"ok", u"ok"], filtered_states
 
     @skip_without_tool( "multi_select" )
@@ -525,7 +524,7 @@ class ToolsTestCase( api.ApiTestCase ):
         # Assert we have three outputs with 1, 2, and 3 lines respectively.
         assert len( outputs ) == 3
         outputs_contents = [ self.dataset_populator.get_history_dataset_content( history_id, dataset=o ).strip() for o in outputs ]
-        assert sorted( map( lambda c: len( c.split( "\n" ) ), outputs_contents ) ) == [ 1, 2, 3 ]
+        assert sorted( len( c.split( "\n" ) ) for c in outputs_contents ) == [ 1, 2, 3 ]
 
     @skip_without_tool( "cat1" )
     def test_multirun_in_repeat( self ):
@@ -1230,7 +1229,7 @@ class ToolsTestCase( api.ApiTestCase ):
             else:
                 tools.append( tool_or_section )
 
-        tool_ids = map( itemgetter( "id" ), tools )
+        tool_ids = [_["id"] for _ in tools]
         return tool_ids
 
     def __build_nested_list( self, history_id ):

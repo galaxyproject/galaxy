@@ -1,13 +1,13 @@
-""" Code obtained from https://github.com/dmfrey/FileLock
+"""Code obtained from https://github.com/dmfrey/FileLock.
 
 See full license at:
 
 https://github.com/dmfrey/FileLock/blob/master/LICENSE.txt
 
 """
+import errno
 import os
 import time
-import errno
 
 
 class FileLockException(Exception):

@@ -469,13 +469,20 @@ class JobConfiguration( object ):
         rval = {}
         for param in parent.findall('param'):
             key = param.get('id')
-            param_value = param.text
+            if key in ["container", "container_override"]:
+                from galaxy.tools.deps import requirements
+                containers = map(requirements.container_from_element, list(param))
+                param_value = map(lambda c: c.to_dict(), containers)
+            else:
+                param_value = param.text
+
             if 'from_environ' in param.attrib:
                 environ_var = param.attrib['from_environ']
                 param_value = os.environ.get(environ_var, param_value)
             elif 'from_config' in param.attrib:
                 config_val = param.attrib['from_config']
                 param_value = self.app.config.config_dict.get(config_val, param_value)
+
             rval[key] = param_value
         return rval
 
@@ -755,6 +762,7 @@ class JobWrapper( object ):
         self.sa_session = self.app.model.context
         self.extra_filenames = []
         self.command_line = None
+        self.dependencies = []
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
@@ -794,6 +802,10 @@ class JobWrapper( object ):
         """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
         """
         return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
+
+    @property
+    def requires_containerization(self):
+        return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -902,6 +914,7 @@ class JobWrapper( object ):
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
+        job.dependencies = self.tool.dependencies
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files

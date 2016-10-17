@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-
 """
 Classes encapsulating decypher tool.
 James E Johnson - University of Minnesota
 """
+from __future__ import print_function
+
 import os
 import subprocess
 import sys
@@ -23,7 +24,7 @@ def __main__():
     for _ in ('Roadmaps', 'Sequences'):
         os.symlink(os.path.join(working_dir, _), _)
     cmdline = 'velvetg . %s' % (inputs)
-    print "Command to be executed: %s" % cmdline
+    print("Command to be executed: %s" % cmdline)
     try:
         proc = subprocess.Popen( args=cmdline, shell=True, stderr=subprocess.PIPE )
         returncode = proc.wait()

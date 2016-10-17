@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 Read a maf file and write out a new maf with only blocks having all of
 the passed in species, after dropping any other species and removing columns
@@ -9,6 +8,8 @@ which are adjacent after the unwanted species have been dropped.
 usage: %prog input_maf output_maf species1,species2
 """
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 import bx.align.maf
@@ -24,12 +25,12 @@ def main():
     try:
         maf_reader = bx.align.maf.Reader( open( input_file ) )
     except:
-        print >> sys.stderr, "Unable to open source MAF file"
+        print("Unable to open source MAF file", file=sys.stderr)
         sys.exit()
     try:
         maf_writer = FusingAlignmentWriter( bx.align.maf.Writer( open( output_file, 'w' ) ) )
     except:
-        print >> sys.stderr, "Unable to open output file"
+        print("Unable to open output file", file=sys.stderr)
         sys.exit()
     try:
         for m in maf_reader:
@@ -42,12 +43,12 @@ def main():
                 m.score = 0.0
                 maf_writer.write( m )
     except Exception as e:
-        print >> sys.stderr, "Error steping through MAF File: %s" % e
+        print("Error steping through MAF File: %s" % e, file=sys.stderr)
         sys.exit()
     maf_reader.close()
     maf_writer.close()
 
-    print "Restricted to species: %s." % ", ".join( species )
+    print("Restricted to species: %s." % ", ".join( species ))
 
 if __name__ == "__main__":
     main()

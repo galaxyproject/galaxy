@@ -3,15 +3,25 @@ Utility functions for bi-directional Python version compatibility.  Python 2.5
 introduced hashlib which replaced sha in Python 2.4 and previous versions.
 """
 
-import logging
-
 import hashlib
 sha1 = hashlib.sha1
 sha = sha1
 md5 = hashlib.md5
 import hmac
+import logging
 
 log = logging.getLogger( __name__ )
+
+
+def md5_hash_file(path):
+    """
+    Return a md5 hashdigest for a file.
+    """
+    hasher = hashlib.md5()
+    with open(path, 'rb') as afile:
+        buf = afile.read()
+        hasher.update(buf)
+        return hasher.hexdigest()
 
 
 def new_secure_hash( text_type=None ):

@@ -1,20 +1,18 @@
 """Constructors for concrete tool and input source objects."""
 from __future__ import absolute_import
 
+import logging
+
 import yaml
-
-from .yaml import YamlToolSource
-from .xml import XmlToolSource
-from .xml import XmlInputSource
-from .cwl import CwlToolSource
-from .interface import InputSource
-
 
 from galaxy.tools.loader import load_tool as load_tool_xml
 from galaxy.util.odict import odict
 
+from .cwl import CwlToolSource
+from .interface import InputSource
+from .xml import XmlInputSource, XmlToolSource
+from .yaml import YamlToolSource
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -73,4 +71,4 @@ def get_input_source(content):
     return content
 
 
-__all__ = ["get_tool_source", "get_input_source"]
+__all__ = ("get_tool_source", "get_input_source")

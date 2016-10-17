@@ -105,8 +105,8 @@ function get (options) {
                 top.__utils__get__[cache_key] = response;
                 options.success && options.success(response);
             },
-            error : function(response) {
-                options.error && options.error(response);
+            error : function(response, status) {
+                options.error && options.error(response, status);
             }
         });
     }
@@ -159,7 +159,7 @@ function request (options) {
         } catch (e) {
             response_text = response.responseText;
         }
-        options.error && options.error(response_text, response);
+        options.error && options.error(response_text, response.status);
     }).always(function() {
         options.complete && options.complete();
     });

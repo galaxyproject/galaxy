@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # This tool takes a tab-delimited text file as input and creates filters on columns based on certain properties.
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
-
-from __future__ import division
+from __future__ import division, print_function
 
 import re
 import sys
-from ast import parse, Module, walk
+from ast import Module, parse, walk
 
 AST_NODE_TYPE_WHITELIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
@@ -220,7 +219,7 @@ for i, line in enumerate( open( in_fname ) ):
 
     if i < num_header_lines:
         lines_kept += 1
-        print >> out, line
+        print( line, file=out )
         continue
 
     if not line or line.startswith( '#' ):
@@ -231,7 +230,7 @@ for i, line in enumerate( open( in_fname ) ):
         %s
         if %s:
             lines_kept += 1
-            print >> out, line
+            print( line, file=out )
     except:
         invalid_lines += 1
         if not invalid_line:
@@ -240,7 +239,7 @@ for i, line in enumerate( open( in_fname ) ):
 ''' % ( assign, wrap, cond_text )
 valid_filter = True
 try:
-    exec code
+    exec(code)
 except Exception as e:
     out.close()
     if str( e ).startswith( 'invalid syntax' ):
@@ -252,12 +251,12 @@ except Exception as e:
 if valid_filter:
     out.close()
     valid_lines = total_lines - skipped_lines
-    print 'Filtering with %s, ' % cond_text
+    print('Filtering with %s, ' % cond_text)
     if valid_lines > 0:
-        print 'kept %4.2f%% of %d valid lines (%d total lines).' % ( 100.0 * lines_kept / valid_lines, valid_lines, total_lines )
+        print('kept %4.2f%% of %d valid lines (%d total lines).' % ( 100.0 * lines_kept / valid_lines, valid_lines, total_lines ))
     else:
-        print 'Possible invalid filter condition "%s" or non-existent column referenced. See tool tips, syntax and examples.' % cond_text
+        print('Possible invalid filter condition "%s" or non-existent column referenced. See tool tips, syntax and examples.' % cond_text)
     if invalid_lines:
-        print 'Skipped %d invalid line(s) starting at line #%d: "%s"' % ( invalid_lines, first_invalid_line, invalid_line )
+        print('Skipped %d invalid line(s) starting at line #%d: "%s"' % ( invalid_lines, first_invalid_line, invalid_line ))
     if skipped_lines:
-        print 'Skipped %i comment (starting with #) or blank line(s)' % skipped_lines
+        print('Skipped %i comment (starting with #) or blank line(s)' % skipped_lines)

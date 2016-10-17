@@ -1,9 +1,10 @@
 """
 A simple wrapper for writing tarballs as a stream.
 """
-import os
 import logging
+import os
 import tarfile
+
 from galaxy.exceptions import ObjectNotFound
 
 log = logging.getLogger( __name__ )

@@ -9,8 +9,9 @@ define([
     "mvc/dataset/data",
     "mvc/tool/tools",
     "utils/config",
+    "viz/bbi-data-manager",
     "ui/editable-text",
-], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod, bbi) {
 
 
 var extend = _.extend;
@@ -185,6 +186,25 @@ function round(num, places) {
 
     var val = Math.pow(10, places);
     return Math.round(num * val) / val;
+}
+
+/**
+ * Check if a server can do byte range requests.
+ */
+function supportsByteRanges(url) {
+    var promise = $.Deferred();
+    $.ajax({
+        type: 'HEAD',
+        url: url,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Range", "bytes=0-10");
+        },
+        success: function(result, status, xhr) {
+            promise.resolve(xhr.status === 206);
+        }
+    });
+
+    return promise;
 }
 
 /**
@@ -3078,7 +3098,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if ( [undefined, null, 0].indexOf(this.config.get_value("max_value")) !== -1 ) {
             this.config.set_value("max_value", _.max( _.map(result.data, function(d) { return d[1]; }) ) || 0);
         }
-        
+
         var canvas = ctx.canvas,
             painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.config.to_key_value_dict(), mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
@@ -3601,7 +3621,23 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 var LineTrack = function (view, container, obj_dict) {
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
+    // Need left offset for drawing overlap near tile boundaries.
+    this.left_offset = 30;
+
+    // If server has byte-range support, use BBI data manager to read directly from the BBI file.
+    // FIXME: there should be a flag to wait for this check to complete before loading the track.
+    var self = this;
+    $.when(supportsByteRanges(Galaxy.root + 'datasets/' + this.dataset.id + '/display'))
+     .then(function(supportsByteRanges) {
+         if (supportsByteRanges) {
+             self.data_manager = new bbi.BBIDataManager({
+                 dataset: self.dataset
+             });
+         }
+
+    });
 };
+
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 

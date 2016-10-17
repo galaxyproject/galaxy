@@ -178,6 +178,10 @@ def populate_api_routes( webapp, app ):
                             parent_resources=dict( member_name='history', collection_name='histories' ),
                             )
 
+    contents_archive_mapper = webapp.mapper.submapper( action='archive', controller='history_contents' )
+    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive' )
+    contents_archive_mapper.connect( '/api/histories/{history_id}/contents/archive/{filename}{.format}' )
+
     # Legacy access to HDA details via histories/{history_id}/contents/{hda_id}
     webapp.mapper.resource( 'content',
                             'contents',
@@ -273,7 +277,6 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.connect( '/api/workflows/build_module', action='build_module', controller="workflows" )
-    webapp.mapper.connect( '/api_internal/workflows/{workflow_id}/run', action='run', controller="workflows", conditions=dict( method=['POST'] ) )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
@@ -615,6 +618,36 @@ def populate_api_routes( webapp, app ):
                       repository_id=None,
                       image_file=None )
 
+    webapp.mapper.connect( 'shed_category',
+                           '/api/tool_shed_repositories/shed_category',
+                           controller='tool_shed_repositories',
+                           action='shed_category',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'shed_repository',
+                           '/api/tool_shed_repositories/shed_repository',
+                           controller='tool_shed_repositories',
+                           action='shed_repository',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'shed_categories',
+                           '/api/tool_shed_repositories/shed_categories',
+                           controller='tool_shed_repositories',
+                           action='shed_categories',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'tool_shed_repository',
+                           '/api/tool_shed_repositories/:id/status',
+                           controller='tool_shed_repositories',
+                           action='status',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'install_repository',
+                           '/api/tool_shed_repositories/install',
+                           controller='tool_shed_repositories',
+                           action='install',
+                           conditions=dict( method=[ 'POST' ] ) )
+
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
                             'tool_shed_repositories',
@@ -629,18 +662,6 @@ def populate_api_routes( webapp, app ):
                             path_prefix='/api',
                             new={ 'install_repository_revision': 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
-
-    webapp.mapper.connect( 'tool_shed_repository',
-                           '/api/tool_shed_repositories/:id/status',
-                           controller='tool_shed_repositories',
-                           action='status',
-                           conditions=dict( method=[ "GET" ] ) )
-
-    webapp.mapper.connect( 'install_repository',
-                           '/api/tool_shed_repositories/install',
-                           controller='tool_shed_repositories',
-                           action='install',
-                           conditions=dict( method=[ 'POST' ] ) )
 
     # ==== Trace/Metrics Logger
     # Connect logger from app

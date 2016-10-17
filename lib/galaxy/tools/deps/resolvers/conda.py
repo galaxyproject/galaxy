@@ -3,38 +3,35 @@ This is still an experimental module and there will almost certainly be backward
 incompatible changes coming.
 """
 
-
+import logging
 import os
 
-from galaxy.web.proxy.filelock import (
-    FileLock,
-    FileLockException
-)
-from ..resolvers import (
-    DependencyResolver,
-    NullDependency,
-    Dependency,
-    ListableDependencyResolver,
-    InstallableDependencyResolver,
-)
+import galaxy.tools.deps.installable
+
 from ..conda_util import (
+    build_isolated_environment,
+    cleanup_failed_install,
     CondaContext,
     CondaTarget,
     install_conda,
-    is_conda_target_installed,
-    cleanup_failed_install,
     install_conda_target,
-    build_isolated_environment,
     installed_conda_targets,
+    is_conda_target_installed,
     USE_PATH_EXEC_DEFAULT,
+)
+from ..resolvers import (
+    Dependency,
+    DependencyResolver,
+    InstallableDependencyResolver,
+    ListableDependencyResolver,
+    NullDependency,
 )
 
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "r,bioconda,iuc"
+DEFAULT_ENSURE_CHANNELS = "conda-forge,r,bioconda,iuc"
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -96,43 +93,10 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
         self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
-        self.ensure_conda_installed()
+        self.disabled = not galaxy.tools.deps.installable.ensure_installed(conda_context, install_conda, self.auto_init)
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
         self.verbose_install_check = verbose_install_check
-
-    def ensure_conda_installed(self):
-        """
-        Make sure that conda is installed, and if conda can't be installed, mark resolver as disabled.
-        We acquire a lock, so that multiple handlers do not attempt to install conda simultaneously.
-        """
-        target_path = self.conda_prefix_parent
-
-        def _check():
-            if not self.conda_context.is_conda_installed():
-                if self.auto_init:
-                    if self.conda_context.can_install_conda():
-                        if install_conda(self.conda_context):
-                            self.disabled = True
-                            log.warning("Conda installation requested and failed.")
-                    else:
-                        self.disabled = True
-                else:
-                    self.disabled = True
-                    log.warning("Conda not installed and auto-installation disabled.")
-            else:
-                self.disabled = False
-
-        if not os.path.exists(target_path):
-            os.mkdir(target_path)
-        try:
-            if self.auto_init and os.access(target_path, os.W_OK):
-                with FileLock(os.path.join(target_path, 'conda')):
-                    _check()
-            else:
-                _check()
-        except FileLockException:
-            self.ensure_conda_installed()
 
     def resolve(self, name, version, type, **kwds):
         # Check for conda just not being there, this way we can enable
@@ -280,4 +244,4 @@ def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
 
-__all__ = ['CondaDependencyResolver']
+__all__ = ('CondaDependencyResolver', )

@@ -1,15 +1,13 @@
+import logging
 import uuid
 
-from galaxy import model
-from galaxy import util
-
-from galaxy.util.odict import odict
+from galaxy import model, util
 from galaxy.util import ExecutionTimer
+from galaxy.util.odict import odict
 from galaxy.workflow import modules
-from galaxy.workflow.run_request import WorkflowRunConfig
-from galaxy.workflow.run_request import workflow_run_config_to_request
+from galaxy.workflow.run_request import (workflow_run_config_to_request,
+    WorkflowRunConfig)
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -110,10 +108,7 @@ def queue_invoke( trans, workflow, workflow_run_config, request_params={}, popul
         modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections )
     workflow_invocation = workflow_run_config_to_request( trans, workflow_run_config, workflow )
     workflow_invocation.workflow = workflow
-    return trans.app.workflow_scheduling_manager.queue(
-        workflow_invocation,
-        request_params
-    )
+    return trans.app.workflow_scheduling_manager.queue( workflow_invocation, request_params )
 
 
 class WorkflowInvoker( object ):
@@ -256,7 +251,7 @@ class WorkflowProgress( object ):
                 self.module_injector.inject( step )
                 if step_id not in step_states:
                     template = "Workflow invocation [%s] has no step state for step id [%s]. States ids are %s."
-                    message = template % (self.workflow_invocation.id, step_id, step_states.keys())
+                    message = template % (self.workflow_invocation.id, step_id, list(step_states.keys()))
                     raise Exception(message)
                 runtime_state = step_states[ step_id ].value
                 step.state = step.module.recover_runtime_state( runtime_state )
@@ -402,4 +397,4 @@ class WorkflowProgress( object ):
         except modules.DelayedWorkflowEvaluation:
             self.mark_step_outputs_delayed( step )
 
-__all__ = [ invoke, WorkflowRunConfig ]
+__all__ = ( 'invoke', 'WorkflowRunConfig' )

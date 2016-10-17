@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # By, Guruprasad Ananda.
+from __future__ import print_function
 
 import optparse
 import re
@@ -46,7 +47,7 @@ def __main__():
                     skipped += 1
 
     if skipped:
-        print "Skipped %d lines as invalid." % skipped
+        print("Skipped %d lines as invalid." % skipped)
 
 if __name__ == "__main__":
     __main__()
