@@ -127,12 +127,6 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
                               welcome_url=web.url_for( controller='root', action='welcome' ),
                               show_welcome_with_login=trans.app.config.show_welcome_with_login )
 
-    @web.expose
-    def alt_history( self, trans, redirect=None, **kwd ):
-        """
-        """
-        return self.template( trans, 'history', css=' ' )
-
     # ---- Tool related -----------------------------------------------------
     @web.json
     def tool_search( self, trans, **kwd ):
