@@ -7,8 +7,8 @@ import logging
 from markupsafe import escape
 from sqlalchemy import false
 
-from galaxy import web
 from galaxy import util
+from galaxy import web
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 
 log = logging.getLogger( __name__ )

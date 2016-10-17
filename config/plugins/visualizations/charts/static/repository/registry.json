@@ -1,0 +1,9 @@
+{
+    "nvd3"      : [ "bar", "bar_horizontal", "bar_horizontal_stacked", "bar_stacked", "line", "line_focus", "scatter", "stackedarea", "stackedarea_full", "stackedarea_stream", "pie", "histogram", "histogram_discrete" ],
+    "jqplot"    : [ "bar", "boxplot", "histogram_discrete", "line", "scatter" ],
+    "biojs"     : [ "msa", "drawrnajs" ],
+    "others"    : [ "example", "heatmap", "heatmap_cluster" ],
+    "cytoscape" : [ "basic" ],
+    "pv"        : [ "viewer" ],
+    "benfred"   : [ "venn" ]
+}
