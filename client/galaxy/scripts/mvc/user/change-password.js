@@ -1,7 +1,7 @@
 /** Change password view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var ChangePassword = Backbone.View.extend({
-        initialize: function ( app, options ) {
+    return Backbone.View.extend({
+        initialize: function ( options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
@@ -16,7 +16,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon: 'fa-caret-left',
                         tooltip: 'Return to user preferences',
                         title: 'Preferences',
-                        onclick: function() { self.remove(); app.showPreferences() }
+                        onclick: function() { self.remove(); options.onclose(); }
                     })
                 },
                 buttons: {
@@ -26,7 +26,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         title: 'Save Password',
                         cls: 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick: function() { self._savePassword() }
+                        onclick: function() { self._save() }
                     })
                 }
             });
@@ -34,7 +34,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** Saves the changed password */
-        _savePassword: function() {
+        _save: function() {
             var self = this;
             $.getJSON( Galaxy.root + 'api/user_preferences/change_password', this.form.data.create(), function( response ) {
                 self.form.message.update({
@@ -44,8 +44,4 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         }
     });
-
-    return {
-        ChangePassword: ChangePassword
-    };
 });

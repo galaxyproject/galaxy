@@ -1,7 +1,7 @@
 /** Save the toolbox filters view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var ToolboxFilter = Backbone.View.extend({
-        initialize: function ( app, options ) {
+    return Backbone.View.extend({
+        initialize: function ( options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
@@ -14,7 +14,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon: 'fa-caret-left',
                         tooltip: 'Return to user preferences',
                         title: 'Preferences',
-                        onclick: function() { self.remove(); app.showPreferences() }
+                        onclick: function() { self.remove(); options.onclose(); }
                     })
                 },
                 buttons: {
@@ -23,7 +23,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         title: 'Save changes',
                         cls: 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick: function() { self._saveToolboxFilter() }
+                        onclick: function() { self._save() }
                     })
                 }
             });
@@ -106,8 +106,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** Save the changes made to the filters */
-        _saveToolboxFilter: function() {
-            var url = Galaxy.root + 'api/user_preferences/edit_toolbox_filters',
+        _save: function() {
+            var url = Galaxy.root + 'api/user_preferences/change_toolbox_filters',
                 data = {},
                 self = this;
             data = { 'edit_toolbox_filter': true, 'checked_filters': JSON.stringify( self.form.data.create() ) };
@@ -119,9 +119,5 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         }
     });
-
-    return {
-        ToolboxFilter: ToolboxFilter
-    };
 });
 

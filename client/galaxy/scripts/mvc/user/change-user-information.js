@@ -1,10 +1,8 @@
 /** Show and edit user information */
-define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/user/add-edit-address' ], function( Form, Ui, Address ) {
-    var ManageUserInformation = Backbone.View.extend({
-        initialize: function ( app, options, address_message ) {
+define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
+    return Backbone.View.extend({
+        initialize: function ( options ) {
             var self = this;
-            this.app = app;
-            window.console.log( options );
             this.model = options && options.model || new Backbone.Model( options );
             this.original_email = options.email;
             this.original_username = options.username;
@@ -16,16 +14,14 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/user/add-edit-address' ],
                         icon    : 'fa-caret-left',
                         tooltip : 'Return to user preferences',
                         title   : 'Preferences',
-                        onclick : function() {
-                            self.remove();
-                            app.showPreferences();
-                        }
+                        onclick: function() { self.remove(); options.onclose(); }
                     })
                 },
                 buttons : {
                     'save'  : new Ui.Button({
                         tooltip : 'Save',
-                        title   : 'Save',
+                        title   : 'Save Changes',
+                        icon    : 'fa-save',
                         cls     : 'ui-button btn btn-primary',
                         floating: 'clear',
                         onclick : function() {
@@ -41,7 +37,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/user/add-edit-address' ],
         /** Saves changes */
         _save: function() {
             var self = this;
-            $.getJSON( Galaxy.root + 'api/user_preferences/change_information', self.form.data.create(), function( response ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/set_information', self.form.data.create(), function( response ) {
                 self.form.message.update({
                    message: response.message,
                    status: response.status === 'error' ? 'danger' : 'success'
@@ -53,8 +49,4 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc', 'mvc/user/add-edit-address' ],
             });
         }
     });
-
-    return {
-        ManageUserInformation: ManageUserInformation
-    };
 });

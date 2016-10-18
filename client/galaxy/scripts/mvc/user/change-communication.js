@@ -1,7 +1,7 @@
 /** Change communication settings view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var ChangeCommunication = Backbone.View.extend({
-        initialize: function ( app, options ) {
+    return Backbone.View.extend({
+        initialize: function ( options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
@@ -13,18 +13,18 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon: 'fa-caret-left',
                         tooltip: 'Return to user preferences',
                         title: 'Preferences',
-                        onclick: function() { self.remove(); app.showPreferences() }
+                        onclick: function() { self.remove(); options.onclose(); }
                     })
                 },
                 onchange: function() {
-                   self.saveCommunicationChanges();
+                   self._save();
                }
             });
             this.setElement( this.form.$el );
         },
 
         /** Saves changes */
-        saveCommunicationChanges: function() {
+        _save: function() {
             var self = this;
             var data = { 'enable_communication_server': self.form.data.create()[ 'change-communication' ] };
             $.getJSON( Galaxy.root + 'api/user_preferences/change_communication', data, function( response ) {
@@ -35,8 +35,4 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         }
     });
-
-    return {
-        ChangeCommunication: ChangeCommunication
-    };
 });

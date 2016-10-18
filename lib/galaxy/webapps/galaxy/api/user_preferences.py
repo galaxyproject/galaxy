@@ -38,7 +38,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         }
 
     @expose_api
-    def manage_user_info( self, trans, **kwd ):
+    def get_information( self, trans, **kwd ):
         '''
         Manage a user login, password, public username, type, addresses, etc.
         '''
@@ -93,7 +93,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 inputs.append( info_field )
             address_field = AddressField( '' ).to_dict()
             address_values = [ address.to_dict( trans ) for address in user.addresses ]
-            address_repeat = { 'title': 'Address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
+            address_repeat = { 'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
             for address in address_values:
                 address_inputs = []
                 for input in address_repeat[ 'inputs' ]:
@@ -118,7 +118,15 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'inputs'            : inputs,
         }
 
-    def edit_info(self, trans, cntrller, kwd):
+    @expose_api
+    def set_information( self, trans, **kwd ):
+        '''
+        Manage a user login, password, public username, type, addresses, etc.
+        '''
+        print kwd
+        return {}
+
+    def __edit_info(self, trans, cntrller, kwd):
         """
         Save user information like email and public name
         """
@@ -213,7 +221,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         # Return all data for user information page
         return self.user_info( trans, kwd )
 
-    def edit_address(self, trans, cntrller, kwd):
+    def __edit_address(self, trans, cntrller, kwd):
         """ Allow user to edit the saved address """
         params = util.Params(kwd)
         message = util.restore_text(params.get('message', ''))
@@ -303,12 +311,12 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'status': status
         }
 
-    def delete_address(self, trans, cntrller, kwd):
+    def __delete_address(self, trans, cntrller, kwd):
         """ Delete an address """
         address_id = kwd.get('address_id', None)
         return self.__delete_undelete_address(trans, cntrller, 'delete', address_id, kwd)
 
-    def undelete_address(self, trans, cntrller, kwd):
+    def __undelete_address(self, trans, cntrller, kwd):
         """ Undelete an address """
         address_id = kwd.get('address_id', None)
         return self.__delete_undelete_address(trans, cntrller, 'undelete', address_id, kwd)
@@ -344,7 +352,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
         return self.user_info( trans, kwd )
 
-    def new_address(self, trans, cntrller, kwd):
+    def __new_address(self, trans, cntrller, kwd):
         """ Add new user address """
         params = util.Params(kwd)
         message = util.restore_text(params.get('message', ''))
@@ -478,7 +486,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         }
 
     @expose_api
-    def set_default_permissions(self, trans, cntrller='user_preferences', **kwd):
+    def change_permissions(self, trans, cntrller='user_preferences', **kwd):
         """Set the user's default permissions for the new histories"""
         params = util.Params(kwd)
         message = util.restore_text(params.get('message', ''))
@@ -500,7 +508,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                         in_roles = p.get(k + '_in', [])
                         if not isinstance(in_roles, list):
                             in_roles = [in_roles]
-                        in_roles = self.get_roles_current(trans, in_roles, v)
+                        in_roles = self._get_roles_current(trans, in_roles, v)
                         action = trans.app.security_agent.get_action(v.action).action
                         permissions[action] = in_roles
                 trans.app.security_agent.user_set_default_permissions(trans.user, permissions)
@@ -514,7 +522,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'status': "error"
             }
 
-    def get_roles_current(self, trans, in_roles, action):
+    def _get_roles_current(self, trans, in_roles, action):
         """ Filter the role based on the selection """
         selected_role = []
         obj = trans.user
@@ -541,7 +549,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     selected_role.append(a.role.id)
         return selected_role
 
-    def render_permission_form(self, trans, message, status, do_not_render=[],
+    def __render_permission_form(self, trans, message, status, do_not_render=[],
                                all_roles=[]):
         ''' Obtains parameters to build change permission form '''
         obj = trans.user
@@ -601,9 +609,9 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if item not in do_not_render:
                 permitted_action_list[index] = dict()
                 if item == 'LIBRARY_ACCESS':
-                    role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, all_roles)
+                    role_list = self._get_roles_action(current_actions, permitted_actions, action, do_not_render, all_roles)
                 else:
-                    role_list = self.get_roles_action(current_actions, permitted_actions, action, do_not_render, roles)
+                    role_list = self._get_roles_action(current_actions, permitted_actions, action, do_not_render, roles)
                 # make inputs for the permissions form
                 if trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access':
                     all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=(action.description + '<br/> NOTE: Users must have every role associated with this dataset in order to access it')))
@@ -660,7 +668,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'role_form': all_permitted_actions
         }
 
-    def get_roles_action(self, current_actions, permitted_actions, action, do_not_render, roles):
+    def _get_roles_action(self, current_actions, permitted_actions, action, do_not_render, roles):
         '''
         Fetch in and out roles based on action
         '''
@@ -670,14 +678,14 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if a.action == action.action:
                 in_roles.add(a.role)
         out_roles = filter(lambda x: x not in in_roles, roles)
-        in_role_iterable = self.get_iterable_roles(in_roles)
-        out_role_iterable = self.get_iterable_roles(out_roles)
+        in_role_iterable = self._get_iterable_roles(in_roles)
+        out_role_iterable = self._get_iterable_roles(out_roles)
         return {
             'in_role_iterable': in_role_iterable,
             'out_role_iterable': out_role_iterable
         }
 
-    def get_iterable_roles(self, role_list):
+    def _get_iterable_roles(self, role_list):
         '''
         Converts list to JSON iterable list
         '''
@@ -691,7 +699,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         return iterable_roles_list
 
     @expose_api
-    def api_keys(self, trans, cntrller='user_preferences', **kwd):
+    def change_api_key(self, trans, cntrller='user_preferences', **kwd):
         """
         Generate API keys
         """
@@ -708,7 +716,14 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'app_name': trans.webapp.name
         }
 
-    def tool_filters(self, trans, cntrller='user_preferences', **kwd):
+    @expose_api
+    def change_toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
+        """
+        API call for fetching toolbox filters data
+        """
+        return self._tool_filters(trans, **kwd)
+
+    def _tool_filters(self, trans, cntrller='user_preferences', **kwd):
         """
             Sets the user's default filters for the toolbox.
             Toolbox filters are specified in galaxy.ini.
@@ -783,14 +798,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             }
 
     @expose_api
-    def toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
-        """
-        API call for fetching toolbox filters data
-        """
-        return self.tool_filters(trans, **kwd)
-
-    @expose_api
-    def edit_toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
+    def __edit_toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
         """
         Saves the changes made to the toolbox filters
         """
@@ -822,7 +830,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             kwd = dict(message=message, status='done')
 
         # Display the ToolBox filters form with the current values filled in
-        return self.tool_filters(trans, **kwd)
+        return self._tool_filters(trans, **kwd)
 
     @expose_api
     def change_communication(self, trans, cntrller='user_preferences', **kwd):

@@ -1,7 +1,7 @@
 /** Get API Keys view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var APIKeys = Backbone.View.extend({
-        initialize: function ( app, options ) {
+    return Backbone.View.extend({
+        initialize: function ( options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
@@ -11,14 +11,13 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             label: 'Current API key:',
                             value: options.user_api_key || 'Not available.',
                             readonly: true,
-                            help: ' An API key will allow you to access ' + ( options.app_name === 'galaxy' ? 'Galaxy' : 'the Tool Shed' ) +
-                                  ' via its web API. Please note that this key acts as an alternate means to access your account and should'  	                                + ' be treated with the same care as your login password.' } ],
+                            help: ' An API key will allow you to access ' + ( options.app_name === 'galaxy' ? 'Galaxy' : 'the Tool Shed' ) + ' via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' } ],
                 operations: {
                     'back': new Ui.ButtonIcon({
                         icon: 'fa-caret-left',
                         tooltip: 'Return to user preferences',
                         title: 'Preferences',
-                        onclick: function() { self.remove(); app.showPreferences() }
+                        onclick: function() { self.remove(); options.onclose(); }
                     })
                 },
                 buttons : {
@@ -27,7 +26,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         title: 'Generate a new key',
                         cls: 'ui-button btn btn-primary',
                         floating: 'clear',
-                        onclick: function() { self._getNewApiKey() }
+                        onclick: function() { self._submit() }
                     })
                 }
             });
@@ -35,9 +34,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         /** Generate new API key */
-        _getNewApiKey: function() {
+        _submit: function() {
             var self = this;
-            $.getJSON( Galaxy.root + 'api/user_preferences/api_keys', { 'new_api_key': true }, function( response ) {
+            $.getJSON( Galaxy.root + 'api/user_preferences/change_api_key', { 'new_api_key': true }, function( response ) {
                 if( response.user_api_key ) {
                     var input_id = self.form.data.match( 'api-key' );
                     self.form.field_list[ input_id ].value( response.user_api_key );
@@ -49,9 +48,5 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         }
     });
-
-    return {
-        APIKeys: APIKeys
-    };
 });
 

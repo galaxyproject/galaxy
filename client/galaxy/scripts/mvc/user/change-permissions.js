@@ -1,6 +1,6 @@
 /** Show and save permissions view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
-    var ChangePermissions = Backbone.View.extend({
+    return Backbone.View.extend({
         initialize: function ( app, options, $el ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
@@ -64,9 +64,5 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             }
         }
     });
-
-    return {
-        ChangePermissions: ChangePermissions
-    };
 });
 
