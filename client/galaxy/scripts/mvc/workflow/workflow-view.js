@@ -413,21 +413,30 @@ EditorFormView = Backbone.View.extend({
                 "Close": close_editor
             });
 
+            /******************************************** Issue 3000*/
             function workflow_save_as() {
-                var body = $('<lable>Save as name: <input type="text" id="workflow_rename"></label>');
+                var body = $('<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' + 
+                '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>');
                     window.show_modal("Save As a New Workflow", body, {
                         "OK": function () {
-                            self.rename_name = $('#workflow_rename').val();
-                            save_current_workflow(null, function() {
+                            var rename_name = $('#workflow_rename').val().length > 0 ? $('#workflow_rename').val() : "SavedAs_" + self.workflow.name;
+                            var rename_annotation = $('#wf_annotation').val().length > 0 ? $('#wf_annotation').val() : "";
                             $.ajax({
-                                url: self.urls.workflow_save_as + "&save_as_name=" + self.rename_name,
-                                type: "GET",
-                            }).done(function(){
-                                window.location.href = self.urls.workflow_index;
+                                url: self.urls.workflow_save_as,
+                                type: "POST",
+                                data: {
+                                    workflow_name: rename_name,
+                                    workflow_annotation: rename_annotation,
+                                    workflow_data: function() { return JSON.stringify( self.workflow.to_simple() ); }
+                                }
+                            }).done(function(id){
+                                window.onbeforeunload = undefined;
+                                window.location = "/workflow/editor?id=" + id;
+                                hide_modal();
                             }).fail(function(){
+                                hide_modal();
                                 alert("Saving this workflow failed. Please contact this site's administrator.");
-                            })});
-                            hide_modal();
+                            });
                         },
                         "Cancel": hide_modal
                     });
