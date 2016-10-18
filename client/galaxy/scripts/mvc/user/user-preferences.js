@@ -7,61 +7,75 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
             this.render();
         },
 
-        /** Render the user preferences list */
+        _link: function( page ) {
+            var self = this;
+            var $page_link = $( '<a target="galaxy_main">' + page.title + '</a>' ).on( 'click', function() {
+                $.getJSON( Galaxy.root + page.url, function( data ) {
+                    self.$preferences.hide();
+                    data.onclose = function() { self.$preferences.show() };
+                    self.$el.append( new page.module( data ).$el );
+                });
+            });
+            this.$pages.append( $( '<li/>' ).append( $page_link ) );
+        },
+
         render: function() {
             var self = this;
             $.getJSON( Galaxy.root + 'api/user_preferences', function( data ) {
-                var pages = [];
+                self.$preferences = $( '<div/>' );
                 if ( data.id !== null ) {
+                    self.$preferences.append( '<h2>User preferences</h2>' )
+                                     .append( '<p>You are currently logged in as ' +  data.email + '.</p>' )
+                                     .append( self.$pages = $( '<ul/>' ) );
                     if( !data.remote_user ) {
-                        pages.push( { title  : 'Manage your information (email, address, etc.)',
+                        self._link( { title  : 'Manage your information (email, address, etc.)',
                                       url    : 'api/user_preferences/get_information',
                                       module : UserInformation } );
-                        pages.push( { title  : 'Change your password',
+                        self._link( { title  : 'Change your password',
                                       url    : 'api/user_preferences/change_password',
                                       module : Password } );
                     }
                     if ( data.webapp == 'galaxy' ) {
-                        pages.push( { title  : 'Change your communication settings',
+                        self._link( { title  : 'Change your communication settings',
                                       url    : 'api/user_preferences/change_communication',
                                       module : Communication } );
-                        pages.push( { title  : 'Change default permissions for new histories',
+                        self._link( { title  : 'Change default permissions for new histories',
                                       url    : 'api/user_preferences/change-permissions',
                                       module : Permissions } );
-                        pages.push( { title  : 'Manage your API keys',
+                        self._link( { title  : 'Manage your API keys',
                                       url    : 'api/user_preferences/change_api_key',
                                       module : ApiKey } );
-                        pages.push( { title  : 'Manage your ToolBox filters',
+                        self._link( { title  : 'Manage your ToolBox filters',
                                       url    : 'api/user_preferences/change_toolbox_filters',
                                       module : ToolboxFilter } );
                         if ( data.openid && !data.remote_user ) {
-                            pages.push( { title  : 'Manage OpenIDs linked to your account',
+                            self._link( { title  : 'Manage OpenIDs linked to your account',
                                           module : null } );
                         }
                     } else {
-                        pages.push( { title  : 'Manage your API keys',
+                        self._link( { title  : 'Manage your API keys',
                                       module : ApiKey } );
-                        pages.push( { title  : 'Manage your email alerts',
+                        self._link( { title  : 'Manage your email alerts',
                                       module : null } );
                     }
+                    if ( data.webapp == 'galaxy' ) {
+                        var footer_template = '<p>' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance.';
+                        if ( data.enable_quotas ) {
+                            footer_template += 'Your disk quota is: <strong>' + data.quota + '</strong>.';
+                        }
+                        footer_template += 'Is your usage more than expected?  See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>';
+                        self.$preferences.append( footer_template );
+                    }
+                } else {
+                    if( !data.message ) {
+                        self.$preferences.append( '<p>You are currently not logged in.</p>' );
+                    }
+                    $preferences(   '<ul>' +
+                                        '<li><a target="galaxy_main">Login</a></li>' +
+                                        '<li><a target="galaxy_main">Register</a></li>' +
+                                    '</ul>' );
                 }
-                var $preferences = $( '<div/>' ).addClass( 'user-pref' );
-                if ( data.id !== null ) {
-                    $preferences.append( '<h2>User preferences</h2>' )
-                                .append( '<p>You are currently logged in as ' +  data.email + '.</p>' )
-                                .append( $pages = $( '<ul/>' ) );
-                    _.each( pages, function( page ) {
-                        $page_link = $( '<a target="galaxy_main"> ' + page.title + '</a>' ).on( 'click', function() {
-                            $.getJSON( Galaxy.root + page.url, function( data ) {
-                                $preferences.hide();
-                                data.onclose = function() { $preferences.show() };
-                                self.$el.append( new page.module( data ).$el );
-                            });
-                        });
-                        $pages.append( $( '<li/>' ).append( $page_link ) );
-                    });
-                }
-                self.$el.empty().append( $preferences );
+                self.$el.empty().append( self.$preferences );
             });
         }
     });
