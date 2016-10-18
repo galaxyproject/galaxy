@@ -1,7 +1,7 @@
 /** Change communication settings view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     return Backbone.View.extend({
-        initialize: function ( app, options ) {
+        initialize: function ( options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
@@ -13,7 +13,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon: 'fa-caret-left',
                         tooltip: 'Return to user preferences',
                         title: 'Preferences',
-                        onclick: function() { self.remove(); app.showPreferences() }
+                        onclick: function() { self.remove(); options.onclose(); }
                     })
                 },
                 onchange: function() {

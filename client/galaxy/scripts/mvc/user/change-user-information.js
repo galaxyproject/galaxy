@@ -1,9 +1,8 @@
 /** Show and edit user information */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     return Backbone.View.extend({
-        initialize: function ( app, options, address_message ) {
+        initialize: function ( options ) {
             var self = this;
-            this.app = app;
             this.model = options && options.model || new Backbone.Model( options );
             this.original_email = options.email;
             this.original_username = options.username;
@@ -15,10 +14,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon    : 'fa-caret-left',
                         tooltip : 'Return to user preferences',
                         title   : 'Preferences',
-                        onclick : function() {
-                            self.remove();
-                            app.showPreferences();
-                        }
+                        onclick: function() { self.remove(); options.onclose(); }
                     })
                 },
                 buttons : {
