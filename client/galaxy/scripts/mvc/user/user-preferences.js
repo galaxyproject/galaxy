@@ -9,7 +9,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
 
         _link: function( page ) {
             var self = this;
-            var $page_link = $( '<a target="galaxy_main">' + page.title + '</a>' ).on( 'click', function() {
+            var $page_link = $( '<a target="galaxy_main" href="javascript:void(0)">' + page.title + '</a>' ).on( 'click', function() {
                 $.getJSON( Galaxy.root + page.url, function( data ) {
                     self.$preferences.hide();
                     data.onclose = function() { self.$preferences.show() };
@@ -25,7 +25,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                 self.$preferences = $( '<div/>' );
                 if ( data.id !== null ) {
                     self.$preferences.append( '<h2>User preferences</h2>' )
-                                     .append( '<p>You are currently logged in as ' +  data.email + '.</p>' )
+                                     .append( '<p>You are currently logged in as ' +  _.escape( data.email ) + '.</p>' )
                                      .append( self.$pages = $( '<ul/>' ) );
                     if( !data.remote_user ) {
                         self._link( { title  : 'Manage your information (email, address, etc.)',
