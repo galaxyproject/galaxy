@@ -5,9 +5,11 @@ import shutil
 
 from galaxy import util
 
-from ..collectl import cli
-from ..collectl import processes
-from ..collectl import subsystems
+from ..collectl import (
+    cli,
+    processes,
+    subsystems
+)
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 
@@ -139,7 +141,7 @@ class CollectlPlugin( InstrumentPlugin ):
     def __configure_subsystems( self, kwargs ):
         raw_subsystems_str = kwargs.get( "subsystems", DEFAULT_SUBSYSTEMS )
         raw_subsystems = util.listify( raw_subsystems_str, do_strip=True )
-        self.subsystems = map( subsystems.get_subsystem, raw_subsystems )
+        self.subsystems = [ subsystems.get_subsystem(_) for _ in raw_subsystems ]
 
     def __configure_collectl_recorder_args( self, kwargs ):
         collectl_recorder_args = kwargs.copy()
@@ -214,4 +216,4 @@ def procfilt_argument( procfilt_on ):
         return ""
 
 
-__all__ = [ 'CollectlPlugin' ]
+__all__ = ( 'CollectlPlugin', )
