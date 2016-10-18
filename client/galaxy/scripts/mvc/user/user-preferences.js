@@ -25,6 +25,9 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                         pages.push( { title  : 'Change your communication settings',
                                       url    : 'api/user_preferences/change_communication',
                                       module : Communication } );
+                        pages.push( { title  : 'Change default permissions for new histories',
+                                      url    : 'api/user_preferences/change-permissions',
+                                      module : Permissions } );
                         pages.push( { title  : 'Manage your API keys',
                                       url    : 'api/user_preferences/change_api_key',
                                       module : ApiKey } );
@@ -42,23 +45,23 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                                       module : null } );
                     }
                 }
-                var $el = $( '<div/>' ).addClass( 'user-pref' );
+                var $preferences = $( '<div/>' ).addClass( 'user-pref' );
                 if ( data.id !== null ) {
-                    $el.append( '<h2>User preferences</h2>' )
-                       .append( '<p>You are currently logged in as ' +  data.email + '.</p>' )
-                       .append( $pages = $( '<ul/>' ) );
+                    $preferences.append( '<h2>User preferences</h2>' )
+                                .append( '<p>You are currently logged in as ' +  data.email + '.</p>' )
+                                .append( $pages = $( '<ul/>' ) );
                     _.each( pages, function( page ) {
                         $page_link = $( '<a target="galaxy_main"> ' + page.title + '</a>' ).on( 'click', function() {
                             $.getJSON( Galaxy.root + page.url, function( data ) {
-                                self.$( '.user-pref' ).hide();
-                                data.onclose = function() { self.$( '.user-pref' ).show() };
+                                $preferences.hide();
+                                data.onclose = function() { $preferences.show() };
                                 self.$el.append( new page.module( data ).$el );
                             });
                         });
                         $pages.append( $( '<li/>' ).append( $page_link ) );
                     });
                 }
-                self.$el.empty().append( $el );
+                self.$el.empty().append( $preferences );
             });
         }
     });
