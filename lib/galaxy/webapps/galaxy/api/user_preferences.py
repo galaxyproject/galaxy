@@ -10,7 +10,8 @@ import datetime
 from markupsafe import escape
 from sqlalchemy import and_, true
 
-from galaxy import util
+from galaxy import exceptions, util
+from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import docstring_trim, listify
@@ -22,6 +23,10 @@ log = logging.getLogger( __name__ )
 
 
 class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, UsesFormDefinitionsMixin ):
+
+    def __init__(self, app):
+        super(UserPrefAPIController, self).__init__(app)
+        self.user_manager = users.UserManager(app)
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -833,30 +838,26 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         return self._tool_filters(trans, **kwd)
 
     @expose_api
-    def change_communication(self, trans, cntrller='user_preferences', **kwd):
+    def communication(self, trans, user_id, payload={}, **kwd):
         """
         Allows the user to activate/deactivate the communication server.
         """
-        params = util.Params(kwd)
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = 'Communication server settings unchanged.'
-        status = 'done'
-        user_id = params.get('user_id', None)
-        if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        else:
-            user = trans.user
-        enabled_comm = params.get('enable_communication_server', None)
-        if user and enabled_comm is not None:
-            if enabled_comm == 'true':
-                message = 'Your communication server has been activated.'
+        enable = kwd.get('enable')
+        user = self.get_user(trans, user_id)
+        if user == trans.user or trans.user_is_admin():
+            if enable is not None:
+                if enable == 'true':
+                    message = 'Your communication server has been activated.'
+                else:
+                    message = 'Your communication server has been disabled.'
+                user.preferences['communication_server'] = enable
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
             else:
-                message = 'Your communication server has been disabled.'
-            user.preferences['communication_server'] = enabled_comm
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-        return {
-            'message': message,
-            'status': status,
-            'activated': user.preferences.get('communication_server', 'false')
-        }
+                message = 'Communication server settings unchanged.'
+            return {
+                'message': message,
+                'status': 'done',
+                'activated': user.preferences.get('communication_server', 'false')
+            }
+        return { 'message' : 'Access denied.', 'status' : 'error' }

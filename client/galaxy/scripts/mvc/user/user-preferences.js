@@ -37,7 +37,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                     }
                     if ( data.webapp == 'galaxy' ) {
                         self._link( { title  : 'Change your communication settings',
-                                      url    : 'api/user_preferences/change_communication',
+                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/communication',
                                       module : Communication } );
                         self._link( { title  : 'Change default permissions for new histories',
                                       url    : 'api/user_preferences/change-permissions',
