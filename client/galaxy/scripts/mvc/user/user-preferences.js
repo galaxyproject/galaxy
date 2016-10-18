@@ -7,6 +7,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
             this.render();
         },
 
+        /** Load requested form */
         /** Redirect to manage user information view */
         callManageInfo: function() {
             var self = this;
@@ -83,71 +84,69 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
         render: function() {
             var self = this;
             $.getJSON( Galaxy.root + 'api/user_preferences', function( data ) {
-                self.render(data);
-            });
+                var template = "";
+                if( data.id !== null ) {
+                    template = "<div class='user-preferences-all'>"
+                    template = template + '<div class="user-pref"> <h2> User preferences </h2>' + 
+                               '<p>You are currently logged in as ' +  data["email"] + '.</p>';
+                    template = template + '<ul>';
+                    if( data["webapp"] === "galaxy" ) {
+                        if( !data["remote_user"] ) {
+                               template = template +
+                               "<li><a target='galaxy_main' class='manage-userinfo'>Manage your information</a> (email, address, etc.) </li>" + 
+                               "<li><a target='galaxy_main' class='change-password'>Change your password</a> </li>";
+                        }
+                        template = template +
+                                   "<li><a target='galaxy_main' class='change-communication-setting'>Change your communication settings</a></li>" +  
+                                   "<li><a target='galaxy_main' class='change-permissions'>Change default permissions</a> for new histories </li>" + 
+                                   "<li><a target='galaxy_main' class='manage-api-keys'>Manage your API keys</a></li>" + 
+                                   "<li><a target='galaxy_main' class='manage-toolbox-filters'>Manage your ToolBox filters</a></li>";
 
-            var template = "";
-            if( data["id"] !== null ) {
-                template = "<div class='user-preferences-all'>"
-                template = template + '<div class="user-pref"> <h2> User preferences </h2>' + 
-                           '<p>You are currently logged in as ' +  data["email"] + '.</p>';
-                template = template + '<ul>';
-                if( data["webapp"] === "galaxy" ) {
-                    if( !data["remote_user"] ) {
-                           template = template +
-                           "<li><a target='galaxy_main' class='manage-userinfo'>Manage your information</a> (email, address, etc.) </li>" + 
-                           "<li><a target='galaxy_main' class='change-password'>Change your password</a> </li>";
+                        if( data["openid"] && !data["remote_user"] ) {
+                            template = template + 
+                                   "<li><a target='galaxy_main' class='manage-openid'>Manage OpenIDs</a> linked to your account </li>";
+                        }
                     }
-                    template = template +
-                               "<li><a target='galaxy_main' class='change-communication-setting'>Change your communication settings</a></li>" +  
-                               "<li><a target='galaxy_main' class='change-permissions'>Change default permissions</a> for new histories </li>" + 
-                               "<li><a target='galaxy_main' class='manage-api-keys'>Manage your API keys</a></li>" + 
-                               "<li><a target='galaxy_main' class='manage-toolbox-filters'>Manage your ToolBox filters</a></li>";
-
-                    if( data["openid"] && !data["remote_user"] ) {
+                    else {
                         template = template + 
-                               "<li><a target='galaxy_main' class='manage-openid'>Manage OpenIDs</a> linked to your account </li>";
+                                   "<li><a target='galaxy_main' class='manage-userinfo'> Manage your information </a> for new histories </li>" + 
+                                   "<li><a target='galaxy_main' class='change-password'> Change your password </a> </li>" + 
+                                   "<li><a target='galaxy_main' class='manage-api-keys'> Manage your API keys </a> </li>" + 
+                                   "<li><a target='galaxy_main' class='manage-email-alert'> Manage your email alerts </a> </li>";
+                    }
+                    template = template + "</ul>";
+
+                    if( data["webapp"] === "galaxy" ) {
+                        template = template + '<p>' + 'You are using <strong>' +
+                                   data['disk_usage'] + '</strong> of disk space in this Galaxy instance.';
+                        if( data["enable_quotas"] ) {
+                            template = template + 'Your disk quota is: <strong>' + data['quota'] + '</strong>.';
+                        }
+                        template = template + 'Is your usage more than expected?  See the ' +
+                                   '<a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> ' + 
+                                   'for tips on how to find all of the data in your account.'
+
+                        template = template + '</p>'
                     }
                 }
                 else {
-                    template = template + 
-                               "<li><a target='galaxy_main' class='manage-userinfo'> Manage your information </a> for new histories </li>" + 
-                               "<li><a target='galaxy_main' class='change-password'> Change your password </a> </li>" + 
-                               "<li><a target='galaxy_main' class='manage-api-keys'> Manage your API keys </a> </li>" + 
-                               "<li><a target='galaxy_main' class='manage-email-alert'> Manage your email alerts </a> </li>";
-                }
-                template = template + "</ul>";
-
-                if( data["webapp"] === "galaxy" ) {
-                    template = template + '<p>' + 'You are using <strong>' +
-                               data['disk_usage'] + '</strong> of disk space in this Galaxy instance.';
-                    if( data["enable_quotas"] ) {
-                        template = template + 'Your disk quota is: <strong>' + data['quota'] + '</strong>.';
+                    if( !data['message'] ) {
+                        template = template + '<p>You are currently not logged in.</p>'
                     }
-                    template = template + 'Is your usage more than expected?  See the ' +
-                               '<a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> ' + 
-                               'for tips on how to find all of the data in your account.'
-
-                    template = template + '</p>'
+                    template = template + '<ul><li> <a target="galaxy_main" class="user-login"> Login </a></li>' +
+                               "<li> <a target='galaxy_main' class='user-register'> Register </a></li>" +
+                               "</ul>";
                 }
-            }
-            else {
-                if( !data['message'] ) {
-                    template = template + '<p>You are currently not logged in.</p>'
-                }
-                template = template + '<ul><li> <a target="galaxy_main" class="user-login"> Login </a></li>' +
-                           "<li> <a target='galaxy_main' class='user-register'> Register </a></li>" +
-                           "</ul>";
-            }
-            template = template + "</div></div>";
-            // add this markup to the middle section of the Galaxy
-            this.$el.empty().append( template );
-            $( ".manage-userinfo" ).on( "click", function() { self.callManageInfo() } );
-            $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
-            $( ".change-permissions" ).on( "click", function() { self.callChangePermissions() } );
-            $( ".manage-api-keys" ).on( "click", function() { self.callApiKeys() } );
-            $( ".manage-toolbox-filters" ).on( "click", function() { self.callManageToolboxFilter() } );
-            $( ".change-communication-setting" ).on( "click", function() { self.callChangeCommunication() } );
+                template = template + "</div></div>";
+                // add this markup to the middle section of the Galaxy
+                self.$el.empty().append( template );
+                $( ".manage-userinfo" ).on( "click", function() { self.callManageInfo() } );
+                $( ".change-password" ).on( "click", function() { self.callChangePassword() } );
+                $( ".change-permissions" ).on( "click", function() { self.callChangePermissions() } );
+                $( ".manage-api-keys" ).on( "click", function() { self.callApiKeys() } );
+                $( ".manage-toolbox-filters" ).on( "click", function() { self.callManageToolboxFilter() } );
+                $( ".change-communication-setting" ).on( "click", function() { self.callChangeCommunication() } );
+            });
         }
     });
 
