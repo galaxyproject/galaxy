@@ -416,11 +416,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 name=item['name']
                 owner=item['owner']
                 changeset_revision=item['changeset_revision']
-                installed_tool_shed_repositories = irm.install( tool_shed_url,
-                                                        name,
-                                                        owner,
-                                                        changeset_revision,
-                                                        payload )
+                irm.install( tool_shed_url,
+                             name,
+                             owner,
+                             changeset_revision,
+                             payload )
 
 
         return item
