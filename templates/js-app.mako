@@ -45,12 +45,14 @@
             'bundled/libs.bundled',
             'bundled/' + js_app_name + '.bundled'
         )}
+        %if js_app_entry_fn:
         <script type="text/javascript">
             ${js_app_entry_fn}(
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }
             );
         </script>
+        %endif
     </body>
 </html>
 

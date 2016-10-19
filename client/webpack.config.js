@@ -1,5 +1,4 @@
 var webpack = require( 'webpack' ),
-    // paths
     path = require( 'path' ),
     scriptsBase = path.join( __dirname, 'galaxy/scripts' ),
     libsBase = path.join( scriptsBase, 'libs' ),
@@ -31,7 +30,6 @@ var webpack = require( 'webpack' ),
         'onload',
     ];
 
-
 module.exports = {
     devtool : 'source-map',
     entry   : {
@@ -50,10 +48,15 @@ module.exports = {
             // Backbone looks for these in the same root directory
             jquery      : path.join( libsBase, 'jquery/jquery' ),
             underscore  : path.join( libsBase, 'underscore.js' ),
+            react       : path.join( libsBase, 'react.js' ),
+            'react-dom' : path.join( libsBase, 'react-dom.js' ),
         }
     },
     module : {
+        // https://github.com/webpack/webpack/issues/1617
+        noParse: /galaxy\/scripts\/libs\/react.js/,
         loaders : [
+            { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader", query: { compact: false } },
         ],
     },
     resolveLoader : {

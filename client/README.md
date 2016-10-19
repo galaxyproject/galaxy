@@ -47,6 +47,7 @@ This will:
 1. compress the files in client/galaxy/scripts and place them in static/scripts
 2. generate source maps and place them in static/maps
 3. rebuild the webpack-based client apps
+4. rebuild styles/CSS
 
 
 Rebuilding Scripts Only

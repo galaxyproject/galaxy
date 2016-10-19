@@ -32,7 +32,8 @@
     "jquery.complexify": "git://github.com/danpalmer/jquery.complexify.js.git#~0.5.1",
      "threedubmedia.jquery.event": "*",
     "jquery-migrate": "~1.4",
-    "requirejs": "~2"
+    "requirejs": "~2",
+    "react": "^15.2.1"
   },
   "resolutions": {
     "jquery": "~1.12"
