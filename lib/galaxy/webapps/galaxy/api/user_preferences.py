@@ -43,7 +43,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         }
 
     @expose_api
-    def get_information( self, trans, **kwd ):
+    def get_information( self, trans, user_id, **kwd ):
         '''
         Manage a user login, password, public username, type, addresses, etc.
         '''
@@ -441,21 +441,19 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             # If a token was supplied, validate and set user
             token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
             if not token_result or not token_result.expiration_time > datetime.utcnow():
-                return { 'message': 'Invalid or expired password reset token, please request a new one.', 'status': 'error' }
+                raise exceptions.MessageException('Invalid or expired password reset token, please request a new one.')
             user = token_result.user
         else:
             # The user is changing their own password, validate their current password
-            user = self.get_user(trans, user_id)
-            if user != trans.user and not trans.user_is_admin():
-                return { 'message' : 'Access denied.', 'status' : 'error' }
+            user = self._get_user(trans, user_id)
             (ok, message) = trans.app.auth_manager.check_change_password(user, current)
             if not ok:
-                return { 'message': message, 'status': 'error' }
+                raise exceptions.MessageException(message)
         if user:
             # Validate the new password
             message = validate_password(trans, password, confirm)
             if message:
-                return { 'message': message, 'status': 'error' }
+                raise exceptions.MessageException(message)
             else:
                 # Save new password
                 user.set_password_cleartext(password)
@@ -473,9 +471,9 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
-                trans.log_event("User change password")
-                return { 'message': 'Password has been changed', 'status': 'done' }
-        return { 'message': 'Failed to determine user, access denied', 'status': 'error' }
+                trans.log_event('User change password')
+                return { 'message': 'Password has been changed' }
+        raise exceptions.MessageException('Failed to determine user, access denied.')
 
     @expose_api
     def change_permissions(self, trans, cntrller='user_preferences', **kwd):
@@ -811,19 +809,13 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         """
         Get/Create API key.
         """
-        user = self.get_user(trans, user_id)
-        if user == trans.user or trans.user_is_admin():
-            if kwd.get('new_api_key', False):
-                self.create_api_key(trans, user)
-                message = 'Generated a new web API key.'
-            else:
-                message = 'API key unchanged.'
-            return {
-                'message': message,
-                'status' : 'done',
-                'api_key': user.api_keys[0].key if user.api_keys else None
-            }
-        return { 'message' : 'Access denied.', 'status' : 'error' }
+        user = self._get_user(trans, user_id)
+        if kwd.get('new_api_key', False):
+            self.create_api_key(trans, user)
+            message = 'Generated a new web API key.'
+        else:
+            message = 'API key unchanged.'
+        return { 'message': message, 'api_key': user.api_keys[0].key if user.api_keys else None }
 
     @expose_api
     def communication(self, trans, user_id, payload={}, **kwd):
@@ -831,21 +823,23 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         Allows the user to activate/deactivate the communication server.
         """
         enable = kwd.get('enable')
-        user = self.get_user(trans, user_id)
-        if user == trans.user or trans.user_is_admin():
-            if enable is not None:
-                if enable == 'true':
-                    message = 'Your communication server has been activated.'
-                else:
-                    message = 'Your communication server has been disabled.'
-                user.preferences['communication_server'] = enable
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
+        user = self._get_user(trans, user_id)
+        if enable is not None:
+            if enable == 'true':
+                message = 'Your communication server has been activated.'
             else:
-                message = 'Communication server settings unchanged.'
-            return {
-                'message': message,
-                'status': 'done',
-                'activated': user.preferences.get('communication_server', 'false')
-            }
-        return { 'message' : 'Access denied.', 'status' : 'error' }
+                message = 'Your communication server has been disabled.'
+            user.preferences['communication_server'] = enable
+            trans.sa_session.add(user)
+            trans.sa_session.flush()
+        else:
+            message = 'Communication server settings unchanged.'
+        return { 'message': message, 'activated': user.preferences.get('communication_server', 'false') }
+
+    def _get_user( self, trans, user_id ):
+        user = self.get_user(trans, user_id)
+        if not user:
+            raise exceptions.MessageException('Invalid user (%s).' % user_id)
+        if user != trans.user and trans.user_is_admin():
+            raise exceptions.MessageException('Access denied.')
+        return user

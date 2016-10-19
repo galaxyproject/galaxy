@@ -10,10 +10,13 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
         _link: function( page ) {
             var self = this;
             var $page_link = $( '<a target="galaxy_main" href="javascript:void(0)">' + page.title + '</a>' ).on( 'click', function() {
-                $.getJSON( Galaxy.root + page.url, function( data ) {
+                $.ajax({
+                    url  : Galaxy.root + page.url,
+                    type : 'GET'
+                }).always( function( response ) {
                     self.$preferences.hide();
-                    data.onclose = function() { self.$preferences.show() };
-                    self.$el.append( new page.module( data ).$el );
+                    response.onclose = function() { self.$preferences.show() };
+                    self.$el.append( new page.module( response ).$el );
                 });
             });
             this.$pages.append( $( '<li/>' ).append( $page_link ) );
@@ -29,7 +32,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                                      .append( self.$pages = $( '<ul/>' ) );
                     if( !data.remote_user ) {
                         self._link( { title  : 'Manage your information (email, address, etc.)',
-                                      url    : 'api/user_preferences/get_information',
+                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/information',
                                       module : UserInformation } );
                         self._link( { title  : 'Change your password',
                                       url    : 'api/user_preferences/' + Galaxy.user.id + '/password',

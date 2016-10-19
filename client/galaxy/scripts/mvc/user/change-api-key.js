@@ -39,19 +39,18 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             $.ajax( {
                 url      : Galaxy.root + 'api/user_preferences/' + Galaxy.user.id + '/api_key',
                 type     : 'PUT',
-                data     : { new_api_key: true },
-                success  : function( response ) {
-                    if( response.api_key ) {
-                        var input_id = self.form.data.match( 'api-key' );
-                        self.form.field_list[ input_id ].value( response.api_key );
-                        self.form.message.update({
-                            message: response.message,
-                            status: response.status === 'error' ? 'danger' : 'success',
-                        });
-                    }
+                data     : { new_api_key: true }
+            }).done( function( response ) {
+                if ( response.api_key ) {
+                    var input_id = self.form.data.match( 'api-key' );
+                    self.form.field_list[ input_id ].value( response.api_key );
+                    self.form.message.update( { message: response.message, status: 'success' } );
+                } else {
+                    self.form.message.update( { message: 'API key missing from response.', status: 'danger' } );
                 }
+            }).fail( function( response ) {
+                self.form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
             });
         }
     });
 });
-
