@@ -428,41 +428,34 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             }
 
     @expose_api
-    def change_password(self, trans, password=None, confirm=None, current=None, token=None, **kwd):
+    def password(self, trans, user_id, payload={}, **kwd):
         """
-        Provides a form with which one can change their password. If token is
-        provided, don't require current password.
+        Allows to change a user password.
         """
-        user = None
+        password = kwd.get( 'password' )
+        confirm = kwd.get( 'confirm' )
+        current = kwd.get( 'current' )
+        token = kwd.get( 'token' )
         token_result = None
         if token:
             # If a token was supplied, validate and set user
             token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-            if token_result and token_result.expiration_time > datetime.utcnow():
-                user = token_result.user
-            else:
-                return {
-                    'message': 'Invalid or expired password reset token, please request a new one.',
-                    'status': 'error'
-                }
+            if not token_result or not token_result.expiration_time > datetime.utcnow():
+                return { 'message': 'Invalid or expired password reset token, please request a new one.', 'status': 'error' }
+            user = token_result.user
         else:
             # The user is changing their own password, validate their current password
-            (ok, message) = trans.app.auth_manager.check_change_password(trans.user, current)
-            if ok:
-                user = trans.user
-            else:
-                return {
-                    'message': message,
-                    'status': 'error'
-                }
+            user = self.get_user(trans, user_id)
+            if user != trans.user and not trans.user_is_admin():
+                return { 'message' : 'Access denied.', 'status' : 'error' }
+            (ok, message) = trans.app.auth_manager.check_change_password(user, current)
+            if not ok:
+                return { 'message': message, 'status': 'error' }
         if user:
             # Validate the new password
             message = validate_password(trans, password, confirm)
             if message:
-                return {
-                    'message': message,
-                    'status': 'error'
-                }
+                return { 'message': message, 'status': 'error' }
             else:
                 # Save new password
                 user.set_password_cleartext(password)
@@ -481,14 +474,8 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
                 trans.log_event("User change password")
-                return {
-                    'message': 'Password has been changed',
-                    'status': 'done'
-                }
-        return {
-            'message': 'Failed to determine user, access denied',
-            'status': 'error'
-        }
+                return { 'message': 'Password has been changed', 'status': 'done' }
+        return { 'message': 'Failed to determine user, access denied', 'status': 'error' }
 
     @expose_api
     def change_permissions(self, trans, cntrller='user_preferences', **kwd):

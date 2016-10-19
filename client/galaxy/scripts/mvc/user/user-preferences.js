@@ -32,7 +32,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                                       url    : 'api/user_preferences/get_information',
                                       module : UserInformation } );
                         self._link( { title  : 'Change your password',
-                                      url    : 'api/user_preferences/change_password',
+                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/password',
                                       module : Password } );
                     }
                     if ( data.webapp == 'galaxy' ) {

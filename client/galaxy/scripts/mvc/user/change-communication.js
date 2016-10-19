@@ -26,7 +26,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         /** Saves changes */
         _save: function() {
             var self = this;
-            $.ajax( {
+            $.ajax({
                 url      : Galaxy.root + 'api/user_preferences/' + Galaxy.user.id + '/communication',
                 type     : 'PUT',
                 data     : { enable: self.form.data.create()[ 'enable' ] },
