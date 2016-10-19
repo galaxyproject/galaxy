@@ -1012,7 +1012,7 @@ def _filter_for_panel( item, item_type, filters, context ):
                 elif section_item_type == panel_item_types.LABEL:
                     # If there is a label and it does not have tools,
                     # remove it.
-                    if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
+                    if cur_label_key and ( not tools_under_label or not _apply_filter( section_item, filters[ 'label' ] ) ):
                         del filtered_elems[ cur_label_key ]
 
                     # Reset attributes for new label.

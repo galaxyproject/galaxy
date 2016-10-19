@@ -689,7 +689,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
         The user can activate them and the choice is stored in user_preferences.
         """
-
         user = self._get_user(trans, user_id)
         filter_types = odict([ ('toolbox_tool_filters',    { 'title': 'Tools',    'config': trans.app.config.user_tool_filters }),
                                ('toolbox_section_filters', { 'title': 'Sections', 'config': trans.app.config.user_section_filters }),
