@@ -2157,6 +2157,11 @@ field.</xs:documentation>
 parameter.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="default_value" type="xs:string" gxdocs:deprecated="true">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated way to specify default value for column parameters.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="optional" type="xs:string" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">If ``false``, parameter must have a
@@ -2219,7 +2224,7 @@ but not always the tool's input dataset).
             <xs:documentation xml:lang="en"></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="force_select" type="PermissiveBoolean">
+        <xs:attribute name="force_select" type="PermissiveBoolean" gxdocs:deprecated="true">
           <xs:annotation>
             <xs:documentation xml:lang="en">Used only if the ``type`` attribute
 value is ``data_column``, this is deprecated and the inverse of ``optional``.
@@ -2551,7 +2556,7 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
             <xs:documentation></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="false">
+        <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
           <xs:annotation>
             <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
           </xs:annotation>
