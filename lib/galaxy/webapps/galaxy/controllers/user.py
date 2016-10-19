@@ -1337,7 +1337,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             """
             filters = list()
             for filter_name in config_filters:
-                function = factory._build_filter_function(filter_name)
+                function = factory.build_filter_function(filter_name)
                 doc_string = docstring_trim( function.__doc__ )
                 split = doc_string.split('\n\n')
                 if split:

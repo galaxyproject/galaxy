@@ -49,7 +49,7 @@ define( [ 'mvc/user/change-information', 'mvc/user/change-password', 'mvc/user/c
                                       url    : 'api/user_preferences/' + Galaxy.user.id + '/api_key',
                                       module : ApiKey } );
                         self._link( { title  : 'Manage your ToolBox filters',
-                                      url    : 'api/user_preferences/change_toolbox_filters',
+                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/toolbox_filters',
                                       module : ToolboxFilter } );
                         if ( data.openid && !data.remote_user ) {
                             self._link( { title  : 'Manage OpenIDs linked to your account',

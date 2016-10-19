@@ -15,6 +15,7 @@ from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import docstring_trim, listify
+from galaxy.util.odict import odict
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin, CreatesUsersMixin, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import build_select_field, AddressField
@@ -683,120 +684,59 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         return iterable_roles_list
 
     @expose_api
-    def toolbox_filters(self, trans, user_id, payload, **kwd):
+    def toolbox_filters(self, trans, user_id, payload={}, **kwd):
         """
-        API call for fetching toolbox filters data
-        """
-        return self._tool_filters(trans, **kwd)
-
-    def _tool_filters(self, trans, cntrller='user_preferences', **kwd):
-        """
-            Sets the user's default filters for the toolbox.
-            Toolbox filters are specified in galaxy.ini.
-            The user can activate them and the choice is stored in user_preferences.
+        API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
+        The user can activate them and the choice is stored in user_preferences.
         """
 
-        def get_filter_mapping(db_filters, config_filters, factory):
-            """
-                Compare the allowed filters from the galaxy.ini config file with the previously saved or default filters from the database.
-                We need that to toogle the checkboxes for the formular in the right way.
-                Furthermore we extract all information associated to a filter to display them in the formular.
-            """
-            filters = list()
-            for filter_name in config_filters:
-                function = factory._build_filter_function(filter_name)
-                doc_string = docstring_trim(function.__doc__)
-                split = doc_string.split('\n\n')
-                if split:
-                    sdesc = split[0]
-                else:
-                    log.error('No description specified in the __doc__ string for %s.' % filter_name)
-                if len(split) > 1:
-                    description = split[1]
-                else:
-                    description = ''
+        user = self._get_user(trans, user_id)
+        filter_types = odict([ ('toolbox_tool_filters',    { 'title': 'Tools',    'config': trans.app.config.user_tool_filters }),
+                               ('toolbox_section_filters', { 'title': 'Sections', 'config': trans.app.config.user_section_filters }),
+                               ('toolbox_label_filters',   { 'title': 'Labels',   'config': trans.app.config.user_label_filters }) ])
 
-                if filter_name in db_filters:
-                    filters.append(dict(filterpath=filter_name, short_desc=sdesc, desc=description, checked=True))
-                else:
-                    filters.append(dict(filterpath=filter_name, short_desc=sdesc, desc=description, checked=False))
-            return filters
+        def add_filter_inputs(factory, inputs, filter_type, saved_values):
+            filter_inputs = list()
+            filter_values = saved_values.get( filter_type, [] )
+            filter_config = filter_types[ filter_type ][ 'config' ]
+            filter_title  = filter_types[ filter_type ][ 'title' ]
+            for filter_name in filter_config:
+                function = factory.build_filter_function(filter_name)
+                filter_inputs.append({
+                    'type'   : 'boolean',
+                    'name'   : filter_name,
+                    'label'  : filter_name,
+                    'help'   : docstring_trim(function.__doc__) or 'No description available.',
+                    'value'  : 'true' if filter_name in filter_values else 'false',
+                    'ignore' : 'false'
+                })
+            if filter_inputs:
+                inputs.append( { 'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs } )
 
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-
-        user_id = params.get('user_id', False)
-        if user_id:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        else:
-            user = trans.user
-
-        if user:
-            saved_user_tool_filters = list()
-            saved_user_section_filters = list()
-            saved_user_label_filters = list()
-
-            for name, value in user.preferences.items():
-                if name == 'toolbox_tool_filters':
-                    saved_user_tool_filters = listify(value, do_strip=True)
-                elif name == 'toolbox_section_filters':
-                    saved_user_section_filters = listify(value, do_strip=True)
-                elif name == 'toolbox_label_filters':
-                    saved_user_label_filters = listify(value, do_strip=True)
-
-            ff = FilterFactory(trans.app.toolbox)
-            tool_filters = get_filter_mapping(saved_user_tool_filters, trans.app.config.user_tool_filters, ff)
-            section_filters = get_filter_mapping(saved_user_section_filters, trans.app.config.user_section_filters, ff)
-            label_filters = get_filter_mapping(saved_user_label_filters, trans.app.config.user_label_filters, ff)
-            return {
-                'message': message,
-                'status': status,
-                'tool_filters': json.dumps(tool_filters),
-                'section_filters': json.dumps(section_filters),
-                'label_filters': json.dumps(label_filters),
-            }
-        else:
-            # User not logged in, history group must be only public
-            return {
-                'message': "You must be logged in to change private toolbox filters.",
-                'status': "error"
-            }
-
-    @expose_api
-    def __edit_toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
-        """
-        Saves the changes made to the toolbox filters
-        """
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        checked_filters = kwd.get('checked_filters', {})
-        checked_filters = json.loads(checked_filters)
-        if params.get('edit_toolbox_filter', False):
-            tool_filters = list()
-            section_filters = list()
-            label_filters = list()
-            for name in checked_filters:
-                if checked_filters[name] or checked_filters[name] == 'true':
-                    name = name.split("|")[1]
-                    if name.startswith('t_'):
-                        tool_filters.append(name[2:])
-                    elif name.startswith('l_'):
-                        label_filters.append(name[2:])
-                    elif name.startswith('s_'):
-                        section_filters.append(name[2:])
-
-            trans.user.preferences['toolbox_tool_filters'] = ','.join(tool_filters)
-            trans.user.preferences['toolbox_section_filters'] = ','.join(section_filters)
-            trans.user.preferences['toolbox_label_filters'] = ','.join(label_filters)
-
-            trans.sa_session.add(trans.user)
+        if kwd.get( 'update', False ):
+            for filter_type in filter_types:
+                new_filters = []
+                for prefixed_name in kwd:
+                    prefix = filter_type + '|'
+                    if prefixed_name.startswith(filter_type):
+                        new_filters.append( prefixed_name[len(prefix):] )
+                user.preferences[filter_type] = ','.join(new_filters)
+            trans.sa_session.add(user)
             trans.sa_session.flush()
-            message = 'ToolBox filters have been updated.'
-            kwd = dict(message=message, status='done')
+            message = 'Toolbox filters have been updated.'
+        else:
+            message = 'Toolbox filters unchanged.'
 
-        # Display the ToolBox filters form with the current values filled in
-        return self._tool_filters(trans, **kwd)
+        saved_values = {}
+        for name, value in user.preferences.items():
+            if name in filter_types:
+                saved_values[ name ] = listify(value, do_strip=True)
+        inputs = []
+        factory = FilterFactory(trans.app.toolbox)
+        for filter_type in filter_types:
+            add_filter_inputs(factory, inputs, filter_type, saved_values )
+        inputs.append( { 'type': 'hidden', 'hidden': True, 'name': 'update', 'value': True } )
+        return { 'message': message, 'inputs': inputs }
 
     @expose_api
     def api_key(self, trans, user_id, payload={}, **kwd):
