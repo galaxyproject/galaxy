@@ -8,6 +8,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 title       : 'Manage Toolbox Filters',
                 name        : 'toolbox_filter',
                 inputs      : options.inputs,
+                icon        : 'fa-filter',
                 operations  : {
                     'back'  : new Ui.ButtonIcon({
                         icon    : 'fa-caret-left',
@@ -19,7 +20,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 buttons     : {
                     'save'  : new Ui.Button({
                         tooltip : 'Save changes',
-                        title   : 'Save changes',
+                        title   : 'Save Filters',
+                        icon    : 'fa-save',
                         cls     : 'ui-button btn btn-primary',
                         floating: 'clear',
                         onclick : function() { self._save() }
