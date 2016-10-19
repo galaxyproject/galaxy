@@ -429,6 +429,7 @@
     <datatype extension="hmm3" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
     <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="True" />
     <datatype extension="xmfa" type="galaxy.datatypes.msa:MauveXmfa" display_in_upload="True" />
+    <datatype extension="CEL" type="galaxy.datatypes.binary:Cel" display_in_upload="True" />
 
     <datatype extension="RData" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -641,6 +642,7 @@
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
     <sniffer type="galaxy.datatypes.msa:MauveXmfa" />
+    <sniffer type="galaxy.datatypes.binary:Cel" />
     <sniffer type="galaxy.datatypes.binary:RData" />
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
