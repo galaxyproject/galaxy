@@ -477,46 +477,46 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'get_information',
-                           '/api/user_preferences/get_information',
+                           '/api/user_preferences/{user_id}/information',
                            controller='user_preferences',
                            action='get_information',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'set_information',
-                           '/api/user_preferences/set_information',
+                           '/api/user_preferences/{user_id}/information',
                            controller='user_preferences',
                            action='set_information',
-                           conditions=dict( method=["GET"] ) )
+                           conditions=dict( method=["PUT"] ) )
 
-    webapp.mapper.connect( 'change_password',
-                           '/api/user_preferences/change_password',
+    webapp.mapper.connect( 'password',
+                           '/api/user_preferences/{user_id}/password',
                            controller='user_preferences',
-                           action='change_password',
-                           conditions=dict( method=["GET"] ) )
+                           action='password',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
-    webapp.mapper.connect( 'change_permissions',
-                           '/api/user_preferences/change_permissions',
+    webapp.mapper.connect( 'permissions',
+                           '/api/user_preferences/{user_id}/permissions',
                            controller='user_preferences',
-                           action='change_permissions',
-                           conditions=dict( method=["GET"] ) )
+                           action='permissions',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
-    webapp.mapper.connect( 'change_api_key',
-                           '/api/user_preferences/change_api_key',
+    webapp.mapper.connect( 'api_key',
+                           '/api/user_preferences/{user_id}/api_key',
                            controller='user_preferences',
-                           action='change_api_key',
-                           conditions=dict( method=["GET"] ) )
+                           action='api_key',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
-    webapp.mapper.connect( 'change_toolbox_filters',
-                           '/api/user_preferences/change_toolbox_filters',
+    webapp.mapper.connect( 'toolbox_filters',
+                           '/api/user_preferences/{user_id}/toolbox_filters',
                            controller='user_preferences',
-                           action='change_toolbox_filters',
-                           conditions=dict( method=["GET"] ) )
+                           action='toolbox_filters',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
-    webapp.mapper.connect( 'change_communication',
-                           '/api/user_preferences/change_communication',
+    webapp.mapper.connect( 'communication',
+                           '/api/user_preferences/{user_id}/communication',
                            controller='user_preferences',
-                           action='change_communication',
-                           conditions=dict( method=["GET"] ) )
+                           action='communication',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
     webapp.mapper.connect( 'logout',
                            '/api/user_preferences/logout',

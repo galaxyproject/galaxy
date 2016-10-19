@@ -37,15 +37,14 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         /** Saves changes */
         _save: function() {
             var self = this;
-            $.getJSON( Galaxy.root + 'api/user_preferences/set_information', self.form.data.create(), function( response ) {
-                self.form.message.update({
-                   message: response.message,
-                   status: response.status === 'error' ? 'danger' : 'success'
-                });
-            }).always( function() {
-                self.form.message.update({
-                   message: 'Failed to contact server. Please wait and try again.', status: 'danger'
-                });
+            $.ajax( {
+                url      : Galaxy.root + 'api/user_preferences/' + Galaxy.user.id + '/information',
+                type     : 'PUT',
+                data     : self.form.data.create()
+            }).done( function( response ) {
+                self.form.message.update( { message: response.message, status: 'success' } );
+            }).fail( function( response ) {
+                self.form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
             });
         }
     });
