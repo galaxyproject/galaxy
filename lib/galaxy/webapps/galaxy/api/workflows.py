@@ -401,28 +401,26 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             for key in data['steps']:
                 item = data['steps'][key]
                 if item is not None:
-                    if item.has_key('tool_shed_repository'):
-                        tool_shed_repository=item['tool_shed_repository']
-                        if tool_shed_repository.has_key('owner') and tool_shed_repository.has_key('changeset_revision') and tool_shed_repository.has_key('name') and tool_shed_repository.has_key('tool_shed'):
-                            toolstr=tool_shed_repository['owner'] \
-                                +tool_shed_repository['changeset_revision'] \
-                                +tool_shed_repository['name'] \
-                                +tool_shed_repository['tool_shed']
-                            tools[toolstr]=tool_shed_repository
+                    if 'tool_shed_repository' in item:
+                        tool_shed_repository = item['tool_shed_repository']
+                        if 'owner' in tool_shed_repository and 'changeset_revision' in tool_shed_repository and 'name' in tool_shed_repository and 'tool_shed' in tool_shed_repository:
+                            toolstr = tool_shed_repository['owner'] \
+                                + tool_shed_repository['changeset_revision'] \
+                                + tool_shed_repository['name'] \
+                                + tool_shed_repository['tool_shed']
+                            tools[toolstr] = tool_shed_repository
             irm = InstallRepositoryManager( self.app )
             for k in tools:
                 item = tools[k]
-                tool_shed_url='https://'+item['tool_shed']+'/'
-                name=item['name']
-                owner=item['owner']
-                changeset_revision=item['changeset_revision']
+                tool_shed_url = 'https://' + item['tool_shed'] + '/'
+                name = item['name']
+                owner = item['owner']
+                changeset_revision = item['changeset_revision']
                 irm.install( tool_shed_url,
                              name,
                              owner,
                              changeset_revision,
                              payload )
-
-
         return item
 
     @expose_api
