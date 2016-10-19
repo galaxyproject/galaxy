@@ -477,16 +477,16 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'get_information',
-                           '/api/user_preferences/get_information',
+                           '/api/user_preferences/{user_id}/information',
                            controller='user_preferences',
                            action='get_information',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'set_information',
-                           '/api/user_preferences/set_information',
+                           '/api/user_preferences/{user_id}/information',
                            controller='user_preferences',
                            action='set_information',
-                           conditions=dict( method=["GET"] ) )
+                           conditions=dict( method=["PUT"] ) )
 
     webapp.mapper.connect( 'password',
                            '/api/user_preferences/{user_id}/password',

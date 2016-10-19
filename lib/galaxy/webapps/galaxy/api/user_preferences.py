@@ -45,15 +45,9 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
     @expose_api
     def get_information( self, trans, user_id, **kwd ):
         '''
-        Manage a user login, password, public username, type, addresses, etc.
+        Returns user details such as public username, type, addresses, etc.
         '''
-        user_id = kwd.get( 'id', None )
-        if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get(trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        if not user:
-            raise AssertionError( "The user id (%s) is not valid" % str( user_id ) )
+        user = self._get_user( trans, user_id )
         email = util.restore_text( kwd.get( 'email', user.email ) )
         username = util.restore_text( kwd.get( 'username', user.username ) )
         inputs = list()
@@ -124,7 +118,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         }
 
     @expose_api
-    def set_information( self, trans, **kwd ):
+    def set_information( self, trans, user_id, **kwd ):
         '''
         Manage a user login, password, public username, type, addresses, etc.
         '''
@@ -815,7 +809,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             message = 'Generated a new web API key.'
         else:
             message = 'API key unchanged.'
-        return { 'message': message, 'api_key': user.api_keys[0].key if user.api_keys else None }
+        return { 'message': message, 'webapp' : trans.webapp.name, 'api_key': user.api_keys[0].key if user.api_keys else None }
 
     @expose_api
     def communication(self, trans, user_id, payload={}, **kwd):

@@ -1,5 +1,5 @@
 /** User Preferences view */
-define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/user/change-permissions', 'mvc/user/change-api-key', 'mvc/user/change-toolbox-filter', 'mvc/user/change-communication' ], function( UserInformation, Password, Permissions, ApiKey, ToolboxFilter, Communication ) {
+define( [ 'mvc/user/change-information', 'mvc/user/change-password', 'mvc/user/change-permissions', 'mvc/user/change-api-key', 'mvc/user/change-toolbox-filter', 'mvc/user/change-communication' ], function( Information, Password, Permissions, ApiKey, ToolboxFilter, Communication ) {
     var UserPreferences = Backbone.View.extend({
 
         initialize: function() {
@@ -33,7 +33,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                     if( !data.remote_user ) {
                         self._link( { title  : 'Manage your information (email, address, etc.)',
                                       url    : 'api/user_preferences/' + Galaxy.user.id + '/information',
-                                      module : UserInformation } );
+                                      module : Information } );
                         self._link( { title  : 'Change your password',
                                       url    : 'api/user_preferences/' + Galaxy.user.id + '/password',
                                       module : Password } );
