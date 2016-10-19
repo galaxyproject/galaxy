@@ -494,11 +494,11 @@ def populate_api_routes( webapp, app ):
                            action='password',
                            conditions=dict( method=["GET", "PUT"] ) )
 
-    webapp.mapper.connect( 'change_permissions',
-                           '/api/user_preferences/change_permissions',
+    webapp.mapper.connect( 'permissions',
+                           '/api/user_preferences/{user_id}/permissions',
                            controller='user_preferences',
-                           action='change_permissions',
-                           conditions=dict( method=["GET"] ) )
+                           action='permissions',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
     webapp.mapper.connect( 'api_key',
                            '/api/user_preferences/{user_id}/api_key',
@@ -506,11 +506,11 @@ def populate_api_routes( webapp, app ):
                            action='api_key',
                            conditions=dict( method=["GET", "PUT"] ) )
 
-    webapp.mapper.connect( 'change_toolbox_filters',
-                           '/api/user_preferences/change_toolbox_filters',
+    webapp.mapper.connect( 'toolbox_filters',
+                           '/api/user_preferences/{user_id}/toolbox_filters',
                            controller='user_preferences',
-                           action='change_toolbox_filters',
-                           conditions=dict( method=["GET"] ) )
+                           action='toolbox_filters',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
     webapp.mapper.connect( 'communication',
                            '/api/user_preferences/{user_id}/communication',

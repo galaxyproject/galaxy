@@ -62,9 +62,9 @@ define( [ 'mvc/user/change-information', 'mvc/user/change-password', 'mvc/user/c
                                       module : null } );
                     }
                     if ( data.webapp == 'galaxy' ) {
-                        var footer_template = '<p>' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance.';
+                        var footer_template = '<p>' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance. ';
                         if ( data.enable_quotas ) {
-                            footer_template += 'Your disk quota is: <strong>' + data.quota + '</strong>.';
+                            footer_template += 'Your disk quota is: <strong>' + data.quota + '</strong>. ';
                         }
                         footer_template += 'Is your usage more than expected?  See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>';
                         self.$preferences.append( footer_template );

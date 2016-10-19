@@ -470,7 +470,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         raise exceptions.MessageException('Failed to determine user, access denied.')
 
     @expose_api
-    def change_permissions(self, trans, cntrller='user_preferences', **kwd):
+    def permissions(self, trans, user_id, payload, **kwd):
         """Set the user's default permissions for the new histories"""
         params = util.Params(kwd)
         message = util.restore_text(params.get('message', ''))
@@ -683,7 +683,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         return iterable_roles_list
 
     @expose_api
-    def change_toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
+    def toolbox_filters(self, trans, user_id, payload, **kwd):
         """
         API call for fetching toolbox filters data
         """
