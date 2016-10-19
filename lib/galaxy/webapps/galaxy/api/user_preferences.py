@@ -704,24 +704,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         return iterable_roles_list
 
     @expose_api
-    def change_api_key(self, trans, cntrller='user_preferences', **kwd):
-        """
-        Generate API keys
-        """
-        params = util.Params(kwd)
-        message = 'API key unchanged.'
-        status = 'done'
-        if params.get('new_api_key', False):
-            self.create_api_key(trans, trans.user)
-            message = 'Generated a new web API key.'
-        return {
-            'message': message,
-            'status': status,
-            'user_api_key': trans.user.api_keys[0].key if trans.user.api_keys else None,
-            'app_name': trans.webapp.name
-        }
-
-    @expose_api
     def change_toolbox_filters(self, trans, cntrller='user_preferences', **kwd):
         """
         API call for fetching toolbox filters data
@@ -836,6 +818,25 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
         # Display the ToolBox filters form with the current values filled in
         return self._tool_filters(trans, **kwd)
+
+    @expose_api
+    def api_key(self, trans, user_id, payload={}, **kwd):
+        """
+        Get/Create API key.
+        """
+        user = self.get_user(trans, user_id)
+        if user == trans.user or trans.user_is_admin():
+            if kwd.get('new_api_key', False):
+                self.create_api_key(trans, user)
+                message = 'Generated a new web API key.'
+            else:
+                message = 'API key unchanged.'
+            return {
+                'message': message,
+                'status' : 'done',
+                'api_key': user.api_keys[0].key if user.api_keys else None
+            }
+        return { 'message' : 'Access denied.', 'status' : 'error' }
 
     @expose_api
     def communication(self, trans, user_id, payload={}, **kwd):

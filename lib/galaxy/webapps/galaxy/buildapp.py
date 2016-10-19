@@ -500,11 +500,11 @@ def populate_api_routes( webapp, app ):
                            action='change_permissions',
                            conditions=dict( method=["GET"] ) )
 
-    webapp.mapper.connect( 'change_api_key',
-                           '/api/user_preferences/change_api_key',
+    webapp.mapper.connect( 'api_key',
+                           '/api/user_preferences/{user_id}/api_key',
                            controller='user_preferences',
-                           action='change_api_key',
-                           conditions=dict( method=["GET"] ) )
+                           action='api_key',
+                           conditions=dict( method=["GET", "PUT"] ) )
 
     webapp.mapper.connect( 'change_toolbox_filters',
                            '/api/user_preferences/change_toolbox_filters',

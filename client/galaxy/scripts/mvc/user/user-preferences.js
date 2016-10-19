@@ -43,7 +43,7 @@ define( [ 'mvc/user/change-user-information', 'mvc/user/change-password', 'mvc/u
                                       url    : 'api/user_preferences/change-permissions',
                                       module : Permissions } );
                         self._link( { title  : 'Manage your API keys',
-                                      url    : 'api/user_preferences/change_api_key',
+                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/api_key',
                                       module : ApiKey } );
                         self._link( { title  : 'Manage your ToolBox filters',
                                       url    : 'api/user_preferences/change_toolbox_filters',
