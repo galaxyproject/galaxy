@@ -2159,7 +2159,7 @@ parameter.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="default_value" type="xs:string" gxdocs:deprecated="true">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Deprecated way to specify default value for column parameters.</xs:documentation>
+            <xs:documentation xml:lang="en">Deprecated way to specify default value for column parameters (use ``value`` instead).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="optional" type="xs:string" default="false">
