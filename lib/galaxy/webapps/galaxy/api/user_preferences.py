@@ -427,48 +427,55 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         """
         Allows to change a user password.
         """
-        password = kwd.get( 'password' )
-        confirm = kwd.get( 'confirm' )
-        current = kwd.get( 'current' )
-        token = kwd.get( 'token' )
-        token_result = None
-        if token:
-            # If a token was supplied, validate and set user
-            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-            if not token_result or not token_result.expiration_time > datetime.utcnow():
-                raise exceptions.MessageException('Invalid or expired password reset token, please request a new one.')
-            user = token_result.user
-        else:
-            # The user is changing their own password, validate their current password
-            user = self._get_user(trans, user_id)
-            (ok, message) = trans.app.auth_manager.check_change_password(user, current)
-            if not ok:
-                raise exceptions.MessageException(message)
-        if user:
-            # Validate the new password
-            message = validate_password(trans, password, confirm)
-            if message:
-                raise exceptions.MessageException(message)
+        if kwd:
+            password = kwd.get( 'password' )
+            confirm = kwd.get( 'confirm' )
+            current = kwd.get( 'current' )
+            token = kwd.get( 'token' )
+            token_result = None
+            if token:
+                # If a token was supplied, validate and set user
+                token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
+                if not token_result or not token_result.expiration_time > datetime.utcnow():
+                    raise exceptions.MessageException('Invalid or expired password reset token, please request a new one.')
+                user = token_result.user
             else:
-                # Save new password
-                user.set_password_cleartext(password)
-                # if we used a token, invalidate it and log the user in.
-                if token_result:
-                    trans.handle_user_login(token_result.user)
-                    token_result.expiration_time = datetime.utcnow()
-                    trans.sa_session.add(token_result)
-                # Invalidate all other sessions
-                for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
-                                                 .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
-                    other_galaxy_session.is_valid = False
-                    trans.sa_session.add(other_galaxy_session)
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
-                trans.log_event('User change password')
-                return { 'message': 'Password has been changed' }
-        raise exceptions.MessageException('Failed to determine user, access denied.')
+                # The user is changing their own password, validate their current password
+                user = self._get_user(trans, user_id)
+                (ok, message) = trans.app.auth_manager.check_change_password(user, current)
+                if not ok:
+                    raise exceptions.MessageException(message)
+            if user:
+                # Validate the new password
+                message = validate_password(trans, password, confirm)
+                if message:
+                    raise exceptions.MessageException(message)
+                else:
+                    # Save new password
+                    user.set_password_cleartext(password)
+                    # if we used a token, invalidate it and log the user in.
+                    if token_result:
+                        trans.handle_user_login(token_result.user)
+                        token_result.expiration_time = datetime.utcnow()
+                        trans.sa_session.add(token_result)
+                    # Invalidate all other sessions
+                    for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
+                                                     .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add(other_galaxy_session)
+                    trans.sa_session.add(user)
+                    trans.sa_session.flush()
+                    trans.log_event('User change password')
+                    return { 'message', 'Password has been updated.' }
+            raise exceptions.MessageException('Failed to determine user, access denied.')
+        else:
+            return { 'message': 'Password unchanged.',
+                     'inputs' : [ { 'name': 'current',  'type': 'password', 'label': 'Current password' }, {
+                                    'name': 'password', 'type': 'password', 'label': 'New password'     }, {
+                                    'name': 'confirm',  'type': 'password', 'label': 'Confirm password' }, {
+                                    'name': 'token',    'type': 'hidden',   'hidden': True, 'ignore': None } ] }
 
     @expose_api
     def permissions(self, trans, user_id, payload={}, **kwd):

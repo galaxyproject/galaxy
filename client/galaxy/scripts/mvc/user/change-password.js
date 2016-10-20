@@ -7,10 +7,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             this.form = new Form({
                 title: 'Change Password',
                 icon: 'fa-key',
-                inputs: [ { name: 'current',  type: 'password', label: 'Current password' }, {
-                            name: 'password', type: 'password', label: 'New password'     }, {
-                            name: 'confirm',  type: 'password', label: 'Confirm password' }, {
-                            name: 'token',    type: 'hidden',   hidden: true, ignore: null  } ],
+                inputs: options.inputs,
                 operations: {
                     'back': new Ui.ButtonIcon({
                         icon: 'fa-caret-left',
