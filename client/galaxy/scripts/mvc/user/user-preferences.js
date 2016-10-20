@@ -38,7 +38,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'toolbox_filters': {
                     title           : 'Manage your Toolbox filters',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/toolbox_filters',
-                    icon            : 'fa-filter'
+                    icon            : 'fa-filter',
+                    submit_title    : 'Save filters'
                 }
             }
             this.setElement( '<div/>' );

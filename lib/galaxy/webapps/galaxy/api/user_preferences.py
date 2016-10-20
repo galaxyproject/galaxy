@@ -468,7 +468,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
                     trans.log_event('User change password')
-                    return { 'message', 'Password has been updated.' }
+                    return { 'message', 'Password has been saved.' }
             raise exceptions.MessageException('Failed to determine user, access denied.')
         else:
             return { 'message': 'Password unchanged.',
@@ -527,7 +527,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 user.preferences[filter_type] = ','.join(new_filters)
             trans.sa_session.add(user)
             trans.sa_session.flush()
-            return { 'message': 'Toolbox filters have been updated.' }
+            return { 'message': 'Toolbox filters have been saved.' }
         else:
             saved_values = {}
             for name, value in user.preferences.items():
