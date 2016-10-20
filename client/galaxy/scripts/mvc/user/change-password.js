@@ -23,7 +23,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     'save': new Ui.Button({
                         icon: 'fa-save',
                         tooltip: 'Save settings',
-                        title: 'Save Password',
+                        title: 'Save password',
                         cls: 'ui-button btn btn-primary',
                         floating: 'clear',
                         onclick: function() { self._save() }

@@ -506,15 +506,13 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             message = 'Default new history permissions have been changed.'"""
         inputs = list()
         for index, action in permitted_actions:
-            in_options = []
-            in_roles = []
-            for a in current_actions:
-                if a.action == action.action:
-                    in_options.append({ 'label': a.role.name, 'value': a.role.id })
-                    in_roles.append( a.role )
-            out_roles = filter(lambda x: x not in in_roles, roles)
-            out_options = [ { 'label': r.name, 'value': r.id } for r in out_roles ]
-            inputs.append({ 'type': 'inout', 'name': action.action, 'help': action.description, 'options': { 'in': in_options, 'out': out_options } })
+            inputs.append({ 'type'      : 'select',
+                            'multiple'  : True,
+                            'optional'  : True,
+                            'name'      : action.action,
+                            'help'      : action.description,
+                            'options'   : [ ( r.name, r.id ) for r in roles ],
+                            'value'     : [ a.role.id for a in current_actions if a.action == action.action ] })
         return { 'message': 'message', 'inputs': inputs }
 
     @expose_api

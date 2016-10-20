@@ -8,8 +8,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             this.form = new Form({
                 title       : 'Manage dataset permissions',
                 name        : 'toolbox_filter',
+                icon        : 'fa-lock',
                 inputs      : options.inputs,
-                icon        : 'fa-universal-access',
                 operations  : {
                     'back'  : new Ui.ButtonIcon({
                         icon    : 'fa-caret-left',
@@ -21,7 +21,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 buttons     : {
                     'save'  : new Ui.Button({
                         tooltip : 'Save changes',
-                        title   : 'Save Permissions',
+                        title   : 'Save permissions',
                         icon    : 'fa-save',
                         cls     : 'ui-button btn btn-primary',
                         floating: 'clear',

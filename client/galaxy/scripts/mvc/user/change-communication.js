@@ -5,7 +5,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = new Form({
-                title   : 'Enable real-time communication with other Galaxy users',
+                title   : 'Enable real-time communication with other users',
                 icon    : 'fa-child',
                 inputs  : [ { name: 'enable', type: 'boolean', label: 'Enable communication', value: options.activated } ],
                 operations: {
