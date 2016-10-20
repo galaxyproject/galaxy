@@ -67,9 +67,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         floating : 'clear',
                         onclick  : function() {
                             $.ajax( {
-                                url  : options.url,
-                                data : form.data.create(),
-                                type : 'PUT'
+                                url         : options.url,
+                                data        : form.data.create(),
+                                type        : 'PUT',
+                                traditional : true,
                             }).done( function( response ) {
                                 form.data.matchModel( response, function ( input, input_id ) {
                                     form.field_list[ input_id ].value( input.value );
