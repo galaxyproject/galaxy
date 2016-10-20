@@ -1,22 +1,95 @@
 /** User Preferences view */
-define( [ 'mvc/user/change-information', 'mvc/user/change-password', 'mvc/user/change-permissions', 'mvc/user/change-api-key', 'mvc/user/change-toolbox-filter', 'mvc/user/change-communication' ], function( Information, Password, Permissions, ApiKey, ToolboxFilter, Communication ) {
+define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
+
     var UserPreferences = Backbone.View.extend({
 
         initialize: function() {
+            this.form_def = {
+                'information': {
+                    title           : 'Manage your information (email, address, etc.)',
+                    url             : 'api/user_preferences/' + Galaxy.user.id + '/information',
+                    icon            : 'fa-info-circle'
+                },
+                'password': {
+                    title           : 'Change your password',
+                    icon            : 'fa-key',
+                    url             : 'api/user_preferences/' + Galaxy.user.id + '/password',
+                    submit_title    : 'Save password',
+                },
+                'communication': {
+                    title           : 'Change your communication settings',
+                    url             : 'api/user_preferences/' + Galaxy.user.id + '/communication',
+                    icon            : 'fa-child',
+                    submit_icon     : 'Save communication settings'
+                },
+                'permissions': {
+                    title           : 'Change default permissions for new histories',
+                    url             : 'api/user_preferences/' + Galaxy.user.id + '/permissions',
+                    submit_icon     : 'fa-lock',
+                    submit_icon     : 'Save permissions'
+                },
+                'api_key': {
+                    title           : 'Manage your API keys',
+                    url             : 'api/user_preferences/' + Galaxy.user.id + '/api_key',
+                    icon            : 'fa-key',
+                },
+                'toolbox_filters': {
+                    title           : 'Manage your ToolBox filters',
+                    url             : 'api/user_preferences/' + Galaxy.user.id + '/toolbox_filters',
+                    icon            : 'fa-filter'
+                }
+            }
             this.setElement( '<div/>' );
             this.render();
+        },
+
+        _load: function( options ) {
+            var self = this;
+            var form = new Form({
+                title  : options.title,
+                icon   : options.icon,
+                inputs : options.inputs,
+                operations: {
+                    'back': new Ui.ButtonIcon({
+                        icon     : 'fa-caret-left',
+                        tooltip  : 'Return to user preferences',
+                        title    : 'Preferences',
+                        onclick  : function() { form.remove(); self.$preferences.show() }
+                    })
+                },
+                buttons: {
+                    'submit': new Ui.Button({
+                        tooltip  : options.submit_tooltip,
+                        title    : options.submit_title || 'Save settings',
+                        icon     : options.submit_icon || 'fa-save',
+                        cls      : 'ui-button btn btn-primary',
+                        floating : 'clear',
+                        onclick  : function() {
+                            $.ajax( {
+                                url  : options.url,
+                                data : form.data.create(),
+                                type : 'PUT'
+                            }).done( function( response ) {
+                                form.data.matchModel( response, function ( input, input_id ) {
+                                    form.field_list[ input_id ].value( input.value );
+                                });
+                                form.message.update( { message: response.message, status: 'success' } );
+                            }).fail( function( response ) {
+                                form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
+                            });
+                        }
+                    })
+                }
+            });
+            this.$preferences.hide();
+            this.$el.append( form.$el );
         },
 
         _link: function( page ) {
             var self = this;
             var $page_link = $( '<a target="galaxy_main" href="javascript:void(0)">' + page.title + '</a>' ).on( 'click', function() {
-                $.ajax({
-                    url  : Galaxy.root + page.url,
-                    type : 'GET'
-                }).always( function( response ) {
-                    self.$preferences.hide();
-                    response.onclose = function() { self.$preferences.show() };
-                    self.$el.append( new page.module( response ).$el );
+                $.ajax({ url: Galaxy.root + page.url, type: 'GET' }).always( function( response ) {
+                    self._load( $.extend( {}, page, response ) );
                 });
             });
             this.$pages.append( $( '<li/>' ).append( $page_link ) );
@@ -27,39 +100,24 @@ define( [ 'mvc/user/change-information', 'mvc/user/change-password', 'mvc/user/c
             $.getJSON( Galaxy.root + 'api/user_preferences', function( data ) {
                 self.$preferences = $( '<div/>' );
                 if ( data.id !== null ) {
-                    self.$preferences.append( '<h2>User preferences</h2>' )
-                                     .append( '<p>You are currently logged in as ' +  _.escape( data.email ) + '.</p>' )
+                    self.$preferences.append( $( '<h2/>' ).append( 'User preferences' ) )
+                                     .append( $( '<p/>' ).append( 'You are currently logged in as ' +  _.escape( data.email ) + '.' ) )
                                      .append( self.$pages = $( '<ul/>' ) );
                     if( !data.remote_user ) {
-                        self._link( { title  : 'Manage your information (email, address, etc.)',
-                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/information',
-                                      module : Information } );
-                        self._link( { title  : 'Change your password',
-                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/password',
-                                      module : Password } );
+                        self._link( self.form_def.information );
+                        self._link( self.form_def.password );
                     }
                     if ( data.webapp == 'galaxy' ) {
-                        self._link( { title  : 'Change your communication settings',
-                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/communication',
-                                      module : Communication } );
-                        self._link( { title  : 'Change default permissions for new histories',
-                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/permissions',
-                                      module : Permissions } );
-                        self._link( { title  : 'Manage your API keys',
-                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/api_key',
-                                      module : ApiKey } );
-                        self._link( { title  : 'Manage your ToolBox filters',
-                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/toolbox_filters',
-                                      module : ToolboxFilter } );
+                        self._link( self.form_def.communication );
+                        self._link( self.form_def.permissions );
+                        self._link( self.form_def.api_key );
+                        self._link( self.form_def.toolbox_filters );
                         if ( data.openid && !data.remote_user ) {
-                            self._link( { title  : 'Manage OpenIDs linked to your account',
-                                          module : null } );
+                            self._link( { title  : 'Manage OpenIDs linked to your account' } );
                         }
                     } else {
-                        self._link( { title  : 'Manage your API keys',
-                                      module : ApiKey } );
-                        self._link( { title  : 'Manage your email alerts',
-                                      module : null } );
+                        self._link( self.form_def.api_key );
+                        self._link( { title  : 'Manage your email alerts' } );
                     }
                     if ( data.webapp == 'galaxy' ) {
                         var footer_template = '<p>' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance. ';
