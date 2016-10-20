@@ -468,7 +468,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
                     trans.log_event('User change password')
-                    return { 'message', 'Password has been saved.' }
+                    return { 'message': 'Password has been saved.' }
             raise exceptions.MessageException('Failed to determine user, access denied.')
         else:
             return { 'message': 'Password unchanged.',
