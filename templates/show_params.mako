@@ -189,23 +189,6 @@
             <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
         %endif
         %if job and job.command_line and trans.user_is_admin():
-	    %if job.command_line.find("JPCNn681vcGV4KuvuT16") != (-1):
-       	      	<%
-		job.command_line = str(job.command_line)
-		print "in show params, command line: " + job.command_line
-		passVar = ''
-	     	index = job.command_line.find("JPCNn681vcGV4KuvuT16") + len("JPCNn681vcGV4KuvuT16") + 1
-		print "Type command line: " + str(type(job.command_line))
-		print "Last character: " + job.command_line[index]
-	     	while (index< len(job.command_line)) and (job.command_line[index] != ' '):
-	      		passVar = passVar + job.command_line[index]
-	     		index = index + 1
-	     	job.command_line = job.command_line.replace(passVar, '$PASS')
-	     	job.command_line = job.command_line.replace('JPCNn681vcGV4KuvuT16 ', '') 
-	     	%>
-	    %endif
-	
-			
             <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
         %endif
         %if job and trans.user_is_admin():

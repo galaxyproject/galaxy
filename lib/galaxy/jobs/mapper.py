@@ -153,7 +153,6 @@ class JobRunnerMapper( object ):
     def __job_params( self, job ):
         app = self.job_wrapper.app
         param_values = job.get_param_values( app, ignore_errors=True )
-	print "These are your param values: " + param_values
         return param_values
 
     def __convert_url_to_destination( self, url ):

@@ -342,7 +342,6 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
                 b.deleted == false(),
                 b.dataset_id == v
             ) )
-	#check what the value is at this point
 	  
 
         out = []

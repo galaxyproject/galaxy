@@ -3,8 +3,6 @@ import os
 import tempfile
 from six import string_types
 
-from sqlalchemy.orm import object_session
-import galaxy
 from galaxy import model
 from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util.bunch import Bunch
@@ -114,9 +112,9 @@ class ToolEvaluator( object ):
         self.param_dict = param_dict
 
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[] ):
-	
 	"""
-        Build the dictionary of parameters for substituting into the command
+       
+	 Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
         all the attributes of the value to be used in the template, *but*
         when the __str__ method is called it actually calls the
@@ -484,16 +482,6 @@ class ToolEvaluator( object ):
             abs_executable = os.path.join( tool_dir, executable )
             command_line = command_line.replace(executable, abs_executable, 1)
 	    command_line = interpreter + " " + command_line
-	#if command_line.find("JPCNn681vcGV4KuvuT16") != (-1):
-         #   start = command_line.find(' JPCNn681vcGV4KuvuT16 ')
-         #   end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
-         #   index = end + 1
-         #   passVar = ''
-         #   while (index < len(command_line)) and (command_line[index] != ' '):
-         #       passVar = passVar + command_line[index]
-         #       index = index + 1
-         #   command_line = command_line.replace(passVar, '$PASS')
-         #   command_line = command_line.replace('JPCNn681vcGV4KuvuT16 ', '')
 
         self.command_line = command_line
 

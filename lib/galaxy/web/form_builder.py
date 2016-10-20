@@ -63,7 +63,6 @@ class PasswordField(BaseField):
     def __init__( self, name, size=None, value=None ):
         self.name = name
         self.size = int( size or 10 )
-	os.environ[self.name] = value
 	self.value = value or ""
 
     def get_html( self, prefix="", disabled=False  ):

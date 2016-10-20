@@ -1,5 +1,4 @@
 from os import getcwd
-import re
 import galaxy
 from galaxy import model
 from os.path import join

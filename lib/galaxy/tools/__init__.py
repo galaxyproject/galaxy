@@ -1150,10 +1150,10 @@ class Tool( object, Dictifiable ):
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook( 'validate_input' )
                 if validate_input:
-		    "Print I validated input..."
                     validate_input( request_context, errors, params, self.inputs )
             all_errors.append( errors )
             all_params.append( params )
+	#formatting for this parameter
 	if 'JPCNn681vcGV4KuvuT16' in expanded_incomings[0].keys():
 		all_params[0]['JPCNn681vcGV4KuvuT16'] = expanded_incomings[0]['JPCNn681vcGV4KuvuT16']
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
