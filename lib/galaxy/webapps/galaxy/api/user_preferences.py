@@ -471,217 +471,51 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         raise exceptions.MessageException('Failed to determine user, access denied.')
 
     @expose_api
-    def permissions(self, trans, user_id, payload, **kwd):
-        """Set the user's default permissions for the new histories"""
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        update_roles = kwd.get('update_roles', False)
-        if trans.user:
-            if update_roles:
-                p = util.Params(kwd)
-                permissions = {}
-                for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    if p.get(k + '_out', []):
-                        in_roles = p.get(k + '_out', [])
-                        if not isinstance(in_roles, list):
-                            in_roles = [in_roles]
-                        in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                        action = trans.app.security_agent.get_action(v.action).action
-                        permissions[action] = in_roles
-                    elif p.get(k + '_in', []):
-                        in_roles = p.get(k + '_in', [])
-                        if not isinstance(in_roles, list):
-                            in_roles = [in_roles]
-                        in_roles = self._get_roles_current(trans, in_roles, v)
-                        action = trans.app.security_agent.get_action(v.action).action
-                        permissions[action] = in_roles
-                trans.app.security_agent.user_set_default_permissions(trans.user, permissions)
-                message = 'Default new history permissions have been changed.'
+    def permissions(self, trans, user_id, payload={}, **kwd):
+        """
+        Set the user's default permissions for the new histories
+        """
+        user = self._get_user( trans, user_id )
+        roles = user.all_roles()
+        current_actions = user.default_permissions
+        permitted_actions = trans.app.model.Dataset.permitted_actions.items()
 
-            return self.render_permission_form(trans, message, status)
-        else:
-            # User not logged in, history group must be only public
-            return {
-                'message': "You must be logged in to change your default permitted actions.",
-                'status': "error"
-            }
-
-    def _get_roles_current(self, trans, in_roles, action):
-        """ Filter the role based on the selection """
-        selected_role = []
-        obj = trans.user
-
-        if isinstance(obj, trans.app.model.User):
-            current_actions = obj.default_permissions
-        elif isinstance(obj, trans.app.model.History):
-            current_actions = obj.default_permissions
-        elif isinstance(obj, trans.app.model.Dataset):
-            current_actions = obj.actions
-        elif isinstance(obj, trans.app.model.LibraryDatasetDatasetAssociation):
-            current_actions = obj.actions + obj.dataset.actions
-        elif isinstance(obj, trans.app.model.Library):
-            current_actions = obj.actions
-        elif isinstance(obj, trans.app.model.LibraryDataset):
-            current_actions = obj.actions
-        elif isinstance(obj, trans.app.model.LibraryFolder):
-            current_actions = obj.actions
-        else:
-            current_actions = []
-        for a in current_actions:
-            if a.action == action.action:
-                if str(a.role.id) not in in_roles:
-                    selected_role.append(a.role.id)
-        return selected_role
-
-    def __render_permission_form(self, trans, message, status, do_not_render=[],
-                               all_roles=[]):
-        ''' Obtains parameters to build change permission form '''
-        obj = trans.user
-        obj_name = trans.user.email
-        roles = trans.user.all_roles()
-        if isinstance(obj, trans.app.model.User):
-            current_actions = obj.default_permissions
-            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-            obj_str = 'user %s' % obj_name
-            obj_type = 'dataset'
-        elif isinstance(obj, trans.app.model.History):
-            current_actions = obj.default_permissions
-            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-            obj_str = 'history %s' % obj_name
-            obj_type = 'dataset'
-        elif isinstance(obj, trans.app.model.Dataset):
-            current_actions = obj.actions
-            permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-            obj_str = obj_name
-            obj_type = 'dataset'
-        elif isinstance(obj, trans.app.model.LibraryDatasetDatasetAssociation):
-            current_actions = obj.actions + obj.dataset.actions
-            permitted_actions = trans.app.model.Dataset.permitted_actions.items() + trans.app.model.Library.permitted_actions.items()
-            obj_str = obj_name
-            obj_type = 'dataset'
-        elif isinstance(obj, trans.app.model.Library):
-            current_actions = obj.actions
-            permitted_actions = trans.app.model.Library.permitted_actions.items()
-            obj_str = 'library %s' % obj_name
-            obj_type = 'library'
-        elif isinstance(obj, trans.app.model.LibraryDataset):
-            current_actions = obj.actions
-            permitted_actions = trans.app.model.Library.permitted_actions.items()
-            obj_str = 'library dataset %s' % obj_name
-            obj_type = 'library'
-        elif isinstance(obj, trans.app.model.LibraryFolder):
-            current_actions = obj.actions
-            permitted_actions = trans.app.model.Library.permitted_actions.items()
-            obj_str = 'library folder %s' % obj_name
-            obj_type = 'library'
-        else:
-            current_actions = []
-            permitted_actions = {}.items()
-            obj_str = 'unknown object %s' % obj_name
-            obj_type = ''
-
-        # converts the list to JSON iterable
-        current_action_list = dict()
-        for index, item in enumerate(current_actions):
-            current_action_list[index] = dict()
-            current_action_list[index]["action"] = item.action
-
-        all_permitted_actions = list()
-        permitted_action_list = dict()
-        action_role = list()
-        for index, (item, action) in permitted_actions:
-            if item not in do_not_render:
-                permitted_action_list[index] = dict()
-                if item == 'LIBRARY_ACCESS':
-                    role_list = self._get_roles_action(current_actions, permitted_actions, action, do_not_render, all_roles)
-                else:
-                    role_list = self._get_roles_action(current_actions, permitted_actions, action, do_not_render, roles)
-                # make inputs for the permissions form
-                if trans.app.security_agent.permitted_actions.DATASET_ACCESS.action == 'data_access':
-                    all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=(action.description + '<br/> NOTE: Users must have every role associated with this dataset in order to access it')))
-                else:
-                    all_permitted_actions.append(dict(name=(action.action.upper() + ':'), type='hidden', help=action.description))
-                data_options_in = list()
-                data_options_out = list()
-                for role_item_in in role_list["in_role_iterable"]:
-                    role_in = role_list["in_role_iterable"][role_item_in]
-                    data_options_in.append(dict(value=role_in['id'], label=role_in['name']))
-
-                for role_item_out in role_list["out_role_iterable"]:
-                    role_out = role_list["out_role_iterable"][role_item_out]
-                    data_options_out.append(dict(value=role_out['id'],
-                                                 label=role_out['name']))
-                all_permitted_actions.append(dict(name=(item + '_in'),
-                                                  type='select',
-                                                  data=data_options_in,
-                                                  display='checkboxes',
-                                                  optional=True,
-                                                  label='Roles associated:',
-                                                  multiple=True))
-                all_permitted_actions.append(dict(name=(item + '_out'),
-                                                  type='select',
-                                                  data=data_options_out,
-                                                  display='checkboxes',
-                                                  label='Roles not associated:',
-                                                  multiple=True,
-                                                  optional=True))
-                all_permitted_actions.append(dict(id='horizontal_line',
-                                                  title='',
-                                                  type='hidden',
-                                                  help='<hr class="docutils">'))
-
-        action_role.append(dict(value="", label='Add or remove roles'))
-        all_permitted_actions.append(dict(name=('addremove_actionrole'),
-                                          type='select',
-                                          label='Action',
-                                          display='radiobutton',
-                                          optional=True,
-                                          data=action_role,
-                                          multiple=False))
-
-        return {
-            'userid': trans.user.id,
-            'current_actions': current_action_list,
-            'permitted_actions': permitted_action_list,
-            'obj_str': obj_str,
-            'obj_type': obj_type,
-            'data_access': trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
-            'all_roles': all_roles,
-            'message': message,
-            'status': status,
-            'role_form': all_permitted_actions
-        }
-
-    def _get_roles_action(self, current_actions, permitted_actions, action, do_not_render, roles):
-        '''
-        Fetch in and out roles based on action
-        '''
-        in_roles = sets.Set()
-        out_roles = []
-        for a in current_actions:
-            if a.action == action.action:
-                in_roles.add(a.role)
-        out_roles = filter(lambda x: x not in in_roles, roles)
-        in_role_iterable = self._get_iterable_roles(in_roles)
-        out_role_iterable = self._get_iterable_roles(out_roles)
-        return {
-            'in_role_iterable': in_role_iterable,
-            'out_role_iterable': out_role_iterable
-        }
-
-    def _get_iterable_roles(self, role_list):
-        '''
-        Converts list to JSON iterable list
-        '''
-        index = 0
-        iterable_roles_list = dict()
-        for item in role_list:
-            iterable_roles_list[index] = dict()
-            iterable_roles_list[index]["id"] = item.id
-            iterable_roles_list[index]["name"] = item.name
-            index = index + 1
-        return iterable_roles_list
+        """if kwd.get('update_roles', False):
+            p = util.Params(kwd)
+            permissions = {}
+            for k, v in permitted_actions:
+                if p.get(k + '_out', []):
+                    in_roles = p.get(k + '_out', [])
+                    if not isinstance(in_roles, list):
+                        in_roles = [in_roles]
+                    in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
+                    action = trans.app.security_agent.get_action(v.action).action
+                    permissions[action] = in_roles
+                elif p.get(k + '_in', []):
+                    in_roles = p.get(k + '_in', [])
+                    if not isinstance(in_roles, list):
+                        in_roles = [in_roles]
+                    selected_role = []
+                    for a in current_actions:
+                        if a.action == action.action:
+                            if str(a.role.id) not in in_roles:
+                                selected_role.append(a.role.id)
+                    action = trans.app.security_agent.get_action(v.action).action
+                    permissions[action] = selected_role
+            trans.app.security_agent.user_set_default_permissions(trans.user, permissions)
+            message = 'Default new history permissions have been changed.'"""
+        inputs = list()
+        for index, action in permitted_actions:
+            in_options = []
+            in_roles = []
+            for a in current_actions:
+                if a.action == action.action:
+                    in_options.append({ 'label': a.role.name, 'value': a.role.id })
+                    in_roles.append( a.role )
+            out_roles = filter(lambda x: x not in in_roles, roles)
+            out_options = [ { 'label': r.name, 'value': r.id } for r in out_roles ]
+            inputs.append({ 'type': 'inout', 'name': action.action, 'help': action.description, 'options': { 'in': in_options, 'out': out_options } })
+        return { 'message': 'message', 'inputs': inputs }
 
     @expose_api
     def toolbox_filters(self, trans, user_id, payload={}, **kwd):
@@ -693,24 +527,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         filter_types = odict([ ('toolbox_tool_filters',    { 'title': 'Tools',    'config': trans.app.config.user_tool_filters }),
                                ('toolbox_section_filters', { 'title': 'Sections', 'config': trans.app.config.user_section_filters }),
                                ('toolbox_label_filters',   { 'title': 'Labels',   'config': trans.app.config.user_label_filters }) ])
-
-        def add_filter_inputs(factory, inputs, filter_type, saved_values):
-            filter_inputs = list()
-            filter_values = saved_values.get( filter_type, [] )
-            filter_config = filter_types[ filter_type ][ 'config' ]
-            filter_title  = filter_types[ filter_type ][ 'title' ]
-            for filter_name in filter_config:
-                function = factory.build_filter_function(filter_name)
-                filter_inputs.append({
-                    'type'   : 'boolean',
-                    'name'   : filter_name,
-                    'label'  : filter_name,
-                    'help'   : docstring_trim(function.__doc__) or 'No description available.',
-                    'value'  : 'true' if filter_name in filter_values else 'false',
-                    'ignore' : 'false'
-                })
-            if filter_inputs:
-                inputs.append( { 'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs } )
 
         if kwd.get( 'update', False ):
             for filter_type in filter_types:
@@ -733,9 +549,27 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         inputs = []
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
-            add_filter_inputs(factory, inputs, filter_type, saved_values )
+            self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values )
         inputs.append( { 'type': 'hidden', 'hidden': True, 'name': 'update', 'value': True } )
         return { 'message': message, 'inputs': inputs }
+
+    def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
+        filter_inputs = list()
+        filter_values = saved_values.get( filter_type, [] )
+        filter_config = filter_types[ filter_type ][ 'config' ]
+        filter_title  = filter_types[ filter_type ][ 'title' ]
+        for filter_name in filter_config:
+            function = factory.build_filter_function(filter_name)
+            filter_inputs.append({
+                'type'   : 'boolean',
+                'name'   : filter_name,
+                'label'  : filter_name,
+                'help'   : docstring_trim(function.__doc__) or 'No description available.',
+                'value'  : 'true' if filter_name in filter_values else 'false',
+                'ignore' : 'false'
+            })
+        if filter_inputs:
+            inputs.append( { 'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs } )
 
     @expose_api
     def api_key(self, trans, user_id, payload={}, **kwd):

@@ -1,7 +1,38 @@
 /** Show and save permissions view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     return Backbone.View.extend({
-        initialize: function ( app, options, $el ) {
+        initialize: function ( options ) {
+            var self = this;
+            this.model = options && options.model || new Backbone.Model( options );
+            window.console.log( options );
+            this.form = new Form({
+                title       : 'Manage dataset permissions',
+                name        : 'toolbox_filter',
+                inputs      : options.inputs,
+                icon        : 'fa-universal-access',
+                operations  : {
+                    'back'  : new Ui.ButtonIcon({
+                        icon    : 'fa-caret-left',
+                        tooltip : 'Return to user preferences',
+                        title   : 'Preferences',
+                        onclick : function() { self.remove(); options.onclose(); }
+                    })
+                },
+                buttons     : {
+                    'save'  : new Ui.Button({
+                        tooltip : 'Save changes',
+                        title   : 'Save Permissions',
+                        icon    : 'fa-save',
+                        cls     : 'ui-button btn btn-primary',
+                        floating: 'clear',
+                        onclick : function() { self._save() }
+                    })
+                }
+            });
+            this.setElement( this.form.$el );
+        },
+
+        initializedssd: function ( app, options, $el ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
             this.form = self._buildForm( options, app, self, $el );
@@ -11,7 +42,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         /** Build the form for changing permissions */
         _buildForm: function( options, app, self, $el ) {
             return new Form({
-                title: 'Manage ' + options["obj_type"] + ' permissions on ' + options["obj_str"],
+                title: 'Manage dataset permissions on EMAIL',
                 icon: 'fa-universal-access',
                 inputs: options['role_form'],
                 operations: {

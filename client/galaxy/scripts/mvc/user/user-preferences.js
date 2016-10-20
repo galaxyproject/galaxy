@@ -43,7 +43,7 @@ define( [ 'mvc/user/change-information', 'mvc/user/change-password', 'mvc/user/c
                                       url    : 'api/user_preferences/' + Galaxy.user.id + '/communication',
                                       module : Communication } );
                         self._link( { title  : 'Change default permissions for new histories',
-                                      url    : 'api/user_preferences/change-permissions',
+                                      url    : 'api/user_preferences/' + Galaxy.user.id + '/permissions',
                                       module : Permissions } );
                         self._link( { title  : 'Manage your API keys',
                                       url    : 'api/user_preferences/' + Galaxy.user.id + '/api_key',
