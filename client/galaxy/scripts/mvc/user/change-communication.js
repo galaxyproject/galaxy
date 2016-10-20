@@ -7,7 +7,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             this.form = new Form({
                 title   : 'Enable real-time communication with other users',
                 icon    : 'fa-child',
-                inputs  : [ { name: 'enable', type: 'boolean', label: 'Enable communication', value: options.activated } ],
+                inputs  : options.inputs,
                 operations: {
                     'back': new Ui.ButtonIcon({
                         icon: 'fa-caret-left',

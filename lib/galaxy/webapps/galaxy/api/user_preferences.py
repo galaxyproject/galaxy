@@ -517,7 +517,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         filter_types = odict([ ('toolbox_tool_filters',    { 'title': 'Tools',    'config': trans.app.config.user_tool_filters }),
                                ('toolbox_section_filters', { 'title': 'Sections', 'config': trans.app.config.user_section_filters }),
                                ('toolbox_label_filters',   { 'title': 'Labels',   'config': trans.app.config.user_label_filters }) ])
-        if kwd.get( 'update', False ):
+        if kwd:
             for filter_type in filter_types:
                 new_filters = []
                 for prefixed_name in kwd:
@@ -527,19 +527,17 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 user.preferences[filter_type] = ','.join(new_filters)
             trans.sa_session.add(user)
             trans.sa_session.flush()
-            message = 'Toolbox filters have been updated.'
+            return { 'message': 'Toolbox filters have been updated.' }
         else:
-            message = 'Toolbox filters unchanged.'
-        saved_values = {}
-        for name, value in user.preferences.items():
-            if name in filter_types:
-                saved_values[ name ] = listify(value, do_strip=True)
-        inputs = []
-        factory = FilterFactory(trans.app.toolbox)
-        for filter_type in filter_types:
-            self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values )
-        inputs.append( { 'type': 'hidden', 'hidden': True, 'name': 'update', 'value': True } )
-        return { 'message': message, 'inputs': inputs }
+            saved_values = {}
+            for name, value in user.preferences.items():
+                if name in filter_types:
+                    saved_values[ name ] = listify(value, do_strip=True)
+            inputs = []
+            factory = FilterFactory(trans.app.toolbox)
+            for filter_type in filter_types:
+                self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values )
+            return { 'message': 'Toolbox filters unchanged.', 'inputs': inputs }
 
     def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
         filter_inputs = list()
@@ -565,20 +563,27 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         Get/Create API key.
         """
         user = self._get_user(trans, user_id)
-        if kwd.get('new_api_key', False):
+        if kwd:
             self.create_api_key(trans, user)
             message = 'Generated a new web API key.'
         else:
             message = 'API key unchanged.'
-        return { 'message': message, 'webapp' : trans.webapp.name, 'api_key': user.api_keys[0].key if user.api_keys else None }
+        webapp_name = 'Galaxy' if trans.webapp.name == 'galaxy' else 'the Tool Shed'
+        inputs = [ { 'name'       : 'api-key',
+                     'type'       : 'text',
+                     'label'      : 'Current API key:',
+                     'value'      : user.api_keys[0].key if user.api_keys else 'Not available.',
+                     'readonly'   : True,
+                     'help'       : ' An API key will allow you to access %s via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' % webapp_name } ]
+        return { 'message': message, 'inputs': inputs }
 
     @expose_api
     def communication(self, trans, user_id, payload={}, **kwd):
         """
         Allows the user to activate/deactivate the communication server.
         """
-        enable = kwd.get('enable')
         user = self._get_user(trans, user_id)
+        enable = kwd.get('enable')
         if enable is not None:
             if enable == 'true':
                 message = 'Your communication server has been activated.'
@@ -587,9 +592,13 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             user.preferences['communication_server'] = enable
             trans.sa_session.add(user)
             trans.sa_session.flush()
+            return { 'message' : message }
         else:
-            message = 'Communication server settings unchanged.'
-        return { 'message': message, 'activated': user.preferences.get('communication_server', 'false') }
+            return { 'message' : 'Communication server settings unchanged.',
+                     'inputs'  : { name  : 'enable',
+                                   type  : 'boolean',
+                                   label : 'Enable communication',
+                                   value : user.preferences.get('communication_server', 'false') } }
 
     def _get_user( self, trans, user_id ):
         user = self.get_user(trans, user_id)

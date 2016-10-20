@@ -7,12 +7,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             this.form = new Form({
                 title  : 'Web API Key',
                 icon   : 'fa-key',
-                inputs : [ { name     : 'api-key',
-                             type     : 'text',
-                             label    : 'Current API key:',
-                             value    : options.api_key || 'Not available.',
-                             readonly : true,
-                             help     : ' An API key will allow you to access ' + ( options.webapp === 'galaxy' ? 'Galaxy' : 'the Tool Shed' ) + ' via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' } ],
+                inputs : options.inputs,
                 operations: {
                     'back': new Ui.ButtonIcon({
                         icon     : 'fa-caret-left',
@@ -43,13 +38,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 type : 'PUT',
                 data : { new_api_key: true }
             }).done( function( response ) {
-                if ( response.api_key ) {
-                    var input_id = self.form.data.match( 'api-key' );
-                    self.form.field_list[ input_id ].value( response.api_key );
-                    self.form.message.update( { message: response.message, status: 'success' } );
-                } else {
-                    self.form.message.update( { message: 'API key missing from response.', status: 'danger' } );
-                }
+                self.form.data.matchModel( response, function ( input, input_id ) {
+                    self.form.field_list[ input_id ].value( input.value );
+                });
+                self.form.message.update( { message: response.message, status: 'success' } );
             }).fail( function( response ) {
                 self.form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
             });
