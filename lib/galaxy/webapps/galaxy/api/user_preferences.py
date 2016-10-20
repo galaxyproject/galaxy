@@ -479,41 +479,26 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         roles = user.all_roles()
         current_actions = user.default_permissions
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-
-        """if kwd.get('update_roles', False):
-            p = util.Params(kwd)
+        if kwd:
             permissions = {}
-            for k, v in permitted_actions:
-                if p.get(k + '_out', []):
-                    in_roles = p.get(k + '_out', [])
-                    if not isinstance(in_roles, list):
-                        in_roles = [in_roles]
-                    in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                    action = trans.app.security_agent.get_action(v.action).action
-                    permissions[action] = in_roles
-                elif p.get(k + '_in', []):
-                    in_roles = p.get(k + '_in', [])
-                    if not isinstance(in_roles, list):
-                        in_roles = [in_roles]
-                    selected_role = []
-                    for a in current_actions:
-                        if a.action == action.action:
-                            if str(a.role.id) not in in_roles:
-                                selected_role.append(a.role.id)
-                    action = trans.app.security_agent.get_action(v.action).action
-                    permissions[action] = selected_role
-            trans.app.security_agent.user_set_default_permissions(trans.user, permissions)
-            message = 'Default new history permissions have been changed.'"""
-        inputs = list()
+            for index, action in permitted_actions:
+                action_id = trans.app.security_agent.get_action(action.action).action
+                permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in kwd.get( index, [] )]
+            trans.app.security_agent.user_set_default_permissions(user, permissions)
+            message = 'Permissions have been updated.'
+        else:
+            message = 'Permissions unchanged.'
+        inputs = []
         for index, action in permitted_actions:
             inputs.append({ 'type'      : 'select',
                             'multiple'  : True,
                             'optional'  : True,
-                            'name'      : action.action,
+                            'name'      : index,
+                            'label'     : action.action,
                             'help'      : action.description,
                             'options'   : [ ( r.name, r.id ) for r in roles ],
                             'value'     : [ a.role.id for a in current_actions if a.action == action.action ] })
-        return { 'message': 'message', 'inputs': inputs }
+        return { 'message': message, 'inputs': inputs }
 
     @expose_api
     def toolbox_filters(self, trans, user_id, payload={}, **kwd):
@@ -525,7 +510,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         filter_types = odict([ ('toolbox_tool_filters',    { 'title': 'Tools',    'config': trans.app.config.user_tool_filters }),
                                ('toolbox_section_filters', { 'title': 'Sections', 'config': trans.app.config.user_section_filters }),
                                ('toolbox_label_filters',   { 'title': 'Labels',   'config': trans.app.config.user_label_filters }) ])
-
         if kwd.get( 'update', False ):
             for filter_type in filter_types:
                 new_filters = []
@@ -539,7 +523,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             message = 'Toolbox filters have been updated.'
         else:
             message = 'Toolbox filters unchanged.'
-
         saved_values = {}
         for name, value in user.preferences.items():
             if name in filter_types:

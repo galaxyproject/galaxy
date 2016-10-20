@@ -29,7 +29,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             $.ajax({
                 url  : Galaxy.root + 'api/user_preferences/' + Galaxy.user.id + '/communication',
                 type : 'PUT',
-                data : { enable: self.form.data.create()[ 'enable' ] }
+                data : self.form.data.create(),
             }).done( function( response ) {
                 self.form.message.update( { message: response.message, status: 'success' } );
             }).fail( function( response ) {

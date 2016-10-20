@@ -4,7 +4,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         initialize: function ( options ) {
             var self = this;
             this.model = options && options.model || new Backbone.Model( options );
-            window.console.log( options );
             this.form = new Form({
                 title       : 'Manage dataset permissions',
                 name        : 'toolbox_filter',
@@ -36,9 +35,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         _save: function() {
             var self = this;
             $.ajax({
-                url      : Galaxy.root + 'api/user_preferences/' + Galaxy.user.id + '/permissions',
-                type     : 'PUT',
-                data     : self.form.data.create(),
+                url         : Galaxy.root + 'api/user_preferences/' + Galaxy.user.id + '/permissions',
+                type        : 'PUT',
+                traditional : true,
+                data        : self.form.data.create(),
             }).done( function( response ) {
                 self.form.message.update( { message: response.message, status: 'success' } );
             }).fail( function( response ) {
