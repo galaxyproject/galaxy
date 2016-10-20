@@ -595,10 +595,10 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             return { 'message' : message }
         else:
             return { 'message' : 'Communication server settings unchanged.',
-                     'inputs'  : { name  : 'enable',
-                                   type  : 'boolean',
-                                   label : 'Enable communication',
-                                   value : user.preferences.get('communication_server', 'false') } }
+                     'inputs'  : [{ 'name'  : 'enable',
+                                    'type'  : 'boolean',
+                                    'label' : 'Enable communication',
+                                    'value' : user.preferences.get('communication_server', 'false') }] }
 
     def _get_user( self, trans, user_id ):
         user = self.get_user(trans, user_id)

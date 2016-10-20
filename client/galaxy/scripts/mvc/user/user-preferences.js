@@ -19,22 +19,23 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'communication': {
                     title           : 'Change your communication settings',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/communication',
-                    icon            : 'fa-child',
-                    submit_icon     : 'Save communication settings'
+                    icon            : 'fa-child'
                 },
                 'permissions': {
                     title           : 'Change default permissions for new histories',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/permissions',
-                    submit_icon     : 'fa-lock',
-                    submit_icon     : 'Save permissions'
+                    icon            : 'fa-lock',
+                    submit_title    : 'Save permissions'
                 },
                 'api_key': {
                     title           : 'Manage your API keys',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/api_key',
                     icon            : 'fa-key',
+                    submit_title    : 'Create a new key',
+                    submit_icon     : 'fa-check'
                 },
                 'toolbox_filters': {
-                    title           : 'Manage your ToolBox filters',
+                    title           : 'Manage your Toolbox filters',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/toolbox_filters',
                     icon            : 'fa-filter'
                 }
