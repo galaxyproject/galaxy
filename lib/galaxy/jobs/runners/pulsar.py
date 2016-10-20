@@ -759,9 +759,6 @@ class PulsarComputeEnvironment( ComputeEnvironment ):
     def __init__( self, pulsar_client, job_wrapper, remote_job_config ):
         self.pulsar_client = pulsar_client
         self.job_wrapper = job_wrapper
-        print "From runner/pulsar, job_wrapper: "
-	print self.job_wrapper
-	print " All done"
 	self.local_path_config = job_wrapper.default_compute_environment()
         self.unstructured_path_rewrites = {}
         # job_wrapper.prepare is going to expunge the job backing the following

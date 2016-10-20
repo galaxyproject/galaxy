@@ -64,7 +64,6 @@ class PasswordField(BaseField):
         self.name = name
         self.size = int( size or 10 )
 	os.environ[self.name] = value
-        print "Existing env: " + str(os.environ.keys())
 	self.value = value or ""
 
     def get_html( self, prefix="", disabled=False  ):

@@ -243,12 +243,6 @@ class TextToolParameter( ToolParameter ):
 
 class PasswordToolParameter(TextToolParameter):
 
-#	def get_html_field(self,trans=None, value=None, other_values={}):
-#		
-#		if value is None:
-#			value = self.value
-#		return form_builder.PasswordField(self.name,self.size,value)
-
 	def get_initial_value(self,trans,context,history=None):
 		return self.value
 

@@ -59,7 +59,10 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                 inputs          : this.form.data.create()
             }
 
-	
+	  /** This adds a name value pair to the list of job parameters to identify that a password parameter
+	   *  is present. The "name" is a 20 character long random string and its value is the name of the password
+	   *  parameter. This will be used to track down password paramters in the job_parameter table in the database.
+	   */
 	  for (var job_input_id in job_def.inputs){
                         var input_id = this.form.data.match(job_input_id);
                         var input_def = this.form.input_list[input_id];

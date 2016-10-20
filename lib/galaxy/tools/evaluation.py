@@ -55,14 +55,8 @@ class ToolEvaluator( object ):
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
-	####
-	#self.sa_session = self.app.model.context
-	#query = self.sa_session.query(galaxy.model.JobParameter).get(2021)
-	#print "In eval.py: " + str(query.name)
-
-
-	####
-        # Full parameter validation
+        
+	# Full parameter validation
         request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
 
         def validate_inputs( input, value, context, **kwargs ):
@@ -100,9 +94,6 @@ class ToolEvaluator( object ):
         incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
 
         # Build params, done before hook so hook can use
-        #print "Incoming at eval.py"
-	#print incoming
-	#print " All doooner"
 	param_dict = self.build_param_dict(
             incoming,
             inp_data,
@@ -153,9 +144,6 @@ class ToolEvaluator( object ):
         self.__populate_non_job_params(param_dict)
 
         # Return the dictionary of parameters
-        #print "In build_param_dict just before returning it"
-	#print param_dict
-	#print "Donnerr"
 	return param_dict
 
     def __walk_inputs(self, inputs, input_values, func):
@@ -471,12 +459,6 @@ class ToolEvaluator( object ):
         """
         command = self.tool.command
         param_dict = self.param_dict
-        #conn = object_session(self).connection()
-	#trans = conn.begin()
-	#print trans
-	#print " In eval.py param_dict"
-	#print param_dict
-	#print "Doner"	
         interpreter = self.tool.interpreter
         command_line = None
         if not command:
@@ -502,18 +484,16 @@ class ToolEvaluator( object ):
             abs_executable = os.path.join( tool_dir, executable )
             command_line = command_line.replace(executable, abs_executable, 1)
 	    command_line = interpreter + " " + command_line
-	if command_line.find("JPCNn681vcGV4KuvuT16") != (-1):
-            start = command_line.find(' JPCNn681vcGV4KuvuT16 ')
-            end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
-            index = end + 1
-            passVar = ''
-            while (index < len(command_line)) and (command_line[index] != ' '):
-                passVar = passVar + command_line[index]
-                index = index + 1
-            print "passVar: " + passVar
-            command_line = command_line.replace(passVar, '$PASS')
-            command_line = command_line.replace('JPCNn681vcGV4KuvuT16 ', '')
-            print "command_line: " + command_line	
+	#if command_line.find("JPCNn681vcGV4KuvuT16") != (-1):
+         #   start = command_line.find(' JPCNn681vcGV4KuvuT16 ')
+         #   end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
+         #   index = end + 1
+         #   passVar = ''
+         #   while (index < len(command_line)) and (command_line[index] != ' '):
+         #       passVar = passVar + command_line[index]
+         #       index = index + 1
+         #   command_line = command_line.replace(passVar, '$PASS')
+         #   command_line = command_line.replace('JPCNn681vcGV4KuvuT16 ', '')
 
         self.command_line = command_line
 

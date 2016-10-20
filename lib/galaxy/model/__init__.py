@@ -583,9 +583,6 @@ class Job( object, JobLike, Dictifiable ):
 
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
-	if name == "pw":
-		print "hello world"
-	print "I got here in model/__init__ "
 	
     def add_input_dataset( self, name, dataset=None, dataset_id=None ):
         assoc = JobToInputDatasetAssociation( name, dataset )
@@ -628,7 +625,6 @@ class Job( object, JobLike, Dictifiable ):
         """
         param_dict = self.raw_param_dict()
         tool = app.toolbox.get_tool( self.tool_id )
-	print "In model/__init__: " + str(tool)
         param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
         return param_dict
 

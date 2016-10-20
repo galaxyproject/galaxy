@@ -47,7 +47,6 @@ class DefaultToolAction( object ):
         parameter name to Dataset instance for each tool parameter that is
         of the DataToolParameter type.
         """
-	
 	if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
@@ -55,9 +54,6 @@ class DefaultToolAction( object ):
         def visitor( input, value, prefix, parent=None, **kwargs ):
 
             def process_dataset( data, formats=None ):
-                print "I can get here"
-		flag = trans.sa_session.query(trans.app.model.JobParameter).get(2021)
-		print flag
 		if not data or isinstance( data, RuntimeValue ):
                     return None
                 if formats is None:
@@ -447,9 +443,6 @@ class DefaultToolAction( object ):
             job.params = dumps( job_params )
         job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
-        #print "In actions/__init__.py: " + str(vars(job )['parameters'])
- 	#for obj in vars(job)['parameters']:
-	#	print "My attributes: " + str(vars(obj))	
 	# Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:

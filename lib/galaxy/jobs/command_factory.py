@@ -39,6 +39,12 @@ def build_command(
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
+   
+    #Obtain the first job parameter of the galaxy job and iterate through its parameters	
+    #until you come upon a parameter with the name "JPCN... " which indicates that the job
+    #has a password parameter. If found, look through the job parameters and find
+    #the password parameter which has a name that matches the value of "JPCN...". Set the value
+    #of the password paramter to a blank using the same format the other values use in a job.
     job_id = job_wrapper.job_id
     sa_session = this_app.model.context
     query = sa_session.query(galaxy.model.JobParameter).filter(galaxy.model.JobParameter.job_id==job_id).first()
@@ -63,8 +69,6 @@ def build_command(
 		item.value = unicode('""',"utf-8")
 		indexOfPass = index
 	index = index + 1
-#    print "Name: " + queryList[indexOfPass].value
- #   print "New value: " + queryList[indexOfPass].value
     
     shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
@@ -145,25 +149,9 @@ def __externalize_commands(job_wrapper, passwordIS, shell, commands_builder, rem
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
 	
-    ####
-#    tool_commands = str(tool_commands)
+    #set environment variable in job execution script so it is accessible to user's tool file.
     envVar = ''
-    envVar = "PASS=" + passwordIS
-#    if ' JPCNn681vcGV4KuvuT16 ' in tool_commands:
-#	start = tool_commands.find(' JPCNn681vcGV4KuvuT16 ')
-#	end = start + len( 'JPCNn681vcGV4KuvuT16 ' )
- #       index = end + 1 
-#        passVar = ''
-#        while (index < len(tool_commands)) and (tool_commands[index] is not ' '):  
-#		passVar = passVar + tool_commands[index]
-#                index = index + 1
-	
-#        envVar = "PASS=" + '"'+passVar + '"'
-#        indexSoFar = end +1
-#	tool_commands = tool_commands.replace(passVar, '$PASS')
-#        tool_commands = tool_commands.replace('JPCNn681vcGV4KuvuT16 ', '')
-
-	####
+    envVar = "export PASS=" + passwordIS
 
     script_contents = u"#!%s\n%s%s%s\n%s" % (
         shell,
@@ -173,9 +161,7 @@ def __externalize_commands(job_wrapper, passwordIS, shell, commands_builder, rem
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
-    #print local_container_script
     commands = local_container_script
-    #print "From command factory, commands: " + commands
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
     log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))
