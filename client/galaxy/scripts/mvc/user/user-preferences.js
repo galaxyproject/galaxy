@@ -19,7 +19,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'communication': {
                     title           : 'Change your communication settings',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/communication',
-                    icon            : 'fa-child'
+                    icon            : 'fa-child',
+                    auto_save       : true
                 },
                 'permissions': {
                     title           : 'Change default permissions for new histories',
@@ -46,6 +47,21 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         _load: function( options ) {
             var self = this;
+            var save = function( form ) {
+                $.ajax( {
+                    url         : options.url,
+                    data        : form.data.create(),
+                    type        : 'PUT',
+                    traditional : true,
+                }).done( function( response ) {
+                    form.data.matchModel( response, function ( input, input_id ) {
+                        form.field_list[ input_id ].value( input.value );
+                    });
+                    form.message.update( { message: response.message, status: 'success' } );
+                }).fail( function( response ) {
+                    form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
+                });
+            };
             var form = new Form({
                 title  : options.title,
                 icon   : options.icon,
@@ -58,28 +74,15 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         onclick  : function() { form.remove(); self.$preferences.show() }
                     })
                 },
-                buttons: {
+                onchange : function() { options.auto_save && save( form ) },
+                buttons: !options.auto_save && {
                     'submit': new Ui.Button({
                         tooltip  : options.submit_tooltip,
                         title    : options.submit_title || 'Save settings',
                         icon     : options.submit_icon || 'fa-save',
                         cls      : 'ui-button btn btn-primary',
                         floating : 'clear',
-                        onclick  : function() {
-                            $.ajax( {
-                                url         : options.url,
-                                data        : form.data.create(),
-                                type        : 'PUT',
-                                traditional : true,
-                            }).done( function( response ) {
-                                form.data.matchModel( response, function ( input, input_id ) {
-                                    form.field_list[ input_id ].value( input.value );
-                                });
-                                form.message.update( { message: response.message, status: 'success' } );
-                            }).fail( function( response ) {
-                                form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
-                            });
-                        }
+                        onclick  : function() { save( form ) }
                     })
                 }
             });
