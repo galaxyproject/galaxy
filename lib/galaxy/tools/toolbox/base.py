@@ -23,14 +23,14 @@ from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
-from .panel import panel_item_types
 from .panel import ToolPanelElements
 from .panel import ToolSection
 from .panel import ToolSectionLabel
+from .panel import panel_item_types
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
-from .watcher import get_tool_watcher
 from .watcher import get_tool_conf_watcher
+from .watcher import get_tool_watcher
 
 log = logging.getLogger( __name__ )
 
@@ -520,15 +520,20 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool = self.load_tool_from_cache(os.path.join(tool_path, path))
             from_cache = tool
             if from_cache:
-                log.debug("Loading tool %s from cache", str(tool.id))
-            elif guid:  # tool was not in cache and is a tool shed tool
+                if guid and tool.id != guid:
+                    # In rare cases a tool shed tool is loaded into the cache without guid.
+                    # In that case recreating the tool will correct the cached version.
+                    from_cache = False
+                else:
+                    log.debug("Loading tool %s from cache", str(tool.id))
+            if guid and not from_cache:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id(tool_shed_repository.id)
                     tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=False)
-            else:  # tool was not in cache and is not a tool shed tool.
+            if not tool:  # tool was not in cache and is not a tool shed tool.
                 tool = self.load_tool(os.path.join(tool_path, path), use_cached=False)
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True

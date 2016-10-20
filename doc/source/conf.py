@@ -15,6 +15,12 @@ import datetime
 import os
 import sys
 
+# Library to make .md to slideshow
+from recommonmark.parser import CommonMarkParser
+
+source_parsers = {
+    '.md': CommonMarkParser,
+}
 
 ####### REQUIRED GALAXY INCLUDES
 
@@ -43,7 +49,7 @@ templates_path = ['_templates']
 autodoc_default_flags = [ 'members', 'undoc-members', 'show-inheritance' ]
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'

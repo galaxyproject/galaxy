@@ -36,6 +36,6 @@ def convert_and_import_workflow(has_workflow, **kwds):
         import_kwds["publish"] = True
     return galaxy_interface.import_workflow(workflow, **import_kwds)
 
-__all__ = [
+__all__ = (
     'convert_and_import_workflow',
-]
+)

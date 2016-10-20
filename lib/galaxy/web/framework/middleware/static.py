@@ -1,6 +1,6 @@
 import os
-from paste import request
 from paste import fileapp
+from paste import request
 from paste.httpheaders import ETAG
 
 from paste.urlparser import StaticURLParser

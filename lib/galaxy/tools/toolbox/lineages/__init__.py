@@ -3,4 +3,4 @@ from .interface import ToolLineage
 from .tool_shed import ToolVersionCache
 
 
-__all__ = ["LineageMap", "ToolLineage", "ToolVersionCache"]
+__all__ = ("LineageMap", "ToolLineage", "ToolVersionCache")

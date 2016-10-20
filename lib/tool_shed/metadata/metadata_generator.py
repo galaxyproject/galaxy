@@ -15,8 +15,8 @@ from tool_shed.tools import tool_validator
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
-from tool_shed.util import readme_util
 from tool_shed.util import metadata_util
+from tool_shed.util import readme_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util

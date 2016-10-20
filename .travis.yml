@@ -11,6 +11,7 @@ env:
   - TOX_ENV=py27-lint-imports
   - TOX_ENV=py27-lint-imports-include-list
   - TOX_ENV=validate-test-tools
+  - TOX_ENV=py27-lint-docstring-include-list
 
 matrix:
   include:
@@ -22,9 +23,6 @@ matrix:
     language: generic
   allow_failures:
   - env: TOX_ENV=py27-lint-imports
-
-before_install:
-  - if [ `uname` == "Darwin"  ]; then bash -c "brew update && brew install python"; fi
 
 install:
   - pip install tox

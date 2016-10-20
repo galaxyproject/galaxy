@@ -1,5 +1,4 @@
-from .interface import ToolLineage
-from .interface import ToolLineageVersion
+from .interface import ToolLineage, ToolLineageVersion
 
 try:
     from galaxy.model.tool_shed_install import ToolVersion
@@ -78,13 +77,13 @@ class ToolShedLineage(ToolLineage):
         return result
 
     def get_versions( self, reverse=False ):
-        return map( ToolLineageVersion.from_guid, self.get_version_ids( reverse=reverse ) )
+        return [ ToolLineageVersion.from_guid(_) for _ in self.get_version_ids( reverse=reverse ) ]
 
     def to_dict(self):
         tool_shed_repository = self._tool_shed_repository
         rval = dict(
             tool_version_id=self.tool_version_id,
-            tool_versions=map(lambda v: v.to_dict(), self.get_versions()),
+            tool_versions=[v.to_dict() for v in self.get_versions()],
             tool_shed_repository=tool_shed_repository if tool_shed_repository is not None else None,
             lineage_type='tool_shed',
         )
@@ -94,4 +93,4 @@ class ToolShedLineage(ToolLineage):
 def get_installed_tool_version( app, tool_id ):
     return app.tool_version_cache.tool_version_by_tool_id.get(tool_id, None)
 
-__all__ = [ "ToolShedLineage" ]
+__all__ = ( "ToolShedLineage", )

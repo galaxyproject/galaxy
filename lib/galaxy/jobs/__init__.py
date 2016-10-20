@@ -8,6 +8,7 @@ import os
 import pwd
 import random
 import shutil
+import string
 import subprocess
 import sys
 import time
@@ -830,6 +831,10 @@ class JobWrapper( object ):
         """
         return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
 
+    @property
+    def requires_containerization(self):
+        return util.asbool(self.get_destination_configuration("require_container", "False"))
+
     def can_split( self ):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
@@ -942,8 +947,10 @@ class JobWrapper( object ):
         self.sa_session.flush()
         # Return list of all extra files
         self.param_dict = tool_evaluator.param_dict
-        version_string_cmd = self.tool.version_string_cmd
-        if version_string_cmd:
+        version_string_cmd_raw = self.tool.version_string_cmd
+        if version_string_cmd_raw:
+            version_command_template = string.Template(version_string_cmd_raw)
+            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": compute_environment.tool_directory() })
             self.write_version_cmd = "%s > %s 2>&1" % ( version_string_cmd, compute_environment.version_path() )
         else:
             self.write_version_cmd = None
