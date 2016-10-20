@@ -11,7 +11,8 @@ def fill_template( template_text, context=None, **kwargs ):
         raise TypeError("Template text specified as None to fill_template.")
     if not context:
         context = kwargs
-	    	 
+    #Remove the value of the password parameter from the job command line before 
+    #sending it off.	    	 
     flag = False
     if 'JPCNn681vcGV4KuvuT16' in context.keys():
 	flag = True
