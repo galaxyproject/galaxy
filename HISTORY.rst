@@ -9,7 +9,7 @@ History
 16.10.9.dev0
 ---------------------
 
-    
+* Small fixes including to reflect mulled name on quay.io changed to biocontainers.
 
 ---------------------
 16.10.8 (2016-10-10)
