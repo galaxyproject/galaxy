@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.10.9.dev0
+16.10.9 (2016-10-21)
 ---------------------
 
 * Small fixes including to reflect mulled name on quay.io changed to biocontainers.
