@@ -84,6 +84,7 @@ var View = Backbone.View.extend({
             options.onclick ? options.onclick() : self.show( id );
         });
         this.$content.append( $tab_content.append( options.$el ) );
+        this.$nav[ this.size() > 1 ? 'show' : 'hide' ]();
 
         // assign current/first tab
         if ( this.size() == 1 ) {

@@ -9,7 +9,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
         initialize : function( options ) {
             this.model = options.model || new Backbone.Model( options );
             this.collection = new Backbone.Collection( this.model.get( 'items' ) );
-            this.tabs = new Tabs.View( {} );
+            this.tabs = new Tabs.View({});
             this.setElement( this.tabs.$el.addClass( 'ui-thumbnails' ) );
             this.render();
             this.listenTo( this.model, 'change', this.render, this );
