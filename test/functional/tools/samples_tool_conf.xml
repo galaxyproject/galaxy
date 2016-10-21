@@ -40,6 +40,9 @@
   <tool file="maxseconds.xml" />
   -->
   <tool file="job_properties.xml" />
+  <tool file="version_command_plain.xml" />
+  <tool file="version_command_interpreter.xml" />
+  <tool file="version_command_tool_dir.xml" />
   <tool file="exit_code_from_file.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
@@ -57,6 +60,7 @@
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
   <tool file="multi_data_repeat.xml" />
+  <tool file="multi_data_optional.xml" />
   <tool file="paths_as_file.xml" />
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
@@ -122,5 +126,6 @@
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
+  <tool file="${model_tools_path}/merge_collection.xml" />
 
 </toolbox>

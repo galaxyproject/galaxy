@@ -5,9 +5,9 @@ import shutil
 
 from galaxy import util
 
-from ..collectl import subsystems
 from ..collectl import cli
 from ..collectl import processes
+from ..collectl import subsystems
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 

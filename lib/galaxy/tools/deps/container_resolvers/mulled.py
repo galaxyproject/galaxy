@@ -58,7 +58,7 @@ def list_cached_mulled_images(namespace=None):
 
         return image
 
-    return map(output_line_to_image, filter(name_filter, images_and_versions.splitlines()))
+    return [output_line_to_image(_) for _ in filter(name_filter, images_and_versions.splitlines())]
 
 
 def get_filter(namespace):
@@ -200,8 +200,8 @@ def mulled_targets(tool_info):
     return requirements_to_mulled_targets(tool_info.requirements)
 
 
-__all__ = [
+__all__ = (
     "CachedMulledContainerResolver",
     "MulledContainerResolver",
     "BuildMulledContainerResolver",
-]
+)
