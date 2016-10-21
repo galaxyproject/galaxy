@@ -262,14 +262,16 @@ for i, line in enumerate( open( in_fname ) ):
         elems = line.split( '\t' )
         attribute_values = {}
         for name_value_pair in elems[8].split(";"):
-            pair = name_value_pair.strip().split(" ")
-            if pair == '':
+            # Split on first equals (GFF3) or space (legacy)
+            name_value_pair = name_value_pair.strip()
+            i = name_value_pair.replace(" ", "=").find("=")
+            if i == -1:
                 continue
-            name = pair[0].strip()
+            name = name_value_pair[:i].strip()
             if name == '':
                 continue
             # Need to strip double quote from value and typecast.
-            attribute_values[name] = pair[1].strip(" \\"")
+            attribute_values[name] = name_value_pair[i+1:].strip(" \\"")
         %s
         if %s:
             lines_kept += 1
