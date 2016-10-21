@@ -492,20 +492,19 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 action_id = trans.app.security_agent.get_action(action.action).action
                 permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in kwd.get( index, [] )]
             trans.app.security_agent.user_set_default_permissions(user, permissions)
-            message = 'Permissions have been updated.'
+            return { 'message': 'Permissions have been updated.' }
         else:
-            message = 'Permissions unchanged.'
-        inputs = []
-        for index, action in permitted_actions:
-            inputs.append({ 'type'      : 'select',
-                            'multiple'  : True,
-                            'optional'  : True,
-                            'name'      : index,
-                            'label'     : action.action,
-                            'help'      : action.description,
-                            'options'   : [ ( r.name, r.id ) for r in roles ],
-                            'value'     : [ a.role.id for a in current_actions if a.action == action.action ] })
-        return { 'message': message, 'inputs': inputs }
+            inputs = []
+            for index, action in permitted_actions:
+                inputs.append({ 'type'      : 'select',
+                                'multiple'  : True,
+                                'optional'  : True,
+                                'name'      : index,
+                                'label'     : action.action,
+                                'help'      : action.description,
+                                'options'   : [ ( r.name, r.id ) for r in roles ],
+                                'value'     : [ a.role.id for a in current_actions if a.action == action.action ] })
+            return { 'message': 'Permissions unchanged.', 'inputs': inputs }
 
     @expose_api
     def toolbox_filters(self, trans, user_id, payload={}, **kwd):
