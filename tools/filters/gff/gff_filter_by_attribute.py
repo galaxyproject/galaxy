@@ -199,6 +199,16 @@ for name, a_type in attribute_types.items():
         stop_err("Problem with attribute type [%s]" % a_type)
     attribute_types[ name ] = eval( a_type )
 
+# Possible (eg workflows) that user's filter contains standard
+# GFF attributes which are not present in the actual file -
+# and thus not in the metadata passed in by Galaxy.
+# To avoid a nasty error here, add the official terms from
+# the GFF3 specification (if not already defined).
+# (These all start with a capital letter, which is important):
+for name in ["ID", "Name", "Alias", "Parent", "Target", "Gap", "Derives_from",
+             "Note", "Dbxref", "Ontology_term", "Is_circular"]:
+    attribute_types[ name ] = str
+
 # Unescape if input has been escaped
 mapped_str = {
     '__lt__': '<',
