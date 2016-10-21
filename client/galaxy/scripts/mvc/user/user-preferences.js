@@ -6,37 +6,43 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         initialize: function() {
             this.form_def = {
                 'information': {
-                    title           : 'Manage your information (email, address, etc.)',
+                    title           : 'Manage information',
+                    description     : 'Edit your email, addresses and custom parameters or change your username.',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/information',
                     icon            : 'fa-info-circle'
                 },
                 'password': {
-                    title           : 'Change your password',
-                    icon            : 'fa-key',
+                    title           : 'Change password',
+                    description     : 'Allows you to change your login credentials.',
+                    icon            : 'fa-unlock-alt',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/password',
                     submit_title    : 'Save password',
                 },
                 'communication': {
-                    title           : 'Change your communication settings',
+                    title           : 'Change communication settings',
+                    description     : 'Enable or disable the communication feature to chat with other users.',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/communication',
                     icon            : 'fa-child',
                     auto_save       : true
                 },
                 'permissions': {
-                    title           : 'Change default permissions for new histories',
+                    title           : 'Change default permissions',
+                    description     : 'Grant others default access to newly created histories.',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/permissions',
-                    icon            : 'fa-lock',
+                    icon            : 'fa-users',
                     submit_title    : 'Save permissions'
                 },
                 'api_key': {
-                    title           : 'Manage your API keys',
+                    title           : 'Manage API key',
+                    description     : 'Access your current API key or create a new one.',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/api_key',
                     icon            : 'fa-key',
                     submit_title    : 'Create a new key',
                     submit_icon     : 'fa-check'
                 },
                 'toolbox_filters': {
-                    title           : 'Manage your Toolbox filters',
+                    title           : 'Manage Toolbox filters',
+                    description     : 'Customize your Toolbox by displaying or omitting sets of Tools.',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/toolbox_filters',
                     icon            : 'fa-filter',
                     submit_title    : 'Save filters'
@@ -72,7 +78,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon     : 'fa-caret-left',
                         tooltip  : 'Return to user preferences',
                         title    : 'Preferences',
-                        onclick  : function() { form.remove(); self.$preferences.show() }
+                        onclick  : function() { form.remove(); self.$preferences.show(); }
                     })
                 },
                 onchange : function() { options.auto_save && submit( form ) },
@@ -93,27 +99,13 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         _link: function( page ) {
             var self = this;
-            var $page_link = $( '<a target="galaxy_main" href="javascript:void(0)">' + page.title + '</a>' ).on( 'click', function() {
+            var $page_item = $( this._templatePage( page ) );
+            var $page_link = $page_item.find( 'a' ).on( 'click', function() {
                 $.ajax({ url: Galaxy.root + page.url, type: 'GET' }).always( function( response ) {
                     self._show( $.extend( {}, page, response ) );
                 });
             });
-            this.$table.append( this._templatePage( page ) );
-        },
-
-        _templatePage: function( options ) {
-            return  '<div class="ui-thumbnails-item">' +
-                        '<table>' +
-                            '<tr>' +
-                                '<td>' +
-                                    '<div class="ui-thumbnails-description-icon fa fa-user">' +
-                                '</td>' +
-                                '<td>' +
-                                    '<div class="ui-thumbnails-description-title ui-form-info">' + options.title + '</div>' +
-                                    '<div class="ui-thumbnails-description-text ui-form-info">' + options.description + '</div>' +
-                                '</td>' +
-                            '</tr>' +
-                    '<div>';
+            this.$table.append( $page_item );
         },
 
         render: function() {
@@ -122,7 +114,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 self.$preferences = $( '<div/>' );
                 if ( data.id !== null ) {
                     self.$preferences.append( $( '<h2/>' ).append( 'User preferences' ) )
-                                     .append( $( '<p/>' ).append( 'You are currently logged in as ' +  _.escape( data.email ) + '.' ) )
+                                     .append( $( '<p/>' ).append( 'You are currently logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
                                      .append( self.$table = $( '<table/>' ) );
                     if( !data.remote_user ) {
                         self._link( self.form_def.information );
@@ -134,7 +126,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         self._link( self.form_def.api_key );
                         self._link( self.form_def.toolbox_filters );
                         data.openid && !data.remote_user && self._link( { title  : 'Manage OpenIDs linked to your account' } );
-                        var footer_template = '<p>' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance. ';
+                        var footer_template = '<p style="margin-top: 10px;">' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance. ';
                         if ( data.enable_quotas ) {
                             footer_template += 'Your disk quota is: <strong>' + data.quota + '</strong>. ';
                         }
@@ -155,6 +147,21 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 }
                 self.$el.empty().append( self.$preferences );
             });
+        },
+
+        _templatePage: function( options ) {
+            return  '<div style="margin-left: 20px;">' +
+                        '<table>' +
+                            '<tr>' +
+                                '<td>' +
+                                    '<div class="fa ' + options.icon + '" style="width: 30px; margin: 10px; font-size: 1.6em;">' +
+                                '</td>' +
+                                '<td>' +
+                                    '<a style="font-weight: bold;" href="javascript:void(0)">' + options.title + '</a>' +
+                                    '<div class="ui-form-info">' + options.description + '</div>' +
+                                '</td>' +
+                            '</tr>' +
+                    '<div>';
         }
     });
 
