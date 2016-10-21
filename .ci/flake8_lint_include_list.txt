@@ -5,6 +5,7 @@ cron/cleanup_datasets.py
 cron/parse_builds_3_sites.py
 cron/parse_builds.py
 doc/parse_gx_xsd.py
+doc/patch.py
 lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
