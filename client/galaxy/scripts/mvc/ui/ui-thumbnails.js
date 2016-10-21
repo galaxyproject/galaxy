@@ -52,7 +52,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                 this.collection.each( function( model ) {
                     $el.append( self._templateRegularItem( model.attributes ) );
                 });
-                this.tabs.add( { id: Utils.uid(), title: 'List of available visualizations', $el: $el } );
+                this.tabs.add( { id: Utils.uid(), title: self.model.get( 'title_list' ), $el: $el } );
             }
         },
 

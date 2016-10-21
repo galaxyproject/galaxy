@@ -37,7 +37,7 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'mvc/ui/ui-th
             // grid with chart types
             this.types = new Thumbnails.View({
                 title_default   : 'Suggested visualizations',
-                title_others    : 'List of available visualizations',
+                title_list      : 'List of available visualizations',
                 items           : _.map( this.app.types, function( type, type_id ) {
                     return {
                         id          : type_id,
