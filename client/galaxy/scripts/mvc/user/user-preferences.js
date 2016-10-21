@@ -114,7 +114,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 self.$preferences = $( '<div/>' );
                 if ( data.id !== null ) {
                     self.$preferences.append( $( '<h2/>' ).append( 'User preferences' ) )
-                                     .append( $( '<p/>' ).append( 'You are currently logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
+                                     .append( $( '<p/>' ).append( 'You are logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
                                      .append( self.$table = $( '<table/>' ) );
                     if( !data.remote_user ) {
                         self._link( self.form_def.information );

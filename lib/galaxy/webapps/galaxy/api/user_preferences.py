@@ -491,7 +491,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 action_id = trans.app.security_agent.get_action(action.action).action
                 permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in kwd.get( index, [] )]
             trans.app.security_agent.user_set_default_permissions(user, permissions)
-            return { 'message': 'Permissions have been updated.' }
+            return { 'message': 'Permissions have been saved.' }
         else:
             inputs = []
             for index, action in permitted_actions:
