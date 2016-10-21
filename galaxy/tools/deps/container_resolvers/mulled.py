@@ -120,7 +120,7 @@ class MulledContainerResolver(ContainerResolver):
 
     resolver_type = "mulled"
 
-    def __init__(self, app_info=None, namespace="mulled"):
+    def __init__(self, app_info=None, namespace="biocontainers"):
         super(MulledContainerResolver, self).__init__(app_info)
         self.namespace = namespace
 

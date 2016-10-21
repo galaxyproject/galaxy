@@ -210,7 +210,7 @@ class ContainerRegistry(object):
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
                 CachedMulledContainerResolver(self.app_info),
-                MulledContainerResolver(self.app_info, namespace="mulled"),
+                MulledContainerResolver(self.app_info, namespace="biocontainers"),
                 BuildMulledContainerResolver(self.app_info),
             ])
         return default_resolvers
