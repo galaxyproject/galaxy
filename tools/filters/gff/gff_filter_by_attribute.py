@@ -254,10 +254,7 @@ for i, line in enumerate( open( in_fname ) ):
     total_lines += 1
     line = line.rstrip( '\\r\\n' )
     if not line or line.startswith( '#' ):
-        skipped_lines += 1
-        if not invalid_line:
-            first_invalid_line = i + 1
-            invalid_line = line
+        # Ignore blank lines or comments
         continue
     try:
         # Place attribute values into variables with attribute
