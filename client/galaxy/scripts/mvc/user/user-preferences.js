@@ -46,9 +46,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             this.render();
         },
 
-        _load: function( options ) {
+        _show: function( options ) {
             var self = this;
-            var save = function( form ) {
+            var submit = function( form ) {
                 $.ajax( {
                     url         : options.url,
                     data        : form.data.create(),
@@ -75,7 +75,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         onclick  : function() { form.remove(); self.$preferences.show() }
                     })
                 },
-                onchange : function() { options.auto_save && save( form ) },
+                onchange : function() { options.auto_save && submit( form ) },
                 buttons: !options.auto_save && {
                     'submit': new Ui.Button({
                         tooltip  : options.submit_tooltip,
@@ -83,7 +83,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         icon     : options.submit_icon || 'fa-save',
                         cls      : 'ui-button btn btn-primary',
                         floating : 'clear',
-                        onclick  : function() { save( form ) }
+                        onclick  : function() { submit( form ) }
                     })
                 }
             });
@@ -95,10 +95,25 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var self = this;
             var $page_link = $( '<a target="galaxy_main" href="javascript:void(0)">' + page.title + '</a>' ).on( 'click', function() {
                 $.ajax({ url: Galaxy.root + page.url, type: 'GET' }).always( function( response ) {
-                    self._load( $.extend( {}, page, response ) );
+                    self._show( $.extend( {}, page, response ) );
                 });
             });
-            this.$pages.append( $( '<li/>' ).append( $page_link ) );
+            this.$table.append( this._templatePage( page ) );
+        },
+
+        _templatePage: function( options ) {
+            return  '<div class="ui-thumbnails-item">' +
+                        '<table>' +
+                            '<tr>' +
+                                '<td>' +
+                                    '<div class="ui-thumbnails-description-icon fa fa-user">' +
+                                '</td>' +
+                                '<td>' +
+                                    '<div class="ui-thumbnails-description-title ui-form-info">' + options.title + '</div>' +
+                                    '<div class="ui-thumbnails-description-text ui-form-info">' + options.description + '</div>' +
+                                '</td>' +
+                            '</tr>' +
+                    '<div>';
         },
 
         render: function() {
@@ -108,7 +123,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 if ( data.id !== null ) {
                     self.$preferences.append( $( '<h2/>' ).append( 'User preferences' ) )
                                      .append( $( '<p/>' ).append( 'You are currently logged in as ' +  _.escape( data.email ) + '.' ) )
-                                     .append( self.$pages = $( '<ul/>' ) );
+                                     .append( self.$table = $( '<table/>' ) );
                     if( !data.remote_user ) {
                         self._link( self.form_def.information );
                         self._link( self.form_def.password );
@@ -118,29 +133,25 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         self._link( self.form_def.permissions );
                         self._link( self.form_def.api_key );
                         self._link( self.form_def.toolbox_filters );
-                        if ( data.openid && !data.remote_user ) {
-                            self._link( { title  : 'Manage OpenIDs linked to your account' } );
-                        }
-                    } else {
-                        self._link( self.form_def.api_key );
-                        self._link( { title  : 'Manage your email alerts' } );
-                    }
-                    if ( data.webapp == 'galaxy' ) {
+                        data.openid && !data.remote_user && self._link( { title  : 'Manage OpenIDs linked to your account' } );
                         var footer_template = '<p>' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance. ';
                         if ( data.enable_quotas ) {
                             footer_template += 'Your disk quota is: <strong>' + data.quota + '</strong>. ';
                         }
                         footer_template += 'Is your usage more than expected?  See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>';
                         self.$preferences.append( footer_template );
+                    } else {
+                        self._link( self.form_def.api_key );
+                        self._link( { title  : 'Manage your email alerts' } );
                     }
                 } else {
                     if( !data.message ) {
                         self.$preferences.append( '<p>You are currently not logged in.</p>' );
                     }
-                    $preferences(   '<ul>' +
-                                        '<li><a target="galaxy_main">Login</a></li>' +
-                                        '<li><a target="galaxy_main">Register</a></li>' +
-                                    '</ul>' );
+                    $preferences.append(    '<ul>' +
+                                                '<li><a target="galaxy_main">Login</a></li>' +
+                                                '<li><a target="galaxy_main">Register</a></li>' +
+                                            '</ul>' );
                 }
                 self.$el.empty().append( self.$preferences );
             });
