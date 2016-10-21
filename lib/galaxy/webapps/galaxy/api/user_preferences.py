@@ -484,7 +484,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         """
         user = self._get_user( trans, user_id )
         roles = user.all_roles()
-        current_actions = user.default_permissions
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         if kwd:
             permissions = {}
@@ -503,7 +502,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                                 'label'     : action.action,
                                 'help'      : action.description,
                                 'options'   : [ ( r.name, r.id ) for r in roles ],
-                                'value'     : [ a.role.id for a in current_actions if a.action == action.action ] })
+                                'value'     : [ a.role.id for a in user.default_permissions if a.action == action.action ] })
             return { 'message': 'Permissions unchanged.', 'inputs': inputs }
 
     @expose_api
