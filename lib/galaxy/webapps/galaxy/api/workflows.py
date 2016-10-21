@@ -18,7 +18,8 @@ from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 from galaxy.workflow.modules import module_factory
-
+from galaxy import model
+from galaxy.util.sanitize_html import sanitize_html
 
 log = logging.getLogger(__name__)
 
@@ -300,11 +301,36 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
                          The workflow contents will be updated to target
                          this.
+
+            * name       optional string name for the workflow, if not present in payload,
+                         name defaults to existing name
+            * annotation optional string annotation for the workflow, if not present in payload,
+                         annotation defaults to existing annotation
+            * menu_entry optional boolean marking if the workflow should appear in the user's menu, 
+                         if not present, workflow menu entries are not modified   
+
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow( trans, id )
         if 'workflow' in payload:
+            stored_workflow.name = sanitize_html(payload['name']) if ('name' in payload) else stored_workflow.name
+            
+            if 'annotation' in payload:
+                newAnnotation = sanitize_html(payload['annotation'])
+                self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
+            
+            if 'menu_entry' in payload:
+                if payload['menu_entry']:
+                    menuEntry = model.StoredWorkflowMenuEntry()
+                    menuEntry.stored_workflow = stored_workflow
+                    trans.get_user().stored_workflow_menu_entries.append(menuEntry)
+                else:
+                    #remove if in list
+                    entries = {x.stored_workflow_id: x for x in trans.get_user().stored_workflow_menu_entries}
+                    if (trans.security.decode_id(id) in entries):
+                        trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
+
             workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
                 trans,
                 stored_workflow,
