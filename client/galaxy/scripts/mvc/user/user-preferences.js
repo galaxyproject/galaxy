@@ -60,7 +60,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     onclick         : function() {
                         Galaxy.modal.show({
                             title   : 'Sign out',
-                            body    : 'Do you want to continue and sign out of all sessions?',
+                            body    : 'Do you want to continue and sign out of all active sessions?',
                             buttons : {
                                 'Cancel'    : function() { Galaxy.modal.hide(); },
                                 'Sign out'  : function() {
@@ -81,9 +81,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         render: function() {
             var self = this;
             $.getJSON( Galaxy.root + 'api/user_preferences', function( data ) {
-                self.$preferences = $( '<div/>' ).append( $( '<h2/>' ).append( 'User preferences' ) )
+                self.$preferences = $( '<div/>' ).addClass( 'ui-panel' )
+                                                 .append( $( '<h2/>' ).append( 'User preferences' ) )
                                                  .append( $( '<p/>' ).append( 'You are logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
-                                                 .append( self.$table = $( '<table/>' ) );
+                                                 .append( self.$table = $( '<table/>' ).addClass( 'ui-panel-table' ) );
                 if( !data.remote_user ) {
                     self._link( self.defs.information );
                     self._link( self.defs.password );
@@ -95,12 +96,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     self._link( self.defs.toolbox_filters );
                     data.openid && !data.remote_user && self._link( self.defs.openids );
                     self._link( self.defs.logout );
-                    var footer_template = '<p style="margin-top: 10px;">' + 'You are using <strong>' + data.disk_usage + '</strong> of disk space in this Galaxy instance. ';
-                    if ( data.enable_quotas ) {
-                        footer_template += 'Your disk quota is: <strong>' + data.quota + '</strong>. ';
-                    }
-                    footer_template += 'Is your usage more than expected?  See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>';
-                    self.$preferences.append( footer_template );
+                    self.$preferences.append( self._templateFooter( data ) );
                 } else {
                     self._link( self.defs.api_key );
                     self._link( { title  : 'Manage your email alerts' } );
@@ -111,7 +107,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         _link: function( page ) {
             var self = this;
-            var $page_item = $( this._templatePage( page ) );
+            var $page_item = $( this._templateRow( page ) );
             this.$table.append( $page_item );
             $page_item.find( 'a' ).on( 'click', function() {
                 if ( page.url ) {
@@ -166,19 +162,24 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             });
         },
 
-        _templatePage: function( options ) {
-            return  '<div style="margin-left: 20px;">' +
-                        '<table>' +
-                            '<tr>' +
-                                '<td>' +
-                                    '<div class="fa ' + options.icon + '" style="width: 30px; margin: 10px; font-size: 1.6em;">' +
-                                '</td>' +
-                                '<td>' +
-                                    '<a style="font-weight: bold;" href="javascript:void(0)">' + options.title + '</a>' +
-                                    '<div class="ui-form-info">' + options.description + '</div>' +
-                                '</td>' +
-                            '</tr>' +
-                    '<div>';
+        _templateRow: function( options ) {
+            return  '<tr>' +
+                        '<td>' +
+                            '<div class="ui-panel-icon fa ' + options.icon + '">' +
+                        '</td>' +
+                        '<td>' +
+                            '<a class="ui-panel-anchor" href="javascript:void(0)">' + options.title + '</a>' +
+                            '<div class="ui-form-info">' + options.description + '</div>' +
+                        '</td>' +
+                    '</tr>';
+        },
+
+        _templateFooter: function( options ) {
+            var tmpl =  '<p class="ui-panel-footer">You are using <strong>' + options.disk_usage + '</strong> of disk space in this Galaxy instance. ';
+            if ( options.enable_quotas ) {
+                tmpl += 'Your disk quota is: <strong>' + options.quota + '</strong>. ';
+            }
+            return tmpl + 'Is your usage more than expected? See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>';
         }
     });
 
