@@ -63,7 +63,12 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             body    : 'Do you want to continue and sign out of all sessions?',
                             buttons : {
                                 'Cancel'    : function() { Galaxy.modal.hide(); },
-                                'Sign out'  : function() { Galaxy.modal.hide(); }
+                                'Sign out'  : function() {
+                                    $.ajax( { url : 'api/users/' + Galaxy.user.id + '/logout', method: 'POST', data: { all: true } } )
+                                     .done( function( response ) {
+                                        window.location.href = response.redirect_url || Galaxy.root;
+                                    });
+                                }
                             }
                         });
                     }

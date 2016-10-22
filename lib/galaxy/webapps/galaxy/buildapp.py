@@ -331,6 +331,9 @@ def populate_api_routes( webapp, app ):
                            "/api/histories/{id}/exports/{jeha_id}", controller="histories",
                            action="archive_download", conditions=dict( method=[ "GET" ] ) )
 
+    webapp.mapper.connect( 'logout', '/api/users/{user_id}/logout',
+                           controller='users', action='logout',
+                           conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( "create_api_key", "/api/users/{user_id}/api_key",
                            controller="users", action="api_key", user_id=None,
                            conditions=dict( method=["POST"] ) )
