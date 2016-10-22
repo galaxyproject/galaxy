@@ -175,11 +175,11 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         _templateFooter: function( options ) {
-            var tmpl =  '<p class="ui-panel-footer">You are using <strong>' + options.disk_usage + '</strong> of disk space in this Galaxy instance. ';
-            if ( options.enable_quotas ) {
-                tmpl += 'Your disk quota is: <strong>' + options.quota + '</strong>. ';
-            }
-            return tmpl + 'Is your usage more than expected? See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>';
+            return  '<p class="ui-panel-footer">' +
+                        'You are using <strong>' + options.disk_usage + '</strong> of disk space in this Galaxy instance. ' +
+                        ( options.enable_quotas ? 'Your disk quota is: <strong>' + options.quota + '</strong>. ' : '' ) +
+                        'Is your usage more than expected? See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.' +
+                    '</p>';
         }
     });
 
