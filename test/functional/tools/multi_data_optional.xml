@@ -1,0 +1,27 @@
+<tool id="multi_data_optional" name="multi_data_optional" version="0.1.0">
+  <command>
+    touch $out1;
+    #for $input in $input1
+    #if $input
+    cat $input >> $out1;
+    #end if
+    #end for
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="txt" multiple="true" label="Data 1" optional="true" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="simple_line.txt,simple_line_alternative.txt" />
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

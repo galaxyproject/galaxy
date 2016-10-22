@@ -54,8 +54,8 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from six.moves import copyreg as copy_reg
 from six.moves import UserDict
+from six.moves import copyreg as copy_reg
 
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 

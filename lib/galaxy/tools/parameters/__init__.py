@@ -4,15 +4,16 @@ Classes encapsulating Galaxy tool parameters.
 import re
 from json import dumps, loads
 
-from basic import RuntimeValue, DataCollectionToolParameter, DataToolParameter, SelectToolParameter
-from grouping import Conditional, Repeat, Section, UploadDataset
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
+
+from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
+from .grouping import Conditional, Repeat, Section, UploadDataset
 
 REPLACE_ON_TRUTHY = object()
 
 # Some tools use the code tag and access the code base, expecting certain tool parameters to be available here.
-__all__ = [ DataCollectionToolParameter, DataToolParameter, SelectToolParameter ]
+__all__ = ( 'DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParameter' )
 
 
 def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY ):
@@ -82,7 +83,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix='', label_pr
 
     context = ExpressionContext( input_values, context )
     payload = { 'context': context, 'no_replacement_value': no_replacement_value }
-    for input in inputs.itervalues():
+    for input in inputs.values():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             values = input_values[ input.name ] = input_values.get( input.name, [] )
             for i, d in enumerate( values ):
@@ -143,7 +144,7 @@ def params_to_strings( params, param_values, app ):
     such).
     """
     rval = dict()
-    for key, value in param_values.iteritems():
+    for key, value in param_values.items():
         if key in params:
             value = params[ key ].value_to_basic( value, app )
         rval[ key ] = str( dumps( value ) )
@@ -158,7 +159,7 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     preferred form).
     """
     rval = dict()
-    for key, value in param_values.iteritems():
+    for key, value in param_values.items():
         value = json_fix( loads( value ) )
         if key in params:
             value = params[ key ].value_from_basic( value, app, ignore_errors )
@@ -173,7 +174,7 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
 
     Useful for e.g. the rerun function.
     """
-    for input in inputs.itervalues():
+    for input in inputs.values():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
             for d in input_values[ input.name ]:
                 index = d[ '__index__' ]
@@ -201,7 +202,7 @@ def update_param( prefixed_name, input_values, new_value ):
     """
     for key in input_values:
         match = re.match( '^' + key + '_(\d+)\|(.+)', prefixed_name )
-        if match:
+        if match and not key.endswith( "|__identifier__" ):
             index = int( match.group( 1 ) )
             if isinstance( input_values[ key ], list ) and len( input_values[ key ] ) > index:
                 update_param( match.group( 2 ), input_values[ key ][ index ], new_value )

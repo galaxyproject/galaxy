@@ -512,7 +512,7 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv)
 
-__all__ = [
+__all__ = (
     'yaml_to_workflow',
     'python_to_workflow',
-]
+)

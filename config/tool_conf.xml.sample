@@ -35,6 +35,7 @@
     <tool file="${model_tools_path}/zip_collection.xml" />
     <tool file="${model_tools_path}/filter_failed_collection.xml" />
     <tool file="${model_tools_path}/flatten_collection.xml" />
+    <tool file="${model_tools_path}/merge_collection.xml" />
   </section>
   <section id="liftOver" name="Lift-Over">
     <tool file="extract/liftOver_wrapper.xml" />
