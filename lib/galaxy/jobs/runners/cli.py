@@ -154,7 +154,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
                         ajs.job_wrapper.change_state( state )
             else:
                 if state != old_state:
-                    log.debug("(%s/%s) state change: %s to %s" % ( id_tag, external_job_id, old_state, state ) )
+                    log.debug("(%s/%s) state change: from %s to %s" % ( id_tag, external_job_id, old_state, state ) )
                     ajs.job_wrapper.change_state( state )
                 if state == model.Job.states.RUNNING and not ajs.running:
                     ajs.running = True
