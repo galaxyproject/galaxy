@@ -46,8 +46,6 @@ open-docs-schema: docs-schema-html ## Open HTML generated from Galaxy Tool XSD.
 ready-slides:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
 	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/plantuml_options.txt -tsvg $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/ *.plantuml.txt
-	./node_modules/mermaid/bin/mermaid.js --svg $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/server_client.mermaid --o $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images -t ./node_modules/mermaid/dist/mermaid.forest.css -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/sequence.json
-	./node_modules/mermaid/bin/mermaid.js --svg $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/server_client_old.mermaid --o $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images -t ./node_modules/mermaid/dist/mermaid.forest.css -c $(DOC_SOURCE_DIR)/slideshow/galaxy_architecture_2015/images/sequence.json
 
 	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' doc/source/slideshow/galaxy_architecture_2015/galaxy_architecture_2015.md
 
