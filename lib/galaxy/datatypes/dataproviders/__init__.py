@@ -17,15 +17,16 @@ can be piped from one to the other.
     keywords to the proper (often final) provider. These errors that result
     can be hard to diagnose.
 """
-import decorators
-import exceptions
+from . import (
+    base,
+    chunk,
+    column,
+    dataset,
+    decorators,
+    exceptions,
+    external,
+    hierarchy,
+    line
+)
 
-import base
-import chunk
-import line
-import hierarchy
-import column
-import external
-import dataset
-
-__all__ = ['decorators', 'exceptions', 'base', 'chunk', 'line', 'hierarchy', 'column', 'external', 'dataset']
+__all__ = ('decorators', 'exceptions', 'base', 'chunk', 'line', 'hierarchy', 'column', 'external', 'dataset')

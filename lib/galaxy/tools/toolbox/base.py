@@ -13,9 +13,11 @@ from galaxy.exceptions import ObjectNotFound
 # BaseGalaxyToolBox.
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
-from galaxy.util import listify
-from galaxy.util import parse_xml
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    listify,
+    parse_xml,
+    string_as_bool
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
@@ -23,14 +25,18 @@ from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
-from .panel import ToolPanelElements
-from .panel import ToolSection
-from .panel import ToolSectionLabel
-from .panel import panel_item_types
+from .panel import (
+    panel_item_types,
+    ToolPanelElements,
+    ToolSection,
+    ToolSectionLabel
+)
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
-from .watcher import get_tool_conf_watcher
-from .watcher import get_tool_watcher
+from .watcher import (
+    get_tool_conf_watcher,
+    get_tool_watcher
+)
 
 log = logging.getLogger( __name__ )
 
@@ -399,8 +405,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
 
         if "/repos/" in tool_id:  # test if tool came from a toolshed
             tool_id_without_tool_shed = tool_id.split("/repos/")[1]
-            available_tool_sheds = self.app.tool_shed_registry.tool_sheds.values()
-            available_tool_sheds = [ urlparse(tool_shed) for tool_shed in available_tool_sheds ]
+            available_tool_sheds = [ urlparse(_) for _ in self.app.tool_shed_registry.tool_sheds.values() ]
             available_tool_sheds = [ url.geturl().replace(url.scheme + "://", '', 1) for url in available_tool_sheds]
             tool_ids = [ tool_shed + "repos/" + tool_id_without_tool_shed for tool_shed in available_tool_sheds]
             if tool_id in tool_ids:  # move original tool_id to the top of tool_ids
@@ -432,7 +437,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         rval.append( lineage_tool )
             if not rval:
                 # still no tool, do a deeper search and try to match by old ids
-                for tool in self._tools_by_id.itervalues():
+                for tool in self._tools_by_id.values():
                     if tool.old_id == tool_id:
                         rval.append( tool )
             if rval:

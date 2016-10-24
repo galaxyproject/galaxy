@@ -10,11 +10,10 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from cgi import escape
 from json import dumps
-
-from six import PY3
 
 from galaxy import util
 from galaxy.datatypes import data, metadata
@@ -24,7 +23,7 @@ from galaxy.util.checkers import is_gzip
 
 from . import dataproviders
 
-if PY3:
+if sys.version_info > (3,):
     long = int
 
 log = logging.getLogger(__name__)

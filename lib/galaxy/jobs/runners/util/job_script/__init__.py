@@ -1,10 +1,11 @@
 import os
-from string import Template
 import subprocess
 import time
-from pkg_resources import resource_string
+from string import Template
 
+from pkg_resources import resource_string
 from six import text_type
+
 from galaxy.util import unicodify
 
 DEFAULT_SHELL = '/bin/bash'
@@ -140,9 +141,9 @@ def _handle_script_integrity(path, config):
         raise Exception("Failed to write job script, could not verify job script integrity.")
 
 
-__all__ = [
+__all__ = (
     'check_script_integrity',
     'job_script',
     'write_script',
     'INTEGRITY_INJECTION',
-]
+)
