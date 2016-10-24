@@ -1,4 +1,4 @@
-"""This module describes the abstract interface for :class:`InstrumentPlugin`s.
+"""This module describes the abstract interface for :class:`InstrumentPlugin`.
 
 These are responsible for collecting and formatting a coherent set of metrics.
 """

@@ -4,9 +4,10 @@ defines a base ModelManager, ModelSerializer, and ModelDeserializer.
 
 ModelManagers are used for operations on models that occur outside the scope of
 a single model object, such as:
-    - object creation
-    - object lookup
-    - interactions between 2+ objects of different model classes
+
+- object creation
+- object lookup
+- interactions between 2+ objects of different model classes
 
 (Since these were to replace model Mixins from
 web/framework/base/controller.py the rule of thumb used there also generally
@@ -903,10 +904,12 @@ class ModelFilterParser( HasAModelManager ):
     """
     Converts string tuples (partially converted query string params) of
     attr, op, val into either:
-        - ORM based filters (filters that can be applied by the ORM at the SQL
-        level) or
-        - functional filters (filters that use derived values or values not
-        within the SQL tables)
+
+    - ORM based filters (filters that can be applied by the ORM at the SQL
+      level) or
+    - functional filters (filters that use derived values or values not
+      within the SQL tables)
+
     These filters can then be applied to queries.
 
     This abstraction allows 'smarter' application of limit and offset at either the
