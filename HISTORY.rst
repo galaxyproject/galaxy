@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-16.10.10.dev0
+16.10.10 (2016-10-24)
 ---------------------
 
 * Fix mulled package data fetching for Mac OS X (thanks to @dannon).
