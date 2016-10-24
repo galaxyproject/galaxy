@@ -20,6 +20,7 @@ See recent changes that would be built with:
 
 import os
 import time
+import sys
 
 from ._cli import arg_parser
 from .mulled_build import (
@@ -40,7 +41,8 @@ def _fetch_repo_data(args):
     if repo_data is None:
         repo_data = "%s-repodata.json" % channel
     if not os.path.exists(repo_data):
-        check_output("wget --quiet https://conda.anaconda.org/%s/linux-64/repodata.json.bz2 -O '%s.bz2' && bzip2 -d '%s.bz2'" % (channel, repo_data, repo_data))
+        platform_tag = 'osx-64' if sys.platform == 'darwin' else 'linux-64'
+        check_output("wget --quiet https://conda.anaconda.org/%s/%s/repodata.json.bz2 -O '%s.bz2' && bzip2 -d '%s.bz2'" % (channel, platform_tag, repo_data, repo_data))
     return repo_data
 
 
