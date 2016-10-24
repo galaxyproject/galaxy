@@ -9,7 +9,7 @@ History
 16.10.10.dev0
 ---------------------
 
-    
+* Fix mulled package data fetching for Mac OS X (thanks to @dannon).
 
 ---------------------
 16.10.9 (2016-10-21)
