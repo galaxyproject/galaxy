@@ -50,8 +50,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'openids': {
                     title           : 'Manage OpenIDs',
                     description     : 'Associate OpenIDs with your account.',
-                    url             : 'api/user_preferences/' + Galaxy.user.id + '/openids',
-                    icon            : 'fa-openid'
+                    icon            : 'fa-openid',
+                    onclick         : function() {
+                        $( '#galaxy_main' ).attr( 'src', Galaxy.root + 'user/openid_manage?cntrller=user' );
+                    }
                 },
                 'logout': {
                     title           : 'Sign out',
