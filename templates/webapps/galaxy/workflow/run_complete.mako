@@ -3,7 +3,7 @@
 
 <div class="donemessagelarge">
 %if scheduled:
-    Successfully ran workflow "${util.unicodify( workflow.name )}". The following datasets have been added to the queue:
+    Successfully submitted workflow "${util.unicodify( workflow.name )}". The following datasets have been added to the queue:
     %for invocation in invocations:
         <div class="workflow-invocation-complete">
             %if invocation['new_history']:
