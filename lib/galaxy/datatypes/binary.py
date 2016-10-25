@@ -126,8 +126,9 @@ Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 class Cel( Binary ):
     """Binary data in CEL format"""
-    file_ext = "CEL"
+    file_ext = "cel"
     edam_format = "format_1638"
+    edam_data = "data_3110"
 
     def sniff( self, filename ):
         try:
@@ -138,7 +139,7 @@ class Cel( Binary ):
         except:
             return False
 
-Binary.register_sniffable_binary_format("CEL", "CEL", Cel)
+Binary.register_sniffable_binary_format("cel", "cel", Cel)
 
 
 class CompressedArchive( Binary ):
