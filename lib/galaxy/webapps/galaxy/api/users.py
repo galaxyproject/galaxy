@@ -11,6 +11,7 @@ from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
+from galaxy.web import url_for
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
@@ -229,6 +230,16 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
     @web.require_admin
     def undelete( self, trans, **kwd ):
         raise exceptions.NotImplemented()
+
+    @expose_api
+    def logout(self, trans, user_id, payload={}, **kwd):
+        trans.handle_user_logout( logout_all=kwd.get( 'all', False ) )
+        redirect_url = url_for( '/' )
+        if util.biostar.biostar_logged_in( trans ):
+            redirect_url = util.biostar.biostar_logout( trans )
+        elif trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            redirect_url = trans.app.config.remote_user_logout_href
+        return { 'redirect_url': redirect_url }
 
     # TODO: move to more basal, common resource than this
     def anon_user_api_value( self, trans ):
