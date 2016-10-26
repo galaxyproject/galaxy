@@ -131,6 +131,18 @@ class Cel( Binary ):
     edam_data = "data_3110"
 
     def sniff( self, filename ):
+        """
+        Try to guess if the file is a CEL file.
+        
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.CEL')
+        >>> Cel().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('drugbank_drugs.mz5')
+        >>> Cel().sniff(fname)
+        False
+        """
         try:
             header = open( filename, 'rb' ).read(4)
             if header == b';\x01\x00\x00':
