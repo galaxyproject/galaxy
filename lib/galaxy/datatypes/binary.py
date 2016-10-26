@@ -125,7 +125,8 @@ Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 
 class Cel( Binary ):
-    """Binary data in CEL format"""
+
+    """Binary data in CEL format."""
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -133,7 +134,7 @@ class Cel( Binary ):
     def sniff( self, filename ):
         """
         Try to guess if the file is a CEL file.
-        
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.CEL')
         >>> Cel().sniff(fname)
