@@ -448,7 +448,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
         TODO: Allow named access to fields using the column names.
         """
-        separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
+        separator_char = "<TAB>" if self.separator == "\t" else self.separator
 
         rval = []
         for i, line in enumerate( reader ):
