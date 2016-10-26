@@ -465,6 +465,8 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     if errors is not None:
                         errors.append( line_error )
                     log.warning( line_error )
+        if hasattr(reader, "name"):
+            log.debug("Loaded %i lines from '%s' for '%s'", len(rval), reader.name, self.name)
         return rval
 
     def get_column_name_list( self ):
