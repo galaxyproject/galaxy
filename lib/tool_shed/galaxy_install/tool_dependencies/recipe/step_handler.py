@@ -6,15 +6,16 @@ import shutil
 import stat
 import tarfile
 import tempfile
-import time
-import urllib2
 import zipfile
 from string import Template
 
 # TODO: eliminate the use of fabric here.
 from fabric.api import lcd, settings
 
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    download_to_file
+)
 from galaxy.util.template import fill_template
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.util import basic_util, tool_dependency_util
@@ -157,33 +158,11 @@ class Download( object ):
             If the checksum does not match an exception is thrown.
         """
         file_path = os.path.join( install_dir, downloaded_file_name )
-        src = None
-        dst = None
-
-        # Set a timer so we don't sit here forever.
-        start_time = time.time()
         try:
-            src = urllib2.urlopen( download_url )
-            dst = open( file_path, 'wb' )
-            while True:
-                chunk = src.read( basic_util.CHUNK_SIZE )
-                if chunk:
-                    dst.write( chunk )
-                else:
-                    break
-                time_taken = time.time() - start_time
-                if time_taken > basic_util.NO_OUTPUT_TIMEOUT:
-                    err_msg = 'Downloading from URL %s took longer than the defined timeout period of %.1f seconds.' % \
-                        ( str( download_url ), basic_util.NO_OUTPUT_TIMEOUT )
-                    raise Exception( err_msg )
+            download_to_file( download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
         except Exception as e:
-            err_msg = err_msg = 'Error downloading from URL\n%s:\n%s' % ( str( download_url ), str( e ) )
+            err_msg = 'Error downloading from URL %s : %s' % ( str( download_url ), str( e ) )
             raise Exception( err_msg )
-        finally:
-            if src:
-                src.close()
-            if dst:
-                dst.close()
 
         if 'sha256sum' in checksums or '#sha256#' in download_url:
             downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest().lower()
@@ -228,7 +207,7 @@ class Download( object ):
         return rval
 
     def get_dict_checksums( self, dct ):
-        return dict(filter(lambda i: i[0] in ['md5sum', 'sha256sum'], dct.iteritems()))
+        return dict(i for i in dct.items() if i[0] in ['md5sum', 'sha256sum'])
 
 
 class RecipeStep( object ):
