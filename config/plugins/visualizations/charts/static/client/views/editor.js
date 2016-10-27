@@ -38,17 +38,17 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'mvc/ui/ui-th
             this.types = new Thumbnails.View({
                 title_default   : 'Suggested visualizations',
                 title_list      : 'List of available visualizations',
-                items           : _.map( this.app.types, function( type, type_id ) {
+                collection      : _.map( this.app.types, function( type, type_id ) {
                     return {
                         id          : type_id,
                         keywords    : type.keywords,
                         title       : type.title + ' (' + type.library + ')',
                         title_icon  : type.zoomable && 'fa-search-plus',
-                        url         : repository_root + '/visualizations/' + self.app.split( type_id ) + '/logo.png',
+                        image_src   : repository_root + '/visualizations/' + self.app.split( type_id ) + '/logo.png',
                         description : type.description
                     }
                 }),
-                ondblclick      : function( chart_id ) { self._drawChart() },
+                ondblclick      : function( chart_type ) { self._drawChart() },
                 onchange        : function( chart_type ) {
                     var chart_definition = self.app.types[ chart_type ];
                     if ( !chart_definition ) {
@@ -110,7 +110,6 @@ define( [ 'mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'mvc/ui/ui-th
             this.portlet.append( this.tabs.$el.addClass( 'ui-margin-top-large' ) );
             this.portlet.hideOperation( 'back' );
             this.setElement( this.portlet.$el );
-            this.tabs.hideOperation( 'back' );
 
             // chart events
             this.listenTo( this.chart, 'change:title', function( chart ) { self._refreshTitle() } );

@@ -8,12 +8,12 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
 
         initialize : function( options ) {
             this.model = options.model || new Backbone.Model( options );
-            this.collection = new Backbone.Collection( this.model.get( 'items' ) );
+            this.collection = new Backbone.Collection( this.model.get( 'collection' ) );
             this.tabs = new Tabs.View({});
             this.setElement( this.tabs.$el.addClass( 'ui-thumbnails' ) );
             this.render();
             this.listenTo( this.model, 'change', this.render, this );
-            this.listenTo( this.collection, 'change', this.render, this );
+            this.listenTo( this.collection, 'reset change add remove', this.render, this );
         },
 
         render: function() {
@@ -35,7 +35,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                         id          : model.id,
                         title       : title.length < title_length ? title : title.substr( 0, title_length ) + '...',
                         title_icon  : model.get( 'title_icon' ),
-                        url         : model.get( 'url' )
+                        image_src   : model.get( 'image_src' )
                     })).tooltip( { title: model.get( 'description' ), placement: 'bottom' } ) );
                 }
             });
@@ -83,7 +83,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
         /* Thumbnail template with image */
         _templateThumbnailItem: function( options ) {
             return  '<div class="ui-thumbnails-item ui-thumbnails-item-float" value="' + options.id + '">' +
-                        '<img class="ui-thumbnails-image" src="' + options.url + '">' +
+                        '<img class="ui-thumbnails-image" src="' + options.image_src + '">' +
                         '<div class="ui-thumbnails-title ui-form-info">' +
                             '<span class="fa ' + options.title_icon + '"/>' + options.title +
                         '</div>' +
@@ -96,7 +96,7 @@ define( [ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs' ], function( Utils, 
                         '<table>' +
                             '<tr>' +
                                 '<td>' +
-                                    '<img class="ui-thumbnails-image" src="' + options.url + '">' +
+                                    '<img class="ui-thumbnails-image" src="' + options.image_src + '">' +
                                 '</td>' +
                                 '<td>' +
                                     '<div class="ui-thumbnails-description-title ui-form-info">' + options.title + '</div>' +
