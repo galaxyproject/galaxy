@@ -1,6 +1,6 @@
 /* This is the regular tool form */
-define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base' ],
-    function( Utils, Ui, Modal, ToolFormBase ) {
+define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base', 'mvc/webhooks' ],
+    function( Utils, Ui, Modal, ToolFormBase, Webhooks ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -80,6 +80,13 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     callback && callback();
                     self.$el.children().hide();
                     self.$el.append( self._templateSuccess( response ) );
+                    // Show Webhook if job is running
+                    if ( response.jobs && response.jobs.length > 0 ) {
+                        self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
+                        var WebhookApp = new Webhooks.WebhookView({
+                            urlRoot: Galaxy.root + 'api/webhooks/tool'
+                        });
+                    }
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
                 },
                 error   : function( response ) {
