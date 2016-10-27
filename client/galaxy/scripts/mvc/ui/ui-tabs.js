@@ -20,10 +20,12 @@ define( [ 'utils/utils' ], function( Utils ) {
             this.listenTo( this.collection, 'remove', this._remove, this );
             this.listenTo( this.collection, 'change', this._change, this );
             this.listenTo( this.collection, 'reset', this._reset, this );
+            this.listenTo( this.collection, 'add remove reset', this.render, this );
         },
 
         render: function() {
             var id = this.model.get( 'current' );
+            id = this.$( '#' + id ).length > 0 ? id : this.first();
             if ( id ) {
                 this.$nav.children().removeClass('active' );
                 this.$content.children().removeClass('active' );
@@ -31,6 +33,7 @@ define( [ 'utils/utils' ], function( Utils ) {
                 this.$( '#' + id ).addClass( 'active' );
             }
             this.$el[ this.model.get( 'visible' ) ? 'fadeIn' : 'fadeOut' ]( 'fast' );
+            this.$nav[ this.size() > 1 ? 'show' : 'hide' ]();
         },
 
         /** Returns tab id for currently shown tab */
@@ -108,7 +111,6 @@ define( [ 'utils/utils' ], function( Utils ) {
         _remove: function( tab_model ) {
             this.$( '#tab-' + tab_model.id ).remove();
             this.$( '#' + tab_model.id ).remove();
-            tab_model.id == this.model.get( 'current' ) && this.show( this.first() );
         },
 
         /** Reset collection */
