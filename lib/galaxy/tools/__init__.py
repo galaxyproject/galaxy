@@ -35,7 +35,7 @@ from galaxy.tools.parameters import params_to_incoming, check_param, params_from
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
-                                           SelectToolParameter, ToolParameter, TextToolParameter)
+                                           SelectToolParameter, ToolParameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.test import parse_tests
@@ -1291,11 +1291,6 @@ class Tool( object, Dictifiable ):
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
                 else:
                     messages[ prefixed_name ] = error
-	#print "in tool/__init__ self.inputs: " + str(self.inputs)
-	#print "in tool/__init__ values: " + str(values)
-#	for key, value in values.iteritems():
-#		if key == "JPCNn681vcGV4KuvuT16":
-#			self.inputs['JPCNn681vcGV4KuvuT16'] = 
 	visit_input_values( self.inputs, values, validate_inputs )
         return messages
 

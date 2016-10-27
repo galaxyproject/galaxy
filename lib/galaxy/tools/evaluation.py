@@ -109,7 +109,6 @@ class ToolEvaluator( object ):
                              out_data=out_data, tool=self.tool, param_dict=incoming)
 
         self.param_dict = param_dict
-	#print "param_dict: " + str(self.param_dict)
 
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[] ):
 	"""
@@ -458,7 +457,6 @@ class ToolEvaluator( object ):
          
 	command = self.tool.command
 	param_dict = self.param_dict
-        #print "param_dict: " + str(param_dict)
 	interpreter = self.tool.interpreter
         command_line = None
         
@@ -488,7 +486,6 @@ class ToolEvaluator( object ):
 
         self.command_line = command_line
 	
-	#print "command_line: " + command_line
     def __build_config_files( self ):
         """
         Build temporary file for file based parameter transfer if needed

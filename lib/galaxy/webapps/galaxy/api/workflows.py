@@ -1,6 +1,4 @@
 """
-	irint "workflow: " + str(workflow)
-	irint "run_configs replacement_dict: " + str(run_configs[0].replacement_dict)
 API operations for Workflows
 """
 
@@ -151,7 +149,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.RequestParameterInvalidException( message )
 
         if 'installed_repository_file' in payload:
-	    print "Used installed_repository_file method"
             workflow_controller = trans.webapp.controllers[ 'workflow' ]
             result = workflow_controller.import_workflow( trans=trans,
                                                           cntrller='api',
@@ -159,7 +156,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return result
 
         if 'from_history_id' in payload:
-	    print "Used from_history_id method"
             from_history_id = payload.get( 'from_history_id' )
             from_history_id = self.decode_id( from_history_id )
             history = self.history_manager.get_accessible( from_history_id, trans.user, current_history=trans.history )
@@ -182,16 +178,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return item
 
         if 'shared_workflow_id' in payload:
-	    print "Used shared_workflow_id method"
             workflow_id = payload[ 'shared_workflow_id' ]
             return self.__api_import_shared_workflow( trans, workflow_id, payload )
 
         if 'workflow' in payload:
-	    print "Used workflow method"
             return self.__api_import_new_workflow( trans, payload, **kwd )
 
         workflow_id = payload.get( 'workflow_id', None )
-	print "Used workflow_id method"
         if not workflow_id:
             message = "Invalid workflow_id specified."
             raise exceptions.RequestParameterInvalidException( message )
@@ -238,7 +231,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Returns a selected workflow as a json dictionary.
         """
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
-	print "stored_workflow: " + stored_workflow
         style = kwd.get("style", "export")
         ret_dict = self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
         if not ret_dict:
@@ -345,7 +337,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # create tool model and default tool state (if missing)
         tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
         module.update_state( tool_model[ 'state_inputs' ] )
-	print "module inputs: " + str(module.get_data_inputs())
         return {
             'tool_model'        : tool_model,
             'tool_state'        : module.get_state(),
@@ -402,36 +393,26 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         return item
 
-#    def _finditem(self,workflow_tool_inputs, key_list):
-#	if isinstance(workflow_tool_inputs,dict):
-#		for k,v, in iter(sorted(workflow_tool_inputs.iteritems())):
-#			if isinstance(v, list):
-#				_finditem(v,key_list)
-#			elif isinstance(v, dict):
-#				_finditem(v, key_list)
-#			key_list.append(k)
-#	return key_list	
+#    def findKey(self,workflow_tool_inputs,key1):
+#	for key,value in workflow_tool_inputs.iteritems():
+#		if isinstance(value, unicode):
+#			value = value.encode('utf-8')
+#			value = ast.literal_eval(value)
+#		if key1 == key:
+#			return True
+#		elif isinstance(value,dict):
+#			self.findKey(value,key1)
+#	return False
 
-    def findKey(self,workflow_tool_inputs,key1):
-	for key,value in workflow_tool_inputs.iteritems():
-		if isinstance(value, unicode):
-			value = value.encode('utf-8')
-			value = ast.literal_eval(value)
-		if key1 == key:
-			return True
-		elif isinstance(value,dict):
-			self.findKey(value,key1)
-	return False
-
-    def findKey2(self,workflow_tool_inputs,key1):	
-	for key,value in workflow_tool_inputs.iteritems():
-		if '|' in key:
-			key = key.split('|')
-			for item in key:
-				if item == key1:
-					return True
-		elif key == key1:
-			return True
+#    def findKey2(self,workflow_tool_inputs,key1):	
+#	for key,value in workflow_tool_inputs.iteritems():
+#		if '|' in key:
+#			key = key.split('|')
+#			for item in key:
+#				if item == key1:
+#					return True
+#		elif key == key1:
+#			return True
 
     @expose_api
     def import_shared_workflow_deprecated(self, trans, payload, **kwd):
@@ -472,30 +453,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Schedule the workflow specified by `workflow_id` to run.
         """
-        #print "payload: " + str(payload)
 	# /usage is awkward in this context but is consistent with the rest of
         # this module. Would prefer to redo it all to use /invocation(s).
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow
-        print "workflow: " + str(workflow.steps[0].tool_inputs)
-	#print "inputs: " + str(self.findKey(workflow.steps[0].tool_inputs,"password"))
 	run_configs = build_workflow_run_configs(trans, workflow, payload)
-#        print "run_configs: " + str(dir(run_configs[0])) 
-	print "run_configs param_map: " + str(run_configs[0].param_map)
 	index = 0
 	thingy = run_configs[0].param_map
 	
 	for key,value in thingy.iteritems():
-	#	print "value in thingy: " + str(value)
 		for key1,val in value.iteritems():
-	#		print "key1: " + str(key1)
 			if 'JPCNn681vcGV4KuvuT16' == key1:
-	#			print "I found it: " + value['JPCNn681vcGV4KuvuT16']
 				val = '"' + val + '"'
 				workflow.steps[index].tool_inputs[unicode('JPCNn681vcGV4KuvuT16',"utf-8")] = val
 		index = index + 1
-	print "workflow afterwards: " + str(workflow.steps[0].tool_inputs)				
 	is_batch = payload.get('batch')
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
@@ -511,11 +483,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 workflow_run_config=run_config,
                 request_params=work_request_params
             )
- #           print "workflow_invocation: " + str(dir(workflow_invocation.input_parameters))
 	    invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
-#	    print "invocation: " + str(invocation)
             invocations.append(invocation)
-#	print "invocations: " + str(invocations)
 
         if is_batch:
             return invocations

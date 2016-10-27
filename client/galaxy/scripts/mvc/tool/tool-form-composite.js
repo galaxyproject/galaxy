@@ -413,7 +413,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 Utils.request({
                     type    : 'POST',
                     url     : Galaxy.root + 'api/workflows/' + this.model.id + '/invocations',
-                    success : function( response ) {
+                    data    : job_def,
+		    success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.children().hide();
                         self.$el.append( self._templateSuccess( response ) );

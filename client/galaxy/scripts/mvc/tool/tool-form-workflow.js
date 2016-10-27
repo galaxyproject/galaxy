@@ -17,7 +17,6 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                             input.value = { '__class__': 'RuntimeValue' };
                         } else {
                             input.collapsible_value = { '__class__': 'RuntimeValue' };
-			    console.log("I can print something");
                             input.is_workflow = ( input.options && input.options.length == 0 ) ||
                                                 ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
                         }
@@ -201,7 +200,6 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                 head_list = head_list || [];
                 head_list.push( head );
                 for ( var i in head.inputs ) {
-                    console.log("I got here");
 		    var input = head.inputs[ i ];
                     var action = input.action;
                     if ( action ) {
