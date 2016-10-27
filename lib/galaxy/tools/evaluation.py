@@ -101,7 +101,6 @@ class ToolEvaluator( object ):
             job_working_directory=compute_environment.working_directory(),
             input_paths=compute_environment.input_paths()
         )
-
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job( self.app, inp_data, out_data, param_dict )
@@ -110,6 +109,7 @@ class ToolEvaluator( object ):
                              out_data=out_data, tool=self.tool, param_dict=incoming)
 
         self.param_dict = param_dict
+	#print "param_dict: " + str(self.param_dict)
 
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[] ):
 	"""
@@ -455,11 +455,14 @@ class ToolEvaluator( object ):
         """
         Build command line to invoke this tool given a populated param_dict
         """
-        command = self.tool.command
-        param_dict = self.param_dict
-        interpreter = self.tool.interpreter
+         
+	command = self.tool.command
+	param_dict = self.param_dict
+        #print "param_dict: " + str(param_dict)
+	interpreter = self.tool.interpreter
         command_line = None
-        if not command:
+        
+	if not command:
             return
         try:
             # Substituting parameters into the command
@@ -484,7 +487,8 @@ class ToolEvaluator( object ):
 	    command_line = interpreter + " " + command_line
 
         self.command_line = command_line
-
+	
+	#print "command_line: " + command_line
     def __build_config_files( self ):
         """
         Build temporary file for file based parameter transfer if needed

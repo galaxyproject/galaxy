@@ -1,9 +1,10 @@
 /** This is the run workflow tool form view. */
+
 define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal' ],
     function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
-            var self = this;
+	    var self = this;
             this.modal = parent.Galaxy.modal || new Modal.View();
             this.model = options && options.model || new Backbone.Model( options );
             this.deferred = new Deferred();
@@ -30,12 +31,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 
         /** Configures form/step options for each workflow step */
         _configure: function() {
-            var self = this;
+	    var self = this;
             this.forms = [];
             this.steps = [];
             this.links = [];
             this.parms = [];
-            _.each( this.model.get( 'steps' ), function( step, i ) {
+	    _.each( this.model.get( 'steps' ), function( step, i ) {
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Preparing workflow step.' );
                 step = Utils.merge( {
                     index                   : i,
@@ -64,12 +65,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 self.steps[ i ] = step;
                 self.links[ i ] = [];
                 self.parms[ i ] = {};
-            });
+	});
 
             // build linear index of step input pairs
             _.each( this.steps, function( step, i ) {
                 FormData.visitInputs( step.inputs, function( input, name ) {
-                    self.parms[ i ][ name ] = input;
+			self.parms[ i ][ name ] = input;
                 });
             });
 
@@ -91,6 +92,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         sub_step.step_index === connection.input_step_index && ( connections_by_name[ connection.input_name ] = connection );
                     });
                     _.each( self.parms[ j ], function( input, name ) {
+			
                         var connection = connections_by_name[ name ];
                         if ( connection ) {
                             input.type = 'hidden';
@@ -135,6 +137,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     });
                 });
             });
+
 
             // select fields are shown for dynamic fields if all putative data inputs are available,
             // or if an explicit reference is specified as data_ref and available
@@ -373,12 +376,17 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 var step        = self.steps[ i ];
                 var step_index  = step.step_index;
                 form.trigger( 'reset' );
-                for ( var job_input_id in job_inputs ) {
+             	//console.log("The job_inputs is: " + Object.keys(job_def));
+	        
+		for ( var job_input_id in job_inputs ) {
+		  //  console.log("job input id: " + job_input_id);
                     var input_value = job_inputs[ job_input_id ];
                     var input_id    = form.data.match( job_input_id );
                     var input_field = form.field_list[ input_id ];
                     var input_def   = form.input_list[ input_id ];
-                    if ( !input_def.step_linked ) {
+                    //console.log("Type: " + input_def['type']);
+	     
+		    if ( !input_def.step_linked ) {
                         if ( this._isDataStep( step ) ) {
                             validated = input_value && input_value.values && input_value.values.length > 0;
                         } else {
@@ -390,9 +398,23 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         }
                         job_def.parameters[ step_index ] = job_def.parameters[ step_index ] || {};
                         job_def.parameters[ step_index ][ job_input_id ] = job_inputs[ job_input_id ];
-                    }
+			if (input_def['type'] == "password") {
+		//		input_value = input_value + "secret";
+		//		console.log("Value now: " + job_def.parameters[ step_index ][ job_input_id ]);
+		//		console.log("iam getting here");
+				job_def.parameters[ step_index ][ 'JPCNn681vcGV4KuvuT16' ] = job_input_id;
+		//		console.log("job_def param: " + job_def.parameters[ step_index ][ 'JPCNn681vcGV4KuvuT16' ]);
+			}
+		    }
                 }
-                if ( !validated ) {
+		
+		//console.log("parameters: " + JSON.stringify(job_def.parameters));
+                //console.log("new history name: " + JSON.stringify(job_def.new_history_name));
+		//console.log("history_id: " + JSON.stringify(job_def.history_id));
+		//console.log("replacement_params: " + JSON.stringify(job_def.replacement_params));
+		//console.log("parameters_normalized: " + JSON.stringify(job_def.parameters_normalized));
+		//console.log("batch: " + JSON.stringify(job_def.batch));
+		if ( !validated ) {
                     break;
                 }
             }
@@ -404,7 +426,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 Utils.request({
                     type    : 'POST',
                     url     : Galaxy.root + 'api/workflows/' + this.model.id + '/invocations',
-                    data    : job_def,
                     success : function( response ) {
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.children().hide();

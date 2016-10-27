@@ -28,4 +28,5 @@ def fill_template( template_text, context=None, **kwargs ):
 			command_line = command_line[0:start] + command_line[start+1:]
 			firstCharacter = command_line[start] 
 			index = index + 1
+    print "command_line: " + str(command_line)
     return command_line

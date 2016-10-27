@@ -149,6 +149,7 @@ def __externalize_commands(job_wrapper, passwordIS, shell, commands_builder, rem
         set_e = "set -e\n"
 	
     #set environment variable in job execution script so it is accessible to user's tool file.
+   
     envVar = ''
     envVar = "export PASS=" + passwordIS
 

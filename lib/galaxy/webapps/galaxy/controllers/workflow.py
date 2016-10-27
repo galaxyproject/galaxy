@@ -561,7 +561,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     @web.expose
     @web.require_login( "create workflows" )
     def create( self, trans, workflow_name=None, workflow_annotation="" ):
-        """
+#        print "This is where the workflow is created"
+	"""
         Create a new stored workflow with name `workflow_name`.
         """
         user = trans.get_user()
@@ -577,9 +578,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-            workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
+ #           print "workflow_annotation: " + str(workflow_annotation)
+	    workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
             self.add_item_annotation( trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation )
-            # Persist
+  #          print "stored_workflow: " + str(vars(stored_workflow))
+	    # Persist
             session = trans.sa_session
             session.add( stored_workflow )
             session.flush()
@@ -693,15 +696,19 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         Save the workflow described by `workflow_data` with id `id`.
         """
-        # Get the stored workflow
+        #print "id: " + str(id)
+	#print "workflow_data: " + str(workflow_data)
+	# Get the stored workflow
         stored = self.get_stored_workflow( trans, id )
-        workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+	
+	workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
         try:
             workflow, errors = workflow_contents_manager.update_workflow_from_dict(
                 trans,
                 stored,
                 workflow_data,
             )
+	
         except workflows.MissingToolsException as e:
             return dict(
                 name=e.workflow.name,
@@ -709,7 +716,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         "It cannot be saved until the following steps are removed or the missing tools are enabled.",
                 errors=e.errors,
             )
-
+	#print "save controller from workflow" + str(vars(workflow))
         if workflow.has_errors:
             errors.append( "Some steps in this workflow have validation errors" )
         if workflow.has_cycles:

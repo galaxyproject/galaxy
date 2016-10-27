@@ -207,7 +207,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             var newTerminalViews = {};
             _.each( data.data_inputs, function( input ) {
                 var terminalView = node.nodeView.addDataInput( input, new_body );
-                newTerminalViews[ input.name ] = terminalView;
+		newTerminalViews[ input.name ] = terminalView;
             });
             // Cleanup any leftover terminals
             _.each( _.difference( _.values( nodeView.terminalViews ), _.values( newTerminalViews ) ), function( unusedView ) {

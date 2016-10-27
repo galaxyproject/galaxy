@@ -1,4 +1,5 @@
 /* This is the regular tool form */
+console.log("I will be here");
 define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base' ],
     function( Utils, Ui, Modal, ToolFormBase ) {
     var View = Backbone.View.extend({
@@ -63,11 +64,12 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
 	   *  is present. The "name" is a 20 character long random string and its value is the name of the password
 	   *  parameter. This will be used to track down password paramters in the job_parameter table in the database.
 	   */
+	  console.log("I got here");
 	  for (var job_input_id in job_def.inputs){
                         var input_id = this.form.data.match(job_input_id);
                         var input_def = this.form.input_list[input_id];
                         var typeParam = input_def['type']
-                        if (typeParam == "password"){
+			if (typeParam == "password"){
                                 job_def.inputs.JPCNn681vcGV4KuvuT16 = job_input_id;
 
                         }

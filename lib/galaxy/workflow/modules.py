@@ -748,7 +748,8 @@ class ToolModule( WorkflowModule ):
         self.trans = trans
         self.tool_id = tool_id
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
-        self.post_job_actions = {}
+        #print "tool: " + str(vars(self.tool))
+	self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
@@ -850,7 +851,10 @@ class ToolModule( WorkflowModule ):
         params_from_kwds = dict(
             ignore_errors=kwds.get( "ignore_errors", True )
         )
+	#print "I am here setting things, like inputs"
+	#print "state: " + str(state)
         self.state.inputs = self.tool.params_from_strings( state, app, **params_from_kwds )
+	#print "state.inputs: " + str(self.state.inputs)
 
     def recover_runtime_state( self, runtime_state ):
         """ Take runtime state from persisted invocation and convert it
@@ -991,7 +995,8 @@ class ToolModule( WorkflowModule ):
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
-        return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
+        #print "inputs in check and update state: " + str(inputs)
+	return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
@@ -1321,6 +1326,7 @@ class WorkflowModuleInjector(object):
         If step_args is provided from a web form this is applied to generate
         'state' else it is just obtained from the database.
         """
+        #print "step: " + str(vars(step))
         step_errors = None
         step.upgrade_messages = {}
 
@@ -1329,13 +1335,16 @@ class WorkflowModuleInjector(object):
 
         # Populate module.
         module = step.module = module_factory.from_workflow_step( self.trans, step )
-        if not module:
+	
+        #print "THis is the tool module created: " + str(vars(module.tool))
+	if not module:
             step.module = None
             step.state = None
             raise MissingToolException(step.tool_id)
 
         # Fix any missing parameters
-        step.upgrade_messages = module.check_and_update_state()
+        #print "step.state.inputs: " + str(module.state.inputs)
+	step.upgrade_messages = module.check_and_update_state()
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
@@ -1352,10 +1361,13 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
     """ Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
+    #print "in modules.py workflow: " + str(workflow.steps[0].tool_inputs)
+    #print "in modules.py param.map: " + str(param_map)
     if module_injector is None:
         module_injector = WorkflowModuleInjector( trans, allow_tool_state_corrections )
     for step in workflow.steps:
         step_args = param_map.get( step.id, {} )
+#	print "here are the step args: " + str(step_args)
         step_errors = module_injector.inject( step, step_args=step_args )
         if step.type == 'tool' or step.type is None:
             if step_errors:

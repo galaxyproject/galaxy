@@ -3,7 +3,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
     function( Utils, ToolFormBase ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
-            var self = this;
+	    var self = this;
             this.workflow = options.workflow;
             this.node     = options.node;
             this.setElement( '<div/>' );
@@ -17,6 +17,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                             input.value = { '__class__': 'RuntimeValue' };
                         } else {
                             input.collapsible_value = { '__class__': 'RuntimeValue' };
+			    console.log("I can print something");
                             input.is_workflow = ( input.options && input.options.length == 0 ) ||
                                                 ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );
                         }
@@ -51,7 +52,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
 
         /** Builds all sub sections */
         _makeSections: function( options ){
-            var inputs = options.inputs;
+	    var inputs = options.inputs;
             var datatypes = options.datatypes;
             inputs[ Utils.uid() ] = {
                 label   : 'Annotation / Notes',
@@ -90,7 +91,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
 
         /** Builds sub section with step actions/annotation */
         _makeSection: function( output_id, datatypes ){
-            var self = this;
+	    var self = this;
             var extensions = [];
             var input_terminal_names = [];
             for ( key in datatypes  ) {
@@ -200,7 +201,8 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                 head_list = head_list || [];
                 head_list.push( head );
                 for ( var i in head.inputs ) {
-                    var input = head.inputs[ i ];
+                    console.log("I got here");
+		    var input = head.inputs[ i ];
                     var action = input.action;
                     if ( action ) {
                         input.name = 'pja__' + output_id + '__' + input.action;
