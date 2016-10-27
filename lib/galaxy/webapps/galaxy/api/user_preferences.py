@@ -92,7 +92,21 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     info_field[ 'cases' ].append( { 'value': i, 'inputs' : d[ 'inputs' ] } )
                 inputs.append( info_field )
             address_field = AddressField( '' ).to_dict()
-            address_values = [ address.to_dict( trans ) for address in user.addresses ]
+            address_values = list()        
+            for address in user.addresses:
+                address_item = dict()
+                address_item["short_desc"] = address.desc
+                address_item["name"] = address.name
+                address_item["institution"] = address.institution
+	        address_item["address"] = address.address
+	        address_item["city"] = address.city
+	        address_item["state"] = address.state
+	        address_item["postal_code"] = address.postal_code
+	        address_item["country"] = address.country
+                address_item["phone"] = address.phone
+                address_item["address_id"] = trans.security.encode_id(address.id)
+                address_values.append(address_item)
+            print address_values
             address_repeat = { 'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
             for address in address_values:
                 address_inputs = []
@@ -118,13 +132,108 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'inputs'            : inputs,
         }
 
+
+    def _build_address_dict( self, address_id, payload ):
+        addressdict = dict()
+        for i, address in enumerate( payload ):
+            if address_id == address.split("|")[0]:
+                addressdict[ address.split("|")[1] ] = payload[ address ]
+        return addressdict
+
     @expose_api
     def set_information( self, trans, user_id, **kwd ):
         '''
         Manage a user login, password, public username, type, addresses, etc.
         '''
-        print kwd
-        return {}
+        user = self._get_user( trans, user_id )
+        payload = kwd.get('payload')
+        user.addresses = []
+        addressnames = list()
+        alladdressnames = [ item for item in payload if item.find("address") > -1 ]
+        for item in alladdressnames:
+            name = item.split('|')[0]
+            if name not in addressnames:
+                addressnames.append( name )
+
+        for each_address in addressnames:
+            address = self._build_address_dict( each_address, payload ) 
+            add_status = self.__add_address( trans, user_id, address )
+            if( add_status['status'] == 'error' ):
+                return {
+                    'message': add_status['message'],
+                    'status': 'error'
+                }
+
+        return {
+            'message': 'User information has been updated',
+            'status': 'done'
+        }
+
+
+    def __add_address( self, trans, user_id, params ):
+        """ Add new address """
+        is_admin = trans.user_is_admin()
+        if is_admin:
+            if not user_id:
+                return trans.show_error_message("You must specify a user to add a new address to.")
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id( user_id ))
+        else:
+            user = trans.user
+        short_desc = util.restore_text(params.get('short_desc', ''))
+        name = util.restore_text(params.get('name', ''))
+        institution = util.restore_text(params.get('institution', ''))
+        address = util.restore_text(params.get('address', ''))
+        city = util.restore_text(params.get('city', ''))
+        state = util.restore_text(params.get('state', ''))
+        postal_code = str(util.restore_text(params.get('postal_code', '')))
+        country = util.restore_text(params.get('country', ''))
+        phone = str(util.restore_text(params.get('phone', '')))
+
+        if not trans.app.config.allow_user_creation and not is_admin:
+            return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
+
+        error_status = True
+        if not short_desc:
+            message = 'Enter a short description for this address'
+        elif not name:
+            message = 'Enter the name'
+        elif not institution:
+            message = 'Enter the institution associated with the user'
+        elif not address:
+            message = 'Enter the address'
+        elif not city:
+            message = 'Enter the city'
+        elif not state:
+            message = 'Enter the state/province/region'
+        elif not postal_code:
+            message = 'Enter the postal code'
+        elif not country:
+            message = 'Enter the country'
+        else:
+            error_status = False
+            user_address = trans.model.UserAddress(user=user,
+                                                   desc=short_desc,
+                                                   name=name,
+                                                   institution=institution,
+                                                   address=address,
+                                                   city=city,
+                                                   state=state,
+                                                   postal_code=postal_code,
+                                                   country=country,
+                                                   phone=phone)
+            trans.sa_session.add(user_address)
+            trans.sa_session.flush()
+            return {
+                'message': 'Address (%s) has been added.' % escape(user_address.desc),
+                'status': 'done'
+            }
+
+        if error_status:
+            return {
+                'message': escape(message),
+                'status': 'error'
+            }
+
 
     def __edit_info(self, trans, cntrller, kwd):
         """
@@ -351,76 +460,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             kwd['status'] = status
 
         return self.user_info( trans, kwd )
-
-    def __new_address(self, trans, cntrller, kwd):
-        """ Add new user address """
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get('id', False)
-        if is_admin:
-            if not user_id:
-                return trans.show_error_message("You must specify a user to add a new address to.")
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        else:
-            user = trans.user
-        short_desc = util.restore_text(params.get('short_desc', ''))
-        name = util.restore_text(params.get('name', ''))
-        institution = util.restore_text(params.get('institution', ''))
-        address = util.restore_text(params.get('address', ''))
-        city = util.restore_text(params.get('city', ''))
-        state = util.restore_text(params.get('state', ''))
-        postal_code = util.restore_text(params.get('postal_code', ''))
-        country = util.restore_text(params.get('country', ''))
-        phone = util.restore_text(params.get('phone', ''))
-
-        if not trans.app.config.allow_user_creation and not is_admin:
-            return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
-
-        error_status = True
-        if not short_desc:
-            message = 'Enter a short description for this address'
-        elif not name:
-            message = 'Enter the name'
-        elif not institution:
-            message = 'Enter the institution associated with the user'
-        elif not address:
-            message = 'Enter the address'
-        elif not city:
-            message = 'Enter the city'
-        elif not state:
-            message = 'Enter the state/province/region'
-        elif not postal_code:
-            message = 'Enter the postal code'
-        elif not country:
-            message = 'Enter the country'
-        else:
-            error_status = False
-            user_address = trans.model.UserAddress(user=user,
-                                                   desc=short_desc,
-                                                   name=name,
-                                                   institution=institution,
-                                                   address=address,
-                                                   city=city,
-                                                   state=state,
-                                                   postal_code=postal_code,
-                                                   country=country,
-                                                   phone=phone)
-            trans.sa_session.add(user_address)
-            trans.sa_session.flush()
-            message = 'Address (%s) has been added' % escape(user_address.desc)
-            new_kwd = dict(message=message, status=status)
-            if is_admin:
-                new_kwd['id'] = trans.security.encode_id(user.id)
-            return self.user_info( trans, new_kwd )
-
-        if error_status:
-            return {
-                'user_id': user_id,
-                'message': escape(message),
-                'status': 'error'
-            }
 
     @expose_api
     def password(self, trans, user_id, payload={}, **kwd):
