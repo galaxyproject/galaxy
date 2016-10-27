@@ -1,7 +1,7 @@
 /** This is the run workflow tool form view. */
 
-define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal' ],
-    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal ) {
+define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal', 'mvc/webhooks' ],
+    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal, Webhooks ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
 	    var self = this;
@@ -376,15 +376,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 var step        = self.steps[ i ];
                 var step_index  = step.step_index;
                 form.trigger( 'reset' );
-             	//console.log("The job_inputs is: " + Object.keys(job_def));
 	        
 		for ( var job_input_id in job_inputs ) {
-		  //  console.log("job input id: " + job_input_id);
                     var input_value = job_inputs[ job_input_id ];
                     var input_id    = form.data.match( job_input_id );
                     var input_field = form.field_list[ input_id ];
                     var input_def   = form.input_list[ input_id ];
-                    //console.log("Type: " + input_def['type']);
 	     
 		    if ( !input_def.step_linked ) {
                         if ( this._isDataStep( step ) ) {
@@ -399,21 +396,11 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         job_def.parameters[ step_index ] = job_def.parameters[ step_index ] || {};
                         job_def.parameters[ step_index ][ job_input_id ] = job_inputs[ job_input_id ];
 			if (input_def['type'] == "password") {
-		//		input_value = input_value + "secret";
-		//		console.log("Value now: " + job_def.parameters[ step_index ][ job_input_id ]);
-		//		console.log("iam getting here");
 				job_def.parameters[ step_index ][ 'JPCNn681vcGV4KuvuT16' ] = job_input_id;
-		//		console.log("job_def param: " + job_def.parameters[ step_index ][ 'JPCNn681vcGV4KuvuT16' ]);
 			}
 		    }
                 }
 		
-		//console.log("parameters: " + JSON.stringify(job_def.parameters));
-                //console.log("new history name: " + JSON.stringify(job_def.new_history_name));
-		//console.log("history_id: " + JSON.stringify(job_def.history_id));
-		//console.log("replacement_params: " + JSON.stringify(job_def.replacement_params));
-		//console.log("parameters_normalized: " + JSON.stringify(job_def.parameters_normalized));
-		//console.log("batch: " + JSON.stringify(job_def.batch));
 		if ( !validated ) {
                     break;
                 }
@@ -430,6 +417,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.children().hide();
                         self.$el.append( self._templateSuccess( response ) );
+                        
+                        // Show Webhook if job is running
+                        if ($.isArray( response ) && response.length > 0) {
+                            self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
+                            var WebhookApp = new Webhooks.WebhookView({
+                                urlRoot: Galaxy.root + 'api/webhooks/workflow'
+                            });
+                        }
+
                         self._refreshHistory();
                     },
                     error   : function( response ) {

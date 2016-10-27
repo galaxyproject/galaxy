@@ -127,7 +127,7 @@ def check_image( file_path ):
     return False
 
 
-__all__ = [
+__all__ = (
     'check_binary',
     'check_bz2',
     'check_gzip',
@@ -136,4 +136,4 @@ __all__ = [
     'check_zip',
     'is_gzip',
     'is_bz2',
-]
+)

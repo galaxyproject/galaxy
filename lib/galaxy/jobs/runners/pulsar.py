@@ -4,45 +4,52 @@ More infromation on Pulsar can be found at http://pulsar.readthedocs.org/.
 """
 from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 
-from distutils.version import LooseVersion
 import errno
 import logging
 import os
+from distutils.version import LooseVersion
 from time import sleep
 
-from pulsar.client import build_client_manager
-from pulsar.client import url_to_destination_params
-from pulsar.client import finish_job as pulsar_finish_job
-from pulsar.client import submit_job as pulsar_submit_job
-from pulsar.client import ClientJobDescription
-from pulsar.client import PulsarOutputs
-from pulsar.client import ClientOutputs
-from pulsar.client import PathMapper
-from pulsar.client import PulsarClientTransportError
-
 import pulsar.core
-
 import yaml
+from pulsar.client import (
+    build_client_manager,
+    ClientJobDescription,
+    ClientOutputs,
+    finish_job as pulsar_finish_job,
+    PathMapper,
+    PulsarClientTransportError,
+    PulsarOutputs,
+    submit_job as pulsar_submit_job,
+    url_to_destination_params
+)
 
 from galaxy import model
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
-from galaxy.jobs import ComputeEnvironment
-from galaxy.jobs import JobDestination
+from galaxy.jobs import (
+    ComputeEnvironment,
+    JobDestination
+)
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState
+)
 from galaxy.tools.deps import dependencies
-from galaxy.util import string_as_bool_or_none
+from galaxy.util import (
+    galaxy_directory,
+    specs,
+    string_as_bool_or_none
+)
 from galaxy.util.bunch import Bunch
-from galaxy.util import specs
-from galaxy.util import galaxy_directory
 
 log = logging.getLogger( __name__ )
 
-__all__ = [
+__all__ = (
     'PulsarLegacyJobRunner',
     'PulsarRESTJobRunner',
     'PulsarMQJobRunner',
     'PulsarEmbeddedJobRunner',
-]
+)
 
 MINIMUM_PULSAR_VERSION = LooseVersion("0.7.0.dev3")
 
@@ -382,7 +389,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
     def _populate_parameter_defaults( self, job_destination ):
         updated = False
         params = job_destination.params
-        for key, value in self.destination_defaults.iteritems():
+        for key, value in self.destination_defaults.items():
             if key in params:
                 if value is PARAMETER_SPECIFICATION_IGNORED:
                     log.warning( "Pulsar runner in selected configuration ignores parameter %s" % key )
@@ -417,7 +424,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         if hasattr(job_wrapper, 'task_id'):
             job_id = "%s_%s" % (job_id, job_wrapper.task_id)
         params = job_wrapper.job_destination.params.copy()
-        for key, value in params.iteritems():
+        for key, value in params.items():
             if value:
                 params[key] = model.User.expand_user_properties( job_wrapper.get_job().user, value )
 
@@ -825,7 +832,7 @@ class PulsarComputeEnvironment( ComputeEnvironment ):
         if parameter_value in unstructured_path_rewrites:
             # Path previously mapped, use previous mapping.
             return unstructured_path_rewrites[ parameter_value ]
-        if parameter_value in unstructured_path_rewrites.itervalues():
+        if parameter_value in unstructured_path_rewrites.values():
             # Path is a rewritten remote path (this might never occur,
             # consider dropping check...)
             return parameter_value

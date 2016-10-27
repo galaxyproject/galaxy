@@ -1,16 +1,19 @@
+from logging import getLogger
 from os import getcwd
 import galaxy
 from galaxy import model
-from os.path import join
-from os.path import abspath
-from galaxy import util
-from galaxy.jobs.runners.util.job_script import (
-    INTEGRITY_INJECTION,
-    write_script,
-    check_script_integrity,
+from os.path import (
+    abspath,
+    join
 )
 
-from logging import getLogger
+from galaxy import util
+from galaxy.jobs.runners.util.job_script import (
+    check_script_integrity,
+    INTEGRITY_INJECTION,
+    write_script,
+)
+
 log = getLogger( __name__ )
 
 CAPTURE_RETURN_CODE = "return_code=$?"
@@ -259,7 +262,7 @@ class CommandsBuilder(object):
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command(u"; ".join([c for c in commands if c]))
+        return self.prepend_command(u"; ".join(c for c in commands if c))
 
     def append_command(self, command):
         if command:
@@ -268,7 +271,7 @@ class CommandsBuilder(object):
         return self
 
     def append_commands(self, commands):
-        self.append_command(u"; ".join([c for c in commands if c]))
+        self.append_command(u"; ".join(c for c in commands if c))
 
     def capture_return_code(self):
         if not self.return_code_captured:
@@ -280,4 +283,4 @@ class CommandsBuilder(object):
             self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
 
-__all__ = [ "build_command" ]
+__all__ = ( "build_command", )

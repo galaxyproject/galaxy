@@ -1,24 +1,29 @@
 """
 Job runner plugin for executing jobs on the local system via the command line.
 """
-import os
+import datetime
 import errno
 import logging
-import datetime
-import tempfile
+import os
 import subprocess
-
+import tempfile
 from time import sleep
 
 from galaxy import model
-from ..runners import BaseJobRunner
-from ..runners import JobState
-from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    DATABASE_MAX_STRING_SIZE,
+    shrink_stream_by_size
+)
+
+from ..runners import (
+    BaseJobRunner,
+    JobState
+)
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'LocalJobRunner' ]
+__all__ = ( 'LocalJobRunner', )
 
 DEFAULT_POOL_SLEEP_TIME = 1
 # TODO: Set to false and just get rid of this option. It would simplify this

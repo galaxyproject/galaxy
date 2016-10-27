@@ -1,0 +1,12 @@
+name: trans_object
+type: 
+  - masthead
+activate: true
+
+icon: fa-user
+tooltip: Show Username
+
+function: >
+  $.getJSON("/api/webhooks/trans_object/get_data", function(data) {
+    alert('Username: ' + data.username);
+  });

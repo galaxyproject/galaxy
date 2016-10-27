@@ -1,7 +1,11 @@
+from requests import (
+    get,
+    post,
+    put
+)
+
 from base import api
-from requests import get
-from requests import post
-from requests import put
+
 from .helpers import DatasetPopulator, wait_on
 
 

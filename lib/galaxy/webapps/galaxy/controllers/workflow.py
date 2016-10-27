@@ -526,7 +526,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
-    def copy( self, trans, id ):
+    def copy( self, trans, id, save_as_name=None ):
         # Get workflow to copy.
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
@@ -540,7 +540,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         # Copy.
         new_stored = model.StoredWorkflow()
-        new_stored.name = "Copy of '%s'" % stored.name
+        if (save_as_name):
+            new_stored.name = '%s' % save_as_name
+        else:
+            new_stored.name = "Copy of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
         # Copy annotation.
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
@@ -594,6 +597,50 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                            "Workflow Annotation",
                            value="",
                            help="A description of the workflow; annotation is shown alongside shared or published workflows." )
+
+    @web.json
+    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
+        """
+            Creates a new workflow based on Save As command. It is a new workflow, but
+            is created with workflow_data already present.
+        """
+        user = trans.get_user()
+        if workflow_name is not None:
+            workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+            stored_workflow = model.StoredWorkflow()
+            stored_workflow.name = workflow_name
+            stored_workflow.user = user
+            self.create_item_slug(trans.sa_session, stored_workflow)
+            workflow = model.Workflow()
+            workflow.name = workflow_name
+            workflow.stored_workflow = stored_workflow
+            stored_workflow.latest_workflow = workflow
+            # Add annotation.
+            workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation )
+
+            # Persist
+            session = trans.sa_session
+            session.add( stored_workflow )
+            session.flush()
+
+            try:
+                workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+                    trans,
+                    stored_workflow,
+                    workflow_data,
+                )
+            except workflows.MissingToolsException as e:
+                return dict(
+                    name=e.workflow.name,
+                    message=("This workflow includes missing or invalid tools. "
+                             "It cannot be saved until the following steps are removed or the missing tools are enabled."),
+                    errors=e.errors,
+                )
+            return (trans.security.encode_id(stored_workflow.id))
+        else:
+            # This is an error state, 'save as' must have a workflow_name
+            log.exception("Error in Save As workflow: no name.")
 
     @web.expose
     def delete( self, trans, id=None ):

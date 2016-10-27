@@ -1,17 +1,20 @@
 import json
 import logging
-import requests
 import time
-
 from datetime import datetime
 
+import requests
+
 from galaxy import model
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState
+)
 
 
 log = logging.getLogger(__name__)
 
-__all__ = ['GodockerJobRunner']
+__all__ = ('GodockerJobRunner', )
 
 
 class Godocker(object):
