@@ -615,7 +615,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Add annotation.
             workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
             self.add_item_annotation( trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation )
-            
+
             # Persist
             session = trans.sa_session
             session.add( stored_workflow )
@@ -630,13 +630,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             except workflows.MissingToolsException as e:
                 return dict(
                     name=e.workflow.name,
-                    message="This workflow includes missing or invalid tools. "
-                        "It cannot be saved until the following steps are removed or the missing tools are enabled.",
+                    message=("This workflow includes missing or invalid tools. "
+                             "It cannot be saved until the following steps are removed or the missing tools are enabled."),
                     errors=e.errors,
                 )
             return (trans.security.encode_id(stored_workflow.id))
         else:
-            #This is an error state, 'save as' must have a workflow_name
+            # This is an error state, 'save as' must have a workflow_name
             log.exception("Error in Save As workflow: no name.")
 
     @web.expose
