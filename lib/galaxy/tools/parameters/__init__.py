@@ -17,6 +17,8 @@ __all__ = ( 'DataCollectionToolParameter', 'DataToolParameter', 'SelectToolParam
 
 
 def visit_input_values( inputs, input_values, callback, name_prefix='', label_prefix='', parent_prefix='', context=None, no_replacement_value=REPLACE_ON_TRUTHY ):
+    print "inputs in parameters/_init__ : " + str(inputs)
+    print "input values in parameters/__init__: " + str(input_values)
     """
     Given a tools parameter definition (`inputs`) and a specific set of
     parameter `values`, call `callback` for each non-grouping parameter,

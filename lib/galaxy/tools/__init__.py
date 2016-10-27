@@ -35,7 +35,7 @@ from galaxy.tools.parameters import params_to_incoming, check_param, params_from
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
-                                           SelectToolParameter, ToolParameter)
+                                           SelectToolParameter, ToolParameter, TextToolParameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.test import parse_tests
@@ -688,7 +688,7 @@ class Tool( object, Dictifiable ):
         return tool_source.parse_environment_variables()
 
     def parse_inputs( self, tool_source ):
-        """
+	"""
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
         This implementation supports multiple pages and grouping constructs.
         """
@@ -720,7 +720,7 @@ class Tool( object, Dictifiable ):
                 # Handle multiple page case
             for page_source in pages.page_sources:
                 inputs = self.parse_input_elem( page_source, enctypes )
-                display = page_source.parse_display()
+		display = page_source.parse_display()
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
@@ -1291,8 +1291,12 @@ class Tool( object, Dictifiable ):
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
                 else:
                     messages[ prefixed_name ] = error
-
-        visit_input_values( self.inputs, values, validate_inputs )
+	#print "in tool/__init__ self.inputs: " + str(self.inputs)
+	#print "in tool/__init__ values: " + str(values)
+#	for key, value in values.iteritems():
+#		if key == "JPCNn681vcGV4KuvuT16":
+#			self.inputs['JPCNn681vcGV4KuvuT16'] = 
+	visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
