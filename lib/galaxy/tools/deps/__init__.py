@@ -2,12 +2,16 @@
 Dependency management for tools.
 """
 
+import json
 import logging
 import os.path
 
 from collections import OrderedDict
 
-from galaxy.util import plugin_config
+from galaxy.util import (
+    hash_util,
+    plugin_config
+)
 
 from .resolvers import NullDependency
 from .resolvers.conda import CondaDependencyResolver, DEFAULT_ENSURE_CHANNELS
@@ -45,7 +49,11 @@ def build_dependency_manager( config ):
             if value is CONFIG_VAL_NOT_FOUND:
                 value = default_value
             dependency_manager_kwds[key] = value
-        dependency_manager = DependencyManager( **dependency_manager_kwds )
+        if config.use_cached_dependency_manager:
+            dependency_manager_kwds['tool_dependency_cache_dir'] = config.tool_dependency_cache_dir
+            dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
+        else:
+            dependency_manager = DependencyManager( **dependency_manager_kwds )
     else:
         dependency_manager = NullDependencyManager()
 
@@ -109,6 +117,8 @@ class DependencyManager( object ):
                 log.debug(dependency.resolver_msg)
                 if dependency.dependency_type:
                     requirement_to_dependency[requirement] = dependency
+        if 'tool_instance' in kwds:
+            kwds['tool_instance'].dependencies = [dep.to_dict() for dep in requirement_to_dependency.values()]
         return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
@@ -155,3 +165,55 @@ class DependencyManager( object ):
     def __resolvers_dict( self ):
         import galaxy.tools.deps.resolvers
         return plugin_config.plugins_dict( galaxy.tools.deps.resolvers, 'resolver_type' )
+
+
+class CachedDependencyManager(DependencyManager):
+    def __init__(self, default_base_path, conf_file=None, **extra_config):
+        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, conf_file=conf_file, **extra_config)
+
+    def dependency_shell_commands( self, requirements, **kwds ):
+        commands = self.get_cached_commands(requirements, **kwds)
+        if not commands:
+            hashed_requirements_dir = self.get_hashed_requirements_path(requirements)
+            kwds['conda_env'] = hashed_requirements_dir
+            requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
+            commands = [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
+            if not os.path.exists(hashed_requirements_dir):
+                # conda will create the hashed_requirements_dir, and fail if it already exists,
+                # while other resolvers may not create the hashed_requirements_dir
+                os.mkdir(hashed_requirements_dir)
+            with open(os.path.join(hashed_requirements_dir, 'dep_commands.sh'), 'w') as cmds_f:
+                [cmds_f.write("%s\n" % line) for line in commands]
+            with open(os.path.join(hashed_requirements_dir, 'packages.json'), 'w') as packages:
+                # Keep a list of dependencies, so that on re-use we can log the resolved packages
+                packages.write(json.dumps([dep.to_dict() for dep in requirement_to_dependency.values()], sort_keys=True))
+        return commands
+
+    def hash_requirements(self, requirements):
+        """Return hash for requirements"""
+        r_string = ':'.join(['_'.join((r.type, r.name, str(r.version))) for r in requirements])
+        return hash_util.new_secure_hash(r_string)
+
+    def get_hashed_requirements_path(self, requirements):
+        """
+        Returns the path to the hashed requirements directory (but does not evaluate whether the path exists)
+        :param requirements:
+        :return:
+        """
+        req_hashes = self.hash_requirements(requirements)
+        return os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes)
+
+    def get_cached_commands(self, requirements, **kwargs):
+        """
+        Return commands for activating cached env if it exists
+        :param requirements_hash:
+        :return: list of commands
+        """
+        hashed_requirements_dir = self.get_hashed_requirements_path(requirements)
+        if not os.path.exists(os.path.join(hashed_requirements_dir)):
+            return []
+        else:
+            if 'tool_instance' in kwargs:
+                dependencies = json.load(open(os.path.join(hashed_requirements_dir, 'packages.json')))
+                kwargs['tool_instance'].dependencies = dependencies
+            return [line.strip() for line in open(os.path.join(hashed_requirements_dir, 'dep_commands.sh'))]
