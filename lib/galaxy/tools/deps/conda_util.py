@@ -54,7 +54,7 @@ class CondaContext(installable.InstallableContext):
 
     def __init__(self, conda_prefix=None, conda_exec=None,
                  shell_exec=None, debug=False, ensure_channels='',
-                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT):
+                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT, copy_dependencies=False):
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
             conda_exec = commands.which("conda")
@@ -63,6 +63,7 @@ class CondaContext(installable.InstallableContext):
         self.conda_exec = conda_exec
         self.debug = debug
         self.shell_exec = shell_exec or commands.shell
+        self.copy_dependencies = copy_dependencies
 
         if conda_prefix is None:
             info = self.conda_info()
