@@ -172,35 +172,33 @@ class CachedDependencyManager(DependencyManager):
         super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, conf_file=conf_file, **extra_config)
 
     def dependency_shell_commands( self, requirements, **kwds ):
-        commands = self.get_cached_commands(requirements, **kwds)
-        if not commands:
-            hashed_requirements_dir = self.get_hashed_requirements_path(requirements)
-            kwds['conda_env'] = hashed_requirements_dir
-            requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
-            commands = [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
-            if not os.path.exists(hashed_requirements_dir):
-                # conda will create the hashed_requirements_dir, and fail if it already exists,
-                # while other resolvers may not create the hashed_requirements_dir
-                os.mkdir(hashed_requirements_dir)
-            with open(os.path.join(hashed_requirements_dir, 'dep_commands.sh'), 'w') as cmds_f:
-                [cmds_f.write("%s\n" % line) for line in commands]
-            with open(os.path.join(hashed_requirements_dir, 'packages.json'), 'w') as packages:
-                # Keep a list of dependencies, so that on re-use we can log the resolved packages
-                packages.write(json.dumps([dep.to_dict() for dep in requirement_to_dependency.values()], sort_keys=True))
+        """
+        Runs a set of requirements through the dependency resolvers and returns
+        a list of commands required to activate the dependencies. For dependencies
+        that are cacheable (currently only conda), calculates a hash based on the name,
+        version, exact and dependency_type attributes for all dependencies. The hash
+        will be used as name for the folder where the environment will be created,
+        which allows re-using these environments.
+        """
+        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        cacheable_dependencies = [dep for req, dep in resolved_dependencies.items() if dep.cacheable]
+        hashed_requirements_dir = self.get_hashed_requirements_path(cacheable_dependencies)
+        [dep.set_cache_path(hashed_requirements_dir) for dep in cacheable_dependencies]
+        commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
         return commands
 
-    def hash_requirements(self, requirements):
+    def hash_requirements(self, resolved_dependencies):
         """Return hash for requirements"""
-        r_string = ':'.join(['_'.join((r.type, r.name, str(r.version))) for r in requirements])
-        return hash_util.new_secure_hash(r_string)
+        hashable_str = json.dumps([(dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies])
+        return hash_util.new_secure_hash(hashable_str)[:8]  # short hash
 
-    def get_hashed_requirements_path(self, requirements):
+    def get_hashed_requirements_path(self, resolved_dependencies):
         """
         Returns the path to the hashed requirements directory (but does not evaluate whether the path exists)
         :param requirements:
         :return:
         """
-        req_hashes = self.hash_requirements(requirements)
+        req_hashes = self.hash_requirements(resolved_dependencies)
         return os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes)
 
     def get_cached_commands(self, requirements, **kwargs):
@@ -209,6 +207,8 @@ class CachedDependencyManager(DependencyManager):
         :param requirements_hash:
         :return: list of commands
         """
+        if not requirements:  # if tool has no requirements
+            return []
         hashed_requirements_dir = self.get_hashed_requirements_path(requirements)
         if not os.path.exists(os.path.join(hashed_requirements_dir)):
             return []

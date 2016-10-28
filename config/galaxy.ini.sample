@@ -219,11 +219,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Certain dependency resolvers (namely Conda) take a considerable amount of
 # time to build an isolated job environment in the job_working_directory if the
-# job working diretory is on a network share.  Set the following option to True
+# job working directory is on a network share.  Set the following option to True
 # to cache the dependencies in a folder. This option is beta and should only be
 # used if you experience long waiting times before a job is actually submitted
-# to your cluster. If you activate this option and install or remove dependencies,
-# you may need to clear out old cached environments
+# to your cluster.
 #use_cached_dependency_manager = False
 
 # By default the tool_dependency_cache_dir is the _cache directory
