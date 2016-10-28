@@ -275,6 +275,8 @@ def populate_api_routes( webapp, app ):
 
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
+    webapp.mapper.connect( '/api/genomes/{id}/indexes', controller='genomes', action='indexes' )
+    webapp.mapper.connect( '/api/genomes/{id}/sequences', controller='genomes', action='sequences' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.connect( '/api/workflows/build_module', action='build_module', controller="workflows" )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
