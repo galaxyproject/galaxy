@@ -106,7 +106,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 address_item["phone"] = address.phone
                 address_item["address_id"] = trans.security.encode_id(address.id)
                 address_values.append(address_item)
-            print address_values
             address_repeat = { 'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
             for address in address_values:
                 address_inputs = []
@@ -134,6 +133,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
 
     def _build_address_dict( self, address_id, payload ):
+        ''' Build user addresses' dictionary '''
         addressdict = dict()
         for i, address in enumerate( payload ):
             if address_id == address.split("|")[0]:
@@ -143,7 +143,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
     @expose_api
     def set_information( self, trans, user_id, **kwd ):
         '''
-        Manage a user login, password, public username, type, addresses, etc.
+        Save a user's email address, public username, type, addresses etc.
         '''
         user = self._get_user( trans, user_id )
         payload = kwd.get('payload')
@@ -159,15 +159,9 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             address = self._build_address_dict( each_address, payload ) 
             add_status = self.__add_address( trans, user_id, address )
             if( add_status['status'] == 'error' ):
-                return {
-                    'message': add_status['message'],
-                    'status': 'error'
-                }
-
-        return {
-            'message': 'User information has been updated',
-            'status': 'done'
-        }
+                raise exceptions.MessageException( add_status['message'] )
+        trans.sa_session.flush()
+        return { 'message': 'User information has been updated' }
 
 
     def __add_address( self, trans, user_id, params ):
@@ -230,10 +224,9 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
         if error_status:
             return {
-                'message': escape(message),
+                'message': escape( message ),
                 'status': 'error'
             }
-
 
     def __edit_info(self, trans, cntrller, kwd):
         """
@@ -329,96 +322,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             kwd['status'] = status
         # Return all data for user information page
         return self.user_info( trans, kwd )
-
-    def __edit_address(self, trans, cntrller, kwd):
-        """ Allow user to edit the saved address """
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get('id', False)
-        if is_admin:
-            if not user_id:
-                return trans.show_error_message("You must specify a user to add a new address to.")
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        else:
-            user = trans.user
-        address_id = params.get('address_id', None)
-        if not address_id:
-            return trans.show_error_message("Invalid address id.")
-        address_obj = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(address_id))
-        if address_obj.user_id != user.id:
-            return trans.show_error_message("Invalid address id.")
-        if params.get('edit_address', False):
-            short_desc = util.restore_text(params.get('short_desc', ''))
-            name = util.restore_text(params.get('name', ''))
-            institution = util.restore_text(params.get('institution', ''))
-            address = util.restore_text(params.get('address', ''))
-            city = util.restore_text(params.get('city', ''))
-            state = util.restore_text(params.get('state', ''))
-            postal_code = util.restore_text(params.get('postal_code', ''))
-            country = util.restore_text(params.get('country', ''))
-            phone = util.restore_text(params.get('phone', ''))
-
-            error_status = True
-            if not short_desc:
-                message = 'Enter a short description for this address'
-            elif not name:
-                message = 'Enter the name'
-            elif not institution:
-                message = 'Enter the institution associated with the user'
-            elif not address:
-                message = 'Enter the address'
-            elif not city:
-                message = 'Enter the city'
-            elif not state:
-                message = 'Enter the state/province/region'
-            elif not postal_code:
-                message = 'Enter the postal code'
-            elif not country:
-                message = 'Enter the country'
-            else:
-                error_status = False
-                address_obj.desc = short_desc
-                address_obj.name = name
-                address_obj.institution = institution
-                address_obj.address = address
-                address_obj.city = city
-                address_obj.state = state
-                address_obj.postal_code = postal_code
-                address_obj.country = country
-                address_obj.phone = phone
-                trans.sa_session.add(address_obj)
-                trans.sa_session.flush()
-                message = 'Address (%s) has been updated.' % escape(address_obj.desc)
-                new_kwd = dict(message=message, status=status)
-                if is_admin:
-                    new_kwd['id'] = trans.security.encode_id(user.id)
-
-                return self.user_info( trans, new_kwd )
-
-            if error_status:
-                status = 'error'
-
-        # Display the address form with the current values filled in
-        address_item = dict({
-            "desc": address_obj.desc,
-            "name": address_obj.name,
-            "institution": address_obj.institution,
-            "address": address_obj.address,
-            "city": address_obj.city,
-            "state": address_obj.state,
-            "postal_code": address_obj.postal_code,
-            "country": address_obj.country,
-            "phone": address_obj.phone})
-
-        return {
-            'user_id': user_id,
-            'address_obj': address_item,
-            'address_id': address_id,
-            'message': escape(message),
-            'status': status
-        }
 
     def __delete_address(self, trans, cntrller, kwd):
         """ Delete an address """
