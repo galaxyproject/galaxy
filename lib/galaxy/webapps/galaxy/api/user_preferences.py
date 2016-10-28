@@ -6,6 +6,7 @@ import sets
 import json
 import logging
 import datetime
+import re
 
 from markupsafe import escape
 from sqlalchemy import and_, true
@@ -140,12 +141,112 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 addressdict[ address.split("|")[1] ] = payload[ address ]
         return addressdict
 
+    def __validate_email_username( self, email, username ):
+        ''' Validate email and username '''
+        message = ''
+        status = 'done'    
+        if not re.match( '^[a-z0-9\-]{3,255}$', username ) or len( username ) > 255 or len( username ) < 3 or len( username ) == 0:
+           status = 'error'
+           message = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
+
+        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
+           status = 'error'
+           message = 'Please enter your valid email address'
+        elif email == '':
+           status = 'error'
+           message = 'Please enter your email address'
+        elif len(email) > 255:
+           status = 'error'
+           message = 'Email cannot be more than 255 characters in length'
+
+        return { 'message': message, 'status': status }
+        
+
     @expose_api
     def set_information( self, trans, user_id, **kwd ):
         '''
         Save a user's email address, public username, type, addresses etc.
         '''
-        user = self._get_user( trans, user_id )
+        is_admin = trans.user_is_admin()
+        if user_id and is_admin:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id(user_id) )
+        elif user_id and ( not trans.user or trans.user.id != trans.security.decode_id( user_id ) ):
+            message = 'Invalid user id'
+            status = 'error'
+            user = None
+        else:
+            user = trans.user
+
+        if user.values:
+            user_type_fd_id = kwd.get('user_type_fd_id', 'none')
+            if user_type_fd_id not in ['none']:
+                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
+            elif user.values:
+                user_type_form_definition = user.values.form_definition
+            else:
+                # User was created before any of the user_info forms were created
+                user_type_form_definition = None
+            if user_type_form_definition:
+                values = self.get_form_values(trans, user, user_type_form_definition, **kwd)
+            else:
+                values = {}
+            flush_needed = False
+            if user.values:
+                # Editing the user info of an existing user with existing user info
+                user.values.content = values
+                trans.sa_session.add(user.values)
+                flush_needed = True
+            elif values:
+                form_values = trans.model.FormValues(user_type_form_definition, values)
+                trans.sa_session.add(form_values)
+                user.values = form_values
+                flush_needed = True
+            if flush_needed:
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+            status = 'done'
+        elif user:
+            # Editing email and username
+            email = util.restore_text( kwd.get( 'email', '' ) )
+            username = util.restore_text( kwd.get( 'username', '' ) )
+            validate = self.__validate_email_username( email, username )
+            if validate[ 'status' ] == 'error':
+                raise exceptions.MessageException( validate['message'] )
+            # Validate the new values for email and username
+            message = validate_email(trans, email, user)
+            
+            if not message and username:
+                message = validate_publicname(trans, username, user)
+            if message:
+                status = 'error'
+            else:
+                if (user.email != email):
+                    # The user's private role name must match the user's login (email)
+                    private_role = trans.app.security_agent.get_private_user_role( user )
+                    private_role.name = email
+                    private_role.description = 'Private role for ' + email
+                    # Change the email itself
+                    user.email = email
+                    trans.sa_session.add_all( ( user, private_role ) )
+                    trans.sa_session.flush()
+                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                        user.active = False
+                        trans.sa_session.add( user )
+                        trans.sa_session.flush()
+                        is_activation_sent = self.send_verification_email( trans, user.email, user.username )
+                        if is_activation_sent:
+                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                        else:
+                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                            if trans.app.config.error_email_to is not None:
+                                message += ' Contact: %s' % trans.app.config.error_email_to
+                if (user.username != username):
+                    user.username = username
+                    trans.sa_session.add(user)
+                    trans.sa_session.flush()
+                status = 'done'
+
+        # add/save user address
         payload = kwd.get('payload')
         user.addresses = []
         addressnames = list()
@@ -162,7 +263,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 raise exceptions.MessageException( add_status['message'] )
         trans.sa_session.flush()
         return { 'message': 'User information has been updated' }
-
 
     def __add_address( self, trans, user_id, params ):
         """ Add new address """
@@ -227,142 +327,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'message': escape( message ),
                 'status': 'error'
             }
-
-    def __edit_info(self, trans, cntrller, kwd):
-        """
-        Save user information like email and public name
-        """
-        params = util.Params(kwd)
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        user_id = params.get('id', None)
-        save_type = params.get('save_type', None)
-        if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        elif user_id and (not trans.user or trans.user.id != trans.security.decode_id(user_id)):
-            message = 'Invalid user id'
-            status = 'error'
-            user = None
-        else:
-            user = trans.user
-        if user and (save_type == 'login_info'):
-            # Editing email and username
-            email = util.restore_text(params.get('email', ''))
-            username = util.restore_text(params.get('username', '')).lower()
-
-            # Validate the new values for email and username
-            message = validate_email(trans, email, user)
-            if not message and username:
-                message = validate_publicname(trans, username, user)
-            if message:
-                status = 'error'
-            else:
-                if (user.email != email):
-                    # The user's private role name must match the user's login (email)
-                    private_role = trans.app.security_agent.get_private_user_role(user)
-                    private_role.name = email
-                    private_role.description = 'Private role for ' + email
-                    # Change the email itself
-                    user.email = email
-                    trans.sa_session.add_all((user, private_role))
-                    trans.sa_session.flush()
-                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                        user.active = False
-                        trans.sa_session.add(user)
-                        trans.sa_session.flush()
-                        is_activation_sent = self.send_verification_email(trans, user.email, user.username)
-                        if is_activation_sent:
-                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-                        else:
-                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                            if trans.app.config.error_email_to is not None:
-                                message += ' Contact: %s' % trans.app.config.error_email_to
-                if (user.username != username):
-                    user.username = username
-                    trans.sa_session.add(user)
-                    trans.sa_session.flush()
-                message = 'The login information has been updated with the changes.'
-        elif user and (save_type == 'edit_user_info'):
-            # Edit user information - webapp MUST BE 'galaxy'
-            user_type_fd_id = params.get('user_type_fd_id', 'none')
-            if user_type_fd_id not in ['none']:
-                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
-            elif user.values:
-                user_type_form_definition = user.values.form_definition
-            else:
-                # User was created before any of the user_info forms were created
-                user_type_form_definition = None
-            if user_type_form_definition:
-                values = self.get_form_values(trans, user,
-                                              user_type_form_definition, **kwd)
-            else:
-                values = {}
-            flush_needed = False
-            if user.values:
-                # Editing the user info of an existing user with existing user info
-                user.values.content = values
-                trans.sa_session.add(user.values)
-                flush_needed = True
-            elif values:
-                form_values = trans.model.FormValues(user_type_form_definition, values)
-                trans.sa_session.add(form_values)
-                user.values = form_values
-                flush_needed = True
-            if flush_needed:
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
-            message = "The user information has been updated with the changes."
-        if user and trans.webapp.name == 'galaxy' and is_admin:
-            kwd['user_id'] = trans.security.encode_id(user.id)
-        kwd['id'] = user_id
-        if message:
-            kwd['message'] = util.sanitize_text(message)
-        if status:
-            kwd['status'] = status
-        # Return all data for user information page
-        return self.user_info( trans, kwd )
-
-    def __delete_address(self, trans, cntrller, kwd):
-        """ Delete an address """
-        address_id = kwd.get('address_id', None)
-        return self.__delete_undelete_address(trans, cntrller, 'delete', address_id, kwd)
-
-    def __undelete_address(self, trans, cntrller, kwd):
-        """ Undelete an address """
-        address_id = kwd.get('address_id', None)
-        return self.__delete_undelete_address(trans, cntrller, 'undelete', address_id, kwd)
-
-    def __delete_undelete_address(self, trans, cntrller, op, address_id, kwd):
-        """ Delete or undelete an address based on parameter op """
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = kwd.get('id', False)
-        if is_admin:
-            if not user_id:
-                return trans.show_error_message("You must specify a user to %s an address from." % op)
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        else:
-            user = trans.user
-        try:
-            user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(address_id))
-        except:
-            return trans.show_error_message("Invalid address id.")
-        if user_address:
-            if user_address.user_id != user.id:
-                return trans.show_error_message("Invalid address id.")
-            user_address.deleted = True if op == 'delete' else False
-            trans.sa_session.add(user_address)
-            trans.sa_session.flush()
-            message = 'Address (%s) %sd' % (escape(user_address.desc), op)
-            status = 'done'
-
-        kwd['id'] = trans.security.encode_id(user.id)
-        if message:
-            kwd['message'] = util.sanitize_text(message)
-        if status:
-            kwd['status'] = status
-
-        return self.user_info( trans, kwd )
 
     @expose_api
     def password(self, trans, user_id, payload={}, **kwd):
