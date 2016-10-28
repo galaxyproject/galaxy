@@ -215,7 +215,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Set to True if conda_prefix and job_working_directory are not on the same
 # volume. Conda will copy packages content instead of creating symlinks.
 # This will prevent problems with some specific packages (perl, R), at the cost
-# of extra disk space usage.
+# of extra disk space usage and extra time spent copying packages.
 #conda_copy_dependencies = False
 
 # File containing the Galaxy Tool Sheds that should be made available to
