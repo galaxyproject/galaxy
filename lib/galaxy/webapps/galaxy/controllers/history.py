@@ -4,7 +4,7 @@ import urllib
 from markupsafe import escape
 from six import string_types
 from sqlalchemy import and_, false, func, null, true
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import eagerload, eagerload_all
 
 import galaxy.util
 from galaxy import exceptions
@@ -664,7 +664,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Get history.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
-        history = trans.sa_session.query( model.History ).filter_by( user=user, slug=slug, deleted=False ).first()
+        history = trans.sa_session.query( model.History ) \
+            .options( eagerload( 'tags' ) ).options( eagerload( 'annotations' ) ) \
+            .filter_by( user=user, slug=slug, deleted=False ).first()
         if history is None:
             raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access history.
