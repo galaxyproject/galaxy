@@ -22,7 +22,7 @@ class DefaultJobAction(object):
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict=None):
-	pass
+        pass
 
     @classmethod
     def get_short_str(cls, pja):

@@ -583,7 +583,7 @@ class Job( object, JobLike, Dictifiable ):
 
     def add_parameter( self, name, value ):
         self.parameters.append( JobParameter( name, value ) )
-	
+
     def add_input_dataset( self, name, dataset=None, dataset_id=None ):
         assoc = JobToInputDatasetAssociation( name, dataset )
         if dataset is None and dataset_id is not None:

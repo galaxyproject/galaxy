@@ -53,8 +53,8 @@ class ToolEvaluator( object ):
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         incoming = self.tool.params_from_strings( incoming, self.app )
-        
-	# Full parameter validation
+
+        # Full parameter validation
         request_context = WorkRequestContext( app=self.app, user=job.history and job.history.user, history=job.history )
 
         def validate_inputs( input, value, context, **kwargs ):
@@ -92,7 +92,7 @@ class ToolEvaluator( object ):
         incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
 
         # Build params, done before hook so hook can use
-	param_dict = self.build_param_dict(
+        param_dict = self.build_param_dict(
             incoming,
             inp_data,
             out_data,
@@ -112,8 +112,7 @@ class ToolEvaluator( object ):
 
     def build_param_dict( self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[] ):
 	"""
-       
-	 Build the dictionary of parameters for substituting into the command
+	Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
         all the attributes of the value to be used in the template, *but*
         when the __str__ method is called it actually calls the
@@ -124,7 +123,7 @@ class ToolEvaluator( object ):
         def input():
             raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
         param_dict["input"] = input
-
+        
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update( incoming )
@@ -141,7 +140,7 @@ class ToolEvaluator( object ):
         self.__populate_non_job_params(param_dict)
 
         # Return the dictionary of parameters
-	return param_dict
+        return param_dict
 
     def __walk_inputs(self, inputs, input_values, func):
 
@@ -454,12 +453,11 @@ class ToolEvaluator( object ):
         """
         Build command line to invoke this tool given a populated param_dict
         """
-         
 	command = self.tool.command
 	param_dict = self.param_dict
 	interpreter = self.tool.interpreter
-        command_line = None
         
+        command_line = None
 	if not command:
             return
         try:
@@ -482,8 +480,7 @@ class ToolEvaluator( object ):
             tool_dir = os.path.abspath( self.tool.tool_dir )
             abs_executable = os.path.join( tool_dir, executable )
             command_line = command_line.replace(executable, abs_executable, 1)
-	    command_line = interpreter + " " + command_line
-
+            command_line = interpreter + " " + command_line
         self.command_line = command_line
 	
     def __build_config_files( self ):

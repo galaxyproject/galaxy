@@ -293,12 +293,12 @@ class WorkflowProgress( object ):
         if step_outputs is STEP_OUTPUT_DELAYED:
             raise modules.DelayedWorkflowEvaluation()
         output_name = connection.output_name
-	try:
+        try:
             replacement = step_outputs[ output_name ]
         except KeyError:
             if is_data:
                 # Must resolve.
-		template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
                 message = template % ( output_name, step_outputs )
                 raise Exception( message )
             else:

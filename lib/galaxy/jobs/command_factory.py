@@ -1,6 +1,5 @@
 from logging import getLogger
 from os import getcwd
-import galaxy
 from galaxy import model
 from os.path import (
     abspath,
@@ -49,7 +48,7 @@ def build_command(
     #of the password paramter to a blank using the same format the other values use in a job.
     job_id = job_wrapper.job_id
     sa_session = this_app.model.context
-    query = sa_session.query(galaxy.model.JobParameter).filter(galaxy.model.JobParameter.job_id==job_id).first()
+    query = sa_session.query(model.JobParameter).filter(model.JobParameter.job_id==job_id).first()
     idVar = query.id
     jobId = query.job_id
     jobOrig = query.job_id
@@ -63,7 +62,7 @@ def build_command(
 	if query.name == "JPCNn681vcGV4KuvuT16":
 		passwordName = query.value[1:-1]
 	queryList.append(query)	
-	query = sa_session.query(galaxy.model.JobParameter).get(idVar)
+	query = sa_session.query(model.JobParameter).get(idVar)
     index = 0
     for item in queryList:
 	if str(item.name) == (passwordName):

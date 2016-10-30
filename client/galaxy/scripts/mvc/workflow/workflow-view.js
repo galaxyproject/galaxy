@@ -761,7 +761,7 @@ EditorFormView = Backbone.View.extend({
         },
 
         showWorkflowParameters: function () {
-	    var parameter_re = /\$\{.+?\}/g;
+            var parameter_re = /\$\{.+?\}/g;
             var workflow_parameters = [];
             var wf_parm_container = $("#workflow-parameters-container");
             var wf_parm_box = $("#workflow-parameters-box");

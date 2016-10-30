@@ -23,12 +23,12 @@ from galaxy.web.base.controller import UsesLibraryMixinItems
 log = logging.getLogger( __name__ )
 
 
-class JobController( BaseAPIController, UsesLibraryMixinItems ):
-	
+class JobController( BaseAPIController, UsesLibraryMixinItems ):	
     def __init__( self, app ):
         super( JobController, self ).__init__( app )
         self.hda_manager = managers.hdas.HDAManager( app )
         self.dataset_manager = managers.datasets.DatasetManager( app )
+    
     @expose_api
     def index( self, trans, **kwd ):
         """
@@ -328,7 +328,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
                 a.value == v
             ) )
 
-	for k, v in input_data.items():
+        for k, v in input_data.items():
             # Here we are attempting to link the inputs to the underlying
             # dataset (not the dataset association).
             # This way, if the calculation was done using a copied HDA
@@ -342,7 +342,6 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
                 b.deleted == false(),
                 b.dataset_id == v
             ) )
-	  
 
         out = []
         for job in query.all():

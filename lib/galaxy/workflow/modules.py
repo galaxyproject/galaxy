@@ -748,7 +748,7 @@ class ToolModule( WorkflowModule ):
         self.trans = trans
         self.tool_id = tool_id
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
-	self.post_job_actions = {}
+        self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
@@ -991,7 +991,7 @@ class ToolModule( WorkflowModule ):
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
-	return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
+        return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
@@ -1329,14 +1329,13 @@ class WorkflowModuleInjector(object):
 
         # Populate module.
         module = step.module = module_factory.from_workflow_step( self.trans, step )
-	
 	if not module:
             step.module = None
             step.state = None
             raise MissingToolException(step.tool_id)
 
         # Fix any missing parameters
-	step.upgrade_messages = module.check_and_update_state()
+        step.upgrade_messages = module.check_and_update_state()
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)

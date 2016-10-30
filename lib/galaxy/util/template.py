@@ -1,5 +1,7 @@
 """Entry point for the usage of Cheetah templating within Galaxy."""
 from Cheetah.Template import Template
+
+
 def fill_template( template_text, context=None, **kwargs ):
     """Fill a cheetah template out for specified context.
 

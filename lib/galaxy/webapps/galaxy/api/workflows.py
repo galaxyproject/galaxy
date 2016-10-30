@@ -85,7 +85,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
     @expose_api
     def create(self, trans, payload, **kwd):
-	"""
+        """
         POST /api/workflows
 
         Run or create workflows from the api.
@@ -192,6 +192,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
         workflow = stored_workflow.latest_workflow
+        
         run_configs = build_workflow_run_configs( trans, workflow, payload )
         assert len(run_configs) == 1
         run_config = run_configs[0]
@@ -231,6 +232,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Returns a selected workflow as a json dictionary.
         """
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
+        
         style = kwd.get("style", "export")
         ret_dict = self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
         if not ret_dict:
@@ -393,27 +395,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         return item
 
-#    def findKey(self,workflow_tool_inputs,key1):
-#	for key,value in workflow_tool_inputs.iteritems():
-#		if isinstance(value, unicode):
-#			value = value.encode('utf-8')
-#			value = ast.literal_eval(value)
-#		if key1 == key:
-#			return True
-#		elif isinstance(value,dict):
-#			self.findKey(value,key1)
-#	return False
-
-#    def findKey2(self,workflow_tool_inputs,key1):	
-#	for key,value in workflow_tool_inputs.iteritems():
-#		if '|' in key:
-#			key = key.split('|')
-#			for item in key:
-#				if item == key1:
-#					return True
-#		elif key == key1:
-#			return True
-
     @expose_api
     def import_shared_workflow_deprecated(self, trans, payload, **kwd):
         """
@@ -453,7 +434,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Schedule the workflow specified by `workflow_id` to run.
         """
-	# /usage is awkward in this context but is consistent with the rest of
+        # /usage is awkward in this context but is consistent with the rest of
         # this module. Would prefer to redo it all to use /invocation(s).
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
@@ -483,7 +464,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 workflow_run_config=run_config,
                 request_params=work_request_params
             )
-	    invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
+            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
             invocations.append(invocation)
 
         if is_batch:

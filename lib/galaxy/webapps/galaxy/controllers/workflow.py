@@ -564,7 +564,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     @web.expose
     @web.require_login( "create workflows" )
     def create( self, trans, workflow_name=None, workflow_annotation="" ):
-	"""
+        """
         Create a new stored workflow with name `workflow_name`.
         """
         user = trans.get_user()
@@ -580,9 +580,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-	    workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
+            workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
             self.add_item_annotation( trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation )
-	    # Persist
+            # Persist
             session = trans.sa_session
             session.add( stored_workflow )
             session.flush()
@@ -742,7 +742,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
 	# Get the stored workflow
         stored = self.get_stored_workflow( trans, id )
-	
 	workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
         try:
             workflow, errors = workflow_contents_manager.update_workflow_from_dict(
@@ -750,7 +749,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 stored,
                 workflow_data,
             )
-	
         except workflows.MissingToolsException as e:
             return dict(
                 name=e.workflow.name,
@@ -758,6 +756,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         "It cannot be saved until the following steps are removed or the missing tools are enabled.",
                 errors=e.errors,
             )
+        
         if workflow.has_errors:
             errors.append( "Some steps in this workflow have validation errors" )
         if workflow.has_cycles:

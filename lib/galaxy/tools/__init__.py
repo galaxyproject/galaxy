@@ -688,7 +688,7 @@ class Tool( object, Dictifiable ):
         return tool_source.parse_environment_variables()
 
     def parse_inputs( self, tool_source ):
-	"""
+        """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
         This implementation supports multiple pages and grouping constructs.
         """
@@ -720,7 +720,7 @@ class Tool( object, Dictifiable ):
                 # Handle multiple page case
             for page_source in pages.page_sources:
                 inputs = self.parse_input_elem( page_source, enctypes )
-		display = page_source.parse_display()
+                display = page_source.parse_display()
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
@@ -1108,7 +1108,7 @@ class Tool( object, Dictifiable ):
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
         """
-	request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history or trans.history )
+        request_context = WorkRequestContext( app=trans.app, user=trans.user, history=history or trans.history )
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1291,6 +1291,7 @@ class Tool( object, Dictifiable ):
                         messages[ prefixed_name ] = 'Attempt to replace invalid value for \'%s\' failed.' % ( prefixed_label )
                 else:
                     messages[ prefixed_name ] = error
+
 	visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
