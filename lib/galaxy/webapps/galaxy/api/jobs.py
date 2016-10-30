@@ -24,6 +24,7 @@ log = logging.getLogger( __name__ )
 
 
 class JobController( BaseAPIController, UsesLibraryMixinItems ):	
+
     def __init__( self, app ):
         super( JobController, self ).__init__( app )
         self.hda_manager = managers.hdas.HDAManager( app )

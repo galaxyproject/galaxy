@@ -1329,7 +1329,7 @@ class WorkflowModuleInjector(object):
 
         # Populate module.
         module = step.module = module_factory.from_workflow_step( self.trans, step )
-	if not module:
+        if not module:
             step.module = None
             step.state = None
             raise MissingToolException(step.tool_id)

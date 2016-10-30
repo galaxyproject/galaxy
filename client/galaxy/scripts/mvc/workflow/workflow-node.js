@@ -247,3 +247,4 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
     });
     return Node;
 });
+

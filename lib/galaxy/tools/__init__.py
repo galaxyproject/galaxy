@@ -1292,7 +1292,7 @@ class Tool( object, Dictifiable ):
                 else:
                     messages[ prefixed_name ] = error
 
-	visit_input_values( self.inputs, values, validate_inputs )
+        visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):

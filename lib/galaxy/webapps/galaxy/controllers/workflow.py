@@ -740,9 +740,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         Save the workflow described by `workflow_data` with id `id`.
         """
-	# Get the stored workflow
+        # Get the stored workflow
         stored = self.get_stored_workflow( trans, id )
-	workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+        workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
         try:
             workflow, errors = workflow_contents_manager.update_workflow_from_dict(
                 trans,
@@ -756,7 +756,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         "It cannot be saved until the following steps are removed or the missing tools are enabled.",
                 errors=e.errors,
             )
-        
+ 
         if workflow.has_errors:
             errors.append( "Some steps in this workflow have validation errors" )
         if workflow.has_cycles:

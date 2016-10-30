@@ -373,12 +373,12 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 var step        = self.steps[ i ];
                 var step_index  = step.step_index;
                 form.trigger( 'reset' );
-		for ( var job_input_id in job_inputs ) {
+                for ( var job_input_id in job_inputs ) {
                     var input_value = job_inputs[ job_input_id ];
                     var input_id    = form.data.match( job_input_id );
                     var input_field = form.field_list[ input_id ];
                     var input_def   = form.input_list[ input_id ];
-		    if ( !input_def.step_linked ) {
+                    if ( !input_def.step_linked ) {
                         if ( this._isDataStep( step ) ) {
                             validated = input_value && input_value.values && input_value.values.length > 0;
                         } else {
@@ -395,7 +395,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
 			}
 		    }
                 }
-		if ( !validated ) {
+                if ( !validated ) {
                     break;
                 }
             }
