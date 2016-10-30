@@ -2,14 +2,18 @@
 
 Subsystems are essentially monitoring plugins available within collectl.
 """
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
 
 
+@six.add_metaclass(ABCMeta)
 class CollectlSubsystem( object ):
     """ Class providing an abstraction of collectl subsytems.
     """
-    __metaclass__ = ABCMeta
 
     @property
     @abstractmethod
@@ -73,4 +77,4 @@ def get_subsystem( name ):
     """
     return SUBSYSTEM_DICT[ name ]
 
-__all__ = [ 'get_subsystem' ]
+__all__ = ( 'get_subsystem', )

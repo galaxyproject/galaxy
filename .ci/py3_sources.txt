@@ -57,6 +57,16 @@ lib/galaxy/tools/toolbox/
 lib/galaxy/tours/
 lib/galaxy/util/
 lib/galaxy/visualization/
+lib/galaxy/web/buildapp.py
+lib/galaxy/web/framework/__init__.py
+lib/galaxy/web/framework/middleware/error.py
+lib/galaxy/web/framework/middleware/static.py
+lib/galaxy/web/__init__.py
+lib/galaxy/webapps/galaxy/api/tours.py
+lib/galaxy/webapps/galaxy/controllers/userskeys.py
+lib/galaxy/webapps/reports/__init__.py
+lib/galaxy/webapps/tool_shed/controllers/user.py
+lib/galaxy/webapps/tool_shed/__init__.py
 lib/galaxy/work/
 lib/galaxy/workflow/extract.py
 lib/galaxy/workflow/run.py

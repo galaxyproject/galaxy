@@ -248,6 +248,36 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 });
             }
 
+            // add admin operations for tool XML reloading
+            if (Galaxy.user && Galaxy.user.get('is_admin')) {
+                menu_button.addMenu({
+                    icon    : 'fa-refresh',
+                    title   : 'Reload Tool XML',
+                    tooltip : 'Reload tool XML file',
+                    onclick : function() {
+                        var modalMessage = new Ui.Modal.View();
+                        $.ajax({
+                            url: '/api/tools/' + options.id + '/reload',
+                            type: "GET",
+                        }).done(function(data){
+                            modalMessage.show({
+                                title   : data.done ? 'Tool XML Reload' : 'Tool XML Reload Error',
+                                body    : data.done ? data.done : data.error,
+                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                            });
+                            window.setTimeout(function(){modalMessage.hide();}, 2000);
+
+                        }).fail(function(error){
+                            modalMessage.show({
+                                title: "Tool XML Reload AJAX Error",
+                                body: options.id + " " + error,
+                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                            });
+                        });
+                    }
+                });
+            }
+
             // button for version selection
             if (options.requirements && options.requirements.length > 0) {
                 menu_button.addMenu({

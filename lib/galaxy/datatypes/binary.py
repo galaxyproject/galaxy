@@ -124,6 +124,37 @@ class Idat( Binary ):
 Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 
+class Cel( Binary ):
+
+    """Binary data in CEL format."""
+    file_ext = "cel"
+    edam_format = "format_1638"
+    edam_data = "data_3110"
+
+    def sniff( self, filename ):
+        """
+        Try to guess if the file is a CEL file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.CEL')
+        >>> Cel().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('drugbank_drugs.mz5')
+        >>> Cel().sniff(fname)
+        False
+        """
+        try:
+            header = open( filename, 'rb' ).read(4)
+            if header == b';\x01\x00\x00':
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("cel", "cel", Cel)
+
+
 class CompressedArchive( Binary ):
     """
         Class describing an compressed binary file

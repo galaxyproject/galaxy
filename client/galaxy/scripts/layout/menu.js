@@ -1,8 +1,6 @@
 /** Masthead Collection **/
-define(['mvc/tours',
-        'layout/generic-nav-view',
-        'mvc/user/user-preferences'],
-function( Tours, GenericNav, Preferences ) {
+define(['mvc/tours', 'layout/generic-nav-view', 'mvc/user/user-preferences', 'mvc/webhooks'],
+function( Tours, GenericNav, Preferences, Webhooks ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -108,6 +106,29 @@ var Collection = Backbone.Collection.extend({
                     target  : 'galaxy_main'
                 }
             ]
+        });
+
+        //
+        // Webhooks
+        //
+        Webhooks.add({
+            url: 'api/webhooks/masthead/all',
+            callback: function(webhooks) {
+                $(document).ready(function() {
+                    $.each(webhooks.models, function(index, model) {
+                        var webhook = model.toJSON();
+                        if (webhook.activate) {
+                            Galaxy.page.masthead.collection.add({
+                                id      : webhook.name,
+                                icon    : webhook.config.icon,
+                                url     : webhook.config.url,
+                                tooltip : webhook.config.tooltip,
+                                onclick : webhook.config.function && new Function(webhook.config.function),
+                            });
+                        }
+                    });
+                });
+            }
         });
 
         //

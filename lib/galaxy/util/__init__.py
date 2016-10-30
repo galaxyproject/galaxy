@@ -32,10 +32,12 @@ from hashlib import md5
 from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
 
-from six import binary_type, iteritems, PY3, string_types, text_type
+from six import binary_type, iteritems, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
-from six.moves.urllib import parse as urlparse
-from six.moves.urllib import request as urlrequest
+from six.moves.urllib import (
+    parse as urlparse,
+    request as urlrequest
+)
 
 try:
     import docutils.core as docutils_core
@@ -45,14 +47,8 @@ except ImportError:
     docutils_html4css1 = None
 
 from .inflection import English, Inflector
+
 inflector = Inflector(English)
-
-if PY3:
-    def list_map(f, input):
-        return list(map(f, input))
-else:
-    list_map = map
-
 
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -479,7 +475,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance( text, list ):
-        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+        return [ sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) for x in text ]
     if not isinstance( text, string_types ):
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
@@ -518,7 +514,7 @@ def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_ch
     if isinstance( value, string_types ):
         return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
+        return [ sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) for x in value ]
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
@@ -1026,8 +1022,7 @@ def read_dbnames(filename):
                     ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
             except:
                 continue
-        sort_names = name_to_db_base.keys()
-        sort_names.sort()
+        sort_names = sorted(name_to_db_base.keys())
         for name in sort_names:
             db_base = name_to_db_base[name]
             ucsc_builds[db_base].sort()
@@ -1115,7 +1110,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
     dir = os.path.dirname(src)
     names = tempfile._get_candidate_names()
     for seq in xrange(tempfile.TMP_MAX):
-        name = names.next()
+        name = next(names)
         file = os.path.join(dir, prefix + name)
         try:
             os.link( src, file )
@@ -1172,14 +1167,14 @@ def docstring_trim(docstring):
     # and split into a list of lines:
     lines = docstring.expandtabs().splitlines()
     # Determine minimum indentation (first line doesn't count):
-    indent = sys.maxint
+    indent = sys.maxsize
     for line in lines[1:]:
         stripped = line.lstrip()
         if stripped:
             indent = min(indent, len(line) - len(stripped))
     # Remove indentation (first line is special):
     trimmed = [lines[0].strip()]
-    if indent < sys.maxint:
+    if indent < sys.maxsize:
         for line in lines[1:]:
             trimmed.append(line[indent:].rstrip())
     # Strip off trailing and leading blank lines:

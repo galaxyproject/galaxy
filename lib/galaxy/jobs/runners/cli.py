@@ -6,13 +6,17 @@ import logging
 
 from galaxy import model
 from galaxy.jobs import JobDestination
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState
+)
 from galaxy.util import asbool
+
 from .util.cli import CliInterface, split_params
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'ShellJobRunner' ]
+__all__ = ( 'ShellJobRunner', )
 
 DEFAULT_EMBED_METADATA_IN_JOB = True
 

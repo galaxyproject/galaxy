@@ -324,6 +324,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # separated list.
 #tour_config_dir = config/plugins/tours
 
+# Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
+# By default none will be loaded.  Set to config/plugins/webhooks/demo to load Galaxy's
+# demo webhooks.  To use an absolute path begin the path with '/'.  This is a comma
+# separated list.
+# webhooks_dir = config/plugins/webhooks
+
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.
@@ -1262,4 +1268,3 @@ use_interactive = True
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
 #rabbitmqctl_path = /path/to/rabbitmqctl
-
