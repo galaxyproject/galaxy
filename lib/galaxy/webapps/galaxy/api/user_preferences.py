@@ -279,9 +279,9 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         address = util.restore_text(params.get('address', ''))
         city = util.restore_text(params.get('city', ''))
         state = util.restore_text(params.get('state', ''))
-        postal_code = str(util.restore_text(params.get('postal_code', '')))
+        postal_code = str( params.get( 'postal_code', '' ) )
         country = util.restore_text(params.get('country', ''))
-        phone = str(util.restore_text(params.get('phone', '')))
+        phone = str( params.get( 'phone', '' ) )
 
         if not trans.app.config.allow_user_creation and not is_admin:
             return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
