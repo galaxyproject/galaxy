@@ -132,11 +132,10 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'inputs'            : inputs,
         }
 
-
     def _build_address_dict( self, address_id, payload ):
         ''' Build user addresses' dictionary '''
         addressdict = dict()
-        for i, address in enumerate( payload ):
+        for address in payload:
             if address_id == address.split("|")[0]:
                 addressdict[ address.split("|")[1] ] = payload[ address ]
         return addressdict
@@ -144,11 +143,12 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
     def __validate_email_username( self, email, username ):
         ''' Validate email and username '''
         message = ''
-        status = 'done'    
+        status = 'done'
+        # Regex match for username
         if not re.match( '^[a-z0-9\-]{3,255}$', username ) or len( username ) > 255 or len( username ) < 3 or len( username ) == 0:
            status = 'error'
            message = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
-
+        # Regex match for email
         if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
            status = 'error'
            message = 'Please enter your valid email address'
@@ -160,7 +160,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
            message = 'Email cannot be more than 255 characters in length'
 
         return { 'message': message, 'status': status }
-        
 
     @expose_api
     def set_information( self, trans, user_id, **kwd ):
@@ -169,7 +168,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         '''
         is_admin = trans.user_is_admin()
         if user_id and is_admin:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id(user_id) )
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
         elif user_id and ( not trans.user or trans.user.id != trans.security.decode_id( user_id ) ):
             message = 'Invalid user id'
             status = 'error'
@@ -178,7 +177,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             user = trans.user
 
         if user.values:
-            user_type_fd_id = kwd.get('user_type_fd_id', 'none')
+            user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id not in ['none']:
                 user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
             elif user.values:
@@ -244,12 +243,14 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     user.username = username
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
+                    trans.log_event('User information added')
                 status = 'done'
 
-        # add/save user address
+        # Add/save user address
         payload = kwd.get('payload')
         user.addresses = []
         addressnames = list()
+        # Get addresses from payload
         alladdressnames = [ item for item in payload if item.find("address") > -1 ]
         for item in alladdressnames:
             name = item.split('|')[0]
@@ -257,7 +258,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 addressnames.append( name )
 
         for each_address in addressnames:
-            address = self._build_address_dict( each_address, payload ) 
+            address = self._build_address_dict( each_address, payload )
             add_status = self.__add_address( trans, user_id, address )
             if( add_status['status'] == 'error' ):
                 raise exceptions.MessageException( add_status['message'] )
@@ -273,14 +274,16 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id( user_id ))
         else:
             user = trans.user
-        short_desc = util.restore_text(params.get('short_desc', ''))
-        name = util.restore_text(params.get('name', ''))
-        institution = util.restore_text(params.get('institution', ''))
-        address = util.restore_text(params.get('address', ''))
-        city = util.restore_text(params.get('city', ''))
-        state = util.restore_text(params.get('state', ''))
+        short_desc = util.restore_text( params.get('short_desc', '') )
+        name = util.restore_text( params.get('name', '') )
+        institution = util.restore_text( params.get('institution', '') )
+        address = util.restore_text( params.get('address', '') )
+        city = util.restore_text( params.get('city', '') )
+        state = util.restore_text( params.get('state', '') )
+        # Handle the case of int value
         postal_code = str( params.get( 'postal_code', '' ) )
-        country = util.restore_text(params.get('country', ''))
+        country = util.restore_text( params.get('country', '') )
+        # Handle the case of int value
         phone = str( params.get( 'phone', '' ) )
 
         if not trans.app.config.allow_user_creation and not is_admin:
@@ -317,6 +320,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                                                    phone=phone)
             trans.sa_session.add(user_address)
             trans.sa_session.flush()
+            trans.log_event('User address added')
             return {
                 'message': 'Address (%s) has been added.' % escape(user_address.desc),
                 'status': 'done'
@@ -331,7 +335,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
     @expose_api
     def password(self, trans, user_id, payload={}, **kwd):
         """
-        Allows to change a user password.
+        Allow to change a user password.
         """
         if kwd:
             password = kwd.get( 'password' )
@@ -339,11 +343,20 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             current = kwd.get( 'current' )
             token = kwd.get( 'token' )
             token_result = None
+
+            # If field(s) are left empty
+            if not password or not current or not confirm:
+                raise exceptions.MessageException( 'Please fill all the fields' )
+
+            # If current password is same as new or confirm password
+            if current == password or current == confirm:
+                raise exceptions.MessageException( 'The current and new passwords should be different' )
+
             if token:
                 # If a token was supplied, validate and set user
                 token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
                 if not token_result or not token_result.expiration_time > datetime.utcnow():
-                    raise exceptions.MessageException('Invalid or expired password reset token, please request a new one.')
+                    raise exceptions.MessageException( 'Invalid or expired password reset token, please request a new one.' )
                 user = token_result.user
             else:
                 # The user is changing their own password, validate their current password
@@ -444,6 +457,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             return { 'message': 'Toolbox filters unchanged.', 'inputs': inputs }
 
     def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
+        ''' Build inputs for filters '''
         filter_inputs = list()
         filter_values = saved_values.get( filter_type, [] )
         filter_config = filter_types[ filter_type ][ 'config' ]
@@ -484,7 +498,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
     @expose_api
     def communication(self, trans, user_id, payload={}, **kwd):
         """
-        Allows the user to activate/deactivate the communication server.
+        Allow the user to activate/deactivate the communication server.
         """
         user = self._get_user(trans, user_id)
         enable = kwd.get('enable')
@@ -505,6 +519,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                                     'value' : user.preferences.get('communication_server', 'false') }] }
 
     def _get_user( self, trans, user_id ):
+        ''' Get the user '''
         user = self.get_user(trans, user_id)
         if not user:
             raise exceptions.MessageException('Invalid user (%s).' % user_id)
