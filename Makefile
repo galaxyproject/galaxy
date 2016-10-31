@@ -34,15 +34,6 @@ docs-slides-ready:
 docs-slides-export: docs-slides-ready
 	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
 
-docs-schema-ready: ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
-	python $(DOCS_DIR)/parse_gx_xsd.py > $(DOCS_DIR)/schema.md
-
-docs-schema-html: docs-schema-ready ## Convert Galaxy Tool XSD Markdown docs into HTML (expects pandoc in environment)
-	pandoc $(DOCS_DIR)/schema.md -f markdown_github -s -o $(DOCS_DIR)/schema.html
-
-open-docs-schema: docs-schema-html ## Open HTML generated from Galaxy Tool XSD.
-	$(OPEN_RESOURCE) $(DOCS_DIR)/schema.html
-
 _open-docs:
 	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
 

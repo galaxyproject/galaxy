@@ -1,6 +1,6 @@
-=================================
+================================
 Containers for Tool Dependencies
-=================================
+================================
 
 Galaxy tools (also called wrappers) are able to use Conda packages
 (see more information in our `Galaxy Conda documentation`_) and Docker containers as dependency resolvers.
@@ -59,7 +59,7 @@ This will search for containers in the biocontainers organisation.
 
 
 Build all packages from bioconda from the last 24h
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The BioConda community is building a container for every package they create with a command similar to this.
 
@@ -70,7 +70,7 @@ The BioConda community is building a container for every package they create wit
 
 
 Building Docker containers for local Conda packages
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Conda packages can be tested with creating a busybox based container for this particular package in the following way.
 This also demonstrates how you can build a container locally and on-the-fly.
@@ -101,7 +101,7 @@ The ``--0`` indicates the build version of the conda package. It is recommended 
 you will override already existing images. For Python Conda packages this extension might look like this ``--py35_1``.
 
 Build, test and push a conda-forge package to biocontainers
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  > You need to have write access to the biocontainers repository
 

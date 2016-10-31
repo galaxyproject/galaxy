@@ -10,10 +10,8 @@ If you find a bug please report it [here](https://github.com/galaxyproject/galax
 
 This document serves as reference documentation. If you would like to learn
 how to build tools for Galaxy,
-[Planemo](http://planemo.readthedocs.io/en/latest/writing.html) features a
+[Planemo](https://planemo.readthedocs.io/en/latest/writing.html) features a
 number of tutorials on building Galaxy tools that would better serve that purpose.
-
-$toc
 
 $tag:tool://element[@name='tool']
 $tag:tool|description://element[@name='tool']//element[@name='description']
