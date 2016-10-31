@@ -3005,13 +3005,13 @@ being used for validation start with a this attribute value.</xs:documentation>
 ``in_range`` - this is the maximum number allowed.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="exclude_min" type="xs:decimal">
+        <xs:attribute name="exclude_min" type="xs:boolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">When the ``type`` attribute value is
 ``in_range`` - this boolean indicates if the ``min`` value is allowed.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="exclude_max" type="xs:decimal">
+        <xs:attribute name="exclude_max" type="xs:boolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">When the ``type`` attribute value is
 ``in_range`` - this boolean indicates if the ``max`` value is allowed.</xs:documentation>
