@@ -23,7 +23,7 @@ tool_shed=`./scripts/tool_shed/bootstrap_tool_shed/parse_run_sh_args.sh $@`
 args=$@
 
 if [ $? -eq 0 ] ; then
-	bash ./scripts/tool_shed/bootstrap_tool_shed/parse_run_sh_args.sh $@
+	bash ./scripts/tool_shed/bootstrap_tool_shed/bootstrap_tool_shed.sh $@
 	args=`echo $@ | sed "s#-\?-bootstrap_from_tool_shed $tool_shed##"`
 fi
 
