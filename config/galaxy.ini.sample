@@ -125,11 +125,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
-# Setting the following option to true will cause Galaxy to automatically
-# migrate the database forward after updates. This is not recommended for production
-# use.
-#database_auto_migrate = False
-
 # -- Files and directories
 
 # Dataset files are stored in this directory.
@@ -169,47 +164,39 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # <toolbox> tag.
 #tool_path = tools
 
-# -- Tool dependencies
-
 # Path to the directory in which tool dependencies are placed.  This is used by
-# the Tool Shed to install dependencies and can also be used by administrators
+# the tool shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
 #   https://wiki.galaxyproject.org/Admin/Config/ToolDependencies
-# Set the string to None to explicitly disable tool dependency handling.
+# Set to the string none to explicitly disable tool dependency handling.
 # If this option is set to none or an invalid path, installing tools with dependencies
-# from the Tool Shed will fail.
+# from the Tool Shed will fail. 
 #tool_dependency_dir = database/dependencies
 
-# The dependency resolvers config file specifies an ordering and options for how
+# The dependency resolves config file specifies an ordering and options for how
 # Galaxy resolves tool dependencies (requirement tags in Tool XML). The default
-# ordering is to the use the Tool Shed for tools installed that way, use local
-# Galaxy packages, and then use Conda if available.
+# ordering is to the use the tool shed for tools installed that way, use local
+# Galaxy packages, and then use conda if available.
 # See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
 # for more information on these options.
 #dependency_resolvers_config_file = config/dependency_resolvers_conf.xml
 
-# The following Conda dependency resolution options will change the defaults for
-# all Conda resolvers, but multiple resolvers can be configured independently
-# in dependency_resolvers_config_file and these options overridden.
-# Location on the filesystem where Conda packages are installed
-
-# conda_prefix is the location on the filesystem where Conda packages and environments are installed
-# IMPORTANT: Due to a current limitation in conda, the total length of the
-# conda_prefix and the job_working_directory path should be less than 50 characters!
+# Following conda dependeny resolution options are experimental as of early
+# 2016. These will change the defaults for each conda resolver, but multiple
+# resolvers can be configured independently and these options overridden in
+# dependency_resolvers_config_file.
 #conda_prefix = <tool_dependency_dir>/_conda
-# Override the Conda executable to use, it will default to the one on the
+# Override the conda executable to use, it will default to the one on the
 # PATH (if available) and then to <conda_prefix>/bin/conda
 #conda_exec =
 # Pass debug flag to conda commands.
 #conda_debug = False
 # conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
-#conda_ensure_channels = conda-forge,r,bioconda,iuc
+#conda_ensure_channels = r,bioconda,iuc
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
-# Set to True to perform additional checking of installed Conda environment
-#conda_verbose_install_check=False
-# Set to True to instruct Galaxy to install Conda from the web automatically
+# Set to True to instruct Galaxy to install conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
 #conda_auto_init = False
 
@@ -227,31 +214,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # a less efficient monitoring scheme that may work in wider range of scenarios
 # than the watchdog default.
 #watch_tools = False
-
-# Enable Galaxy to fetch Docker containers registered with quay.io generated
-# from tool requirements resolved through conda. These containers (when
-# available) have been generated using mulled - https://github.com/mulled.
-# These containers are highly beta and availablity will vary by tool.
-# This option will additionally only be used for job destinations with
-# Docker enabled.
-#enable_beta_mulled_containers = False
-
-# Container resolvers configuration (beta). Setup a file describing container
-# resolvers to use when discovering containers for Galaxy. If this is set to
-# None, the default containers loaded is determined by
-# enable_beta_mulled_containers.
-#containers_resolvers_config_file = None
-
-# involucro is a tool used to build Docker containers for tools from Conda
-# dependencies referenced in tools as `requirement`s. The following path is
-# the location of involucro on the Galaxy host. This is ignored if the relevant
-# container resolver isn't enabled, and will install on demand unless
-# involucro_auto_init is set to False.
-#involucro_path = database/dependencies/involucro
-
-# Install involucro as needed to build Docker containers for tools. Ignored if
-# relevant container resolver is not used.
-#involucro_auto_init = True
 
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy
@@ -324,12 +286,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # separated list.
 #tour_config_dir = config/plugins/tours
 
-# Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
-# By default none will be loaded.  Set to config/plugins/webhooks/demo to load Galaxy's
-# demo webhooks.  To use an absolute path begin the path with '/'.  This is a comma
-# separated list.
-# webhooks_dir = config/plugins/webhooks
-
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.
@@ -350,6 +306,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #check_job_script_integrity_count = 35
 # Time to sleep between checks if check_job_script_integrity is enabled (in seconds).
 #check_job_script_integrity_sleep = .25
+
 
 # Set the default shell used by non-containerized jobs Galaxy-wide. This
 # defaults to bash for all jobs and can be overidden at the destination
@@ -452,19 +409,16 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Activation grace period (in hours).  Activation is not forced (login is not
 # disabled) until grace period has passed.  Users under grace period can't run
-# jobs. Enter 0 to disable grace period.
+# jobs (see inactivity_box_content).  Default is 3.  Enter 0 to disable grace
+# period.
 # Users with OpenID logins have grace period forever.
-#activation_grace_period = 3
+#activation_grace_period = 0
 
-# Shown in warning box to users that were not activated yet.
+# Used for warning box for inactive accounts (unable to run jobs).
 # In use only if activation_grace_period is set.
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
-# Password expiration period (in days). Users are required to change their
-# password every x days. Users will be redirected to the change password
-# screen when they log in after their password expires. Enter 0 to disable
-# password expiration.
-#password_expiration_period = 0
+
 
 # Galaxy Session Timeout
 # This provides a timeout (in minutes) after which a user will have to log back in.
@@ -564,13 +518,13 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 #citation_url = https://wiki.galaxyproject.org/CitingGalaxy
 
-# The URL linked by the "Search" link in the "Help" menu.
+#The URL linked by the "Search" link in the "Help" menu.
 #search_url = http://galaxyproject.org/search/usegalaxy/
 
-# The URL linked by the "Mailing Lists" link in the "Help" menu.
+#The URL linked by the "Mailing Lists" link in the "Help" menu.
 #mailing_lists_url = https://wiki.galaxyproject.org/MailingLists
 
-# The URL linked by the "Videos" link in the "Help" menu.
+#The URL linked by the "Videos" link in the "Help" menu.
 #screencasts_url = https://vimeo.com/galaxyproject
 
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
@@ -662,7 +616,7 @@ nglims_config_file = tool-data/nglims.yaml
 # implementation, alongside a new Golang single-binary-no-dependencies
 # version. Valid values are (node, golang)
 #dynamic_proxy=node
-
+#
 # The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
 # set that here.
 #dynamic_proxy_session_map=database/session_map.sqlite
@@ -731,6 +685,7 @@ nglims_config_file = tool-data/nglims.yaml
 # are grid views, tool searches, and use of "recently" used tools menu.  The
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
+
 
 # Fluentd configuration.  Various events can be logged to the fluentd instance
 # configured below by enabling fluent_log.
@@ -892,10 +847,11 @@ use_interactive = True
 # Galaxy encodes various internal values when these values will be output in
 # some format (for example, in a URL or cookie).  You should set a key to be
 # used by the algorithm that encodes and decodes these values.  It can be any
-# string.
+# string.  If left unchanged, anyone could construct a cookie that would grant
+# them access to others' sessions.
 # One simple way to generate a value for this is with the shell command:
 #   python -c 'import time; print time.time()' | md5sum | cut -f 1 -d ' '
-#id_secret = USING THE DEFAULT IS NOT SECURE!
+id_secret = passwordabc
 
 # User authentication can be delegated to an upstream proxy server (usually
 # Apache).  The upstream proxy should set a REMOTE_USER header in the request.
@@ -966,7 +922,7 @@ use_interactive = True
 # Allow users to remove their datasets from disk immediately (otherwise,
 # datasets will be removed after a time period specified by an administrator in
 # the cleanup scripts run via cron)
-#allow_user_dataset_purge = True
+#allow_user_dataset_purge = False
 
 # By default, users' data will be public, but setting this to True will cause
 # it to be private.  Does not affect existing users and data, only ones created
@@ -984,16 +940,22 @@ use_interactive = True
 #expose_user_email = False
 
 # -- Beta features
-
 # Enable new run workflow form
-#run_workflow_toolform_upgrade = True
+#run_workflow_toolform_upgrade = False
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
+# Separate tool command from rest of job script so tool dependencies
+# don't interfer with metadata generation.
+# Despite the name, this feature is enabled by default
+# in 16.01 and the option will go away in the future.
+#enable_beta_tool_command_isolation = True
+
 # Enable the new interface for installing tools from Tool Shed
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = False
+
 
 # Set the following to a number of threads greater than 1 to spawn
 # a Python task queue for dealing with large tool submissions (either
@@ -1206,14 +1168,14 @@ use_interactive = True
 # if running many handlers.
 #cache_user_job_count = False
 
-# -- ToolBox filtering
+# ToolBox filtering
 
 # Modules from lib/galaxy/tools/toolbox/filters/ can be specified in
 # the following lines.  tool_* filters will be applied for all users
 # and can not be changed by them.  user_tool_* filters will be shown
-# under user preferences and can be toggled on and off at
+# under user preferences and can be toogled on and off by
 # runtime.  Example shown below are not real defaults (no custom
-# filters are applied by default), but can be enabled by renaming the
+# filters applied by defualt) but can be enabled with by renaming the
 # example.py.sample in the filters directory to example.py.
 
 #tool_filters =
@@ -1228,7 +1190,7 @@ use_interactive = True
 # modifying the following option.
 #toolbox_filter_base_modules = galaxy.tools.toolbox.filters,galaxy.tools.filters
 
-# -- Galaxy Application Internal Message Queue
+# Galaxy Application Internal Message Queue
 
 # Galaxy uses AMQP internally TODO more documentation on what for.
 # For examples, see http://ask.github.io/kombu/userguide/connections.html
@@ -1244,9 +1206,11 @@ use_interactive = True
 #enable_communication_server = False
 #communication_server_host = http://localhost
 #communication_server_port = 7070
-# persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-#persistent_communication_rooms =
+#persistent_communication_rooms is a comma-separated list of rooms that should be always be available.
+#persistent_communication_rooms = RNA-seq, Room 1, Room ABC
 
+# Enable new preferences which showcases new UI for the user preferences
+enable_new_preferences = False
 
 # ---- Galaxy External Message Queue -------------------------------------------------
 
@@ -1268,3 +1232,4 @@ use_interactive = True
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
 #rabbitmqctl_path = /path/to/rabbitmqctl
+

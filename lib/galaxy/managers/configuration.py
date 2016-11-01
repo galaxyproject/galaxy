@@ -56,6 +56,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'communication_server_host' : _defaults_to( None ),
             'communication_server_port' : _defaults_to( None ),
             'persistent_communication_rooms' : _defaults_to( None ),
+            'enable_new_preferences'    : _defaults_to( False ),
             'allow_user_creation'       : _defaults_to( False ),
             'use_remote_user'           : _defaults_to( None ),
             'remote_user_logout_href'   : _defaults_to( '' ),

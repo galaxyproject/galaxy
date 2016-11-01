@@ -236,23 +236,10 @@ var Collection = Backbone.Collection.extend({
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },
                     {
-                        title   : 'Preferences Mako',
+                        title   : 'User Preferences',
                         url     : 'user?cntrller=user',
                         target  : 'galaxy_main'
                     },
-                    {
-                        title   : 'New Preferences',
-                        url     : 'user',
-                        onclick : function() {
-                            if (Galaxy.app) {
-                                Galaxy.app.display(new Preferences.UserPreferences());
-                            } 
-                            else {
-                                window.location = Galaxy.root + "user";
-                            }
-                       }
-                    },
-
                     {
                         title   : 'Custom Builds',
                         url     : 'user/dbkeys',
@@ -280,6 +267,22 @@ var Collection = Backbone.Collection.extend({
                         target  : 'galaxy_main'
                 }]
             };
+
+            if( window.Galaxy.config.enable_new_preferences ) {
+                userTab.menu.push({
+                    title   : 'New User Preferences UI',
+                    url     : 'user',
+                    onclick : function() {
+                        if (Galaxy.app) {
+                            Galaxy.app.display(new Preferences.UserPreferences());
+                        } 
+                        else {
+                            window.location = Galaxy.root + "user";
+                        }
+                    }
+                });
+            }
+            
             options.use_remote_user && userTab.menu.push({
                 title   : 'Public Name',
                 url     : 'user/edit_username?cntrller=user',
