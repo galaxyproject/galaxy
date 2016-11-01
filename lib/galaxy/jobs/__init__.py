@@ -541,9 +541,8 @@ class JobConfiguration( object ):
         a list of IDs, the JobToolConfigurations for the first id in ``ids``
         matching a tool definition.
 
-        .. note::
-
-            You should not mix tool shed tool IDs, versionless tool shed IDs, and tool config tool IDs that refer to the same tool.
+        .. note:: You should not mix tool shed tool IDs, versionless tool shed
+             IDs, and tool config tool IDs that refer to the same tool.
 
         :param ids: Tool ID or IDs to fetch the JobToolConfiguration of.
         :type ids: list or str.

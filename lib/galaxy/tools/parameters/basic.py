@@ -277,6 +277,7 @@ class PasswordToolParameter(TextToolParameter):
 class IntegerToolParameter( TextToolParameter ):
     """
     Parameter that takes an integer value.
+
     >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
     >>> p = IntegerToolParameter( None, XML( '<param name="_name" type="integer" value="10" />' ) )
@@ -352,6 +353,7 @@ class IntegerToolParameter( TextToolParameter ):
 class FloatToolParameter( TextToolParameter ):
     """
     Parameter that takes a real number value.
+
     >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
     >>> p = FloatToolParameter( None, XML( '<param name="_name" type="float" value="3.141592" />' ) )

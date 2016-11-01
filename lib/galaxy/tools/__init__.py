@@ -68,7 +68,7 @@ import galaxy.jobs
 log = logging.getLogger( __name__ )
 
 HELP_UNINITIALIZED = threading.Lock()
-MODEL_TOOLS_PATH = os.path.dirname(__file__)
+MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 class ToolErrorLog:

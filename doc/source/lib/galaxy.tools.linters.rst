@@ -25,6 +25,14 @@ galaxy.tools.linters.command module
     :undoc-members:
     :show-inheritance:
 
+galaxy.tools.linters.general module
+-----------------------------------
+
+.. automodule:: galaxy.tools.linters.general
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.tools.linters.help module
 --------------------------------
 
@@ -49,6 +57,14 @@ galaxy.tools.linters.outputs module
     :undoc-members:
     :show-inheritance:
 
+galaxy.tools.linters.stdio module
+---------------------------------
+
+.. automodule:: galaxy.tools.linters.stdio
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.tools.linters.tests module
 ---------------------------------
 
@@ -57,12 +73,10 @@ galaxy.tools.linters.tests module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.linters.top_level module
+galaxy.tools.linters.xml_order module
 -------------------------------------
 
-.. automodule:: galaxy.tools.linters.top_level
+.. automodule:: galaxy.tools.linters.xml_order
     :members:
     :undoc-members:
     :show-inheritance:
-
-

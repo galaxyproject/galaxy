@@ -33,7 +33,7 @@ class LibraryManager( object ):
         :type   check_accessible:         bool
 
         :returns:   the requested library
-        :rtype:     Library
+        :rtype:     galaxy.model.Library
         """
         try:
             library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.id == decoded_library_id ).one()
@@ -145,8 +145,8 @@ class LibraryManager( object ):
         """
         Check if library is accessible to user.
 
-        :param  folder:                  library
-        :type   folder:                  Library
+        :param  library:                 library
+        :type   library:                 galaxy.model.Library
         :param  check_accessible:        flag whether to check that user can access library
         :type   check_accessible:        bool
 
@@ -176,7 +176,7 @@ class LibraryManager( object ):
         Return library data in the form of a dictionary.
 
         :param  library:       library
-        :type   library:       Library
+        :type   library:       galaxy.model.Library
 
         :returns:   dict with data about the library
         :rtype:     dictionary
@@ -201,7 +201,7 @@ class LibraryManager( object ):
         Load all permissions currently related to the given library.
 
         :param  library:      the model object
-        :type   library:      Library
+        :type   library:      galaxy.model.Library
 
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types

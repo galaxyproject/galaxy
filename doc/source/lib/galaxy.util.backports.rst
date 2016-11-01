@@ -5,11 +5,3 @@ galaxy.util.backports package
     :members:
     :undoc-members:
     :show-inheritance:
-
-Subpackages
------------
-
-.. toctree::
-
-    galaxy.util.backports.importlib
-

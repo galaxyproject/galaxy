@@ -764,11 +764,11 @@ var FolderToolbarView = Backbone.View.extend({
     var popped_item = history_item_set.pop();
     if ( typeof popped_item == "undefined" ) {
       if ( this.options.chain_call_control.failed_number === 0 ){
-        mod_toastr.success( 'Selected datasets imported into history. Click this to start analyzing it.', '', { onclick: function() { window.location='/' } } );
+        mod_toastr.success( 'Selected datasets imported into history. Click this to start analyzing it.', '', { onclick: function() { window.location=Galaxy.root } } );
       } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
         mod_toastr.error( 'There was an error and no datasets were imported into history.' );
       } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
-        mod_toastr.warning( 'Some of the datasets could not be imported into history. Click this to see what was imported.', '', { onclick: function() { window.location='/' } } );
+        mod_toastr.warning( 'Some of the datasets could not be imported into history. Click this to see what was imported.', '', { onclick: function() { window.location=Galaxy.root } } );
       }
       Galaxy.modal.hide();
       return true;
