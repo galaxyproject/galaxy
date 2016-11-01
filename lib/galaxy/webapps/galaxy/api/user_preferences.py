@@ -72,41 +72,53 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if type_form_id:
                 type_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( type_form_id ) )
                 if type_form_model:
-                    inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': custom_form_model.to_dict() } )
-            info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            info_forms = [ f.to_dict() for f in info_form_models ]
-            if info_forms:
-                info_field = {
-                    'type'   : 'conditional',
-                    'name'   : 'user_info',
-                    'cases'  : [],
-                    'test_param' : {
-                        'name'  : 'selected',
-                        'label' : 'User information',
-                        'type'  : 'select',
-                        'help'  : '',
-                        'data'  : []
+                    form_def = type_form_model.to_dict()
+                    form_def_fields = type_form_model.fields
+                    user_info_inputs = []
+                    user_type_input = { 
+                        'type': 'select',
+                        'data': [ {'label' : form_def[ 'name' ], 'value': 0} ],
+                        'help': '',
+                        'label': 'User Type',
+                        'name': 'user_type'
                     }
-                }
-                for i, d in enumerate( info_forms ):
-                    info_field[ 'test_param' ][ 'data' ].append( { 'label' : d[ 'name' ], 'value': i } )
-                    info_field[ 'cases' ].append( { 'value': i, 'inputs' : d[ 'inputs' ] } )
-                inputs.append( info_field )
+                    
+                    user_info_def = {
+                        'type': 'section',
+                        'name': 'user_info',
+                        'title': 'User Information'
+                    }
+                    # Build inputs
+                    user_info_inputs_values = []
+                    user_info_inputs_values.append( user_type_input )
+                    for item_dict in form_def[ 'inputs' ]:
+                        for item_field in form_def_fields:
+                            if item_dict[ 'name' ] == item_field[ 'name' ]:
+                                item_dict[ 'label' ] = item_field[ 'label' ]
+                                item_dict[ 'help' ] = item_field[ 'helptext' ]
+                                item_dict[ 'default' ] = item_field[ 'default' ]
+                                item_dict[ 'required' ] = item_field[ 'required' ]
+                                # Add value to an input
+                                item_dict[ 'value' ] = user.values.content[ item_dict[ 'name' ] ]
+                                user_info_inputs_values.append( item_dict )
+                    user_info_def[ 'inputs' ] = user_info_inputs_values
+                    inputs.append( user_info_def )
+
             address_field = AddressField( '' ).to_dict()
             address_values = list()        
             for address in user.addresses:
                 address_item = dict()
-                address_item["short_desc"] = address.desc
-                address_item["name"] = address.name
-                address_item["institution"] = address.institution
-	        address_item["address"] = address.address
-	        address_item["city"] = address.city
-	        address_item["state"] = address.state
-	        address_item["postal_code"] = address.postal_code
-	        address_item["country"] = address.country
-                address_item["phone"] = address.phone
-                address_item["address_id"] = trans.security.encode_id(address.id)
-                address_values.append(address_item)
+                address_item[ "short_desc" ] = address.desc
+                address_item[ "name" ] = address.name
+                address_item[ "institution" ] = address.institution
+	        address_item[ "address" ] = address.address
+	        address_item[ "city" ] = address.city
+	        address_item[ "state" ] = address.state
+	        address_item[ "postal_code" ] = address.postal_code
+	        address_item[ "country" ] = address.country
+                address_item[ "phone" ] = address.phone
+                address_item[ "address_id" ] = trans.security.encode_id( address.id )
+                address_values.append( address_item )
             address_repeat = { 'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
             for address in address_values:
                 address_inputs = []
@@ -120,12 +132,12 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if user.active_repositories:
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
-                inputs.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
+                inputs.append( dict( id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.' ) )
         return {
             'webapp'            : trans.webapp.name,
             'user_id'           : trans.security.encode_id( trans.user.id ),
             'is_admin'          : trans.user_is_admin(),
-            'values'            : user.values,
+            'values'            : user.values.content if user.values else {},
             'email'             : email,
             'username'          : username,
             'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
@@ -161,6 +173,16 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
         return { 'message': message, 'status': status }
 
+    def get_user_info_dict( self, trans, payload ):
+        ''' Extract user information attributes '''
+        user_info_fields = [ item for item in payload if item.find("user_info") > -1 ]
+        user_info_dict = dict()
+        for item in user_info_fields:
+            value = payload[ item ]
+            attribute = item.replace( 'user_info|', '' )
+            user_info_dict[ attribute ] = value
+        return user_info_dict
+
     @expose_api
     def set_information( self, trans, user_id, **kwd ):
         '''
@@ -186,9 +208,10 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 # User was created before any of the user_info forms were created
                 user_type_form_definition = None
             if user_type_form_definition:
-                values = self.get_form_values(trans, user, user_type_form_definition, **kwd)
+                values = self.get_user_info_dict( trans, kwd.get( 'payload' ) )
             else:
                 values = {}
+
             flush_needed = False
             if user.values:
                 # Editing the user info of an existing user with existing user info
@@ -203,48 +226,47 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if flush_needed:
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
-            status = 'done'
-        elif user:
-            # Editing email and username
-            email = util.restore_text( kwd.get( 'email', '' ) )
-            username = util.restore_text( kwd.get( 'username', '' ) )
-            validate = self.__validate_email_username( email, username )
-            if validate[ 'status' ] == 'error':
-                raise exceptions.MessageException( validate['message'] )
-            # Validate the new values for email and username
-            message = validate_email(trans, email, user)
-            
-            if not message and username:
-                message = validate_publicname(trans, username, user)
-            if message:
-                status = 'error'
-            else:
-                if (user.email != email):
-                    # The user's private role name must match the user's login (email)
-                    private_role = trans.app.security_agent.get_private_user_role( user )
-                    private_role.name = email
-                    private_role.description = 'Private role for ' + email
-                    # Change the email itself
-                    user.email = email
-                    trans.sa_session.add_all( ( user, private_role ) )
+
+        # Editing email and username
+        email = util.restore_text( kwd.get( 'email', '' ) )
+        username = util.restore_text( kwd.get( 'username', '' ) )
+        validate = self.__validate_email_username( email, username )
+        if validate[ 'status' ] == 'error':
+            raise exceptions.MessageException( validate['message'] )
+        # Validate the new values for email and username
+        message = validate_email(trans, email, user)
+    
+        if not message and username:
+            message = validate_publicname(trans, username, user)
+        if message:
+            status = 'error'
+        else:
+            if (user.email != email):
+                # The user's private role name must match the user's login (email)
+                private_role = trans.app.security_agent.get_private_user_role( user )
+                private_role.name = email
+                private_role.description = 'Private role for ' + email
+                # Change the email itself
+                user.email = email
+                trans.sa_session.add_all( ( user, private_role ) )
+                trans.sa_session.flush()
+                if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                    user.active = False
+                    trans.sa_session.add( user )
                     trans.sa_session.flush()
-                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                        user.active = False
-                        trans.sa_session.add( user )
-                        trans.sa_session.flush()
-                        is_activation_sent = self.send_verification_email( trans, user.email, user.username )
-                        if is_activation_sent:
-                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-                        else:
-                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                            if trans.app.config.error_email_to is not None:
-                                message += ' Contact: %s' % trans.app.config.error_email_to
-                if (user.username != username):
-                    user.username = username
-                    trans.sa_session.add(user)
-                    trans.sa_session.flush()
-                    trans.log_event('User information added')
-                status = 'done'
+                    is_activation_sent = self.send_verification_email( trans, user.email, user.username )
+                    if is_activation_sent:
+                        message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                    else:
+                        message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                        if trans.app.config.error_email_to is not None:
+                            message += ' Contact: %s' % trans.app.config.error_email_to
+            if (user.username != username):
+                user.username = username
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+                trans.log_event('User information added')
+        status = 'done'
 
         # Add/save user address
         payload = kwd.get('payload')
