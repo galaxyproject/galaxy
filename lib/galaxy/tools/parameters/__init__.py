@@ -159,6 +159,7 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     preferred form).
     """
     rval = dict()
+    param_values = param_values or {}
     for key, value in param_values.items():
         value = json_fix( loads( value ) )
         if key in params:
