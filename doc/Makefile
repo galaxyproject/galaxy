@@ -49,6 +49,7 @@ schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd
 
 source/dev/schema.rst: schema.md ## Convert Galaxy Tool XSD Markdown docs into reStructuredText (expects pandoc in environment)
 	pandoc schema.md -f markdown_github-hard_line_breaks -s --toc --toc-depth=2 -o $@
+	sed -i -e 's|.. code:: xml|.. code-block:: xml|g' $@
 
 # might also want to do
 # cd source/lib; hg revert; rm *.rst.orig;  or not.
