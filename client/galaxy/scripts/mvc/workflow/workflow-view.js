@@ -855,21 +855,15 @@ EditorFormView = Backbone.View.extend({
             return ( this.type_to_type[child] ) && ( parent in this.type_to_type[child] );
         },
 
-        $newNodeElement: function(type, title_text) {
+        prebuildNode: function ( type, title_text, content_id ) {
+            var self = this;
             var $f = $("<div class='toolForm toolFormInCanvas'></div>");
             var $title = $("<div class='toolFormTitle unselectable'><span class='nodeTitle'>" + title_text + "</div></div>" );
             add_node_icon($title.find('.nodeTitle'), type);
             $f.append( $title );
             $f.css( "left", $(window).scrollLeft() + 20 );
             $f.css( "top", $(window).scrollTop() + 20 );
-            var $b = $("<div class='toolFormBody'></div>");
-            $f.append($b);
-            return $f
-        },
-
-        prebuildNode: function ( type, title_text, content_id ) {
-            var self = this;
-            var $f = this.$newNodeElement( type, title_text );
+            $f.append($("<div class='toolFormBody'></div>"));
             var node = new Node( this, { element: $f } );
             node.type = type;
             node.content_id = content_id;
