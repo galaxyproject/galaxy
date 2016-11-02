@@ -1058,31 +1058,31 @@ class ConnectivityTable( Tabular ):
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
         the RNAStructure package. The tabular file format is defined as
-        follows:
+        follows::
 
-5	energy = -12.3	sequence name
-1	G	0	2	0	1
-2	A	1	3	0	2
-3	A	2	4	0	3
-4	A	3	5	0	4
-5	C	4	6	1	5
+            5	energy = -12.3	sequence name
+            1	G	0	2	0	1
+            2	A	1	3	0	2
+            3	A	2	4	0	3
+            4	A	3	5	0	4
+            5	C	4	6	1	5
 
         The links given at the edam ontology page do not indicate what
         type of separator is used (space or tab) while different
         implementations exist. The implementation that uses spaces as
-        separator (implemented in RNAStructure) is as follows:
+        separator (implemented in RNAStructure) is as follows::
 
-   10    ENERGY = -34.8  seqname
-    1 G       0    2    9    1
-    2 G       1    3    8    2
-    3 G       2    4    7    3
-    4 a       3    5    0    4
-    5 a       4    6    0    5
-    6 a       5    7    0    6
-    7 C       6    8    3    7
-    8 C       7    9    2    8
-    9 C       8   10    1    9
-   10 a       9    0    0   10
+            10    ENERGY = -34.8  seqname
+            1 G       0    2    9    1
+            2 G       1    3    8    2
+            3 G       2    4    7    3
+            4 a       3    5    0    4
+            5 a       4    6    0    5
+            6 a       5    7    0    6
+            7 C       6    8    3    7
+            8 C       7    9    2    8
+            9 C       8   10    1    9
+            10 a       9    0    0   10
         """
 
         i = 0

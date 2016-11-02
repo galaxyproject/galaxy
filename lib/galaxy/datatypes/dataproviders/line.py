@@ -88,7 +88,7 @@ class RegexLineDataProvider( FilteredLineDataProvider ):
     of regexs.
 
     .. note:: the regex matches are effectively OR'd (if **any** regex matches
-    the line it is considered valid and will be provided).
+        the line it is considered valid and will be provided).
     """
     settings = {
         'regex_list'    : 'list:escaped',

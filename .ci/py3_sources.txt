@@ -2,6 +2,7 @@ client/galaxy/style/source_material/circle.py
 contrib/
 cron/
 doc/parse_gx_xsd.py
+doc/patch.py
 lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
@@ -63,6 +64,7 @@ lib/galaxy/web/framework/middleware/error.py
 lib/galaxy/web/framework/middleware/static.py
 lib/galaxy/web/__init__.py
 lib/galaxy/webapps/galaxy/api/tours.py
+lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/userskeys.py
 lib/galaxy/webapps/reports/__init__.py
 lib/galaxy/webapps/tool_shed/controllers/user.py

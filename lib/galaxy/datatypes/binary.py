@@ -1170,10 +1170,13 @@ class OxliCountGraph(OxliBinary):
     """
     OxliCountGraph starts with "OXLI" + one byte version number +
     8-bit binary '1'
-    Test file generated via `load-into-counting.py --n_tables 1 \
-            --max-tablesize 1 oxli_countgraph.oxlicg \
-            khmer/tests/test-data/100-reads.fq.bz2`
+    Test file generated via::
+
+        load-into-counting.py --n_tables 1 --max-tablesize 1 \\
+            oxli_countgraph.oxlicg khmer/tests/test-data/100-reads.fq.bz2
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliCountGraph().sniff( fname )
@@ -1194,10 +1197,13 @@ class OxliNodeGraph(OxliBinary):
     """
     OxliNodeGraph starts with "OXLI" + one byte version number +
     8-bit binary '2'
-    Test file generated via `load-graph.py --n_tables 1 \
-            --max-tablesize 1 oxli_nodegraph.oxling \
-            khmer/tests/test-data/100-reads.fq.bz2`
+    Test file generated via::
+
+        load-graph.py --n_tables 1 --max-tablesize 1 oxli_nodegraph.oxling \\
+            khmer/tests/test-data/100-reads.fq.bz2
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliNodeGraph().sniff( fname )
@@ -1218,11 +1224,14 @@ class OxliTagSet(OxliBinary):
     """
     OxliTagSet starts with "OXLI" + one byte version number +
     8-bit binary '3'
-    Test file generated via `load-graph.py --n_tables 1 \
-            --max-tablesize 1 oxli_nodegraph.oxling \
-            khmer/tests/test-data/100-reads.fq.bz2; \
-            mv oxli_nodegraph.oxling.tagset oxli_tagset.oxlits`
+    Test file generated via::
+
+        load-graph.py --n_tables 1 --max-tablesize 1 oxli_nodegraph.oxling \\
+            khmer/tests/test-data/100-reads.fq.bz2;
+        mv oxli_nodegraph.oxling.tagset oxli_tagset.oxlits
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliTagSet().sniff( fname )
@@ -1244,6 +1253,7 @@ class OxliStopTags(OxliBinary):
     8-bit binary '4'
     Test file adapted from khmer 2.0's
     "khmer/tests/test-data/goodversion-k32.stoptags"
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliStopTags().sniff( fname )
@@ -1264,11 +1274,14 @@ class OxliSubset(OxliBinary):
     """
     OxliSubset starts with "OXLI" + one byte version number +
     8-bit binary '5'
-    Test file generated via `load-graph.py -k 20 example \
-            tests/test-data/random-20-a.fa; \
-            partition-graph.py example; \
-            mv example.subset.0.pmap oxli_subset.oxliss`
+    Test file generated via::
+
+        load-graph.py -k 20 example tests/test-data/random-20-a.fa;
+        partition-graph.py example;
+        mv example.subset.0.pmap oxli_subset.oxliss
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliSubset().sniff( fname )
@@ -1288,11 +1301,15 @@ class OxliGraphLabels(OxliBinary):
     """
     OxliGraphLabels starts with "OXLI" + one byte version number +
     8-bit binary '6'
-    Test file generated via `python -c "from khmer import GraphLabels; \
-        gl = GraphLabels(20, 1e7, 4); gl.consume_fasta_and_tag_with_labels(
-            'tests/test-data/test-labels.fa'); \
-        gl.save_labels_and_tags('oxli_graphlabels.oxligl')"`
+    Test file generated via::
+
+        python -c "from khmer import GraphLabels; \\
+            gl = GraphLabels(20, 1e7, 4); \\
+            gl.consume_fasta_and_tag_with_labels('tests/test-data/test-labels.fa'); \\
+            gl.save_labels_and_tags('oxli_graphlabels.oxligl')"
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliGraphLabels().sniff( fname )

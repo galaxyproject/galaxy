@@ -5,6 +5,7 @@ cron/cleanup_datasets.py
 cron/parse_builds_3_sites.py
 cron/parse_builds.py
 doc/parse_gx_xsd.py
+doc/patch.py
 lib/galaxy/actions/
 lib/galaxy/auth/
 lib/galaxy/config.py
@@ -340,6 +341,7 @@ lib/galaxy/webapps/galaxy/api/roles.py
 lib/galaxy/webapps/galaxy/api/samples.py
 lib/galaxy/webapps/galaxy/api/tools.py
 lib/galaxy/webapps/galaxy/api/tours.py
+lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/async.py
 lib/galaxy/webapps/galaxy/controllers/data_manager.py
 lib/galaxy/webapps/galaxy/controllers/error.py

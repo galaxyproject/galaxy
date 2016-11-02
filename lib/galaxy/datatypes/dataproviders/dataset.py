@@ -56,6 +56,7 @@ class DatasetDataProvider( base.DataProvider ):
     def get_column_metadata_from_dataset( cls, dataset ):
         """
         Convenience class method to get column metadata from a dataset.
+
         :returns: a dictionary of `column_count`, `column_types`, and `column_names`
             if they're available, setting each to `None` if not.
         """
@@ -69,6 +70,7 @@ class DatasetDataProvider( base.DataProvider ):
     def get_metadata_column_types( self, indeces=None ):
         """
         Return the list of `column_types` for this dataset or `None` if unavailable.
+
         :param indeces: the indeces for the columns of which to return the types.
             Optional: defaults to None (return all types)
         :type indeces: list of ints
@@ -88,6 +90,7 @@ class DatasetDataProvider( base.DataProvider ):
     def get_metadata_column_names( self, indeces=None ):
         """
         Return the list of `column_names` for this dataset or `None` if unavailable.
+
         :param indeces: the indeces for the columns of which to return the names.
             Optional: defaults to None (return all names)
         :type indeces: list of ints
@@ -108,8 +111,10 @@ class DatasetDataProvider( base.DataProvider ):
     def get_indeces_by_column_names( self, list_of_column_names ):
         """
         Return the list of column indeces when given a list of column_names.
+
         :param list_of_column_names: the names of the columns of which to get indeces.
         :type list_of_column_names: list of strs
+
         :raises KeyError: if column_names are not found
         :raises ValueError: if an entry in list_of_column_names is not in column_names
         """
@@ -399,7 +404,8 @@ class IntervalDataProvider( column.ColumnarDataProvider ):
 #   WITHOUT reading the entire seq into memory - possibly apply some version of limit/offset
 class FastaDataProvider( base.FilteredDataProvider ):
     """
-    Class that returns fasta format data in a list of maps of the form:
+    Class that returns fasta format data in a list of maps of the form::
+
         {
             id: <fasta header id>,
             sequence: <joined lines of nucleotide/amino data>
@@ -432,7 +438,8 @@ class FastaDataProvider( base.FilteredDataProvider ):
 
 class TwoBitFastaDataProvider( DatasetDataProvider ):
     """
-    Class that returns fasta format data in a list of maps of the form:
+    Class that returns fasta format data in a list of maps of the form::
+
         {
             id: <fasta header id>,
             sequence: <joined lines of nucleotide/amino data>

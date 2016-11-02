@@ -1,24 +1,35 @@
 """
 API operations for Workflows
 """
-
 from __future__ import absolute_import
 
 import logging
-import urllib
+from six.moves.urllib.parse import unquote_plus
+
 from sqlalchemy import desc, false, or_, true
-from galaxy import exceptions, util
+
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
+from galaxy.managers import (
+    histories,
+    workflows
+)
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.managers import histories
-from galaxy.managers import workflows
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
-from galaxy.web.base.controller import SharableMixin
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    SharableMixin,
+    url_for,
+    UsesStoredWorkflowMixin
+)
 from galaxy.workflow.extract import extract_workflow
+from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from galaxy.workflow.modules import module_factory
-
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +171,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             from_history_id = self.decode_id( from_history_id )
             history = self.history_manager.get_accessible( from_history_id, trans.user, current_history=trans.history )
 
-            job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
+            job_ids = [ self.decode_id(_) for _ in payload.get( 'job_ids', [] ) ]
             dataset_ids = payload.get( 'dataset_ids', [] )
             dataset_collection_ids = payload.get( 'dataset_collection_ids', [] )
             workflow_name = payload[ 'workflow_name' ]
@@ -215,7 +226,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         rval['outputs'] = []
         for step in workflow.steps:
             if step.type == 'tool' or step.type is None:
-                for v in outputs[ step.id ].itervalues():
+                for v in outputs[ step.id ].values():
                     rval[ 'outputs' ].append( trans.security.encode_id( v.id ) )
 
         # Newer version of this API just returns the invocation as a dict, to
@@ -300,11 +311,36 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
                          The workflow contents will be updated to target
                          this.
+
+            * name       optional string name for the workflow, if not present in payload,
+                         name defaults to existing name
+            * annotation optional string annotation for the workflow, if not present in payload,
+                         annotation defaults to existing annotation
+            * menu_entry optional boolean marking if the workflow should appear in the user's menu,
+                         if not present, workflow menu entries are not modified
+
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow( trans, id )
         if 'workflow' in payload:
+            stored_workflow.name = sanitize_html(payload['name']) if ('name' in payload) else stored_workflow.name
+
+            if 'annotation' in payload:
+                newAnnotation = sanitize_html(payload['annotation'])
+                self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
+
+            if 'menu_entry' in payload:
+                if payload['menu_entry']:
+                    menuEntry = model.StoredWorkflowMenuEntry()
+                    menuEntry.stored_workflow = stored_workflow
+                    trans.get_user().stored_workflow_menu_entries.append(menuEntry)
+                else:
+                    # remove if in list
+                    entries = {x.stored_workflow_id: x for x in trans.get_user().stored_workflow_menu_entries}
+                    if (trans.security.decode_id(id) in entries):
+                        trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
+
             workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
                 trans,
                 stored_workflow,
@@ -354,7 +390,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     # -- Helper methods --
     #
     def _get_tool( self, id, tool_version=None, user=None ):
-        id = urllib.unquote_plus( id )
+        id = unquote_plus( id )
         tool = self.app.toolbox.get_tool( id, tool_version )
         if not tool or not tool.allow_user_access( user ):
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
