@@ -268,9 +268,9 @@ var Collection = Backbone.Collection.extend({
                 }]
             };
 
-            if( window.Galaxy.config.enable_new_preferences ) {
+            if( window.Galaxy.config.enable_new_user_preferences ) {
                 userTab.menu.push({
-                    title   : 'New User Preferences UI',
+                    title   : 'New User Preferences',
                     url     : 'user',
                     onclick : function() {
                         if (Galaxy.app) {
