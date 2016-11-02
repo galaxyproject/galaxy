@@ -34,6 +34,7 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.deps import views
+from galaxy.tools.deps import CachedDependencyManager
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -1304,6 +1305,17 @@ class Tool( object, Dictifiable ):
 
         visit_input_values( self.inputs, values, validate_inputs )
         return messages
+
+    def build_dependency_cache(self):
+        if isinstance(self.app.toolbox.dependency_manager, CachedDependencyManager):
+            self.app.toolbox.dependency_manager.build_cache(
+                requirements=self.requirements,
+                installed_tool_dependencies=self.installed_tool_dependencies,
+                tool_dir=self.tool_dir,
+                job_directory=None,
+                metadata=False,
+                tool_instance=self
+            )
 
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
         """

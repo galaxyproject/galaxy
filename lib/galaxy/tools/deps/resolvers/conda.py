@@ -21,6 +21,7 @@ from ..conda_util import (
 )
 from ..resolvers import (
     Dependency,
+    DependencyException,
     DependencyResolver,
     InstallableDependencyResolver,
     ListableDependencyResolver,
@@ -196,6 +197,7 @@ class CondaDependency(Dependency):
         self._exact = exact
         self._name = name
         self._version = version
+        self.cache_path = None
 
     @property
     def exact(self):
@@ -209,10 +211,15 @@ class CondaDependency(Dependency):
     def version(self):
         return self._version
 
+    def build_cache(self, cache_path):
+        self.set_cache_path(cache_path)
+        self.build_environment()
+
     def set_cache_path(self, cache_path):
+        self.cache_path = cache_path
         self.environment_path = cache_path
 
-    def shell_commands(self, requirement, cache_path=None):
+    def build_environment(self):
         env_path, exit_code = build_isolated_environment(
             CondaTarget(self.name, self.version),
             path=self.environment_path,
@@ -220,12 +227,17 @@ class CondaDependency(Dependency):
             conda_context=self.conda_context,
         )
         if exit_code:
-            if len(self.conda_environment) > 79:
+            if len(os.path.abspath(self.environment_path)) > 79:
                 # TODO: remove this once conda_build version 2 is released and packages have been rebuilt.
-                raise Exception("Conda dependency failed to build job environment. "
-                                "This is most likely a limitation in conda. "
-                                "You can try to shorten the path to the job_working_directory.")
-            raise Exception("Conda dependency seemingly installed but failed to build job environment.")
+                raise DependencyException("Conda dependency failed to build job environment. "
+                                          "This is most likely a limitation in conda. "
+                                          "You can try to shorten the path to the job_working_directory.")
+            raise DependencyException("Conda dependency seemingly installed but failed to build job environment.")
+
+    def shell_commands(self, requirement):
+        if not self.cache_path:
+            # Build an isolated environment if not using a cached dependency manager
+            self.build_environment()
         return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' > conda_activate.log 2>&1 """ % (
             self.environment_path,
             self.activate,
