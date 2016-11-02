@@ -67,6 +67,34 @@ class ListableDependencyResolver:
         return ToolRequirement(name=name, type="package", version=version)
 
 
+class SpecificationAwareDependencyResolver:
+    """Mix this into a :class:`DependencyResolver` to implement URI specification matching.
+
+    Allows adapting generic requirements to more specific URIs - to tailor name
+    or version to specified resolution system.
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def find_specification(self, specs):
+        """Find closest matching specification for discovered resolver."""
+
+
+class SpecificationPatternDependencyResolver:
+    """Implement the :class:`SpecificationAwareDependencyResolver` with a regex pattern."""
+
+    @abstractproperty
+    def _specification_pattern(self):
+        """Pattern of URI to match against."""
+
+    def find_specification(self, specs):
+        pattern = self._specification_pattern
+        for spec in specs:
+            if pattern.match(spec.uri):
+                return spec
+        return None
+
+
 class InstallableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can attempt to install new dependencies.

@@ -5,6 +5,7 @@ incompatible changes coming.
 
 import logging
 import os
+import re
 
 import galaxy.tools.deps.installable
 
@@ -25,6 +26,7 @@ from ..resolvers import (
     InstallableDependencyResolver,
     ListableDependencyResolver,
     NullDependency,
+    SpecificationPatternDependencyResolver,
 )
 
 
@@ -35,9 +37,10 @@ DEFAULT_ENSURE_CHANNELS = "conda-forge,r,bioconda,iuc"
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, InstallableDependencyResolver):
+class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
     resolver_type = "conda"
+    _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
     def __init__(self, dependency_manager, **kwds):
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
