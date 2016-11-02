@@ -13,18 +13,23 @@ from sqlalchemy import and_, true
 
 from galaxy import exceptions, util
 from galaxy.managers import users
-from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
+from galaxy.security.validate_user_input import validate_email,\
+     validate_password, validate_publicname
 from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import docstring_trim, listify
 from galaxy.util.odict import odict
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin, CreatesUsersMixin, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin
+from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin,\
+    CreatesUsersMixin, UsesTagsMixin, BaseUIController,\
+    UsesFormDefinitionsMixin
 from galaxy.web.form_builder import build_select_field, AddressField
 
 log = logging.getLogger( __name__ )
 
 
-class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, UsesFormDefinitionsMixin ):
+class UserPrefAPIController( BaseAPIController, BaseUIController,
+                             UsesTagsMixin, CreatesUsersMixin,
+                             CreatesApiKeysMixin, UsesFormDefinitionsMixin ):
 
     def __init__(self, app):
         super(UserPrefAPIController, self).__init__(app)
@@ -41,7 +46,8 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'openid'        : trans.app.config.enable_openid,
             'enable_quotas' : trans.app.config.enable_quotas,
             'disk_usage'    : trans.user.get_disk_usage( nice_size=True ),
-            'quota'         : trans.app.quota_agent.get_quota( trans.user, nice_size=True )
+            'quota'         : trans.app.quota_agent.get_quota( trans.user,
+                                                               nice_size=True )
         }
 
     @expose_api
@@ -59,7 +65,9 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'type'  : 'text',
             'label' : 'Email address',
             'value' : email,
-            'help'  : 'If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.' } )
+            'help'  : 'If you change your email address you will receive an' +
+                      'activation link in the new mailbox and you have to' +
+                      'activate your account by visiting it.' } )
         if trans.webapp.name == 'galaxy':
             inputs.append( {
                 'id'    : 'name_input',
@@ -67,22 +75,29 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'type'  : 'text',
                 'label' : 'Public name',
                 'value' : username,
-                'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
-            type_form_id = trans.security.encode_id( user.values.form_definition.id ) if user and user.values else kwd.get( 'type_form_id', None )
+                'help'  : 'The public name is an identifier and will be used' +
+                          'to generate addresses for information you share' +
+                          'publicly. Public names must be at least three' +
+                          'characters in length and contain only lower-case' +
+                          'letters, numbers, and the "-" character.' } )
+            type_form_id = trans.security.encode_id(
+            user.values.form_definition.id )\
+            if user and user.values else kwd.get( 'type_form_id', None )
             if type_form_id:
-                type_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( type_form_id ) )
+                type_form_model = trans.sa_session.query(
+                    trans.app.model.FormDefinition ).get(
+                        trans.security.decode_id( type_form_id ) )
                 if type_form_model:
                     form_def = type_form_model.to_dict()
                     form_def_fields = type_form_model.fields
                     user_info_inputs = []
-                    user_type_input = { 
+                    user_type_input = {
                         'type': 'select',
                         'data': [ {'label' : form_def[ 'name' ], 'value': 0} ],
                         'help': '',
                         'label': 'User Type',
                         'name': 'user_type'
                     }
-                    
                     user_info_def = {
                         'type': 'section',
                         'name': 'user_info',
@@ -96,43 +111,68 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                             if item_dict[ 'name' ] == item_field[ 'name' ]:
                                 item_dict[ 'label' ] = item_field[ 'label' ]
                                 item_dict[ 'help' ] = item_field[ 'helptext' ]
-                                item_dict[ 'default' ] = item_field[ 'default' ]
-                                item_dict[ 'required' ] = item_field[ 'required' ]
+                                item_dict[ 'default' ] = item_field[
+                                    'default' ]
+                                item_dict[ 'required' ] = item_field[
+                                    'required' ]
                                 # Add value to an input
-                                item_dict[ 'value' ] = user.values.content[ item_dict[ 'name' ] ]
+                                if item_dict[ 'name' ] in user.values.content:
+                                    item_dict[ 'value' ] =\
+                                    user.values.content[ item_dict[ 'name' ] ]
+                                else:
+                                    item_dict[ 'value' ] = None
                                 user_info_inputs_values.append( item_dict )
                     user_info_def[ 'inputs' ] = user_info_inputs_values
                     inputs.append( user_info_def )
 
             address_field = AddressField( '' ).to_dict()
-            address_values = list()        
+            address_values = list()
             for address in user.addresses:
                 address_item = dict()
                 address_item[ "short_desc" ] = address.desc
                 address_item[ "name" ] = address.name
                 address_item[ "institution" ] = address.institution
-	        address_item[ "address" ] = address.address
-	        address_item[ "city" ] = address.city
-	        address_item[ "state" ] = address.state
-	        address_item[ "postal_code" ] = address.postal_code
-	        address_item[ "country" ] = address.country
+                address_item[ "address" ] = address.address
+                address_item[ "city" ] = address.city
+                address_item[ "state" ] = address.state
+                address_item[ "postal_code" ] = address.postal_code
+                address_item[ "country" ] = address.country
                 address_item[ "phone" ] = address.phone
-                address_item[ "address_id" ] = trans.security.encode_id( address.id )
+                address_item[ "address_id" ] = trans.security.encode_id(
+                address.id )
                 address_values.append( address_item )
-            address_repeat = { 'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
+            address_repeat = { 'title': 'Address', 'name': 'address', 'type':
+                               'repeat', 'inputs': address_field[ 'inputs' ],
+                               'cache': [] }
             for address in address_values:
                 address_inputs = []
                 for input in address_repeat[ 'inputs' ]:
                     input_copy = input.copy()
-                    input_copy[ 'value' ] = address.get( input[ 'name' ], None )
+                    input_copy[ 'value' ] = address.get(
+                        input[ 'name' ], None )
                     address_inputs.append( input_copy )
                 address_repeat[ 'cache' ].append( address_inputs )
             inputs.append( address_repeat )
         else:
             if user.active_repositories:
-                inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
+                inputs.append(dict(id='name_input', name='username',
+                                   label='Public name:', type='hidden',
+                                   value=username, help='You cannot change' +
+                                   'your public name after you have' +
+                                   ' created a repository in this tool shed.'))
             else:
-                inputs.append( dict( id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.' ) )
+                inputs.append( dict( id='name_input', name='username',
+                                     label='Public name:', type='text',
+                                     value=username, help='Your public name' +
+                                     ' provides a means of identifying you' +
+                                     ' publicly within this tool shed.' +
+                                     ' Public names must be at least 3' +
+                                     ' characters in length and contain only' +
+                                     ' lower-case letters, numbers, and' +
+                                     ' the "-" character. You cannot change' +
+                                     ' your public name after you have' +
+                                     ' created a repository in this tool' +
+                                     ' shed.' ) )
         return {
             'webapp'            : trans.webapp.name,
             'user_id'           : trans.security.encode_id( trans.user.id ),
@@ -140,7 +180,8 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'values'            : user.values.content if user.values else {},
             'email'             : email,
             'username'          : username,
-            'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
+            'addresses'         : [ address.to_dict( trans ) for address in
+                                    user.addresses ],
             'inputs'            : inputs,
         }
 
@@ -154,28 +195,35 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
     def __validate_email_username( self, email, username ):
         ''' Validate email and username '''
+
         message = ''
         status = 'done'
         # Regex match for username
-        if not re.match( '^[a-z0-9\-]{3,255}$', username ) or len( username ) > 255 or len( username ) < 3 or len( username ) == 0:
-           status = 'error'
-           message = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
-        # Regex match for email
-        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-           status = 'error'
-           message = 'Please enter your valid email address'
-        elif email == '':
-           status = 'error'
-           message = 'Please enter your email address'
-        elif len(email) > 255:
-           status = 'error'
-           message = 'Email cannot be more than 255 characters in length'
+        if not re.match( '^[a-z0-9\-]{3,255}$', username ):
+            status = 'error'
+            message = 'Public name must contain only lowercase'\
+            ' letters, numbers and "-". It also has to be shorter than 255'\
+            ' characters but longer than 2'
 
+        # Regex match for email
+        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)' +
+                        '*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' +
+                        '\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$',
+                        email):
+            status = 'error'
+            message = 'Please enter your valid email address'
+        elif email == '':
+            status = 'error'
+            message = 'Please enter your email address'
+        elif len(email) > 255:
+            status = 'error'
+            message = 'Email cannot be more than 255 characters in length'
         return { 'message': message, 'status': status }
 
     def get_user_info_dict( self, trans, payload ):
         ''' Extract user information attributes '''
-        user_info_fields = [ item for item in payload if item.find("user_info") > -1 ]
+        user_info_fields = [ item for item in payload
+                             if item.find("user_info") > -1 ]
         user_info_dict = dict()
         for item in user_info_fields:
             value = payload[ item ]
@@ -190,8 +238,11 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         '''
         is_admin = trans.user_is_admin()
         if user_id and is_admin:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        elif user_id and ( not trans.user or trans.user.id != trans.security.decode_id( user_id ) ):
+            user = trans.sa_session.query(
+                trans.app.model.User ).get(
+                    trans.security.decode_id( user_id ) )
+        elif user_id and ( not trans.user or trans.user.id !=
+                           trans.security.decode_id( user_id ) ):
             message = 'Invalid user id'
             status = 'error'
             user = None
@@ -201,11 +252,13 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         if user.values:
             user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id not in ['none']:
-                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
+                user_type_form_definition = trans.sa_session.query(
+                    trans.app.model.FormDefinition).get(
+                        trans.security.decode_id(user_type_fd_id))
             elif user.values:
                 user_type_form_definition = user.values.form_definition
             else:
-                # User was created before any of the user_info forms were created
+                # User was created before creating any user_info forms
                 user_type_form_definition = None
             if user_type_form_definition:
                 values = self.get_user_info_dict( trans, kwd.get( 'payload' ) )
@@ -214,17 +267,18 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
             flush_needed = False
             if user.values:
-                # Editing the user info of an existing user with existing user info
+                # Edit user information
                 user.values.content = values
-                trans.sa_session.add(user.values)
+                trans.sa_session.add( user.values )
                 flush_needed = True
             elif values:
-                form_values = trans.model.FormValues(user_type_form_definition, values)
-                trans.sa_session.add(form_values)
+                form_values = trans.model.FormValues(
+                    user_type_form_definition, values )
+                trans.sa_session.add( form_values )
                 user.values = form_values
                 flush_needed = True
             if flush_needed:
-                trans.sa_session.add(user)
+                trans.sa_session.add( user )
                 trans.sa_session.flush()
 
         # Editing email and username
@@ -235,32 +289,42 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             raise exceptions.MessageException( validate['message'] )
         # Validate the new values for email and username
         message = validate_email(trans, email, user)
-    
         if not message and username:
             message = validate_publicname(trans, username, user)
         if message:
             status = 'error'
         else:
             if (user.email != email):
-                # The user's private role name must match the user's login (email)
-                private_role = trans.app.security_agent.get_private_user_role( user )
+                # The user's private role name must match the user's login
+                private_role = trans.app.security_agent.get_private_user_role(
+                    user )
                 private_role.name = email
                 private_role.description = 'Private role for ' + email
                 # Change the email itself
                 user.email = email
                 trans.sa_session.add_all( ( user, private_role ) )
                 trans.sa_session.flush()
-                if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                if trans.webapp.name == 'galaxy'\
+                and trans.app.config.user_activation_on:
                     user.active = False
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
-                    is_activation_sent = self.send_verification_email( trans, user.email, user.username )
+                    is_activation_sent = self.send_verification_email(
+                        trans, user.email, user.username )
                     if is_activation_sent:
-                        message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                        message = 'The login information has been updated'
+                        ' with the changes.<br>Verification email'
+                        ' has been sent to your new email address.'
+                        ' Please verify it by clicking the'
+                        ' activation link in the email.<br>Please'
+                        ' check your spam/trash folder in case you'
+                        ' cannot find the message.'
                     else:
-                        message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                        message = 'Unable to send activation email, please'
+                        ' contact your local Galaxy administrator.'
                         if trans.app.config.error_email_to is not None:
-                            message += ' Contact: %s' % trans.app.config.error_email_to
+                            message +=\
+                            ' Contact: %s' % trans.app.config.error_email_to
             if (user.username != username):
                 user.username = username
                 trans.sa_session.add(user)
@@ -273,7 +337,8 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         user.addresses = []
         addressnames = list()
         # Get addresses from payload
-        alladdressnames = [ item for item in payload if item.find("address") > -1 ]
+        alladdressnames = [ item for item in payload
+                            if item.find("address") > -1 ]
         for item in alladdressnames:
             name = item.split('|')[0]
             if name not in addressnames:
@@ -292,8 +357,10 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         is_admin = trans.user_is_admin()
         if is_admin:
             if not user_id:
-                return trans.show_error_message("You must specify a user to add a new address to.")
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id( user_id ))
+                return trans.show_error_message(
+                    "You must specify a user to add a new address to.")
+            user = trans.sa_session.query(trans.app.model.User).get(
+                trans.security.decode_id( user_id ))
         else:
             user = trans.user
         short_desc = util.restore_text( params.get('short_desc', '') )
@@ -307,10 +374,11 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         country = util.restore_text( params.get('country', '') )
         # Handle the case of int value
         phone = str( params.get( 'phone', '' ) )
-
         if not trans.app.config.allow_user_creation and not is_admin:
-            return trans.show_error_message('User registration is disabled.  Please contact your local Galaxy administrator for an account.')
-
+            return trans.show_error_message('User registration is disabled.' +
+                                            'Please contact your local' +
+                                            'Galaxy administrator for an' +
+                                            'account.')
         error_status = True
         if not short_desc:
             message = 'Enter a short description for this address'
@@ -344,7 +412,8 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             trans.sa_session.flush()
             trans.log_event('User address added')
             return {
-                'message': 'Address (%s) has been added.' % escape(user_address.desc),
+                'message': 'Address (%s) has been added.' % escape(
+                    user_address.desc),
                 'status': 'done'
             }
 
@@ -368,22 +437,29 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
             # If field(s) are left empty
             if not password or not current or not confirm:
-                raise exceptions.MessageException( 'Please fill all the fields' )
+                raise exceptions.MessageException(
+                    'Please fill all the fields' )
 
             # If current password is same as new or confirm password
             if current == password or current == confirm:
-                raise exceptions.MessageException( 'The current and new passwords should be different' )
+                raise exceptions.MessageException(
+                    'The current and new passwords should be different' )
 
             if token:
                 # If a token was supplied, validate and set user
-                token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-                if not token_result or not token_result.expiration_time > datetime.utcnow():
-                    raise exceptions.MessageException( 'Invalid or expired password reset token, please request a new one.' )
+                token_result = trans.sa_session.query(
+                    trans.app.model.PasswordResetToken).get(token)
+                if not token_result or\
+                not token_result.expiration_time > datetime.utcnow():
+                    raise exceptions.MessageException(
+                        'Invalid or expired password reset token,' +
+                        'please request a new one.' )
                 user = token_result.user
             else:
-                # The user is changing their own password, validate their current password
+                # User password change
                 user = self._get_user(trans, user_id)
-                (ok, message) = trans.app.auth_manager.check_change_password(user, current)
+                (ok, message) = trans.app.auth_manager.check_change_password(
+                    user, current)
                 if not ok:
                     raise exceptions.MessageException(message)
             if user:
@@ -400,23 +476,32 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                         token_result.expiration_time = datetime.utcnow()
                         trans.sa_session.add(token_result)
                     # Invalidate all other sessions
-                    for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
-                                                     .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                    for other_galaxy_session in trans.sa_session.query(
+                    trans.app.model.GalaxySession).filter(and_(
+                    trans.app.model.GalaxySession.table.c.user_id ==
+                    user.id,
+                    trans.app.model.GalaxySession.table.c.is_valid ==
+                    true(),
+                    trans.app.model.GalaxySession.table.c.id !=
+                    trans.galaxy_session.id)):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add(other_galaxy_session)
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
                     trans.log_event('User change password')
                     return { 'message': 'Password has been saved.' }
-            raise exceptions.MessageException('Failed to determine user, access denied.')
+            raise exceptions.MessageException('Failed to determine user,' +
+                                              'access denied.')
         else:
             return { 'message': 'Password unchanged.',
-                     'inputs' : [ { 'name': 'current',  'type': 'password', 'label': 'Current password' }, {
-                                    'name': 'password', 'type': 'password', 'label': 'New password'     }, {
-                                    'name': 'confirm',  'type': 'password', 'label': 'Confirm password' }, {
-                                    'name': 'token',    'type': 'hidden',   'hidden': True, 'ignore': None } ] }
+                     'inputs' : [ { 'name': 'current', 'type': 'password',
+                                    'label': 'Current password' }, {
+                                    'name': 'password', 'type': 'password',
+                                    'label': 'New password' }, {
+                                    'name': 'confirm', 'type': 'password',
+                                    'label': 'Confirm password' }, {
+                                    'name': 'token', 'type': 'hidden',
+                                    'hidden': True, 'ignore': None } ] }
 
     @expose_api
     def permissions(self, trans, user_id, payload={}, **kwd):
@@ -429,9 +514,12 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         if kwd:
             permissions = {}
             for index, action in permitted_actions:
-                action_id = trans.app.security_agent.get_action(action.action).action
-                permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in kwd.get( index, [] )]
-            trans.app.security_agent.user_set_default_permissions(user, permissions)
+                action_id = trans.app.security_agent.get_action(
+                    action.action).action
+                permissions[action_id] = [trans.sa_session.query(
+                    trans.app.model.Role).get(x) for x in kwd.get( index, [] )]
+            trans.app.security_agent.user_set_default_permissions(
+                user, permissions)
             return { 'message': 'Permissions have been saved.' }
         else:
             inputs = []
@@ -442,20 +530,31 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                                 'name'      : index,
                                 'label'     : action.action,
                                 'help'      : action.description,
-                                'options'   : [ ( r.name, r.id ) for r in roles ],
-                                'value'     : [ a.role.id for a in user.default_permissions if a.action == action.action ] })
+                                'options'   : [ ( r.name, r.id )
+                                                  for r in roles ],
+                                'value'     : [ a.role.id for a in
+                                                user.default_permissions
+                                                if a.action == action.action ]
+                            })
             return { 'message': 'Permissions unchanged.', 'inputs': inputs }
 
     @expose_api
     def toolbox_filters(self, trans, user_id, payload={}, **kwd):
         """
-        API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
-        The user can activate them and the choice is stored in user_preferences.
+        API call for fetching toolbox filters data. Toolbox filters
+        are specified in galaxy.ini. The user can activate them and the choice
+        is stored in user_preferences.
         """
         user = self._get_user(trans, user_id)
-        filter_types = odict([ ('toolbox_tool_filters',    { 'title': 'Tools',    'config': trans.app.config.user_tool_filters }),
-                               ('toolbox_section_filters', { 'title': 'Sections', 'config': trans.app.config.user_section_filters }),
-                               ('toolbox_label_filters',   { 'title': 'Labels',   'config': trans.app.config.user_label_filters }) ])
+        filter_types = odict([ ('toolbox_tool_filters', { 'title': 'Tools',
+                                'config': trans.app.config.user_tool_filters }),
+                               ('toolbox_section_filters', {
+                                   'title': 'Sections',
+                                   'config': trans.app.config.user_section_filters }),
+                               ('toolbox_label_filters',
+                               { 'title': 'Labels',
+                               'config': trans.app.config.user_label_filters }
+                               ) ])
         if kwd:
             for filter_type in filter_types:
                 new_filters = []
@@ -475,27 +574,33 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             inputs = []
             factory = FilterFactory(trans.app.toolbox)
             for filter_type in filter_types:
-                self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values )
-            return { 'message': 'Toolbox filters unchanged.', 'inputs': inputs }
+                self._add_filter_inputs(factory, filter_types, inputs,
+                                        filter_type, saved_values)
+            return { 'message': 'Toolbox filters unchanged.',
+                     'inputs': inputs }
 
-    def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
+    def _add_filter_inputs( self, factory, filter_types, inputs,
+                            filter_type, saved_values ):
         ''' Build inputs for filters '''
         filter_inputs = list()
         filter_values = saved_values.get( filter_type, [] )
         filter_config = filter_types[ filter_type ][ 'config' ]
-        filter_title  = filter_types[ filter_type ][ 'title' ]
+        filter_title = filter_types[ filter_type ][ 'title' ]
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
             filter_inputs.append({
                 'type'   : 'boolean',
                 'name'   : filter_name,
                 'label'  : filter_name,
-                'help'   : docstring_trim(function.__doc__) or 'No description available.',
+                'help'   : docstring_trim(function.__doc__) or
+                'No description available.',
                 'value'  : 'true' if filter_name in filter_values else 'false',
                 'ignore' : 'false'
             })
         if filter_inputs:
-            inputs.append( { 'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs } )
+            inputs.append( { 'type': 'section', 'title': filter_title,
+                             'name': filter_type, 'expanded': True,
+                             'inputs': filter_inputs } )
 
     @expose_api
     def api_key(self, trans, user_id, payload={}, **kwd):
@@ -508,13 +613,22 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             message = 'Generated a new web API key.'
         else:
             message = 'API key unchanged.'
-        webapp_name = 'Galaxy' if trans.webapp.name == 'galaxy' else 'the Tool Shed'
+        webapp_name = 'Galaxy'\
+        if trans.webapp.name == 'galaxy' else 'the Tool Shed'
         inputs = [ { 'name'       : 'api-key',
                      'type'       : 'text',
                      'label'      : 'Current API key:',
-                     'value'      : user.api_keys[0].key if user.api_keys else 'Not available.',
+                     'value'      : user.api_keys[0].key\
+                                    if user.api_keys else 'Not available.',
                      'readonly'   : True,
-                     'help'       : ' An API key will allow you to access %s via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' % webapp_name } ]
+                     'help'       : ' An API key will allow you to access '\
+                                    + webapp_name + ' via its web API.'
+                                    ' Please note that this'\
+                                    ' key acts as alternate means to access'\
+                                    ' your account and should be treated'
+                                    ' with the same care as your login'\
+                                    ' password.'
+                 } ]
         return { 'message': message, 'inputs': inputs }
 
     @expose_api
@@ -538,7 +652,8 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                      'inputs'  : [{ 'name'  : 'enable',
                                     'type'  : 'boolean',
                                     'label' : 'Enable communication',
-                                    'value' : user.preferences.get('communication_server', 'false') }] }
+                                    'value' : user.preferences.get(
+                                        'communication_server', 'false') }] }
 
     def _get_user( self, trans, user_id ):
         ''' Get the user '''
@@ -548,3 +663,4 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         if user != trans.user and trans.user_is_admin():
             raise exceptions.MessageException('Access denied.')
         return user
+
