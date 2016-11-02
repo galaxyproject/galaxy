@@ -371,8 +371,8 @@ EditorFormView = Backbone.View.extend({
                         }
                      });
                      if ( upgrade_message ) {
-                        window.show_modal( "Workflow loaded with changes",
-                                    "Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
+                        window.show_modal( "Issues loading this workflow",
+                                    "Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>" + upgrade_message + "</ul></p>",
                                     { "Continue" : hide_modal } );
                      } else {
                         hide_modal();

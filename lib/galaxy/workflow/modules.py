@@ -747,6 +747,7 @@ class ToolModule( WorkflowModule ):
     def __init__( self, trans, tool_id, tool_version=None ):
         self.trans = trans
         self.tool_id = tool_id
+        self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
@@ -763,8 +764,7 @@ class ToolModule( WorkflowModule ):
     def new( Class, trans, content_id=None ):
         module = Class( trans, content_id )
         if module.tool is None:
-            error_message = "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % content_id
-            raise Exception( error_message )
+            raise Exception( "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % content_id )
         module.state = module.tool.new_state( trans )
         module.label = None
         return module
@@ -805,15 +805,17 @@ class ToolModule( WorkflowModule ):
             # TODO: If workflows are ever enhanced to use tool version
             # in addition to tool id, enhance the selection process here
             # to retrieve the correct version of the tool.
-            tool_id = toolbox.get_tool_id( tool_id )
-        if ( toolbox and tool_id ):
-            if step.config:
-                # This step has its state saved in the config field due to the
-                # tool being previously unavailable.
-                return module_factory.from_dict(trans, loads(step.config))
-            tool_version = step.tool_version
-            module = Class( trans, tool_id, tool_version=tool_version )
-            message = ""
+            matched_tool_id = toolbox.get_tool_id( tool_id )
+            tool_id = matched_tool_id or tool_id
+        #if ( toolbox and tool_id ):
+        #if step.config:
+            # This step has its state saved in the config field due to the
+            # tool being previously unavailable.
+        #    return module_factory.from_dict(trans, loads(step.config))
+        tool_version = step.tool_version
+        module = Class( trans, tool_id, tool_version=tool_version )
+        message = ""
+        if module.tool:
             if step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split( "/repos/" )[0]
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
@@ -827,19 +829,18 @@ class ToolModule( WorkflowModule ):
                     message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
             if step.tool_version and (step.tool_version != module.tool.version):
                 message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (tool_id, module.tool.version, step.tool_version)
-            if message:
-                log.debug(message)
-                module.version_changes.append(message)
-            module.recover_state( step.tool_inputs )
-            module.errors = step.tool_errors
-            module.workflow_outputs = step.workflow_outputs
-            module.label = step.label or None
-            pjadict = {}
-            for pja in step.post_job_actions:
-                pjadict[pja.action_type] = pja
-            module.post_job_actions = pjadict
-            return module
-        return None
+        if message:
+            log.debug(message)
+            module.version_changes.append(message)
+        module.recover_state( step.tool_inputs )
+        module.errors = step.tool_errors
+        module.workflow_outputs = step.workflow_outputs
+        module.label = step.label or None
+        pjadict = {}
+        for pja in step.post_job_actions:
+            pjadict[pja.action_type] = pja
+        module.post_job_actions = pjadict
+        return module
 
     def recover_state( self, state, **kwds ):
         """ Recover module configuration state property (a `DefaultToolState`
@@ -847,22 +848,22 @@ class ToolModule( WorkflowModule ):
         """
         app = self.trans.app
         self.state = DefaultToolState()
-        params_from_kwds = dict(
-            ignore_errors=kwds.get( "ignore_errors", True )
-        )
-        self.state.inputs = self.tool.params_from_strings( state, app, **params_from_kwds )
+        self.state.inputs = self.tool.params_from_strings( state, app, ignore_errors=kwds.get( "ignore_errors", True ) ) if self.tool else state
 
     def recover_runtime_state( self, runtime_state ):
         """ Take runtime state from persisted invocation and convert it
         into a DefaultToolState object for use during workflow invocation.
         """
-        state = DefaultToolState()
-        app = self.trans.app
-        state.decode( runtime_state, self.tool, app )
-        state_dict = loads( runtime_state )
-        if RUNTIME_STEP_META_STATE_KEY in state_dict:
-            self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
-        return state
+        if self.tool:
+            state = DefaultToolState()
+            app = self.trans.app
+            state.decode( runtime_state, self.tool, app )
+            state_dict = loads( runtime_state )
+            if RUNTIME_STEP_META_STATE_KEY in state_dict:
+                self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
+                return state
+        else:
+            raise Exception( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
 
     def save_to_step( self, step ):
         step.type = self.type
@@ -871,6 +872,7 @@ class ToolModule( WorkflowModule ):
             step.tool_version = self.get_tool_version()
             step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
         else:
+            raise Exception( "Tool %s missing. Cannot save state." % self.tool_id )
             step.tool_version = None
             step.tool_inputs = None
         step.tool_errors = self.errors
@@ -890,78 +892,76 @@ class ToolModule( WorkflowModule ):
         return PostJobAction(value['action_type'], step, output_name, action_arguments)
 
     def get_name( self ):
-        if self.tool:
-            return self.tool.name
-        return 'unavailable'
+        return self.tool.name if self.tool else self.tool_id
 
     def get_content_id( self ):
         return self.tool_id
 
     def get_tool_version( self ):
-        return self.tool.version
+        return self.tool.version if self.tool else self.tool_version
 
     def get_state( self, state=None ):
         state = state or self.state
-        return state.encode( self.tool, self.trans.app )
+        return state.encode( self.tool, self.trans.app ) if self.tool else dumps( state.inputs )
 
     def get_errors( self ):
         return self.errors
 
     def get_tooltip( self, static_path='' ):
-        if self.tool.help:
+        if self.tool and self.tool.help:
             return self.tool.help.render( host_url=web.url_for('/'), static_path=static_path )
-        else:
-            return None
 
     def get_data_inputs( self ):
         data_inputs = []
+        if self.tool:
 
-        def callback( input, prefixed_name, prefixed_label, **kwargs ):
-            if not hasattr( input, 'hidden' ) or not input.hidden:
-                if isinstance( input, DataToolParameter ):
-                    data_inputs.append( dict(
-                        name=prefixed_name,
-                        label=prefixed_label,
-                        multiple=input.multiple,
-                        extensions=input.extensions,
-                        input_type="dataset", ) )
-                elif isinstance( input, DataCollectionToolParameter ):
-                    data_inputs.append( dict(
-                        name=prefixed_name,
-                        label=prefixed_label,
-                        multiple=input.multiple,
-                        input_type="dataset_collection",
-                        collection_types=input.collection_types,
-                        extensions=input.extensions,
-                    ) )
+            def callback( input, prefixed_name, prefixed_label, **kwargs ):
+                if not hasattr( input, 'hidden' ) or not input.hidden:
+                    if isinstance( input, DataToolParameter ):
+                        data_inputs.append( dict(
+                            name=prefixed_name,
+                            label=prefixed_label,
+                            multiple=input.multiple,
+                            extensions=input.extensions,
+                            input_type="dataset", ) )
+                    elif isinstance( input, DataCollectionToolParameter ):
+                        data_inputs.append( dict(
+                            name=prefixed_name,
+                            label=prefixed_label,
+                            multiple=input.multiple,
+                            input_type="dataset_collection",
+                            collection_types=input.collection_types,
+                            extensions=input.extensions,
+                        ) )
 
-        visit_input_values( self.tool.inputs, self.state.inputs, callback )
+            visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
 
     def get_data_outputs( self ):
         data_outputs = []
-        for name, tool_output in self.tool.outputs.iteritems():
-            extra_kwds = {}
-            if tool_output.collection:
-                extra_kwds["collection"] = True
-                extra_kwds["collection_type"] = tool_output.structure.collection_type
-                formats = [ 'input' ]  # TODO: fix
-            elif tool_output.format_source is not None:
-                formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
-            else:
-                formats = [ tool_output.format ]
-            for change_elem in tool_output.change_format:
-                for when_elem in change_elem.findall( 'when' ):
-                    format = when_elem.get( 'format', None )
-                    if format and format not in formats:
-                        formats.append( format )
-            data_outputs.append(
-                dict(
-                    name=name,
-                    extensions=formats,
-                    **extra_kwds
+        if self.tool:
+            for name, tool_output in self.tool.outputs.iteritems():
+                extra_kwds = {}
+                if tool_output.collection:
+                    extra_kwds["collection"] = True
+                    extra_kwds["collection_type"] = tool_output.structure.collection_type
+                    formats = [ 'input' ]  # TODO: fix
+                elif tool_output.format_source is not None:
+                    formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
+                else:
+                    formats = [ tool_output.format ]
+                for change_elem in tool_output.change_format:
+                    for when_elem in change_elem.findall( 'when' ):
+                        format = when_elem.get( 'format', None )
+                        if format and format not in formats:
+                            formats.append( format )
+                data_outputs.append(
+                    dict(
+                        name=name,
+                        extensions=formats,
+                        **extra_kwds
+                    )
                 )
-            )
         return data_outputs
 
     def get_runtime_input_dicts( self, step_annotation ):
@@ -982,38 +982,47 @@ class ToolModule( WorkflowModule ):
         return ActionBox.handle_incoming( incoming )
 
     def get_config_form( self ):
-        self.add_dummy_datasets()
-        return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
+        if self.tool:
+            self.add_dummy_datasets()
+            return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
                                          tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+        else:
+            return "Tool missing. Parameters cannot be edited."
 
     def update_state( self, incoming ):
         self.recover_state( incoming )
 
     def check_and_update_state( self ):
         inputs = self.state.inputs
-        return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
+        if self.tool:
+            return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
+        else:
+            return [ "This tool is not installed." ]
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
-        step_errors = {}
-        state = self.state
-        self.runtime_post_job_actions = {}
-        if step_updates:
+        if self.tool:
+            step_errors = {}
+            state = self.state
+            self.runtime_post_job_actions = {}
+            if step_updates:
 
-            def update_value( input, context, prefixed_name, **kwargs ):
-                if prefixed_name in step_updates or '__force_update__' + prefixed_name in step_updates:
-                    value, error = check_param( trans, input, step_updates.get( prefixed_name ), context )
-                    if error is not None:
-                        step_errors[ prefixed_name ] = error
-                    return value
-                return NO_REPLACEMENT
+                def update_value( input, context, prefixed_name, **kwargs ):
+                    if prefixed_name in step_updates or '__force_update__' + prefixed_name in step_updates:
+                        value, error = check_param( trans, input, step_updates.get( prefixed_name ), context )
+                        if error is not None:
+                            step_errors[ prefixed_name ] = error
+                        return value
+                    return NO_REPLACEMENT
 
-            self.runtime_post_job_actions = step_updates.get( RUNTIME_POST_JOB_ACTIONS_KEY, {} )
-            visit_input_values( self.tool.inputs, state.inputs, update_value, no_replacement_value=NO_REPLACEMENT )
-            step_metadata_runtime_state = self.__step_meta_runtime_state()
-            if step_metadata_runtime_state:
-                state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
-        return state, step_errors
+                self.runtime_post_job_actions = step_updates.get( RUNTIME_POST_JOB_ACTIONS_KEY, {} )
+                visit_input_values( self.tool.inputs, state.inputs, update_value, no_replacement_value=NO_REPLACEMENT )
+                step_metadata_runtime_state = self.__step_meta_runtime_state()
+                if step_metadata_runtime_state:
+                    state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
+            return state, step_errors
+        else:
+            raise Exception( "Tool %s missing. Cannot compute runtime state." % self.tool_id )
 
     def __step_meta_runtime_state( self ):
         """ Build a dictionary a of meta-step runtime state (state about how
@@ -1175,7 +1184,6 @@ class ToolModule( WorkflowModule ):
                         return input.get_initial_value( self.trans, context )
                 elif connections is None or prefixed_name in input_connections_by_name:
                     return RuntimeValue()
-
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
 
     def recover_mapping( self, step, step_invocations, progress ):

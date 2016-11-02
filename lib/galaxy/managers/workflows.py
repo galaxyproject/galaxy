@@ -501,7 +501,7 @@ class WorkflowContentsManager(UsesAnnotations):
             input_connections = step.input_connections
             input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be mutliple
-            if step.type is None or step.type == 'tool':
+            if ( step.type is None or step.type == 'tool' ) and module.tool:
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
