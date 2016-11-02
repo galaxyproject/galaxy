@@ -341,6 +341,7 @@ lib/galaxy/webapps/galaxy/api/roles.py
 lib/galaxy/webapps/galaxy/api/samples.py
 lib/galaxy/webapps/galaxy/api/tools.py
 lib/galaxy/webapps/galaxy/api/tours.py
+lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/async.py
 lib/galaxy/webapps/galaxy/controllers/data_manager.py
 lib/galaxy/webapps/galaxy/controllers/error.py

@@ -64,6 +64,7 @@ lib/galaxy/web/framework/middleware/error.py
 lib/galaxy/web/framework/middleware/static.py
 lib/galaxy/web/__init__.py
 lib/galaxy/webapps/galaxy/api/tours.py
+lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/userskeys.py
 lib/galaxy/webapps/reports/__init__.py
 lib/galaxy/webapps/tool_shed/controllers/user.py
