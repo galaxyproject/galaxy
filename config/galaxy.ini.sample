@@ -900,7 +900,7 @@ id_secret = passwordabc
 # of the server, and will have access to create users, groups, roles,
 # libraries, and more.  For more information, see:
 #   https://wiki.galaxyproject.org/Admin/Interface
-admin_users = anup.rulez@gmail.com
+#admin_users = None
 
 # Force everyone to log in (disable anonymous access).
 #require_login = False
@@ -1181,9 +1181,9 @@ admin_users = anup.rulez@gmail.com
 #tool_filters =
 #tool_label_filters =
 #tool_section_filters =
-user_tool_filters = examples:restrict_upload_to_admins, examples:restrict_encode
-user_tool_section_filters = examples:restrict_upload_to_admins
-user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+#user_tool_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+#user_tool_section_filters = examples:restrict_upload_to_admins
+#user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
 
 # The base modules that are searched for modules as described above
 # can be modified and modules external to Galaxy can be searched by
