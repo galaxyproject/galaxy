@@ -118,47 +118,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             'inputs'            : inputs,
         }
 
-    def _build_address_dict(self, address_id, payload):
-        ''' Build user addresses' dictionary '''
-        addressdict = dict()
-        for address in payload:
-            if address_id == address.split("|")[0]:
-                addressdict[address.split("|")[1]] = payload[address]
-        return addressdict
-
-    def _validate_email_username(self, email, username):
-        ''' Validate email and username '''
-
-        message = ''
-        status = 'done'
-        # Regex match for username
-        if not re.match('^[a-z0-9\-]{3,255}$', username):
-            status = 'error'
-            message = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
-
-        # Regex match for email
-        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-            status = 'error'
-            message = 'Please enter your valid email address'
-        elif email == '':
-            status = 'error'
-            message = 'Please enter your email address'
-        elif len(email) > 255:
-            status = 'error'
-            message = 'Email cannot be more than 255 characters in length'
-        return {'message': message, 'status': status}
-
-    def _get_user_info_dict(self, trans, payload):
-        ''' Extract user information attributes '''
-        user_info_fields = [item for item in payload
-                            if item.find("user_info") > -1]
-        user_info_dict = dict()
-        for item in user_info_fields:
-            value = payload[item]
-            attribute = item.replace('user_info|', '')
-            user_info_dict[attribute] = value
-        return user_info_dict
-
     @expose_api
     def set_information(self, trans, user_id, **kwd):
         '''
@@ -176,7 +135,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             user = None
         else:
             user = trans.user
-
         if user.values:
             user_type_fd_id = kwd.get('user_type_fd_id', 'none')
             if user_type_fd_id not in ['none']:
@@ -192,7 +150,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 values = self._get_user_info_dict(trans, kwd.get('payload'))
             else:
                 values = {}
-
             flush_needed = False
             if user.values:
                 # Edit user information
@@ -265,11 +222,51 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
 
         for each_address in addressnames:
             address = self._build_address_dict(each_address, payload)
-            add_status = self.__add_address(trans, user_id, address)
+            add_status = self._add_address(trans, user_id, address)
             if(add_status['status'] == 'error'):
                 raise exceptions.MessageException(add_status['message'])
         trans.sa_session.flush()
         return {'message': 'User information has been updated'}
+
+    def _build_address_dict(self, address_id, payload):
+        ''' Build user addresses' dictionary '''
+        addressdict = dict()
+        for address in payload:
+            if address_id == address.split("|")[0]:
+                addressdict[address.split("|")[1]] = payload[address]
+        return addressdict
+
+    def _validate_email_username(self, email, username):
+        ''' Validate email and username '''
+        message = ''
+        status = 'done'
+        # Regex match for username
+        if not re.match('^[a-z0-9\-]{3,255}$', username):
+            status = 'error'
+            message = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
+
+        # Regex match for email
+        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
+            status = 'error'
+            message = 'Please enter your valid email address'
+        elif email == '':
+            status = 'error'
+            message = 'Please enter your email address'
+        elif len(email) > 255:
+            status = 'error'
+            message = 'Email cannot be more than 255 characters in length'
+        return {'message': message, 'status': status}
+
+    def _get_user_info_dict(self, trans, payload):
+        ''' Extract user information attributes '''
+        user_info_fields = [item for item in payload
+                            if item.find("user_info") > -1]
+        user_info_dict = dict()
+        for item in user_info_fields:
+            value = payload[item]
+            attribute = item.replace('user_info|', '')
+            user_info_dict[attribute] = value
+        return user_info_dict
 
     def __add_address(self, trans, user_id, params):
         """ Add new address """
@@ -331,7 +328,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 'message': 'Address (%s) has been added.' % escape(user_address.desc),
                 'status': 'done'
             }
-
         if error_status:
             return {
                 'message': escape(message),
