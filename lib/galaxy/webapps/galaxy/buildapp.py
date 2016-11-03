@@ -72,16 +72,6 @@ def paste_app_factory( global_conf, **kwargs ):
     webapp.add_client_route( '/tours' )
     webapp.add_client_route( '/tours/{tour_id}' )
 
-    webapp.add_client_route( '/user_preferences' )
-    webapp.add_client_route( '/user_preferences/manage_user_info' )
-    webapp.add_client_route( '/user_preferences/change_password' )
-    webapp.add_client_route( '/user_preferences/set_default_permissions' )
-    webapp.add_client_route( '/user_preferences/api_keys' )
-    webapp.add_client_route( '/user_preferences/toolbox_filters' )
-    webapp.add_client_route( '/user_preferences/edit_toolbox_filters' )
-    webapp.add_client_route( '/user_preferences/change_communication' )
-    webapp.add_client_route( '/user_preferences/logout' )
-
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to view of current
@@ -523,11 +513,6 @@ def populate_api_routes( webapp, app ):
                            action='communication',
                            conditions=dict( method=["GET", "PUT"] ) )
 
-    webapp.mapper.connect( 'logout',
-                           '/api/user_preferences/logout',
-                           controller='user_preferences',
-                           action='logout',
-                           conditions=dict( method=["GET"] ) )
     # ========================
     # ===== WEBHOOKS API =====
     # ========================
