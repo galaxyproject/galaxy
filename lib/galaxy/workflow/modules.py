@@ -102,11 +102,7 @@ class WorkflowModule( object ):
         pass
 
     def get_errors( self ):
-        """ It seems like this is effectively just used as boolean - some places
-        in the tool shed self.errors is set to boolean, other places 'unavailable',
-        likewise in Galaxy it stores a list containing a string with an unrecognized
-        tool id error message.
-        """
+        """ This returns a step related error message as string or None """
         return None
 
     def get_data_inputs( self ):
@@ -755,7 +751,6 @@ class ToolModule( WorkflowModule ):
         self.workflow_outputs = []
         self.state = None
         self.version_changes = []
-        self.errors = None
 
     @classmethod
     def new( Class, trans, content_id=None ):
@@ -789,7 +784,6 @@ class ToolModule( WorkflowModule ):
                 module.version_changes.append( message )
             if d.get( 'tool_state' ):
                 module.state.decode( d.get( 'tool_state' ), module.tool, module.trans.app )
-        module.errors = d.get( 'tool_errors' )
         module.post_job_actions = d.get( 'post_job_actions', {} )
         module.workflow_outputs = d.get( 'workflow_outputs', [] )
         return module
@@ -830,10 +824,6 @@ class ToolModule( WorkflowModule ):
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
-            module.errors = step.tool_errors
-        else:
-            module.errors = {}
-            module.errors[ '__step__' ] = 'Tool unavailable.'
         module.recover_state( step.tool_inputs )
         module.workflow_outputs = step.workflow_outputs
         module.label = step.label or None
@@ -876,7 +866,6 @@ class ToolModule( WorkflowModule ):
             raise ToolMissingException( "Tool %s missing. Cannot save state." % self.tool_id )
             step.tool_version = None
             step.tool_inputs = None
-        step.tool_errors = self.errors
         for k, v in self.post_job_actions.iteritems():
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )
@@ -906,7 +895,7 @@ class ToolModule( WorkflowModule ):
         return state.encode( self.tool, self.trans.app ) if self.tool else dumps( state.inputs )
 
     def get_errors( self ):
-        return self.errors
+        return None if self.tool else "Tool missing."
 
     def get_tooltip( self, static_path='' ):
         if self.tool and self.tool.help:
@@ -985,8 +974,7 @@ class ToolModule( WorkflowModule ):
     def get_config_form( self ):
         if self.tool:
             self.add_dummy_datasets()
-            return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
-                                         tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+            return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self, tool=self.tool, values=self.state.inputs )
         else:
             return "Tool missing. Parameters cannot be edited."
 
