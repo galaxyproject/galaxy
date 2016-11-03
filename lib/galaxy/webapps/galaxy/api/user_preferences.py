@@ -193,7 +193,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController,
                 addressdict[ address.split("|")[1] ] = payload[ address ]
         return addressdict
 
-    def __validate_email_username( self, email, username ):
+    def _validate_email_username( self, email, username ):
         ''' Validate email and username '''
 
         message = ''
@@ -220,7 +220,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController,
             message = 'Email cannot be more than 255 characters in length'
         return { 'message': message, 'status': status }
 
-    def get_user_info_dict( self, trans, payload ):
+    def _get_user_info_dict( self, trans, payload ):
         ''' Extract user information attributes '''
         user_info_fields = [ item for item in payload
                              if item.find("user_info") > -1 ]
@@ -261,7 +261,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController,
                 # User was created before creating any user_info forms
                 user_type_form_definition = None
             if user_type_form_definition:
-                values = self.get_user_info_dict( trans, kwd.get( 'payload' ) )
+                values = self._get_user_info_dict( trans, kwd.get( 'payload' ) )
             else:
                 values = {}
 
@@ -284,7 +284,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController,
         # Editing email and username
         email = util.restore_text( kwd.get( 'email', '' ) )
         username = util.restore_text( kwd.get( 'username', '' ) )
-        validate = self.__validate_email_username( email, username )
+        validate = self._validate_email_username( email, username )
         if validate[ 'status' ] == 'error':
             raise exceptions.MessageException( validate['message'] )
         # Validate the new values for email and username
