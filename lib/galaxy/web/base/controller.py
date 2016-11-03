@@ -1143,7 +1143,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
                 pass
 
     def _import_shared_workflow( self, trans, stored):
-        """ """
+        """ Imports a shared workflow """
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
         imported_stored.name = "imported: " + stored.name
