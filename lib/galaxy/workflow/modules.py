@@ -746,8 +746,6 @@ class ToolModule( WorkflowModule ):
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
-        ##if tool_id == 'toolshed.g2.bx.psu.edu/repos/idot/prop_venn/prop_venn/0.5':
-        ##    self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
@@ -803,11 +801,6 @@ class ToolModule( WorkflowModule ):
             # to retrieve the correct version of the tool.
             matched_tool_id = toolbox.get_tool_id( tool_id )
             tool_id = matched_tool_id or tool_id
-        #if ( toolbox and tool_id ):
-        #if step.config:
-            # This step has its state saved in the config field due to the
-            # tool being previously unavailable.
-        #    return module_factory.from_dict(trans, loads(step.config))
         tool_version = step.tool_version
         module = Class( trans, tool_id, tool_version=tool_version )
         message = ""
