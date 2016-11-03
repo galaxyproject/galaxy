@@ -29,7 +29,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         super( JobController, self ).__init__( app )
         self.hda_manager = managers.hdas.HDAManager( app )
         self.dataset_manager = managers.datasets.DatasetManager( app )
-    
+
     @expose_api
     def index( self, trans, **kwd ):
         """

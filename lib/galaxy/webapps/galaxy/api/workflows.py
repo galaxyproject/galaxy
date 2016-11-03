@@ -203,7 +203,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
         workflow = stored_workflow.latest_workflow
- 
+
         run_configs = build_workflow_run_configs( trans, workflow, payload )
         assert len(run_configs) == 1
         run_config = run_configs[0]
@@ -243,7 +243,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Returns a selected workflow as a json dictionary.
         """
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
- 
+
         style = kwd.get("style", "export")
         ret_dict = self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
         if not ret_dict:

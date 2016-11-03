@@ -756,7 +756,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         "It cannot be saved until the following steps are removed or the missing tools are enabled.",
                 errors=e.errors,
             )
- 
+
         if workflow.has_errors:
             errors.append( "Some steps in this workflow have validation errors" )
         if workflow.has_cycles:
