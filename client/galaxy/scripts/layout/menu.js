@@ -234,13 +234,11 @@ var Collection = Backbone.Collection.extend({
                 tooltip         : 'Account preferences and saved data',
                 menu            : [{
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
-                    },
-                    {
+                    },{
                         title   : 'User Preferences',
                         url     : 'user?cntrller=user',
                         target  : 'galaxy_main'
-                    },
-                    {
+                    },{
                         title   : 'Custom Builds',
                         url     : 'user/dbkeys',
                         target  : 'galaxy_main'
@@ -268,15 +266,14 @@ var Collection = Backbone.Collection.extend({
                 }]
             };
 
-            if( window.Galaxy.config.enable_new_user_preferences ) {
+            if( Galaxy.config.enable_new_user_preferences ) {
                 userTab.menu.push({
                     title   : 'New User Preferences',
                     url     : 'user',
                     onclick : function() {
-                        if (Galaxy.app) {
-                            Galaxy.app.display(new Preferences.UserPreferences());
-                        } 
-                        else {
+                        if ( Galaxy.app ) {
+                            Galaxy.app.display( new Preferences.UserPreferences() );
+                        } else {
                             window.location = Galaxy.root + "user";
                         }
                     }
