@@ -1,18 +1,14 @@
 """
 Classes for generating HTML forms
 """
-import os
-import time
 import logging
 
 from six import string_types
-from operator import itemgetter
 from cgi import escape
-from galaxy.util import restore_text, relpath, nice_size, unicodify
-from galaxy.web import url_for
-from binascii import hexlify
+from galaxy.util import restore_text, unicodify
 
 log = logging.getLogger(__name__)
+
 
 class BaseField(object):
     def __init__( self, name, value=None, disabled=False, optional=True, **kwds ):

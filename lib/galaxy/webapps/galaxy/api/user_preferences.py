@@ -1,11 +1,9 @@
 """
 API operations on User Preferences objects.
 """
-
-import sets
-import json
 import logging
 import datetime
+import re
 
 from markupsafe import escape
 from sqlalchemy import and_, true
@@ -18,7 +16,7 @@ from galaxy.util import docstring_trim, listify
 from galaxy.util.odict import odict
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin, CreatesUsersMixin, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin
-from galaxy.web.form_builder import build_select_field, AddressField
+from galaxy.web.form_builder import AddressField
 
 log = logging.getLogger( __name__ )
 
@@ -71,7 +69,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             if type_form_id:
                 type_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( type_form_id ) )
                 if type_form_model:
-                    inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': custom_form_model.to_dict() } )
+                    inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': type_form_model.to_dict() } )
             info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
             info_forms = [ f.to_dict() for f in info_form_models ]
             if info_forms:
@@ -177,7 +175,7 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         if not message and username:
             message = validate_publicname(trans, username, user)
         if message:
-            status = 'error'
+            raise exceptions.MessageException(message)
         else:
             if (user.email != email):
                 # The user's private role name must match the user's login
@@ -206,7 +204,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
                 trans.log_event('User information added')
-        status = 'done'
 
         # Add/save user address
         payload = kwd.get('payload')
@@ -384,10 +381,10 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             raise exceptions.MessageException('Failed to determine user, access denied.')
         else:
             return { 'message': 'Password unchanged.',
-                     'inputs' : [ { 'name': 'current',  'type': 'password', 'label': 'Current password' }, {
-                                    'name': 'password', 'type': 'password', 'label': 'New password'     }, {
-                                    'name': 'confirm',  'type': 'password', 'label': 'Confirm password' }, {
-                                    'name': 'token',    'type': 'hidden',   'hidden': True, 'ignore': None } ] }
+                     'inputs' : [ { 'name': 'current',  'type': 'password', 'label': 'Current password' },
+                                  { 'name': 'password', 'type': 'password', 'label': 'New password'     },
+                                  { 'name': 'confirm',  'type': 'password', 'label': 'Confirm password' },
+                                  { 'name': 'token',    'type': 'hidden',   'hidden': True, 'ignore': None } ] }
 
     @expose_api
     def permissions(self, trans, user_id, payload={}, **kwd):
