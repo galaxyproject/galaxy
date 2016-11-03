@@ -862,10 +862,6 @@ class ToolModule( WorkflowModule ):
         if self.tool:
             step.tool_version = self.get_tool_version()
             step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
-        else:
-            raise ToolMissingException( "Tool %s missing. Cannot save state." % self.tool_id )
-            step.tool_version = None
-            step.tool_inputs = None
         for k, v in self.post_job_actions.iteritems():
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )

@@ -254,7 +254,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if missing_tool_tups:
             errors = []
             for missing_tool_tup in missing_tool_tups:
-                errors.append("Step %s requires tool '%s'." % (missing_tool_tup[3], missing_tool_tup[0]))
+                errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3])+1, missing_tool_tup[0]))
             raise MissingToolsException(workflow, errors)
 
         # Connect up
@@ -292,14 +292,10 @@ class WorkflowContentsManager(UsesAnnotations):
         missing_tool_tups = []
 
         for step_dict in self.__walk_step_dicts( data ):
-            module, step = self.__track_module_from_dict( trans, steps, steps_by_external_id, step_dict )
+            module, step = self.__module_from_dict( trans, steps, steps_by_external_id, step_dict )
             is_tool = is_tool_module_type( module.type )
             if is_tool and module.tool is None:
-                # A required tool is not available in the local Galaxy instance.
-                tool_id = step_dict.get('content_id', step_dict.get('tool_id', None))
-                assert tool_id is not None  # Threw an exception elsewhere if not
-
-                missing_tool_tup = ( tool_id, step_dict[ 'name' ], step_dict[ 'tool_version' ], step_dict[ 'id'] )
+                missing_tool_tup = ( module.tool_id, module.get_name(), module.tool_version, step_dict[ 'id' ] )
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append( missing_tool_tup )
 
@@ -799,11 +795,38 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __track_module_from_dict( self, trans, steps, steps_by_external_id, step_dict ):
-        module, step = self.__module_from_dict( trans, step_dict )
+    def __module_from_dict( self, trans, steps, steps_by_external_id, step_dict ):
+        """ Create a WorkflowStep model object and corresponding module
+        representing type-specific functionality from the incoming dictionary.
+        """
+        step = model.WorkflowStep()
+        # TODO: Consider handling position inside module.
+        step.position = step_dict['position']
+        if "uuid" in step_dict and step_dict['uuid'] != "None":
+            step.uuid = step_dict["uuid"]
+        if "label" in step_dict:
+            step.label = step_dict["label"]
+        step_type = step_dict.get("type", None)
+        if step_type == "subworkflow":
+            subworkflow = self.__load_subworkflow_from_step_dict(
+                trans, step_dict
+            )
+            step_dict["subworkflow"] = subworkflow
+
+        module = module_factory.from_dict( trans, step_dict )
+        module.save_to_step( step )
+
+        annotation = step_dict[ 'annotation' ]
+        if annotation:
+            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+
+        # Stick this in the step temporarily
+        step.temp_input_connections = step_dict['input_connections']
+
         # Create the model class for the step
         steps.append( step )
-        steps_by_external_id[ step_dict['id' ] ] = step
+        steps_by_external_id[ step_dict[ 'id' ] ] = step
         if 'workflow_outputs' in step_dict:
             workflow_outputs = step_dict['workflow_outputs']
             found_output_names = set([])
@@ -825,38 +848,6 @@ class WorkflowContentsManager(UsesAnnotations):
                     label=label,
                 )
                 trans.sa_session.add(m)
-        return module, step
-
-    def __module_from_dict( self, trans, step_dict ):
-        """ Create a WorkflowStep model object and corresponding module
-        representing type-specific functionality from the incoming dictionary.
-        """
-        step = model.WorkflowStep()
-        # TODO: Consider handling position inside module.
-        step.position = step_dict['position']
-        if "uuid" in step_dict and step_dict['uuid'] != "None":
-            step.uuid = step_dict["uuid"]
-        if "label" in step_dict:
-            step.label = step_dict["label"]
-
-        step_type = step_dict.get("type", None)
-        if step_type == "subworkflow":
-            subworkflow = self.__load_subworkflow_from_step_dict(
-                trans, step_dict
-            )
-            step_dict["subworkflow"] = subworkflow
-
-        module = module_factory.from_dict( trans, step_dict )
-        module.save_to_step( step )
-
-        annotation = step_dict[ 'annotation' ]
-        if annotation:
-            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
-
-        # Stick this in the step temporarily
-        step.temp_input_connections = step_dict['input_connections']
-
         return module, step
 
     def __load_subworkflow_from_step_dict(self, trans, step_dict):
