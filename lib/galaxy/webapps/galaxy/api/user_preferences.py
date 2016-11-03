@@ -18,102 +18,102 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin, CreatesUsersMixin, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import AddressField
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, UsesFormDefinitionsMixin ):
+class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
         super(UserPrefAPIController, self).__init__(app)
         self.user_manager = users.UserManager(app)
 
     @expose_api
-    def index( self, trans, **kwd ):
+    def index(self, trans, **kwd):
         return {
-            'user_id'       : trans.security.encode_id( trans.user.id ),
-            'username'      : trans.user.username,
-            'email'         : trans.user.email,
-            'webapp'        : trans.webapp.name,
-            'remote_user'   : trans.app.config.use_remote_user,
-            'openid'        : trans.app.config.enable_openid,
-            'enable_quotas' : trans.app.config.enable_quotas,
-            'disk_usage'    : trans.user.get_disk_usage( nice_size=True ),
-            'quota'         : trans.app.quota_agent.get_quota( trans.user, nice_size=True )
+            'user_id': trans.security.encode_id(trans.user.id),
+            'username': trans.user.username,
+            'email': trans.user.email,
+            'webapp': trans.webapp.name,
+            'remote_user': trans.app.config.use_remote_user,
+            'openid': trans.app.config.enable_openid,
+            'enable_quotas': trans.app.config.enable_quotas,
+            'disk_usage': trans.user.get_disk_usage(nice_size=True),
+            'quota': trans.app.quota_agent.get_quota(trans.user, nice_size=True)
         }
 
     @expose_api
-    def get_information( self, trans, user_id, **kwd ):
+    def get_information(self, trans, user_id, **kwd):
         '''
         Returns user details such as public username, type, addresses, etc.
         '''
-        user = self._get_user( trans, user_id )
-        email = util.restore_text( kwd.get( 'email', user.email ) )
-        username = util.restore_text( kwd.get( 'username', user.username ) )
+        user = self._get_user(trans, user_id)
+        email = util.restore_text(kwd.get('email', user.email))
+        username = util.restore_text(kwd.get('username', user.username))
         inputs = list()
-        inputs.append( {
-            'id'    : 'email_input',
-            'name'  : 'email',
-            'type'  : 'text',
-            'label' : 'Email address',
-            'value' : email,
-            'help'  : 'If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.' } )
+        inputs.append({
+            'id': 'email_input',
+            'name': 'email',
+            'type': 'text',
+            'label': 'Email address',
+            'value': email,
+            'help': 'If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.'})
         if trans.webapp.name == 'galaxy':
-            inputs.append( {
-                'id'    : 'name_input',
-                'name'  : 'username',
-                'type'  : 'text',
-                'label' : 'Public name',
-                'value' : username,
-                'help'  : 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.' } )
-            type_form_id = trans.security.encode_id( user.values.form_definition.id ) if user and user.values else kwd.get( 'type_form_id', None )
+            inputs.append({
+                'id': 'name_input',
+                'name': 'username',
+                'type': 'text',
+                'label': 'Public name',
+                'value': username,
+                'help': 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.'})
+            type_form_id = trans.security.encode_id(user.values.form_definition.id) if user and user.values else kwd.get('type_form_id', None)
             if type_form_id:
-                type_form_model = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( type_form_id ) )
+                type_form_model = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(type_form_id))
                 if type_form_model:
-                    inputs.append( { 'type': 'section', 'title': 'Custom options', 'inputs': type_form_model.to_dict() } )
-            info_form_models = self.get_all_forms( trans, filter=dict( deleted=False ), form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            info_forms = [ f.to_dict() for f in info_form_models ]
+                    inputs.append({'type': 'section', 'title': 'Custom options', 'inputs': type_form_model.to_dict()})
+            info_form_models = self.get_all_forms(trans, filter=dict(deleted=False), form_type=trans.app.model.FormDefinition.types.USER_INFO)
+            info_forms = [f.to_dict() for f in info_form_models]
             if info_forms:
                 info_field = {
-                    'type'   : 'conditional',
-                    'name'   : 'user_info',
-                    'cases'  : [],
-                    'test_param' : {
-                        'name'  : 'selected',
-                        'label' : 'User information',
-                        'type'  : 'select',
-                        'help'  : '',
-                        'data'  : []
+                    'type': 'conditional',
+                    'name': 'user_info',
+                    'cases': [],
+                    'test_param': {
+                        'name': 'selected',
+                        'label': 'User information',
+                        'type': 'select',
+                        'help': '',
+                        'data': []
                     }
                 }
-                for i, d in enumerate( info_forms ):
-                    info_field[ 'test_param' ][ 'data' ].append( { 'label' : d[ 'name' ], 'value': i } )
-                    info_field[ 'cases' ].append( { 'value': i, 'inputs' : d[ 'inputs' ] } )
-                inputs.append( info_field )
-            address_field = AddressField( '' ).to_dict()
-            address_values = [ address.to_dict( trans ) for address in user.addresses ]
-            address_repeat = { 'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field[ 'inputs' ], 'cache': [] }
+                for i, d in enumerate(info_forms):
+                    info_field['test_param']['data'].append({'label': d['name'], 'value': i})
+                    info_field['cases'].append({'value': i, 'inputs': d['inputs']})
+                inputs.append(info_field)
+            address_field = AddressField('').to_dict()
+            address_values = [address.to_dict(trans) for address in user.addresses]
+            address_repeat = {'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field['inputs'], 'cache': []}
             for address in address_values:
                 address_inputs = []
-                for input in address_repeat[ 'inputs' ]:
+                for input in address_repeat['inputs']:
                     input_copy = input.copy()
-                    input_copy[ 'value' ] = address.get( input[ 'name' ], None )
-                    address_inputs.append( input_copy )
-                address_repeat[ 'cache' ].append( address_inputs )
-            inputs.append( address_repeat )
+                    input_copy['value'] = address.get(input['name'], None)
+                    address_inputs.append(input_copy)
+                address_repeat['cache'].append(address_inputs)
+            inputs.append(address_repeat)
         else:
             if user.active_repositories:
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='hidden', value=username, help='You cannot change your public name after you have created a repository in this tool shed.'))
             else:
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
         return {
-            'webapp'            : trans.webapp.name,
-            'user_id'           : trans.security.encode_id( trans.user.id ),
-            'is_admin'          : trans.user_is_admin(),
-            'values'            : user.values,
-            'email'             : email,
-            'username'          : username,
-            'addresses'         : [ address.to_dict( trans ) for address in user.addresses ],
-            'inputs'            : inputs,
+            'webapp': trans.webapp.name,
+            'user_id': trans.security.encode_id(trans.user.id),
+            'is_admin': trans.user_is_admin(),
+            'values': user.values,
+            'email': email,
+            'username': username,
+            'addresses': [address.to_dict(trans) for address in user.addresses],
+            'inputs': inputs,
         }
 
     @expose_api
@@ -129,7 +129,6 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         elif user_id and (not trans.user or trans.user.id !=
                           trans.security.decode_id(user_id)):
             message = 'Invalid user id'
-            status = 'error'
             user = None
         else:
             user = trans.user
@@ -337,10 +336,10 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         Allows to change a user password.
         """
         if kwd:
-            password = kwd.get( 'password' )
-            confirm = kwd.get( 'confirm' )
-            current = kwd.get( 'current' )
-            token = kwd.get( 'token' )
+            password = kwd.get('password')
+            confirm = kwd.get('confirm')
+            current = kwd.get('current')
+            token = kwd.get('token')
             token_result = None
             if token:
                 # If a token was supplied, validate and set user
@@ -377,42 +376,42 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
                     trans.log_event('User change password')
-                    return { 'message': 'Password has been saved.' }
+                    return {'message': 'Password has been saved.'}
             raise exceptions.MessageException('Failed to determine user, access denied.')
         else:
-            return { 'message': 'Password unchanged.',
-                     'inputs' : [ { 'name': 'current',  'type': 'password', 'label': 'Current password' },
-                                  { 'name': 'password', 'type': 'password', 'label': 'New password'     },
-                                  { 'name': 'confirm',  'type': 'password', 'label': 'Confirm password' },
-                                  { 'name': 'token',    'type': 'hidden',   'hidden': True, 'ignore': None } ] }
+            return {'message': 'Password unchanged.',
+                    'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
+                                {'name': 'password', 'type': 'password', 'label': 'New password'},
+                                {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
+                                {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None} ]}
 
     @expose_api
     def permissions(self, trans, user_id, payload={}, **kwd):
         """
         Set the user's default permissions for the new histories
         """
-        user = self._get_user( trans, user_id )
+        user = self._get_user(trans, user_id)
         roles = user.all_roles()
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         if kwd:
             permissions = {}
             for index, action in permitted_actions:
                 action_id = trans.app.security_agent.get_action(action.action).action
-                permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in kwd.get( index, [] )]
+                permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in kwd.get(index, [])]
             trans.app.security_agent.user_set_default_permissions(user, permissions)
-            return { 'message': 'Permissions have been saved.' }
+            return {'message': 'Permissions have been saved.'}
         else:
             inputs = []
             for index, action in permitted_actions:
-                inputs.append({ 'type'      : 'select',
-                                'multiple'  : True,
-                                'optional'  : True,
-                                'name'      : index,
-                                'label'     : action.action,
-                                'help'      : action.description,
-                                'options'   : [ ( r.name, r.id ) for r in roles ],
-                                'value'     : [ a.role.id for a in user.default_permissions if a.action == action.action ] })
-            return { 'message': 'Permissions unchanged.', 'inputs': inputs }
+                inputs.append({'type': 'select',
+                               'multiple': True,
+                               'optional': True,
+                               'name': index,
+                               'label': action.action,
+                               'help': action.description,
+                               'options': [(r.name, r.id) for r in roles],
+                               'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
+            return {'message': 'Permissions unchanged.', 'inputs': inputs}
 
     @expose_api
     def toolbox_filters(self, trans, user_id, payload={}, **kwd):
@@ -421,48 +420,48 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         The user can activate them and the choice is stored in user_preferences.
         """
         user = self._get_user(trans, user_id)
-        filter_types = odict([ ('toolbox_tool_filters',    { 'title': 'Tools',    'config': trans.app.config.user_tool_filters }),
-                               ('toolbox_section_filters', { 'title': 'Sections', 'config': trans.app.config.user_section_filters }),
-                               ('toolbox_label_filters',   { 'title': 'Labels',   'config': trans.app.config.user_label_filters }) ])
+        filter_types = odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
+                              ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_section_filters}),
+                              ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_label_filters})])
         if kwd:
             for filter_type in filter_types:
                 new_filters = []
                 for prefixed_name in kwd:
                     prefix = filter_type + '|'
                     if prefixed_name.startswith(filter_type):
-                        new_filters.append( prefixed_name[len(prefix):] )
+                        new_filters.append(prefixed_name[len(prefix):])
                 user.preferences[filter_type] = ','.join(new_filters)
             trans.sa_session.add(user)
             trans.sa_session.flush()
-            return { 'message': 'Toolbox filters have been saved.' }
+            return {'message': 'Toolbox filters have been saved.'}
         else:
             saved_values = {}
             for name, value in user.preferences.items():
                 if name in filter_types:
-                    saved_values[ name ] = listify(value, do_strip=True)
+                    saved_values[name] = listify(value, do_strip=True)
             inputs = []
             factory = FilterFactory(trans.app.toolbox)
             for filter_type in filter_types:
-                self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values )
-            return { 'message': 'Toolbox filters unchanged.', 'inputs': inputs }
+                self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values)
+            return {'message': 'Toolbox filters unchanged.', 'inputs': inputs}
 
     def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
         filter_inputs = list()
-        filter_values = saved_values.get( filter_type, [] )
-        filter_config = filter_types[ filter_type ][ 'config' ]
-        filter_title  = filter_types[ filter_type ][ 'title' ]
+        filter_values = saved_values.get(filter_type, [])
+        filter_config = filter_types[filter_type]['config']
+        filter_title = filter_types[filter_type]['title']
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
             filter_inputs.append({
-                'type'   : 'boolean',
-                'name'   : filter_name,
-                'label'  : filter_name,
-                'help'   : docstring_trim(function.__doc__) or 'No description available.',
-                'value'  : 'true' if filter_name in filter_values else 'false',
-                'ignore' : 'false'
+                'type': 'boolean',
+                'name': filter_name,
+                'label': filter_name,
+                'help': docstring_trim(function.__doc__) or 'No description available.',
+                'value': 'true' if filter_name in filter_values else 'false',
+                'ignore': 'false'
             })
         if filter_inputs:
-            inputs.append( { 'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs } )
+            inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     @expose_api
     def api_key(self, trans, user_id, payload={}, **kwd):
@@ -476,13 +475,13 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
         else:
             message = 'API key unchanged.'
         webapp_name = 'Galaxy' if trans.webapp.name == 'galaxy' else 'the Tool Shed'
-        inputs = [ { 'name'       : 'api-key',
-                     'type'       : 'text',
-                     'label'      : 'Current API key:',
-                     'value'      : user.api_keys[0].key if user.api_keys else 'Not available.',
-                     'readonly'   : True,
-                     'help'       : ' An API key will allow you to access %s via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' % webapp_name } ]
-        return { 'message': message, 'inputs': inputs }
+        inputs = [{'name': 'api-key',
+                   'type': 'text',
+                   'label': 'Current API key:',
+                   'value': user.api_keys[0].key if user.api_keys else 'Not available.',
+                   'readonly': True,
+                   'help': ' An API key will allow you to access %s via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' % webapp_name}]
+        return {'message': message, 'inputs': inputs}
 
     @expose_api
     def communication(self, trans, user_id, payload={}, **kwd):
@@ -499,15 +498,15 @@ class UserPrefAPIController( BaseAPIController, BaseUIController, UsesTagsMixin,
             user.preferences['communication_server'] = enable
             trans.sa_session.add(user)
             trans.sa_session.flush()
-            return { 'message' : message }
+            return {'message': message}
         else:
-            return { 'message' : 'Communication server settings unchanged.',
-                     'inputs'  : [{ 'name'  : 'enable',
-                                    'type'  : 'boolean',
-                                    'label' : 'Enable communication',
-                                    'value' : user.preferences.get('communication_server', 'false') }] }
+            return {'message': 'Communication server settings unchanged.',
+                    'inputs': [{'name': 'enable',
+                                'type': 'boolean',
+                                'label': 'Enable communication',
+                                'value': user.preferences.get('communication_server', 'false')}]}
 
-    def _get_user( self, trans, user_id ):
+    def _get_user(self, trans, user_id):
         user = self.get_user(trans, user_id)
         if not user:
             raise exceptions.MessageException('Invalid user (%s).' % user_id)
