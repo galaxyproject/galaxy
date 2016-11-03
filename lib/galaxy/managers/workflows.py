@@ -251,11 +251,11 @@ class WorkflowContentsManager(UsesAnnotations):
             name=stored_workflow.name,
         )
 
-        if missing_tool_tups:
-            errors = []
-            for missing_tool_tup in missing_tool_tups:
-                errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3])+1, missing_tool_tup[0]))
-            raise MissingToolsException(workflow, errors)
+        ##if missing_tool_tups:
+        ##    errors = []
+        ##    for missing_tool_tup in missing_tool_tups:
+        ##        errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3])+1, missing_tool_tup[0]))
+        ##    raise MissingToolsException(workflow, errors)
 
         # Connect up
         workflow.stored_workflow = stored_workflow

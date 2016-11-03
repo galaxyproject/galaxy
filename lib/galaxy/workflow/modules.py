@@ -746,6 +746,8 @@ class ToolModule( WorkflowModule ):
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
+        ##if tool_id == 'toolshed.g2.bx.psu.edu/repos/idot/prop_venn/prop_venn/0.5':
+        ##    self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
@@ -773,7 +775,7 @@ class ToolModule( WorkflowModule ):
         module = Class( trans, tool_id, tool_version=tool_version )
         module.state = DefaultToolState()
         module.label = d.get( 'label' ) or None
-        if module.tool is not None:
+        if module.tool:
             message = ""
             if tool_id != module.tool_id:
                 message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
@@ -784,6 +786,8 @@ class ToolModule( WorkflowModule ):
                 module.version_changes.append( message )
             if d.get( 'tool_state' ):
                 module.state.decode( d.get( 'tool_state' ), module.tool, module.trans.app )
+        else:
+            module.state.inputs = loads( d.get( 'tool_state' ) )
         module.post_job_actions = d.get( 'post_job_actions', {} )
         module.workflow_outputs = d.get( 'workflow_outputs', [] )
         return module
@@ -859,9 +863,8 @@ class ToolModule( WorkflowModule ):
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = self.tool_id
-        if self.tool:
-            step.tool_version = self.get_tool_version()
-            step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
+        step.tool_version = self.get_tool_version()
+        step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app ) if self.tool else self.state.inputs
         for k, v in self.post_job_actions.iteritems():
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )
