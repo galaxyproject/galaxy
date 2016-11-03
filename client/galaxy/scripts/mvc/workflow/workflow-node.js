@@ -5,7 +5,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.element = attr.element;
             this.input_terminals = {};
             this.output_terminals = {};
-            this.tool_errors = {};
+            this.errors = {};
             this.workflow_outputs = [];
         },
         getWorkflowOutput: function(outputName) {
@@ -159,7 +159,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.name = data.name;
             this.form_html = data.form_html;
             this.tool_state = data.tool_state;
-            this.tool_errors = data.tool_errors;
+            this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.annotation = data.annotation;
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
@@ -191,7 +191,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
                 nodeView = node.nodeView;
             this.tool_state = data.tool_state;
             this.form_html = data.form_html;
-            this.tool_errors = data.tool_errors;
+            this.errors = data.errors;
             this.annotation = data['annotation'];
             this.setLabel(data.label);
 

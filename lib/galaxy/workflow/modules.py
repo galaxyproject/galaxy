@@ -895,7 +895,7 @@ class ToolModule( WorkflowModule ):
         return state.encode( self.tool, self.trans.app ) if self.tool else dumps( state.inputs )
 
     def get_errors( self ):
-        return None if self.tool else "Tool missing."
+        return None if self.tool else "Tool is not installed."
 
     def get_tooltip( self, static_path='' ):
         if self.tool and self.tool.help:
@@ -985,8 +985,6 @@ class ToolModule( WorkflowModule ):
         inputs = self.state.inputs
         if self.tool:
             return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
-        else:
-            return [ "This tool is not installed." ]
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
@@ -1348,11 +1346,10 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
     for step in workflow.steps:
         step_args = param_map.get( step.id, {} )
         step_errors = module_injector.inject( step, step_args=step_args )
-        if step.type == 'tool' or step.type is None:
-            if step_errors:
-                raise exceptions.MessageException( step_errors, err_data={ step.order_index: step_errors } )
-            if step.upgrade_messages:
-                if allow_tool_state_corrections:
-                    log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
-                else:
-                    raise exceptions.MessageException( step.upgrade_messages, err_data={ step.order_index: step.upgrade_messages } )
+        if step_errors:
+            raise exceptions.MessageException( step_errors, err_data={ step.order_index: step_errors } )
+        if step.upgrade_messages:
+            if allow_tool_state_corrections:
+                log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
+            else:
+                raise exceptions.MessageException( step.upgrade_messages, err_data={ step.order_index: step.upgrade_messages } )

@@ -361,9 +361,12 @@ EditorFormView = Backbone.View.extend({
                      self.canvas_manager.draw_overview();
                      // Determine if any parameters were 'upgraded' and provide message
                      upgrade_message = "";
-                     _.each( data.upgrade_messages, function( messages, step_id ) {
+                     _.each( data.steps, function( step, step_id ) {
                         var details = "";
-                        _.each( messages, function( m ) {
+                        if ( step.errors ) {
+                            details += "<li>" + step.errors + "</li>";
+                        }
+                        _.each( data.upgrade_messages[ step_id ], function( m ) {
                             details += "<li>" + m + "</li>";
                         });
                         if ( details ) {
@@ -371,9 +374,7 @@ EditorFormView = Backbone.View.extend({
                         }
                      });
                      if ( upgrade_message ) {
-                        window.show_modal( "Issues loading this workflow",
-                                    "Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>" + upgrade_message + "</ul></p>",
-                                    { "Continue" : hide_modal } );
+                        window.show_modal( "Issues loading this workflow", "Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>" + upgrade_message + "</ul></p>", { "Continue" : hide_modal } );
                      } else {
                         hide_modal();
                      }

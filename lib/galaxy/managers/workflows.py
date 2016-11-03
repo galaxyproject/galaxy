@@ -307,7 +307,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 # when we do have the tool
                 step.config = json.dumps(step_dict)
 
-            if step.tool_errors:
+            if module.get_errors():
                 workflow.has_errors = True
 
         # Second pass to deal with connections between steps
@@ -361,8 +361,9 @@ class WorkflowContentsManager(UsesAnnotations):
             if step.type == 'tool' or step.type is None:
                 if step.module.version_changes:
                     step_version_changes.extend( step.module.version_changes )
-                if step.tool_errors:
-                    errors[ step.id ] = step.tool_errors
+                step_errors = step.module.get_errors();
+                if step_errors:
+                    errors[ step.id ] = step_errors
         if missing_tools:
             workflow.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, workflow )
             raise exceptions.MessageException( 'Following tools missing: %s' % missing_tools )
@@ -454,7 +455,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
                 'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
-                'tool_errors': module.get_errors(),
+                'errors': module.get_errors(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
                 'form_html': form_html,
@@ -569,7 +570,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'tool_version': step.tool_version,
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
-                'tool_errors': module.get_errors(),
+                'errors': module.get_errors(),
                 'uuid': str(step.uuid),
                 'label': step.label or None,
                 # 'data_inputs': module.get_data_inputs(),
@@ -596,9 +597,9 @@ class WorkflowContentsManager(UsesAnnotations):
 
             if module.type == 'subworkflow':
                 del step_dict['content_id']
+                del step_dict['errors']
                 del step_dict['tool_version']
                 del step_dict['tool_state']
-                del step_dict['tool_errors']
                 subworkflow = step.subworkflow
                 subworkflow_as_dict = self._workflow_to_dict_export(
                     trans,

@@ -219,7 +219,7 @@ function( Connector, Toastr ) {
                     type : node.type,
                     content_id : node.content_id,
                     tool_state : node.tool_state,
-                    tool_errors : node.tool_errors,
+                    errors : node.errors,
                     input_connections : input_connections,
                     position : $(node.element).position(),
                     annotation: node.annotation,
