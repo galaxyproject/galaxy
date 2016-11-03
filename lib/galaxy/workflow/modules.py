@@ -6,6 +6,7 @@ from json import dumps, loads
 from xml.etree.ElementTree import Element
 
 from galaxy import exceptions, model, web
+from galaxy.exceptions import ToolMissingException
 from galaxy.dataset_collections import matching
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
@@ -764,7 +765,7 @@ class ToolModule( WorkflowModule ):
             module.label = None
             return module
         else:
-            raise Exception( "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % content_id )
+            raise ToolMissingException( "Tool %s missing. Cannot create new workflow module." % content_id )
 
     @classmethod
     def from_dict( Class, trans, d ):
@@ -863,7 +864,7 @@ class ToolModule( WorkflowModule ):
                 self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
                 return state
         else:
-            raise Exception( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
+            raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
 
     def save_to_step( self, step ):
         step.type = self.type
@@ -872,7 +873,7 @@ class ToolModule( WorkflowModule ):
             step.tool_version = self.get_tool_version()
             step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
         else:
-            raise Exception( "Tool %s missing. Cannot save state." % self.tool_id )
+            raise ToolMissingException( "Tool %s missing. Cannot save state." % self.tool_id )
             step.tool_version = None
             step.tool_inputs = None
         step.tool_errors = self.errors
@@ -1022,7 +1023,7 @@ class ToolModule( WorkflowModule ):
                     state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
             return state, step_errors
         else:
-            raise Exception( "Tool %s missing. Cannot compute runtime state." % self.tool_id )
+            raise ToolMissingException( "Tool %s missing. Cannot compute runtime state." % self.tool_id )
 
     def __step_meta_runtime_state( self ):
         """ Build a dictionary a of meta-step runtime state (state about how
@@ -1160,31 +1161,34 @@ class ToolModule( WorkflowModule ):
             self.trans.sa_session.flush()
 
     def add_dummy_datasets( self, connections=None, steps=None ):
-        if connections:
-            # Store connections by input name
-            input_connections_by_name = dict( ( conn.input_name, conn ) for conn in connections )
-        else:
-            input_connections_by_name = {}
+        if self.tool:
+            if connections:
+                # Store connections by input name
+                input_connections_by_name = dict( ( conn.input_name, conn ) for conn in connections )
+            else:
+                input_connections_by_name = {}
 
-        # Any input needs to have value RuntimeValue or obtain the value from connected steps
-        def callback( input, prefixed_name, context, **kwargs ):
-            if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
-                    if prefixed_name in input_connections_by_name:
-                        connection = input_connections_by_name[ prefixed_name ]
-                        output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
-                        if output_step.type.startswith( 'data' ):
-                            output_inputs = output_step.module.get_runtime_inputs( connections=connections )
-                            output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
-                            if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
-                                return output_value.to_hda_representative()
-                            return output_value
+            # Any input needs to have value RuntimeValue or obtain the value from connected steps
+            def callback( input, prefixed_name, context, **kwargs ):
+                if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
+                    if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+                        if prefixed_name in input_connections_by_name:
+                            connection = input_connections_by_name[ prefixed_name ]
+                            output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
+                            if output_step.type.startswith( 'data' ):
+                                output_inputs = output_step.module.get_runtime_inputs( connections=connections )
+                                output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
+                                if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
+                                    return output_value.to_hda_representative()
+                                return output_value
+                            return RuntimeValue()
+                        else:
+                            return input.get_initial_value( self.trans, context )
+                    elif connections is None or prefixed_name in input_connections_by_name:
                         return RuntimeValue()
-                    else:
-                        return input.get_initial_value( self.trans, context )
-                elif connections is None or prefixed_name in input_connections_by_name:
-                    return RuntimeValue()
-        visit_input_values( self.tool.inputs, self.state.inputs, callback )
+            visit_input_values( self.tool.inputs, self.state.inputs, callback )
+        else:
+            raise ToolMissingException( "Tool %s missing. Cannot add dummy datasets." % self.tool_id )
 
     def recover_mapping( self, step, step_invocations, progress ):
         # Grab a job representing this invocation - for normal workflows
@@ -1296,11 +1300,6 @@ def load_module_sections( trans ):
     return module_sections
 
 
-class MissingToolException( Exception ):
-    """ WorkflowModuleInjector will raise this if the tool corresponding to the
-    module is missing. """
-
-
 class DelayedWorkflowEvaluation(Exception):
     pass
 
@@ -1337,10 +1336,6 @@ class WorkflowModuleInjector(object):
 
         # Populate module.
         module = step.module = module_factory.from_workflow_step( self.trans, step )
-        if not module:
-            step.module = None
-            step.state = None
-            raise MissingToolException(step.tool_id)
 
         # Fix any missing parameters
         step.upgrade_messages = module.check_and_update_state()

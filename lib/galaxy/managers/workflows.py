@@ -19,7 +19,7 @@ from .base import decode_id
 # For WorkflowContentManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector, MissingToolException
+from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector
 from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter, workflow_building_modes
 from galaxy.tools.parameters import visit_input_values, params_to_incoming
 from galaxy.jobs.actions.post import ActionBox
@@ -276,7 +276,6 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Create new workflow from source data
         workflow = model.Workflow()
-
         workflow.name = name
 
         # Assume no errors until we find a step that has some
@@ -353,7 +352,7 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             try:
                 module_injector.inject( step, steps=workflow.steps )
-            except MissingToolException:
+            except exceptions.ToolMissingException:
                 if step.tool_id not in missing_tools:
                     missing_tools.append( step.tool_id )
                 continue

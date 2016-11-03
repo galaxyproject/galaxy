@@ -98,6 +98,9 @@ class ToolMetaParameterException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_TOOL_META_PARAMETER_PROBLEM
 
+class ToolMissingException( MessageException ):
+    status_code = 400
+    err_code = error_codes.USER_TOOL_MISSING_PROBLEM
 
 class RequestParameterInvalidException( MessageException ):
     status_code = 400
