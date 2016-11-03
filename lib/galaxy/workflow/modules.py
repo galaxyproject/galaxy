@@ -754,32 +754,29 @@ class ToolModule( WorkflowModule ):
         self.workflow_outputs = []
         self.state = None
         self.version_changes = []
-        if self.tool:
-            self.errors = None
-        else:
-            self.errors = {}
-            self.errors[ tool_id ] = 'Tool unavailable'
+        self.errors = None
 
     @classmethod
     def new( Class, trans, content_id=None ):
         module = Class( trans, content_id )
-        if module.tool is None:
+        if module.tool:
+            module.state = module.tool.new_state( trans )
+            module.label = None
+            return module
+        else:
             raise Exception( "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % content_id )
-        module.state = module.tool.new_state( trans )
-        module.label = None
-        return module
 
     @classmethod
     def from_dict( Class, trans, d ):
-        tool_id = d.get( 'content_id', None )
+        tool_id = d.get( 'content_id' )
         if tool_id is None:
-            tool_id = d.get( 'tool_id', None )  # Older workflows will have exported this as tool_id.
+            tool_id = d.get( 'tool_id' )  # Older workflows will have exported this as tool_id.
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
-        tool_version = str( d.get( 'tool_version', None ) )
+        tool_version = str( d.get( 'tool_version' ) )
         module = Class( trans, tool_id, tool_version=tool_version )
         module.state = DefaultToolState()
-        module.label = d.get("label", None) or None
+        module.label = d.get( 'label' ) or None
         if module.tool is not None:
             message = ""
             if tool_id != module.tool_id:
@@ -787,13 +784,13 @@ class ToolModule( WorkflowModule ):
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
                 message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_tool_version(), d.get( 'tool_version', 'Unspecified' ) )
             if message:
-                log.debug(message)
-                module.version_changes.append(message)
-            if d[ "tool_state" ]:
-                module.state.decode( d[ "tool_state" ], module.tool, module.trans.app )
-        module.errors = d.get( "tool_errors", None )
-        module.post_job_actions = d.get( "post_job_actions", {} )
-        module.workflow_outputs = d.get( "workflow_outputs", [] )
+                log.debug( message )
+                module.version_changes.append( message )
+            if d.get( 'tool_state' ):
+                module.state.decode( d.get( 'tool_state' ), module.tool, module.trans.app )
+        module.errors = d.get( 'tool_errors' )
+        module.post_job_actions = d.get( 'post_job_actions', {} )
+        module.workflow_outputs = d.get( 'workflow_outputs', [] )
         return module
 
     @classmethod
@@ -829,11 +826,14 @@ class ToolModule( WorkflowModule ):
                     message += "A derivation of this tool installed from <a href=\"%s\" target=\"_blank\">%s</a> will be used instead. " % (new_url, new_tool_shed_url)
             if step.tool_version and (step.tool_version != module.tool.version):
                 message += "<span title=\"tool id '%s'\">Using version '%s' instead of version '%s' specified in this workflow. " % (tool_id, module.tool.version, step.tool_version)
-        if message:
-            log.debug(message)
-            module.version_changes.append(message)
+            if message:
+                log.debug(message)
+                module.version_changes.append(message)
+            module.errors = step.tool_errors
+        else:
+            module.errors = {}
+            module.errors[ '__step__' ] = 'Tool unavailable.'
         module.recover_state( step.tool_inputs )
-        module.errors = step.tool_errors
         module.workflow_outputs = step.workflow_outputs
         module.label = step.label or None
         pjadict = {}
