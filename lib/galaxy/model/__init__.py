@@ -4842,8 +4842,7 @@ class UserAddress( object ):
                  'state'        : sanitize_html( self.state ),
                  'postal_code'  : sanitize_html( self.postal_code ),
                  'country'      : sanitize_html( self.country ),
-                 'phone'        : sanitize_html( self.phone )
-        }
+                 'phone'        : sanitize_html( self.phone ) }
 
     def get_html(self):
         # This should probably be deprecated eventually.  It should currently
