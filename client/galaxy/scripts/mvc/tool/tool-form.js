@@ -70,7 +70,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                         var typeParam = input_def['type']
 			if (typeParam == "password"){
                                 job_def.inputs.JPCNn681vcGV4KuvuT16 = job_input_id;
-
+				console.log(job_def.inputs.JPCNn681vcGV4KuvuT16)
                         }
             }
 

@@ -154,31 +154,32 @@ define(['utils/utils',
         },
 
         
-		_fieldPassword: function(input_def){
-		if (input_def.options && input_def.data){
-			input_def.area = input_def.multiple;
-			if (Utils.isEmpty(input_def.value)){
-				input_def.value = null;
-			} else {
-				if ($.isArray(input_def.value)){
-					var str_value = '';
-					for (var i in input_def.value){
-						str_value += String(input_def.value[i]);
-						if( !input_def.multiple){
-							break;
-						}
-						str_value += '\n';
-					}
-					input_def.value = str_value;
-				}
-			}
-		}
-		return new Ui.Password({
-			id		:'field-' + input_def.id,
-			area		: input_def.area,
-			placeholder	: input_def.placeholder,
-			onchange	: input_def.onchange
-		});
+	//_fieldPassword: function(input_def){
+	//if (input_def.options && input_def.data){
+	//	input_def.area = input_def.multiple;
+	//	if (Utils.isEmpty(input_def.value)){
+	//		input_def.value = null;
+	//	} else {
+	//		if ($.isArray(input_def.value)){
+	//			var str_value = '';
+	//			for (var i in input_def.value){
+	//				str_value += String(input_def.value[i]);
+	//				if( !input_def.multiple){
+	//					break;
+	//				}
+	//				str_value += '\n';
+	//			}
+	//			input_def.value = str_value;
+	//		}
+	//	}
+	//}
+	_fieldPassword: function( input_def) {
+	return new Ui.Password({
+		id		:'field-' + input_def.id,
+		area		: input_def.area,
+		placeholder	: input_def.placeholder,
+		onchange	: input_def.onchange
+	});
 	},
 
 

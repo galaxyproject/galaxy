@@ -100,7 +100,6 @@ define(['utils/utils',
 		'input': '_onchange'
 	},
 	value: function(new_val) {
-//		new_val = "hello";
 		new_val !== undefined && this.model.set('value', typeof new_val === 'string' ? new_val : '');
 		
 		return this.model.get('value');
@@ -204,8 +203,8 @@ define(['utils/utils',
         ButtonCheck : Buttons.ButtonCheck,
         ButtonMenu  : Buttons.ButtonMenu,
         ButtonLink  : Buttons.ButtonLink,
-	Password    : Password,
-        Input       : Input,
+        Password    : Password,
+	Input       : Input,
         Label       : Label,
         Message     : Message,
         Modal       : Modal,
