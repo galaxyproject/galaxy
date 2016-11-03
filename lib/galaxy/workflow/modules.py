@@ -854,13 +854,16 @@ class ToolModule( WorkflowModule ):
             raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
 
     def save_to_step( self, step ):
-        step.type = self.type
-        step.tool_id = self.tool_id
-        step.tool_version = self.get_tool_version()
-        step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app ) if self.tool else self.state.inputs
-        for k, v in self.post_job_actions.iteritems():
-            pja = self.__to_pja( k, v, step )
-            self.trans.sa_session.add( pja )
+        if self.tool:
+            step.type = self.type
+            step.tool_id = self.tool_id
+            step.tool_version = self.get_tool_version()
+            step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
+            for k, v in self.post_job_actions.iteritems():
+                pja = self.__to_pja( k, v, step )
+                self.trans.sa_session.add( pja )
+        else:
+            raise ToolMissingException( "Tool %s missing. Cannot save workflow state." % self.tool_id )
 
     def __to_pja( self, key, value, step ):
         if 'output_name' in value:
