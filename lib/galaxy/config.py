@@ -167,7 +167,7 @@ class Configuration( object ):
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
 
-        # Fall back to to legacy job_working_directory config variable if set.
+        # Fall back to legacy job_working_directory config variable if set.
         default_jobs_directory = kwargs.get( "job_working_directory", "database/jobs_directory" )
         self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.root )
         self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
@@ -665,9 +665,6 @@ class Configuration( object ):
                 except Exception as e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
-        if self.object_store_config_file is None:
-            for path in (self.file_path, self.job_working_directory):
-                self._ensure_directory( path )
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
                      self.nginx_upload_store, self.whoosh_index_dir,
