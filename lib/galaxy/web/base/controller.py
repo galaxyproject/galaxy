@@ -1140,8 +1140,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
             try:
                 module_injector.inject( step )
             except ToolMissingException:
-                # Now upgrade_messages is a string instead of a dict, why?
-                step.upgrade_messages = "Unknown Tool ID"
+                pass
 
     def _import_shared_workflow( self, trans, stored):
         """ """
