@@ -456,7 +456,7 @@ class ToolEvaluator( object ):
         """
 	command = self.tool.command
 	param_dict = self.param_dict
-	interpreter = self.tool.interpreter
+        interpreter = self.tool.interpreter
         
         command_line = None
         if not command:
