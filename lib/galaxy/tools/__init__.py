@@ -1155,7 +1155,6 @@ class Tool( object, Dictifiable ):
             all_params.append( params )
 	#formatting for this parameter
 	if 'JPCNn681vcGV4KuvuT16' in expanded_incomings[0].keys():
-		print "I exist: JPCN.."
 		all_params[0]['JPCNn681vcGV4KuvuT16'] = expanded_incomings[0]['JPCNn681vcGV4KuvuT16']
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them

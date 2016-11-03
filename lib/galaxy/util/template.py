@@ -13,6 +13,4 @@ def fill_template( template_text, context=None, **kwargs ):
         raise TypeError("Template text specified as None to fill_template.")
     if not context:
         context = kwargs
-    
-    command_line = str( Template( source=template_text, searchList=[context]))
-    return command_line
+    return str( Template( source=template_text, searchList=[context] ) )    
