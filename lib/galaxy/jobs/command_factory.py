@@ -55,7 +55,7 @@ def build_command(
     queryList = []
     queryList.append(query)
     passwordName = ''
-    passwordIS = ''   
+    password = ''   
     while (query is not None) and jobOrig == jobId:
 	idVar = idVar + 1
 	jobId = query.job_id
@@ -66,7 +66,7 @@ def build_command(
     index = 0
     for item in queryList:
 	if str(item.name) == (passwordName):
-		passwordIS = item.value
+		password = item.value
 		item.value = unicode('""',"utf-8")
 		indexOfPass = index
 	index = index + 1
@@ -99,7 +99,7 @@ def build_command(
             external_command_shell = container.shell
         else:
             external_command_shell = shell
-        externalized_commands = __externalize_commands(job_wrapper, passwordIS, external_command_shell, commands_builder, remote_command_params)
+        externalized_commands = __externalize_commands(job_wrapper, password, external_command_shell, commands_builder, remote_command_params)
         if container and modify_command_for_container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside
@@ -134,7 +134,7 @@ def build_command(
     return commands_builder.build()
 
 
-def __externalize_commands(job_wrapper, passwordIS, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
+def __externalize_commands(job_wrapper, password, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
     config = job_wrapper.app.config
@@ -151,10 +151,15 @@ def __externalize_commands(job_wrapper, passwordIS, shell, commands_builder, rem
         set_e = "set -e\n"
 	
     #set environment variable in job execution script so it is accessible to user's tool file.
+    tool_commands = str(tool_commands) 
    
     envVar = ''
-    envVar = "export PASS=" + passwordIS
-
+    envVar = "export PASS=" + password
+    password = str(password[1:-1])
+    if tool_commands.find(password) != (-1):
+	password = " " + password
+	tool_commands = tool_commands.replace(password, '')
+    print "tool_commands: " + str(tool_commands)
     script_contents = u"#!%s\n%s%s%s\n%s" % (
         shell,
         integrity_injection,
