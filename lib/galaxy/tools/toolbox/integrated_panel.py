@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import time
 import traceback
+from xml.sax.saxutils import escape
 
 from .panel import ToolPanelElements
 from .panel import panel_item_types
@@ -78,7 +79,7 @@ class ManagesIntegratedToolPanelMixin:
                     section_id = item.id or ''
                     section_name = item.name or ''
                     section_version = item.version or ''
-                    os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
+                    os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( escape(section_id), escape(section_name), section_version ) )
                     for section_key, section_item_type, section_item in item.panel_items_iter():
                         if section_item_type == panel_item_types.TOOL:
                             if section_item:
