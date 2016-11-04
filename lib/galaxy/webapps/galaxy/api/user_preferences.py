@@ -119,12 +119,11 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         }
 
     @expose_api
-    def set_information(self, trans, user_id, **kwd):
+    def set_information(self, trans, user_id, payload={}, **kwd):
         '''
         Save a user's email address, public username, type, addresses etc.
         '''
         user = self._get_user(trans, user_id)
-        payload = kwd.get('payload')
         email = util.restore_text(kwd.get('email', ''))
         username = util.restore_text(kwd.get('username', ''))
         message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
@@ -151,28 +150,28 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         # Update public name
         if user.username != username:
             user.username = username
-        user_info_form_id = payload.get('user_info|form_id')
+        user_info_form_id = kwd.get('user_info|form_id')
         if user_info_form_id:
             prefix = 'user_info|'
             user_info_form = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_info_form_id))
             user_info_values = {}
-            for item in payload:
+            for item in kwd:
                 if item.startswith(prefix):
-                    user_info_values[item[len(prefix):]] = payload[item]
+                    user_info_values[item[len(prefix):]] = kwd[item]
             form_values = trans.model.FormValues(user_info_form, user_info_values)
             trans.sa_session.add(form_values)
             user.values = form_values
         # Update user addresses
         address_dicts = {}
         address_count = 0
-        for item in payload:
+        for item in kwd:
             match = re.match(r'^address_(?P<index>\d+)\|(?P<attribute>\S+)', item)
             if match:
                 groups = match.groupdict()
                 index = int(groups['index'])
                 attribute = groups['attribute']
                 address_dicts[index] = address_dicts.get(index) or {}
-                address_dicts[index][attribute] = payload[item]
+                address_dicts[index][attribute] = kwd[item]
                 address_count = max(address_count, index + 1)
         user.addresses = []
         for index in range(0, address_count):

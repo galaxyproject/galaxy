@@ -34,7 +34,7 @@ class BaseField(object):
             'label'     : self.label,
             'disabled'  : self.disabled,
             'optional'  : self.optional,
-            'value'     : escape( unicodify( self.value ), quote=True ) if isinstance( self.value, basestring ) else self.value
+            'value'     : self.value
         }
 
 
@@ -162,7 +162,7 @@ class CheckboxField(BaseField):
 
     @staticmethod
     def is_checked( value ):
-        if value is True:
+        if value in [ True, "true" ]:
             return True
         return isinstance( value, list ) and ( '__CHECKED__' in value or len( value ) == 2 )
 
@@ -175,7 +175,6 @@ class CheckboxField(BaseField):
     def to_dict( self ):
         d = super( CheckboxField, self ).to_dict()
         d[ 'type' ] = 'boolean'
-        d[ 'value' ] = 'true' if self.value else 'false'
         return d
 
 
@@ -494,7 +493,6 @@ class AddressField(BaseField):
     def to_dict( self ):
         d = super( AddressField, self ).to_dict()
         d[ 'type' ] = 'select'
-        d[ 'value'] = self.value
         d[ 'data' ] = []
         if self.user:
             for a in self.user.addresses:
