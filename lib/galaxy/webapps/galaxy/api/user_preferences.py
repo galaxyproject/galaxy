@@ -8,7 +8,8 @@ import re
 from markupsafe import escape
 from sqlalchemy import and_, true
 
-from galaxy import exceptions, util
+from galaxy import util
+from galaxy.exceptions import MessageException
 from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.tools.toolbox.filters import FilterFactory
@@ -158,13 +159,13 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         username = util.restore_text(kwd.get('username', ''))
         validate = self._validate_email_username(email, username)
         if validate['status'] == 'error':
-            raise exceptions.MessageException(validate['message'])
+            raise MessageException(validate['message'])
         # Validate the new values for email and username
         message = validate_email(trans, email, user)
         if not message and username:
             message = validate_publicname(trans, username, user)
         if message:
-            raise exceptions.MessageException(message)
+            raise MessageException(message)
         else:
             if (user.email != email):
                 # The user's private role name must match the user's login
@@ -210,7 +211,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             address = self._build_address_dict(each_address, payload)
             add_status = self._add_address(trans, user_id, address)
             if(add_status['status'] == 'error'):
-                raise exceptions.MessageException(add_status['message'])
+                raise MessageException(add_status['message'])
         trans.sa_session.flush()
         return {'message': 'User information has been updated'}
 
@@ -335,19 +336,19 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 # If a token was supplied, validate and set user
                 token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
                 if not token_result or not token_result.expiration_time > datetime.utcnow():
-                    raise exceptions.MessageException('Invalid or expired password reset token, please request a new one.')
+                    raise MessageException('Invalid or expired password reset token, please request a new one.')
                 user = token_result.user
             else:
                 # The user is changing their own password, validate their current password
                 user = self._get_user(trans, user_id)
                 (ok, message) = trans.app.auth_manager.check_change_password(user, current)
                 if not ok:
-                    raise exceptions.MessageException(message)
+                    raise MessageException(message)
             if user:
                 # Validate the new password
                 message = validate_password(trans, password, confirm)
                 if message:
-                    raise exceptions.MessageException(message)
+                    raise MessageException(message)
                 else:
                     # Save new password
                     user.set_password_cleartext(password)
@@ -367,7 +368,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                     trans.sa_session.flush()
                     trans.log_event('User change password')
                     return {'message': 'Password has been saved.'}
-            raise exceptions.MessageException('Failed to determine user, access denied.')
+            raise MessageException('Failed to determine user, access denied.')
         else:
             return {'message': 'Password unchanged.',
                     'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
@@ -499,7 +500,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
     def _get_user(self, trans, user_id):
         user = self.get_user(trans, user_id)
         if not user:
-            raise exceptions.MessageException('Invalid user (%s).' % user_id)
+            raise MessageException('Invalid user (%s).' % user_id)
         if user != trans.user and trans.user_is_admin():
-            raise exceptions.MessageException('Access denied.')
+            raise MessageException('Access denied.')
         return user
