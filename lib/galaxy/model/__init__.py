@@ -4199,8 +4199,8 @@ class FormDefinition( object, Dictifiable ):
         self.type = form_type
         self.layout = layout
 
-    def to_dict( self ):
-        form_def = { 'name': self.name, 'inputs': [] }
+    def to_dict( self, trans ):
+        form_def = { 'id': trans.security.encode_id( self.id ), 'name': self.name, 'inputs': [] }
         for field in self.fields:
             FieldClass = ( { 'AddressField'         : AddressField,
                              'CheckboxField'        : CheckboxField,

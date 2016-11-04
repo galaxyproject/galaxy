@@ -66,13 +66,9 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 'label': 'Public name',
                 'value': username,
                 'help': 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.'})
-            type_form_id = trans.security.encode_id(user.values.form_definition.id) if user and user.values else kwd.get('type_form_id', None)
-            if type_form_id:
-                type_form_model = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(type_form_id))
-                if type_form_model:
-                    inputs.append({'type': 'section', 'title': 'Custom options', 'inputs': type_form_model.to_dict()})
+            info_form_id = trans.security.encode_id(user.values.form_definition.id) if user and user.values else kwd.get('info_form_id')
             info_form_models = self.get_all_forms(trans, filter=dict(deleted=False), form_type=trans.app.model.FormDefinition.types.USER_INFO)
-            info_forms = [f.to_dict() for f in info_form_models]
+            info_forms = [f.to_dict(trans) for f in info_form_models]
             if info_forms:
                 info_field = {
                     'type': 'conditional',
@@ -82,13 +78,14 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                         'name': 'selected',
                         'label': 'User information',
                         'type': 'select',
+                        'value': info_form_id,
                         'help': '',
                         'data': []
                     }
                 }
                 for i, d in enumerate(info_forms):
-                    info_field['test_param']['data'].append({'label': d['name'], 'value': i})
-                    info_field['cases'].append({'value': i, 'inputs': d['inputs']})
+                    info_field['test_param']['data'].append({'label': d['name'], 'value': d['id']})
+                    info_field['cases'].append({'value': d['id'], 'inputs': d['inputs']})
                 inputs.append(info_field)
             address_field = AddressField('').to_dict()
             address_values = [address.to_dict(trans) for address in user.addresses]
