@@ -127,6 +127,38 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         Save a user's email address, public username, type, addresses etc.
         '''
         user = self._get_user(trans, user_id)
+        email = util.restore_text(kwd.get('email', ''))
+        username = util.restore_text(kwd.get('username', ''))
+        message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
+        if not message and username:
+            message = validate_publicname(trans, username, user)
+        if message:
+            raise MessageException(message)
+        # Update user email and user's private role name which must match
+        if (user.email != email):
+            private_role = trans.app.security_agent.get_private_user_role(user)
+            private_role.name = email
+            private_role.description = 'Private role for ' + email
+            user.email = email
+            trans.sa_session.add_all((user, private_role))
+            trans.sa_session.flush()
+            if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                user.active = False
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+                if self.send_verification_email(trans, user.email, user.username):
+                    message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                else:
+                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                    if trans.app.config.error_email_to is not None:
+                        message += ' Contact: %s' % trans.app.config.error_email_to
+                    raise MessageException(message)
+        # Update public name
+        if (user.username != username):
+            user.username = username
+            trans.sa_session.add(user)
+            trans.sa_session.flush()
+            trans.log_event('User information added')
         if user.values:
             user_type_fd_id = kwd.get('user_type_fd_id', 'none')
             if user_type_fd_id not in ['none']:
@@ -157,48 +189,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             if flush_needed:
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
-
-        # Editing email and username
-        email = util.restore_text(kwd.get('email', ''))
-        username = util.restore_text(kwd.get('username', ''))
-        validate = self._validate_email_username(email, username)
-        if validate['status'] == 'error':
-            raise MessageException(validate['message'])
-        # Validate the new values for email and username
-        message = validate_email(trans, email, user)
-        if not message and username:
-            message = validate_publicname(trans, username, user)
-        if message:
-            raise MessageException(message)
-        else:
-            if (user.email != email):
-                # The user's private role name must match the user's login
-                private_role = trans.app.security_agent.get_private_user_role(
-                    user)
-                private_role.name = email
-                private_role.description = 'Private role for ' + email
-                # Change the email itself
-                user.email = email
-                trans.sa_session.add_all((user, private_role))
-                trans.sa_session.flush()
-                if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                    user.active = False
-                    trans.sa_session.add(user)
-                    trans.sa_session.flush()
-                    is_activation_sent = self.send_verification_email(
-                        trans, user.email, user.username)
-                    if is_activation_sent:
-                        message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-                    else:
-                        message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                        if trans.app.config.error_email_to is not None:
-                            message += ' Contact: %s' % trans.app.config.error_email_to
-            if (user.username != username):
-                user.username = username
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
-                trans.log_event('User information added')
-
         # Add/save user address
         payload = kwd.get('payload')
         user.addresses = []
@@ -227,26 +217,16 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 addressdict[address.split("|")[1]] = payload[address]
         return addressdict
 
-    def _validate_email_username(self, email, username):
-        ''' Validate email and username '''
-        message = ''
-        status = 'done'
-        # Regex match for username
+    def _validate_email_publicname(self, email, username):
+        ''' Validate email and username using regex '''
         if not re.match('^[a-z0-9\-]{3,255}$', username):
-            status = 'error'
-            message = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
-
-        # Regex match for email
+            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
         if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-            status = 'error'
-            message = 'Please enter your valid email address'
-        elif email == '':
-            status = 'error'
-            message = 'Please enter your email address'
-        elif len(email) > 255:
-            status = 'error'
-            message = 'Email cannot be more than 255 characters in length'
-        return {'message': message, 'status': status}
+            return 'Please enter your valid email address'
+        if email == '':
+            return 'Please enter your email address'
+        if len(email) > 255:
+            return 'Email cannot be more than 255 characters in length'
 
     def _get_user_info_dict(self, trans, payload):
         ''' Extract user information attributes '''
