@@ -17,12 +17,11 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
-import requests
 from paste import httpserver
 
 from functional import database_contexts
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.util import asbool
+from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
@@ -254,9 +253,7 @@ def copy_database_template( source, db_path ):
         shutil.copy(source, db_path)
         assert os.path.exists(db_path)
     elif source.lower().startswith(("http://", "https://", "ftp://")):
-        r = requests.get(source)
-        with open(db_path, 'w') as f:
-            f.write(r.content)
+        download_to_file(source, db_path)
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
 
