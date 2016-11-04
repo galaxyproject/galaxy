@@ -22,8 +22,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     title           : 'Change communication settings',
                     description     : 'Enable or disable the communication feature to chat with other users.',
                     url             : 'api/user_preferences/' + Galaxy.user.id + '/communication',
-                    icon            : 'fa-child',
-                    auto_save       : true
+                    icon            : 'fa-child'
                 },
                 'permissions': {
                     title           : 'Change default permissions',
@@ -76,6 +75,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     }
                 }
             }
+            this.message = new Ui.Message();
             this.setElement( '<div/>' );
             this.render();
         },
@@ -84,6 +84,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var self = this;
             $.getJSON( Galaxy.root + 'api/user_preferences', function( data ) {
                 self.$preferences = $( '<div/>' ).addClass( 'ui-panel' )
+                                                 .append( self.message.$el )
                                                  .append( $( '<h2/>' ).append( 'User preferences' ) )
                                                  .append( $( '<p/>' ).append( 'You are logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
                                                  .append( self.$table = $( '<table/>' ).addClass( 'ui-panel-table' ) );
@@ -120,22 +121,17 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             icon   : options.icon,
                             inputs : options.inputs,
                             operations: {
+                                'submit': new Ui.ButtonIcon({
+                                    tooltip  : options.submit_tooltip || 'Store user preferences',
+                                    title    : options.submit_title || 'Save settings',
+                                    icon     : options.submit_icon || 'fa-save',
+                                    onclick  : function() { self._submit( form, options ) }
+                                }),
                                 'back': new Ui.ButtonIcon({
                                     icon     : 'fa-caret-left',
                                     tooltip  : 'Return to user preferences',
                                     title    : 'Preferences',
                                     onclick  : function() { form.remove(); self.$preferences.show(); }
-                                })
-                            },
-                            onchange : function() { options.auto_save && self._submit( form, options ) },
-                            buttons: !options.auto_save && {
-                                'submit': new Ui.Button({
-                                    tooltip  : options.submit_tooltip,
-                                    title    : options.submit_title || 'Save settings',
-                                    icon     : options.submit_icon || 'fa-save',
-                                    cls      : 'ui-button btn btn-primary',
-                                    floating : 'clear',
-                                    onclick  : function() { self._submit( form, options ) }
                                 })
                             }
                         });
@@ -149,16 +145,25 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         },
 
         _submit: function( form, options ) {
+            var self = this;
             $.ajax( {
                 url         : options.url,
                 data        : form.data.create(),
                 type        : 'PUT',
                 traditional : true,
             }).done( function( response ) {
+                var updated_values = false;
                 form.data.matchModel( response, function ( input, input_id ) {
                     form.field_list[ input_id ].value( input.value );
+                    updated_values = true;
                 });
-                form.message.update( { message: response.message, status: 'success' } );
+                if ( updated_values ) {
+                    form.message.update( { message: response.message, status: 'success' } );
+                } else {
+                    form.remove();
+                    self.$preferences.show();
+                    self.message.update( { message: response.message, status: 'success' } );
+                }
             }).fail( function( response ) {
                 form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
             });
