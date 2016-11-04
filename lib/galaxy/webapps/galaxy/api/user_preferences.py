@@ -81,7 +81,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                     'name': 'user_info',
                     'cases': [],
                     'test_param': {
-                        'name': 'selected',
+                        'name': 'form_id',
                         'label': 'User type',
                         'type': 'select',
                         'value': info_form_id,
@@ -154,11 +154,11 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         # Update public name
         if user.username != username:
             user.username = username
-        user_info_id = payload.get('user_info|selected')
-        if user_info_id:
-            user_info_form = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_info_id))
-            user_info_values = {}
+        user_info_form_id = payload.get('user_info|form_id')
+        if user_info_form_id:
             prefix = 'user_info|'
+            user_info_form = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_info_form_id))
+            user_info_values = {}
             for item in payload:
                 if item.startswith(prefix):
                     user_info_values[item[len(prefix):]] = payload[item]
