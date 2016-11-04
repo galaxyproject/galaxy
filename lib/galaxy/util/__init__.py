@@ -45,7 +45,10 @@ except ImportError:
     docutils_html4css1 = None
 
 from xml.etree import ElementTree, ElementInclude
-from xml.etree.ElementTree import ParseError
+try:
+    from xml.etree.ElementTree import ParseError
+except ImportError:
+    from xml.parsers.expat import ExpatError as ParseError
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
