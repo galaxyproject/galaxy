@@ -11,8 +11,9 @@ log = logging.getLogger(__name__)
 
 
 class BaseField(object):
-    def __init__( self, name, value=None, disabled=False, optional=True, **kwds ):
+    def __init__( self, name, value=None, disabled=False, optional=True, label=None, **kwds ):
         self.name = name
+        self.label = label
         self.value = value
         self.disabled = disabled
         self.optional = optional
@@ -30,6 +31,7 @@ class BaseField(object):
     def to_dict( self ):
         return {
             'name'      : self.name,
+            'label'     : self.label,
             'disabled'  : self.disabled,
             'optional'  : self.optional,
             'value'     : escape( unicodify( self.value ), quote=True ) if isinstance( self.value, basestring ) else self.value
