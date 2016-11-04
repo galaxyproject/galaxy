@@ -141,8 +141,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             private_role.name = email
             private_role.description = 'Private role for ' + email
             user.email = email
-            trans.sa_session.add_all((user, private_role))
-            trans.sa_session.flush()
+            trans.sa_session.add(private_role)
             if trans.app.config.user_activation_on:
                 user.active = False
                 if self.send_verification_email(trans, user.email, user.username):
@@ -197,6 +196,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 address_dicts[index] = address_dicts.get(index) or {}
                 address_dicts[index][attribute] = payload[item]
                 address_count = max(address_count, index+1)
+        for user_address in user.addresses:
+            trans.sa_session.delete(user_address)
         user.addresses = []
         for index in range(0, address_count):
             d = address_dicts[index]
