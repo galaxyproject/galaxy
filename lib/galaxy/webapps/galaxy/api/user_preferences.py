@@ -136,7 +136,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         if message:
             raise MessageException(message)
         # Update user email and user's private role name which must match
-        if (user.email != email):
+        if user.email != email:
             private_role = trans.app.security_agent.get_private_user_role(user)
             private_role.name = email
             private_role.description = 'Private role for ' + email
@@ -152,38 +152,19 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                         message += ' Contact: %s' % trans.app.config.error_email_to
                     raise MessageException(message)
         # Update public name
-        if (user.username != username):
+        if user.username != username:
             user.username = username
-        """if user.values:
-            user_type_fd_id = kwd.get('user_type_fd_id', 'none')
-            if user_type_fd_id not in ['none']:
-                user_type_form_definition = trans.sa_session.query(
-                    trans.app.model.FormDefinition).get(
-                        trans.security.decode_id(user_type_fd_id))
-            elif user.values:
-                user_type_form_definition = user.values.form_definition
-            else:
-                # User was created before creating any user_info forms
-                user_type_form_definition = None
-            if user_type_form_definition:
-                values = self._get_user_info_dict(trans, kwd.get('payload'))
-            else:
-                values = {}
-            flush_needed = False
-            if user.values:
-                # Edit user information
-                user.values.content = values
-                trans.sa_session.add(user.values)
-                flush_needed = True
-            elif values:
-                form_values = trans.model.FormValues(
-                    user_type_form_definition, values)
-                trans.sa_session.add(form_values)
-                user.values = form_values
-                flush_needed = True
-            if flush_needed:
-                trans.sa_session.add(user)
-                trans.sa_session.flush()"""
+        user_info_id = payload.get('user_info|selected')
+        if user_info_id:
+            user_info_form = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_info_id))
+            user_info_values = {}
+            for item in payload:
+                prefix = 'user_info|'
+                if item.startswith(prefix):
+                    user_info_values[item[len(prefix):]] = payload[item]
+            form_values = trans.model.FormValues(user_info_form, user_info_values)
+            trans.sa_session.add(form_values)
+            user.values = form_values
         # Update user addresses
         address_dicts = {}
         address_count = 0
@@ -196,8 +177,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 address_dicts[index] = address_dicts.get(index) or {}
                 address_dicts[index][attribute] = payload[item]
                 address_count = max(address_count, index+1)
-        for user_address in user.addresses:
-            trans.sa_session.delete(user_address)
         user.addresses = []
         for index in range(0, address_count):
             d = address_dicts[index]
