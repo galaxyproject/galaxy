@@ -127,6 +127,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         Save a user's email address, public username, type, addresses etc.
         '''
         user = self._get_user(trans, user_id)
+        payload = kwd.get('payload')
         email = util.restore_text(kwd.get('email', ''))
         username = util.restore_text(kwd.get('username', ''))
         message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
@@ -142,10 +143,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             user.email = email
             trans.sa_session.add_all((user, private_role))
             trans.sa_session.flush()
-            if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+            if trans.app.config.user_activation_on:
                 user.active = False
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
                 if self.send_verification_email(trans, user.email, user.username):
                     message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                 else:
@@ -156,10 +155,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         # Update public name
         if (user.username != username):
             user.username = username
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-            trans.log_event('User information added')
-        if user.values:
+        """if user.values:
             user_type_fd_id = kwd.get('user_type_fd_id', 'none')
             if user_type_fd_id not in ['none']:
                 user_type_form_definition = trans.sa_session.query(
@@ -188,34 +184,40 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 flush_needed = True
             if flush_needed:
                 trans.sa_session.add(user)
-                trans.sa_session.flush()
-        # Add/save user address
-        payload = kwd.get('payload')
+                trans.sa_session.flush()"""
+        # Update user addresses
+        address_dicts = {}
+        address_count = 0
+        for item in payload:
+            match = re.match(r'^address_(?P<index>\d+)\|(?P<attribute>\S+)', item)
+            if match:
+                groups = match.groupdict()
+                index = int(groups['index'])
+                attribute = groups['attribute']
+                address_dicts[index] = address_dicts.get(index) or {}
+                address_dicts[index][attribute] = payload[item]
+                address_count = max(address_count, index+1)
         user.addresses = []
-        addressnames = list()
-        # Get addresses from payload
-        alladdressnames = [
-            item for item in payload if item.find("address") > -1]
-        for item in alladdressnames:
-            name = item.split('|')[0]
-            if name not in addressnames:
-                addressnames.append(name)
-
-        for each_address in addressnames:
-            address = self._build_address_dict(each_address, payload)
-            add_status = self._add_address(trans, user_id, address)
-            if(add_status['status'] == 'error'):
-                raise MessageException(add_status['message'])
+        for index in range(0, address_count):
+            d = address_dicts[index]
+            user_address = trans.model.UserAddress(user=user,
+                                                   desc=d.get('short_desc', ''),
+                                                   name=d.get('name', ''),
+                                                   institution=d.get('institution', ''),
+                                                   address=d.get('address', ''),
+                                                   city=d.get('city', ''),
+                                                   state=d.get('state', ''),
+                                                   postal_code=d.get('postal_code', ''),
+                                                   country=d.get('country', ''),
+                                                   phone=d.get('phone', ''))
+            user.addresses.append(user_address)
+            trans.sa_session.add(user_address)
+            trans.sa_session.flush()
+            trans.log_event('User address added')
+        trans.sa_session.add(user)
         trans.sa_session.flush()
-        return {'message': 'User information has been updated'}
-
-    def _build_address_dict(self, address_id, payload):
-        ''' Build user addresses' dictionary '''
-        addressdict = dict()
-        for address in payload:
-            if address_id == address.split("|")[0]:
-                addressdict[address.split("|")[1]] = payload[address]
-        return addressdict
+        trans.log_event('User information added')
+        return {'message': 'User information has been updated.'}
 
     def _validate_email_publicname(self, email, username):
         ''' Validate email and username using regex '''
@@ -228,82 +230,24 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length'
 
-    def _get_user_info_dict(self, trans, payload):
-        ''' Extract user information attributes '''
-        user_info_fields = [item for item in payload
-                            if item.find("user_info") > -1]
-        user_info_dict = dict()
-        for item in user_info_fields:
-            value = payload[item]
-            attribute = item.replace('user_info|', '')
-            user_info_dict[attribute] = value
-        return user_info_dict
-
-    def _add_address(self, trans, user_id, params):
-        """ Add new address """
-        is_admin = trans.user_is_admin()
-        if is_admin:
-            if not user_id:
-                return trans.show_error_message(
-                    "You must specify a user to add a new address to.")
-            user = trans.sa_session.query(trans.app.model.User).get(
-                trans.security.decode_id(user_id))
-        else:
-            user = trans.user
-        short_desc = util.restore_text(params.get('short_desc', ''))
-        name = util.restore_text(params.get('name', ''))
-        institution = util.restore_text(params.get('institution', ''))
-        address = util.restore_text(params.get('address', ''))
-        city = util.restore_text(params.get('city', ''))
-        state = util.restore_text(params.get('state', ''))
-        # Handle the case of int value
-        postal_code = str(params.get('postal_code', ''))
-        country = util.restore_text(params.get('country', ''))
-        # Handle the case of int value
-        phone = str(params.get('phone', ''))
-        if not trans.app.config.allow_user_creation and not is_admin:
-            return trans.show_error_message('User registration is disabled. Please contact your local Galaxy administrator for an account.')
-        error_status = True
-        if not short_desc:
-            message = 'Enter a short description for this address'
-        elif not name:
-            message = 'Enter the name'
-        elif not institution:
-            message = 'Enter the institution associated with the user'
-        elif not address:
-            message = 'Enter the address'
-        elif not city:
-            message = 'Enter the city'
-        elif not state:
-            message = 'Enter the state/province/region'
-        elif not postal_code:
-            message = 'Enter the postal code'
-        elif not country:
-            message = 'Enter the country'
-        else:
-            error_status = False
-            user_address = trans.model.UserAddress(user=user,
-                                                   desc=short_desc,
-                                                   name=name,
-                                                   institution=institution,
-                                                   address=address,
-                                                   city=city,
-                                                   state=state,
-                                                   postal_code=postal_code,
-                                                   country=country,
-                                                   phone=phone)
-            trans.sa_session.add(user_address)
-            trans.sa_session.flush()
-            trans.log_event('User address added')
-            return {
-                'message': 'Address (%s) has been added.' % escape(user_address.desc),
-                'status': 'done'
-            }
-        if error_status:
-            return {
-                'message': escape(message),
-                'status': 'error'
-            }
+    def _validate_address(self, trans, user, params):
+        """ Validate address """
+        if not params.get('short_desc'):
+            MessageException('Enter a short description for this address.')
+        if not params.get('name'):
+            MessageException('Enter the name')
+        if not params.get('institution'):
+            MessageException('Enter the institution associated with the user.')
+        if not params.get('address'):
+            MessageException('Enter the address.')
+        if not params.get('city'):
+            MessageException('Enter the city.')
+        if not params.get('state'):
+            MessageException('Enter the state/province/region.')
+        if not params.get('postal_code'):
+            MessageException('Enter the postal code.')
+        if not params.get('country'):
+            MessageException('Enter the country.')
 
     @expose_api
     def password(self, trans, user_id, payload={}, **kwd):

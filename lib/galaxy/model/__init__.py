@@ -4837,6 +4837,7 @@ class UserAddress( object ):
     def to_dict( self, trans ):
         return { 'id'           : trans.security.encode_id( self.id ),
                  'name'         : sanitize_html( self.name ),
+                 'short_desc'   : sanitize_html( self.desc ),
                  'institution'  : sanitize_html( self.institution ),
                  'address'      : sanitize_html( self.address ),
                  'city'         : sanitize_html( self.city ),
