@@ -264,7 +264,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             user_info_dict[attribute] = value
         return user_info_dict
 
-    def __add_address(self, trans, user_id, params):
+    def _add_address(self, trans, user_id, params):
         """ Add new address """
         is_admin = trans.user_is_admin()
         if is_admin:
