@@ -490,10 +490,15 @@ class AddressField(BaseField):
         return self.select_address.get_html( disabled=disabled ) + address_html
 
     def to_dict( self ):
-        inputs = []
-        for field in self.fields():
-            inputs.append( { 'type': 'text', 'name': field[ 0 ], 'label': field[ 1 ], 'help': field[ 2 ], 'value': self.value.get( field[ 0 ] ) if self.value else None } )
-        return { 'title': 'Address', 'name': self.name, 'type': 'section', 'inputs': inputs }
+        d = super( AddressField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        d[ 'value'] = self.value
+        d[ 'data' ] = []
+        if self.user:
+            for a in self.user.addresses:
+                if not a.deleted:
+                    d[ 'data' ].append( { 'label': a.desc, 'value': str( a.id ) } )
+        return d
 
 
 class WorkflowField( BaseField ):

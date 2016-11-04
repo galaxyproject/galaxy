@@ -66,9 +66,15 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 'label': 'Public name',
                 'value': username,
                 'help': 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.'})
-            info_form_id = trans.security.encode_id(user.values.form_definition.id) if user and user.values else kwd.get('info_form_id')
+            info_form_id = trans.security.encode_id(user.values.form_definition.id) if user.values else None
+            info_form_values = user.values.content if user.values else None
             info_form_models = self.get_all_forms(trans, filter=dict(deleted=False), form_type=trans.app.model.FormDefinition.types.USER_INFO)
-            info_forms = [f.to_dict(trans) for f in info_form_models]
+            info_forms = []
+            for f in info_form_models:
+                values = None
+                if info_form_id == trans.security.encode_id(f.id):
+                    values = info_form_values
+                info_forms.append(f.to_dict(trans, user, values=values))
             if info_forms:
                 info_field = {
                     'type': 'conditional',
@@ -76,7 +82,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                     'cases': [],
                     'test_param': {
                         'name': 'selected',
-                        'label': 'User information',
+                        'label': 'User type',
                         'type': 'select',
                         'value': info_form_id,
                         'help': '',
@@ -87,16 +93,18 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                     info_field['test_param']['data'].append({'label': d['name'], 'value': d['id']})
                     info_field['cases'].append({'value': d['id'], 'inputs': d['inputs']})
                 inputs.append(info_field)
-            address_field = AddressField('').to_dict()
+            address_inputs = []
+            for field in AddressField.fields():
+                address_inputs.append({'type': 'text', 'name': field[0], 'label': field[1], 'help': field[2]})
+            address_repeat = {'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_inputs, 'cache': []}
             address_values = [address.to_dict(trans) for address in user.addresses]
-            address_repeat = {'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_field['inputs'], 'cache': []}
             for address in address_values:
-                address_inputs = []
-                for input in address_repeat['inputs']:
+                address_cache = []
+                for input in address_inputs:
                     input_copy = input.copy()
-                    input_copy['value'] = address.get(input['name'], None)
-                    address_inputs.append(input_copy)
-                address_repeat['cache'].append(address_inputs)
+                    input_copy['value'] = address.get(input['name'])
+                    address_cache.append(input_copy)
+                address_repeat['cache'].append(address_cache)
             inputs.append(address_repeat)
         else:
             if user.active_repositories:
@@ -107,7 +115,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             'webapp': trans.webapp.name,
             'user_id': trans.security.encode_id(trans.user.id),
             'is_admin': trans.user_is_admin(),
-            'values': user.values,
             'email': email,
             'username': username,
             'addresses': [address.to_dict(trans) for address in user.addresses],
