@@ -41,6 +41,7 @@ define(['utils/utils',
                 Galaxy.emit.debug('form-parameters::_addRow()', 'Auto matched field type (' + input_def.type + ').');
             }
             input_def.value === undefined && ( input_def.value = null );
+            field.value( input_def.value );
             return field;
         },
 
