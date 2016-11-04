@@ -907,9 +907,11 @@ class InstallRepositoryManager( object ):
                 if install_resolver_dependencies:
                     requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
                     [self._view.install_dependency(id=None, **req) for req in requirements]
+                    cached_requirements = []
                     for tool_d in metadata['tools']:
                         tool = self.app.toolbox._tools_by_id.get(tool_d['guid'], None)
-                        if tool:
+                        if tool and tool.requirements not in cached_requirements:
+                            cached_requirements.append(tool.requirements)
                             tool.build_dependency_cache()
                 # Get the tool_versions from the tool shed for each tool in the installed change set.
                 self.update_tool_shed_repository_status( tool_shed_repository,
