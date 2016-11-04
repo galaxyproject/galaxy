@@ -201,15 +201,15 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         for index in range(0, address_count):
             d = address_dicts[index]
             user_address = trans.model.UserAddress(user=user,
-                                                   desc=d.get('short_desc', ''),
-                                                   name=d.get('name', ''),
-                                                   institution=d.get('institution', ''),
-                                                   address=d.get('address', ''),
-                                                   city=d.get('city', ''),
-                                                   state=d.get('state', ''),
-                                                   postal_code=d.get('postal_code', ''),
-                                                   country=d.get('country', ''),
-                                                   phone=d.get('phone', ''))
+                                                   desc=str(d.get('short_desc', '')),
+                                                   name=str(d.get('name', '')),
+                                                   institution=str(d.get('institution', '')),
+                                                   address=str(d.get('address', '')),
+                                                   city=str(d.get('city', '')),
+                                                   state=str(d.get('state', '')),
+                                                   postal_code=str(d.get('postal_code', '')),
+                                                   country=str(d.get('country', '')),
+                                                   phone=str(d.get('phone', '')))
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
             trans.sa_session.flush()
