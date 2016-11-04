@@ -175,7 +175,7 @@ class CheckboxField(BaseField):
     def to_dict( self ):
         d = super( CheckboxField, self ).to_dict()
         d[ 'type' ] = 'boolean'
-        d[ 'value' ] = 'true' if self.checked else 'false'
+        d[ 'value' ] = 'true' if self.value else 'false'
         return d
 
 
