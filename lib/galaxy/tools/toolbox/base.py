@@ -993,7 +993,7 @@ def _filter_for_panel( item, item_type, filters, context ):
             try:
                 if not filter_method( context, filter_item ):
                     return False
-            except Exception, e:
+            except Exception as e:
                 raise MessageException( "Toolbox filter exception from \'%s\': %s." % ( filter_method.__name__, e ) )
         return True
     if item_type == panel_item_types.TOOL:
