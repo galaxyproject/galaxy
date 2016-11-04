@@ -121,17 +121,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         '''
         Save a user's email address, public username, type, addresses etc.
         '''
-        is_admin = trans.user_is_admin()
-        if user_id and is_admin:
-            user = trans.sa_session.query(
-                trans.app.model.User).get(
-                    trans.security.decode_id(user_id))
-        elif user_id and (not trans.user or trans.user.id !=
-                          trans.security.decode_id(user_id)):
-            message = 'Invalid user id'
-            user = None
-        else:
-            user = trans.user
+        user = self._get_user(trans, user_id)
         if user.values:
             user_type_fd_id = kwd.get('user_type_fd_id', 'none')
             if user_type_fd_id not in ['none']:
