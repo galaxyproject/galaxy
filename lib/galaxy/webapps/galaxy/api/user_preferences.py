@@ -158,8 +158,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         if user_info_id:
             user_info_form = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_info_id))
             user_info_values = {}
+            prefix = 'user_info|'
             for item in payload:
-                prefix = 'user_info|'
                 if item.startswith(prefix):
                     user_info_values[item[len(prefix):]] = payload[item]
             form_values = trans.model.FormValues(user_info_form, user_info_values)
