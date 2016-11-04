@@ -90,7 +90,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                     info_field['test_param']['data'].append({'label': d['name'], 'value': d['id']})
                     info_field['cases'].append({'value': d['id'], 'inputs': d['inputs']})
                 inputs.append(info_field)
-            address_inputs = []
+            address_inputs = [{'type': 'hidden', 'name': 'id', 'hidden': True}]
             for field in AddressField.fields():
                 address_inputs.append({'type': 'text', 'name': field[0], 'label': field[1], 'help': field[2]})
             address_repeat = {'title': 'Address', 'name': 'address', 'type': 'repeat', 'inputs': address_inputs, 'cache': []}
@@ -177,19 +177,26 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         user.addresses = []
         for index in range(0, address_count):
             d = address_dicts[index]
-            user_address = trans.model.UserAddress(user=user,
-                                                   desc=str(d.get('short_desc', '')),
-                                                   name=str(d.get('name', '')),
-                                                   institution=str(d.get('institution', '')),
-                                                   address=str(d.get('address', '')),
-                                                   city=str(d.get('city', '')),
-                                                   state=str(d.get('state', '')),
-                                                   postal_code=str(d.get('postal_code', '')),
-                                                   country=str(d.get('country', '')),
-                                                   phone=str(d.get('phone', '')))
+            if d.get('id'):
+                try:
+                    user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(d['id']))
+                except Exception as e:
+                    raise MessageException('Failed to access user address (%s).' % d['id'])
+            else:
+                user_address = trans.model.UserAddress()
+                trans.log_event('User address added')
+            user_address.user=user
+            user_address.desc=str(d.get('short_desc', ''))
+            user_address.name=str(d.get('name', ''))
+            user_address.institution=str(d.get('institution', ''))
+            user_address.address=str(d.get('address', ''))
+            user_address.city=str(d.get('city', ''))
+            user_address.state=str(d.get('state', ''))
+            user_address.postal_code=str(d.get('postal_code', ''))
+            user_address.country=str(d.get('country', ''))
+            user_address.phone=str(d.get('phone', ''))
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
-            trans.log_event('User address added')
         trans.sa_session.add(user)
         trans.sa_session.flush()
         trans.log_event('User information added')
