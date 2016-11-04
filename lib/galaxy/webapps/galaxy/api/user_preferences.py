@@ -213,7 +213,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                                                    phone=str(d.get('phone', '')))
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
-            trans.sa_session.flush()
             trans.log_event('User address added')
         trans.sa_session.add(user)
         trans.sa_session.flush()
