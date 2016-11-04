@@ -45,6 +45,8 @@ log = logging.getLogger(__name__)
 class BlastXml(GenericXml):
     """NCBI Blast XML Output data"""
     file_ext = "blastxml"
+    edam_format = "format_3331"
+    edam_data = "data_0857"
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
