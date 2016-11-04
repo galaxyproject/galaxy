@@ -424,7 +424,7 @@ class SelectField(BaseField):
 class AddressField(BaseField):
     @staticmethod
     def fields():
-        return [  ( "short_desc", "Short address description", "Required" ),
+        return [  ( "desc", "Short address description", "Required" ),
                   ( "name", "Name", "Required" ),
                   ( "institution", "Institution", "Required" ),
                   ( "address", "Address", "Required" ),

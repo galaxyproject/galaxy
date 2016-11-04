@@ -185,16 +185,9 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             else:
                 user_address = trans.model.UserAddress()
                 trans.log_event('User address added')
+            for field in AddressField.fields():
+                setattr(user_address, field[0], str(d.get(field[0], '')))
             user_address.user=user
-            user_address.desc=str(d.get('short_desc', ''))
-            user_address.name=str(d.get('name', ''))
-            user_address.institution=str(d.get('institution', ''))
-            user_address.address=str(d.get('address', ''))
-            user_address.city=str(d.get('city', ''))
-            user_address.state=str(d.get('state', ''))
-            user_address.postal_code=str(d.get('postal_code', ''))
-            user_address.country=str(d.get('country', ''))
-            user_address.phone=str(d.get('phone', ''))
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
         trans.sa_session.add(user)
@@ -215,7 +208,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
 
     def _validate_address(self, trans, user, params):
         """ Validate address """
-        if not params.get('short_desc'):
+        if not params.get('desc'):
             MessageException('Enter a short description for this address.')
         if not params.get('name'):
             MessageException('Enter the name')
