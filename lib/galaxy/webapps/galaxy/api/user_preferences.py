@@ -4,10 +4,7 @@ API operations on User Preferences objects.
 import logging
 import datetime
 import re
-
-from markupsafe import escape
 from sqlalchemy import and_, true
-
 from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.managers import users
@@ -176,7 +173,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 attribute = groups['attribute']
                 address_dicts[index] = address_dicts.get(index) or {}
                 address_dicts[index][attribute] = payload[item]
-                address_count = max(address_count, index+1)
+                address_count = max(address_count, index + 1)
         user.addresses = []
         for index in range(0, address_count):
             d = address_dicts[index]
