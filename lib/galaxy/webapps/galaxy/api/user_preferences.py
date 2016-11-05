@@ -71,7 +71,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 values = None
                 if info_form_id == trans.security.encode_id(f.id):
                     values = info_form_values
-                info_forms.append(f.to_dict(trans, user, values=values))
+                info_forms.append(f.to_dict(user=user, values=values, security=trans.security))
             if info_forms:
                 info_field = {
                     'type': 'conditional',
@@ -192,7 +192,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         trans.sa_session.add(user)
         trans.sa_session.flush()
         trans.log_event('User information added')
-        return {'message': 'User information has been updated.'}
+        return {'message': 'User information has been saved.'}
 
     def _validate_email_publicname(self, email, username):
         ''' Validate email and username using regex '''

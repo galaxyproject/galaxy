@@ -416,7 +416,7 @@ class SelectField(BaseField):
         d[ 'multiple' ] = self.multiple
         d[ 'data' ] = []
         for value in self.selectlist:
-            d[ 'data' ].append( { 'label': unicodify( value ), 'value': escape( unicodify( value ), quote=True ) } )
+            d[ 'data' ].append( { 'label': value, 'value': value } )
         return d
 
 
@@ -433,9 +433,10 @@ class AddressField(BaseField):
                   ( "country", "Country", "Required" ),
                   ( "phone", "Phone", "" )  ]
 
-    def __init__(self, name, user=None, value=None, params=None, **kwds):
+    def __init__(self, name, user=None, value=None, params=None, security=None, **kwds):
         super( AddressField, self ).__init__( name, value, **kwds )
         self.user = user
+        self.security = security
         self.select_address = None
         self.params = params
 
@@ -494,10 +495,10 @@ class AddressField(BaseField):
         d = super( AddressField, self ).to_dict()
         d[ 'type' ] = 'select'
         d[ 'data' ] = []
-        if self.user:
+        if self.user and self.security:
             for a in self.user.addresses:
                 if not a.deleted:
-                    d[ 'data' ].append( { 'label': a.desc, 'value': str( a.id ) } )
+                    d[ 'data' ].append( { 'label': a.desc, 'value': self.security.encode_id( a.id ) } )
         return d
 
 

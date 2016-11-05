@@ -4199,20 +4199,20 @@ class FormDefinition( object, Dictifiable ):
         self.type = form_type
         self.layout = layout
 
-    def to_dict( self, trans, user=None, values=None ):
+    def to_dict( self, user=None, values=None, security=None ):
         values = values or {}
-        form_def = { 'id': trans.security.encode_id( self.id ), 'name': self.name, 'inputs': [] }
+        form_def = { 'id': security.encode_id( self.id ) if security else self.id, 'name': self.name, 'inputs': [] }
         for field in self.fields:
             FieldClass = ( { 'AddressField'         : AddressField,
                              'CheckboxField'        : CheckboxField,
                              'HistoryField'         : HistoryField,
-                             'PasswordFiled'        : PasswordField,
+                             'PasswordField'        : PasswordField,
                              'SelectField'          : SelectField,
                              'TextArea'             : TextArea,
                              'TextField'            : TextField,
                              'WorkflowField'        : WorkflowField,
                              'WorkflowMappingField' : WorkflowMappingField } ).get( field[ 'type' ], TextField )
-            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ] ), **field ).to_dict() )
+            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ] ), security=security, **field ).to_dict() )
         return form_def
 
     def grid_fields( self, grid_index ):
