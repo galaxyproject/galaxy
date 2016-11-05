@@ -4212,7 +4212,7 @@ class FormDefinition( object, Dictifiable ):
                              'TextField'            : TextField,
                              'WorkflowField'        : WorkflowField,
                              'WorkflowMappingField' : WorkflowMappingField } ).get( field[ 'type' ], TextField )
-            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ] ), security=security, **field ).to_dict() )
+            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ], field[ 'default' ] ), security=security, **field ).to_dict() )
         return form_def
 
     def grid_fields( self, grid_index ):
