@@ -45,6 +45,10 @@ except ImportError:
     docutils_html4css1 = None
 
 from xml.etree import ElementTree, ElementInclude
+try:
+    from xml.etree.ElementTree import ParseError
+except ImportError:
+    from xml.parsers.expat import ExpatError as ParseError
 
 from .inflection import Inflector, English
 inflector = Inflector(English)
@@ -184,7 +188,11 @@ def parse_xml( fname ):
         def doctype( *args ):
             pass
     tree = ElementTree.ElementTree()
-    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    try:
+        root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    except ParseError:
+        log.exception("Error parsing file %s", fname)
+        raise
     ElementInclude.include( root )
     return tree
 
