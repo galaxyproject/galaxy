@@ -1,0 +1,57 @@
+# This is a sample file distributed with Galaxy that is used to define a
+# list of protein domain databases, using three columns tab separated
+# (longer whitespace are TAB characters):
+#
+# <unique_id>{tab}<database_caption>{tab}<base_name_path>
+#
+# The captions typically contain spaces and might end with the build date.
+# It is important that the actual database name does not have a space in
+# it, and that there are only two tabs on each line.
+#
+# You can download the NCBI provided databases as tar-balls from here:
+# ftp://ftp.ncbi.nih.gov/pub/mmdb/cdd/little_endian/
+#
+# For simplicity, many Galaxy servers are configured to offer just a live
+# version of each NCBI BLAST database (updated with the NCBI provided
+# Perl scripts or similar). In this case, we recommend using the case
+# sensistive base-name of the NCBI BLAST databases as the unique id.
+# Consistent naming is important for sharing workflows between Galaxy
+# servers.
+#
+# For example, consider the NCBI Conserved Domains Database (CDD), where
+# you have downloaded and decompressed the files under the directory
+# /data/blastdb/domains/ meaning at the command line BLAST+ would be
+# run as follows any would look at the files /data/blastdb/domains/Cdd.*:
+#
+# $ rpsblast -db /data/blastdb/domains/Cdd -query ...
+#
+# In this case use Cdd (title case to match the NCBI file naming) as the
+# unique id in the first column of blastdb_d.loc, giving an entry like
+# this:
+#
+# Cdd{tab}NCBI Conserved Domains Database (CDD){tab}/data/blastdb/domains/Cdd
+#
+# Your blastdb_d.loc file should include an entry per line for each "base name"
+# you have stored. For example:
+#
+# Cdd{tab}NCBI CDD{tab}/data/blastdb/domains/Cdd
+# Kog{tab}KOG (eukaryotes){tab}/data/blastdb/domains/Kog
+# Cog{tab}COG (prokaryotes){tab}/data/blastdb/domains/Cog
+# Pfam{tab}Pfam-A{tab}/data/blastdb/domains/Pfam
+# Smart{tab}SMART{tab}/data/blastdb/domains/Smart
+# Tigr{tab}TIGR	/data/blastdb/domains/Tigr
+# Prk{tab}Protein Clusters database{tab}/data/blastdb/domains/Prk
+# ...etc...
+#
+# Alternatively, rather than a "live" mirror of the NCBI databases which
+# are updated automatically, for full reproducibility the Galaxy Team
+# recommend saving date-stamped copies of the databases. In this case
+# your blastdb_d.loc file should include an entry per line for each
+# version you have stored. For example:
+#
+# Cdd_05Jun2010{tab}NCBI CDD 05 Jun 2010{tab}/data/blastdb/domains/05Jun2010/Cdd
+# Cdd_15Aug2010{tab}NCBI CDD 15 Aug 2010{tab}/data/blastdb/domains/15Aug2010/Cdd
+# ...etc...
+#
+# See also blastdb.loc which is for any nucleotide BLAST database, and
+# blastdb_p.loc which is for any protein BLAST databases.
