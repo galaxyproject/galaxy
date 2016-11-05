@@ -11,12 +11,13 @@ log = logging.getLogger(__name__)
 
 
 class BaseField(object):
-    def __init__( self, name, value=None, disabled=False, optional=True, label=None, **kwds ):
+    def __init__( self, name, value=None, label=None, **kwds ):
         self.name = name
         self.label = label
         self.value = value
-        self.disabled = disabled
-        self.optional = optional
+        self.disabled = kwds.get( 'disabled', False )
+        self.optional = kwds.get( 'optional', True ) and kwds.get( 'required', 'optional' ) == 'optional'
+        self.help = kwds.get( 'helptext' )
 
     def get_html( self, prefix="" ):
         """Returns the html widget corresponding to the parameter"""
@@ -34,7 +35,8 @@ class BaseField(object):
             'label'     : self.label,
             'disabled'  : self.disabled,
             'optional'  : self.optional,
-            'value'     : self.value
+            'value'     : self.value,
+            'help'      : self.help
         }
 
 
