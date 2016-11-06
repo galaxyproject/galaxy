@@ -95,6 +95,13 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         interacting with the rest of the Galaxy app or message queues, etc....
         """
 
+    def handle_panel_update(self, section_dict):
+        """Extension-point for Galaxy-app specific reload logic.
+
+        This abstract representation of the toolbox shouldn't have details about
+        interacting with the rest of the Galaxy app or message queues, etc....
+        """
+
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         raise NotImplementedError()
 
@@ -236,13 +243,18 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 'id': section_id,
                 'version': '',
             }
-            tool_section = ToolSection( section_dict )
-            self._tool_panel.append_section( tool_panel_section_key, tool_section )
-            log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
+            self.handle_panel_update(section_dict)
+            tool_section = self._tool_panel[ tool_panel_section_key ]
             self._save_integrated_tool_panel()
         else:
             tool_section = None
         return tool_panel_section_key, tool_section
+
+    def create_section(self, section_dict):
+        tool_section = ToolSection(section_dict)
+        self._tool_panel.append_section(tool_section.id, tool_section)
+        log.debug("Loading new tool panel section: %s" % str(tool_section.name))
+        return tool_section
 
     def get_integrated_section_for_tool( self, tool ):
         tool_id = tool.id

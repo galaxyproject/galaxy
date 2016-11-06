@@ -9,6 +9,7 @@ import os
 import re
 import tarfile
 import tempfile
+import time
 import threading
 import urllib
 from datetime import datetime
@@ -24,7 +25,10 @@ from galaxy import model
 from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
-from galaxy.queue_worker import reload_toolbox
+from galaxy.queue_worker import (
+    reload_toolbox,
+    send_control_task
+)
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -114,6 +118,14 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def handle_reload_toolbox(self):
         reload_toolbox(self.app)
+
+    def handle_panel_update(self, section_dict):
+        send_control_task(self.app, 'create_panel_section', noop_self=False, kwargs=section_dict)
+        max_wait = 10
+        i = 0
+        while not section_dict['id'] in self._tool_panel and i < max_wait:
+            i += 1
+            time.sleep(1)
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
