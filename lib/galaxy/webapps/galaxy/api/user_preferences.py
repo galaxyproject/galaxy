@@ -5,7 +5,6 @@ import logging
 import datetime
 import re
 from sqlalchemy import and_, true
-from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
