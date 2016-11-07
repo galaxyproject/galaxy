@@ -2358,6 +2358,7 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="select"/>
       <xs:enumeration value="data_column"/>
       <xs:enumeration value="hidden"/>
+      <xs:enumeration value="hidden_data"/>
       <xs:enumeration value="baseurl"/>
       <xs:enumeration value="file"/>
       <xs:enumeration value="data"/>
