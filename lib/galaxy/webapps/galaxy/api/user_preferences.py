@@ -229,7 +229,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         """
         Allows to change a user password.
         """
-        if kwd:
+        if trans.get_request_method() == 'PUT':
             password = kwd.get('password')
             confirm = kwd.get('confirm')
             current = kwd.get('current')
@@ -287,7 +287,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         user = self._get_user(trans, user_id)
         roles = user.all_roles()
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-        if kwd:
+        if trans.get_request_method() == 'PUT':
             permissions = {}
             for index, action in permitted_actions:
                 action_id = trans.app.security_agent.get_action(action.action).action
@@ -317,7 +317,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         filter_types = odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
                               ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_section_filters}),
                               ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_label_filters})])
-        if kwd:
+        if trans.get_request_method() == 'PUT':
             for filter_type in filter_types:
                 new_filters = []
                 for prefixed_name in kwd:
@@ -363,7 +363,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         Get/Create API key.
         """
         user = self._get_user(trans, user_id)
-        if kwd:
+        if trans.get_request_method() == 'PUT':
             self.create_api_key(trans, user)
             message = 'Generated a new web API key.'
         else:

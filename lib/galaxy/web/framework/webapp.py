@@ -304,6 +304,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         # NOTE: raising some errors (such as httpexceptions), will remove the header
         # (e.g. client will get both cors error and 404 inside that)
 
+    def get_request_method( self ):
+        """Returns request method."""
+        return self.environ.get( 'REQUEST_METHOD' )
+
     def get_user( self ):
         """Return the current user if logged in or None."""
         if self.galaxy_session:
