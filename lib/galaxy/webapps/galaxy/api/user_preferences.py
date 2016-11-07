@@ -75,7 +75,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             if info_forms:
                 info_field = {
                     'type': 'conditional',
-                    'name': 'user_info',
+                    'name': 'info',
                     'cases': [],
                     'test_param': {
                         'name': 'form_id',
@@ -150,9 +150,9 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         # Update public name
         if user.username != username:
             user.username = username
-        user_info_form_id = kwd.get('user_info|form_id')
+        user_info_form_id = kwd.get('info|form_id')
         if user_info_form_id:
-            prefix = 'user_info|'
+            prefix = 'info|'
             user_info_form = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_info_form_id))
             user_info_values = {}
             for item in kwd:
@@ -180,13 +180,13 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 try:
                     user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(d['id']))
                 except Exception as e:
-                    raise MessageException('Failed to access user address (%s).' % d['id'])
+                    raise MessageException('Failed to access user address (%s). %s' % (d['id'], e))
             else:
                 user_address = trans.model.UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
                 setattr(user_address, field[0], str(d.get(field[0], '')))
-            user_address.user=user
+            user_address.user = user
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
         trans.sa_session.add(user)
