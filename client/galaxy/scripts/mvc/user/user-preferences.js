@@ -148,8 +148,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             var self = this;
             $.ajax( {
                 url         : options.url,
-                data        : form.data.create(),
+                data        : JSON.stringify(form.data.create()),
                 type        : 'PUT',
+                contentType : 'application/json',
                 traditional : true,
             }).done( function( response ) {
                 var updated_values = false;
