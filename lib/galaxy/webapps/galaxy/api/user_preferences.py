@@ -206,25 +206,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length'
 
-    def _validate_address(self, trans, user, params):
-        """ Validate address """
-        if not params.get('desc'):
-            MessageException('Enter a short description for this address.')
-        if not params.get('name'):
-            MessageException('Enter the name')
-        if not params.get('institution'):
-            MessageException('Enter the institution associated with the user.')
-        if not params.get('address'):
-            MessageException('Enter the address.')
-        if not params.get('city'):
-            MessageException('Enter the city.')
-        if not params.get('state'):
-            MessageException('Enter the state/province/region.')
-        if not params.get('postal_code'):
-            MessageException('Enter the postal code.')
-        if not params.get('country'):
-            MessageException('Enter the country.')
-
     @expose_api
     def password(self, trans, user_id, payload={}, **kwd):
         """
