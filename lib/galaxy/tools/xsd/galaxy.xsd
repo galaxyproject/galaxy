@@ -1903,7 +1903,11 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
         <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="help" type="xs:string" />
+    <xs:attribute name="help" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Short help description for section, rendered just below the section.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="Param">
