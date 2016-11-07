@@ -486,6 +486,11 @@ def get_field_components_options( dataset, field_name ):
     <xs:annotation>
       <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
+    <xs:attribute name="type" type="TracksterActionType" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Type of action (at least ``set_param`` currently).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en"></xs:documentation>
@@ -5114,6 +5119,14 @@ and ``contains``.</xs:documentation>
       <xs:enumeration value="False"/>
       <xs:enumeration value="yes"/>
       <xs:enumeration value="no"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TracksterActionType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for TracksterActionType</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="set_param"/>
     </xs:restriction>
   </xs:simpleType>
 </xs:schema>
