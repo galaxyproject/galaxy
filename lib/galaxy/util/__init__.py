@@ -26,6 +26,7 @@ from datetime import datetime
 from hashlib import md5
 from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
+from xml.etree.ElementTree import ParseError
 
 from six import binary_type, iteritems, PY3, string_types, text_type
 from six.moves import email_mime_text, xrange, zip
@@ -40,6 +41,7 @@ except ImportError:
     docutils_html4css1 = None
 
 from .inflection import English, Inflector
+
 inflector = Inflector(English)
 
 if PY3:
@@ -177,7 +179,11 @@ def parse_xml( fname ):
         def doctype( *args ):
             pass
     tree = ElementTree.ElementTree()
-    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    try:
+        root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    except ParseError:
+        log.exception("Error parsing file %s", fname)
+        raise
     ElementInclude.include( root )
     return tree
 
