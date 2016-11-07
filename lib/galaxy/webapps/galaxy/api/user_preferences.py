@@ -123,7 +123,6 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         '''
         Save a user's email address, public username, type, addresses etc.
         '''
-        print payload
         user = self._get_user(trans, user_id)
         email = payload.get('email')
         username = payload.get('username')
