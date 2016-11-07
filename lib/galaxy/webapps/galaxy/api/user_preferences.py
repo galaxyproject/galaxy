@@ -45,8 +45,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         Returns user details such as public username, type, addresses, etc.
         '''
         user = self._get_user(trans, user_id)
-        email = util.restore_text(kwd.get('email', user.email))
-        username = util.restore_text(kwd.get('username', user.username))
+        email = user.email
+        username = user.username
         inputs = list()
         inputs.append({
             'id': 'email_input',
@@ -123,9 +123,10 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         '''
         Save a user's email address, public username, type, addresses etc.
         '''
+        print payload
         user = self._get_user(trans, user_id)
-        email = kwd.get('email')
-        username = kwd.get('username')
+        email = payload.get('email')
+        username = payload.get('username')
         if email or username:
             message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
             if not message and username:
@@ -152,28 +153,28 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             if user.username != username:
                 user.username = username
         # Update user custom form
-        user_info_form_id = kwd.get('info|form_id')
+        user_info_form_id = payload.get('info|form_id')
         if user_info_form_id:
             prefix = 'info|'
             user_info_form = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_info_form_id))
             user_info_values = {}
-            for item in kwd:
+            for item in payload:
                 if item.startswith(prefix):
-                    user_info_values[item[len(prefix):]] = kwd[item]
+                    user_info_values[item[len(prefix):]] = payload[item]
             form_values = trans.model.FormValues(user_info_form, user_info_values)
             trans.sa_session.add(form_values)
             user.values = form_values
         # Update user addresses
         address_dicts = {}
         address_count = 0
-        for item in kwd:
+        for item in payload:
             match = re.match(r'^address_(?P<index>\d+)\|(?P<attribute>\S+)', item)
             if match:
                 groups = match.groupdict()
                 index = int(groups['index'])
                 attribute = groups['attribute']
                 address_dicts[index] = address_dicts.get(index) or {}
-                address_dicts[index][attribute] = kwd[item]
+                address_dicts[index][attribute] = payload[item]
                 address_count = max(address_count, index + 1)
         user.addresses = []
         for index in range(0, address_count):
@@ -234,10 +235,10 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         Allows to change a user password.
         """
         if trans.get_request_method() == 'PUT':
-            password = kwd.get('password')
-            confirm = kwd.get('confirm')
-            current = kwd.get('current')
-            token = kwd.get('token')
+            password = payload.get('password')
+            confirm = payload.get('confirm')
+            current = payload.get('current')
+            token = payload.get('token')
             token_result = None
             if token:
                 # If a token was supplied, validate and set user
@@ -295,7 +296,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
             permissions = {}
             for index, action in permitted_actions:
                 action_id = trans.app.security_agent.get_action(action.action).action
-                permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in kwd.get(index, [])]
+                permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in payload.get(index, [])]
             trans.app.security_agent.user_set_default_permissions(user, permissions)
             return {'message': 'Permissions have been saved.'}
         else:
@@ -324,7 +325,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         if trans.get_request_method() == 'PUT':
             for filter_type in filter_types:
                 new_filters = []
-                for prefixed_name in kwd:
+                for prefixed_name in payload:
                     prefix = filter_type + '|'
                     if prefixed_name.startswith(filter_type):
                         new_filters.append(prefixed_name[len(prefix):])
@@ -387,7 +388,7 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         Allows the user to activate/deactivate the communication server.
         """
         user = self._get_user(trans, user_id)
-        enable = kwd.get('enable')
+        enable = payload.get('enable')
         if enable is not None:
             if enable == 'true':
                 message = 'Your communication server has been activated.'
