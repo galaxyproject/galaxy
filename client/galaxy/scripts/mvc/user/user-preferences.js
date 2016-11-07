@@ -150,8 +150,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 url         : options.url,
                 data        : JSON.stringify(form.data.create()),
                 type        : 'PUT',
-                contentType : 'application/json',
-                traditional : true,
+                contentType : 'application/json'
             }).done( function( response ) {
                 var updated_values = false;
                 form.data.matchModel( response, function ( input, input_id ) {
