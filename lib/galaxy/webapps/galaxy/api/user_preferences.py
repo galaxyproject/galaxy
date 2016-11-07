@@ -124,32 +124,34 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
         Save a user's email address, public username, type, addresses etc.
         '''
         user = self._get_user(trans, user_id)
-        email = util.restore_text(kwd.get('email', ''))
-        username = util.restore_text(kwd.get('username', ''))
-        message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
-        if not message and username:
-            message = validate_publicname(trans, username, user)
-        if message:
-            raise MessageException(message)
-        # Update user email and user's private role name which must match
-        if user.email != email:
-            private_role = trans.app.security_agent.get_private_user_role(user)
-            private_role.name = email
-            private_role.description = 'Private role for ' + email
-            user.email = email
-            trans.sa_session.add(private_role)
-            if trans.app.config.user_activation_on:
-                user.active = False
-                if self.send_verification_email(trans, user.email, user.username):
-                    message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-                else:
-                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                    if trans.app.config.error_email_to is not None:
-                        message += ' Contact: %s' % trans.app.config.error_email_to
-                    raise MessageException(message)
-        # Update public name
-        if user.username != username:
-            user.username = username
+        email = kwd.get('email')
+        username = kwd.get('username')
+        if email or username:
+            message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
+            if not message and username:
+                message = validate_publicname(trans, username, user)
+            if message:
+                raise MessageException(message)
+            # Update user email and user's private role name which must match
+            if user.email != email:
+                private_role = trans.app.security_agent.get_private_user_role(user)
+                private_role.name = email
+                private_role.description = 'Private role for ' + email
+                user.email = email
+                trans.sa_session.add(private_role)
+                if trans.app.config.user_activation_on:
+                    user.active = False
+                    if self.send_verification_email(trans, user.email, user.username):
+                        message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                    else:
+                        message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                        if trans.app.config.error_email_to is not None:
+                            message += ' Contact: %s' % trans.app.config.error_email_to
+                        raise MessageException(message)
+            # Update public name
+            if user.username != username:
+                user.username = username
+        # Update user custom form
         user_info_form_id = kwd.get('info|form_id')
         if user_info_form_id:
             prefix = 'info|'
@@ -185,6 +187,8 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
                 user_address = trans.model.UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
+                if str(field[2]).lower() == 'required' and not d.get(field[0]):
+                    raise MessageException('Address %s: %s (%s) required.' % (index + 1, field[1], field[0]))
                 setattr(user_address, field[0], str(d.get(field[0], '')))
             user_address.user = user
             user.addresses.append(user_address)

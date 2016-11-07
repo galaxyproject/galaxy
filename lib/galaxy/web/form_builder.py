@@ -426,13 +426,13 @@ class AddressField(BaseField):
     @staticmethod
     def fields():
         return [  ( "desc", "Short address description", "Required" ),
-                  ( "name", "Name", "Required" ),
-                  ( "institution", "Institution", "Required" ),
-                  ( "address", "Address", "Required" ),
-                  ( "city", "City", "Required" ),
-                  ( "state", "State/Province/Region", "Required" ),
-                  ( "postal_code", "Postal Code", "Required" ),
-                  ( "country", "Country", "Required" ),
+                  ( "name", "Name", "" ),
+                  ( "institution", "Institution", "" ),
+                  ( "address", "Address", "" ),
+                  ( "city", "City", "" ),
+                  ( "state", "State/Province/Region", "" ),
+                  ( "postal_code", "Postal Code", "" ),
+                  ( "country", "Country", "" ),
                   ( "phone", "Phone", "" )  ]
 
     def __init__(self, name, user=None, value=None, params=None, security=None, **kwds):
