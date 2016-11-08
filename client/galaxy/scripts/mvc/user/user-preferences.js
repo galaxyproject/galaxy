@@ -114,7 +114,10 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
             this.$table.append( $page_item );
             $page_item.find( 'a' ).on( 'click', function() {
                 if ( page.url ) {
-                    $.ajax({ url: Galaxy.root + page.url, type: 'GET' }).always( function( response ) {
+                    $.ajax({
+                        url     : Galaxy.root + page.url,
+                        type    : 'GET'
+                    }).done( function( response ) {
                         var options = $.extend( {}, page, response );
                         var form = new Form({
                             title  : options.title,
@@ -137,7 +140,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         });
                         self.$preferences.hide();
                         self.$el.append( form.$el );
-                    });
+                    }).fail( function( response ) {
+                        self.message.update( { message: 'Failed to load resource ' + page.url + '.', status: 'danger' } );
+                    })
                 } else {
                     page.onclick();
                 }
