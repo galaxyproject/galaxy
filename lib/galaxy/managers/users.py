@@ -290,7 +290,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
 
             'total_disk_usage' : lambda i, k, **c: float( i.total_disk_usage ),
             'quota_percent' : lambda i, k, **c: self.user_manager.quota( i ),
-            'quota'         : lambda i, k, **c: self.user_manager.quota( i, True ),
+            'quota'         : lambda i, k, **c: self.user_manager.quota( i, total=True ),
 
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used( i ),
             'has_requests'  : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )
