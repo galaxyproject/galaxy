@@ -621,7 +621,7 @@ class HistoryField( BaseField ):
     def to_dict( self ):
         d = super( HistoryField, self ).to_dict()
         d[ 'type' ] = 'select'
-        d[ 'data' ] = [{ 'label': 'No Import', 'value': 'none' }, { 'label': 'New History', 'value': 'new' }]
+        d[ 'data' ] = [{ 'label': 'New History', 'value': 'new' }]
         if self.user and self.security:
             for a in self.user.histories:
                 if not a.deleted:
