@@ -82,14 +82,14 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         render: function() {
             var self = this;
-            var use_remote_user = Galaxy.config.use_remote_user;
+            var config = Galaxy.config;
             $.getJSON( Galaxy.root + 'api/users/' + Galaxy.user.id, function( data ) {
                 self.$preferences = $( '<div/>' ).addClass( 'ui-panel' )
                                                  .append( self.message.$el )
                                                  .append( $( '<h2/>' ).append( 'User preferences' ) )
                                                  .append( $( '<p/>' ).append( 'You are logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
                                                  .append( self.$table = $( '<table/>' ).addClass( 'ui-panel-table' ) );
-                if( !use_remote_user ) {
+                if( !config.use_remote_user ) {
                     self._link( self.defs.information );
                     self._link( self.defs.password );
                 }
@@ -97,7 +97,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 self._link( self.defs.permissions );
                 self._link( self.defs.api_key );
                 self._link( self.defs.toolbox_filters );
-                data.openid && !use_remote_user && self._link( self.defs.openids );
+                config.enable_openid && !config.use_remote_user && self._link( self.defs.openids );
                 self._link( self.defs.logout );
                 self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );
@@ -185,7 +185,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         _templateFooter: function( options ) {
             return  '<p class="ui-panel-footer">' +
                         'You are using <strong>' + options.nice_total_disk_usage + '</strong> of disk space in this Galaxy instance. ' +
-                        ( options.enable_quotas ? 'Your disk quota is: <strong>' + options.quota + '</strong>. ' : '' ) +
+                        ( Galaxy.config.enable_quotas ? 'Your disk quota is: <strong>' + options.quota + '</strong>. ' : '' ) +
                         'Is your usage more than expected? See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.' +
                     '</p>';
         }
