@@ -197,13 +197,13 @@ class UserPrefAPIController(BaseAPIController, BaseUIController, UsesTagsMixin, 
     def _validate_email_publicname(self, email, username):
         ''' Validate email and username using regex '''
         if not re.match('^[a-z0-9\-]{3,255}$', username):
-            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2'
+            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
         if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-            return 'Please enter your valid email address'
+            return 'Please enter your valid email address.'
         if email == '':
-            return 'Please enter your email address'
+            return 'Please enter your email address.'
         if len(email) > 255:
-            return 'Email cannot be more than 255 characters in length'
+            return 'Email cannot be more than 255 characters in length.'
 
     @expose_api
     def password(self, trans, user_id, payload={}, **kwd):
