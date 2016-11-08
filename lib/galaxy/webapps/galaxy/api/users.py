@@ -318,8 +318,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             else:
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
         return {
-            'webapp': trans.webapp.name,
-            'is_admin': trans.user_is_admin(),
             'email': email,
             'username': username,
             'addresses': [address.to_dict(trans) for address in user.addresses],
