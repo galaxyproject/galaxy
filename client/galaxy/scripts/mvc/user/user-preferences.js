@@ -82,28 +82,24 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         render: function() {
             var self = this;
-            $.getJSON( Galaxy.root + 'api/users/' + Galaxy.user.id + '/basics', function( data ) {
+            var use_remote_user = Galaxy.config.use_remote_user;
+            $.getJSON( Galaxy.root + 'api/users/' + Galaxy.user.id, function( data ) {
                 self.$preferences = $( '<div/>' ).addClass( 'ui-panel' )
                                                  .append( self.message.$el )
                                                  .append( $( '<h2/>' ).append( 'User preferences' ) )
                                                  .append( $( '<p/>' ).append( 'You are logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
                                                  .append( self.$table = $( '<table/>' ).addClass( 'ui-panel-table' ) );
-                if( !data.remote_user ) {
+                if( !use_remote_user ) {
                     self._link( self.defs.information );
                     self._link( self.defs.password );
                 }
-                if ( data.webapp == 'galaxy' ) {
-                    self._link( self.defs.communication );
-                    self._link( self.defs.permissions );
-                    self._link( self.defs.api_key );
-                    self._link( self.defs.toolbox_filters );
-                    data.openid && !data.remote_user && self._link( self.defs.openids );
-                    self._link( self.defs.logout );
-                    self.$preferences.append( self._templateFooter( data ) );
-                } else {
-                    self._link( self.defs.api_key );
-                    self._link( { title  : 'Manage your email alerts' } );
-                }
+                self._link( self.defs.communication );
+                self._link( self.defs.permissions );
+                self._link( self.defs.api_key );
+                self._link( self.defs.toolbox_filters );
+                data.openid && !use_remote_user && self._link( self.defs.openids );
+                self._link( self.defs.logout );
+                self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );
             });
         },
@@ -188,7 +184,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         _templateFooter: function( options ) {
             return  '<p class="ui-panel-footer">' +
-                        'You are using <strong>' + options.disk_usage + '</strong> of disk space in this Galaxy instance. ' +
+                        'You are using <strong>' + options.nice_total_disk_usage + '</strong> of disk space in this Galaxy instance. ' +
                         ( options.enable_quotas ? 'Your disk quota is: <strong>' + options.quota + '</strong>. ' : '' ) +
                         'Is your usage more than expected? See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.' +
                     '</p>';

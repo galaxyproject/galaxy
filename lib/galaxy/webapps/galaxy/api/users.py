@@ -121,8 +121,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
-        GET /api/users/{encoded_user_id}
-        GET /api/users/deleted/{encoded_user_id}
+        GET /api/users/{encoded_id}
+        GET /api/users/deleted/{encoded_id}
         GET /api/users/current
         Displays information about a user.
         """
@@ -174,17 +174,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                             'total_disk_usage': float } )
         return item
-
-    @expose_api
-    @web.require_admin
-    def api_key( self, trans, user_id, **kwd ):
-        """
-        POST /api/users/{encoded_user_id}/api_key
-        Creates a new API key for specified user.
-        """
-        user = self.get_user( trans, user_id )
-        key = self.create_api_key( trans, user )
-        return key
 
     @expose_api
     def update( self, trans, id, payload, **kwd ):
@@ -242,7 +231,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         raise exceptions.NotImplemented()
 
     @expose_api
-    def logout(self, trans, user_id, payload={}, **kwd):
+    def logout(self, trans, id, payload={}, **kwd):
         trans.handle_user_logout( logout_all=kwd.get( 'all', False ) )
         redirect_url = url_for( '/' )
         if util.biostar.biostar_logged_in( trans ):
@@ -263,30 +252,11 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 'quota_percent': percent}
 
     @expose_api
-    def basics(self, trans, user_id, **kwd):
-        '''
-        Returns basic user details
-        '''
-        user = self._get_user(trans, user_id)
-        app = trans.app
-        return {
-            'user_id': app.security.encode_id(user.id),
-            'username': user.username,
-            'email': user.email,
-            'webapp': trans.webapp.name,
-            'remote_user': app.config.use_remote_user,
-            'openid': app.config.enable_openid,
-            'enable_quotas': app.config.enable_quotas,
-            'disk_usage': user.get_disk_usage(nice_size=True),
-            'quota': app.quota_agent.get_quota(user, nice_size=True)
-        }
-
-    @expose_api
-    def get_information(self, trans, user_id, **kwd):
+    def get_information(self, trans, id, **kwd):
         '''
         Returns user details such as public username, type, addresses, etc.
         '''
-        user = self._get_user(trans, user_id)
+        user = self._get_user(trans, id)
         email = user.email
         username = user.username
         inputs = list()
@@ -349,7 +319,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 inputs.append(dict(id='name_input', name='username', label='Public name:', type='text', value=username, help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.'))
         return {
             'webapp': trans.webapp.name,
-            'user_id': trans.security.encode_id(trans.user.id),
             'is_admin': trans.user_is_admin(),
             'email': email,
             'username': username,
@@ -358,11 +327,11 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         }
 
     @expose_api
-    def set_information(self, trans, user_id, payload={}, **kwd):
+    def set_information(self, trans, id, payload={}, **kwd):
         '''
         Save a user's email address, public username, type, addresses etc.
         '''
-        user = self._get_user(trans, user_id)
+        user = self._get_user(trans, id)
         email = payload.get('email')
         username = payload.get('username')
         if email or username:
@@ -449,7 +418,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             return 'Email cannot be more than 255 characters in length.'
 
     @expose_api
-    def password(self, trans, user_id, payload={}, **kwd):
+    def password(self, trans, id, payload={}, **kwd):
         """
         Allows to change a user password.
         """
@@ -467,7 +436,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 user = token_result.user
             else:
                 # The user is changing their own password, validate their current password
-                user = self._get_user(trans, user_id)
+                user = self._get_user(trans, id)
                 (ok, message) = trans.app.auth_manager.check_change_password(user, current)
                 if not ok:
                     raise MessageException(message)
@@ -504,11 +473,11 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                                 {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None} ]}
 
     @expose_api
-    def permissions(self, trans, user_id, payload={}, **kwd):
+    def permissions(self, trans, id, payload={}, **kwd):
         """
         Set the user's default permissions for the new histories
         """
-        user = self._get_user(trans, user_id)
+        user = self._get_user(trans, id)
         roles = user.all_roles()
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         if trans.get_request_method() == 'PUT':
@@ -532,12 +501,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             return {'message': 'Permissions unchanged.', 'inputs': inputs}
 
     @expose_api
-    def toolbox_filters(self, trans, user_id, payload={}, **kwd):
+    def toolbox_filters(self, trans, id, payload={}, **kwd):
         """
         API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
         The user can activate them and the choice is stored in user_preferences.
         """
-        user = self._get_user(trans, user_id)
+        user = self._get_user(trans, id)
         filter_types = odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
                               ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_section_filters}),
                               ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_label_filters})])
@@ -582,12 +551,14 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     @expose_api
-    def api_key(self, trans, user_id, payload={}, **kwd):
+    def api_key(self, trans, id, payload={}, **kwd):
         """
         Get/Create API key.
         """
-        user = self._get_user(trans, user_id)
-        if trans.get_request_method() == 'PUT':
+        user = self._get_user(trans, id)
+        if trans.get_request_method() == 'POST':
+            return self.create_api_key(trans, user)
+        elif trans.get_request_method() == 'PUT':
             self.create_api_key(trans, user)
             message = 'Generated a new web API key.'
         else:
@@ -602,11 +573,11 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         return {'message': message, 'inputs': inputs}
 
     @expose_api
-    def communication(self, trans, user_id, payload={}, **kwd):
+    def communication(self, trans, id, payload={}, **kwd):
         """
         Allows the user to activate/deactivate the communication server.
         """
-        user = self._get_user(trans, user_id)
+        user = self._get_user(trans, id)
         enable = payload.get('enable')
         if enable is not None:
             if enable == 'true':
@@ -624,10 +595,10 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                                 'label': 'Enable communication',
                                 'value': user.preferences.get('communication_server', 'false')}]}
 
-    def _get_user(self, trans, user_id):
-        user = self.get_user(trans, user_id)
+    def _get_user(self, trans, id):
+        user = self.get_user(trans, id)
         if not user:
-            raise MessageException('Invalid user (%s).' % user_id)
+            raise MessageException('Invalid user (%s).' % id)
         if user != trans.user and trans.user_is_admin():
             raise MessageException('Access denied.')
         return user
