@@ -323,13 +323,6 @@ def populate_api_routes( webapp, app ):
                            "/api/histories/{id}/exports/{jeha_id}", controller="histories",
                            action="archive_download", conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'logout', '/api/users/{user_id}/logout',
-                           controller='users', action='logout',
-                           conditions=dict( method=['POST'] ) )
-    webapp.mapper.connect( "create_api_key", "/api/users/{user_id}/api_key",
-                           controller="users", action="api_key", user_id=None,
-                           conditions=dict( method=["POST"] ) )
-
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
     webapp.add_route( '/visualization/show/{visualization_name}', controller='visualization', action='render', visualization_name=None )
@@ -462,56 +455,56 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=[ "POST" ] ) )
 
     # ================================
-    # ===== USER PREFERENCES API =====
+    # ===== USERS API =====
     # ================================
 
-    webapp.mapper.connect( 'index',
-                           '/api/user_preferences',
-                           controller='user_preferences',
-                           action='index',
-                           conditions=dict( method=["GET"] ) )
-
     webapp.mapper.connect( 'get_information',
-                           '/api/user_preferences/{user_id}/information',
-                           controller='user_preferences',
+                           '/api/users/{id}/information',
+                           controller='users',
                            action='get_information',
                            conditions=dict( method=["GET"] ) )
 
     webapp.mapper.connect( 'set_information',
-                           '/api/user_preferences/{user_id}/information',
-                           controller='user_preferences',
+                           '/api/users/{id}/information',
+                           controller='users',
                            action='set_information',
                            conditions=dict( method=["PUT"] ) )
 
     webapp.mapper.connect( 'password',
-                           '/api/user_preferences/{user_id}/password',
-                           controller='user_preferences',
+                           '/api/users/{id}/password',
+                           controller='users',
                            action='password',
                            conditions=dict( method=["GET", "PUT"] ) )
 
     webapp.mapper.connect( 'permissions',
-                           '/api/user_preferences/{user_id}/permissions',
-                           controller='user_preferences',
+                           '/api/users/{id}/permissions',
+                           controller='users',
                            action='permissions',
                            conditions=dict( method=["GET", "PUT"] ) )
 
     webapp.mapper.connect( 'api_key',
-                           '/api/user_preferences/{user_id}/api_key',
-                           controller='user_preferences',
+                           '/api/users/{id}/api_key',
+                           controller='users',
                            action='api_key',
-                           conditions=dict( method=["GET", "PUT"] ) )
+                           conditions=dict( method=["GET", "PUT", "POST"] ) )
 
     webapp.mapper.connect( 'toolbox_filters',
-                           '/api/user_preferences/{user_id}/toolbox_filters',
-                           controller='user_preferences',
+                           '/api/users/{id}/toolbox_filters',
+                           controller='users',
                            action='toolbox_filters',
                            conditions=dict( method=["GET", "PUT"] ) )
 
     webapp.mapper.connect( 'communication',
-                           '/api/user_preferences/{user_id}/communication',
-                           controller='user_preferences',
+                           '/api/users/{id}/communication',
+                           controller='users',
                            action='communication',
                            conditions=dict( method=["GET", "PUT"] ) )
+
+    webapp.mapper.connect( 'logout',
+                           '/api/users/{id}/logout',
+                           controller='users',
+                           action='logout',
+                           conditions=dict( method=["POST"] ) )
 
     # ========================
     # ===== WEBHOOKS API =====

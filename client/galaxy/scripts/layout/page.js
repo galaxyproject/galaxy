@@ -138,9 +138,10 @@ var PageLayoutView = Backbone.View.extend( BaseMVC.LoggableMixin ).extend({
     _checkCommunicationServerOnline: function(){
         var host = window.Galaxy.config.communication_server_host,
             port = window.Galaxy.config.communication_server_port,
+            preferences = window.Galaxy.user.attributes.preferences,
             $chat_icon_element = $( "#show-chat-online" );
         /** Check if the user has deactivated the communication in it's personal settings */
-        if ( Galaxy.user.attributes.preferences && [ '1', 'true' ].indexOf( Galaxy.user.attributes.preferences.communication_server ) != -1 ) {
+        if ( preferences && [ '1', 'true' ].indexOf( preferences.communication_server ) != -1 ) {
             // See if the configured communication server is available
             $.ajax({
                 url: host + ":" + port,

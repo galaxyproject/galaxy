@@ -43,8 +43,19 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo', 'sp
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-#configure default autodoc's action
+# Configure default autodoc's action
 autodoc_default_flags = [ 'members', 'undoc-members', 'show-inheritance' ]
+
+
+def dont_skip_init(app, what, name, obj, skip, options):
+    if name == "__init__":
+        return False
+    return skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", dont_skip_init)
+
 
 # The suffix of source filenames.
 source_suffix = ['.rst', '.md']

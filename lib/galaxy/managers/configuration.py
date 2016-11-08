@@ -59,6 +59,8 @@ class ConfigSerializer( base.ModelSerializer ):
             'enable_new_user_preferences'    : _defaults_to( False ),
             'allow_user_creation'       : _defaults_to( False ),
             'use_remote_user'           : _defaults_to( None ),
+            'enable_openid'             : _defaults_to( False ),
+            'enable_quotas'             : _defaults_to( False ),
             'remote_user_logout_href'   : _defaults_to( '' ),
             'datatypes_disable_auto'    : _defaults_to( False ),
             'allow_user_dataset_purge'  : _defaults_to( False ),

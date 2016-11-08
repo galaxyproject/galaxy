@@ -11,11 +11,13 @@ log = logging.getLogger(__name__)
 
 
 class BaseField(object):
-    def __init__( self, name, value=None, disabled=False, optional=True, **kwds ):
+    def __init__( self, name, value=None, label=None, **kwds ):
         self.name = name
+        self.label = label
         self.value = value
-        self.disabled = disabled
-        self.optional = optional
+        self.disabled = kwds.get( 'disabled', False )
+        self.optional = kwds.get( 'optional', True ) and kwds.get( 'required', 'optional' ) == 'optional'
+        self.help = kwds.get( 'helptext' )
 
     def get_html( self, prefix="" ):
         """Returns the html widget corresponding to the parameter"""
@@ -30,9 +32,11 @@ class BaseField(object):
     def to_dict( self ):
         return {
             'name'      : self.name,
+            'label'     : self.label,
             'disabled'  : self.disabled,
             'optional'  : self.optional,
-            'value'     : escape( unicodify( self.value ), quote=True ) if isinstance( self.value, basestring ) else self.value
+            'value'     : self.value,
+            'help'      : self.help
         }
 
 
@@ -160,7 +164,7 @@ class CheckboxField(BaseField):
 
     @staticmethod
     def is_checked( value ):
-        if value is True:
+        if value in [ True, "true" ]:
             return True
         return isinstance( value, list ) and ( '__CHECKED__' in value or len( value ) == 2 )
 
@@ -173,7 +177,6 @@ class CheckboxField(BaseField):
     def to_dict( self ):
         d = super( CheckboxField, self ).to_dict()
         d[ 'type' ] = 'boolean'
-        d[ 'value' ] = 'true' if self.checked else 'false'
         return d
 
 
@@ -415,26 +418,27 @@ class SelectField(BaseField):
         d[ 'multiple' ] = self.multiple
         d[ 'data' ] = []
         for value in self.selectlist:
-            d[ 'data' ].append( { 'label': unicodify( value ), 'value': escape( unicodify( value ), quote=True ) } )
+            d[ 'data' ].append( { 'label': value, 'value': value } )
         return d
 
 
 class AddressField(BaseField):
     @staticmethod
     def fields():
-        return [  ( "short_desc", "Short address description", "Required" ),
-                  ( "name", "Name", "Required" ),
-                  ( "institution", "Institution", "Required" ),
-                  ( "address", "Address", "Required" ),
-                  ( "city", "City", "Required" ),
-                  ( "state", "State/Province/Region", "Required" ),
-                  ( "postal_code", "Postal Code", "Required" ),
-                  ( "country", "Country", "Required" ),
+        return [  ( "desc", "Short address description", "Required" ),
+                  ( "name", "Name", "" ),
+                  ( "institution", "Institution", "" ),
+                  ( "address", "Address", "" ),
+                  ( "city", "City", "" ),
+                  ( "state", "State/Province/Region", "" ),
+                  ( "postal_code", "Postal Code", "" ),
+                  ( "country", "Country", "" ),
                   ( "phone", "Phone", "" )  ]
 
-    def __init__(self, name, user=None, value=None, params=None, **kwds):
+    def __init__(self, name, user=None, value=None, params=None, security=None, **kwds):
         super( AddressField, self ).__init__( name, value, **kwds )
         self.user = user
+        self.security = security
         self.select_address = None
         self.params = params
 
@@ -490,18 +494,23 @@ class AddressField(BaseField):
         return self.select_address.get_html( disabled=disabled ) + address_html
 
     def to_dict( self ):
-        inputs = []
-        for field in self.fields():
-            inputs.append( { 'type': 'text', 'name': field[ 0 ], 'label': field[ 1 ], 'help': field[ 2 ], 'value': self.value.get( field[ 0 ] ) if self.value else None } )
-        return { 'title': 'Address', 'name': self.name, 'type': 'section', 'inputs': inputs }
+        d = super( AddressField, self ).to_dict()
+        d[ 'type' ] = 'select'
+        d[ 'data' ] = []
+        if self.user and self.security:
+            for a in self.user.addresses:
+                if not a.deleted:
+                    d[ 'data' ].append( { 'label': a.desc, 'value': self.security.encode_id( a.id ) } )
+        return d
 
 
 class WorkflowField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+    def __init__( self, name, user=None, value=None, params=None, security=None, **kwds ):
         super( WorkflowField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
+        self.security = security
         self.select_workflow = None
         self.params = params
 
@@ -523,12 +532,16 @@ class WorkflowField( BaseField ):
     def to_dict( self ):
         d = super( WorkflowField, self ).to_dict()
         d[ 'type' ] = 'select'
+        d[ 'data' ] = []
+        if self.user and self.security:
+            for a in self.user.stored_workflows:
+                if not a.deleted:
+                    d[ 'data' ].append( { 'label': a.name, 'value': self.security.encode_id( a.id ) } )
         return d
 
 
 class WorkflowMappingField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None, **kwds ):
-        super( WorkflowMappingField, self ).__init__( name, value, **kwds )
+    def __init__( self, name, user=None, value=None, params=None, **kwd ):
         # DBTODO integrate this with the new __build_workflow approach in requests_common.  As it is, not particularly useful.
         self.name = name
         self.user = user
@@ -562,19 +575,14 @@ class WorkflowMappingField( BaseField ):
         # Do something more appropriate here and allow selection of inputs
         return self.select_workflow.get_html( disabled=disabled ) + ''.join(['<div class="form-row"><label>%s</label>%s</div>' % (s[0], s[1].get_html()) for s in workflow_inputs])
 
-    def get_display_text(self):
-        if self.value:
-            return self.value
-        else:
-            return '-'
-
 
 class HistoryField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+    def __init__( self, name, user=None, value=None, params=None, security=None, **kwds ):
         super( HistoryField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
+        self.security = security
         self.select_history = None
         self.params = params
 
@@ -598,15 +606,14 @@ class HistoryField( BaseField ):
                         self.select_history.add_option( a.name, str( a.id ) )
         return self.select_history.get_html( disabled=disabled )
 
-    def get_display_text(self):
-        if self.value:
-            return self.value
-        else:
-            return '-'
-
     def to_dict( self ):
         d = super( HistoryField, self ).to_dict()
         d[ 'type' ] = 'select'
+        d[ 'data' ] = [{ 'label': 'New History', 'value': 'new' }]
+        if self.user and self.security:
+            for a in self.user.histories:
+                if not a.deleted:
+                    d[ 'data' ].append( { 'label': a.name, 'value': self.security.encode_id( a.id ) } )
         return d
 
 

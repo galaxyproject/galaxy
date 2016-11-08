@@ -237,7 +237,14 @@ var Collection = Backbone.Collection.extend({
                     },{
                         title   : 'User Preferences',
                         url     : 'user?cntrller=user',
-                        target  : 'galaxy_main'
+                        target  : 'galaxy_main',
+                        onclick : function() {
+                            if ( Galaxy.config.enable_new_user_preferences && Galaxy.app ) {
+                                Galaxy.app.display( new Preferences.UserPreferences() );
+                            } else {
+                                Galaxy.frame.add( { url: 'user?cntrller=user', target: 'galaxy_main' } );
+                            }
+                        }
                     },{
                         title   : 'Custom Builds',
                         url     : 'user/dbkeys',
@@ -266,20 +273,6 @@ var Collection = Backbone.Collection.extend({
                 }]
             };
 
-            if( Galaxy.config.enable_new_user_preferences ) {
-                userTab.menu.push({
-                    title   : 'New User Preferences',
-                    url     : 'user',
-                    onclick : function() {
-                        if ( Galaxy.app ) {
-                            Galaxy.app.display( new Preferences.UserPreferences() );
-                        } else {
-                            window.location = Galaxy.root + "user";
-                        }
-                    }
-                });
-            }
-            
             options.use_remote_user && userTab.menu.push({
                 title   : 'Public Name',
                 url     : 'user/edit_username?cntrller=user',

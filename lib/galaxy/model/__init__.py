@@ -4199,19 +4199,19 @@ class FormDefinition( object, Dictifiable ):
         self.type = form_type
         self.layout = layout
 
-    def to_dict( self ):
-        form_def = { 'name': self.name, 'inputs': [] }
+    def to_dict( self, user=None, values=None, security=None ):
+        values = values or {}
+        form_def = { 'id': security.encode_id( self.id ) if security else self.id, 'name': self.name, 'inputs': [] }
         for field in self.fields:
             FieldClass = ( { 'AddressField'         : AddressField,
                              'CheckboxField'        : CheckboxField,
                              'HistoryField'         : HistoryField,
-                             'PasswordFiled'        : PasswordField,
+                             'PasswordField'        : PasswordField,
                              'SelectField'          : SelectField,
                              'TextArea'             : TextArea,
                              'TextField'            : TextField,
-                             'WorkflowField'        : WorkflowField,
-                             'WorkflowMappingField' : WorkflowMappingField } ).get( field[ 'type' ], TextField )
-            form_def[ 'inputs' ].append( FieldClass( **field ).to_dict() )
+                             'WorkflowField'        : WorkflowField } ).get( field[ 'type' ], TextField )
+            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ], field[ 'default' ] ), security=security, **field ).to_dict() )
         return form_def
 
     def grid_fields( self, grid_index ):
@@ -4836,6 +4836,7 @@ class UserAddress( object ):
     def to_dict( self, trans ):
         return { 'id'           : trans.security.encode_id( self.id ),
                  'name'         : sanitize_html( self.name ),
+                 'desc'         : sanitize_html( self.desc ),
                  'institution'  : sanitize_html( self.institution ),
                  'address'      : sanitize_html( self.address ),
                  'city'         : sanitize_html( self.city ),
