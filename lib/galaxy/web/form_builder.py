@@ -575,12 +575,6 @@ class WorkflowMappingField( BaseField ):
         # Do something more appropriate here and allow selection of inputs
         return self.select_workflow.get_html( disabled=disabled ) + ''.join(['<div class="form-row"><label>%s</label>%s</div>' % (s[0], s[1].get_html()) for s in workflow_inputs])
 
-    def get_display_text(self):
-        if self.value:
-            return self.value
-        else:
-            return '-'
-
 
 class HistoryField( BaseField ):
     def __init__( self, name, user=None, value=None, params=None, security=None, **kwds ):
@@ -611,12 +605,6 @@ class HistoryField( BaseField ):
                     else:
                         self.select_history.add_option( a.name, str( a.id ) )
         return self.select_history.get_html( disabled=disabled )
-
-    def get_display_text(self):
-        if self.value:
-            return self.value
-        else:
-            return '-'
 
     def to_dict( self ):
         d = super( HistoryField, self ).to_dict()
