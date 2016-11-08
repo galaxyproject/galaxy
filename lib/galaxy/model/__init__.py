@@ -4210,8 +4210,7 @@ class FormDefinition( object, Dictifiable ):
                              'SelectField'          : SelectField,
                              'TextArea'             : TextArea,
                              'TextField'            : TextField,
-                             'WorkflowField'        : WorkflowField,
-                             'WorkflowMappingField' : WorkflowMappingField } ).get( field[ 'type' ], TextField )
+                             'WorkflowField'        : WorkflowField } ).get( field[ 'type' ], TextField )
             form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ], field[ 'default' ] ), security=security, **field ).to_dict() )
         return form_def
 

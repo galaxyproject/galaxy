@@ -505,11 +505,12 @@ class AddressField(BaseField):
 
 
 class WorkflowField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+    def __init__( self, name, user=None, value=None, params=None, security=None, **kwds ):
         super( WorkflowField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
+        self.security = security
         self.select_workflow = None
         self.params = params
 
@@ -531,12 +532,16 @@ class WorkflowField( BaseField ):
     def to_dict( self ):
         d = super( WorkflowField, self ).to_dict()
         d[ 'type' ] = 'select'
+        d[ 'data' ] = []
+        if self.user and self.security:
+            for a in self.user.stored_workflows:
+                if not a.deleted:
+                    d[ 'data' ].append( { 'label': a.name, 'value': self.security.encode_id( a.id ) } )
         return d
 
 
 class WorkflowMappingField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None, **kwds ):
-        super( WorkflowMappingField, self ).__init__( name, value, **kwds )
+    def __init__( self, name, user=None, value=None, params=None, **kwd ):
         # DBTODO integrate this with the new __build_workflow approach in requests_common.  As it is, not particularly useful.
         self.name = name
         self.user = user
@@ -578,11 +583,12 @@ class WorkflowMappingField( BaseField ):
 
 
 class HistoryField( BaseField ):
-    def __init__( self, name, user=None, value=None, params=None, **kwds ):
+    def __init__( self, name, user=None, value=None, params=None, security=None, **kwds ):
         super( HistoryField, self ).__init__( name, value, **kwds )
         self.name = name
         self.user = user
         self.value = value
+        self.security = security
         self.select_history = None
         self.params = params
 
@@ -615,6 +621,11 @@ class HistoryField( BaseField ):
     def to_dict( self ):
         d = super( HistoryField, self ).to_dict()
         d[ 'type' ] = 'select'
+        d[ 'data' ] = [{ 'label': 'No Import', 'value': 'none' }, { 'label': 'New History', 'value': 'new' }]
+        if self.user and self.security:
+            for a in self.user.histories:
+                if not a.deleted:
+                    d[ 'data' ].append( { 'label': a.name, 'value': self.security.encode_id( a.id ) } )
         return d
 
 
