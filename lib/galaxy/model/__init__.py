@@ -2080,7 +2080,7 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass  # No deps
-        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True, target_context=target_context ).values()))
+        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context ).values()))
         new_dataset.name = self.name
         self.copy_attributes( new_dataset )
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
@@ -3139,14 +3139,14 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     def populated( self ):
         top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
         if top_level_populated and self.has_subcollections:
-            return all(map(lambda e: e.child_collection.populated, self.elements))
+            return all(e.child_collection.populated for e in self.elements)
         return top_level_populated
 
     @property
     def waiting_for_elements( self ):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:
-            return any(map(lambda e: e.child_collection.waiting_for_elements, self.elements))
+            return any(e.child_collection.waiting_for_elements for e in self.elements)
         return top_level_waiting
 
     def mark_as_populated( self ):
