@@ -443,6 +443,9 @@ class SimplifiedToolBox( ToolBox ):
         )
         self._tool_conf_watcher = get_tool_conf_watcher(dummy_callback)
 
+    def handle_panel_update(self, section_dict):
+        self.create_section(section_dict)
+
 
 def dummy_callback():
     pass

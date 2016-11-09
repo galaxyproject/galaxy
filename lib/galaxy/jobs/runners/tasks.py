@@ -1,17 +1,15 @@
-import logging
-
-from galaxy import model
-
-import os
 import errno
+import logging
+import os
 from time import sleep
 
+from galaxy import model
 from galaxy.jobs import TaskWrapper
 from galaxy.jobs.runners import BaseJobRunner
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'TaskedJobRunner' ]
+__all__ = ( 'TaskedJobRunner', )
 
 
 class TaskedJobRunner( BaseJobRunner ):

@@ -2,19 +2,19 @@
 # TODO: Add examples, tables and best practice links to command
 # TODO: Examples of truevalue, falsevalue
 # TODO: Test param extra_file
+# Things dropped from schema_template.md (still documented inside schema).
+#  - request_parameter_translation
 from __future__ import print_function
 
-# Things dropped from TOC (still documented inside schema).
-#  - request_parameter_translation
+import sys
 
 from lxml import etree
-from StringIO import StringIO
+from six import StringIO
 
-
-with open("doc/schema_template.md", "r") as f:
+with open(sys.argv[1], "r") as f:
     MARKDOWN_TEMPLATE = f.read()
 
-with open("lib/galaxy/tools/xsd/galaxy.xsd", "r") as f:
+with open(sys.argv[2], "r") as f:
     xmlschema_doc = etree.parse(f)
 
 markdown_buffer = StringIO()
@@ -25,40 +25,8 @@ def main():
     for line in MARKDOWN_TEMPLATE.splitlines():
         if line.startswith("$tag:"):
             print(Tag(line).build_help())
-        elif line.startswith("$toc"):
-            print_toc()
         else:
             print(line)
-
-
-def print_toc():
-    tags = []
-    for line in MARKDOWN_TEMPLATE.splitlines():
-        if line.startswith("$tag:"):
-            tags.append(Tag(line))
-
-    for i, tag in enumerate(tags):
-        try:
-            next_tag = tags[i + 1]
-            next_count = next_tag.title.count("|")
-        except IndexError:
-            next_tag = None
-            next_count = None
-        line = ""
-        count = tag.title.count("|")
-        for c in range(count):
-            if next_count is not None and c < next_count:
-                if c == 0:
-                    line += "├──"
-                else:
-                    line += "┼──"
-            else:
-                if c == 0:
-                    line += "└──"
-                else:
-                    line += "┴──"
-        line += "[``<" + tag.title.split("|")[-1] + ">``](#" + tag.title + ")  "
-        print(line)
 
 
 class Tag(object):
@@ -86,7 +54,6 @@ class Tag(object):
 
         title = self.title
         tag_help = StringIO()
-        tag_help.write("""\n<a name="%s"></a>\n""" % title)
         tag_help.write("## " + " > ".join(["``%s``" % p for p in title.split("|")]))
         tag_help.write("\n")
         tag_help.write(_build_tag(tag, self.hide_attributes))
@@ -102,9 +69,10 @@ def _build_tag(tag, hide_attributes):
     text = annotation_el.find("{http://www.w3.org/2001/XMLSchema}documentation").text
     for line in text.splitlines():
         if line.startswith("$attribute_list:"):
-            attributes_str = line.split(":", 1)[1]
+            attributes_str, header_level = line.split(":")[1:3]
             attribute_names = attributes_str.split(",")
-            text = text.replace(line, _build_attributes_table(tag, attributes, attribute_names=attribute_names))
+            header_level = int(header_level)
+            text = text.replace(line, _build_attributes_table(tag, attributes, attribute_names=attribute_names, header_level=header_level))
         if line.startswith("$assertions"):
             assertions_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}complexType[@name='TestAssertions']")
             assertion_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}group[@name='TestAssertion']")
@@ -134,15 +102,16 @@ def _get_bp_link(annotation_el):
     anchor = annotation_el.attrib.get("{http://galaxyproject.org/xml/1.0}best_practices", None)
     link = None
     if anchor:
-        link = "http://planemo.readthedocs.io/en/latest/standards/docs/best_practices/tool_xml.html#%s" % anchor
+        link = "https://planemo.readthedocs.io/en/latest/standards/docs/best_practices/tool_xml.html#%s" % anchor
     return link
 
 
-def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_names=None):
+def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_names=None, header_level=3):
     attribute_table = StringIO()
     attribute_table.write("\n\n")
     if attributes and not hide_attributes:
-        attribute_table.write("\n### Attributes\n")
+        header_prefix = '#' * header_level
+        attribute_table.write("\n%s Attributes\n" % header_prefix)
         attribute_table.write("Attribute | Details | Required\n")
         attribute_table.write("--- | --- | ---\n")
         for attribute in attributes:

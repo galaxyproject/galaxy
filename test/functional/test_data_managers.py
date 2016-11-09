@@ -1,12 +1,14 @@
+import logging
 import new
-import tempfile
 import os.path
 import shutil
-from test_toolbox import ToolTestCase
-from base.interactor import stage_data_in_history
-import logging
-log = logging.getLogger( __name__ )
+import tempfile
 
+from base.interactor import stage_data_in_history
+
+from .test_toolbox import ToolTestCase
+
+log = logging.getLogger( __name__ )
 data_managers = None
 
 
@@ -68,7 +70,7 @@ def build_tests( tmp_dir=None, testing_shed_tools=False, master_api_key=None, us
             del G[ key ]
 
     # first we will loop through data table loc files and copy them to temporary location, then swap out filenames:
-    for data_table_name, data_table in data_managers.app.tool_data_tables.get_tables().iteritems():
+    for data_table_name, data_table in data_managers.app.tool_data_tables.get_tables().items():
         for filename, value in list( data_table.filenames.items() ):
             new_filename = tempfile.NamedTemporaryFile( prefix=os.path.basename( filename ), dir=tmp_dir ).name
             try:
@@ -81,7 +83,7 @@ def build_tests( tmp_dir=None, testing_shed_tools=False, master_api_key=None, us
             del data_table.filenames[ filename ]  # remove filename:value pair
             data_table.filenames[ new_filename ] = value  # add new value by
 
-    for i, ( data_manager_id, data_manager ) in enumerate( data_managers.data_managers.iteritems() ):
+    for i, ( data_manager_id, data_manager ) in enumerate( data_managers.data_managers.items() ):
         tool = data_manager.tool
         if not tool:
             log.warning( "No Tool has been specified for Data Manager: %s", data_manager_id )

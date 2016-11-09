@@ -1,9 +1,8 @@
 
 .. to_doc
 
--------------------------------
 16.07
--------------------------------
+===============================
 
 .. announce_start
 
@@ -111,7 +110,7 @@ Enhancements
 * Fix running tool tests if remote user middleware is enabled.
   `Pull Request 2173`_
 * Improve handling of a missing R environment during Tool Shed dependency
-   installations.
+  installations.
   `Pull Request 2215`_
 * Quote some parameters in the trim tool command
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__.)

@@ -434,27 +434,18 @@ class Registry( object ):
         Return the datatype class where the datatype's `type` attribute
         (as defined in the datatype_conf.xml file) contains `name`.
         """
-        # TODO: too roundabout - would be better to generate this once as a map and store in this object
+        # TODO: obviously not ideal but some of these base classes that are useful for testing datatypes
+        # aren't loaded into the datatypes registry, so we'd need to test for them here
+        if name == 'images.Image':
+            return images.Image
+
+        # TODO: too inefficient - would be better to generate this once as a map and store in this object
         for ext, datatype_obj in self.datatypes_by_extension.items():
             datatype_obj_class = datatype_obj.__class__
             datatype_obj_class_str = str( datatype_obj_class )
             if name in datatype_obj_class_str:
                 return datatype_obj_class
         return None
-        # these seem to be connected to the dynamic classes being generated in this file, lines 157-158
-        #   they appear when a one of the three are used in inheritance with subclass="True"
-        # TODO: a possible solution is to def a fn in datatypes __init__ for creating the dynamic classes
-
-        # remap = {
-        #    'galaxy.datatypes.registry.Tabular'   : galaxy.datatypes.tabular.Tabular,
-        #    'galaxy.datatypes.registry.Text'      : galaxy.datatypes.data.Text,
-        #    'galaxy.datatypes.registry.Binary'    : galaxy.datatypes.binary.Binary
-        # }
-        # datatype_str = str( datatype )
-        # if datatype_str in remap:
-        #    datatype = remap[ datatype_str ]
-        #
-        # return datatype
 
     def get_available_tracks( self ):
         return self.available_tracks

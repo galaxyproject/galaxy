@@ -61,23 +61,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="xs:string" minOccurs="0">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
-order to get the tool's version string. The resulting value will be found in the
-"Info" field of the history dataset.
-
-Unlike the [``command``](#tool|command) tag, this value is taken as a literal and so there is no
-need to escape values like ``$`` and command inputs are not available for variable
-substitution.
-
-### Example
-
-```xml
-<version_command>tophat -version</version_command>
-```
-]]></xs:documentation>
-          </xs:annotation>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
         </xs:element>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
@@ -90,7 +74,7 @@ substitution.
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
         <xs:element name="help" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="help-tag">
-            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html.
+            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html .
 
 tag | details
 --- | -------
@@ -520,13 +504,13 @@ def get_field_components_options( dataset, field_name ):
 
 Container tag set to specify tests via the <test> tag sets. Any number of tests can be included,
 and each test is wrapped within separate <test> tag sets. Functional tests are
-executed via [Planemo](http://planemo.readthedocs.io/) or the
+executed via [Planemo](https://planemo.readthedocs.io/) or the
 [run_tests.sh](https://github.com/galaxyproject/galaxy/blob/dev/run_tests.sh)
 shell script distributed with Galaxy.
 
 The documentation contained here is mostly reference documentation, for
 tutorials on writing tool tests please check out Planemo's
-[Test-Driven Development](http://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development)
+[Test-Driven Development](https://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development)
 documentation or the much older wiki content for
 [WritingTests](https://wiki.galaxyproject.org/Admin/Tools/WritingTests).
 
@@ -944,7 +928,7 @@ associated input ``repeat``.</xs:documentation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set defines the tool's input parameters for executing the tool via the
-functional test framework. See [``test``'s](#tool|tests|test) documentation for
+functional test framework. See [test](#tool-tests-test) documentation for
 some simple examples of parameters.
 
 ]]></xs:documentation>
@@ -1232,7 +1216,7 @@ This directive specifies a test for an output's discovered dataset. It acts as a
 ### Example
 
 The functional test tool
-multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
+[multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
 provides a demonstration of using this tag.
 
 ```xml
@@ -1315,7 +1299,7 @@ tool demonstrates basic usage of an ``output_collection`` test expectation.
 
 The [CWPair2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/cwpair2/cwpair2.xml)
 tool demonstrates that ``element``s can specify a ``compare`` attribute just
-like [``output``](#tool|tests|test|output).
+like [output](#tool-tests-test-output).
 
 ```xml
 <test>
@@ -1342,7 +1326,7 @@ test tool demonstrates the use of nested ``element`` directives as described
 above. Notice also that it tests the output with ``assert_contents`` instead of
 supplying a ``file`` attribute. Like hinted at with with ``compare`` attribute
 above, the ``element`` tag can specify any of the test attributes that apply to
-the [``output``](#tool|tests|test|output) (e.g. ``md5``, ``compare``, ``diff``,
+the [output](#tool-tests-test-output) (e.g. ``md5``, ``compare``, ``diff``,
 etc...).
 
 ```xml
@@ -1428,7 +1412,7 @@ many of the default assertion tags that come with Galaxy and examples of each
 can be found below.
 
 The implementation of these tags are simply Python functions defined in the
-[``galaxy.tools.verify.asserts``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts]
+[galaxy.tools.verify.asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts)
 module.
 ]]>
       </xs:documentation>
@@ -1527,7 +1511,7 @@ module.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all tag sets that define the
 tool's input parameters. Each ``<param>`` tag within the ``<inputs>`` tag set
-maps to a command line parameter within the [``command``](#tool|command) tag. Most
+maps to a command line parameter within the [command](#tool-command) tag. Most
 tools will not need to specify any attributes on this tag itself.]]>
 </xs:documentation>
     </xs:annotation>
@@ -1618,7 +1602,7 @@ statement. A good example tool that demonstrates many conditional parameters is
 </conditional>
 ```
 
-The first directive following the conditional is a [``param``](#tool|inputs|param),
+The first directive following the conditional is a [param](#tool-inputs-param),
 this param must be of type ``select`` or ``boolean``. Depending on the value a
 user selects for this "test" parameter - different UI elements will be shown.
 These different paths are described by the following the ``when`` blocks shown
@@ -1721,7 +1705,7 @@ Is referenced parameter is the same group.]]></xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive describes one potential
 set of input for the tool at this depth. See documentation for the
-[``conditional``](#tool|inputs|conditional) block for more details and examples (XML
+[conditional](#tool-inputs-conditional) block for more details and examples (XML
 and corresponding Cheetah conditionals).</xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -1795,7 +1779,7 @@ This is an example test case with multiple repeat elements for the example above
 </test>
 ```
 
-See the documentation on the [``repeat`` test directive](#tool|tests|test|repeat).
+See the documentation on the [repeat test directive](#tool-tests-test-repeat).
 
 An older way to specify repeats in a test is by instances that are created by referring to names with a special format: "<repeat name>_<repeat index>|<param name>"
 
@@ -1903,6 +1887,11 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
         <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="help" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Short help description for section, rendered just below the section.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="Param">
@@ -1920,7 +1909,7 @@ parameter being described. All the attributes for the ``param`` element are
 documented below for completeness, but here are the common ones for each
 type are as follows:
 
-$attribute_list:name,type,optional,label,help,argument
+$attribute_list:name,type,optional,label,help,argument:4
 
 ### Parameter Types
 
@@ -1928,8 +1917,6 @@ $attribute_list:name,type,optional,label,help,argument
 
 When ``type="text"``, the parameter is free form text and appears as a text box
 in the tool form.
-
-$attribute_list:value,size,area
 
 ##### Examples
 
@@ -1948,11 +1935,11 @@ rendered on the tool form as a text area instead of a single line text box.
 <param name="foo" type="text" area="True" size="5x25" />
 ```
 
+$attribute_list:value,size,area:5
+
 #### ``integer`` and ``float``
 
 These parameters represent whole number and real numbers, respectively.
-
-$attribute_list:value,min,max
 
 ##### Example
 
@@ -1960,11 +1947,13 @@ $attribute_list:value,min,max
 <param name="region_size" size="4" type="integer" value="1" label="flanking regions of size" />
 ```
 
+$attribute_list:value,min,max:5
+
 #### ``boolean``
 
 This represents a binary true or false value.
 
-$attribute_list:checked,truevalue,falsevalue
+$attribute_list:checked,truevalue,falsevalue:5
 
 #### ``data``
 
@@ -1990,7 +1979,34 @@ multiple formats.
        help="The set of aligned reads." />
 ```
 
-$attribute_list:format,multiple
+Perhaps counter-intuitively, a ``multiple="true"`` data parameter requires at least one
+data input. If ``optional="true"`` is specified, this condition is relaxed and the user
+is allowed to select 0 datasets. Unfortunately, if 0 datasets are selected the resulting
+value for the parameter during Cheetah templating (such as in a ``command`` block) will
+effectively be a list with one ``None``-like entity in it.
+
+The following idiom can be used to iterate over such a list and build a hypothetical ``-B``
+parameter for each file - the ``if`` block is used to handle the case where a ``None``-like
+entity appears in the list because no files were selected: 
+
+```
+#for $input in $input1
+    #if $input
+        -B "$input"
+    #end if
+#end for
+```
+
+Some example tools using ``multiple="true"`` data parameters include:
+
+- [multi_data_param.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_data_param.xml)
+- [multi_data_optional.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_data_optional.xml)
+
+Additionally, a detailed discussion of handling multiple homogenous files can be found in the
+the [Planemo Documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#consuming-collections)
+on this topic.
+
+$attribute_list:format,multiple:5
 
 #### ``select``
 
@@ -2016,21 +2032,19 @@ value of ``$upstream_or_down`` will be ``d``, ``u``, ``u,d``, or "".
 </param>
 ```
 
-$attribute_list:data_ref,dynamic_options,display,multiple
+$attribute_list:data_ref,dynamic_options,display,multiple:5
 
 #### ``data_column``
 
 This parameter type is used to select columns from a parameter.
 
-$attribute_list:force_select,numerical,use_header_name
+$attribute_list:force_select,numerical,use_header_name:5
 
 #### ``drill_down``
 
-$attribute_list:hierarchy
+$attribute_list:hierarchy:5
 
 #### ``data_collection``
-
-$attribute_list:format,collection_type
 
 The following will create a parameter that only accepts paired FASTQ files grouped into a collection.
 
@@ -2042,11 +2056,11 @@ The following will create a parameter that only accepts paired FASTQ files group
 ```
 
 More detailed information on writing tools that consume collections can be found
-in the [planemo documentation](http://planemo.readthedocs.io/en/latest/writing_advanced.html#collections).
+in the [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#collections).
+
+$attribute_list:format,collection_type:5
 
 #### ``color``
-
-$attribute_list:value
 
 ##### Examples
 
@@ -2069,6 +2083,8 @@ sanitizer to prevent Galaxy from escaping the result.
   </sanitizer>
 </param>
 ```
+
+$attribute_list:value,rgb:5
 
 This covers examples of the most common parameter types, the remaining parameter
 types are more obsecure and less likely to be useful for most tool authors.
@@ -2146,10 +2162,21 @@ field.</xs:documentation>
 parameter.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="default_value" type="xs:string" gxdocs:deprecated="true">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated way to specify default value for column parameters (use ``value`` instead).</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="optional" type="xs:string" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">If ``false``, parameter must have a
 value. Defaults to "false".</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="rgb" type="xs:string" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">If ``false``, the returned value will be in Hex color code. If ``true``
+it will be a RGB value e.g. 0,0,255. This attribute is only valid when ``type`` is ``color``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:float">
@@ -2202,7 +2229,7 @@ but not always the tool's input dataset).
             <xs:documentation xml:lang="en"></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="force_select" type="PermissiveBoolean">
+        <xs:attribute name="force_select" type="PermissiveBoolean" gxdocs:deprecated="true">
           <xs:annotation>
             <xs:documentation xml:lang="en">Used only if the ``type`` attribute
 value is ``data_column``, this is deprecated and the inverse of ``optional``.
@@ -2331,6 +2358,7 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="select"/>
       <xs:enumeration value="data_column"/>
       <xs:enumeration value="hidden"/>
+      <xs:enumeration value="hidden_data"/>
       <xs:enumeration value="baseurl"/>
       <xs:enumeration value="file"/>
       <xs:enumeration value="data"/>
@@ -2349,12 +2377,12 @@ parameters supplied in the form with the actual tool executable). Any word
 inside it starting with a dollar sign (``$``) will be treated as a variable whose
 values can be acquired from one of three sources: parameters, metadata, or
 output files. After the substitution of variables with their values, the content
-is interpreted with [Cheetah](http://www.cheetahtemplate.org/) and finally given
+is interpreted with [Cheetah](https://pythonhosted.org/Cheetah/) and finally given
 to the interpreter specified in the corresponding attribute (if any).
 
 ### Examples
 
-The following uses a compiled executable ([bedtools](http://bedtools.readthedocs.io/en/latest/)).
+The following uses a compiled executable ([bedtools](https://bedtools.readthedocs.io/en/latest/)).
 
 ```xml
 <command>bed12ToBed6 -i '$input' > '$output'</command>
@@ -2420,7 +2448,7 @@ the following feature components.
 
 A set of "metadata information" is defined for each supported data type (see the
 ``MetadataElement`` objects in the various data types classes in
-[``/lib/galaxy/datatypes``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/datatypes).
+[/lib/galaxy/datatypes](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/datatypes).
 The ``DatasetFilenameWrapper`` class in the
 [/lib/galaxy/tools/wrappers.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/wrappers.py)
 code file wraps a metadata collection to return metadata parameters wrapped
@@ -2466,8 +2494,6 @@ In additon to demonstrating accessing metadata, this example demonstrates:
 * ``#set datatype = $input.datatype`` which is the syntax for defining variables
   in Cheetah.
 
-<a name="cheetah_reserved_variables"></a>
-
 ### Reserved Variables
 
 Galaxy provides a few pre-defined variables which can be used in your command line,
@@ -2492,7 +2518,7 @@ Name | Description
 ---- | -----------
 ``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
 
-See the [Planemo docs](http://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
+See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
 on the topic of ``GALAXY_SLOTS`` for more information and examples.
 
 ### Attributes
@@ -2534,7 +2560,7 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
             <xs:documentation></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="false">
+        <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
           <xs:annotation>
             <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
           </xs:annotation>
@@ -2556,7 +2582,7 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
 See [/tools/filters/sorter.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/filters/sorter.xml)
 for typical examples of how to use this tag set. This directive is used to described
 static lists of options and is contained
-within the [``param``](#tool|inputs|param) directive when the ``type`` attribute
+within the [param](#tool-inputs-param) directive when the ``type`` attribute
 value is ``select`` (i.e. ``<param type="select" ...>``).
 
 ### Example
@@ -2633,7 +2659,7 @@ exclusively use ``filter``s to populate options.
 * ``from_parameter`` - The options for the select list are dynamically obtained
   from a parameter.
 * Using ``filter``s - various filters can be used to populate options, see
-  examples in the [``filter``](#tool|inputs|param|options|filter) documentation.
+  examples in the [filter](#tool-inputs-param-options-filter) documentation.
 
 ### ``from_data_table``
 
@@ -2701,7 +2727,7 @@ and demonstrates generating options from a dataset directly.
 
 Filters can be used to generate options from dataset directly also as the
 example below demonstrates (many more examples are present in the
-[``filter``](#tool|inputs|param|options|filter) documentation).
+[filter](#tool-inputs-param-options-filter) documentation).
 
 ```xml
 <param name="species1" type="select" label="When Species" multiple="false">
@@ -2719,7 +2745,7 @@ dataset is available, admins must add the database to the local file named
 "blastdb.loc". All such databases in that file are included in the options of
 the select list. For a local instance, the file (e.g. ``blastdb.loc`` or
 ``alignseq.loc``) must be stored in the configured
-[``tool_data_path``](https://github.com/galaxyproject/galaxy/tree/master/tool-data)
+[tool_data_path](https://github.com/galaxyproject/galaxy/tree/master/tool-data)
 directory. In this example, the option names and values are taken from column 0
 of the file.
 
@@ -2744,7 +2770,7 @@ wrappers for an example of these.
 
 ### Other Ways to Dynamically Generate Options
 
-Though deprecated and discouraged, [``code``](#tool|code) blocks can also be
+Though deprecated and discouraged, [code](#tool-code) blocks can also be
 used to generate dynamic options.
 
 ]]>
@@ -2983,13 +3009,13 @@ being used for validation start with a this attribute value.</xs:documentation>
 ``in_range`` - this is the maximum number allowed.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="exclude_min" type="xs:decimal">
+        <xs:attribute name="exclude_min" type="xs:boolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">When the ``type`` attribute value is
 ``in_range`` - this boolean indicates if the ``min`` value is allowed.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="exclude_max" type="xs:decimal">
+        <xs:attribute name="exclude_max" type="xs:boolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">When the ``type`` attribute value is
 ``in_range`` - this boolean indicates if the ``max`` value is allowed.</xs:documentation>
@@ -3561,10 +3587,10 @@ This tag set is contained within the ``<outputs>`` tag set, and it defines the
 output dataset collection description resulting from the tool's execution. The
 value of the attribute ``label`` can be acquired from input parameters or
 metadata in the same way that the command line parameters are (discussed in the
-[``command``](#tool|command) directive).
+[command](#tool-command) directive).
 
 Creating collections in tools is covered in-depth in
-[planemo's documentation](http://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
+[planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -3655,10 +3681,9 @@ conditionals are accessed using a hash named after the conditional.
     </inputs>
     <outputs>
       <data format="txt" label="Alignment report on ${on_string}" name="output_txt" />
-      <data format="vcf" label="Variant summary on ${on_string}" name="output_vcf>
+      <data format="vcf" label="Variant summary on ${on_string}" name="output_vcf">
           <filter>options['selection_mode'] == 'advanced' and options['vcf_output']</filter>
       </data>
-    </outputs>
     </outputs>
 ```
 ]]></xs:documentation>
@@ -3683,7 +3708,7 @@ Galaxy, including:
 * https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml
 
 More information can be found on Planemo's documentation for
-[multiple output files](http://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
+[multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="pattern" type="xs:string" use="required">
@@ -3943,7 +3968,7 @@ This directive is contained within an output ``data``'s  ``actions`` directive
 describes modifications to either the output's format or metadata (based on
 whether ``type`` is ``format`` or ``metadata``).
 
-See [``actions``](#tool|outputs|data|actions) documentation for examples
+See [actions](#tool-outputs-data-actions) documentation for examples
 of this directive.
 
 ]]></xs:documentation>
@@ -4012,7 +4037,7 @@ This directive describes the state of the inputs required to apply an ``action``
 (specified as children of the child ``when`` directives to this element) to an
 output.
 
-See [``actions``](#tool|outputs|data|actions) documentation for examples
+See [actions](#tool-outputs-data-actions) documentation for examples
 of this directive.
 
 ]]></xs:documentation>
@@ -4032,7 +4057,7 @@ conditional logic on. The value of this parameter will be matched against nested
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-See [``actions``](#tool|outputs|data|actions) documentation for examples
+See [actions](#tool-outputs-data-actions) documentation for examples
 of this directive.
 
       ]]></xs:documentation>
@@ -4183,7 +4208,6 @@ define.</xs:documentation>
     </xs:simpleContent>
   </xs:complexType>
 
-
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See
@@ -4313,6 +4337,52 @@ response to this directive.
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="VersionCommand">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
+order to get the tool's version string. The resulting value will be found in the
+"Info" field of the history dataset.
+
+Unlike the [command](#tool-command) tag, with the exception of the string
+``$__tool_directory__`` this value is taken as a literal and so there is no
+need to escape values like ``$`` and command inputs are not available for variable
+substitution.
+
+### Examples
+
+A simple example for a [TopHat](https://ccb.jhu.edu/software/tophat/index.shtml)
+tool definition might just be:
+
+```xml
+<version_command>tophat -version</version_command>
+```
+
+An example that leverages a Python script (e.g. ``count_reads.py``) shipped with
+the tool might be:
+
+```xml
+<version_command>python $__tool_directory__/count_reads.py</version_command>
+```
+
+Examples are included in the test tools directory including:
+
+- [version_command_plain.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_plain.xml)
+- [version_command_tool_dir.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_tool_dir.xml)
+- [version_command_interpreter.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_interpreter.xml) (*deprecated*)
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="interpreter" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*: Prefix the version command with an interpreter and the tool directory in order to execute a script shipped with the tool. It is better to just use ``<interpreter> $__tool_directory__/<script_name>``.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -4533,7 +4603,7 @@ Tools may use exit codes to indicate specific execution errors. Many programs us
 
 The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied <exit_code> tags' ranges, then no errors are applied to the tool's execution.
 
-Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at http://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
+Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at https://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
 
 The <exit_code> tag's supported attributes are as follows:
 
@@ -4779,7 +4849,7 @@ well. Likewise, the history menu includes an option allowing users to aggregate
 all such citations across an analysis in a list of citations.
 
 BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
-http://dx.doi.org/ and cached.
+https://dx.doi.org/ and cached.
 
 ```xml
 <citations>

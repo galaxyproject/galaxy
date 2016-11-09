@@ -24,9 +24,6 @@ matrix:
   allow_failures:
   - env: TOX_ENV=py27-lint-imports
 
-before_install:
-  - if [ `uname` == "Darwin"  ]; then bash -c "brew update && brew install python"; fi
-
 install:
   - pip install tox
   - if [ "$TOX_ENV" == "validate-test-tools" ]; then sudo apt-get install libxml2-utils; fi

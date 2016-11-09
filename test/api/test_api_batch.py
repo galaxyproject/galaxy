@@ -1,7 +1,9 @@
 import json
-import pprint
 import logging
+import pprint
+
 from requests import post
+
 from base import api
 
 log = logging.getLogger( "functional_tests.py" )

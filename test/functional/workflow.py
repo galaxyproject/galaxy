@@ -1,14 +1,15 @@
+from __future__ import print_function
+
 import os
 import sys
-from base.twilltestcase import TwillTestCase
-from base.interactor import GalaxyInteractorApi, stage_data_in_history
-
-from galaxy.util import parse_xml
-from galaxy.util import bunch
-from galaxy.tools.test import parse_param_elem, require_file, test_data_iter, parse_output_elems
-from json import load, dumps
-
+from json import dumps, load
 from logging import getLogger
+
+from base.interactor import GalaxyInteractorApi, stage_data_in_history
+from base.twilltestcase import TwillTestCase
+from galaxy.tools.test import parse_output_elems, parse_param_elem, require_file, test_data_iter
+from galaxy.util import bunch, parse_xml
+
 log = getLogger( __name__ )
 
 
@@ -75,7 +76,7 @@ class WorkflowTestCase( TwillTestCase ):
             except Exception:
                 for stream in ['stdout', 'stderr']:
                     stream_output = galaxy_interactor.get_job_stream( test_history, output_data, stream=stream )
-                    print >>sys.stderr, self._format_stream( stream_output, stream=stream, format=True )
+                    print(self._format_stream( stream_output, stream=stream, format=True ), file=sys.stderr)
                 raise
 
     def __import_workflow( self, galaxy_interactor, workflow ):
@@ -94,8 +95,8 @@ class WorkflowTestCase( TwillTestCase ):
 
         imported_workflow = galaxy_interactor.read_workflow( workflow_id )
         step_id_map = {}
-        local_steps_ids = sorted( [ int( step_id ) for step_id in workflow[ 'steps' ].keys() ] )
-        imported_steps_ids = sorted( [ int( step_id ) for step_id in imported_workflow[ 'steps' ].keys() ] )
+        local_steps_ids = sorted( int( step_id ) for step_id in workflow[ 'steps' ].keys() )
+        imported_steps_ids = sorted( int( step_id ) for step_id in imported_workflow[ 'steps' ].keys() )
         for local_step_id, imported_step_id in zip( local_steps_ids, imported_steps_ids ):
             step_id_map[ local_step_id ] = imported_step_id
 
@@ -152,7 +153,7 @@ class WorkflowTest( object ):
     def input_datasets( self ):
         steps = self.workflow[ "steps" ]
         log.info("in input_datasets with steps %s" % steps)
-        for step_index, step_dict in steps.iteritems():
+        for step_index, step_dict in steps.items():
             if step_dict.get( "name", None ) == "Input dataset":
                 yield int( step_index ), step_dict[ "inputs" ][0][ "name" ]
 

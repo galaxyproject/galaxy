@@ -248,6 +248,36 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 });
             }
 
+            // add admin operations for tool XML reloading
+            if (Galaxy.user && Galaxy.user.get('is_admin')) {
+                menu_button.addMenu({
+                    icon    : 'fa-refresh',
+                    title   : 'Reload Tool XML',
+                    tooltip : 'Reload tool XML file',
+                    onclick : function() {
+                        var modalMessage = new Ui.Modal.View();
+                        $.ajax({
+                            url: '/api/tools/' + options.id + '/reload',
+                            type: "GET",
+                        }).done(function(data){
+                            modalMessage.show({
+                                title   : data.done ? 'Tool XML Reload' : 'Tool XML Reload Error',
+                                body    : data.done ? data.done : data.error,
+                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                            });
+                            window.setTimeout(function(){modalMessage.hide();}, 2000);
+
+                        }).fail(function(error){
+                            modalMessage.show({
+                                title: "Tool XML Reload AJAX Error",
+                                body: options.id + " " + error,
+                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                            });
+                        });
+                    }
+                });
+            }
+
             // button for version selection
             if (options.requirements && options.requirements.length > 0) {
                 menu_button.addMenu({
@@ -255,19 +285,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     title   : 'Requirements',
                     tooltip : 'Display tool requirements',
                     onclick : function() {
-                        if (!this.visible || self.portlet.collapsed ) {
-                            this.visible = true;
+                        if ( !this.requirements_visible || self.portlet.collapsed ) {
+                            this.requirements_visible = true;
                             self.portlet.expand();
-                            self.message.update({
-                                persistent  : true,
-                                message     : self._templateRequirements(options),
-                                status      : 'info'
-                            });
+                            self.message.update( { persistent : true, message : self._templateRequirements( options ), status : 'info' } );
                         } else {
-                            this.visible = false;
-                            self.message.update({
-                                message     : ''
-                            });
+                            this.requirements_visible = false;
+                            self.message.update( { message : '' } );
                         }
                     }
                 });

@@ -8,14 +8,16 @@ from markupsafe import escape
 from six import iteritems
 from six.moves.urllib.parse import urlparse
 
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import MessageException, ObjectNotFound
 # Next two are extra tool dependency not used by AbstractToolBox but by
 # BaseGalaxyToolBox.
 from galaxy.tools.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
-from galaxy.util import listify
-from galaxy.util import parse_xml
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    listify,
+    parse_xml,
+    string_as_bool
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
@@ -23,14 +25,18 @@ from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
-from .panel import panel_item_types
-from .panel import ToolPanelElements
-from .panel import ToolSection
-from .panel import ToolSectionLabel
+from .panel import (
+    panel_item_types,
+    ToolPanelElements,
+    ToolSection,
+    ToolSectionLabel
+)
 from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
-from .watcher import get_tool_watcher
-from .watcher import get_tool_conf_watcher
+from .watcher import (
+    get_tool_conf_watcher,
+    get_tool_watcher
+)
 
 log = logging.getLogger( __name__ )
 
@@ -83,6 +89,13 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         self._save_integrated_tool_panel()
 
     def handle_reload_toolbox(self):
+        """Extension-point for Galaxy-app specific reload logic.
+
+        This abstract representation of the toolbox shouldn't have details about
+        interacting with the rest of the Galaxy app or message queues, etc....
+        """
+
+    def handle_panel_update(self, section_dict):
         """Extension-point for Galaxy-app specific reload logic.
 
         This abstract representation of the toolbox shouldn't have details about
@@ -230,13 +243,18 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                 'id': section_id,
                 'version': '',
             }
-            tool_section = ToolSection( section_dict )
-            self._tool_panel.append_section( tool_panel_section_key, tool_section )
-            log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
+            self.handle_panel_update(section_dict)
+            tool_section = self._tool_panel[ tool_panel_section_key ]
             self._save_integrated_tool_panel()
         else:
             tool_section = None
         return tool_panel_section_key, tool_section
+
+    def create_section(self, section_dict):
+        tool_section = ToolSection(section_dict)
+        self._tool_panel.append_section(tool_section.id, tool_section)
+        log.debug("Loading new tool panel section: %s" % str(tool_section.name))
+        return tool_section
 
     def get_integrated_section_for_tool( self, tool ):
         tool_id = tool.id
@@ -399,8 +417,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
 
         if "/repos/" in tool_id:  # test if tool came from a toolshed
             tool_id_without_tool_shed = tool_id.split("/repos/")[1]
-            available_tool_sheds = self.app.tool_shed_registry.tool_sheds.values()
-            available_tool_sheds = [ urlparse(tool_shed) for tool_shed in available_tool_sheds ]
+            available_tool_sheds = [ urlparse(_) for _ in self.app.tool_shed_registry.tool_sheds.values() ]
             available_tool_sheds = [ url.geturl().replace(url.scheme + "://", '', 1) for url in available_tool_sheds]
             tool_ids = [ tool_shed + "repos/" + tool_id_without_tool_shed for tool_shed in available_tool_sheds]
             if tool_id in tool_ids:  # move original tool_id to the top of tool_ids
@@ -432,7 +449,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
                         rval.append( lineage_tool )
             if not rval:
                 # still no tool, do a deeper search and try to match by old ids
-                for tool in self._tools_by_id.itervalues():
+                for tool in self._tools_by_id.values():
                     if tool.old_id == tool_id:
                         rval.append( tool )
             if rval:
@@ -534,15 +551,20 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             tool = self.load_tool_from_cache(os.path.join(tool_path, path))
             from_cache = tool
             if from_cache:
-                log.debug("Loading tool %s from cache", str(tool.id))
-            elif guid:  # tool was not in cache and is a tool shed tool
+                if guid and tool.id != guid:
+                    # In rare cases a tool shed tool is loaded into the cache without guid.
+                    # In that case recreating the tool will correct the cached version.
+                    from_cache = False
+                else:
+                    log.debug("Loading tool %s from cache", str(tool.id))
+            if guid and not from_cache:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id(tool_shed_repository.id)
                     tool = self.load_tool(os.path.join( tool_path, path ), guid=guid, repository_id=repository_id, use_cached=False)
-            else:  # tool was not in cache and is not a tool shed tool.
+            if not tool:  # tool was not in cache and is not a tool shed tool.
                 tool = self.load_tool(os.path.join(tool_path, path), use_cached=False)
             if string_as_bool(item.get( 'hidden', False )):
                 tool.hidden = True
@@ -569,7 +591,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             if labels is not None:
                 tool.labels = labels
         except IOError:
-            log.error( "Error reading tool configuration file from path: %s." % path )
+            log.error( "Error reading tool configuration file from path: %s" % path )
         except Exception:
             log.exception( "Error reading tool from path: %s" % path )
 
@@ -994,8 +1016,11 @@ def _filter_for_panel( item, item_type, filters, context ):
     """
     def _apply_filter( filter_item, filter_list ):
         for filter_method in filter_list:
-            if not filter_method( context, filter_item ):
-                return False
+            try:
+                if not filter_method( context, filter_item ):
+                    return False
+            except Exception as e:
+                raise MessageException( "Toolbox filter exception from '%s': %s." % ( filter_method.__name__, e ) )
         return True
     if item_type == panel_item_types.TOOL:
         if _apply_filter( item, filters[ 'tool' ] ):
@@ -1021,7 +1046,7 @@ def _filter_for_panel( item, item_type, filters, context ):
                 elif section_item_type == panel_item_types.LABEL:
                     # If there is a label and it does not have tools,
                     # remove it.
-                    if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
+                    if cur_label_key and ( not tools_under_label or not _apply_filter( section_item, filters[ 'label' ] ) ):
                         del filtered_elems[ cur_label_key ]
 
                     # Reset attributes for new label.

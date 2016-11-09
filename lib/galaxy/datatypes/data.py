@@ -66,14 +66,13 @@ class Data( object ):
     'test'
     >>> type( DataTest.metadata_spec.test.param )
     <class 'galaxy.model.metadata.MetadataParameter'>
-
     """
     edam_data = "data_0006"
     edam_format = "format_1915"
     # Data is not chunkable by default.
     CHUNKABLE = False
 
-    #: dictionary of metadata fields for this datatype::
+    #: Dictionary of metadata fields for this datatype
     metadata_spec = None
 
     # Add metadata elements
@@ -855,7 +854,7 @@ class Text( Data ):
     @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
     def line_dataprovider( self, dataset, **settings ):
         """
-        Returns an iterator over the dataset's lines (that have been `strip`ed)
+        Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.
         """
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
@@ -962,10 +961,9 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
 
-    ## >>> fname = get_test_fname('4.bed')
-    ## >>> get_file_peek(fname)
-    ## 'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
-
+    >>> fname = get_test_fname('4.bed')
+    >>> get_file_peek(fname, LINE_COUNT=1)
+    u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
