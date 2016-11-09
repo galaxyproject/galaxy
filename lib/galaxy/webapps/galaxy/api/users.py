@@ -6,7 +6,7 @@ import logging
 import datetime
 import re
 
-from sqlalchemy import false, true, or_
+from sqlalchemy import false, true, and_, or_
 
 from galaxy import exceptions, util, web
 from galaxy.exceptions import MessageException
