@@ -8,7 +8,7 @@ from markupsafe import escape
 from six import iteritems
 from six.moves.urllib.parse import urlparse
 
-from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import MessageException, ObjectNotFound
 # Next two are extra tool dependency not used by AbstractToolBox but by
 # BaseGalaxyToolBox.
 from galaxy.tools.deps import build_dependency_manager
@@ -1002,8 +1002,11 @@ def _filter_for_panel( item, item_type, filters, context ):
     """
     def _apply_filter( filter_item, filter_list ):
         for filter_method in filter_list:
-            if not filter_method( context, filter_item ):
-                return False
+            try:
+                if not filter_method( context, filter_item ):
+                    return False
+            except Exception as e:
+                raise MessageException( "Toolbox filter exception from '%s': %s." % ( filter_method.__name__, e ) )
         return True
     if item_type == panel_item_types.TOOL:
         if _apply_filter( item, filters[ 'tool' ] ):
@@ -1029,7 +1032,7 @@ def _filter_for_panel( item, item_type, filters, context ):
                 elif section_item_type == panel_item_types.LABEL:
                     # If there is a label and it does not have tools,
                     # remove it.
-                    if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
+                    if cur_label_key and ( not tools_under_label or not _apply_filter( section_item, filters[ 'label' ] ) ):
                         del filtered_elems[ cur_label_key ]
 
                     # Reset attributes for new label.
