@@ -356,6 +356,7 @@ lib/galaxy/webapps/galaxy/controllers/tool_runner.py
 lib/galaxy/webapps/galaxy/controllers/userskeys.py
 lib/galaxy/webapps/galaxy/__init__.py
 lib/galaxy/webapps/__init__.py
+lib/galaxy/webapps/reports/config.py
 lib/galaxy/webapps/reports/controllers/__init__.py
 lib/galaxy/webapps/reports/controllers/query.py
 lib/galaxy/webapps/reports/__init__.py
