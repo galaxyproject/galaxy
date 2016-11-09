@@ -195,26 +195,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
     @expose_api
     @web.require_admin
-    def shed_categories( self, trans, **kwd ):
-        """
-        GET /api/tool_shed_repositories/shed_categories
-
-        Display a list of categories in the selected toolshed.
-
-        :param tool_shed_url: the url of the toolshed to get categories from
-        """
-        tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories' ] )
-        categories = json.loads( util.url_get( url ) )
-        repositories = []
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
-        for repo in json.loads( util.url_get( url ) ):
-            repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
-        return { 'categories': categories, 'repositories': repositories }
-
-    @expose_api
-    @web.require_admin
     def shed_category( self, trans, **kwd ):
         """
         GET /api/tool_shed_repositories/shed_category
@@ -816,3 +796,36 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                           id=trans.security.encode_id( tool_shed_repository.id ) )
         tool_shed_repository_dict[ 'repository_dependencies' ] = self.__flatten_repository_dependency_list( trans, tool_shed_repository )
         return tool_shed_repository_dict
+
+    @expose_api
+    @web.require_admin
+    def tool_shed( self, trans, **kwd ):
+        """
+        GET /api/tool_shed
+        Interact with this galaxy instance's toolshed registry.
+        """
+        sheds = []
+        for name, url in trans.app.tool_shed_registry.tool_sheds.items():
+            sheds.append( dict( name=name, url=url.replace( '/', '%2F' ).replace( ':', '%3A' ) ) )
+        return sheds
+
+    @expose_api
+    @web.require_admin
+    def shed_categories( self, trans, **kwd ):
+        """
+        GET /api/tool_shed/{tool_shed_url}/categories
+
+        Display a list of categories in the selected toolshed.
+
+        :param tool_shed_url: the url of the toolshed to get categories from
+        """
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, kwd.get('tool_shed_url') )
+        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories' ] )
+        categories = json.loads( util.url_get( url ) )
+        return categories
+        repositories = []
+        # url = util.build_url( tool_shed_url, pathspec=[ 'api', 'repositories' ] )
+        # for repo in json.loads( util.url_get( url ) ):
+        #     repositories.append( dict( value=repo[ 'id' ], label='%s/%s' % ( repo[ 'owner' ], repo[ 'name' ] ) ) )
+        # return { 'categories': categories, 'repositories': repositories }
+

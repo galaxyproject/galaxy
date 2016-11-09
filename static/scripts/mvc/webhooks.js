@@ -1,2 +1,38 @@
-define([],function(){var a=Backbone.Model.extend({defaults:{activate:!1}}),b=Backbone.Collection.extend({model:a}),c=Backbone.View.extend({el:"#webhook-view",initialize:function(b){var c=this;this.model=new a,this.model.urlRoot=b.urlRoot,this.model.fetch({success:function(){c.render()}})},render:function(){var a=this.model.toJSON();return this.$el.html('<div id="'+a.name+'"></div>'),a.styles&&$("<style/>",{type:"text/css"}).text(a.styles).appendTo("head"),a.script&&$("<script/>",{type:"text/javascript"}).text(a.script).appendTo("head"),this}}),d=function(a){var c=new b;c.url=Galaxy.root+a.url,c.fetch({async:"undefined"!=typeof a.async?a.async:!0,success:a.callback})};return{Webhooks:b,WebhookView:c,add:d}});
-//# sourceMappingURL=../../maps/mvc/webhooks.js.map
+define([], function() {
+    var WebhookModel = Backbone.Model.extend({
+        defaults: {
+            activate: !1
+        }
+    }), Webhooks = Backbone.Collection.extend({
+        model: WebhookModel
+    }), WebhookView = Backbone.View.extend({
+        el: "#webhook-view",
+        initialize: function(options) {
+            var me = this;
+            this.model = new WebhookModel(), this.model.urlRoot = options.urlRoot, this.model.fetch({
+                success: function() {
+                    me.render();
+                }
+            });
+        },
+        render: function() {
+            var webhook = this.model.toJSON();
+            return this.$el.html('<div id="' + webhook.name + '"></div>'), webhook.styles && $("<style/>", {
+                type: "text/css"
+            }).text(webhook.styles).appendTo("head"), webhook.script && $("<script/>", {
+                type: "text/javascript"
+            }).text(webhook.script).appendTo("head"), this;
+        }
+    }), add = function(options) {
+        var webhooks = new Webhooks();
+        webhooks.url = Galaxy.root + options.url, webhooks.fetch({
+            async: "undefined" != typeof options.async ? options.async : !0,
+            success: options.callback
+        });
+    };
+    return {
+        Webhooks: Webhooks,
+        WebhookView: WebhookView,
+        add: add
+    };
+});

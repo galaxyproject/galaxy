@@ -195,10 +195,13 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def browse_toolsheds( self, trans, **kwd ):
-        message = escape( kwd.get( 'message', '' ) )
-        return trans.fill_template( '/admin/tool_shed_repository/browse_toolsheds.mako',
-                                    message=message,
-                                    status='error' )
+        app = {
+            'jscript': "admin.toolshed"
+        }
+        return trans.fill_template( 'galaxy.panels.mako',
+                                    config={
+                                        'title': 'Galaxy ToolSheds',
+                                        'app': app } )
 
     @web.expose
     @web.require_admin
