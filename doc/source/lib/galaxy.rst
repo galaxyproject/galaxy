@@ -22,7 +22,6 @@ Subpackages
     galaxy.forms
     galaxy.jobs
     galaxy.managers
-    galaxy.metadata
     galaxy.model
     galaxy.objectstore
     galaxy.openid

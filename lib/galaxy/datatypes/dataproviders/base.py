@@ -7,9 +7,13 @@ Base class(es) for all DataProviders.
 # also, this shouldn't be a replacement/re-implementation of the tool layer
 #   (which provides traceability/versioning/reproducibility)
 
-from collections import deque
-import exceptions
 import logging
+from collections import deque
+
+import six
+
+from . import exceptions
+
 log = logging.getLogger( __name__ )
 
 _TODO = """
@@ -60,7 +64,8 @@ class HasSettings( type ):
 
 
 # ----------------------------------------------------------------------------- base classes
-class DataProvider( object ):
+@six.add_metaclass(HasSettings)
+class DataProvider( six.Iterator ):
     """
     Base class for all data providers. Data providers:
         (a) have a source (which must be another file-like object)
@@ -71,7 +76,6 @@ class DataProvider( object ):
     # a definition of expected types for keyword arguments sent to __init__
     #   useful for controlling how query string dictionaries can be parsed into correct types for __init__
     #   empty in this base class
-    __metaclass__ = HasSettings
     settings = {}
 
     def __init__( self, source, **kwargs ):
@@ -130,8 +134,8 @@ class DataProvider( object ):
             for datum in self.source:
                 yield datum
 
-    def next( self ):
-        return self.source.next()
+    def __next__( self ):
+        return next(self.source)
 
     # context manager interface
     def __enter__( self ):

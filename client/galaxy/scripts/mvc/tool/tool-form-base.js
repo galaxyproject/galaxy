@@ -16,6 +16,23 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     self._buildModel(process, options, true);
                 });
             }
+            // listen to history panel
+            if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
+                this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
+                    this.refresh();
+                });
+            }
+            // destroy dom elements
+            this.$el.on( 'remove', function() { self.remove() } );
+        },
+
+        /** Listen to history panel changes and update the tool form */
+        refresh: function() {
+            var self = this;
+            self.deferred.reset();
+            this.deferred.execute( function (process){
+                self._updateModel( process)
+            });
         },
 
         /** Wait for deferred build processes before removal */
@@ -35,12 +52,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.options = Utils.merge({
                 icon            : options.icon,
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations      : this._operations(),
+                operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
-                    self.deferred.reset();
-                    self.deferred.execute(function(process) {
-                        self._updateModel(process);
-                    });
+                    self.refresh();
                 }
             }, this.options);
             this.options.customize && this.options.customize( this.options );
@@ -89,9 +103,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     Galaxy.emit.debug('tool-form-base::initialize()', 'Initial tool model ready.', new_model);
                     process.resolve();
                 },
-                error   : function(response, xhr) {
+                error   : function(response, status) {
                     var error_message = ( response && response.err_msg ) || 'Uncaught error.';
-                    if ( xhr.status == 401 ) {
+                    if ( status == 401 ) {
                         window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + self.options.id });
                     } else if ( self.$el.is(':empty') ) {
                         self.$el.prepend((new Ui.Message({
@@ -234,6 +248,36 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 });
             }
 
+            // add admin operations for tool XML reloading
+            if (Galaxy.user && Galaxy.user.get('is_admin')) {
+                menu_button.addMenu({
+                    icon    : 'fa-refresh',
+                    title   : 'Reload Tool XML',
+                    tooltip : 'Reload tool XML file',
+                    onclick : function() {
+                        var modalMessage = new Ui.Modal.View();
+                        $.ajax({
+                            url: '/api/tools/' + options.id + '/reload',
+                            type: "GET",
+                        }).done(function(data){
+                            modalMessage.show({
+                                title   : data.done ? 'Tool XML Reload' : 'Tool XML Reload Error',
+                                body    : data.done ? data.done : data.error,
+                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                            });
+                            window.setTimeout(function(){modalMessage.hide();}, 2000);
+
+                        }).fail(function(error){
+                            modalMessage.show({
+                                title: "Tool XML Reload AJAX Error",
+                                body: options.id + " " + error,
+                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                            });
+                        });
+                    }
+                });
+            }
+
             // button for version selection
             if (options.requirements && options.requirements.length > 0) {
                 menu_button.addMenu({
@@ -241,19 +285,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     title   : 'Requirements',
                     tooltip : 'Display tool requirements',
                     onclick : function() {
-                        if (!this.visible || self.portlet.collapsed ) {
-                            this.visible = true;
+                        if ( !this.requirements_visible || self.portlet.collapsed ) {
+                            this.requirements_visible = true;
                             self.portlet.expand();
-                            self.message.update({
-                                persistent  : true,
-                                message     : self._templateRequirements(options),
-                                status      : 'info'
-                            });
+                            self.message.update( { persistent : true, message : self._templateRequirements( options ), status : 'info' } );
                         } else {
-                            this.visible = false;
-                            self.message.update({
-                                message     : ''
-                            });
+                            this.requirements_visible = false;
+                            self.message.update( { message : '' } );
                         }
                     }
                 });

@@ -132,7 +132,7 @@ class WorkflowModule( object ):
         """
         pass
 
-    def add_dummy_datasets( self, connections=None):
+    def add_dummy_datasets( self, connections=None, steps=None ):
         # Replaced connected inputs with DummyDataset values.
         pass
 
@@ -417,7 +417,7 @@ class SubWorkflowModule( WorkflowModule ):
         """
         return None
 
-    def add_dummy_datasets( self, connections=None):
+    def add_dummy_datasets( self, connections=None, steps=None ):
         # Replaced connected inputs with DummyDataset values.
         return None
 
@@ -528,9 +528,20 @@ class InputDataModule( InputModule ):
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
 
-    def get_runtime_inputs( self, filter_set=['data'] ):
+    def get_filter_set( self, connections=None ):
+        filter_set = []
+        if connections:
+            for oc in connections:
+                for ic in oc.input_step.module.get_data_inputs():
+                    if 'extensions' in ic and ic[ 'name' ] == oc.input_name:
+                        filter_set += ic[ 'extensions' ]
+        if not filter_set:
+            filter_set = [ 'data' ]
+        return ', '.join( filter_set )
+
+    def get_runtime_inputs( self, connections=None ):
         label = self.state.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=', '.join(filter_set) ), self.trans ) )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
 
 
 class InputDataCollectionModule( InputModule ):
@@ -545,7 +556,7 @@ class InputDataCollectionModule( InputModule ):
     def default_state( Class ):
         return dict( name=Class.default_name, collection_type=Class.default_collection_type )
 
-    def get_runtime_inputs( self, filter_set=['data'] ):
+    def get_runtime_inputs( self, **kwds ):
         label = self.state.get( "name", self.default_name )
         collection_type = self.state.get( "collection_type", self.default_collection_type )
         input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
@@ -1139,22 +1150,31 @@ class ToolModule( WorkflowModule ):
         if flush_required:
             self.trans.sa_session.flush()
 
-    def add_dummy_datasets( self, connections=None):
+    def add_dummy_datasets( self, connections=None, steps=None ):
         if connections:
-            # Store onnections by input name
-            input_connections_by_name = \
-                dict( ( conn.input_name, conn ) for conn in connections )
+            # Store connections by input name
+            input_connections_by_name = dict( ( conn.input_name, conn ) for conn in connections )
         else:
             input_connections_by_name = {}
 
-        # Any connected input needs to have value RuntimeValue (these
-        # are not persisted so we need to do it every time)
+        # Any input needs to have value RuntimeValue or obtain the value from connected steps
         def callback( input, prefixed_name, context, **kwargs ):
             if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                if connections is None or prefixed_name in input_connections_by_name:
+                if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+                    if prefixed_name in input_connections_by_name:
+                        connection = input_connections_by_name[ prefixed_name ]
+                        output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
+                        if output_step.type.startswith( 'data' ):
+                            output_inputs = output_step.module.get_runtime_inputs( connections=connections )
+                            output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
+                            if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
+                                return output_value.to_hda_representative()
+                            return output_value
+                        return RuntimeValue()
+                    else:
+                        return input.get_initial_value( self.trans, context )
+                elif connections is None or prefixed_name in input_connections_by_name:
                     return RuntimeValue()
-                elif self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
-                    return input.get_initial_value( self.trans, context )
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
 
@@ -1289,7 +1309,7 @@ class WorkflowModuleInjector(object):
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject( self, step, step_args=None ):
+    def inject( self, step, step_args=None, steps=None ):
         """ Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.
@@ -1319,7 +1339,7 @@ class WorkflowModuleInjector(object):
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
-        module.add_dummy_datasets( connections=step.input_connections )
+        module.add_dummy_datasets( connections=step.input_connections, steps=steps )
         state, step_errors = module.compute_runtime_state( self.trans, step_args )
         step.state = state
         if step.type == "subworkflow":
@@ -1339,9 +1359,9 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
         step_errors = module_injector.inject( step, step_args=step_args )
         if step.type == 'tool' or step.type is None:
             if step_errors:
-                raise exceptions.MessageException( step_errors )
+                raise exceptions.MessageException( step_errors, err_data={ step.order_index: step_errors } )
             if step.upgrade_messages:
                 if allow_tool_state_corrections:
                     log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
                 else:
-                    raise exceptions.MessageException( step.upgrade_messages )
+                    raise exceptions.MessageException( step.upgrade_messages, err_data={ step.order_index: step.upgrade_messages } )

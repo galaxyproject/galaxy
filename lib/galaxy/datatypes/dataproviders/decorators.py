@@ -32,25 +32,24 @@ def has_dataproviders( cls ):
     in the class.
 
     This allows a class to maintain a name -> method map, effectively
-    'registering' dataprovider factory methods.
+    'registering' dataprovider factory methods::
 
-    .. example::
-    @has_dataproviders
-    class MyDtype( data.Data ):
+        @has_dataproviders
+        class MyDtype( data.Data ):
 
-        @dataprovider_factory( 'bler' )
-        def provide_some_bler( self, dataset, **settings ):
-            '''blerblerbler'''
-            dataset_source = providers.DatasetDataProvider( dataset )
-            # ... chain other, intermidiate providers here
-            return providers.BlerDataProvider( dataset_source, **settings )
+            @dataprovider_factory( 'bler' )
+            def provide_some_bler( self, dataset, **settings ):
+                '''blerblerbler'''
+                dataset_source = providers.DatasetDataProvider( dataset )
+                # ... chain other, intermidiate providers here
+                return providers.BlerDataProvider( dataset_source, **settings )
 
-    # use the base method in data.Data
-    provider = dataset.datatype.dataprovider( dataset, 'bler',
-                                              my_setting='blah', ... )
-    # OR directly from the map
-    provider = dataset.datatype.dataproviders[ 'bler' ]( dataset,
-                                                         my_setting='blah', ... )
+        # use the base method in data.Data
+        provider = dataset.datatype.dataprovider( dataset, 'bler',
+                                                  my_setting='blah', ... )
+        # OR directly from the map
+        provider = dataset.datatype.dataproviders[ 'bler' ]( dataset,
+                                                             my_setting='blah', ... )
     """
     # init the class dataproviders map if necc.
     if not hasattr( cls, _DATAPROVIDER_CLASS_MAP_KEY ):
@@ -82,15 +81,15 @@ def dataprovider_factory( name, settings=None ):
     function to parse query strings to __init__ arguments as the
     `parse_query_string_settings` attribute of the factory function.
 
-    An example use of the `parse_query_string_settings`:
-    ..example::
-    kwargs = dataset.datatype.dataproviders[ provider ].parse_query_string_settings( query_kwargs )
-    return list( dataset.datatype.dataprovider( dataset, provider, **kwargs ) )
+    An example use of the `parse_query_string_settings`::
+
+        kwargs = dataset.datatype.dataproviders[ provider ].parse_query_string_settings( query_kwargs )
+        return list( dataset.datatype.dataprovider( dataset, provider, **kwargs ) )
 
     :param name: what name/key to register the factory under in `cls.dataproviders`
     :type name: any hashable var
     :param settings: dictionary containing key/type pairs for parsing query strings
-    to __init__ arguments
+        to __init__ arguments
     :type settings: dictionary
     """
     # TODO:?? use *args for settings allowing mulitple dictionaries

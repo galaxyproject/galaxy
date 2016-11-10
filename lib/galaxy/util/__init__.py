@@ -8,7 +8,6 @@ from __future__ import absolute_import
 import binascii
 import collections
 import errno
-import grp
 import json
 import logging
 import os
@@ -22,15 +21,23 @@ import sys
 import tempfile
 import threading
 import time
+try:
+    import grp
+except ImportError:
+    # For Pulsar on Windows (which does not use the function that uses grp)
+    grp = None
+
 from datetime import datetime
 from hashlib import md5
 from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
 
-from six import binary_type, iteritems, PY3, string_types, text_type
-from six.moves import email_mime_text, email_mime_multipart, xrange, zip
-from six.moves.urllib import parse as urlparse
-from six.moves.urllib import request as urlrequest
+from six import binary_type, iteritems, string_types, text_type
+from six.moves import email_mime_multipart, email_mime_text, xrange, zip
+from six.moves.urllib import (
+    parse as urlparse,
+    request as urlrequest
+)
 
 try:
     import docutils.core as docutils_core
@@ -40,14 +47,8 @@ except ImportError:
     docutils_html4css1 = None
 
 from .inflection import English, Inflector
+
 inflector = Inflector(English)
-
-if PY3:
-    def list_map(f, input):
-        return list(map(f, input))
-else:
-    list_map = map
-
 
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -62,6 +63,7 @@ bz2_magic = 'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
+FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 def remove_protocol_from_url( url ):
@@ -473,7 +475,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance( text, list ):
-        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+        return [ sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) for x in text ]
     if not isinstance( text, string_types ):
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
@@ -512,7 +514,7 @@ def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_ch
     if isinstance( value, string_types ):
         return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
+        return [ sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) for x in value ]
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
@@ -564,7 +566,7 @@ def mask_password_from_url( url ):
 
 
 def ready_name_for_url( raw_name ):
-    """ General method to convert a string (i.e. object name) to a URL-ready
+    u""" General method to convert a string (i.e. object name) to a URL-ready
     slug.
 
     >>> ready_name_for_url( "My Cool Object" )
@@ -707,9 +709,11 @@ class Params( object ):
                 # name. Anything relying on NEVER_SANITIZE should be
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
-                                                                    nonsanitize_parameter in self.NEVER_SANITIZE ]:
-                    self.__dict__[ key ] = sanitize_param( value )
+                if (value is not None and
+                    key not in self.NEVER_SANITIZE and
+                    True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
+                                  nonsanitize_parameter in self.NEVER_SANITIZE ]):
+                        self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
         else:
@@ -808,7 +812,7 @@ def asbool(obj):
 
 
 def string_as_bool( string ):
-    if str( string ).lower() in ( 'true', 'yes', 'on' ):
+    if str( string ).lower() in ( 'true', 'yes', 'on', '1' ):
         return True
     else:
         return False
@@ -1018,8 +1022,7 @@ def read_dbnames(filename):
                     ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
             except:
                 continue
-        sort_names = name_to_db_base.keys()
-        sort_names.sort()
+        sort_names = sorted(name_to_db_base.keys())
         for name in sort_names:
             db_base = name_to_db_base[name]
             ucsc_builds[db_base].sort()
@@ -1107,7 +1110,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
     dir = os.path.dirname(src)
     names = tempfile._get_candidate_names()
     for seq in xrange(tempfile.TMP_MAX):
-        name = names.next()
+        name = next(names)
         file = os.path.join(dir, prefix + name)
         try:
             os.link( src, file )
@@ -1164,14 +1167,14 @@ def docstring_trim(docstring):
     # and split into a list of lines:
     lines = docstring.expandtabs().splitlines()
     # Determine minimum indentation (first line doesn't count):
-    indent = sys.maxint
+    indent = sys.maxsize
     for line in lines[1:]:
         stripped = line.lstrip()
         if stripped:
             indent = min(indent, len(line) - len(stripped))
     # Remove indentation (first line is special):
     trimmed = [lines[0].strip()]
-    if indent < sys.maxint:
+    if indent < sys.maxsize:
         for line in lines[1:]:
             trimmed.append(line[indent:].rstrip())
     # Strip off trailing and leading blank lines:

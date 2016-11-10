@@ -9,10 +9,10 @@ from xml.etree import ElementTree as ET
 
 from .resolver_mixins import (
     UsesHomebrewMixin,
-    UsesToolDependencyDirMixin,
     UsesInstalledRepositoriesMixin,
+    UsesToolDependencyDirMixin,
 )
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY
+from ..resolvers import DependencyResolver, NullDependency
 
 log = logging.getLogger(__name__)
 
@@ -31,10 +31,9 @@ class HomebrewToolShedDependencyResolver(
 
     def resolve(self, name, version, type, **kwds):
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
-
+            return NullDependency(version=version, name=name)
         if version is None:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         return self._find_tool_dependencies(name, version, type, **kwds)
 
@@ -49,7 +48,7 @@ class HomebrewToolShedDependencyResolver(
             if os.path.exists(tool_depenedencies_path):
                 return self._resolve_from_tool_dependencies_path(name, version, tool_depenedencies_path)
 
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
     def _resolve_from_installed_tool_dependency(self, name, version, installed_tool_dependency):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
@@ -66,11 +65,11 @@ class HomebrewToolShedDependencyResolver(
             raw_dependencies = RawDependencies(tool_dependencies_path)
         except Exception:
             log.debug("Failed to parse dependencies in file %s" % tool_dependencies_path)
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         raw_dependency = raw_dependencies.find(name, version)
         if not raw_dependency:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         recipe_name = build_recipe_name(
             package_name=name,
@@ -147,4 +146,4 @@ def build_recipe_name(package_name, package_version, repository_owner, repositor
     return base
 
 
-__all__ = ['HomebrewToolShedDependencyResolver']
+__all__ = ('HomebrewToolShedDependencyResolver', )

@@ -12,10 +12,6 @@ var DCListItemView = DC_LI.DCListItemView;
  */
 var DCListItemEdit = DCListItemView.extend(
 /** @lends DCListItemEdit.prototype */{
-//TODO: may not be needed
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     /** override to add linkTarget */
     initialize : function( attributes ){
@@ -39,9 +35,6 @@ var DCEListItemEdit = DCEListItemView.extend(
 /** @lends DCEListItemEdit.prototype */{
 //TODO: this might be expendable - compacted with HDAListItemView
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** set up */
     initialize  : function( attributes ){
         DCEListItemView.prototype.initialize.call( this, attributes );
@@ -64,9 +57,6 @@ var DCEListItemEdit = DCEListItemView.extend(
  */
 var DatasetDCEListItemEdit = DATASET_LI_EDIT.DatasetListItemEdit.extend(
 /** @lends DatasetDCEListItemEdit.prototype */{
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     /** set up */
     initialize  : function( attributes ){
@@ -116,11 +106,6 @@ DatasetDCEListItemEdit.prototype.templates = (function(){
 var NestedDCDCEListItemEdit = DC_LI.NestedDCDCEListItemView.extend(
 /** @lends NestedDCDCEListItemEdit.prototype */{
 
-    /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
-    //logger              : console,
-
-    // ......................................................................... misc
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );

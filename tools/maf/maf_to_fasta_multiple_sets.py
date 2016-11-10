@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-
 """
 Read a maf and output a multiple block fasta file.
 """
 # Dan Blankenberg
+from __future__ import print_function
+
 import sys
 
 from bx.align import maf
@@ -34,9 +35,9 @@ def __main__():
         maf_utilities.tool_fail( "Error determining keep partial value: %s" % e )
 
     if species:
-        print "Restricted to species: %s" % ', '.join( species )
+        print("Restricted to species: %s" % ', '.join( species ))
     else:
-        print "Not restricted to species."
+        print("Not restricted to species.")
 
     for block_num, block in enumerate( maf_reader ):
         if species:

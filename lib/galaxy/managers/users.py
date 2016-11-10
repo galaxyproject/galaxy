@@ -187,6 +187,10 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         return self.create_api_key( self, user )
 
     # ---- preferences
+    def preferences( self, user ):
+        log.warn(dict( (key, value) for key, value in user.preferences.items() ))
+        return dict( (key, value) for key, value in user.preferences.items() )
+
     # ---- roles and permissions
     def private_role( self, user ):
         return self.app.security_agent.get_private_user_role( user )
@@ -197,8 +201,9 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
     def default_permissions( self, user ):
         return self.app.security_agent.user_get_default_permissions( user )
 
-    def quota( self, user ):
-        # TODO: use quota manager
+    def quota( self, user, total=False ):
+        if total:
+            return self.app.quota_agent.get_quota( user, nice_size=True )
         return self.app.quota_agent.get_percent( user=user )
 
     def tags_used( self, user, tag_models=None ):
@@ -259,11 +264,12 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'total_disk_usage',
             'nice_total_disk_usage',
             'quota_percent',
+            'quota',
             'deleted',
             'purged',
             # 'active',
 
-            # 'preferences',
+            'preferences',
             #  all tags
             'tags_used',
             # all annotations
@@ -280,8 +286,11 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'update_time'   : self.serialize_date,
             'is_admin'      : lambda i, k, **c: self.user_manager.is_admin( i ),
 
+            'preferences'   : lambda i, k, **c: self.user_manager.preferences( i ),
+
             'total_disk_usage' : lambda i, k, **c: float( i.total_disk_usage ),
             'quota_percent' : lambda i, k, **c: self.user_manager.quota( i ),
+            'quota'         : lambda i, k, **c: self.user_manager.quota( i, total=True ),
 
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used( i ),
             'has_requests'  : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )

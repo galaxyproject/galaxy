@@ -1,11 +1,11 @@
 """Functionality for converting a Format 2 workflow into a standard Galaxy workflow."""
 from __future__ import print_function
 
-from collections import OrderedDict
 import json
 import os
 import sys
 import uuid
+from collections import OrderedDict
 
 import yaml
 
@@ -96,7 +96,7 @@ def _python_to_workflow(as_python, conversion_context):
         as_python["steps"] = steps_as_dict
         steps = steps_as_dict
 
-    for step in steps.itervalues():
+    for step in steps.values():
         step_type = step.get("type", None)
         if "run" in step:
             if step_type is not None:
@@ -118,7 +118,7 @@ def _python_to_workflow(as_python, conversion_context):
             run_to_step_function(conversion_context, step, run_action)
             del step["run"]
 
-    for step in steps.itervalues():
+    for step in steps.values():
         step_type = step.get("type", "tool")
         step_type = STEP_TYPE_ALIASES.get(step_type, step_type)
         if step_type not in STEP_TYPES:
@@ -326,7 +326,7 @@ def transform_tool(context, step):
             return {"__class__": "RuntimeValue"}
         if isinstance(value, dict):
             new_values = {}
-            for k, v in value.iteritems():
+            for k, v in value.items():
                 new_key = _join_prefix(key, k)
                 new_values[k] = replace_links(v, new_key)
             return new_values
@@ -349,7 +349,7 @@ def transform_tool(context, step):
         step_state = step["state"]
         step_state = replace_links(step_state)
 
-        for key, value in step_state.iteritems():
+        for key, value in step_state.items():
             tool_state[key] = json.dumps(value)
         del step["state"]
 
@@ -470,7 +470,7 @@ def _populate_input_connections(context, step, connect):
     input_connections = step["input_connections"]
     is_subworkflow_step = step.get("type") == "subworkflow"
 
-    for key, values in connect.iteritems():
+    for key, values in connect.items():
         input_connection_value = []
         if not isinstance(values, list):
             values = [values]
@@ -512,7 +512,7 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv)
 
-__all__ = [
+__all__ = (
     'yaml_to_workflow',
     'python_to_workflow',
-]
+)

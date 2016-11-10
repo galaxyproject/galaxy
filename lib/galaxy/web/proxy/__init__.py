@@ -2,7 +2,7 @@ import logging
 import os
 import json
 
-from .filelock import FileLock
+from galaxy.util.filelock import FileLock
 from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
 from galaxy.util import sqlite
@@ -106,6 +106,7 @@ class NodeProxyLauncher(object):
             "--sessions", config.proxy_session_map,
             "--ip", config.dynamic_proxy_bind_ip,
             "--port", str(config.dynamic_proxy_bind_port),
+            "--reverseProxy",
         ]
         if config.dynamic_proxy_debug:
             args.append("--verbose")

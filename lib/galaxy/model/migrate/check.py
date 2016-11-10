@@ -89,7 +89,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
     db_schema = schema.ControlledSchema( engine, migrate_repository )
     if migrate_repository.versions.latest != db_schema.version:
         config_arg = ''
-        if os.path.abspath( os.path.join( os.getcwd(), 'config', 'galaxy.ini' ) ) != galaxy_config_file:
+        if galaxy_config_file and os.path.abspath( os.path.join( os.getcwd(), 'config', 'galaxy.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
         raise Exception( "Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh%s upgrade'."
                          % ( db_schema.version, migrate_repository.versions.latest, config_arg ) )
@@ -99,7 +99,11 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
 
 def migrate_to_current_version( engine, schema ):
     # Changes to get to current version
-    changeset = schema.changeset( None )
+    try:
+        changeset = schema.changeset( None )
+    except Exception as e:
+        log.error("Problem determining migration changeset for engine [%s]" % engine)
+        raise e
     for ver, change in changeset:
         nextver = ver + changeset.step
         log.info( 'Migrating %s -> %s... ' % ( ver, nextver ) )

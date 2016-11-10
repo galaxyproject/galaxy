@@ -10,11 +10,6 @@
         <columns>value, dbkey, formats, name, path</columns>
         <file path="tool-data/bfast_indexes.loc" />
     </table>
-    <!-- Locations of protein (mega)blast databases -->
-    <table name="blastdb_p" comment_char="#" allow_duplicate_entries="False">
-        <columns>value, name, path</columns>
-        <file path="tool-data/blastdb_p.loc" />
-    </table>
     <!-- Locations of indexes in the BWA mapper format -->
     <table name="bwa_indexes" comment_char="#" allow_duplicate_entries="False">
         <columns>value, dbkey, name, path</columns>

@@ -39,12 +39,16 @@ prefix = /reports
 
 # Specifies the factory for the universe WSGI application
 paste.app_factory = galaxy.webapps.reports.buildapp:app_factory
-log_level = DEBUG
+
+# Verbosity of console log messages.  Acceptable values can be found here:
+# https://docs.python.org/2/library/logging.html#logging-levels
+#log_level = DEBUG
 
 # Database connection
-# Galaxy reports are intended for production Galaxy instances, so sqlite is not supported.
-# You may use a SQLAlchemy connection string to specify an external database.
-#database_connection = postgres:///galaxy_test?user=postgres&password=postgres
+# Galaxy reports are intended for production Galaxy instances, so sqlite (and the default value
+# below) is not supported. An SQLAlchemy connection string should be used specify an external
+# database.
+#database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
 # Where dataset files are saved
 #file_path = database/files
@@ -54,13 +58,6 @@ log_level = DEBUG
 # Mako templates are compiled as needed and cached for reuse, this directory is
 # used for the cache
 #template_cache_path = database/compiled_templates/reports
-
-# Session support (beaker)
-use_beaker_session = True
-session_type = memory
-session_data_dir = %(here)s/database/beaker_sessions
-session_key = galaxysessions
-session_secret = changethisinproduction
 
 # Configuration for debugging middleware
 #debug = False

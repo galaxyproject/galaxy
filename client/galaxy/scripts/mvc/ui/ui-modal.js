@@ -1,5 +1,8 @@
 define([], function() {
 var View = Backbone.View.extend({
+
+    className: "ui-modal",
+
     // defaults
     optionsDefault  : {
         container        : 'body',
@@ -19,18 +22,8 @@ var View = Backbone.View.extend({
 
     // initialize
     initialize: function( options ) {
-        this.setElement( this._template() );
         this.options = _.defaults( options || {}, this.optionsDefault );
         $( this.options.container ).prepend( this.el );
-
-        // link elements
-        this.$header    = this.$( '.modal-header' );
-        this.$dialog    = this.$( '.modal-dialog' );
-        this.$body      = this.$( '.modal-body' );
-        this.$footer    = this.$( '.modal-footer' );
-        this.$backdrop  = this.$( '.modal-backdrop' );
-        this.$buttons   = this.$( '.buttons' );
-
         // optional render
         options && this.render();
     },
@@ -70,6 +63,16 @@ var View = Backbone.View.extend({
     */
     render: function() {
         var self = this;
+        this.$el.html( this._template() );
+
+        // link elements
+        this.$header    = this.$( '.modal-header' );
+        this.$dialog    = this.$( '.modal-dialog' );
+        this.$body      = this.$( '.modal-body' );
+        this.$footer    = this.$( '.modal-footer' );
+        this.$backdrop  = this.$( '.modal-backdrop' );
+        this.$buttons   = this.$( '.buttons' );
+
         if (this.options.body == 'progress') {
             this.options.body = $(  '<div class="progress progress-striped active">' +
                                         '<div class="progress-bar progress-bar-info" style="width:100%"/>' +
@@ -100,6 +103,8 @@ var View = Backbone.View.extend({
         this.$header[ !this.options.title_separator && 'addClass' || 'removeClass' ]( 'no-separator' );
 
         // fix dimensions
+        // note: because this is a singleton, we need to clear inline styles from any previous invocations
+        this.$body.removeAttr( 'style' );
         if ( this.options.height ) {
             this.$body.css( 'height', this.options.height );
             this.$body.css( 'overflow', 'hidden' );
@@ -162,17 +167,15 @@ var View = Backbone.View.extend({
      * Returns the modal template
     */
     _template: function() {
-        return  '<div class="ui-modal">' +
-                    '<div class="modal-backdrop fade"/>' +
-                    '<div class="modal-dialog">' +
-                        '<div class="modal-content">' +
-                            '<div class="modal-header">' +
-                                '<h4 class="title"/>' +
-                            '</div>' +
-                            '<div class="modal-body"/>' +
-                            '<div class="modal-footer">' +
-                                '<div class="buttons"/>' +
-                            '</div>' +
+        return  '<div class="modal-backdrop fade"/>' +
+                '<div class="modal-dialog">' +
+                    '<div class="modal-content">' +
+                        '<div class="modal-header">' +
+                            '<h4 class="title"/>' +
+                        '</div>' +
+                        '<div class="modal-body"/>' +
+                        '<div class="modal-footer">' +
+                            '<div class="buttons"/>' +
                         '</div>' +
                     '</div>' +
                 '</div>';

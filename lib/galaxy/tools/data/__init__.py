@@ -83,9 +83,9 @@ class ToolDataTableManager( object ):
                 table_elems.append( table_elem )
                 if table.name not in self.data_tables:
                     self.data_tables[ table.name ] = table
-                    log.debug( "Loaded tool data table '%s'", table.name )
+                    log.debug( "Loaded tool data table '%s' from file '%s'", table.name, filename )
                 else:
-                    log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
+                    log.debug( "Loading another instance of data table '%s' from file '%s', attempting to merge content.", table.name, filename )
                     self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
                     # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
@@ -161,6 +161,9 @@ class ToolDataTableManager( object ):
         os.chmod( full_path, 0644 )
 
     def reload_tables( self, table_names=None ):
+        """
+        Reload tool data tables.
+        """
         tables = self.get_tables()
         if not table_names:
             table_names = tables.keys()
@@ -445,7 +448,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
         TODO: Allow named access to fields using the column names.
         """
-        separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
+        separator_char = "<TAB>" if self.separator == "\t" else self.separator
 
         rval = []
         for i, line in enumerate( reader ):
@@ -462,6 +465,8 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     if errors is not None:
                         errors.append( line_error )
                     log.warning( line_error )
+        if hasattr(reader, "name"):
+            log.debug("Loaded %i lines from '%s' for '%s'", len(rval), reader.name, self.name)
         return rval
 
     def get_column_name_list( self ):

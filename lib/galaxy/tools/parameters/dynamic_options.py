@@ -7,7 +7,7 @@ import logging
 import os
 import validation
 from galaxy.util import string_as_bool
-from galaxy.model import User
+from galaxy.model import User, HistoryDatasetAssociation, HistoryDatasetCollectionAssociation
 import galaxy.tools
 
 log = logging.getLogger(__name__)
@@ -125,10 +125,12 @@ class DataMetaFilter( Filter ):
                 return dataset_value in file_value.split( self.separator )
             return file_value == dataset_value
         ref = other_values.get( self.ref_name, None )
+        if isinstance( ref, HistoryDatasetCollectionAssociation ):
+            ref = ref.to_hda_representative( self.multiple )
         is_data = isinstance( ref, galaxy.tools.wrappers.DatasetFilenameWrapper )
         is_data_list = isinstance( ref, galaxy.tools.wrappers.DatasetListWrapper ) or isinstance( ref, list )
         is_data_or_data_list = is_data or is_data_list
-        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not is_data_or_data_list:
+        if not isinstance( ref, HistoryDatasetAssociation ) and not is_data_or_data_list:
             return []  # not a valid dataset
 
         if is_data_list:
@@ -398,7 +400,9 @@ class RemoveValueFilter( Filter ):
                 value = other_values.get( self.ref_name )
             else:
                 data_ref = other_values.get( self.meta_ref )
-                if not isinstance( data_ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not isinstance( data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper ):
+                if isinstance( data_ref, HistoryDatasetCollectionAssociation ):
+                    data_ref = data_ref.to_hda_representative()
+                if not isinstance( data_ref, HistoryDatasetAssociation ) and not isinstance( data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper ):
                     return options  # cannot modify options
                 value = data_ref.metadata.get( self.metadata_key, None )
         return [ ( disp_name, optval, selected ) for disp_name, optval, selected in options if not compare_value( optval, value ) ]

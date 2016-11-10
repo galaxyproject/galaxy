@@ -1,11 +1,18 @@
+"""The module defines the abstract interface for dealing tool dependency resolution plugins."""
+from abc import (
+    ABCMeta,
+    abstractmethod,
+    abstractproperty,
+)
+
 from galaxy.util.dictifiable import Dictifiable
 
 from ..requirements import ToolRequirement
 
-from abc import ABCMeta, abstractmethod, abstractproperty
-
 
 class DependencyResolver(Dictifiable, object):
+    """Abstract description of a technique for resolving container images for tool execution."""
+
     # Keys for dictification.
     dict_collection_visible_keys = ['resolver_type', 'resolves_simple_dependencies']
     # A "simple" dependency is one that does not depend on the the tool
@@ -13,18 +20,21 @@ class DependencyResolver(Dictifiable, object):
     # because the repository install context is used in dependency resolution
     # so the same requirement tags in different tools will have very different
     # resolution.
+    disabled = False
     resolves_simple_dependencies = True
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def resolve( self, name, version, type, **kwds ):
-        """
-        Given inputs describing dependency in the abstract, yield tuple of
-        (script, bin, version). Here script is the env.sh file to source
-        before running a job, if that is not found the bin directory will be
-        appended to the path (if it is not None). Finally, version is the
-        resolved tool dependency version (which may differ from requested
-        version for instance if the request version is 'default'.)
+        """Given inputs describing dependency in the abstract yield a Dependency object.
+
+        The Dependency object describes various attributes (script, bin,
+        version) used to build scripts with the dependency availble. Here
+        script is the env.sh file to source before running a job, if that is
+        not found the bin directory will be appended to the path (if it is
+        not ``None``). Finally, version is the resolved tool dependency
+        version (which may differ from requested version for instance if the
+        request version is 'default'.)
         """
 
     def _get_config_option(self, key, dependency_resolver, default=None, config_prefix=None, **kwds):
@@ -71,7 +81,7 @@ class InstallableDependencyResolver:
 
 
 class Dependency(Dictifiable, object):
-    dict_collection_visible_keys = ['dependency_type', 'exact']
+    dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version']
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -86,13 +96,28 @@ class Dependency(Dictifiable, object):
         the dependency.
         """
 
+    @property
+    def resolver_msg(self):
+        """
+        Return a message describing this dependency
+        """
+        return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
+
 
 class NullDependency( Dependency ):
     dependency_type = None
     exact = True
 
+    def __init__(self, version=None, name=None):
+        self.version = version
+        self.name = name
+
+    @property
+    def resolver_msg(self):
+        """
+        Return a message describing this dependency
+        """
+        return "Dependency %s not found." % self.name
+
     def shell_commands( self, requirement ):
         return None
-
-
-INDETERMINATE_DEPENDENCY = NullDependency()

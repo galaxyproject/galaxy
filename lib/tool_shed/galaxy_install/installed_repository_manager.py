@@ -8,18 +8,17 @@ import os
 from sqlalchemy import and_, false, true
 
 from galaxy import util
+from tool_shed.galaxy_install.datatypes import custom_datatype_manager
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
+from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import data_manager
+from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
-
-from tool_shed.galaxy_install.datatypes import custom_datatype_manager
-from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
-from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
-from tool_shed.galaxy_install.tools import data_manager
-from tool_shed.galaxy_install.tools import tool_panel_manager
 
 log = logging.getLogger( __name__ )
 
@@ -242,7 +241,7 @@ class InstalledRepositoryManager( object ):
         installed_td = {}
         missing_rd = {}
         missing_td = {}
-        name = repo_info_dict.keys()[ 0 ]
+        name = next(iter(repo_info_dict))
         repo_info_tuple = repo_info_dict[ name ]
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
             repository_util.get_repo_info_tuple_contents( repo_info_tuple )

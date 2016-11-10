@@ -6,17 +6,11 @@ from sqlalchemy import false, or_
 from galaxy import util
 from galaxy.util import inflector
 from galaxy.web.form_builder import SelectField
-
 from tool_shed.metadata import metadata_generator
-from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.repository_types import util as rt_util
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
+from tool_shed.repository_types.metadata import TipOnly
+from tool_shed.util import (basic_util, common_util, hg_util, metadata_util,
+    repository_util, shed_util_common as suc, tool_util)
 
 log = logging.getLogger( __name__ )
 
@@ -175,7 +169,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                                     value.get( 'guid'  ),
                                     value.get( 'version' ),
                                     value.get( 'name' ),
-                                    value.get( 'id' )  ) for name, value in metadata_dict.iteritems() ] ) )
+                                    value.get( 'id' )  ) for name, value in metadata_dict.items() ] ) )
         # only compare valid entries, any invalid entries are ignored
         ancestor_metadata = __data_manager_dict_to_tuple_list( ancestor_metadata.get( 'data_managers', {} ) )
         current_metadata = __data_manager_dict_to_tuple_list( current_metadata.get( 'data_managers', {} ) )

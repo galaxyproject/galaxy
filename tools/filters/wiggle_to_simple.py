@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-
 """
 Read a wiggle track and print out a series of lines containing
 "chrom position score". Ignores track lines, handles bed, variableStep
 and fixedStep wiggle lines.
 """
+from __future__ import print_function
+
 import sys
 
 import bx.wiggle
@@ -33,7 +34,7 @@ def main():
             out_file.write( "%s\n" % "\t".join( map( str, fields ) ) )
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
-        print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
+        print('Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.')
     except ValueError as e:
         in_file.close()
         out_file.close()

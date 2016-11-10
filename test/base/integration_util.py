@@ -4,9 +4,9 @@ Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
 tessting configuration.
 """
+from unittest import TestCase
 
 from .driver_util import GalaxyTestDriver
-from unittest import TestCase
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 

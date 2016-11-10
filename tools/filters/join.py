@@ -5,8 +5,8 @@ Script to Join Two Files on specified columns.
 
 Takes two tab delimited files, two column numbers (base 1) and outputs a new tab delimited file with lines joined by tabs.
 User can also opt to have have non-joining rows of file1 echoed.
-
 """
+from __future__ import print_function
 
 import json
 import optparse
@@ -24,7 +24,7 @@ class OffsetList:
         self.file = tempfile.NamedTemporaryFile( 'w+b' )
         if fmt:
             self.fmt = fmt
-        elif filesize and filesize <= sys.maxint * 2:
+        elif filesize and filesize <= sys.maxsize * 2:
             self.fmt = 'I'
         else:
             self.fmt = 'Q'
@@ -88,14 +88,14 @@ class SortedOffsets( OffsetList ):
     def merge_with_dict( self, new_offset_dict ):
         if not new_offset_dict:
             return  # no items to merge in
-        keys = new_offset_dict.keys()
+        keys = list(new_offset_dict.keys())
         keys.sort()
         identifier2 = keys.pop( 0 )
 
         result_offsets = OffsetList( fmt=self.fmt )
         offsets1 = enumerate( self.get_offsets() )
         try:
-            index1, offset1 = offsets1.next()
+            index1, offset1 = next(offsets1)
             identifier1 = self.get_identifier_by_offset( offset1 )
         except StopIteration:
             offset1 = None
@@ -121,7 +121,7 @@ class SortedOffsets( OffsetList ):
             else:
                 result_offsets.add_offset( offset1 )
                 try:
-                    index1, offset1 = offsets1.next()
+                    index1, offset1 = next(offsets1)
                     identifier1 = self.get_identifier_by_offset( offset1 )
                 except StopIteration:
                     offset1 = None
@@ -188,7 +188,7 @@ class OffsetIndex:
             offset_index += 1
 
     def get_offsets( self ):
-        keys = self._offsets.keys()
+        keys = list(self._offsets.keys())
         keys.sort()
         for key in keys:
             for offset in self._offsets[key].get_offsets():
@@ -199,7 +199,7 @@ class OffsetIndex:
         return self.file.readline()
 
     def get_identifiers_offsets( self ):
-        keys = self._offsets.keys()
+        keys = list(self._offsets.keys())
         keys.sort()
         for key in keys:
             for offset in self._offsets[key].get_offsets():
@@ -216,7 +216,7 @@ class OffsetIndex:
         if not d:
             return  # no data to merge
         self._index = None
-        keys = d.keys()
+        keys = list(d.keys())
         keys.sort()
         identifier = keys.pop( 0 )
         first_char = identifier[0]
@@ -360,7 +360,7 @@ def main():
         try:
             fill_options = Bunch( **stringify_dictionary_keys( json.load( open( options.fill_options_file ) ) ) )  # json.load( open( options.fill_options_file ) )
         except Exception as e:
-            print "Warning: Ignoring fill options due to json error (%s)." % e
+            print("Warning: Ignoring fill options due to json error (%s)." % e)
     if fill_options is None:
         fill_options = Bunch()
     if 'fill_unjoined_only' not in fill_options:
@@ -377,7 +377,7 @@ def main():
         column2 = int( args[3] ) - 1
         out_filename = args[4]
     except:
-        print >> sys.stderr, "Error parsing command line."
+        print("Error parsing command line.", file=sys.stderr)
         sys.exit()
 
     # Character for splitting fields and joining lines

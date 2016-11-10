@@ -34,7 +34,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     <div class="toolFormBody">
         <form name="export_repository" id="export_repository" action="${h.url_for( controller='repository', action='export', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}" method="post" >
             %if containers_dict is not None and export_repository_dependencies_check_box is not None:
-                ${render_dependencies_section( export_repository_dependencies_check_box, None, containers_dict, revision_label=revision_label, export=True )}
+                ${render_dependencies_section( None, export_repository_dependencies_check_box, None, containers_dict, revision_label=revision_label, export=True )}
                 <div style="clear: both"></div>
             %else:
                 No repository dependencies are defined for revision <b>${revision_label}</b> of this repository, so click <b>Export</b> to export the selected revision.

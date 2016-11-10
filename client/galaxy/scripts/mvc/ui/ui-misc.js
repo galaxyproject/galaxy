@@ -42,7 +42,8 @@ define(['utils/utils',
                 message     : null,
                 status      : 'info',
                 cls         : '',
-                persistent  : false
+                persistent  : false,
+                fade        : true
             }).set( options );
             this.listenTo( this.model, 'change', this.render, this );
             this.render();
@@ -62,7 +63,7 @@ define(['utils/utils',
             }
             if ( this.model.get( 'message' ) ) {
                 this.$el.html( this.model.get( 'message' ) );
-                this.$el.fadeIn();
+                this.$el[ this.model.get( 'fade' ) ? 'fadeIn' : 'show' ]();
                 this.timeout && window.clearTimeout( this.timeout );
                 if ( !this.model.get( 'persistent' ) ) {
                     var self = this;
@@ -84,6 +85,7 @@ define(['utils/utils',
                 type            : 'text',
                 placeholder     : '',
                 disabled        : false,
+                readonly        : false,
                 visible         : true,
                 cls             : '',
                 area            : false,
@@ -103,6 +105,7 @@ define(['utils/utils',
             return this.model.get( 'value' );
         },
         render: function() {
+            var self = this;
             this.$el.removeClass()
                     .addClass( 'ui-' + this.tagName )
                     .addClass( this.model.get( 'cls' ) )
@@ -115,7 +118,9 @@ define(['utils/utils',
             if ( this.model.get( 'value' ) !== this.$el.val() ) {
                 this.$el.val( this.model.get( 'value' ) );
             }
-            this.model.get( 'disabled' ) ? this.$el.attr( 'disabled', true ) : this.$el.removeAttr( 'disabled' );
+            _.each( [ 'readonly', 'disabled' ], function( attr_name ) {
+                self.model.get( attr_name ) ? self.$el.attr( attr_name, true ) : self.$el.removeAttr( attr_name );
+            });
             this.$el[ this.model.get( 'visible' ) ? 'show' : 'hide' ]();
             return this;
         },

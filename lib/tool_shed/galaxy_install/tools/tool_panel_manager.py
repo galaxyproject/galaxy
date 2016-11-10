@@ -23,6 +23,10 @@ class ToolPanelManager( object ):
         config file to generate the entire list of config_elems instead of using the in-memory list
         since it will be a subset of the entire list if one or more repositories have been deactivated.
         """
+        if not elem_list:
+            # We may have an empty elem_list in case a data manager is being installed.
+            # In that case we don't want to wait for a toolbox reload that will never happen.
+            return
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
@@ -31,18 +35,19 @@ class ToolPanelManager( object ):
             root = tree.getroot()
             for elem in root:
                 config_elems.append( elem )
-            # Add the elements to the in-memory list of config_elems.
+            # Add the new elements to the in-memory list of config_elems.
             for elem_entry in elem_list:
                 config_elems.append( elem_entry )
             # Persist the altered shed_tool_config file.
+            toolbox = self.app.toolbox
             self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
+            self.app.wait_for_toolbox_reload(toolbox)
 
     def add_to_tool_panel( self, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
                            shed_tool_conf, tool_panel_dict, new_install=True, tool_panel_section_mapping={} ):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
         shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
-        tool_path = shed_tool_conf_dict[ 'tool_path' ]
         tool_panel_dict = self.update_tool_panel_dict( tool_panel_dict, tool_panel_section_mapping, repository_tools_tups )
         # Generate the list of ElementTree Element objects for each section or tool.
         elem_list = self.generate_tool_panel_elem_list( repository_name,
@@ -52,23 +57,23 @@ class ToolPanelManager( object ):
                                                         repository_tools_tups,
                                                         owner=owner )
         if new_install:
+            tool_path = shed_tool_conf_dict['tool_path']
             # Add the new elements to the shed_tool_conf file on disk.
+            config_elems = shed_tool_conf_dict['config_elems']
+            for config_elem in elem_list:
+                # Add the new elements to the in-memory list of config_elems.
+                config_elems.append(config_elem)
+                # Load the tools into the in-memory tool panel.
+                self.app.toolbox.load_item(
+                    config_elem,
+                    tool_path=tool_path,
+                    load_panel_dict=True,
+                    guid=config_elem.get('guid'),
+                )
+            # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
+            shed_tool_conf_dict['config_elems'] = config_elems
+            self.app.toolbox.update_shed_config(shed_tool_conf_dict )
             self.add_to_shed_tool_config( shed_tool_conf_dict, elem_list )
-            # Use the new elements to add entries to the
-        config_elems = shed_tool_conf_dict[ 'config_elems' ]
-        for config_elem in elem_list:
-            # Add the new elements to the in-memory list of config_elems.
-            config_elems.append( config_elem )
-            # Load the tools into the in-memory tool panel.
-            self.app.toolbox.load_item(
-                config_elem,
-                tool_path=tool_path,
-                load_panel_dict=True,
-                guid=config_elem.get( 'guid' ),
-            )
-        # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
-        shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.update_shed_config( shed_tool_conf_dict )
 
     def config_elems_to_xml_file( self, config_elems, config_filename, tool_path ):
         """
@@ -356,7 +361,7 @@ class ToolPanelManager( object ):
                     tool_panel_dict = self.generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
                 if tool_panel_dict:
                     # The tool_panel_dict is empty when tools exist but are not installed into a tool panel section.
-                    tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                    tool_section_dicts = tool_panel_dict[ next(iter(tool_panel_dict)) ]
                     tool_section_dict = tool_section_dicts[ 0 ]
                     original_section_id = tool_section_dict[ 'id' ]
                     if original_section_id:
@@ -423,7 +428,7 @@ class ToolPanelManager( object ):
         self.app.install_model.context.flush()
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
-        guids_to_remove = [ k for k in tool_panel_dict.keys() ]
+        guids_to_remove = list(tool_panel_dict.keys())
         self.remove_guids( guids_to_remove, shed_tool_conf, uninstall )
 
     def remove_guids( self, guids_to_remove, shed_tool_conf, uninstall ):
@@ -433,40 +438,8 @@ class ToolPanelManager( object ):
             # remove_from_tool_panel to false, will handling that logic below.
             toolbox.remove_tool_by_id( guid_to_remove, remove_from_panel=False )
         shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
-        if uninstall:
-            # Remove from the shed_tool_conf file on disk.
-            self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
-        config_elems = shed_tool_conf_dict[ 'config_elems' ]
-        config_elems_to_remove = []
-        for config_elem in config_elems:
-            if config_elem.tag == 'section':
-                # Get the section key for the in-memory tool panel.
-                section_key = str( config_elem.get( "id" ) )
-                # Generate the list of tool elements to remove.
-                tool_elems_to_remove = []
-                for tool_elem in config_elem:
-                    if tool_elem.get( 'guid' ) in guids_to_remove:
-                        tool_elems_to_remove.append( tool_elem )
-                for tool_elem in tool_elems_to_remove:
-                    if tool_elem in config_elem:
-                        # Remove the tool sub-element from the section element.
-                        config_elem.remove( tool_elem )
-                    # Remove the tool from the section in the in-memory tool panel.
-                    toolbox.remove_from_panel( tool_elem.get( "guid" ), section_key=section_key, remove_from_config=uninstall )
-                if len( config_elem ) < 1:
-                    # Keep a list of all empty section elements so they can be removed.
-                    config_elems_to_remove.append( config_elem )
-            elif config_elem.tag == 'tool':
-                guid = config_elem.get( 'guid' )
-                if guid in guids_to_remove:
-                    toolbox.remove_from_panel( guid, section_key='', remove_from_config=uninstall )
-                    config_elems_to_remove.append( config_elem )
-        for config_elem in config_elems_to_remove:
-            # Remove the element from the in-memory list of elements.
-            config_elems.remove( config_elem )
-        # Update the config_elems of the in-memory shed_tool_conf_dict.
-        shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        toolbox.update_shed_config( shed_tool_conf_dict, integrated_panel_changes=uninstall )
+        # Always remove from the shed_tool_conf file on disk. Used to test for uninstall, not sure there is a legitimate use for this?!
+        self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
 
     def update_tool_panel_dict( self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups ):
         for tool_guid in tool_panel_dict:

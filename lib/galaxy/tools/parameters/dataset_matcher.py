@@ -1,6 +1,7 @@
+from logging import getLogger
+
 import galaxy.model
 
-from logging import getLogger
 log = getLogger( __name__ )
 
 ROLES_UNSET = object()
@@ -70,12 +71,12 @@ class DatasetMatcher( object ):
             return False
         return rval
 
-    def hda_match( self, hda, check_implicit_conversions=True, ensure_visible=True ):
+    def hda_match( self, hda, check_implicit_conversions=True, check_security=True, ensure_visible=True ):
         """ If HDA is accessible, return information about whether it could
         match this parameter and if so how. See valid_hda_match for more
         information.
         """
-        accessible = self.hda_accessible( hda )
+        accessible = self.hda_accessible( hda, check_security=check_security )
         if accessible and ( not ensure_visible or hda.visible or ( self.selected( hda ) and not hda.implicitly_converted_parent_datasets ) ):
             # If we are sending data to an external application, then we need to make sure there are no roles
             # associated with the dataset that restrict its access from "public".
@@ -100,7 +101,7 @@ class DatasetMatcher( object ):
         applicable).
         """
         param = self.param
-        return param.options and param._options_filter_attribute( hda ) != self.filter_value
+        return param.options and param.get_options_filter_attribute( hda ) != self.filter_value
 
     def __can_access_dataset( self, dataset ):
         # Lazily cache current_user_roles.
@@ -179,4 +180,4 @@ class DatasetCollectionMatcher( object ):
                 break
         return valid
 
-__all__ = [ DatasetMatcher, DatasetCollectionMatcher ]
+__all__ = ( 'DatasetMatcher', 'DatasetCollectionMatcher' )

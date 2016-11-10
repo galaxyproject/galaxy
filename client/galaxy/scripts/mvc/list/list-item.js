@@ -14,7 +14,7 @@ var logNamespace = 'list';
 var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     _logNamespace : logNamespace,
 
-//TODO: Although the reasoning behind them is different, this shares a lot with HiddenUntilActivated above: combine them
+    //TODO: Although the reasoning behind them is different, this shares a lot with HiddenUntilActivated above: combine them
     //PRECONDITION: model must have method hasDetails
     //PRECONDITION: subclasses must have templates.el and templates.details
 
@@ -59,18 +59,28 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         speed = ( speed === undefined )?( this.fxSpeed ):( speed );
         var view = this;
 
-        $( view ).queue( 'fx', [
-            function( next ){ this.$el.fadeOut( speed, next ); },
-            function( next ){
-                view._swapNewRender( $newRender );
-                next();
-            },
-            function( next ){ this.$el.fadeIn( speed, next ); },
-            function( next ){
-                this.trigger( 'rendered', view );
-                next();
-            }
-        ]);
+        if( speed === 0 ){
+            view._swapNewRender( $newRender );
+            view.trigger( 'rendered', view );
+
+        } else {
+            $( view ).queue( 'fx', [
+                function( next ){
+                    view.$el.fadeOut( speed, next );
+                },
+                function( next ){
+                    view._swapNewRender( $newRender );
+                    next();
+                },
+                function( next ){
+                    view.$el.fadeIn( speed, next );
+                },
+                function( next ){
+                    view.trigger( 'rendered', view );
+                    next();
+                }
+            ]);
+        }
     },
 
     /** empty out the current el, move the $newRender's children in */
@@ -146,14 +156,8 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         view.$details().replaceWith( $newDetails );
         // needs to be set after the above or the slide will not show
         view.expanded = true;
-        view.$details().slideDown({
-            duration : view.fxSpeed,
-            step: function(){
-                view.trigger( 'expanding', view );
-            },
-            complete: function(){
-                view.trigger( 'expanded', view );
-            }
+        view.$details().slideDown( view.fxSpeed, function(){
+            view.trigger( 'expanded', view );
         });
     },
 
@@ -164,14 +168,8 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         this.debug( this + '(ExpandableView).collapse' );
         var view = this;
         view.expanded = false;
-        this.$details().slideUp({
-            duration : view.fxSpeed,
-            step: function(){
-                view.trigger( 'collapsing', view );
-            },
-            complete: function(){
-                view.trigger( 'collapsed', view );
-            }
+        this.$details().slideUp( view.fxSpeed, function(){
+            view.trigger( 'collapsed', view );
         });
     }
 
@@ -193,7 +191,6 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 var ListItemView = ExpandableView.extend(
         BASE_MVC.mixin( BASE_MVC.SelectableViewMixin, BASE_MVC.DraggableViewMixin, {
 
-//TODO: that's a little contradictory
     tagName     : 'div',
     className   : 'list-item',
 
@@ -215,9 +212,6 @@ var ListItemView = ExpandableView.extend(
                 this.$( '.primary-actions' ).show();
             }
         }, this );
-        //this.on( 'all', function( event ){
-        //    this.log( event );
-        //}, this );
         return this;
     },
 
@@ -245,7 +239,7 @@ var ListItemView = ExpandableView.extend(
         var view = this,
             $warnings = $( '<div class="warnings"></div>' ),
             json = view.model.toJSON();
-//TODO:! unordered (map)
+        //TODO:! unordered (map)
         _.each( view.templates.warnings, function( templateFn ){
             $warnings.append( $( templateFn( json, view ) ) );
         });
@@ -274,11 +268,6 @@ var ListItemView = ExpandableView.extend(
         // expand the body when the title is clicked or when in focus and space or enter is pressed
         'click .title-bar'      : '_clickTitleBar',
         'keydown .title-bar'    : '_keyDownTitleBar',
-
-        // dragging - don't work, originalEvent === null
-        //'dragstart .dataset-title-bar'  : 'dragStartHandler',
-        //'dragend .dataset-title-bar'    : 'dragEndHandler'
-
         'click .selector'       : 'toggleSelect'
     },
 
@@ -319,7 +308,6 @@ var ListItemView = ExpandableView.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 ListItemView.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var elTemplato = BASE_MVC.wrapTemplate([
         '<div class="list-element">',
@@ -344,7 +332,7 @@ ListItemView.prototype.templates = (function(){
     var titleBarTemplate = BASE_MVC.wrapTemplate([
         // adding a tabindex here allows focusing the title bar and the use of keydown to expand the dataset display
         '<div class="title-bar clear" tabindex="0">',
-//TODO: prob. belongs in dataset-list-item
+            //TODO: prob. belongs in dataset-list-item
             '<span class="state-icon"></span>',
             '<div class="title">',
                 '<span class="name"><%- element.name %></span>',
@@ -399,7 +387,6 @@ var FoldoutListItemView = ListItemView.extend({
      *      disrespect attributes.expanded if drilldown
      */
     initialize : function( attributes ){
-//TODO: hackish
         if( this.foldoutStyle === 'drilldown' ){ this.expanded = false; }
         this.foldoutStyle = attributes.foldoutStyle || this.foldoutStyle;
         this.foldoutPanelClass = attributes.foldoutPanelClass || this.foldoutPanelClass;
@@ -408,15 +395,8 @@ var FoldoutListItemView = ListItemView.extend({
         this.foldout = this._createFoldoutPanel();
     },
 
-//TODO:?? override to exclude foldout scope?
-    //$ : function( selector ){
-    //    var $found = ListItemView.prototype.$.call( this, selector );
-    //    return $found;
-    //},
-
     /** in this override, attach the foldout panel when rendering details */
     _renderDetails : function(){
-//TODO: hackish
         if( this.foldoutStyle === 'drilldown' ){ return $(); }
         var $newDetails = ListItemView.prototype._renderDetails.call( this );
         return this._attachFoldout( this.foldout, $newDetails );
@@ -452,7 +432,6 @@ var FoldoutListItemView = ListItemView.extend({
     _attachFoldout : function( foldout, $whereTo ){
         $whereTo = $whereTo || this.$( '> .details' );
         this.foldout = foldout.render( 0 );
-//TODO: hack
         foldout.$( '> .controls' ).hide();
         return $whereTo.append( foldout.$el );
     },
@@ -489,8 +468,6 @@ var FoldoutListItemView = ListItemView.extend({
 /** underscore templates */
 FoldoutListItemView.prototype.templates = (function(){
 
-//TODO:?? unnecessary?
-    // use element identifier
     var detailsTemplate = BASE_MVC.wrapTemplate([
         '<div class="details">',
             // override with more info (that goes above the panel)

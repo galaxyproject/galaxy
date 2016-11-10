@@ -1,7 +1,10 @@
 from base import api
-from .helpers import TestsDatasets
-from .helpers import LibraryPopulator
-from .helpers import wait_on_state
+
+from .helpers import (
+    LibraryPopulator,
+    TestsDatasets,
+    wait_on_state
+)
 
 
 class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):

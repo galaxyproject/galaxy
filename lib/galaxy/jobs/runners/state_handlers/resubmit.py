@@ -1,6 +1,6 @@
 import logging
 
-__all__ = ['failure']
+__all__ = ('failure', )
 
 log = logging.getLogger(__name__)
 

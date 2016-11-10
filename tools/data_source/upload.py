@@ -20,17 +20,10 @@ from galaxy import util
 from galaxy.datatypes import sniff
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.registry import Registry
-from galaxy.datatypes.util.image_util import get_image_ext
 from galaxy.util import multi_byte
-from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html, check_image, check_zip
+from galaxy.util.checkers import check_binary, check_bz2, check_gzip, check_html, check_zip
+from galaxy.util.image_util import get_image_ext
 
-try:
-    import Image as PIL
-except ImportError:
-    try:
-        from PIL import Image as PIL
-    except:
-        PIL = None
 
 try:
     import bz2
@@ -116,12 +109,9 @@ def add_file( dataset, registry, json_file, output_path ):
         except UnicodeDecodeError as e:
             dataset.is_multi_byte = False
     # Is dataset an image?
-    image = check_image( dataset.path )
-    if image:
-        if not PIL:
-            image = None
-        # get_image_ext() returns None if nor a supported Image type
-        ext = get_image_ext( dataset.path, image )
+    i_ext = get_image_ext( dataset.path )
+    if i_ext:
+        ext = i_ext
         data_type = ext
     # Is dataset content multi-byte?
     elif dataset.is_multi_byte:

@@ -1,15 +1,17 @@
+from logging import getLogger
 from os import getcwd
-from os.path import join
-from os.path import abspath
+from os.path import (
+    abspath,
+    join
+)
 
 from galaxy import util
 from galaxy.jobs.runners.util.job_script import (
+    check_script_integrity,
     INTEGRITY_INJECTION,
     write_script,
-    check_script_integrity,
 )
 
-from logging import getLogger
 log = getLogger( __name__ )
 
 CAPTURE_RETURN_CODE = "return_code=$?"
@@ -55,13 +57,13 @@ def build_command(
     # One could imagine also allowing dependencies inside of the container but
     # that is too sophisticated for a first crack at this - build your
     # containers ready to go!
-    if not container:
+    if not container or container.resolve_dependencies:
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
         if container and modify_command_for_container:
             # Many Docker containers do not have /bin/bash.
-            external_command_shell = "/bin/sh"
+            external_command_shell = container.shell
         else:
             external_command_shell = shell
         externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)
@@ -124,7 +126,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     commands = local_container_script
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
-    log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))
+    log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
 
@@ -219,7 +221,7 @@ class CommandsBuilder(object):
         return self
 
     def prepend_commands(self, commands):
-        return self.prepend_command(u"; ".join([c for c in commands if c]))
+        return self.prepend_command(u"; ".join(c for c in commands if c))
 
     def append_command(self, command):
         if command:
@@ -228,7 +230,7 @@ class CommandsBuilder(object):
         return self
 
     def append_commands(self, commands):
-        self.append_command(u"; ".join([c for c in commands if c]))
+        self.append_command(u"; ".join(c for c in commands if c))
 
     def capture_return_code(self):
         if not self.return_code_captured:
@@ -240,4 +242,4 @@ class CommandsBuilder(object):
             self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
 
-__all__ = [ "build_command" ]
+__all__ = ( "build_command", )

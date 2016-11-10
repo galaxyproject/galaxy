@@ -3,19 +3,20 @@
 
 # Mostly taken from PasteDeploy and stripped down for Galaxy
 
-from __future__ import with_statement
-
 import inspect
 import os
 import re
 import sys
 
+import pkg_resources
+
+from six import iteritems
+from six.moves.urllib.parse import unquote
+
 from galaxy.util.properties import NicerConfigParser
 
-import pkg_resources
-from six import iteritems
 
-__all__ = ['loadapp', 'loadserver', 'loadfilter', 'appconfig']
+__all__ = ('loadapp', 'loadserver', 'loadfilter', 'appconfig')
 
 # ---- from paste.deploy.compat --------------------------------------
 
@@ -31,13 +32,9 @@ def print_(template, *args, **kwargs):
     sys.stdout.writelines(template)
 
 if sys.version_info < (3, 0):
-    from urllib import unquote
-
     def reraise(t, e, tb):
         exec('raise t, e, tb', dict(t=t, e=e, tb=tb))
 else:
-    from urllib.parse import unquote
-
     def reraise(t, e, tb):
         exec('raise e from tb', dict(e=e, tb=tb))
 
@@ -70,9 +67,8 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     if kwargs and args:
         args += ', '
     if kwargs:
-        kwargs = kwargs.items()
-        kwargs.sort()
-        args += ', '.join(['%s=...' % n for n, v in kwargs])
+        kwargs = sorted(kwargs.keys())
+        args += ', '.join('%s=...' % n for n in kwargs)
     gotspec = '(%s)' % args
     msg = '%s; got %s, wanted %s' % (exc_info[1], gotspec, argspec)
     exc_info[1].args = (msg,)
@@ -248,8 +244,8 @@ class _PipeLine(_ObjectType):
         app = context.app_context.create()
         filters = [c.create() for c in context.filter_contexts]
         filters.reverse()
-        for filter in filters:
-            app = filter(app)
+        for filter_ in filters:
+            app = filter_(app)
         return app
 
 PIPELINE = _PipeLine()
@@ -260,8 +256,8 @@ class _FilterApp(_ObjectType):
 
     def invoke(self, context):
         next_app = context.next_context.create()
-        filter = context.filter_context.create()
-        return filter(next_app)
+        filter_ = context.filter_context.create()
+        return filter_(next_app)
 
 FILTER_APP = _FilterApp()
 
@@ -270,14 +266,14 @@ class _FilterWith(_App):
     name = 'filtered_with'
 
     def invoke(self, context):
-        filter = context.filter_context.create()
+        filter_ = context.filter_context.create()
         filtered = context.next_context.create()
         if context.next_context.object_type is APP:
-            return filter(filtered)
+            return filter_(filtered)
         else:
             # filtering a filter
             def composed(app):
-                return filter(filtered(app))
+                return filter_(filtered(app))
             return composed
 
 FILTER_WITH = _FilterWith()

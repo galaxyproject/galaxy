@@ -1,4 +1,4 @@
-<tool id="multi_output_configured" name="Multi_Output_Configured" description="multi_output_configured" version="0.1.0">
+<tool id="multi_output_configured" name="Multi_Output_Configured" version="0.1.0">
   <command>
     echo "Hello" > $report;
     mkdir subdir1;

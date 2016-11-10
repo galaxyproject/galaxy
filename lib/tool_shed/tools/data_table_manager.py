@@ -31,7 +31,7 @@ class ToolDataTableManager( object ):
         changeset_revision_elem.text = changeset_revision
         # add additional values
         # TODO: enhance additional values to allow e.g. use of dict values that will recurse
-        for key, value in kwd.iteritems():
+        for key, value in kwd.items():
             new_elem = XmlET.SubElement( elem, key )
             new_elem.text = value
         return elem

@@ -1,0 +1,66 @@
+#xkcd {
+    border: 1px solid #96a8c8;
+    text-align: center;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#xkcd-header {
+    background: #96a8c8;
+    border-bottom: 1px solid #96a8c8;
+    padding: 15px 0;
+}
+
+#xkcd-name {
+    color: #fff;
+    padding-bottom: 10px;
+}
+
+#xkcd-header button {
+    color: #fff;
+    font-size: 14px;
+    background-color: #859abf;
+    border: none;
+    border-radius: 7px;
+    box-shadow: 0 5px #647eae;
+    padding: 5px 10px;
+}
+
+#xkcd-header button:focus {
+    outline: 0;
+}
+
+#xkcd-header button:hover {
+    background-color: #758cb6;
+}
+
+#xkcd-header button:active {
+    background-color: #758cb6;
+    box-shadow: 0 0 #647eae;
+    transform: translateY(5px);
+}
+
+#xkcd-img {
+    background: #fff;
+}
+
+#xkcd-img img {
+    padding: 10px;
+    max-width: 100%;
+    margin-bottom: -4px;
+}
+
+#xkcd-loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #96a8c8;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    animation: spin 1.5s linear infinite;
+    margin: 15px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

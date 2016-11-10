@@ -14,6 +14,7 @@ define(['utils/utils',
         /** Available parameter types */
         types: {
             'text'              : '_fieldText',
+            'password'          : '_fieldText',
             'select'            : '_fieldSelect',
             'data_column'       : '_fieldSelect',
             'genomebuild'       : '_fieldSelect',
@@ -100,7 +101,8 @@ define(['utils/utils',
                 error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 optional    : input_def.optional,
-                onchange    : input_def.onchange
+                onchange    : input_def.onchange,
+                searchable  : input_def.flavor !== 'workflow'
             });
         },
 
@@ -145,7 +147,9 @@ define(['utils/utils',
             // create input element
             return new Ui.Input({
                 id          : 'field-' + input_def.id,
+                type        : input_def.type,
                 area        : input_def.area,
+                readonly    : input_def.readonly,
                 placeholder : input_def.placeholder,
                 onchange    : input_def.onchange
             });
@@ -199,8 +203,7 @@ define(['utils/utils',
             });
         },
 
-        /** FTP file field
-        */
+        /** FTP file field */
         _fieldFtp: function( input_def ) {
             return new SelectFtp.View({
                 id          : 'field-' + input_def.id,

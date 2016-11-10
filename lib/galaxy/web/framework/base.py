@@ -138,7 +138,7 @@ class WebApplication( object ):
             if self.trace_logger:
                 self.trace_logger.context_remove( "request_id" )
 
-    def handle_request( self, environ, start_response ):
+    def handle_request( self, environ, start_response, body_renderer=None ):
         # Grab the request_id (should have been set by middleware)
         request_id = environ.get( 'request_id', 'unknown' )
         # Map url using routes
@@ -196,6 +196,10 @@ class WebApplication( object ):
             body = self.handle_controller_exception( e, trans, **kwargs )
             if not body:
                 raise
+        body_renderer = body_renderer or self._render_body
+        return body_renderer( trans, body, environ, start_response )
+
+    def _render_body( self, trans, body, environ, start_response ):
         # Now figure out what we got back and try to get it to the browser in
         # a smart way
         if callable( body ):

@@ -8,22 +8,22 @@ import logging
 import os
 import re
 import string
+import sys
 from cgi import escape
-
-from six import PY3
-
-from galaxy import util
-from galaxy.datatypes import metadata
-from galaxy.util.checkers import is_gzip
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.util.image_util import check_image_type
-from galaxy.util import nice_size
-from . import data
 
 import bx.align.maf
 
-if PY3:
+from galaxy import util
+from galaxy.datatypes import metadata
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import get_headers
+from galaxy.util import nice_size
+from galaxy.util.checkers import is_gzip
+from galaxy.util.image_util import check_image_type
+
+from . import data
+
+if sys.version_info > (3,):
     long = int
 
 log = logging.getLogger(__name__)
@@ -1007,19 +1007,28 @@ class DotBracket ( Sequence ):
         Galaxy Dbn (Dot-Bracket notation) rules:
 
         * The first non-empty line is a header line: no comment lines are allowed.
+
           * A header line starts with a '>' symbol and continues with 0 or multiple symbols until the line ends.
+
         * The second non-empty line is a sequence line.
-          * A sequence line may only include chars that match the Fasta format (https://en.wikipedia.org/wiki/FASTA_format#Sequence_representation) symbols for nucleotides: ACGTURYKMSWBDHVN, and may thus not include whitespaces.
+
+          * A sequence line may only include chars that match the FASTA format (https://en.wikipedia.org/wiki/FASTA_format#Sequence_representation) symbols for nucleotides: ACGTURYKMSWBDHVN, and may thus not include whitespaces.
           * A sequence line has no prefix and no suffix.
           * A sequence line is case insensitive.
+
         * The third non-empty line is a structure (Dot-Bracket) line and only describes the 2D structure of the sequence above it.
+
           * A structure line must consist of the following chars: '.{}[]()'.
           * A structure line must be of the same length as the sequence line, and each char represents the structure of the nucleotide above it.
           * A structure line has no prefix and no suffix.
           * A nucleotide pairs with only 1 or 0 other nucleotides.
+
             * In a structure line, the number of '(' symbols equals the number of ')' symbols, the number of '[' symbols equals the number of ']' symbols and the number of '{' symbols equals the number of '}' symbols.
+
         * The format accepts multiple entries per file, given that each entry is provided as three lines: the header, sequence and structure line.
+
             * Sniffing is only applied on the first entry.
+
         * Empty lines are allowed.
          """
 

@@ -9,18 +9,19 @@ Error handler middleware
 When an exception is thrown from the wrapper application, this logs
 the exception and displays an error page.
 """
+import cgi
 import sys
 import traceback
-import cgi
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-from paste.exceptions import formatter, collector, reporter
-from paste import wsgilib
-from paste import request
 
-__all__ = ['ErrorMiddleware', 'handle_exception']
+import six
+from paste import (
+    request,
+    wsgilib
+)
+from paste.exceptions import collector, formatter, reporter
+from six.moves import cStringIO as StringIO
+
+__all__ = ('ErrorMiddleware', 'handle_exception')
 
 
 class _NoDefault(object):
@@ -208,7 +209,7 @@ class ResponseStartChecker(object):
         return self.start_response(*args)
 
 
-class CatchingIter(object):
+class CatchingIter(six.Iterator):
 
     """
     A wrapper around the application iterator that will catch
@@ -227,13 +228,13 @@ class CatchingIter(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         __traceback_supplement__ = (
             Supplement, self.error_middleware, self.environ)
         if self.closed:
             raise StopIteration
         try:
-            return self.app_iterator.next()
+            return next(self.app_iterator)
         except StopIteration:
             self.closed = True
             close_response = self._close()

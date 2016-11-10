@@ -32,16 +32,26 @@
         -->
 
         <!--  Sample Swift Object Store
-         <object_store type="swift">
-             <auth access_key="...." secret_key="....." />
-             <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
-             <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
-             <cache path="database/object_store_cache" size="1000" />
-             <extra_dir type="job_work" path="database/job_working_directory_swift"/>
-             <extra_dir type="temp" path="database/tmp_swift"/>
-         </object_store>
-         -->
+        <object_store type="swift">
+            <auth access_key="...." secret_key="....." />
+            <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
+            <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
+            <cache path="database/object_store_cache" size="1000" />
+            <extra_dir type="job_work" path="database/job_working_directory_swift"/>
+            <extra_dir type="temp" path="database/tmp_swift"/>
+        </object_store>
+        -->
+
+        <!-- Sample Azure Object Store
+        <object_store type="azure_blob">
+            <auth account_name="..." account_key="...." />
+            <container name="unique_container_name" max_chunk_size="250"/>
+            <cache path="database/object_store_cache" size="100" />
+            <extra_dir type="job_work" path="database/job_working_directory_azure"/>
+            <extra_dir type="temp" path="database/tmp_azure"/>
+        </object_store>
+        -->
+
 
     </backends>
 </object_store>
-

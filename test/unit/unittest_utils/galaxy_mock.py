@@ -110,6 +110,7 @@ class MockTrans( object ):
         self.model = self.app.model
         self.webapp = MockWebapp( **kwargs )
         self.sa_session = self.app.model.session
+        self.workflow_building_mode = False
 
         self.galaxy_session = None
         self.__user = user

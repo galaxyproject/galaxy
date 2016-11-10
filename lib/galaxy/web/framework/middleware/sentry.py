@@ -12,6 +12,8 @@ try:
 except:
     Client = None
 
+from galaxy.util.postfork import register_postfork_function
+
 
 RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this '
                         'feature, please install it')
@@ -25,7 +27,12 @@ class Sentry(object):
     def __init__(self, application, dsn):
         assert Client is not None, RAVEN_IMPORT_MESSAGE
         self.application = application
-        self.client = Client( dsn )
+        self.client = None
+
+        def postfork_sentry_client():
+            self.client = Client( dsn )
+
+        register_postfork_function(postfork_sentry_client)
 
     def __call__(self, environ, start_response):
         try:

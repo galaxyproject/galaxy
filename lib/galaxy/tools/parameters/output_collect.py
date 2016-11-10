@@ -314,6 +314,8 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext, in
                             )
             metadata_dict = new_primary_datasets_attributes.get( 'metadata', None )
             if metadata_dict:
+                if "dbkey" in new_primary_datasets_attributes:
+                    metadata_dict["dbkey"] = new_primary_datasets_attributes["dbkey"]
                 primary_data.metadata.from_JSON_dict( json_dict=metadata_dict )
             else:
                 primary_data.set_meta()
