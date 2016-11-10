@@ -27,11 +27,11 @@ define([ "mvc/toolshed/shed-list-view", "mvc/toolshed/categories-view", "mvc/too
             this.admin_toolshed_router.on("route:toolsheds", function() {
                 Galaxy.admintoolshedapp.adminShedListView ? Galaxy.admintoolshedapp.adminShedListView.rePaint() : Galaxy.admintoolshedapp.adminShedListView = new mod_shed_list_view.ShedListView();
             }), this.admin_toolshed_router.on("route:categories", function(tool_shed) {
-                console.log(tool_shed), Galaxy.admintoolshedapp.adminShedCategoriesView ? Galaxy.admintoolshedapp.adminShedCategoriesView.rePaint({
+                Galaxy.admintoolshedapp.adminShedCategoriesView ? Galaxy.admintoolshedapp.adminShedCategoriesView.rePaint({
                     tool_shed: tool_shed.replace(/\//g, "%2f")
-                }) : (console.log("render"), Galaxy.admintoolshedapp.adminShedCategoriesView = new mod_categories_view.CategoryView({
+                }) : Galaxy.admintoolshedapp.adminShedCategoriesView = new mod_categories_view.CategoryView({
                     tool_shed: tool_shed.replace(/\//g, "%2f")
-                }));
+                });
             }), this.admin_toolshed_router.on("route:repositories", function(tool_shed, category_id) {
                 Galaxy.admintoolshedapp.adminShedCategoryView ? Galaxy.admintoolshedapp.adminShedCategoryView.rePaint({
                     tool_shed: tool_shed.replace(/\//g, "%2f"),

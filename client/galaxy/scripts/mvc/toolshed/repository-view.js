@@ -4,20 +4,19 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
 
         el: '#center',
 
-        initialize: function(shed, repository) {
+        initialize: function(params) {
             var self = this;
             this.options = _.defaults(this.options || {}, this.defaults);
             this.model = new toolshed_model.RepositoryCollection();
             this.listenTo(this.model, 'sync', this.render);
-            shed = shed.replace(/\//g, '%2f');
-            this.model.url += '?tool_shed_url=' + shed + '&tsr_id=' + repository;
+            shed = params.tool_shed.replace(/\//g, '%2f');
+            this.model.url += '?tool_shed_url=' + shed + '&tsr_id=' + params.repository_id;
             this.model.tool_shed = shed;
-            this.model.category = repository;
+            this.model.category = params.repository_id;
             this.model.fetch();
         },
 
         render: function(options) {
-            console.log(options);
             var repo_details_template = this.templateRepoDetails;
             var models = this.model.models[0];
             this.options = {
@@ -28,7 +27,6 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             this.options.current_changeset = (this.options.current_changeset || changesets[changesets.length - 1]);
             this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
             this.options.tools = this.options.current_metadata.tools;
-            console.log(this.options.tools);
             this.options.repository_dependencies_template = this.templateRepoDependencies;
             this.options.repository_dependency_template = this.templateRepoDependency;
             this.options.tps_template_global_select = this.templateGlobalSectionSelect;
@@ -38,7 +36,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             this.options.shed_tool_conf = this.templateShedToolConf({'stc_html': models.get('shed_conf')});
             this.options.panel_section_dict = models.get('panel_section_dict');
             this.options = _.extend(this.options, options);
-            this.$el.html(repo_details_template(data));
+            this.$el.html(repo_details_template(this.options));
             this.bindEvents();
             $("#center").css('overflow', 'auto');
         },

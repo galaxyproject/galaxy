@@ -1,13 +1,14 @@
 define([ "mvc/toolshed/toolshed-model" ], function(toolshed_model) {
     var ToolShedCategoryContentsView = Backbone.View.extend({
         el: "#center",
-        initialize: function(shed, category) {
-            this.model = new toolshed_model.CategoryCollection(), this.listenTo(this.model, "sync", this.render), 
-            shed = shed.replace(/\//g, "%2f"), this.model.url += "?tool_shed_url=" + shed + "&category_id=" + category, 
-            this.model.tool_shed = shed, this.model.category = category, this.model.fetch();
+        initialize: function(params) {
+            this.model = new toolshed_model.CategoryCollection(), this.listenTo(this.model, "sync", this.render);
+            var shed = params.tool_shed.replace(/\//g, "%2f");
+            this.model.url += "?tool_shed_url=" + shed + "&category_id=" + params.category_id, 
+            this.model.tool_shed = shed, this.model.category = params.category_id, this.model.fetch();
         },
         render: function(options) {
-            console.log(options), this.options = _.extend(this.options, options);
+            this.options = _.extend(this.options, options);
             var category_contents_template = this.templateCategoryContents;
             this.$el.html(category_contents_template({
                 category: this.model.models[0],

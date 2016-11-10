@@ -648,6 +648,12 @@ def populate_api_routes( webapp, app ):
                       repository_id=None,
                       image_file=None )
 
+    webapp.mapper.connect( 'tool_shed',
+                           '/api/tool_shed',
+                           controller='tool_shed_repositories',
+                           action='tool_shed',
+                           conditions=dict( method=[ "GET" ] ) )
+
     webapp.mapper.connect( 'shed_category',
                            '/api/tool_shed_repositories/shed_category',
                            controller='tool_shed_repositories',

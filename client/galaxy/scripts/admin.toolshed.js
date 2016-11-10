@@ -60,12 +60,10 @@ define(["mvc/toolshed/shed-list-view",
                 }
             });
             this.admin_toolshed_router.on('route:categories', function(tool_shed) {
-                console.log(tool_shed);
                 if (Galaxy.admintoolshedapp.adminShedCategoriesView) {
                     Galaxy.admintoolshedapp.adminShedCategoriesView.rePaint({tool_shed: tool_shed.replace(/\//g, '%2f')});
                 }
                 else {
-                    console.log('render');
                     Galaxy.admintoolshedapp.adminShedCategoriesView = new mod_categories_view.CategoryView({tool_shed: tool_shed.replace(/\//g, '%2f')});
                 }
             });

@@ -9,21 +9,16 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
         },
 
         initialize: function(options) {
-            console.log('init');
             var self = this;
             this.options = _.defaults(this.options || options, this.defaults);
             this.model = new toolshed_model.Categories();
             this.listenTo(this.model, 'sync', this.render);
-            console.log(this.options);
             this.model.url = this.model.url + '?tool_shed_url=' + this.options.tool_shed;
-            console.log(this.model.url);
             this.model.fetch();
         },
 
         render: function(options) {
-            console.log(this.model);
             this.options = _.extend(this.options, options);
-            console.log(this.options);
             this.options.categories = this.model.models;
             var category_list_template = this.templateCategoryList;
             this.$el.html(category_list_template(this.options));
@@ -33,7 +28,6 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
         rePaint: function(options){
             this.$el.empty();
             this.model.url = this.model.url + '?tool_shed_url=' + this.options.tool_shed;
-            console.log(this.model.url);
             this.model.fetch();
             // this.render(options);
         },
