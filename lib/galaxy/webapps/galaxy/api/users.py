@@ -5,7 +5,7 @@ API operations on User objects.
 import logging
 import datetime
 import re
-
+import json
 from sqlalchemy import false, true, and_, or_
 
 from galaxy import exceptions, util, web
@@ -27,7 +27,7 @@ from galaxy.web.form_builder import AddressField
 from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import docstring_trim, listify
 from galaxy.util.odict import odict
-
+from yaml import load
 
 log = logging.getLogger( __name__ )
 
@@ -251,6 +251,46 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 'nice_total_disk_usage': util.nice_size( usage ),
                 'quota_percent': percent}
 
+    def _get_extra_user_preferences(self, trans):
+        """
+        Reads the file user_preferences_extra_conf.xml to display
+        admin defined user informations
+        """
+        path = trans.app.config.user_preferences_extra_config_file
+        try:
+            with open(path, 'r') as stream:
+                config = load(stream)
+        except:
+            log.warn('Config file (%s) could not be found or is malformed.' % path)
+            return {}
+
+        return config['preferences'] if config else {}
+
+    def _build_extra_user_pref_inputs(self, preferences, user):
+        """
+        Build extra user preferences inputs list.
+        Add values to the fields if present
+        """
+        if not preferences:
+           return []
+        data = []
+        # Get data if present
+        data_key = "extra_user_preferences"
+        if data_key in user.preferences:
+            data = json.loads(user.preferences["extra_user_preferences"])
+        extra_pref_inputs = list()
+        # Build sections for different categories of inputs
+        for item in preferences:
+            section = preferences[item]
+            for input in section['inputs']:
+                input['help'] = 'Required' if input['required'] else ''
+                field = item + '|' + input['name']
+                for data_item in data:
+                   if field in data_item:
+                       input['value'] = data_item[field]
+            extra_pref_inputs.append({'type': 'section', 'title': section['description'], 'name': item, 'expanded': True, 'inputs': section['inputs']})
+        return extra_pref_inputs
+
     @expose_api
     def get_information(self, trans, id, **kwd):
         '''
@@ -299,6 +339,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     info_field['test_param']['data'].append({'label': info_form['name'], 'value': info_form['id']})
                     info_field['cases'].append({'value': info_form['id'], 'inputs': info_form['inputs']})
                 inputs.append(info_field)
+
+            # Build sections for extra user preferences
+            extra_user_pref = self._build_extra_user_pref_inputs(self._get_extra_user_preferences(trans), user)
+            for item in extra_user_pref:
+                inputs.append(item)
+
             address_inputs = [{'type': 'hidden', 'name': 'id', 'hidden': True}]
             for field in AddressField.fields():
                 address_inputs.append({'type': 'text', 'name': field[0], 'label': field[1], 'help': field[2]})
@@ -369,6 +415,17 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             form_values = trans.model.FormValues(user_info_form, user_info_values)
             trans.sa_session.add(form_values)
             user.values = form_values
+
+        # Update values for extra user preference items
+        extra_user_pref_data = list()
+        get_extra_pref_keys = self._get_extra_user_preferences(trans)
+        for key in get_extra_pref_keys:
+            key_prefix = key + '|'
+            for item in payload:
+                if item.startswith(key_prefix):
+                   extra_user_pref_data.append({ item : payload[item] })
+        user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
+
         # Update user addresses
         address_dicts = {}
         address_count = 0
