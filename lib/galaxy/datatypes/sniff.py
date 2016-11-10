@@ -198,8 +198,8 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
     """
     headers = []
-    compress = is_gzip(fname)
-    if compress:
+    compressed = is_gzip(fname)
+    if compressed:
         in_file = gzip.GzipFile(fname, 'r')
     else:
         in_file = open(fname, 'rt')
@@ -473,7 +473,7 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
 AUTO_DETECT_EXTENSIONS = [ 'auto' ]  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
 COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
-COMPRESSION_DATATYPES = dict( gzip=[ 'bam' ] )
+COMPRESSION_DATATYPES = dict( gzip=[ 'bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz' ] )
 COMPRESSED_EXTENSIONS = []
 for exts in COMPRESSION_DATATYPES.values():
     COMPRESSED_EXTENSIONS.extend( exts )

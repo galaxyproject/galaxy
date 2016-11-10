@@ -7,16 +7,15 @@ import json
 import logging
 import os
 import re
-import subprocess
 import string
 import sys
-import tempfile
 from cgi import escape
 
 import bx.align.maf
 
 from galaxy import util
 from galaxy.datatypes import metadata
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size
@@ -573,10 +572,12 @@ class Fastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        compress = is_gzip(dataset.file_name)
-        if compress:
-            self.decompress_fastqgz(dataset)
-        for line in open( dataset.file_name ):
+        compressed = is_gzip(dataset.file_name)
+        if compressed:
+            in_file = gzip.GzipFile(dataset.file_name)
+        else:
+            in_file = open(dataset.file_name)
+        for line in in_file:
             line = line.strip()
             if line and line.startswith( '#' ) and not data_lines:
                 # We don't count comment lines for sequence data types
@@ -611,6 +612,9 @@ class Fastq ( Sequence ):
         >>> Fastq().sniff( fname )
         True
         """
+        compressed = is_gzip(filename)
+        if compressed and not isinstance(self, Binary):
+            return False
         headers = get_headers( filename, None )
         bases_regexp = re.compile( "^[NGTAC]*" )
         # check that first block looks like a fastq block
@@ -672,95 +676,6 @@ class Fastq ( Sequence ):
         return True
     process_split_file = staticmethod(process_split_file)
 
-class FastqGz ( Fastq ):
-    """Class representing a generic compressed FASTQ sequence"""
-    edam_format = "format_1930"
-    file_ext = "fastq.gz"
-
-    def set_meta( self, dataset, **kwd ):
-        """
-        Set the number of sequences and the number of data lines
-        in dataset.
-        FIXME: This does not properly handle line wrapping
-        """
-        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            dataset.metadata.data_lines = None
-            dataset.metadata.sequences = None
-            return
-        data_lines = 0
-        sequences = 0
-        seq_counter = 0     # blocks should be 4 lines long
-        compress = is_gzip(dataset.file_name)
-        if not compress:
-            self.compress_fastq(dataset)
-        for line in gzip.GzipFile(dataset.file_name, 'r'):
-            line = line.strip()
-            if line and line.startswith( '#' ) and not data_lines:
-                # We don't count comment lines for sequence data types
-                continue
-            seq_counter += 1
-            data_lines += 1
-            if line and line.startswith( '@' ):
-                if seq_counter >= 4:
-                    # count previous block
-                    # blocks should be 4 lines long
-                    sequences += 1
-                    seq_counter = 1
-        if seq_counter >= 4:
-            # count final block
-            sequences += 1
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.sequences = sequences
-
-    def compress_fastq(self,dataset):
-        print('X Compressing the fastq files')
-        if dataset.file_name and dataset.file_name.strip():
-            compress = is_gzip(dataset.file_name)
-            if not compress:
-                # TODO: consider how to created temp file in Galaxy database/tmp folder
-                compressed_file = tempfile.NamedTemporaryFile(delete=False) 
-                shutil.copyfileobj(open(dataset.file_name), gzip.open(compressed_file.name, 'wb'))
-                compressed_file.close()
-                os.unlink(dataset.file_name)
-                os.rename(compressed_file.name, dataset.file_name)
-                # # Compress fastq file
-                # stderr_name = tempfile.NamedTemporaryFile( prefix="fastq_compress" ).name
-                # command = ['gzip',dataset.file_name]
-                # try:
-                #     exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
-                # except Exception as e:
-                #     log.warning( '%s, Compression Exception: %s', self, e )
-                #
-                # # Rename compressed file
-                # os.rename(dataset.file_name + ".gz" , dataset.file_name)
-            else:
-                return False
-        else:
-            return False
-
-    def sniff( self, filename ):
-        
-        """
-        Determines whether the file is in generic fastq format
-        For details, see http://maq.sourceforge.net/fastq.shtml
-
-        Note: There are three kinds of FASTQ files, known as "Sanger" (sometimes called "Standard"), Solexa, and Illumina
-              These differ in the representation of the quality scores
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( '1.fastqsanger' )
-        >>> Fastq().sniff( fname )
-        True
-        >>> fname = get_test_fname( '2.fastqsanger' )
-        >>> Fastq().sniff( fname )
-        True
-        """
-        is_compressed = is_gzip(filename)
-        is_fastq = super(FastqGz,self).sniff(filename)
-        if is_fastq and is_compressed:
-            return True
-        else:
-            return False
 
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
@@ -785,27 +700,38 @@ class FastqCSSanger( Fastq ):
     file_ext = "fastqcssanger"
 
 
+class FastqGz ( Fastq, Binary ):
+    """Class representing a generic compressed FASTQ sequence"""
+    edam_format = "format_1930"
+    file_ext = "fastq.gz"
+Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
+
+
 class FastqSangerGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.gz"
+Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
 
 
 class FastqSolexaGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
+Binary.register_sniffable_binary_format("fastqsolexa.gz", "fastqsolexa.gz", FastqSolexaGz)
 
 
 class FastqIlluminaGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
     edam_format = "format_1931"
     file_ext = "fastqillumina.gz"
+Binary.register_sniffable_binary_format("fastqillumina.gz", "fastqillumina.gz", FastqIlluminaGz)
 
 
 class FastqCSSangerGz( FastqGz ):
     """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger.gz"
+Binary.register_sniffable_binary_format("fastqcssanger.gz", "fastqcssanger.gz", FastqCSSangerGz)
 
 
 class Maf( Alignment ):
