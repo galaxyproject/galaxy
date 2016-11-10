@@ -44,6 +44,15 @@ log = logging.getLogger(__name__)
 class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
     resolver_type = "conda"
+    config_options = {
+        'prefix': None,
+        'exec': None,
+        'debug': None,
+        'ensure_channels': DEFAULT_ENSURE_CHANNELS,
+        'auto_install': False,
+        'auto_init': False,
+        'copy_dependencies': False,
+    }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
     def __init__(self, dependency_manager, **kwds):
@@ -51,7 +60,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.dependency_manager = dependency_manager
 
         def get_option(name):
-            return self._get_config_option(name, dependency_manager, config_prefix="conda", **kwds)
+            return dependency_manager.get_resolver_option(self, name, explicit_resolver_options=kwds)
 
         # Conda context options (these define the environment)
         conda_prefix = get_option("prefix")
