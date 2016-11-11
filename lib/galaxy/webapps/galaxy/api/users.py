@@ -287,7 +287,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 field = item + '|' + input['name']
                 for data_item in data:
                    if field in data_item:
-                       input['value'] = data_item[field]
+                       input['value'] = data[data_item]
             extra_pref_inputs.append({'type': 'section', 'title': section['description'], 'name': item, 'expanded': True, 'inputs': section['inputs']})
         return extra_pref_inputs
 
@@ -417,15 +417,14 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             user.values = form_values
 
         # Update values for extra user preference items
-        extra_user_pref_data = list()
+        extra_user_pref_data = dict()
         get_extra_pref_keys = self._get_extra_user_preferences(trans)
         for key in get_extra_pref_keys:
             key_prefix = key + '|'
             for item in payload:
                 if item.startswith(key_prefix):
-                   extra_user_pref_data.append({ item : payload[item] })
+                    extra_user_pref_data[item] = payload[item]
         user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
-
         # Update user addresses
         address_dicts = {}
         address_count = 0
