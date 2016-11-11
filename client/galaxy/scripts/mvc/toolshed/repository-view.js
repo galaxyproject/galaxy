@@ -11,6 +11,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             this.listenTo(this.model, 'sync', this.render);
             shed = params.tool_shed.replace(/\//g, '%2f');
             this.model.url += '?tool_shed_url=' + shed + '&tsr_id=' + params.repository_id;
+            this.model.tool_shed_url = params.tool_shed.replace(/%2f/g, '/');
             this.model.tool_shed = shed;
             this.model.category = params.repository_id;
             this.model.fetch();
@@ -35,6 +36,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             this.options.tool_dependencies = models.get('tool_dependencies');
             this.options.shed_tool_conf = this.templateShedToolConf({'stc_html': models.get('shed_conf')});
             this.options.panel_section_dict = models.get('panel_section_dict');
+            this.options.api_url = Galaxy.root + 'api/tool_shed_repositories/install?async=True';
             this.options = _.extend(this.options, options);
             this.$el.html(repo_details_template(this.options));
             this.bindEvents();
@@ -50,6 +52,25 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             $('#tool_panel_section_select').on('change', function() {
                 that.tpsSelection();
             });
+            $('#install_repository').on('click', function(ev) {
+                var form = $('#repository_installation');
+                ev.preventDefault();
+                var params = {};
+                params.repositories = JSON.stringify([[$('#install_repository').attr('data-tsrid'), $('#changeset').find("option:selected").val()]]);
+                params.tool_shed_repository_ids = JSON.stringify([$('#install_repository').attr('data-tsrid')]);
+                params.tool_shed_url = that.model.tool_shed_url;
+                params.install_tool_dependencies = $("#install_tool_dependencies").val();
+                params.install_repository_dependencies = $("#install_repository_dependencies").val();
+                params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
+                var tps = that.panelSelect(params);
+                console.log(tps);
+                params.tool_panel_section = JSON.stringify(that.panelSelect(params));
+                params.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
+                params.changeset = $('#changeset').find("option:selected").val();
+                url = $('#repository_installation').attr('action');
+                console.log({params70: params});
+                that.prepareInstall(params, url);
+            });
             $('.tool_panel_section_picker').on('change', function() {
                 new_value = $(this).find('option:selected').val();
                 default_tps = $('#tool_panel_section_select').find('option:selected').val();
@@ -62,7 +83,28 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             });
         },
 
-        rePaint: function(options){
+        panelSelect: function(params) {
+            var tool_panel_section = {};
+            if ($('#tool_panel_section_select').length) {
+                params.tool_panel_section_id = $('#tool_panel_section_select').find("option:selected").val();
+            }
+            else {
+                params.new_tool_panel_section = $("#new_tool_panel_section").val();
+            }
+            $('.tool_panel_section_picker').each(function() {
+                element_name = $(this).attr('name');
+                tool_guid = $(this).attr('data-toolguid');
+                if (element_name === 'tool_panel_section_id') {
+                    tool_panel_section[tool_guid] = { tool_panel_section: $(this).find("option:selected").val(), action: 'append' }
+                }
+                else {
+                    tool_panel_section[tool_guid] = { tool_panel_section: $(this).val(), action: 'create' }
+                }
+            });
+            return tool_panel_section;
+        },
+
+        rePaint: function(options) {
             this.$el.empty();
             this.render(options);
         },
@@ -74,11 +116,30 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             });
         },
 
+        prepareInstall: function(params, api_url) {
+            var that = this;
+            console.log({params120: params});
+            $.post(api_url, params, function(data) {
+                console.log({data: data});
+                iri_parameters = JSON.parse(data);
+                that.doInstall(iri_parameters);
+            });
+        },
+
+        doInstall: function(params) {
+            controller_url = Galaxy.root + 'admin_toolshed/manage_repositories';
+            $.post(controller_url, params, function(data) {
+                console.log(data);
+                console.log( "Initializing repository installation succeeded" );
+                window.location.assign(Galaxy.root + 'admin_toolshed/monitor_repository_installation');
+            })
+        },
+
         templateRepoDetails: _.template([
             '<% console.log(repository); %>',
             '<div class="tab-pane" id="repository_details">',
                 '<h2 style="font-weight: normal;">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong></h2>',
-                '<form id="repository_installation" name="install_repository" method="post" action="">',
+                '<form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">',
                     '<input type="hidden" id="repositories" name="<%= repository.id %>" value="ID" />',
                     '<input type="hidden" id="tool_shed_url" name="tool_shed_url" value="<%= tool_shed %>" />',
                     '<div class="toolForm">',
