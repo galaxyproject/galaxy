@@ -271,6 +271,31 @@ class MetadataValidator( Validator ):
                 raise ValueError( self.message )
 
 
+class MetadataEqualsValidator(Validator):
+    """
+    """
+    requires_dataset_metadata = True
+
+    def __init__(self, metadata_name=None, value=None, message=None):
+        self.metadata_name = metadata_name
+        self.value = value
+        self.message = message or 'Metadata value for (%s) must be (%s) and is not.' % (metadata_name, value)
+
+    @classmethod
+    def from_element(cls, param, elem):
+        return cls(
+            metadata_name=elem.get('metadata_name', None),
+            value=elem.get('value', None),
+            message=elem.get('message', None),
+        )
+
+    def validate( self, value, trans=None ):
+        if value:
+            metdata_value = getattr(value.metadata, self.metadata_name)
+            if metdata_value != self.value:
+                raise ValueError( self.message )
+
+
 class UnspecifiedBuildValidator( Validator ):
     """
     Validator that checks for dbkey not equal to '?'
@@ -278,10 +303,7 @@ class UnspecifiedBuildValidator( Validator ):
     requires_dataset_metadata = True
 
     def __init__( self, message=None ):
-        if message is None:
-            self.message = "Unspecified genome build, click the pencil icon in the history item to set the genome build"
-        else:
-            self.message = message
+        self.message = message or "Unspecified genome build, click the pencil icon in the history item to set the genome build"
 
     @classmethod
     def from_element( cls, param, elem ):
@@ -431,6 +453,7 @@ validator_types = dict( expression=ExpressionValidator,
                         in_range=InRangeValidator,
                         length=LengthValidator,
                         metadata=MetadataValidator,
+                        metadata_eq=MetadataEqualsValidator,
                         unspecified_build=UnspecifiedBuildValidator,
                         no_options=NoOptionsValidator,
                         empty_field=EmptyTextfieldValidator,
