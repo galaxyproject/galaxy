@@ -554,8 +554,8 @@ class csFasta( Sequence ):
         return Sequence.set_meta( self, dataset, **kwd )
 
 
-class Fastq ( Sequence ):
-    """Class representing a generic FASTQ sequence"""
+class BaseFastq ( Sequence ):
+    """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
 
@@ -677,6 +677,12 @@ class Fastq ( Sequence ):
     process_split_file = staticmethod(process_split_file)
 
 
+class Fastq( BaseFastq ):
+    """Class representing a generic FASTQ sequence"""
+    edam_format = "format_1930"
+    file_ext = "fastq"
+
+
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
@@ -700,7 +706,7 @@ class FastqCSSanger( Fastq ):
     file_ext = "fastqcssanger"
 
 
-class FastqGz ( Fastq, Binary ):
+class FastqGz ( BaseFastq, Binary ):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
