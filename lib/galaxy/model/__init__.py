@@ -2081,14 +2081,20 @@ class DatasetInstance( object ):
         except KeyError:
             pass  # No deps
         new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True, target_context=target_context ).values()))
-        new_dataset.hid = self.hid
         new_dataset.name = self.name
+        self.copy_attributes( new_dataset )
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
         session = trans.sa_session
         session.add( new_dataset )
         session.add( assoc )
         session.flush()
         return new_dataset
+
+    def copy_attributes( self, new_dataset ):
+        """
+        Copies attributes to a new datasets, used for implicit conversions
+        """
+        pass
 
     def get_metadata_dataset( self, dataset_ext ):
         """
@@ -2341,6 +2347,9 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             hda.set_peek()
         object_session( self ).flush()
         return hda
+
+    def copy_attributes( self, new_dataset ):
+        new_dataset.hid = self.hid
 
     def to_library_dataset_dataset_association( self, trans, target_folder,
                                                 replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
