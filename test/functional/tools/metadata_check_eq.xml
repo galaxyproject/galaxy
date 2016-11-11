@@ -1,0 +1,29 @@
+<tool id="metadata_check_eq" name="metadata_check_eq" version="1.0.0">
+    <description>Tests whether asserting metadata equals something works.</description>
+    <command><![CDATA[
+        cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" multiple="false" format="tabular,csv">
+            <validator type="metdata_eq" metadata_name="delimiter" value="&#x9;" />
+        </param>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output" format_source="input">
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="1.tabular" format="tabular" />
+            <output name="output">
+                <metadata name="delimiter" value="&#x9;"/>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="1.csv" format="csv" />
+            <output name="output">
+                <metadata name="delimiter" value="&#x9;"/>
+            </output>
+        </test>
+    </tests>
+</tool>
