@@ -5,9 +5,10 @@ import time
 import traceback
 from xml.sax.saxutils import escape
 
-from .panel import ToolPanelElements
-from .panel import panel_item_types
-
+from .panel import (
+    panel_item_types,
+    ToolPanelElements
+)
 
 INTEGRATED_TOOL_PANEL_DESCRIPTION = """
 This is Galaxy's integrated tool panel and should be modified directly only for
