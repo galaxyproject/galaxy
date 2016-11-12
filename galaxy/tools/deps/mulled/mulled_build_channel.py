@@ -19,8 +19,8 @@ See recent changes that would be built with:
 
 
 import os
-import time
 import sys
+import time
 
 from ._cli import arg_parser
 from .mulled_build import (

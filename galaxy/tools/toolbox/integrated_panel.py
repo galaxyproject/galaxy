@@ -4,8 +4,8 @@ import tempfile
 import time
 import traceback
 
-from .panel import ToolPanelElements
 from .panel import panel_item_types
+from .panel import ToolPanelElements
 
 
 INTEGRATED_TOOL_PANEL_DESCRIPTION = """
