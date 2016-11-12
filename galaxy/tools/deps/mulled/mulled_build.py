@@ -151,6 +151,7 @@ def mull_targets(
         return involucro_context.exec_command(involucro_args)
     return 0
 
+
 def context_from_args(args):
     return InvolucroContext(involucro_bin=args.involucro_path)
 
