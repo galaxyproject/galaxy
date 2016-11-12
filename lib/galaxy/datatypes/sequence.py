@@ -573,28 +573,31 @@ class BaseFastq ( Sequence ):
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
         compressed = is_gzip(dataset.file_name)
-        if compressed:
-            in_file = gzip.GzipFile(dataset.file_name)
-        else:
-            in_file = open(dataset.file_name)
-        for line in in_file:
-            line = line.strip()
-            if line and line.startswith( '#' ) and not data_lines:
-                # We don't count comment lines for sequence data types
-                continue
-            seq_counter += 1
-            data_lines += 1
-            if line and line.startswith( '@' ):
-                if seq_counter >= 4:
-                    # count previous block
-                    # blocks should be 4 lines long
-                    sequences += 1
-                    seq_counter = 1
-        if seq_counter >= 4:
-            # count final block
-            sequences += 1
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.sequences = sequences
+        try:
+            if compressed:
+                in_file = gzip.GzipFile(dataset.file_name)
+            else:
+                in_file = open(dataset.file_name)
+            for line in in_file:
+                line = line.strip()
+                if line and line.startswith( '#' ) and not data_lines:
+                    # We don't count comment lines for sequence data types
+                    continue
+                seq_counter += 1
+                data_lines += 1
+                if line and line.startswith( '@' ):
+                    if seq_counter >= 4:
+                        # count previous block
+                        # blocks should be 4 lines long
+                        sequences += 1
+                        seq_counter = 1
+            if seq_counter >= 4:
+                # count final block
+                sequences += 1
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.sequences = sequences
+        finally:
+            in_file.close()
 
     def sniff( self, filename ):
         """

@@ -199,19 +199,22 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """
     headers = []
     compressed = is_gzip(fname)
-    if compressed:
-        in_file = gzip.GzipFile(fname, 'r')
-    else:
-        in_file = open(fname, 'rt')
-    for idx, line in enumerate(in_file):
-        line = line.rstrip('\n\r')
-        if is_multi_byte:
-            # TODO: fix this - sep is never found in line
-            line = unicodify( line, 'utf-8' )
-            sep = sep.encode( 'utf-8' )
-        headers.append( line.split(sep) )
-        if idx == count:
-            break
+    try:
+        if compressed:
+            in_file = gzip.GzipFile(fname, 'r')
+        else:
+            in_file = open(fname, 'rt')
+        for idx, line in enumerate(in_file):
+            line = line.rstrip('\n\r')
+            if is_multi_byte:
+                # TODO: fix this - sep is never found in line
+                line = unicodify( line, 'utf-8' )
+                sep = sep.encode( 'utf-8' )
+            headers.append( line.split(sep) )
+            if idx == count:
+                break
+    finally:
+        in_file.close()
     return headers
 
 
