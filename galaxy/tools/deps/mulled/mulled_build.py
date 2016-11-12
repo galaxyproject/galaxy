@@ -148,8 +148,8 @@ def mull_targets(
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
         ensure_installed(involucro_context, True)
-        involucro_context.exec_command(involucro_args)
-
+        return involucro_context.exec_command(involucro_args)
+    return 0
 
 def context_from_args(args):
     return InvolucroContext(involucro_bin=args.involucro_path)
