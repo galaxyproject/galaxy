@@ -265,6 +265,31 @@ class TextToolParameter( ToolParameter ):
         return d
 
 
+class PasswordToolParameter( ToolParameter ):
+    """
+    Parameter that can take on any password value.
+
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch()
+    >>> p = PasswordToolParameter( None, XML( '<param name="_name" type="text" value="default" />' ) )
+    >>> print p.name
+    _name
+    >>> sorted( p.to_dict( trans ).items() )
+    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'PasswordToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'password'), ('value', 'default')]
+    """
+    def __init__( self, tool, input_source ):
+        input_source = ensure_input_source(input_source)
+        ToolParameter.__init__( self, tool, input_source )
+
+    def to_json( self, value, app, use_security ):
+        """Convert a value to a string representation suitable for persisting"""
+        return '###%s###' % value
+
+    def to_dict( self, trans, other_values={} ):
+        d = super(PasswordToolParameter, self).to_dict(trans)
+        return d
+
+
 class IntegerToolParameter( TextToolParameter ):
     """
     Parameter that takes an integer value.
@@ -2063,6 +2088,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
 
 parameter_types = dict(
     text=TextToolParameter,
+    password=PasswordToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,
     boolean=BooleanToolParameter,
