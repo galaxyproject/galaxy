@@ -487,5 +487,7 @@ def pickle_SafeStringWrapper( safe_object ):
     if isinstance( safe_object, CallableSafeStringWrapper ):
         cls = CallableSafeStringWrapper
     return ( cls, args )
+
+
 copy_reg.pickle( SafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string )
 copy_reg.pickle( CallableSafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string )

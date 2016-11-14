@@ -14,6 +14,7 @@ import json
 import os
 import string
 import subprocess
+import sys
 from sys import platform as _platform
 
 try:
@@ -49,7 +50,7 @@ def get_tests(args, pkg_path):
     """Extract test cases given a recipe's meta.yaml file."""
     recipes_dir = args.recipes_dir
 
-    tests = ""
+    tests = []
     input_dir = os.path.dirname(os.path.join(recipes_dir, pkg_path))
     recipe_meta = MetaData(input_dir)
 
@@ -59,14 +60,14 @@ def get_tests(args, pkg_path):
 
     if tests_imports or tests_commands:
         if tests_commands:
-            tests = ' && '.join(tests_commands)
-        elif tests_imports and 'python' in requirements:
-            tests = ' && '.join('python -c "import %s"' % imp for imp in tests_imports)
+            tests.append(' && '.join(tests_commands))
+        if tests_imports and 'python' in requirements:
+            tests.append(' && '.join('python -c "import %s"' % imp for imp in tests_imports))
         elif tests_imports and ('perl' in requirements or 'perl-threaded' in requirements):
-            tests = ' && '.join('''perl -e "use %s;"''' % imp for imp in tests_imports)
-        tests = tests.replace('$R ', 'Rscript ')
-    else:
-        pass
+            tests.append(' && '.join('''perl -e "use %s;"''' % imp for imp in tests_imports))
+
+    tests = ' && '.join(tests)
+    tests = tests.replace('$R ', 'Rscript ')
     return tests
 
 
@@ -146,7 +147,8 @@ def mull_targets(
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
         ensure_installed(involucro_context, True)
-        involucro_context.exec_command(involucro_args)
+        return involucro_context.exec_command(involucro_args)
+    return 0
 
 
 def context_from_args(args):
@@ -276,7 +278,7 @@ def main(argv=None):
     parser.add_argument('--test', help='Provide a test command for the container.')
     args = parser.parse_args()
     targets = target_str_to_targets(args.targets)
-    mull_targets(targets, **args_to_mull_targets_kwds(args))
+    sys.exit(mull_targets(targets, **args_to_mull_targets_kwds(args)))
 
 
 __all__ = ("main", )
