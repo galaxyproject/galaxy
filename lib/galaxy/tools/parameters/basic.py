@@ -277,10 +277,6 @@ class PasswordToolParameter( ToolParameter ):
     >>> sorted( p.to_dict( trans ).items() )
     [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'PasswordToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'password')]
     """
-    def __init__( self, tool, input_source ):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__( self, tool, input_source )
-
     def from_json( self, value, trans=None, other_values={} ):
         """Convert a value to a string representation suitable for persisting"""
         if value:
