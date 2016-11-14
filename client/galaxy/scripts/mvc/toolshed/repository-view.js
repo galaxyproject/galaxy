@@ -1,4 +1,12 @@
-define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_model, jstree) {
+define(['mvc/toolshed/toolshed-model',
+        'libs/jquery/jstree',
+        'utils/utils',
+        'mvc/ui/ui-modal',
+        'mvc/form/form-view'], function(toolshed_model,
+                                        jstree,
+                                        Utils,
+                                        Modal,
+                                        FormView) {
 
     var ToolShedRepositoryView = Backbone.View.extend({
 
@@ -80,6 +88,35 @@ define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_
                 }
             });
             $('#repository_dependencies').jstree();
+            $('.tool_form').on('click', function() {
+                var guid = $(this).attr('data-guid');
+                var clean = $(this).attr('data-clean');
+                var name = $(this).attr('data-name');
+                var desc = $(this).attr('data-desc');
+                var tool_shed_url = that.model.tool_shed_url;
+                var tsr_id = $('#repository_details').attr('data-tsrid');
+                var changeset = $('#changeset').find("option:selected").val();
+                var api_url = Galaxy.root + 'api/tool_shed_repositories/shed_tool_json';
+                var params = {'guid': guid, 'tool_shed_url': tool_shed_url, 'tsr_id': tsr_id, 'changeset': changeset};
+                $.get(api_url, params, function(data) {
+                    data.cls = 'ui-portlet-plain';
+                    var toolform = new FormView(data);
+                    Utils.deepeach(data.inputs, function( input ) {
+                        if (input.type) {
+                            if (['data', 'data_collection'].indexOf(input.type) != -1) {
+                                input.type = 'hidden';
+                                input.info = 'Data input \'' + input.name + '\' (' + Utils.textify(input.extensions) + ')';
+                            }
+                        }
+                    });
+                    var modal = new Modal.View();
+                    var modal_title = '<u>' + name + '</u> ' + desc;
+                    modal.show({'closing_events': true,
+                                'title': modal_title,
+                                'body': toolform.$el,
+                                'buttons': { 'Close': function() { modal.hide(); }}});
+                });
+            });
         },
 
         panelSelect: function(params) {
@@ -132,7 +169,7 @@ define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_
         },
 
         templateRepoDetails: _.template([
-            '<div class="tab-pane" id="repository_details">',
+            '<div class="tab-pane" id="repository_details" data-tsrid="<%= repository.id %>">',
                 '<h2 style="font-weight: normal;">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong></h2>',
                 '<form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">',
                     '<input type="hidden" id="repositories" name="<%= repository.id %>" value="ID" />',
@@ -152,9 +189,9 @@ define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_
                         '</div>',
                     '</div>',
                     '<%= shed_tool_conf %>',
-                    '<div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"><%= current_changeset %></strong></div>',
-                    '<div class="toolFormBody">',
-                        '<% if (current_metadata.has_repository_dependencies) { %>',
+                    '<% if (current_metadata.has_repository_dependencies) { %>',
+                        '<div class="toolFormTitle">Repository dependencies for <strong id="current_changeset"><%= current_changeset %></strong></div>',
+                        '<div class="toolFormBody">',
                             '<p id="install_repository_dependencies_checkbox">',
                                 '<input type="checkbox" checked id="install_repository_dependencies" />',
                                 '<label for="install_repository_dependencies">Install repository dependencies</label>',
@@ -168,8 +205,11 @@ define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_
                                 '</div>',
                                 '<%= repository_dependencies_template(current_metadata) %>',
                             '</div>',
-                        '<% } %>',
-                        '<% if (current_metadata.includes_tool_dependencies) { %>',
+                        '</div>',
+                    '<% } %>',
+                    '<% if (current_metadata.includes_tool_dependencies) { %>',
+                        '<div class="toolFormTitle">Tool dependencies</div>',
+                        '<div class="toolFormBody">',
                             '<p id="install_resolver_dependencies_checkbox">',
                                 '<input type="checkbox" checked id="install_resolver_dependencies" />',
                                 '<label for="install_resolver_dependencies">Install resolver dependencies</label>',
@@ -204,14 +244,12 @@ define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_
                                     '</tbody>',
                                 '</table>',
                             '</div>',
-                        '<% } %>',
-                        '<% if (current_metadata.includes_tools_for_display_in_tool_panel) { %>',
+                        '</div>',
+                    '<% } %>',
+                    '<% if (current_metadata.includes_tools_for_display_in_tool_panel) { %>',
+                        '<div class="toolFormTitle">Tools &ndash; <em>click the name to preview the tool and use the pop-up menu to inspect all metadata</em></div>',
+                        '<div class="toolFormBody">',
                             '<div class="tables container-table" id="tools_toggle">',
-                                '<div class="expandLink">',
-                                    '<a class="toggle_folder" data_target="valid_tools">',
-                                        'Valid tools &ndash; <em>click the name to preview the tool and use the pop-up menu to inspect all metadata</em>',
-                                    '</a>',
-                                '</div>',
                                 '<table class="tables container-table" id="valid_tools" border="0" cellpadding="2" cellspacing="2" width="100%">',
                                     '<thead>',
                                         '<tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">',
@@ -238,14 +276,15 @@ define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_
                                     '</tbody>',
                                 '</table>',
                             '</div>',
-                        '<% } %>',
-                    '</div>',
+                        '</div>',
+                    '<% } %>',
                 '</form>',
             '</div>',
         ].join('')),
 
         templateRepoDependencies: _.template([
-            '<div class="tables container-table" id="repository_dependencies_table">',
+            '<div class="toolFormTitle">Repository Dependencies</div>',
+            '<div class="toolFormBody tables container-table" id="repository_dependencies_table">',
                 '<span class="repository_dependency_row"><p>Repository installation requires the following:</p></span>',
                 '<ul id="repository_dependencies">',
                     '<% if (has_repository_dependencies) { %>',
