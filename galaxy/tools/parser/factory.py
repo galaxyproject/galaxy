@@ -10,8 +10,7 @@ from galaxy.util.odict import odict
 
 from .cwl import CwlToolSource
 from .interface import InputSource
-from .xml import XmlInputSource
-from .xml import XmlToolSource
+from .xml import XmlInputSource, XmlToolSource
 from .yaml import YamlToolSource
 
 log = logging.getLogger(__name__)
@@ -72,4 +71,4 @@ def get_input_source(content):
     return content
 
 
-__all__ = ["get_tool_source", "get_input_source"]
+__all__ = ("get_tool_source", "get_input_source")

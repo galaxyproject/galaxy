@@ -17,7 +17,6 @@ import glob
 import os
 
 from ._cli import arg_parser
-
 from .mulled_build import (
     add_build_arguments,
     args_to_mull_targets_kwds,
@@ -73,7 +72,7 @@ def _parse_line(line_str):
     return _Line(*line_parts)
 
 
-__all__ = ["main"]
+__all__ = ("main", )
 
 
 if __name__ == '__main__':

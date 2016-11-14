@@ -1,7 +1,7 @@
 """
 Classes for wrapping Objects and Sanitizing string output.
 """
-
+import collections
 import inspect
 import logging
 import string
@@ -25,16 +25,18 @@ except ImportError:
 try:
     from types import XRangeType
 except ImportError:
-    XRangeType = type(range(0))
+    XRangeType = range
 
 try:
     from types import SliceType
 except ImportError:
-    SliceType = type([][:])
+    SliceType = slice
 
 try:
-    from types import BufferType
-    from types import DictProxyType
+    from types import (
+        BufferType,
+        DictProxyType
+    )
 except ImportError:
     # Py3 doesn't have these concepts, just treat them like SliceType that
     # so they are __WRAP_NO_SUBCLASS__.
@@ -54,8 +56,10 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from six.moves import copyreg as copy_reg
-from six.moves import UserDict
+from six.moves import (
+    copyreg as copy_reg,
+    UserDict
+)
 
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
@@ -126,7 +130,7 @@ def wrap_with_safe_string( value, no_wrap_classes=None ):
         if isinstance( value, SafeStringWrapper ):
             # Only ever wrap one-layer
             return value
-        if callable( value ):
+        if isinstance( value, collections.Callable ):
             safe_class = CallableSafeStringWrapper
         else:
             safe_class = SafeStringWrapper
@@ -142,7 +146,7 @@ def wrap_with_safe_string( value, no_wrap_classes=None ):
         for this_type in __WRAP_MAPPINGS__:
             if isinstance( value, this_type ):
                 # Wrap both key and value
-                return this_type( map( lambda x: ( __do_wrap( x[0] ), __do_wrap( x[1] ) ), value.items() ) )
+                return this_type( ( __do_wrap( x[0] ), __do_wrap( x[1] ) ) for x in value.items() )
         # Create a dynamic class that joins SafeStringWrapper with the object being wrapped.
         # This allows e.g. isinstance to continue to work.
         try:
@@ -271,8 +275,9 @@ class SafeStringWrapper( object ):
     def __hash__( self ):
         return hash( self.unsanitized )
 
-    def __nonzero__( self ):
+    def __bool__( self ):
         return bool( self.unsanitized )
+    __nonzero__ = __bool__
 
     # Do not implement __unicode__, we will rely on __str__
 
@@ -482,5 +487,7 @@ def pickle_SafeStringWrapper( safe_object ):
     if isinstance( safe_object, CallableSafeStringWrapper ):
         cls = CallableSafeStringWrapper
     return ( cls, args )
+
+
 copy_reg.pickle( SafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string )
 copy_reg.pickle( CallableSafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string )

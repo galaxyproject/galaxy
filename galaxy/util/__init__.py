@@ -31,11 +31,15 @@ from datetime import datetime
 from hashlib import md5
 from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
+from xml.etree.ElementTree import ParseError
 
-from six import binary_type, iteritems, PY3, string_types, text_type
+from six import binary_type, iteritems, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
-from six.moves.urllib import parse as urlparse
-from six.moves.urllib import request as urlrequest
+from six.moves.urllib import (
+    parse as urlparse,
+    request as urlrequest
+)
+from six.moves.urllib.request import urlopen
 
 try:
     import docutils.core as docutils_core
@@ -45,14 +49,8 @@ except ImportError:
     docutils_html4css1 = None
 
 from .inflection import English, Inflector
+
 inflector = Inflector(English)
-
-if PY3:
-    def list_map(f, input):
-        return list(map(f, input))
-else:
-    list_map = map
-
 
 log = logging.getLogger(__name__)
 _lock = threading.RLock()
@@ -212,7 +210,11 @@ def parse_xml( fname ):
         def doctype( *args ):
             pass
     tree = ElementTree.ElementTree()
-    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    try:
+        root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    except ParseError:
+        log.exception("Error parsing file %s", fname)
+        raise
     ElementInclude.include( root )
     return tree
 
@@ -445,6 +447,7 @@ def pretty_print_json(json_data, is_json_string=False):
         json_data = json.loads(json_data)
     return json.dumps(json_data, sort_keys=True, indent=4)
 
+
 # characters that are valid
 valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
@@ -479,7 +482,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
     and lists of strings; non-string entities will be cast to strings.
     """
     if isinstance( text, list ):
-        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+        return [ sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) for x in text ]
     if not isinstance( text, string_types ):
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
@@ -518,9 +521,10 @@ def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_ch
     if isinstance( value, string_types ):
         return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return list_map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
+        return [ sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) for x in value ]
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
+
 
 valid_filename_chars = set( string.ascii_letters + string.digits + '_.' )
 invalid_filenames = [ '', '.', '..' ]
@@ -798,6 +802,7 @@ def xml_text(root, name=None):
     # No luck, return empty string
     return ''
 
+
 # asbool implementation pulled from PasteDeploy
 truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
 falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
@@ -1026,8 +1031,7 @@ def read_dbnames(filename):
                     ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
             except:
                 continue
-        sort_names = name_to_db_base.keys()
-        sort_names.sort()
+        sort_names = sorted(name_to_db_base.keys())
         for name in sort_names:
             db_base = name_to_db_base[name]
             ucsc_builds[db_base].sort()
@@ -1115,7 +1119,7 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
     dir = os.path.dirname(src)
     names = tempfile._get_candidate_names()
     for seq in xrange(tempfile.TMP_MAX):
-        name = names.next()
+        name = next(names)
         file = os.path.join(dir, prefix + name)
         try:
             os.link( src, file )
@@ -1172,14 +1176,14 @@ def docstring_trim(docstring):
     # and split into a list of lines:
     lines = docstring.expandtabs().splitlines()
     # Determine minimum indentation (first line doesn't count):
-    indent = sys.maxint
+    indent = sys.maxsize
     for line in lines[1:]:
         stripped = line.lstrip()
         if stripped:
             indent = min(indent, len(line) - len(stripped))
     # Remove indentation (first line is special):
     trimmed = [lines[0].strip()]
-    if indent < sys.maxint:
+    if indent < sys.maxsize:
         for line in lines[1:]:
             trimmed.append(line[indent:].rstrip())
     # Strip off trailing and leading blank lines:
@@ -1366,6 +1370,7 @@ def safe_str_cmp(a, b):
         rv |= ord(x) ^ ord(y)
     return rv == 0
 
+
 galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 
@@ -1486,6 +1491,17 @@ def url_get( base_url, password_mgr=None, pathspec=None, params=None ):
     return content
 
 
+def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
+    """Download a URL to a file in chunks."""
+    src = urlopen(url, timeout=timeout)
+    with open(dest_file_path, 'wb') as f:
+        while True:
+            chunk = src.read(chunk_size)
+            if not chunk:
+                break
+            f.write(chunk)
+
+
 def safe_relpath(path):
     """
     Given what we expect to be a relative path, determine whether the path
@@ -1510,6 +1526,7 @@ class ExecutionTimer(object):
     def __str__(self):
         elapsed = (time.time() - self.begin) * 1000.0
         return "(%0.3f ms)" % elapsed
+
 
 if __name__ == '__main__':
     import doctest

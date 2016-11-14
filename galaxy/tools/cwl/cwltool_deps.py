@@ -4,6 +4,7 @@ Use this as the import interface for cwltool and just call
 :func:`ensure_cwltool_available` before using any of the imported
 functionality at runtime.
 """
+import re
 
 try:
     import requests
@@ -40,8 +41,6 @@ except (ImportError, SyntaxError):
     # Drop SyntaxError once schema_salad supports Python 3
     schema_salad = None
 
-import re
-
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
 
@@ -65,7 +64,7 @@ def ensure_cwltool_available():
         raise ImportError(message)
 
 
-__all__ = [
+__all__ = (
     'main',
     'load_tool',
     'workflow',
@@ -74,4 +73,4 @@ __all__ = [
     'schema_salad',
     'shellescape',
     'needs_shell_quoting',
-]
+)

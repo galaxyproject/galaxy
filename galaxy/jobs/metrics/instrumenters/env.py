@@ -69,4 +69,5 @@ class EnvPlugin( InstrumentPlugin ):
     def __env_file( self, job_directory ):
         return self._instrument_file_path( job_directory, "vars" )
 
-__all__ = [ 'EnvPlugin' ]
+
+__all__ = ( 'EnvPlugin', )

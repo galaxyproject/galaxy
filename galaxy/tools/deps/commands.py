@@ -3,14 +3,11 @@ import os
 import subprocess
 import sys as _sys
 
+from six.moves import shlex_quote
+
 from galaxy.util import which
 
 STDOUT_INDICATOR = "-"
-
-try:
-    from shlex import quote as shell_quote
-except ImportError:
-    from pipes import quote as shell_quote
 
 
 def redirecting_io(sys=_sys):
@@ -37,13 +34,19 @@ def shell(cmds, env=None, **kwds):
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
-    p = shell_process(cmds, env, **kwds)
     if redirecting_io(sys=sys):
+        p = shell_process(cmds, env, **kwds)
         redirect_aware_commmunicate(p, sys=sys)
         exit = p.returncode
         return exit
     else:
-        return p.wait()
+        kwds['stdout'] = subprocess.PIPE
+        kwds['stderr'] = subprocess.PIPE
+        p = shell_process(cmds, env, **kwds)
+        stdout, stderr = p.communicate()
+        if p.returncode != 0:
+            raise CommandLineException(cmds, stdout, stderr, p.returncode)
+        return p.returncode
 
 
 def shell_process(cmds, env=None, **kwds):
@@ -83,11 +86,11 @@ def argv_to_str(command_argv, quote=True):
 
     If None appears in the command list it is simply excluded.
 
-    Arguments are quoted with shlex.quote. That said, this method is not meant to be
+    Arguments are quoted with shlex_quote. That said, this method is not meant to be
     used in security critical paths of code and should not be used to sanitize
     code.
     """
-    map_func = shell_quote if quote else lambda x: x
+    map_func = shlex_quote if quote else lambda x: x
     return " ".join([map_func(c) for c in command_argv if c is not None])
 
 
@@ -125,11 +128,12 @@ def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
 class CommandLineException(Exception):
     """An exception indicating a non-zero command-line exit."""
 
-    def __init__(self, command, stdout, stderr):
+    def __init__(self, command, stdout, stderr, returncode):
         """Construct a CommandLineException from command and standard I/O."""
         self.command = command
         self.stdout = stdout
         self.stderr = stderr
+        self.returncode = returncode
         self.message = ("Failed to execute command-line %s, stderr was:\n"
                         "-------->>begin stderr<<--------\n"
                         "%s\n"
@@ -144,7 +148,7 @@ class CommandLineException(Exception):
         return self.message
 
 
-__all__ = [
+__all__ = (
     'argv_to_str',
     'CommandLineException',
     'download_command',
@@ -153,6 +157,5 @@ __all__ = [
     'redirecting_io',
     'shell',
     'shell_process',
-    'shell_quote',
     'which',
-]
+)

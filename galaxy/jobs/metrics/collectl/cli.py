@@ -1,9 +1,7 @@
 """This module describes :class:`CollectlCli` - an abstraction for building collectl command lines."""
 import logging
 import subprocess
-
 from string import Template
-
 
 log = logging.getLogger( __name__ )
 
@@ -139,4 +137,5 @@ class CollectlCli( object ):
         if return_code:
             raise Exception( "Problem running collectl command." )
 
-__all__ = [ 'CollectlCli' ]
+
+__all__ = ( 'CollectlCli', )

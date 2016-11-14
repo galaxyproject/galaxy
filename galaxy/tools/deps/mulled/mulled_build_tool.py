@@ -40,12 +40,12 @@ def requirements_to_mulled_targets(requirements):
 
     Only package requirements are retained.
     """
-    package_requirements = filter(lambda r: r.type == "package", requirements)
-    targets = map(lambda r: build_target(r.name, r.version), package_requirements)
+    package_requirements = [r for r in requirements if r.type == "package"]
+    targets = [build_target(r.name, r.version) for r in package_requirements]
     return targets
 
 
-__all__ = ["main", "requirements_to_mulled_targets"]
+__all__ = ("main", "requirements_to_mulled_targets")
 
 
 if __name__ == '__main__':

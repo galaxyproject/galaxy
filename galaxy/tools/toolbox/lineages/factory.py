@@ -46,4 +46,4 @@ class LineageMap(object):
         return self.lineage_map.get(versionless_tool_id, None)
 
 
-__all__ = ["LineageMap"]
+__all__ = ("LineageMap", )
