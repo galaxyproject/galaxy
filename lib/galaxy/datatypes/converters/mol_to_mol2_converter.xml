@@ -5,7 +5,7 @@
     </requirements>
     <command>
 <![CDATA[
-        obabel -imol "${input}" -omol2 -O "${output}" -e 2>&1
+        obabel -imol '${input}' -omol2 -O '${output}' -e 2>&1
 ]]>
     </command>
     <inputs>
