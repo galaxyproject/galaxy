@@ -271,11 +271,11 @@ class PasswordToolParameter( ToolParameter ):
 
     >>> from galaxy.util.bunch import Bunch
     >>> trans = Bunch()
-    >>> p = PasswordToolParameter( None, XML( '<param name="_name" type="text" value="default" />' ) )
+    >>> p = PasswordToolParameter( None, XML( '<param name="_name" type="password" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'PasswordToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'password'), ('value', 'default')]
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'PasswordToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'password')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
