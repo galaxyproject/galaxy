@@ -423,33 +423,19 @@ def is_target_available(conda_target, conda_context=None, channels_override=None
         return False
 
 
-def is_conda_target_installed(conda_target, conda_context=None, verbose_install_check=False):
+def is_conda_target_installed(conda_target, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     # fail by default
-    success = False
     if conda_context.has_env(conda_target.install_environment):
-        if not verbose_install_check:
-            return True
-        # because export_list directs output to a file we
-        # need to make a temporary file, not use StringIO
-        f, package_list_file = tempfile.mkstemp(suffix='.env_packages')
-        os.close(f)
-        conda_context.export_list(conda_target.install_environment, package_list_file)
-        search_pattern = conda_target.package_specifier + '='
-        with open(package_list_file) as input_file:
-            for line in input_file:
-                if line.startswith(search_pattern):
-                    success = True
-                    break
-        os.remove(package_list_file)
-    return success
+        return True
+    else:
+        return False
 
 
-def filter_installed_targets(conda_targets, conda_context=None, verbose_install_check=False):
+def filter_installed_targets(conda_targets, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     installed = functools.partial(is_conda_target_installed,
-                                  conda_context=conda_context,
-                                  verbose_install_check=verbose_install_check)
+                                  conda_context=conda_context)
     return list(filter(installed, conda_targets))
 
 
