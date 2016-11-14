@@ -96,7 +96,11 @@ class SecurityHelper( object ):
 
     def decode_id( self, obj_id, kind=None ):
         id_cipher = self.__id_cipher( kind )
-        return int( id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" ) )
+        decrypted = id_cipher.decrypt( obj_id.decode( 'hex' ) ).lstrip( "!" )
+        try:
+            return int( decrypted )
+        except:
+            return decrypted
 
     def encode_guid( self, session_key ):
         # Session keys are strings

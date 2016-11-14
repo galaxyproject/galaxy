@@ -104,6 +104,7 @@ def build_command(
 def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
+    app = job_wrapper.app
     config = job_wrapper.app.config
     integrity_injection = ""
     # Setting shell to none in job_conf.xml disables creating a tool command script,
@@ -119,8 +120,8 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     # Passwords are not parsed to the command line, decode them here and place them into the shell environment
     set_env = []
     def decode_passwords(input, value, prefixed_name, **kwd):
-        if input.type == 'password':
-            set_env.append("export %s=%s" % (prefixed_name, value[3:]))
+        if input.type == 'password' and isinstance(value, basestring) and value.startswith('__'):
+            set_env.append("export %s=%s" % (prefixed_name, app.security.decode_id(value[2:])))
     job_wrapper.tool.visit_inputs(job_wrapper.get_param_dict(), decode_passwords)
     script_contents = u"#!%s\n%s%s%s\n%s" % (
         shell,
@@ -129,6 +130,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         "\n".join(set_env),
         tool_commands
     )
+    print script_contents
     write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:
