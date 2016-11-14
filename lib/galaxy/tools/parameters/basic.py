@@ -283,9 +283,8 @@ class PasswordToolParameter( ToolParameter ):
 
     def from_json( self, value, trans=None, other_values={} ):
         """Convert a value to a string representation suitable for persisting"""
-        if value and not value.startswith( '__' ):
-            return '__%s' % trans.security.encode_id( value )
-        return value
+        if value:
+            return trans.security.encode_id( value )
 
     def to_param_dict_string( self, value, other_values={} ):
         return 'Passwords are only accessible through the shell environment.'
