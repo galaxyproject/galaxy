@@ -106,9 +106,10 @@ def __get_env(job_wrapper):
     Passwords are not parsed to the command line, they are decoded here,
     stripped from the database and returned to be placed into the shell environment
     """
+    set_env = []
     app = job_wrapper.app
     sa_session = app.model.context
-    set_env = []
+    job_parameters = sa_session.query(app.model.JobParameter).filter(app.model.JobParameter.job_id == job_wrapper.job_id)
 
     def decode_passwords(input, value, prefixed_name, **kwd):
         if input.type == 'password' and isinstance(value, basestring):
@@ -117,7 +118,6 @@ def __get_env(job_wrapper):
                 param.value = param.value.replace(value, '')
                 sa_session.add(param)
 
-    job_parameters = sa_session.query(app.model.JobParameter).filter(app.model.JobParameter.job_id == job_wrapper.job_id)
     job_wrapper.tool.visit_inputs(job_wrapper.get_param_dict(), decode_passwords)
     sa_session.flush()
     return "\n".join(set_env)
