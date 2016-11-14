@@ -469,17 +469,4 @@ def get_next_line(fh):
 
 
 class STL(data.Data):
-
     file_ext = "stl"
-
-    def sniff(self, filename):
-        is_stl = False
-        try:
-            t_mesh = mesh.Mesh.from_file(filename)
-            if np.sum(np.isnan(t_mesh.areas)) + np.sum(np.isinf(t_mesh.areas)) + np.sum(np.isneginf(t_mesh.areas)) == 0:
-                is_stl = True
-        except Exception:
-            pass
-        return is_stl
-
-Binary.register_sniffable_binary_format("stl", "stl", STL)
