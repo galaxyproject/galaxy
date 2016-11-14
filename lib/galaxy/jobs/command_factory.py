@@ -121,7 +121,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     # Passwords are not parsed to the command line, decode them here, place them into the shell environment and strip them from params
     set_env = []
     job_parameters = sa_session.query(app.model.JobParameter).filter(app.model.JobParameter.job_id==job_wrapper.job_id)
-    def decode_passwords(input, value, prefixed_name, parent, **kwd):
+    def decode_passwords(input, value, prefixed_name, **kwd):
         if input.type == 'password' and isinstance(value, basestring):
             set_env.append("export %s=%s" % (prefixed_name, app.security.decode_id(value)))
             for param in job_parameters.all():
