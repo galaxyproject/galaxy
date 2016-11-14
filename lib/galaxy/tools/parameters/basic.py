@@ -289,10 +289,6 @@ class PasswordToolParameter( ToolParameter ):
     def to_param_dict_string( self, value, other_values={} ):
         return 'Passwords are only accessible through the shell environment.'
 
-    def to_dict( self, trans, other_values={} ):
-        d = super(PasswordToolParameter, self).to_dict(trans)
-        return d
-
 
 class IntegerToolParameter( TextToolParameter ):
     """
