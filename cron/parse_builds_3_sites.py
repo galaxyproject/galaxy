@@ -41,6 +41,7 @@ def main():
             builds = list(build_dict.keys())
         yield [names[i], trackurl, builds]
 
+
 if __name__ == "__main__":
     for site in main():
         print(site[0] + "\t" + site[1] + "\t" + ",".join(site[2]))

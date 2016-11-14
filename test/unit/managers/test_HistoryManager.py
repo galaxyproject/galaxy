@@ -385,6 +385,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
 
+
 HistorySerializer.url_for = staticmethod( testable_url_for )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 

@@ -1,24 +1,21 @@
 """
 A simple WSGI application/framework.
 """
-
 import cgi  # For FieldStorage
 import logging
 import os.path
 import socket
 import tarfile
 import tempfile
-import types
 import time
+import types
+from Cookie import SimpleCookie
 
 import routes
 import webob
-
-from Cookie import SimpleCookie
-
 # We will use some very basic HTTP/wsgi utilities from the paste library
-from paste.request import get_cookies
 from paste import httpexceptions
+from paste.request import get_cookies
 from paste.response import HeaderDict
 
 from galaxy.util import smart_str
@@ -42,6 +39,8 @@ def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
     self.connect( 'undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
                   conditions=dict( method=['POST'] ) )
     self.resource( member_name, collection_name, **kwargs )
+
+
 routes.Mapper.resource_with_deleted = __resource_with_deleted
 
 
@@ -267,6 +266,8 @@ class LazyProperty( object ):
         value = self.func( obj )
         setattr( obj, self.func.func_name, value )
         return value
+
+
 lazy_property = LazyProperty
 
 
@@ -312,6 +313,8 @@ class FieldStorage( cgi.FieldStorage ):
             self.read_lines_to_outerboundary()
         else:
             self.read_lines_to_eof()
+
+
 cgi.FieldStorage = FieldStorage
 
 
@@ -426,6 +429,7 @@ class Response( object ):
             return "%d %s" % ( exception.code, exception.title )
         else:
             return self.status
+
 
 # ---- Utilities ------------------------------------------------------------
 

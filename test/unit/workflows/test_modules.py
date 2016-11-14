@@ -230,6 +230,7 @@ def test_tool_version_same():
     )
     assert not module.version_changes
 
+
 TEST_WORKFLOW_YAML = """
 steps:
   - type: "data_input"

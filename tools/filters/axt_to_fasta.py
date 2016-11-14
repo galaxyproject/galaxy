@@ -47,5 +47,6 @@ def print_component_as_fasta(c, id=None):
     print(header)
     print(c.text)
 
+
 if __name__ == "__main__":
     main()

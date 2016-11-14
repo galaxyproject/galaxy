@@ -116,5 +116,6 @@ def _check_arg( name ):
         ret_val = False
     return ret_val
 
+
 if __name__ == "__main__":
     driver_util.drive_test(find_test_driver())

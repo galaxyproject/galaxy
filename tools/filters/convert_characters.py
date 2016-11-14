@@ -49,5 +49,6 @@ def __main__():
     if skipped:
         print("Skipped %d lines as invalid." % skipped)
 
+
 if __name__ == "__main__":
     __main__()

@@ -222,6 +222,7 @@ def usage():
     print("-e,--excluded : file with names of SNPs that cannot be TagSNPs", file=f)
     print("-r,--required : file with names of SNPs that should be TagSNPs", file=f)
 
+
 if __name__ == "__main__":
     try:
         opts, args = getopt(argv[1:], "hdr:e:",

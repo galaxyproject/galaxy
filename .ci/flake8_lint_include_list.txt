@@ -320,6 +320,7 @@ lib/galaxy/web/base/controllers/__init__.py
 lib/galaxy/web/base/__init__.py
 lib/galaxy/web/buildapp.py
 lib/galaxy/web/formatting.py
+lib/galaxy/web/framework/base.py
 lib/galaxy/web/framework/decorators.py
 lib/galaxy/web/framework/helpers/grids.py
 lib/galaxy/web/framework/__init__.py

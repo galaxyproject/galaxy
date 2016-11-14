@@ -1015,8 +1015,8 @@ def _turn_sigterm_into_systemexit():
         raise SystemExit
     signal.signal(signal.SIGTERM, handle_term)
 
-# ---- from paste.script.command --------------------------------------
 
+# ---- from paste.script.command --------------------------------------
 python_version = sys.version.splitlines()[0].strip()
 
 parser = optparse.OptionParser(add_help_option=False,

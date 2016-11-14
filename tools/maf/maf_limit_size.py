@@ -32,5 +32,6 @@ def __main__():
             blocks_kept += 1
     print('Kept %s of %s blocks (%.2f%%).' % ( blocks_kept, i + 1, float( blocks_kept ) / float( i + 1 ) * 100.0 ))
 
+
 if __name__ == "__main__":
     __main__()

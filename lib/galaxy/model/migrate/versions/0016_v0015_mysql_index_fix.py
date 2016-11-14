@@ -24,6 +24,7 @@ def display_migration_details():
     print("name length limit and thus the index 'ix_hda_ta_history_dataset_association_id'")
     print("has to be manually created.")
 
+
 HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_association_tag_association", metadata,
                                                        Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
                                                        Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),

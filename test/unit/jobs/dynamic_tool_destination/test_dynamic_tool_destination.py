@@ -770,5 +770,6 @@ class TestDynamicToolDestination(unittest.TestCase):
         self.assertEqual(dt.bytes_to_str( "1000000000\n" ), "953.67 MB")
         self.assertEqual(dt.bytes_to_str( 1024, "fda" ), "1.00 KB")
 
+
 if __name__ == '__main__':
     unittest.main()

@@ -79,5 +79,6 @@ def __main__():
 
     print("#FILE1_DBKEY\t%s" % ( primary_spec ))
 
+
 if __name__ == "__main__":
     __main__()
