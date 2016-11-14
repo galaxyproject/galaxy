@@ -116,10 +116,17 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
-    script_contents = u"#!%s\n%s%s%s" % (
+    # Passwords are not parsed to the command line, decode them here and place them into the shell environment
+    set_env = []
+    def decode_passwords(input, value, prefixed_name, **kwd):
+        if input.type == 'password':
+            set_env.append("export %s=%s" % (prefixed_name, value[3:]))
+    job_wrapper.tool.visit_inputs(job_wrapper.get_param_dict(), decode_passwords)
+    script_contents = u"#!%s\n%s%s%s\n%s" % (
         shell,
         integrity_injection,
         set_e,
+        "\n".join(set_env),
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
