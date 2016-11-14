@@ -1,37 +1,14 @@
 import bz2
 import gzip
-import imghdr
 import re
 import zipfile
 
 from six import StringIO
 
 from galaxy import util
+from galaxy.util.image_util import image_type
 
 HTML_CHECK_LINES = 100
-
-try:
-    import Image as PIL
-except ImportError:
-    try:
-        from PIL import Image as PIL
-    except:
-        PIL = None
-
-
-def check_image( file_path ):
-    if PIL is not None:
-        try:
-            im = PIL.open( file_path )
-        except:
-            return False
-        if im:
-            return im
-        return False
-    else:
-        if imghdr.what( file_path ) is not None:
-            return True
-        return False
 
 
 def check_html( file_path, chunk=None ):
@@ -143,7 +120,14 @@ def is_gzip( file_path ):
     return is_gzipped
 
 
-__all__ = [
+def check_image( file_path ):
+    """ Simple wrapper around image_type to yield a True/False verdict """
+    if image_type( file_path ):
+        return True
+    return False
+
+
+__all__ = (
     'check_binary',
     'check_bz2',
     'check_gzip',
@@ -152,4 +136,4 @@ __all__ = [
     'check_zip',
     'is_gzip',
     'is_bz2',
-]
+)

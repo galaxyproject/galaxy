@@ -183,7 +183,12 @@ class CondaContext(installable.InstallableContext):
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
-        return self.shell_exec(command, env=env)
+        log.debug("Executing command: %s", command)
+        try:
+            return self.shell_exec(command, env=env)
+        except commands.CommandLineException as e:
+            log.warning(e)
+            return e.returncode
 
     def exec_create(self, args):
         create_base_args = [
@@ -445,7 +450,7 @@ def filter_installed_targets(conda_targets, conda_context=None, verbose_install_
     installed = functools.partial(is_conda_target_installed,
                                   conda_context=conda_context,
                                   verbose_install_check=verbose_install_check)
-    return filter(installed, conda_targets)
+    return list(filter(installed, conda_targets))
 
 
 def build_isolated_environment(
@@ -510,7 +515,7 @@ def requirement_to_conda_targets(requirement, conda_context=None):
 def requirements_to_conda_targets(requirements, conda_context=None):
     r_to_ct = functools.partial(requirement_to_conda_targets,
                                 conda_context=conda_context)
-    conda_targets = map(r_to_ct, requirements)
+    conda_targets = (r_to_ct(_) for _ in requirements)
     return [c for c in conda_targets if c is not None]
 
 
@@ -520,10 +525,10 @@ def _ensure_conda_context(conda_context):
     return conda_context
 
 
-__all__ = [
+__all__ = (
     'CondaContext',
     'CondaTarget',
     'install_conda',
     'install_conda_target',
     'requirements_to_conda_targets',
-]
+)

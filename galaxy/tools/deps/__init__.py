@@ -5,6 +5,8 @@ Dependency management for tools.
 import logging
 import os.path
 
+from collections import OrderedDict
+
 from galaxy.util import plugin_config
 
 from .resolvers import NullDependency
@@ -97,7 +99,7 @@ class DependencyManager( object ):
         Takes a list of requirements and returns a dictionary
         with requirements as key and dependencies as value.
         """
-        requirement_to_dependency = dict()
+        requirement_to_dependency = OrderedDict()
         for requirement in requirements:
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,

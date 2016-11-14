@@ -97,4 +97,4 @@ class NicerConfigParser(ConfigParser):
                 raise
 
 
-__all__ = ['load_app_properties', 'NicerConfigParser']
+__all__ = ('load_app_properties', 'NicerConfigParser')

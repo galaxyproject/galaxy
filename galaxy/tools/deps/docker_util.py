@@ -3,7 +3,10 @@
 ...using common defaults and configuration mechanisms.
 """
 import os
-from .commands import argv_to_str, shell_quote
+
+from six.moves import shlex_quote
+
+from .commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
 DEFAULT_SUDO = True
@@ -33,7 +36,7 @@ class DockerVolume(object):
         if not volumes_as_str:
             return []
         volume_strs = [v.strip() for v in volumes_as_str.split(",")]
-        return map(DockerVolume.volume_from_str, volume_strs)
+        return [DockerVolume.volume_from_str(_) for _ in volume_strs]
 
     @staticmethod
     def volume_from_str(as_str):
@@ -152,19 +155,19 @@ def build_docker_run_command(
     if terminal:
         command_parts.append("-t")
     for env_directive in env_directives:
-        command_parts.extend(["-e", shell_quote(env_directive)])
+        command_parts.extend(["-e", shlex_quote(env_directive)])
     for volume in volumes:
-        command_parts.extend(["-v", shell_quote(str(volume))])
+        command_parts.extend(["-v", shlex_quote(str(volume))])
     if volumes_from:
-        command_parts.extend(["--volumes-from", shell_quote(str(volumes_from))])
+        command_parts.extend(["--volumes-from", shlex_quote(str(volumes_from))])
     if memory:
-        command_parts.extend(["-m", shell_quote(memory)])
+        command_parts.extend(["-m", shlex_quote(memory)])
     if name:
-        command_parts.extend(["--name", shell_quote(name)])
+        command_parts.extend(["--name", shlex_quote(name)])
     if working_directory:
-        command_parts.extend(["-w", shell_quote(working_directory)])
+        command_parts.extend(["-w", shlex_quote(working_directory)])
     if net:
-        command_parts.extend(["--net", shell_quote(net)])
+        command_parts.extend(["--net", shlex_quote(net)])
     if auto_rm:
         command_parts.append("--rm")
     if run_extra_arguments:
@@ -177,7 +180,7 @@ def build_docker_run_command(
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)
-    command_parts.append(shell_quote(full_image))
+    command_parts.append(shlex_quote(full_image))
     command_parts.append(container_command)
     return " ".join(command_parts)
 
