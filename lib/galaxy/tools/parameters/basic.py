@@ -283,7 +283,9 @@ class PasswordToolParameter( ToolParameter ):
 
     def to_json( self, value, app, use_security ):
         """Convert a value to a string representation suitable for persisting"""
-        return '###%s###' % value
+        if value and not value.startswith( '###' ):
+            return '###%s###' % value
+        return value
 
     def to_dict( self, trans, other_values={} ):
         d = super(PasswordToolParameter, self).to_dict(trans)
