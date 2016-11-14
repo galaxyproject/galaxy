@@ -22,6 +22,11 @@ SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /c
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
 
+# Building docs requires sphinx and utilities be installed (see issue 3166) as well as pandoc.
+# Run following commands to setup the Python portion of these requirements:
+#   $ ./scripts/common_startup.sh
+#   $ . .venv/bin/activate
+#   $ pip install sphinx sphinx_rtd_theme lxml recommonmark
 docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html

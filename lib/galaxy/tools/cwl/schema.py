@@ -69,4 +69,5 @@ class SchemaLoader(object):
         )
         return tool
 
+
 schema_loader = SchemaLoader()
