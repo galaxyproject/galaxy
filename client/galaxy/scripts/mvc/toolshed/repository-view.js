@@ -1,4 +1,4 @@
-define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
+define(['mvc/toolshed/toolshed-model', 'libs/jquery/jstree'], function(toolshed_model, jstree) {
 
     var ToolShedRepositoryView = Backbone.View.extend({
 
@@ -63,12 +63,10 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
                 params.install_repository_dependencies = $("#install_repository_dependencies").val();
                 params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
                 var tps = that.panelSelect(params);
-                console.log(tps);
                 params.tool_panel_section = JSON.stringify(that.panelSelect(params));
                 params.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
                 params.changeset = $('#changeset').find("option:selected").val();
                 url = $('#repository_installation').attr('action');
-                console.log({params70: params});
                 that.prepareInstall(params, url);
             });
             $('.tool_panel_section_picker').on('change', function() {
@@ -81,6 +79,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
                     $(this).removeAttr('default');
                 }
             });
+            $('#repository_dependencies').jstree();
         },
 
         panelSelect: function(params) {
@@ -118,9 +117,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
 
         prepareInstall: function(params, api_url) {
             var that = this;
-            console.log({params120: params});
             $.post(api_url, params, function(data) {
-                console.log({data: data});
                 iri_parameters = JSON.parse(data);
                 that.doInstall(iri_parameters);
             });
@@ -129,14 +126,12 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
         doInstall: function(params) {
             controller_url = Galaxy.root + 'admin_toolshed/manage_repositories';
             $.post(controller_url, params, function(data) {
-                console.log(data);
                 console.log( "Initializing repository installation succeeded" );
                 window.location.assign(Galaxy.root + 'admin_toolshed/monitor_repository_installation');
             })
         },
 
         templateRepoDetails: _.template([
-            '<% console.log(repository); %>',
             '<div class="tab-pane" id="repository_details">',
                 '<h2 style="font-weight: normal;">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong></h2>',
                 '<form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">',
@@ -157,7 +152,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
                         '</div>',
                     '</div>',
                     '<%= shed_tool_conf %>',
-                    '<div class="toolFormTitle">Dependencies of this repository at revision <strong id="current_changeset"><%= current_changeset %></strong></div>',
+                    '<div class="toolFormTitle">Contents of this repository at revision <strong id="current_changeset"><%= current_changeset %></strong></div>',
                     '<div class="toolFormBody">',
                         '<% if (current_metadata.has_repository_dependencies) { %>',
                             '<p id="install_repository_dependencies_checkbox">',
@@ -209,7 +204,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
                                     '</tbody>',
                                 '</table>',
                             '</div>',
-                        '<% } console.log(current_metadata); %>',
+                        '<% } %>',
                         '<% if (current_metadata.includes_tools_for_display_in_tool_panel) { %>',
                             '<div class="tables container-table" id="tools_toggle">',
                                 '<div class="expandLink">',
@@ -252,7 +247,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
         templateRepoDependencies: _.template([
             '<div class="tables container-table" id="repository_dependencies_table">',
                 '<span class="repository_dependency_row"><p>Repository installation requires the following:</p></span>',
-                '<ul id="repository_deps">',
+                '<ul id="repository_dependencies">',
                     '<% if (has_repository_dependencies) { %>',
                         '<% _.each(repository_dependencies, function(dependency) { %>',
                             '<% dependency.repository_dependency_template = repository_dependency_template; %>',
@@ -267,21 +262,22 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
                 'Repository <b><%= repository.name %></b> revision <b><%= changeset_revision %></b> owned by <b><%= repository.owner %></b>',
             '</li>',
             '<% if (has_repository_dependencies) { %>',
-                '<% _.each(repository_dependencies, function(dependency) { %>',
-                    '<% dependency.repository_dependency_template = repository_dependency_template; %>',
-                    '<li id="repository_<%= id %>_deps">',
+                '<ul class="child_dependencies">',
+                    '<% _.each(repository_dependencies, function(dependency) { %>',
+                        '<% dependency.repository_dependency_template = repository_dependency_template; %>',
                         '<%= repository_dependency_template(dependency) %>',
-                    '</li>',
-                '<% }); %>',
+                    '<% }); %>',
+                '</ul>',
             '<% } %>'
         ].join('')),
 
         templateShedToolConf: _.template([
             '<div class="toolFormTitle">Shed tool configuration file:</div>',
             '<div class="toolFormBody">',
-            '<div class="form-row">',
-                '<%= stc_html %>',
-                '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
+                '<div class="form-row">',
+                    '<%= stc_html %>',
+                    '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
+                '</div>',
             '</div>',
         ].join('')),
 
@@ -298,14 +294,11 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
 
         templateGlobalSectionCreate: _.template([
             '<div id="tool_panel_section">',
-                '<div class="toolFormTitle">Tool Panel Section</div>',
-                '<div class="toolFormBody">',
-                    '<div class="form-row" id="new_tps">',
-                        '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
-                        '<input class="btn btn-primary" type="button" id="select_existing" value="Select existing" />',
-                        '<div class="toolParamHelp" style="clear: both;">',
-                            'Add a new tool panel section to contain the installed tools (optional).',
-                        '</div>',
+                '<div class="form-row" id="new_tps">',
+                    '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
+                    '<input class="btn btn-primary" type="button" id="select_existing" value="Select existing" />',
+                    '<div class="toolParamHelp" style="clear: both;">',
+                        'Add a new tool panel section to contain the installed tools (optional).',
                     '</div>',
                 '</div>',
             '</div>',
