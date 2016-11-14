@@ -14,6 +14,7 @@ import json
 import os
 import string
 import subprocess
+import sys
 
 from sys import platform as _platform
 
@@ -148,7 +149,8 @@ def mull_targets(
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
         ensure_installed(involucro_context, True)
-        involucro_context.exec_command(involucro_args)
+        return involucro_context.exec_command(involucro_args)
+    return 0
 
 
 def context_from_args(args):
@@ -278,8 +280,7 @@ def main(argv=None):
     parser.add_argument('--test', help='Provide a test command for the container.')
     args = parser.parse_args()
     targets = target_str_to_targets(args.targets)
-    mull_targets(targets, **args_to_mull_targets_kwds(args))
-
+    sys.exit(mull_targets(targets, **args_to_mull_targets_kwds(args)))
 
 __all__ = ["main"]
 
