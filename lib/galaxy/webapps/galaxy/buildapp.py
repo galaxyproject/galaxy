@@ -648,40 +648,40 @@ def populate_api_routes( webapp, app ):
                       repository_id=None,
                       image_file=None )
 
-    webapp.mapper.connect( 'tool_shed',
+    webapp.mapper.connect( 'tool_shed_contents',
+                           '/api/tool_shed/contents',
+                           controller='toolshed',
+                           action='show',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'tool_shed_category_contents',
+                           '/api/tool_shed/category',
+                           controller='toolshed',
+                           action='category',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'tool_shed_repository_details',
+                           '/api/tool_shed/repository',
+                           controller='toolshed',
+                           action='repository',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'tool_sheds',
                            '/api/tool_shed',
-                           controller='tool_shed_repositories',
-                           action='tool_shed',
+                           controller='toolshed',
+                           action='index',
                            conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'shed_category',
-                           '/api/tool_shed_repositories/shed_category',
-                           controller='tool_shed_repositories',
-                           action='shed_category',
-                           conditions=dict( method=[ "GET" ] ) )
-
-    webapp.mapper.connect( 'shed_search',
-                           '/api/tool_shed_repositories/shed_search',
-                           controller='tool_shed_repositories',
-                           action='shed_search',
+    webapp.mapper.connect( 'tool_shed_search',
+                           '/api/tool_shed/search',
+                           controller='toolshed',
+                           action='search',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'shed_tool_json',
-                           '/api/tool_shed_repositories/shed_tool_json',
-                           controller='tool_shed_repositories',
-                           action='shed_tool_json',
-                           conditions=dict( method=[ "GET" ] ) )
-
-    webapp.mapper.connect( 'shed_repository',
-                           '/api/tool_shed_repositories/shed_repository',
-                           controller='tool_shed_repositories',
-                           action='shed_repository',
-                           conditions=dict( method=[ "GET" ] ) )
-
-    webapp.mapper.connect( 'shed_categories',
-                           '/api/tool_shed_repositories/shed_categories',
-                           controller='tool_shed_repositories',
-                           action='shed_categories',
+                           '/api/tool_shed/tool_json',
+                           controller='toolshed',
+                           action='tool_json',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'tool_shed_repository',
