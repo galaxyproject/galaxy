@@ -390,10 +390,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         }
                         job_def.parameters[ step_index ] = job_def.parameters[ step_index ] || {};
                         job_def.parameters[ step_index ][ job_input_id ] = job_inputs[ job_input_id ];
-			if (input_def['type'] == "password") {
-				job_def.parameters[ step_index ][ 'JPCNn681vcGV4KuvuT16' ] = job_input_id;
-			}
-		    }
+                    }
                 }
                 if ( !validated ) {
                     break;
