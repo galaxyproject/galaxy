@@ -264,15 +264,6 @@ class TextToolParameter( ToolParameter ):
         d['area'] = self.area
         return d
 
-class PasswordToolParameter(TextToolParameter):
-
-	def get_initial_value(self,trans,context,history=None):
-		return self.value
-
-	def to_dict(self,trans,view='collection',value_mapper=None,other_values={}):
-		d = super(PasswordToolParameter,self).to_dict(trans)
-		d['type']="password"
-		return d
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -2071,7 +2062,6 @@ class LibraryDatasetToolParameter( ToolParameter ):
         return d
 
 parameter_types = dict(
-    password=PasswordToolParameter,
     text=TextToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,

@@ -1,6 +1,5 @@
 from logging import getLogger
 from os import getcwd
-from galaxy import model
 from os.path import (
     abspath,
     join
@@ -22,7 +21,6 @@ YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 def build_command(
     runner,
     job_wrapper,
-    this_app=None,
     container=None,
     modify_command_for_container=True,
     include_metadata=False,
@@ -40,37 +38,6 @@ def build_command(
         - command line taken from job wrapper
         - commands to set metadata (if include_metadata is True)
     """
-   
-    #Obtain the first job parameter of the galaxy job and iterate through its parameters	
-    #until you come upon a parameter with the name "JPCN... " which indicates that the job
-    #has a password parameter. If found, look through the job parameters and find
-    #the password parameter which has a name that matches the value of "JPCN...". Set the value
-    #of the password paramter to a blank using the same format the other values use in a job.
-    job_id = job_wrapper.job_id
-    sa_session = this_app.model.context
-    query = sa_session.query(model.JobParameter).filter(model.JobParameter.job_id==job_id).first()
-    idVar = query.id
-    jobId = query.job_id
-    jobOrig = query.job_id
-    queryList = []
-    queryList.append(query)
-    passwordName = ''
-    password = ''   
-    while (query is not None) and jobOrig == jobId:
-	idVar = idVar + 1
-	jobId = query.job_id
-	if query.name == "JPCNn681vcGV4KuvuT16":
-		passwordName = query.value[1:-1]
-	queryList.append(query)	
-	query = sa_session.query(model.JobParameter).get(idVar)
-    index = 0
-    for item in queryList:
-	if str(item.name) == (passwordName):
-		password = item.value
-		item.value = unicode('""',"utf-8")
-		indexOfPass = index
-	index = index + 1
-    
     shell = job_wrapper.shell
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
@@ -99,7 +66,7 @@ def build_command(
             external_command_shell = container.shell
         else:
             external_command_shell = shell
-        externalized_commands = __externalize_commands(job_wrapper, password, external_command_shell, commands_builder, remote_command_params)
+        externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)
         if container and modify_command_for_container:
             # Stop now and build command before handling metadata and copying
             # working directory files back. These should always happen outside
@@ -134,7 +101,7 @@ def build_command(
     return commands_builder.build()
 
 
-def __externalize_commands(job_wrapper, password, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
+def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
     config = job_wrapper.app.config
@@ -149,27 +116,17 @@ def __externalize_commands(job_wrapper, password, shell, commands_builder, remot
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
-	
-    #set environment variable in job execution script so it is accessible to user's tool file.
-   
-    envVar = ''
-    envVar = "export PASS=" + password
-    password = str(password[1:-1])
-    if tool_commands.find(password) != (-1):
-	password = " " + password
-	tool_commands = tool_commands.replace(password, '')
-    script_contents = u"#!%s\n%s%s%s\n%s" % (
+    script_contents = u"#!%s\n%s%s%s" % (
         shell,
         integrity_injection,
         set_e,
-	envVar,
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
     commands = local_container_script
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
-    log.info("Built script [%s] for tool command[%s]" % (local_container_script, tool_commands))
+    log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
 
