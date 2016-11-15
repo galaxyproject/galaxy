@@ -386,7 +386,7 @@ DatasetListItemEdit.prototype.templates = (function(){
 
     var visualizationsTemplate = BASE_MVC.wrapTemplate([
         '<% if( visualizations.length === 1 ){ %>',
-            '<a class="visualization-btn visualization-link icon-btn" href="<%- visualizations[0].href %>"',
+            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
                     ' target="<%- visualizations[0].target %>" title="', _l( 'Visualize in' ),
                     ' <%- visualizations[0].html %>">',
                 '<span class="fa fa-bar-chart-o"></span>',
