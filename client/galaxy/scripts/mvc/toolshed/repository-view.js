@@ -18,7 +18,7 @@ define(['mvc/toolshed/toolshed-model',
             this.model = new toolshed_model.RepositoryCollection();
             this.listenTo(this.model, 'sync', this.render);
             shed = params.tool_shed.replace(/\//g, '%2f');
-            this.model.url += '?tool_shed_url=' + shed + '&tsr_id=' + params.repository_id;
+            this.model.url += '?tool_shed_url=' + shed + '&repository_id=' + params.repository_id;
             this.model.tool_shed_url = params.tool_shed.replace(/%2f/g, '/');
             this.model.tool_shed = shed;
             this.model.category = params.repository_id;
@@ -55,7 +55,7 @@ define(['mvc/toolshed/toolshed-model',
             var that = this;
             $('#changeset').on('change', function () {
                 that.options.current_changeset = $('#changeset').find("option:selected").text();
-                that.rePaint();
+                that.reDraw();
             });
             $('#tool_panel_section_select').on('change', function() {
                 that.tpsSelection();
@@ -140,9 +140,9 @@ define(['mvc/toolshed/toolshed-model',
             return tool_panel_section;
         },
 
-        rePaint: function(options) {
+        reDraw: function(options) {
             this.$el.empty();
-            this.render(options);
+            this.initialize(options);
         },
 
         tpsSelection: function() {

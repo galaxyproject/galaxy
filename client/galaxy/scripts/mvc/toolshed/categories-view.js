@@ -25,9 +25,10 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
             $("#center").css('overflow', 'auto');
         },
 
-        rePaint: function(options){
+        reDraw: function(options) {
             this.$el.empty();
             this.model.url = this.model.url + '?tool_shed_url=' + this.options.tool_shed;
+            this.initialize(options);
             this.model.fetch();
             // this.render(options);
         },

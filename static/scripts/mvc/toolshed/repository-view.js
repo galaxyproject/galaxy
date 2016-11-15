@@ -4,7 +4,7 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
         initialize: function(params) {
             this.options = _.defaults(this.options || {}, this.defaults), this.model = new toolshed_model.RepositoryCollection(), 
             this.listenTo(this.model, "sync", this.render), shed = params.tool_shed.replace(/\//g, "%2f"), 
-            this.model.url += "?tool_shed_url=" + shed + "&tsr_id=" + params.repository_id, 
+            this.model.url += "?tool_shed_url=" + shed + "&repository_id=" + params.repository_id, 
             this.model.tool_shed_url = params.tool_shed.replace(/%2f/g, "/"), this.model.tool_shed = shed, 
             this.model.category = params.repository_id, this.model.fetch();
         },
@@ -30,7 +30,7 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
             var that = this;
             $("#changeset").on("change", function() {
                 that.options.current_changeset = $("#changeset").find("option:selected").text(), 
-                that.rePaint();
+                that.reDraw();
             }), $("#tool_panel_section_select").on("change", function() {
                 that.tpsSelection();
             }), $("#install_repository").on("click", function(ev) {
@@ -91,8 +91,8 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
                 };
             }), tool_panel_section;
         },
-        rePaint: function(options) {
-            this.$el.empty(), this.render(options);
+        reDraw: function(options) {
+            this.$el.empty(), this.initialize(options);
         },
         tpsSelection: function() {
             new_tps = $("#tool_panel_section_select").find("option:selected").val(), $('.tool_panel_section_picker[default="active"]').each(function() {

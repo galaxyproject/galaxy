@@ -14,9 +14,9 @@ define([ "mvc/toolshed/toolshed-model" ], function(toolshed_model) {
             var category_list_template = this.templateCategoryList;
             this.$el.html(category_list_template(this.options)), $("#center").css("overflow", "auto");
         },
-        rePaint: function() {
+        reDraw: function(options) {
             this.$el.empty(), this.model.url = this.model.url + "?tool_shed_url=" + this.options.tool_shed, 
-            this.model.fetch();
+            this.initialize(options), this.model.fetch();
         },
         templateCategoryList: _.template([ '<div class="tab-pane" id="list_categories" style="overflow: scroll;">', '<div id="standard-search" style="height: 2em; margin: 1em;">', '<span class="ui-widget" >', '<input class="search-box-input" id="repository_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />', "</span>", "</div>", '<div style="clear: both; margin-top: 1em;">', "<h2>Repositories by Category</h2>", '<table class="grid">', '<thead id="grid-table-header">', "<tr>", "<th>Name</th>", "<th>Description</th>", "<th>Repositories</th>", "</tr>", "</thead>", "<% _.each(categories, function(category) { %>", "<tr>", "<td>", '<a href="#/category/s/<%= tool_shed %>/c/<%= category.get("id") %>"><%= category.get("name") %></a>', "</td>", '<td><%= category.get("description") %></td>', '<td><%= category.get("repositories") %></td>', "</tr>", "<% }); %>", "</table>", "</div>", "</div>" ].join(""))
     });

@@ -22,9 +22,9 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             $("#center").css('overflow', 'auto');
         },
 
-        rePaint: function(options){
+        reDraw: function(options){
             this.$el.empty();
-            this.render(options);
+            this.initialize(options);
         },
 
         templateCategoryContents: _.template([

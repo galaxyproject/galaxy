@@ -69,11 +69,11 @@ class ToolShedController( BaseAPIController ):
         """
         sheds = []
         for name, url in trans.app.tool_shed_registry.tool_sheds.items():
-            api_url = web.url_for( controller='api/tool_shed',
-                                   action='contents',
-                                   tool_shed_url=urlquote( url, '' ),
-                                   qualified=True )
-            sheds.append( dict( name=name, url=api_url ) )
+            # api_url = web.url_for( controller='api/tool_shed',
+            #                        action='contents',
+            #                        tool_shed_url=urlquote( url, '' ),
+            #                        qualified=True )
+            sheds.append( dict( name=name, url=urlquote( url, '' ) ) )
         return sheds
 
     @expose_api

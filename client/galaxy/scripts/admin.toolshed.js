@@ -53,7 +53,7 @@ define(["mvc/toolshed/shed-list-view",
 
             this.admin_toolshed_router.on('route:toolsheds', function() {
                 if (Galaxy.admintoolshedapp.adminShedListView) {
-                    Galaxy.admintoolshedapp.adminShedListView.rePaint();
+                    Galaxy.admintoolshedapp.adminShedListView.reDraw();
                 }
                 else {
                     Galaxy.admintoolshedapp.adminShedListView = new mod_shed_list_view.ShedListView();
@@ -61,7 +61,7 @@ define(["mvc/toolshed/shed-list-view",
             });
             this.admin_toolshed_router.on('route:categories', function(tool_shed) {
                 if (Galaxy.admintoolshedapp.adminShedCategoriesView) {
-                    Galaxy.admintoolshedapp.adminShedCategoriesView.rePaint({tool_shed: tool_shed.replace(/\//g, '%2f')});
+                    Galaxy.admintoolshedapp.adminShedCategoriesView.reDraw({tool_shed: tool_shed.replace(/\//g, '%2f')});
                 }
                 else {
                     Galaxy.admintoolshedapp.adminShedCategoriesView = new mod_categories_view.CategoryView({tool_shed: tool_shed.replace(/\//g, '%2f')});
@@ -69,7 +69,7 @@ define(["mvc/toolshed/shed-list-view",
             });
             this.admin_toolshed_router.on('route:repositories', function(tool_shed, category_id) {
                 if (Galaxy.admintoolshedapp.adminShedCategoryView) {
-                    Galaxy.admintoolshedapp.adminShedCategoryView.rePaint({tool_shed: tool_shed.replace(/\//g, '%2f'), category_id: category_id});
+                    Galaxy.admintoolshedapp.adminShedCategoryView.reDraw({tool_shed: tool_shed.replace(/\//g, '%2f'), category_id: category_id});
                 }
                 else {
                     Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category({tool_shed: tool_shed.replace(/\//g, '%2f'), category_id: category_id});
@@ -77,7 +77,7 @@ define(["mvc/toolshed/shed-list-view",
             });
             this.admin_toolshed_router.on('route:repository', function(tool_shed, repository_id) {
                 if (Galaxy.admintoolshedapp.adminRepositoryView) {
-                    Galaxy.admintoolshedapp.adminRepositoryView.rePaint({tool_shed: tool_shed.replace(/\//g, '%2f'), repository_id: repository_id});
+                    Galaxy.admintoolshedapp.adminRepositoryView.reDraw({tool_shed: tool_shed.replace(/\//g, '%2f'), repository_id: repository_id});
                 }
                 else {
                     Galaxy.admintoolshedapp.adminRepositoryView = new mod_repository_view.RepoDetails({tool_shed: tool_shed.replace(/\//g, '%2f'), repository_id: repository_id});

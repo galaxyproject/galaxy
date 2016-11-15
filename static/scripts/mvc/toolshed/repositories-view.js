@@ -15,8 +15,8 @@ define([ "mvc/toolshed/toolshed-model" ], function(toolshed_model) {
                 tool_shed: this.model.tool_shed
             })), $("#center").css("overflow", "auto");
         },
-        rePaint: function(options) {
-            this.$el.empty(), this.render(options);
+        reDraw: function(options) {
+            this.$el.empty(), this.initialize(options);
         },
         templateCategoryContents: _.template([ '<div class="tab-pane" id="list_repositories">', '<div id="standard-search" style="height: 2em; margin: 1em;">', '<span class="ui-widget" >', '<input class="search-box-input" id="category_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />', "</span>", "</div>", '<div style="clear: both; margin-top: 1em;">', '<h2>Repositories in <%= category.get("name") %></h2>', '<table class="grid">', '<thead id="grid-table-header">', "<tr>", '<th style="width: 10%;">Owner</th>', '<th style="width: 15%;">Name</th>', "<th>Synopsis</th>", '<th style="width: 10%;">Type</th>', "</tr>", "</thead>", '<% _.each(category.get("repositories"), function(repository) { %>', "<tr>", "<td><%= repository.owner %></td>", "<td>", '<div style="float: left; margin-left: 1px;" class="menubutton split">', '<a href="#/repository/s/<%= tool_shed %>/r/<%= repository.id %>"><%= repository.name %></a>', "</div>", "</td>", "<td><%= repository.description %></td>", "<td><%= repository.type %></td>", "</tr>", "<% }); %>", "</table>", "</div>", "</div>" ].join(""))
     });

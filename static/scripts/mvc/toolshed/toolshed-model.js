@@ -10,21 +10,21 @@ define([], function() {
         model: ToolShedModel
     }), ToolShedCategoriesModel = Backbone.Model.extend({
         defaults: [ {} ],
-        urlRoot: Galaxy.root + "api/tool_shed_repositories/shed_categories"
+        urlRoot: Galaxy.root + "api/tool_shed/contents"
     }), ToolShedCategoriesCollection = Backbone.Collection.extend({
-        url: Galaxy.root + "api/tool_shed_repositories/shed_categories",
+        url: Galaxy.root + "api/tool_shed/contents",
         model: ToolShedCategoriesModel
     }), ToolShedCategoryModel = Backbone.Model.extend({
         defaults: [ {} ],
-        urlRoot: Galaxy.root + "api/tool_shed_repositories/shed_category"
+        urlRoot: Galaxy.root + "api/tool_shed/category"
     }), ToolShedCategoryCollection = Backbone.Collection.extend({
-        url: Galaxy.root + "api/tool_shed_repositories/shed_category",
+        url: Galaxy.root + "api/tool_shed/category",
         model: ToolShedCategoryModel
     }), ToolShedRepositoryModel = Backbone.Model.extend({
         defaults: [ {} ],
-        urlRoot: Galaxy.root + "api/tool_shed_repositories/shed_repository"
+        urlRoot: Galaxy.root + "api/tool_shed/repository"
     }), ToolShedRepositoryCollection = Backbone.Collection.extend({
-        url: Galaxy.root + "api/tool_shed_repositories/shed_repository",
+        url: Galaxy.root + "api/tool_shed/repository",
         model: ToolShedRepositoryModel
     });
     return {

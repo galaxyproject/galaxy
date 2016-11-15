@@ -22,7 +22,7 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
             this.$el.html(toolshed_list_template({tool_sheds: this.model.models}));
         },
 
-        rePaint: function(options){
+        reDraw: function(options){
             this.$el.empty();
             this.render(options);
         },
@@ -33,7 +33,7 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
                 '<div class="toolFormBody">',
                     '<div class="form-row">',
                         '<table class="grid">',
-                            '<% _.each(tool_sheds, function(shed) { %>',
+                            '<% _.each(tool_sheds, function(shed) { console.log(shed); %>',
                                 '<tr class="libraryTitle">',
                                     '<td>',
                                         '<div style="float: left; margin-left: 1px;" class="menubutton split">',

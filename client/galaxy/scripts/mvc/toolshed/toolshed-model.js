@@ -12,31 +12,31 @@ define([], function() {
 
     var ToolShedCategoriesModel = Backbone.Model.extend({
         defaults: [{}],
-        urlRoot: Galaxy.root + 'api/tool_shed_repositories/shed_categories',
+        urlRoot: Galaxy.root + 'api/tool_shed/contents',
     });
 
     var ToolShedCategoriesCollection = Backbone.Collection.extend({
-        url: Galaxy.root + 'api/tool_shed_repositories/shed_categories',
+        url: Galaxy.root + 'api/tool_shed/contents',
         model: ToolShedCategoriesModel
     });
 
     var ToolShedCategoryModel = Backbone.Model.extend({
         defaults: [{}],
-        urlRoot: Galaxy.root + 'api/tool_shed_repositories/shed_category',
+        urlRoot: Galaxy.root + 'api/tool_shed/category',
     });
 
     var ToolShedCategoryCollection = Backbone.Collection.extend({
-        url: Galaxy.root + 'api/tool_shed_repositories/shed_category',
+        url: Galaxy.root + 'api/tool_shed/category',
         model: ToolShedCategoryModel
     });
 
     var ToolShedRepositoryModel = Backbone.Model.extend({
         defaults: [{}],
-        urlRoot: Galaxy.root + 'api/tool_shed_repositories/shed_repository',
+        urlRoot: Galaxy.root + 'api/tool_shed/repository',
     });
 
     var ToolShedRepositoryCollection = Backbone.Collection.extend({
-        url: Galaxy.root + 'api/tool_shed_repositories/shed_repository',
+        url: Galaxy.root + 'api/tool_shed/repository',
         model: ToolShedRepositoryModel
     });
 

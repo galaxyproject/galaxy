@@ -25,15 +25,15 @@ define([ "mvc/toolshed/shed-list-view", "mvc/toolshed/categories-view", "mvc/too
         initialize: function() {
             Galaxy.admintoolshedapp = this, this.admin_toolshed_router = new AdminToolshedRouter(), 
             this.admin_toolshed_router.on("route:toolsheds", function() {
-                Galaxy.admintoolshedapp.adminShedListView ? Galaxy.admintoolshedapp.adminShedListView.rePaint() : Galaxy.admintoolshedapp.adminShedListView = new mod_shed_list_view.ShedListView();
+                Galaxy.admintoolshedapp.adminShedListView ? Galaxy.admintoolshedapp.adminShedListView.reDraw() : Galaxy.admintoolshedapp.adminShedListView = new mod_shed_list_view.ShedListView();
             }), this.admin_toolshed_router.on("route:categories", function(tool_shed) {
-                Galaxy.admintoolshedapp.adminShedCategoriesView ? Galaxy.admintoolshedapp.adminShedCategoriesView.rePaint({
+                Galaxy.admintoolshedapp.adminShedCategoriesView ? Galaxy.admintoolshedapp.adminShedCategoriesView.reDraw({
                     tool_shed: tool_shed.replace(/\//g, "%2f")
                 }) : Galaxy.admintoolshedapp.adminShedCategoriesView = new mod_categories_view.CategoryView({
                     tool_shed: tool_shed.replace(/\//g, "%2f")
                 });
             }), this.admin_toolshed_router.on("route:repositories", function(tool_shed, category_id) {
-                Galaxy.admintoolshedapp.adminShedCategoryView ? Galaxy.admintoolshedapp.adminShedCategoryView.rePaint({
+                Galaxy.admintoolshedapp.adminShedCategoryView ? Galaxy.admintoolshedapp.adminShedCategoryView.reDraw({
                     tool_shed: tool_shed.replace(/\//g, "%2f"),
                     category_id: category_id
                 }) : Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category({
@@ -41,7 +41,7 @@ define([ "mvc/toolshed/shed-list-view", "mvc/toolshed/categories-view", "mvc/too
                     category_id: category_id
                 });
             }), this.admin_toolshed_router.on("route:repository", function(tool_shed, repository_id) {
-                Galaxy.admintoolshedapp.adminRepositoryView ? Galaxy.admintoolshedapp.adminRepositoryView.rePaint({
+                Galaxy.admintoolshedapp.adminRepositoryView ? Galaxy.admintoolshedapp.adminRepositoryView.reDraw({
                     tool_shed: tool_shed.replace(/\//g, "%2f"),
                     repository_id: repository_id
                 }) : Galaxy.admintoolshedapp.adminRepositoryView = new mod_repository_view.RepoDetails({
