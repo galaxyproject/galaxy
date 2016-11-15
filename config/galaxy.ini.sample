@@ -212,6 +212,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
 #conda_auto_init = False
+# You must set this to True if conda_prefix and job_working_directory are not on the same
+# volume, or some conda dependencies will fail to execute at job runtime.
+# Conda will copy packages content instead of creating hardlinks or symlinks.
+# This will prevent problems with some specific packages (perl, R), at the cost
+# of extra disk space usage and extra time spent copying packages.
+#conda_copy_dependencies = False
 
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
@@ -333,7 +339,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.
-#job_working_directory = database/job_working_directory
+#job_working_directory = database/jobs_directory
 
 # If using a cluster, Galaxy will write job scripts and stdout/stderr to this
 # directory.

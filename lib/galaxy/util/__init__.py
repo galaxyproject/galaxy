@@ -31,6 +31,7 @@ from datetime import datetime
 from hashlib import md5
 from os.path import normpath, relpath
 from xml.etree import ElementInclude, ElementTree
+from xml.etree.ElementTree import ParseError
 
 from six import binary_type, iteritems, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
@@ -38,6 +39,7 @@ from six.moves.urllib import (
     parse as urlparse,
     request as urlrequest
 )
+from six.moves.urllib.request import urlopen
 
 try:
     import docutils.core as docutils_core
@@ -208,7 +210,11 @@ def parse_xml( fname ):
         def doctype( *args ):
             pass
     tree = ElementTree.ElementTree()
-    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    try:
+        root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    except ParseError:
+        log.exception("Error parsing file %s", fname)
+        raise
     ElementInclude.include( root )
     return tree
 
@@ -1479,6 +1485,17 @@ def url_get( base_url, password_mgr=None, pathspec=None, params=None ):
     content = response.read()
     response.close()
     return content
+
+
+def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
+    """Download a URL to a file in chunks."""
+    src = urlopen(url, timeout=timeout)
+    with open(dest_file_path, 'wb') as f:
+        while True:
+            chunk = src.read(chunk_size)
+            if not chunk:
+                break
+            f.write(chunk)
 
 
 def safe_relpath(path):
