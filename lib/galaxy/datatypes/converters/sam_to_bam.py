@@ -71,5 +71,6 @@ def __main__():
 
     cleanup_before_exit( tmp_dir )
 
+
 if __name__ == "__main__":
     __main__()

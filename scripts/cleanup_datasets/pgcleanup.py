@@ -769,6 +769,7 @@ class Cleanup(object):
 
         self._close_logfile()
 
+
 if __name__ == '__main__':
     cleanup = Cleanup()
     try:

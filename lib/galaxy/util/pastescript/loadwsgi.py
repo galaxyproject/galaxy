@@ -31,6 +31,7 @@ def print_(template, *args, **kwargs):
         template = template % kwargs
     sys.stdout.writelines(template)
 
+
 if sys.version_info < (3, 0):
     def reraise(t, e, tb):
         exec('raise t, e, tb', dict(t=t, e=e, tb=tb))
@@ -188,6 +189,7 @@ class _App(_ObjectType):
         else:
             assert 0, "Protocol %r unknown" % context.protocol
 
+
 APP = _App()
 
 
@@ -209,6 +211,7 @@ class _Filter(_ObjectType):
             return filter_wrapper
         else:
             assert 0, "Protocol %r unknown" % context.protocol
+
 
 FILTER = _Filter()
 
@@ -232,6 +235,7 @@ class _Server(_ObjectType):
         else:
             assert 0, "Protocol %r unknown" % context.protocol
 
+
 SERVER = _Server()
 
 
@@ -248,6 +252,7 @@ class _PipeLine(_ObjectType):
             app = filter_(app)
         return app
 
+
 PIPELINE = _PipeLine()
 
 
@@ -258,6 +263,7 @@ class _FilterApp(_ObjectType):
         next_app = context.next_context.create()
         filter_ = context.filter_context.create()
         return filter_(next_app)
+
 
 FILTER_APP = _FilterApp()
 
@@ -276,8 +282,8 @@ class _FilterWith(_App):
                 return filter_(filtered(app))
             return composed
 
-FILTER_WITH = _FilterWith()
 
+FILTER_WITH = _FilterWith()
 
 ############################################################
 # Loaders
@@ -301,6 +307,7 @@ def appconfig(uri, name=None, relative_to=None, global_conf=None):
                           relative_to=relative_to,
                           global_conf=global_conf)
     return context.config()
+
 
 _loaders = {}
 
@@ -360,6 +367,7 @@ def _loadconfig(object_type, uri, path, name, relative_to,
         loader.update_defaults(global_conf, overwrite=False)
     return loader.get_context(object_type, name, global_conf)
 
+
 _loaders['config'] = _loadconfig
 
 
@@ -367,6 +375,7 @@ def _loadegg(object_type, uri, spec, name, relative_to,
              global_conf):
     loader = EggLoader(spec)
     return loader.get_context(object_type, name, global_conf)
+
 
 _loaders['egg'] = _loadegg
 
@@ -376,6 +385,7 @@ def _loadfunc(object_type, uri, spec, name, relative_to,
 
     loader = FuncLoader(spec)
     return loader.get_context(object_type, name, global_conf)
+
 
 _loaders['call'] = _loadfunc
 

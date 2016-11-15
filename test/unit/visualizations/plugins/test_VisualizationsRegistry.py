@@ -93,11 +93,6 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
                         'vis1.xml': 'blerbler'
                     },
                 },
-                'not_a_vis1': {
-                    # no config
-                    'static': {},
-                    'templates': {},
-                },
                 # empty
                 'not_a_vis2': {},
                 'not_a_vis3': 'blerbler',
@@ -106,6 +101,11 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
                     'config': {
                         'not_a_vis4.xml': 'blerbler'
                     }
+                },
+                'not_a_vis5': {
+                    # no config
+                    'static': {},
+                    'templates': {},
                 },
             }
         })

@@ -299,5 +299,6 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
         self.assertEqual( data, [{ 'id': 'One', 'seq': 'ABCD' }, { 'id': 'Two', 'seq': 'ABCDEFGH' }] )
         self.assertCounters( provider, 2, 2, 2 )
 
+
 if __name__ == '__main__':
     unittest.main()

@@ -23,6 +23,7 @@ def display_migration_details():
     print("This migration script provides support for (a) ordering tags by recency and")
     print("(b) tagging pages. This script deletes all existing tags.")
 
+
 HistoryTagAssociation_table = Table( "history_tag_association", metadata,
                                      Column( "id", Integer, primary_key=True ),
                                      Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),

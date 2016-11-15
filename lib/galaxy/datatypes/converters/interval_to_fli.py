@@ -102,5 +102,6 @@ def main():
         out.write( entry.ljust( max_len ) + '\n' )
     out.close()
 
+
 if __name__ == '__main__':
     main()

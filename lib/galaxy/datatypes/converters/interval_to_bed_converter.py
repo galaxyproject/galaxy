@@ -61,5 +61,6 @@ def __main__():
     if skipped_lines > 0:
         print("Skipped %d blank or invalid lines starting with line # %d." % ( skipped_lines, first_skipped_line ))
 
+
 if __name__ == "__main__":
     __main__()

@@ -47,6 +47,7 @@ def getchrominfo(url, db):
         else:
             raise Exception("Problem parsing line '%s'" % line)
 
+
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         sys.exit("Path to place chromInfo tables must be specified.")

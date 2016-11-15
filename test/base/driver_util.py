@@ -478,6 +478,7 @@ def build_shed_app(simple_kwargs):
     log.info( "Embedded Toolshed application started" )
     return app
 
+
 ServerWrapper = collections.namedtuple('ServerWrapper', ['app', 'server', 'name', 'host', 'port'])
 
 
@@ -491,6 +492,7 @@ def _stop(self):
         log.info("Stopping application %s" % self.name)
         self.app.shutdown()
         log.info("Application %s stopped." % self.name)
+
 
 ServerWrapper.stop = _stop
 

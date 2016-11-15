@@ -29,6 +29,7 @@ def display_migration_details():
     print("histories in the same way that workflows are shared.")
     print("========================================")
 
+
 HistoryUserShareAssociation_table = Table( "history_user_share_association", metadata,
                                            Column( "id", Integer, primary_key=True ),
                                            Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),

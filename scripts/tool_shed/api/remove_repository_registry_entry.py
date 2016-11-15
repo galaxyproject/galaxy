@@ -28,6 +28,7 @@ def main( options ):
     else:
         print "An API key for an admin user in the Tool Shed is required to remove entries from the Tool Shed's repository registry."
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Remove entries from the Tool Shed repository registry for a specified repository.' )
     parser.add_argument( "-a", "--api_key", dest="api_key", required=True, help="API Key for user removing entries from the Tool Shed's repository registry." )

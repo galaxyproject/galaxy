@@ -27,6 +27,8 @@ __all__ = ('ErrorMiddleware', 'handle_exception')
 class _NoDefault(object):
     def __repr__(self):
         return '<NoDefault>'
+
+
 NoDefault = _NoDefault()
 
 
@@ -486,6 +488,7 @@ def error_template(head_html, exception, extra):
 
 def make_error_middleware(app, global_conf, **kw):
     return ErrorMiddleware(app, global_conf=global_conf, **kw)
+
 
 doc_lines = ErrorMiddleware.__doc__.splitlines(True)
 for i in range(len(doc_lines)):

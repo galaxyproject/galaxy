@@ -465,6 +465,7 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
         raise InappropriateDatasetContentError( 'The uploaded file contains inappropriate HTML content.' )
     return ext
 
+
 AUTO_DETECT_EXTENSIONS = [ 'auto' ]  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
 COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
@@ -476,6 +477,7 @@ for exts in COMPRESSION_DATATYPES.values():
 
 class InappropriateDatasetContentError( Exception ):
     pass
+
 
 if __name__ == '__main__':
     import doctest
