@@ -393,8 +393,8 @@ DatasetListItemEdit.prototype.templates = (function(){
             '</a>',
 
         '<% } else { %>',
-            '<div class="visualizations-dropdown dropdown">',
-                '<a class="visualization-btn icon-btn" data-toggle="dropdown" title="', _l( 'Visualize' ), '">',
+            '<div class="visualizations-dropdown dropdown icon-btn">',
+                '<a data-toggle="dropdown" title="', _l( 'Visualize' ), '">',
                     '<span class="fa fa-bar-chart-o"></span>',
                 '</a>',
                 '<ul class="dropdown-menu" role="menu">',
