@@ -31,7 +31,7 @@ The following individuals have contributed code to Galaxy:
 * Saket Choudhary <saketkc@gmail.com>
 * Wen-Yu Chung <wychung@bx.psu.edu>
 * Dave Clements <clements@galaxyproject.org>
-* Peter Cock <p.j.a.cock@googlemail.com>
+* Peter Cock <p.j.a.cock@googlemail.com> <peter.cock@hutton.ac.uk>
 * Ira Cooke <iracooke@gmail.com>
 * Nate Coraor <nate@bx.psu.edu>
 * Michael Cotterell <mepcotterell@gmail.com>
@@ -48,6 +48,7 @@ The following individuals have contributed code to Galaxy:
 * Eric Enns <eric.enns@gmail.com>
 * fescudie <fescudie@toulouse.inra.fr>
 * Dorine Francheteau <dorine@bx.psu.edu>
+* Jean-Frédéric (@JeanFred on Github)
 * Jaime Frey <jfrey@cs.wisc.edu>
 * Carrie Ganote <cganote@iu.edu>
 * Ryan Golhar <ngsbioinformatics@gmail.com>
@@ -71,12 +72,14 @@ The following individuals have contributed code to Galaxy:
 * Jan Kanis <jan.code@jankanis.nl>
 * David King <dcking@bx.psu.edu>
 * Rory Kirchner <roryk@mit.edu>
+* Edward Kirton <eskirton@lbl.gov>
 * Brad Langhorst <langhorst@neb.com>
 * Ross Lazarus <ross.lazarus@gmail.com> <rossl@bx.psu.edu>
 * Gildas Le Corguillé @lecorguille
 * Simone Leo <simone.leo@gmail.com>
 * Kanwei Li <kanwei@gmail.com>
 * Michael Li <michael.li@uwaterloo.ca>
+* Pierre Lindenbaum <plindenbaum@yahoo.fr>
 * Mikael Loaec <mikael.loaec@versailles.inra.fr>
 * Philip Mabon <philipmabon@gmail.com>
 * Remi Marenco <remi.marenco@gmail.com> <remimarenco@gmail.com>

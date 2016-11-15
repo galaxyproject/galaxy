@@ -13,10 +13,6 @@ var FoldoutListItemView = LIST_ITEM.FoldoutListItemView,
  */
 var DCListItemView = FoldoutListItemView.extend(
 /** @lends DCListItemView.prototype */{
-//TODO: may not be needed
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     className   : FoldoutListItemView.prototype.className + " dataset-collection",
     id          : function(){
@@ -144,10 +140,6 @@ DCListItemView.prototype.templates = (function(){
  */
 var DCEListItemView = ListItemView.extend(
 /** @lends DCEListItemView.prototype */{
-//TODO: this might be expendable - compacted with HDAListItemView
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     /** add the DCE class to the list item */
     className   : ListItemView.prototype.className + " dataset-collection-element",
@@ -195,9 +187,6 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
 /** @lends DatasetDCEListItemView.prototype */{
 
     className   : DATASET_LI.DatasetListItemView.prototype.className + " dataset-collection-element",
-
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
 
     /** set up */
     initialize  : function( attributes ){
@@ -255,18 +244,11 @@ var NestedDCDCEListItemView = DCListItemView.extend(
 
     className   : DCListItemView.prototype.className + " dataset-collection-element",
 
-    /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
-    //logger              : console,
-
     /** In this override, add the state as a class for use with state-based CSS */
     _swapNewRender : function( $newRender ){
         DCListItemView.prototype._swapNewRender.call( this, $newRender );
-//TODO: model currently has no state
         var state = this.model.get( 'state' ) || 'ok';
-        //if( this.model.has( 'state' ) ){
         this.$el.addClass( 'state-' + state );
-        //}
         return this.$el;
     },
 

@@ -5,8 +5,10 @@ import logging
 import sys
 import shutil
 import os
-from galaxy.datatypes.images import Html
+
 from galaxy.datatypes.data import Data
+from galaxy.datatypes.images import Html
+from galaxy.util import FILENAME_VALID_CHARS
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
@@ -69,8 +71,7 @@ class Neo4j(Html):
             dir_name = str(os.path.dirname(trans.app.object_store.get_filename(data.dataset))) + neo4j_dir_name
 
             # generate unique filename for this dataset
-            valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+            fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
 
             # zip the target directory (dir_name) using the fname
             shutil.make_archive(fname, 'zip', dir_name)

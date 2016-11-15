@@ -2,11 +2,12 @@ from __future__ import print_function
 
 import os
 import re
+import time
 from json import dumps
 from logging import getLogger
 
-from requests import get, post, delete, patch
-from six import StringIO
+from requests import delete, get, patch, post
+from six import StringIO, text_type
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -87,29 +88,60 @@ class GalaxyInteractorApi( object ):
 
     def verify_output_dataset( self, history_id, hda_id, outfile, attributes, shed_tool_id ):
         fetcher = self.__dataset_fetcher( history_id )
-        self.twill_test_case.verify_hid( outfile, hda_id=hda_id, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        self.twill_test_case.verify_hid(
+            outfile,
+            hda_id=hda_id,
+            attributes=attributes,
+            dataset_fetcher=fetcher,
+            shed_tool_id=shed_tool_id
+        )
         self._verify_metadata( history_id, hda_id, attributes )
 
     def _verify_metadata( self, history_id, hid, attributes ):
+        """Check dataset metadata.
+
+        ftype on output maps to `file_ext` on the hda's API description, `name`, `info`,
+        and `dbkey` all map to the API description directly. Other metadata attributes
+        are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
+        """
         metadata = attributes.get( 'metadata', {} ).copy()
         for key, value in metadata.copy().items():
-            new_key = "metadata_%s" % key
-            metadata[ new_key ] = metadata[ key ]
-            del metadata[ key ]
+            if key not in ['name', 'info']:
+                new_key = "metadata_%s" % key
+                metadata[ new_key ] = metadata[ key ]
+                del metadata[ key ]
+            elif key == "info":
+                metadata[ "misc_info" ] = metadata[ "info" ]
+                del metadata[ "info" ]
         expected_file_type = attributes.get( 'ftype', None )
         if expected_file_type:
             metadata[ "file_ext" ] = expected_file_type
 
         if metadata:
+            time.sleep(5)
             dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
             for key, value in metadata.items():
                 try:
                     dataset_value = dataset.get( key, None )
-                    if dataset_value != value:
-                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]."
-                        msg_params = ( key, value, dataset_value )
-                        msg = msg % msg_params
-                        raise Exception( msg )
+
+                    def compare(val, expected):
+                        if text_type(val) != text_type(expected):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+
+                    if isinstance(dataset_value, list):
+                        value = text_type(value).split(",")
+                        if len(value) != len(dataset_value):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s], lists differ in length. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+                        for val, expected in zip(dataset_value, value):
+                            compare(val, expected)
+                    else:
+                        compare(dataset_value, value)
                 except KeyError:
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )

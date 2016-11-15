@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 
 
@@ -31,10 +33,10 @@ def __main__():
                 except:
                     skipped_lines += 1
 
-            print >>outfile, line
+            print(line, file=outfile)
 
     if skipped_lines > 0:
-        print 'Skipped %d invalid lines' % skipped_lines
+        print('Skipped %d invalid lines' % skipped_lines)
 
 if __name__ == "__main__":
     __main__()

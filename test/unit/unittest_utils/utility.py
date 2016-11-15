@@ -4,12 +4,7 @@ Unit test utilities.
 import os
 import sys
 import textwrap
-
-from sys import version_info
-if version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest as unittest
+import unittest
 
 
 # =============================================================================
@@ -45,10 +40,10 @@ def clean_multiline_string( multiline_string, sep='\n' ):
 sys.path[1:1] = [ get_galaxy_libpath(), get_unittest_utils_path() ]
 
 
-__all__ = [
+__all__ = (
     "clean_multiline_string",
     "get_unittest_utils_path",
     "get_galaxy_root",
     "get_galaxy_libpath",
     "unittest",
-]
+)

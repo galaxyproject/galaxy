@@ -1,3 +1,5 @@
+"""The module describes the ``cpuinfo`` job metrics plugin."""
+import logging
 import re
 
 from galaxy import util
@@ -5,7 +7,6 @@ from galaxy import util
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 
-import logging
 log = logging.getLogger( __name__ )
 
 PROCESSOR_LINE = re.compile(r"processor\s*\:\s*(\d+)")
@@ -59,4 +60,5 @@ class CpuInfoPlugin( InstrumentPlugin ):
     def __instrument_cpuinfo_path( self, job_directory ):
         return self._instrument_file_path( job_directory, "cpuinfo" )
 
-__all__ = [ 'CpuInfoPlugin' ]
+
+__all__ = ( 'CpuInfoPlugin', )

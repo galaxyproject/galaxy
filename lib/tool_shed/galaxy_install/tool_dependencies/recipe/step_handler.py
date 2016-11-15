@@ -1,26 +1,24 @@
+import hashlib
 import logging
 import os
 import re
 import shutil
 import stat
-from string import Template
 import tarfile
 import tempfile
-import time
-import urllib2
 import zipfile
-import hashlib
-
-from galaxy.util import asbool
-from galaxy.util.template import fill_template
-
-from tool_shed.util import basic_util
-from tool_shed.util import tool_dependency_util
-from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
+from string import Template
 
 # TODO: eliminate the use of fabric here.
-from fabric.api import settings
-from fabric.api import lcd
+from fabric.api import lcd, settings
+
+from galaxy.util import (
+    asbool,
+    download_to_file
+)
+from galaxy.util.template import fill_template
+from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
+from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger( __name__ )
 
@@ -149,44 +147,22 @@ class Download( object ):
 
     def url_download( self, install_dir, downloaded_file_name, download_url, extract=True, checksums={} ):
         """
-            The given download_url can have an extension like #md5#, #sha256#, (or #md5= to support pypi defaults).
+        The given download_url can have an extension like #md5#, #sha256#, (or #md5= to support pypi defaults).
 
-                https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
+            https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
 
-            Alternatively, to not break HTTP spec, you can specify md5 and
-            sha256 as keys in the <action /> element.
+        Alternatively, to not break HTTP spec, you can specify md5 and
+        sha256 as keys in the <action /> element.
 
-            This indicates a checksum which will be checked after download.
-            If the checksum does not match an exception is thrown.
+        This indicates a checksum which will be checked after download.
+        If the checksum does not match an exception is thrown.
         """
         file_path = os.path.join( install_dir, downloaded_file_name )
-        src = None
-        dst = None
-
-        # Set a timer so we don't sit here forever.
-        start_time = time.time()
         try:
-            src = urllib2.urlopen( download_url )
-            dst = open( file_path, 'wb' )
-            while True:
-                chunk = src.read( basic_util.CHUNK_SIZE )
-                if chunk:
-                    dst.write( chunk )
-                else:
-                    break
-                time_taken = time.time() - start_time
-                if time_taken > basic_util.NO_OUTPUT_TIMEOUT:
-                    err_msg = 'Downloading from URL %s took longer than the defined timeout period of %.1f seconds.' % \
-                        ( str( download_url ), basic_util.NO_OUTPUT_TIMEOUT )
-                    raise Exception( err_msg )
+            download_to_file( download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
         except Exception as e:
-            err_msg = err_msg = 'Error downloading from URL\n%s:\n%s' % ( str( download_url ), str( e ) )
+            err_msg = 'Error downloading from URL %s : %s' % ( str( download_url ), str( e ) )
             raise Exception( err_msg )
-        finally:
-            if src:
-                src.close()
-            if dst:
-                dst.close()
 
         if 'sha256sum' in checksums or '#sha256#' in download_url:
             downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest().lower()
@@ -231,7 +207,7 @@ class Download( object ):
         return rval
 
     def get_dict_checksums( self, dct ):
-        return dict(filter(lambda i: i[0] in ['md5sum', 'sha256sum'], dct.iteritems()))
+        return dict(i for i in dct.items() if i[0] in ['md5sum', 'sha256sum'])
 
 
 class RecipeStep( object ):
@@ -303,7 +279,8 @@ class AssertDirectoryExists( RecipeStep ):
     def assert_directory_exists( self, full_path ):
         """
         Return True if a symbolic link or directory exists, but if full_path is a file,
-        return False.    """
+        return False.
+        """
         if full_path is None:
             return False
         if os.path.isfile( full_path ):
@@ -914,20 +891,20 @@ class RegexReplace( RecipeStep ):
         filtered_actions and dir.
 
         This step supports the full range of python's regular expression engine, including backreferences in
-        the replacement text.
+        the replacement text. Example::
 
-        Example:
-        <action type="regex_replace" filename="Makefile">
-            <regex>^CFLAGS(\s*)=\s*-g\s*-Wall\s*-O2\s*$$</regex>
-            <replacement>CFLAGS\1= -g -Wall -O2 -I$$(NCURSES_INCLUDE_PATH)/ncurses/ -I$$(NCURSES_INCLUDE_PATH) -L$$(NCURSES_LIB_PATH)</replacement>
-        </action>
+            <action type="regex_replace" filename="Makefile">
+                <regex>^CFLAGS(\s*)=\s*-g\s*-Wall\s*-O2\s*$$</regex>
+                <replacement>CFLAGS\1= -g -Wall -O2 -I$$(NCURSES_INCLUDE_PATH)/ncurses/ -I$$(NCURSES_INCLUDE_PATH) -L$$(NCURSES_LIB_PATH)</replacement>
+            </action>
 
-        Before:
-        CFLAGS  = -g -Wall -O2
+        Before::
 
-        After:
-        CFLAGS  = -g -Wall -O2 -I$(NCURSES_INCLUDE_PATH)/ncurses/ -I$(NCURSES_INCLUDE_PATH) -L$(NCURSES_LIB_PATH)
+            CFLAGS  = -g -Wall -O2
 
+        After::
+
+            CFLAGS  = -g -Wall -O2 -I$(NCURSES_INCLUDE_PATH)/ncurses/ -I$(NCURSES_INCLUDE_PATH) -L$(NCURSES_LIB_PATH)
         """
         log_file = os.path.join( install_environment.install_dir, basic_util.INSTALLATION_LOG )
         if os.path.exists( log_file ):
@@ -1014,20 +991,19 @@ class SetEnvironment( RecipeStep ):
 
         The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset
         revision XXX of the repository named package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been
-        previously installed.
+        previously installed::
 
-        <tool_dependency>
-            <package name="graphicsmagick" version="1.3.18">
-                <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" prior_installation_required="True" toolshed="ZZZ" />
-            </package>
-            ...
+            <tool_dependency>
+                <package name="graphicsmagick" version="1.3.18">
+                    <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" prior_installation_required="True" toolshed="ZZZ" />
+                </package>
+                ...
 
-        * By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks
-        something like this (we'll reference this file later in this discussion.
-        ----
-        GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick;
-        export GRAPHICSMAGICK_ROOT_DIR
-        ----
+        By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks
+        something like this (we'll reference this file later in this discussion)::
+
+            GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick;
+            export GRAPHICSMAGICK_ROOT_DIR
 
         The second tag set defines a specific package dependency that has been previously installed (guaranteed by the
         tag set discussed above) and compiled, where the compiled dependency is needed by the tool dependency currently
@@ -1036,44 +1012,42 @@ class SetEnvironment( RecipeStep ):
         version 2.0.0 of the osra package requires version 1.3.18 of the graphicsmagick package in order to successfully
         compile.  When this tag set is handled, one of the effects is that the env.sh file associated with graphicsmagick
         version 1.3.18 is "sourced", which undoubtedly sets or alters certain environment variables (e.g. PATH, PYTHONPATH,
-        etc).
+        etc)::
 
-        <!-- populate the environment variables from the dependent repositories -->
-        <action type="set_environment_for_install">
-            <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" toolshed="ZZZ">
-                <package name="graphicsmagick" version="1.3.18" />
-            </repository>
-        </action>
+            <!-- populate the environment variables from the dependent repositories -->
+            <action type="set_environment_for_install">
+                <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" toolshed="ZZZ">
+                    <package name="graphicsmagick" version="1.3.18" />
+                </repository>
+            </action>
 
         The third tag set enables discovery of the same required package dependency discussed above for correctly compiling
         the osra version 2.0.0 package, but in this case the package can be discovered at tool execution time.  Using the
         $ENV[] option as shown in this example, the value of the environment variable named GRAPHICSMAGICK_ROOT_DIR (which
         was set in the environment using the second tag set described above) will be used to automatically alter the env.sh
         file associated with the osra version 2.0.0 tool dependency when it is installed into Galaxy.  * Refer to where we
-        discussed the env.sh file for version 1.3.18 of the graphicsmagick package above.
+        discussed the env.sh file for version 1.3.18 of the graphicsmagick package above::
 
-        <action type="set_environment">
-            <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
-            <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$INSTALL_DIR/potrace/build/lib/</environment_variable>
-            <environment_variable action="prepend_to" name="PATH">$INSTALL_DIR/bin</environment_variable>
-            <!-- OSRA_DATA_FILES is only used by the galaxy wrapper and is not part of OSRA -->
-            <environment_variable action="set_to" name="OSRA_DATA_FILES">$INSTALL_DIR/share</environment_variable>
-        </action>
+            <action type="set_environment">
+                <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
+                <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$INSTALL_DIR/potrace/build/lib/</environment_variable>
+                <environment_variable action="prepend_to" name="PATH">$INSTALL_DIR/bin</environment_variable>
+                <!-- OSRA_DATA_FILES is only used by the galaxy wrapper and is not part of OSRA -->
+                <environment_variable action="set_to" name="OSRA_DATA_FILES">$INSTALL_DIR/share</environment_variable>
+            </action>
 
         The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy
         that looks something like this.  Notice that the path to the gmagick binary is included here since it expands the
-        defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
+        defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set::
 
-        ----
-        LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
-        export LD_LIBRARY_PATH
-        LD_LIBRARY_PATH=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/potrace/build/lib/:$LD_LIBRARY_PATH;
-        export LD_LIBRARY_PATH
-        PATH=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/bin:$PATH;
-        export PATH
-        OSRA_DATA_FILES=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/share;
-        export OSRA_DATA_FILES
-        ----
+            LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
+            export LD_LIBRARY_PATH
+            LD_LIBRARY_PATH=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/potrace/build/lib/:$LD_LIBRARY_PATH;
+            export LD_LIBRARY_PATH
+            PATH=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/bin:$PATH;
+            export PATH
+            OSRA_DATA_FILES=/<my configured tool dependency path>/osra/1.4.0/YYY/depends_on/XXX/share;
+            export OSRA_DATA_FILES
         """
         env_var_value = env_var_dict[ 'value' ]
         # env_var_value is the text of an environment variable tag like this:
@@ -1578,7 +1552,6 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         although it may never be necessary.  If initial_download is True, the recipe steps will be filtered
         and returned and the installation directory (i.e., dir) will be defined and returned.  If we're not
         in the initial download stage, these actions will not occur, and None values will be returned for them.
-
         """
         # <action type="setup_python_environment">
         #       <repository name="package_python_2_7" owner="bgruening">

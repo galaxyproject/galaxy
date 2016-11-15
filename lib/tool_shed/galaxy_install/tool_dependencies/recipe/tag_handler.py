@@ -4,16 +4,15 @@ import tempfile
 
 from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.util import listify, url_get
+from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
+from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
+from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
-
-from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
-from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
-from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 
 log = logging.getLogger( __name__ )
 
@@ -420,9 +419,9 @@ class Repository( RecipeTag, SyncDatabase ):
                                                                                                         dependent_install_dir,
                                                                                                         tool_dependency_type='package' )
                     if not can_install_tool_dependency:
-                        log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), " %
-                            ( str( tool_dependency.name, str( tool_dependency.version ) ) ) )
-                        log.debug( "so appending it to the list of handled tool dependencies." )
+                        log.debug( "Tool dependency %s version %s cannot be installed (it was probably previously installed), "
+                                   "so appending it to the list of handled tool dependencies.",
+                                   str( tool_dependency.name), str( tool_dependency.version ) )
                         handled_tool_dependencies.append( tool_dependency )
             else:
                 can_install_tool_dependency = True

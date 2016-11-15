@@ -16,9 +16,6 @@ var _super = DATASET_LI.DatasetListItemView;
 var HDAListItemView = _super.extend(
 /** @lends HDAListItemView.prototype */{
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     className   : _super.prototype.className + " history-content",
 
     initialize : function( attributes, options ){
@@ -36,7 +33,6 @@ var HDAListItemView = _super.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 HDAListItemView.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var titleBarTemplate = BASE_MVC.wrapTemplate([
         // adding the hid display to the title

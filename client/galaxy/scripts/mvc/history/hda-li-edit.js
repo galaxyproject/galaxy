@@ -14,9 +14,6 @@ var _super = DATASET_LI_EDIT.DatasetListItemEdit;
 var HDAListItemEdit = _super.extend(
 /** @lends HDAListItemEdit.prototype */{
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     className   : _super.prototype.className + " history-content",
 
     /** In this override, only get details if in the ready state, get rerunnable if in other states.
@@ -54,7 +51,6 @@ var HDAListItemEdit = _super.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 HDAListItemEdit.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var warnings = _.extend( {}, _super.prototype.templates.warnings, {
         hidden : BASE_MVC.wrapTemplate([

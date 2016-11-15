@@ -9,8 +9,8 @@ from xml.etree import ElementTree as ET
 
 from .resolver_mixins import (
     UsesHomebrewMixin,
-    UsesToolDependencyDirMixin,
     UsesInstalledRepositoriesMixin,
+    UsesToolDependencyDirMixin,
 )
 from ..resolvers import DependencyResolver, NullDependency
 
@@ -146,4 +146,4 @@ def build_recipe_name(package_name, package_version, repository_owner, repositor
     return base
 
 
-__all__ = ['HomebrewToolShedDependencyResolver']
+__all__ = ('HomebrewToolShedDependencyResolver', )

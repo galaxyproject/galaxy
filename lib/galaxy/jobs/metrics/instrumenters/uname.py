@@ -1,3 +1,4 @@
+"""The module describes the ``uname`` job metrics plugin."""
 from ..instrumenters import InstrumentPlugin
 from ...metrics import formatting
 
@@ -31,4 +32,4 @@ class UnamePlugin( InstrumentPlugin ):
         return self._instrument_file_path( job_directory, "uname" )
 
 
-__all__ = [ 'UnamePlugin' ]
+__all__ = ( 'UnamePlugin', )

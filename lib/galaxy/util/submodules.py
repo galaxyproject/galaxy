@@ -1,6 +1,7 @@
+import logging
+
 from os import listdir
 
-import logging
 log = logging.getLogger(__name__)
 
 

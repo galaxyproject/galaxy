@@ -2,6 +2,8 @@
 """
 Adapted from bx/scripts/axt_to_fasta.py
 """
+from __future__ import print_function
+
 import sys
 
 import bx.align.axt
@@ -34,7 +36,7 @@ def main():
             id = None
         print_component_as_fasta(a.components[0], id)
         print_component_as_fasta(a.components[1], id)
-        print
+        print()
 
 
 # TODO: this should be moved to a bx.align.fasta module
@@ -42,8 +44,8 @@ def print_component_as_fasta(c, id=None):
     header = ">%s_%s_%s" % (c.src, c.start, c.start + c.size)
     if id is not None:
         header += " " + id
-    print header
-    print c.text
+    print(header)
+    print(c.text)
 
 if __name__ == "__main__":
     main()

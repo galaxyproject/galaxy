@@ -1,6 +1,6 @@
 import logging
-log = logging.getLogger(__name__)
 
+log = logging.getLogger(__name__)
 
 SKIP_INPUT = object()
 
@@ -9,7 +9,7 @@ def json_wrap(inputs, input_values, as_dict=None, handle_files="SKIP"):
     if as_dict is None:
         as_dict = {}
 
-    for input in inputs.itervalues():
+    for input in inputs.values():
         input_name = input.name
         value = input_values[input_name]
         json_value = _json_wrap_input(input, value, handle_files=handle_files)
@@ -65,7 +65,7 @@ def _json_wrap_input(input, value, handle_files="SKIP"):
         json_value = _cast_if_not_none(value, bool)
     elif input_type == "data_column":
         # value is a SelectToolParameterWrapper()
-        json_value = map(int, _cast_if_not_none(value.value, list))
+        json_value = [int(_) for _ in _cast_if_not_none(value.value, list)]
     else:
         raise NotImplementedError("input_type [%s] not implemented" % input_type)
 
@@ -80,4 +80,4 @@ def _cast_if_not_none(value, cast_to, empty_to_none=False):
         return cast_to(value)
 
 
-__all__ = ['json_wrap']
+__all__ = ('json_wrap', )

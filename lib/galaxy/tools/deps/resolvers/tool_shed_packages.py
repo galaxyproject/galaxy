@@ -1,7 +1,7 @@
-from os.path import abspath, join, exists
+from os.path import abspath, exists, join
 
+from .galaxy_packages import BaseGalaxyPackageDependencyResolver, ToolShedDependency
 from .resolver_mixins import UsesInstalledRepositoriesMixin
-from .galaxy_packages import BaseGalaxyPackageDependencyResolver, GalaxyPackageDependency
 from ..resolvers import NullDependency
 
 
@@ -10,6 +10,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
     # Resolution of these dependencies depends on more than just the requirement
     # tag, it depends on the tool installation context - therefore these are
     # non-simple.
+    dependency_type = ToolShedDependency
     resolves_simple_dependencies = False
 
     def __init__(self, dependency_manager, **kwds):
@@ -28,11 +29,11 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
             installed_tool_dependency = self._get_installed_dependency( name, type, version=None, **kwds )
             if installed_tool_dependency:
                 dependency = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
-                is_galaxy_dep = isinstance(dependency, GalaxyPackageDependency)
+                is_galaxy_dep = isinstance(dependency, ToolShedDependency)
                 has_script_dep = is_galaxy_dep and dependency.script and dependency.path
                 if has_script_dep:
                     # Environment settings do not use versions.
-                    return GalaxyPackageDependency(dependency.script, dependency.path, None, True)
+                    return ToolShedDependency(dependency.script, dependency.path, None, name, True)
         return NullDependency(version=None, name=name)
 
     def _get_package_installed_dependency_path( self, installed_tool_dependency, name, version ):
@@ -58,8 +59,8 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
                               tool_shed_repository.installed_changeset_revision ) )
         if exists( path ):
             script = join( path, 'env.sh' )
-            return GalaxyPackageDependency(script, path, None, True)
+            return ToolShedDependency(script, path, None, name, True)
         return NullDependency(version=None, name=name)
 
 
-__all__ = ['ToolShedPackageDependencyResolver']
+__all__ = ('ToolShedPackageDependencyResolver', )

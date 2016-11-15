@@ -15,12 +15,16 @@ import datetime
 import os
 import sys
 
+# Library to make .md to slideshow
+from recommonmark.parser import CommonMarkParser
 
-####### REQUIRED GALAXY INCLUDES
+source_parsers = {
+    '.md': CommonMarkParser,
+}
+
+# REQUIRED GALAXY INCLUDES
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
-
-#######
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -39,11 +43,22 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo', 'sp
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
-#configure default autodoc's action
+# Configure default autodoc's action
 autodoc_default_flags = [ 'members', 'undoc-members', 'show-inheritance' ]
 
+
+def dont_skip_init(app, what, name, obj, skip, options):
+    if name == "__init__":
+        return False
+    return skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", dont_skip_init)
+
+
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -195,8 +210,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Galaxy.tex', u'Galaxy Code Documentation',
-   u'Galaxy Team', 'manual'),
+    ('index', 'Galaxy.tex', u'Galaxy Code Documentation',
+     u'Galaxy Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -239,9 +254,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Galaxy', u'Galaxy Code Documentation',
-   u'Galaxy Team', 'Galaxy', 'Data intensive biology for everyone.',
-   'Miscellaneous'),
+    ('index', 'Galaxy', u'Galaxy Code Documentation',
+     u'Galaxy Team', 'Galaxy', 'Data intensive biology for everyone.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -253,8 +268,8 @@ texinfo_documents = [
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
 
-# -- ReadTheDocs.org Settings ------------------------------------------------
 
+# -- ReadTheDocs.org Settings ------------------------------------------------
 class Mock(object):
     def __init__(self, *args, **kwargs):
         pass

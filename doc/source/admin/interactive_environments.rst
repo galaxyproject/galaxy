@@ -61,7 +61,7 @@ Once Node and npm are ready to go, you'll need to install the dependencies
 
 Running ``node lib/main.js --help`` should produce some useful help text
 
-.. code-block::
+.. code-block:: console
 
     Usage: main [options]
 
@@ -81,7 +81,7 @@ as of 2014. Alternately, the proxy can be stated manually or via a system such a
 Supervisord. Assuming that the ``$GALAXY_ROOT`` environment variable refers to the location of
 the Galaxy installation, the command for launching the proxy is:
 
-.. code-block::  console
+.. code-block:: console
 
     $ node $GALAXY_ROOT/lib/galaxy/web/proxy/js/lib/main.js --ip 0.0.0.0 \
         --port 8800 --sessions $GALAXY_ROOT/database/session_map.sqlite \
@@ -122,6 +122,7 @@ As you can see most of these variables map directly to the command line
 arguments to the NodeJS script. There are a few extra parameters which will
 be needed if you run Galaxy behind an upstream proxy like nginx or
 Apache:
+
 .. code-block:: ini
 
     dynamic_proxy_external_proxy=True
@@ -182,7 +183,7 @@ Please note you will need to be using apache2.4 with ``mod_proxy_wstunnel``.
 
     # Project Jupyter / IPython specific. Other IEs may require their own routes.
     location ~ ^/galaxy/gie_proxy/jupyter/(?<nbtype>[^/]+)/api/kernels(?<rest>.*?)$ {
-        proxy_pass http://localhost:8800/galaxy/gie_proxy/$nbtype/api/kernels$rest;
+        proxy_pass http://localhost:8800/galaxy/gie_proxy/jupyter/$nbtype/api/kernels$rest;
         proxy_redirect off;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

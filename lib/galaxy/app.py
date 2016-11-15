@@ -5,13 +5,6 @@ import sys
 import time
 import os
 
-try:
-    from uwsgidecorators import postfork
-except:
-    def pf_dec(func):
-        return func
-    postfork = pf_dec
-
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
@@ -24,6 +17,7 @@ from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import ToursRegistry
+from galaxy.webhooks import WebhooksRegistry
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
@@ -31,6 +25,7 @@ from galaxy.jobs import metrics as job_metrics
 from galaxy.web.proxy import ProxyManager
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.util import heartbeat
+from galaxy.util.postfork import register_postfork_function
 from tool_shed.galaxy_install import update_repository_manager
 
 
@@ -123,6 +118,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             template_cache_dir=self.config.template_cache )
         # Tours registry
         self.tour_registry = ToursRegistry(self.config.tour_config_dir)
+        # Webhooks registry
+        self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dirs)
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent(
@@ -154,17 +151,16 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                     fname=self.config.heartbeat_log
                 )
                 self.heartbeat.daemon = True
-
-                @postfork
-                def _start():
-                    self.heartbeat.start()
-                if not config.process_is_uwsgi:
-                    _start()
+                register_postfork_function(self.heartbeat.start)
+        self.sentry_client = None
         if self.config.sentry_dsn:
-            import raven
-            self.sentry_client = raven.Client(self.config.sentry_dsn)
-        else:
-            self.sentry_client = None
+
+            def postfork_sentry_client():
+                import raven
+                self.sentry_client = raven.Client(self.config.sentry_dsn)
+
+            register_postfork_function(postfork_sentry_client)
+
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager

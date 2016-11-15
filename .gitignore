@@ -20,6 +20,7 @@ database/pbs
 database/tmp
 database/*.sqlite
 database/openid_consumer_cache
+database/dependencies
 
 # Python bytecode
 *.pyc
@@ -40,6 +41,9 @@ lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml
 reports_webapp.lock
 reports_webapp.log
 reports_webapp.pid
+
+# Jupyter Runtime Files
+.ipynb_checkpoints
 
 # Config files
 universe_wsgi.ini
@@ -123,6 +127,8 @@ bower_components
 
 # Documentation build files.
 doc/build
+doc/schema.md
+doc/source/dev/schema.rst
 
 # Misc
 *.orig

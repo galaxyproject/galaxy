@@ -14,6 +14,8 @@
 }(function () {
     var _l = window._l || function( s ){ return s; };
 
+    //TODO: consolidate with tool menu functionality, use there
+
     /** searchInput: (jQuery plugin)
      *      Creates a search input, a clear button, and loading indicator
      *      within the selected node.
@@ -23,7 +25,6 @@
      *      is focused will clear the input and call a separate callback.
      */
     function searchInput( parentNode, options ){
-//TODO: consolidate with tool menu functionality, use there
         var KEYCODE_ESC     = 27,
             KEYCODE_RETURN  = 13,
             $parentNode     = $( parentNode ),
@@ -45,16 +46,16 @@
         // visually clear the search, trigger an event, and call the callback
         function clearSearchInput( event ){
             var $input = $( this ).parent().children( 'input' );
-            //console.debug( this, 'clear', $input );
-            $input.focus().val( '' ).trigger( 'clear:searchInput' );
+            $input.val( '' ).trigger( 'searchInput.clear' ).blur();
             options.onclear();
         }
 
         // search for searchTerms, trigger an event, call the appropo callback (based on whether this is the first)
         function search( event, searchTerms ){
-            //console.debug( this, 'searching', searchTerms );
-            //TODO: I don't think this is classic jq custom event form? search.searchInput?
-            $( this ).trigger( 'search:searchInput', searchTerms );
+            if( !searchTerms ){
+                return clearSearchInput();
+            }
+            $( this ).trigger( 'search.search', searchTerms );
             if( typeof options.onfirstsearch === 'function' && firstSearch ){
                 firstSearch = false;
                 options.onfirstsearch( searchTerms );
@@ -81,8 +82,6 @@
                 .keyup( function( event ){
                     event.preventDefault();
                     event.stopPropagation();
-//TODO: doesn't work
-                    if( !$( this ).val() ){ $( this ).blur(); }
 
                     // esc key will clear if desired
                     if( event.which === KEYCODE_ESC && options.escWillClear ){
@@ -94,13 +93,8 @@
                         if( ( event.which === KEYCODE_RETURN )
                         ||  ( options.minSearchLen && searchTerms.length >= options.minSearchLen ) ){
                             search.call( this, event, searchTerms );
-                        } else if( !searchTerms.length ){
-                            clearSearchInput.call( this, event );
                         }
                     }
-                })
-                .on( 'change', function( event ){
-                    search.call( this, event, $( this ).val() );
                 })
                 .val( options.initialVal );
         }

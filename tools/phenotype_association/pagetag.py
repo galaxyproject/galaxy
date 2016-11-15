@@ -37,6 +37,7 @@ b) a file where each line has the following:
 where SNP is one of  the SNPs and the "list" is a comma separated list of SNPs
 that exceed the rsquare threshold with the first SNP.
 """
+from __future__ import print_function
 
 from getopt import getopt, GetoptError
 from sys import argv, exit, stderr
@@ -90,7 +91,7 @@ def read_inputfile(filename, samples):
 def annotate_locus(input, minorallelefrequency, snpsfile):
     locus = {}
     for k, v in input.items():
-        genotypes = [x for x in v.values()]
+        genotypes = v.values()
         alleles = [y for x in genotypes for y in x]
         alleleset = list(set(alleles))
         alleleset = list(set(alleles) - set(["N", "X"]))
@@ -124,7 +125,7 @@ def annotate_locus(input, minorallelefrequency, snpsfile):
 
             locus[k] = genotypevec, minorfreq
         elif len(alleleset) > 2:
-            print >> snpsfile, k
+            print(k, file=snpsfile)
     return locus
 
 
@@ -187,7 +188,7 @@ def main(inputfile, snpsfile, neigborhoodfile,
          rsquare, minorallelefrequency, samples):
     # read the input file
     input = read_inputfile(inputfile, samples)
-    print >> stderr, "Read %d locations" % len(input)
+    print("Read %d locations" % len(input), file=stderr)
 
     # open the snpsfile to print
     file = open(snpsfile, "w")
@@ -195,17 +196,17 @@ def main(inputfile, snpsfile, neigborhoodfile,
     # annotate the inputs, remove the abnormal loci (which do not have 2 alleles
     # and add the major and minor allele to each loci
     loci = annotate_locus(input, minorallelefrequency, file)
-    print >> stderr, "Read %d interesting locations" % len(loci)
+    print("Read %d interesting locations" % len(loci), file=stderr)
 
     # print all the interesting loci as candidate snps
     for k in loci.keys():
-        print >> file, k
+        print(k, file=file)
     file.close()
-    print >> stderr, "Finished creating the snpsfile"
+    print("Finished creating the snpsfile", file=stderr)
 
     # calculate the LD values and store it if it exceeds the threshold
     lds = calculateLD(loci, rsquare)
-    print >> stderr, "Calculated all the LD values"
+    print("Calculated all the LD values", file=stderr)
 
     # create a list of SNPs
     snps = {}
@@ -236,9 +237,9 @@ def main(inputfile, snpsfile, neigborhoodfile,
     for k, v in snps.items():
         ldv = ldvals[k]
         if debug_flag is True:
-            print >> file, "%s\t%s\t%s" % (k, ",".join(v), ",".join(ldv))
+            print("%s\t%s\t%s" % (k, ",".join(v), ",".join(ldv)), file=file)
         else:
-            print >> file, "%s\t%s" % (k, ",".join(v))
+            print("%s\t%s" % (k, ",".join(v)), file=file)
 
     file.close()
 
@@ -256,24 +257,24 @@ def read_list(filename):
 
 def usage():
     f = stderr
-    print >> f, "usage:"
-    print >> f, "pagetag [options] input.txt snps.txt neighborhood.txt"
-    print >> f, "where input.txt is the prettybase file"
-    print >> f, "where snps.txt is the first output file with the snps"
-    print >> f, "where neighborhood.txt is the output neighborhood file"
-    print >> f, "where the options are:"
-    print >> f, "-h,--help : print usage and quit"
-    print >> f, "-d,--debug: print debug information"
-    print >> f, "-r,--rsquare: the rsquare threshold (default : 0.64)"
-    print >> f, "-f,--freq : the minimum MAF required (default: 0.0)"
-    print >> f, "-s,--sample : a list of samples to be clustered"
+    print("usage:", file=f)
+    print("pagetag [options] input.txt snps.txt neighborhood.txt", file=f)
+    print("where input.txt is the prettybase file", file=f)
+    print("where snps.txt is the first output file with the snps", file=f)
+    print("where neighborhood.txt is the output neighborhood file", file=f)
+    print("where the options are:", file=f)
+    print("-h,--help : print usage and quit", file=f)
+    print("-d,--debug: print debug information", file=f)
+    print("-r,--rsquare: the rsquare threshold (default : 0.64)", file=f)
+    print("-f,--freq : the minimum MAF required (default: 0.0)", file=f)
+    print("-s,--sample : a list of samples to be clustered", file=f)
 
 if __name__ == "__main__":
     try:
         opts, args = getopt(argv[1:], "hds:r:f:",
                             ["help", "debug", "rsquare=", "freq=", "sample="])
     except GetoptError as err:
-        print str(err)
+        print(str(err))
         usage()
         exit(2)
 
@@ -297,11 +298,11 @@ if __name__ == "__main__":
             assert False, "unhandled option"
 
     if rsquare < 0.00 or rsquare > 1.00:
-        print >> stderr, "input value of rsquare should be in [0.00, 1.00]"
+        print("input value of rsquare should be in [0.00, 1.00]", file=stderr)
         exit(3)
 
     if minorallelefrequency < 0.0 or minorallelefrequency > 0.5:
-        print >> stderr, "input value of MAF should be (0.00,0.50]"
+        print("input value of MAF should be (0.00,0.50]", file=stderr)
         exit(4)
 
     if len(args) != 3:

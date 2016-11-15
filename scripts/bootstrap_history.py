@@ -46,9 +46,8 @@ DEVTEAM = [
 TEMPLATE = """
 .. to_doc
 
--------------------------------
 %s
--------------------------------
+===============================
 
 .. announce_start
 
@@ -103,31 +102,15 @@ Highlights
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
 
-New
+New Galaxy repository
   .. code-block:: shell
 
-      % git clone -b master https://github.com/galaxyproject/galaxy.git
+      $ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
-Update to latest stable release
+Update of existing Galaxy repository
   .. code-block:: shell
 
-      % git checkout master && pull --ff-only origin master
-
-Update to exact version
-  .. code-block:: shell
-
-      % git checkout v${release}
-
-
-`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
-===========================================================
-
-Upgrade
-  .. code-block:: shell
-
-      % hg pull
-      % hg update latest_${release}
-
+      $ git checkout release_${release} && git pull --ff-only origin release_${release}
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
@@ -176,10 +159,16 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
       - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
 
+      - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version.
+
+      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `{version}` so it properly tags new PRs.
+
 - [ ] **Deploy and Test Release**
 
-      - [ ] Update test to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+      - [ ] Update test.galaxyproject.org to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+      - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
       - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
+      - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
       - [ ] [Update bioblend testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target - add ``env`` target ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to ``tox.ini``.
 
 - [ ] **Create Release Notes**
@@ -195,6 +184,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-bootstrap-history RELEASE_CURR=${version}
       - [ ] Open newly created files and manually curate major topics and release notes.
+
+            - [ ] inject 3 witty comments
+            - [ ] inject one whimsical story
+            - [ ] inject one topical reference (preferably satirical in nature) to contemporary world event
       - [ ] Commit release notes.
 
             git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
@@ -210,10 +203,9 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-check-blocking-prs RELEASE_CURR=${version}
       - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
-      - [ ] Create release tag:
+      - [ ] Create and push release tag:
 
             make release-create RELEASE_CURR=${version}
-      - [ ] Push branches and tags as commented out in Makefile target for ``release-create``.
 
 - [ ] **Do Docker Release**
 

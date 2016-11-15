@@ -1,7 +1,8 @@
-from string import Template
-import subprocess
-
+"""This module describes :class:`CollectlCli` - an abstraction for building collectl command lines."""
 import logging
+import subprocess
+from string import Template
+
 log = logging.getLogger( __name__ )
 
 COMMAND_LINE_TEMPLATE = Template(
@@ -136,4 +137,5 @@ class CollectlCli( object ):
         if return_code:
             raise Exception( "Problem running collectl command." )
 
-__all__ = [ 'CollectlCli' ]
+
+__all__ = ( 'CollectlCli', )

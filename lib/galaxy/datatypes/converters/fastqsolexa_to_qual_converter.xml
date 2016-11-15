@@ -1,5 +1,5 @@
 <tool id="CONVERTER_fastqsolexa_to_qual_0" name="Convert Fastqsolexa to Qual">
-  <command interpreter="python">fastqsolexa_to_qual_converter.py $input1 $output1 ${input1.extension}</command>
+  <command interpreter="python">fastqsolexa_to_qual_converter.py '$input1' '$output1' ${input1.extension}</command>
   <inputs>
     <param format="fastqsolexa" name="input1" type="data" label="Choose Fastqsolexa file"/>
   </inputs>

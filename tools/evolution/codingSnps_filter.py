@@ -13,7 +13,7 @@ def validate_input( trans, error_map, param_values, page_param_map ):
     dbkeys = set()
     data_param_names = set()
     data_params = 0
-    for name, param in page_param_map.iteritems():
+    for name, param in page_param_map.items():
         if isinstance( param, DataToolParameter ):
             # for each dataset parameter
             if param_values.get(name, None) is not None:

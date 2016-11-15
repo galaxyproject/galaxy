@@ -10,29 +10,18 @@ define(['utils/utils'], function( Utils ) {
                       ['a5a5a5','262626','494429','17365d','366092','953734','76923c','5f497a','31859b','e36c09'],
                       ['7f7f7e','0c0c0c','1d1b10','0f243e','244061','632423','4f6128','3f3151','205867','974806']]
         },
+
         initialize : function( options ) {
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
-
-            // link components
             this.$panel = this.$( '.ui-color-picker-panel' );
             this.$view = this.$( '.ui-color-picker-view' );
             this.$value = this.$( '.ui-color-picker-value' );
             this.$header = this.$( '.ui-color-picker-header' );
-
-            // build panel
             this._build();
-
-            // hide panel on start up
             this.visible = false;
-
-            // set initial value
             this.value( this.options.value );
-
-            // link boxes
             this.$boxes = this.$( '.ui-color-picker-box' );
-
-            // add event handler
             var self = this;
             this.$boxes.on( 'click', function() {
                 self.value( $( this ).css( 'background-color' ) );
@@ -48,25 +37,18 @@ define(['utils/utils'], function( Utils ) {
             } );
         },
 
-        // value
+        /** Get/set value */
         value : function ( new_val ) {
             if ( new_val !== undefined && new_val !== null ) {
-                // update color value
                 this.$value.css( 'background-color', new_val );
-            
-                // check selected color in panel
                 this.$( '.ui-color-picker-box' ).empty();
                 this.$( this._getValue() ).html( this._templateCheck() );
-
-                // trigger custom event
                 this.options.onchange && this.options.onchange( new_val );
             }
-
-            // return current value
             return this._getValue();
         },
 
-        // get value from dom
+        /** Get value from dom */
         _getValue: function() {
             var rgb = this.$value.css( 'background-color' );
             rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
@@ -80,7 +62,7 @@ define(['utils/utils'], function( Utils ) {
             }
         },
 
-        // build panel
+        /** Build color panel */
         _build: function() {
             var $content = this._content({
                 label       : 'Theme Colors',
@@ -110,27 +92,20 @@ define(['utils/utils'], function( Utils ) {
             });
         },
 
-        // create content
+        /** Create content */
         _content: function( options ) {
-            // get parameters
             var label       = options.label;
             var colors      = options.colors;
             var padding     = options.padding;
             var top         = options.top;
             var bottom      = options.bottom;
-
-            // create lines
             var $content = $( this._templateContent() );
-
-            // set label
             var $label = $content.find( '.label' );
             if ( options.label ) {
                 $label.html( options.label );
             } else {
                 $label.hide();
             }
-
-            // build line
             var $line = $content.find( '.line' );
             this.$panel.append( $content );
             for ( var i in colors ) {
@@ -153,12 +128,12 @@ define(['utils/utils'], function( Utils ) {
             return $content;
         },
 
-        // check icon
+        /** Check icon */
         _templateCheck: function() {
             return  '<div class="ui-color-picker-check fa fa-check"/>';
         },
 
-        // content template
+        /** Content template */
         _templateContent: function() {
             return  '<div class="ui-color-picker-content">' +
                         '<div class="label"/>' +
@@ -166,12 +141,12 @@ define(['utils/utils'], function( Utils ) {
                     '</div>';
         },
 
-        // box template
+        /** Box template */
         _templateBox: function( color ) {
             return '<div id="' + color + '" class="ui-color-picker-box" style="background-color: #' + color + ';"/>';
         },
 
-        // template
+        /** Main template */
         _template: function() {
             return  '<div class="ui-color-picker">' +
                         '<div class="ui-color-picker-header">' +

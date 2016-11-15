@@ -1,10 +1,12 @@
 import os
+
+from contextlib import contextmanager
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
+
 from galaxy import objectstore
 from galaxy.exceptions import ObjectInvalid
-from contextlib import contextmanager
 
 DISK_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="disk">

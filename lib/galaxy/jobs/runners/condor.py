@@ -1,20 +1,26 @@
 """
 Job control via the Condor DRM.
 """
-
-import os
 import logging
+import os
 
 from galaxy import model
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
-from galaxy.jobs.runners.util.condor import submission_params, build_submit_description
-from galaxy.jobs.runners.util.condor import condor_submit, condor_stop
-from galaxy.jobs.runners.util.condor import summarize_condor_log
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState
+)
+from galaxy.jobs.runners.util.condor import (
+    build_submit_description,
+    condor_stop,
+    condor_submit,
+    submission_params,
+    summarize_condor_log
+)
 from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'CondorJobRunner' ]
+__all__ = ( 'CondorJobRunner', )
 
 
 class CondorJobState( AsynchronousJobState ):

@@ -1,7 +1,6 @@
 """
 Proteomics Datatypes
 """
-import binascii
 import logging
 import re
 
@@ -40,7 +39,7 @@ class Wiff(Binary):
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Wiff Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.optional:
@@ -58,7 +57,7 @@ Binary.register_sniffable_binary_format("wiff", "wiff", Wiff )
 class PepXmlReport(Tabular):
     """pepxml converted to tabular report"""
     edam_data = "data_2536"
-    file_ext = "tsv"
+    file_ext = "pepxml.tsv"
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
@@ -72,7 +71,7 @@ class PepXmlReport(Tabular):
 class ProtXmlReport(Tabular):
     """protxml converted to tabular report"""
     edam_data = "data_2536"
-    file_ext = "tsv"
+    file_ext = "protxml.tsv"
     comment_lines = 1
 
     def __init__(self, **kwd):
@@ -272,10 +271,9 @@ class ThermoRAW(Binary):
         # This combination represents 17 bytes, but to play safe we read 20 bytes from
         # the start of the file.
         try:
-            header = open(filename).read(20)
-            hexheader = binascii.b2a_hex(header)
-            finnigan = binascii.hexlify('F\0i\0n\0n\0i\0g\0a\0n')
-            if hexheader.find(finnigan) != -1:
+            header = open(filename, 'rb').read(20)
+            finnigan = b'F\0i\0n\0n\0i\0g\0a\0n'
+            if header.find(finnigan) != -1:
                 return True
             return False
         except:
@@ -351,7 +349,7 @@ class SPLib(Msp):
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Spectral Library Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.optional:

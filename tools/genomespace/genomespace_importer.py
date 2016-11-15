@@ -1,14 +1,14 @@
 # Dan Blankenberg
 
-import cookielib
 import json
 import optparse
 import os
 import shutil
 import tempfile
-import urllib
-import urllib2
-import urlparse
+
+from six.moves import http_cookiejar
+from six.moves.urllib.parse import parse_qs, unquote_plus, urlparse
+from six.moves.urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -16,6 +16,7 @@ from galaxy.datatypes.registry import Registry
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
 DEFAULT_GENOMESPACE_TOOLNAME = 'Galaxy'
+FILENAME_VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
 CHUNK_SIZE = 2**20  # 1mb
 
@@ -45,8 +46,6 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'gmt': 'gmt',
                                  'gct': 'gct'}
 
-VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
-
 
 def chunk_write( source_stream, target_stream, source_method="read", target_method="write" ):
     source_method = getattr( source_stream, source_method )
@@ -61,12 +60,12 @@ def chunk_write( source_stream, target_stream, source_method="read", target_meth
 
 def get_cookie_opener( gs_username, gs_token, gs_toolname=None ):
     """ Create a GenomeSpace cookie opener """
-    cj = cookielib.CookieJar()
+    cj = http_cookiejar.CookieJar()
     for cookie_name, cookie_value in [ ( 'gs-token', gs_token ), ( 'gs-username', gs_username ) ]:
         # create a super-cookie, valid for all domains
-        cookie = cookielib.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
+        cookie = http_cookiejar.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
         cj.set_cookie( cookie )
-    cookie_opener = urllib2.build_opener( urllib2.HTTPCookieProcessor( cj ) )
+    cookie_opener = build_opener( HTTPCookieProcessor( cj ) )
     cookie_opener.addheaders.append( ( 'gs-toolname', gs_toolname or DEFAULT_GENOMESPACE_TOOLNAME ) )
     return cookie_opener
 
@@ -83,7 +82,7 @@ def get_galaxy_ext_from_genomespace_format_url( url_opener, file_format_url, def
 
 def get_genomespace_site_urls():
     genomespace_sites = {}
-    for line in urllib2.urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
+    for line in urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
         line = line.rstrip()
         if not line or line.startswith( "#" ):
             continue
@@ -96,7 +95,7 @@ def get_genomespace_site_urls():
 
 
 def set_genomespace_format_identifiers( url_opener, dm_site ):
-    gs_request = urllib2.Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
+    gs_request = Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
     gs_request.get_method = lambda: 'GET'
     opened_gs_request = url_opener.open( gs_request )
     genomespace_formats = json.loads( opened_gs_request.read() )
@@ -124,21 +123,21 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
     used_filenames = []
     for download_url in url_param.split( ',' ):
         using_temp_file = False
-        parsed_url = urlparse.urlparse( download_url )
-        query_params = urlparse.parse_qs( parsed_url[4] )
+        parsed_url = urlparse( download_url )
+        query_params = parse_qs( parsed_url[4] )
         # write file to disk
-        new_file_request = urllib2.Request( download_url )
+        new_file_request = Request( download_url )
         new_file_request.get_method = lambda: 'GET'
         target_download_url = url_opener.open( new_file_request )
         filename = None
         if 'Content-Disposition' in target_download_url.info():
-            content_disposition = dict( map( lambda x: x.strip().split('=') if '=' in x else ( x.strip(), '' ), target_download_url.info()['Content-Disposition'].split( ';' ) ) )
+            content_disposition = dict( x.strip().split('=') if '=' in x else ( x.strip(), '' ) for x in target_download_url.info()['Content-Disposition'].split( ';' ) )
             if 'filename' in content_disposition:
                 filename = content_disposition[ 'filename' ].strip( "\"'" )
         if not filename:
-            parsed_url = urlparse.urlparse( download_url )
-            query_params = urlparse.parse_qs( parsed_url[4] )
-            filename = urllib.unquote_plus( parsed_url[2].split( '/' )[-1] )
+            parsed_url = urlparse( download_url )
+            query_params = parse_qs( parsed_url[4] )
+            filename = unquote_plus( parsed_url[2].split( '/' )[-1] )
         if not filename:
             filename = download_url
         if output_filename is None:
@@ -158,7 +157,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
             try:
                 # get and use GSMetadata object
                 download_file_path = download_url.split( "%s/file/" % ( genomespace_site_dict['dmServer'] ), 1)[-1]  # FIXME: This is a very bad way to get the path for determining metadata. There needs to be a way to query API using download URLto get to the metadata object
-                metadata_request = urllib2.Request( "%s/%s/filemetadata/%s" % ( genomespace_site_dict['dmServer'], GENOMESPACE_API_VERSION_STRING, download_file_path ) )
+                metadata_request = Request( "%s/%s/filemetadata/%s" % ( genomespace_site_dict['dmServer'], GENOMESPACE_API_VERSION_STRING, download_file_path ) )
                 metadata_request.get_method = lambda: 'GET'
                 metadata_url = url_opener.open( metadata_request )
                 file_metadata_dict = json.loads( metadata_url.read() )
@@ -192,7 +191,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
         # if using tmp file, move the file to the new file path dir to get scooped up later
         if using_temp_file:
             original_filename = filename
-            filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
+            filename = ''.join( c in FILENAME_VALID_CHARS and c or '-' for c in filename )
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )

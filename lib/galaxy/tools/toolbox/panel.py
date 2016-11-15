@@ -1,11 +1,13 @@
 from abc import abstractmethod
 
-from galaxy.util.odict import odict
+from six import iteritems
+
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.odict import odict
+
 from .parser import ensure_tool_conf_item
 
-from six import iteritems
 
 panel_item_types = bunch.Bunch(
     TOOL="TOOL",

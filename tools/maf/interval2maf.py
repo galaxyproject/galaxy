@@ -25,6 +25,8 @@ usage: %prog maf_file [options]
    -z, --mafIndexFile=z: Directory of local maf index file ( maf_index.loc or maf_pairwise.loc )
 """
 # Dan Blankenberg
+from __future__ import print_function
+
 import bx.align.maf
 import bx.intervals.io
 from bx.cookbook import doc_optparse
@@ -132,11 +134,11 @@ def __main__():
     maf_utilities.remove_temp_index_file( index_filename )
 
     if num_blocks:
-        print "%i MAF blocks extracted for %i regions." % ( num_blocks, ( num_regions + 1 ) )
+        print("%i MAF blocks extracted for %i regions." % ( num_blocks, ( num_regions + 1 ) ))
     elif num_regions is not None:
-        print "No MAF blocks could be extracted for %i regions." % ( num_regions + 1 )
+        print("No MAF blocks could be extracted for %i regions." % ( num_regions + 1 ))
     else:
-        print "No valid regions have been provided."
+        print("No valid regions have been provided.")
 
 if __name__ == "__main__":
     __main__()

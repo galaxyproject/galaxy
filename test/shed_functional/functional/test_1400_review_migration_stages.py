@@ -29,7 +29,7 @@ class TestToolMigrationStages( ShedTwillTestCase ):
                                       'blast_datatypes', 'bwa_wrappers', 'picard', 'lastz',
                                       'lastz_paired_reads', 'bowtie_color_wrappers', 'bowtie_wrappers',
                                       'xy_plot', 'bam_to_sam' ]
-        migrated_tool_dependencies = [ 'emboss', '5.0.0', 'freebayes', '0.9.4_9696d0ce8a962f7bb61c4791be5ce44312b81cf8',
+        migrated_tool_dependencies = [ 'emboss', '5.0.0', 'freebayes', '0.9.4_a46483351fd0196637614121868fb5c386612b55',
                                        'samtools', '0.1.18', 'blast+', '2.2.26+', 'bwa', '0.5.9', 'picard', '1.56.0',
                                        'lastz', '1.02.00', 'bowtie', '0.12.7', 'FreeBayes requires g++', 'ncurses', 'zlib',
                                        'blast.ncbi.nlm.nih.gov', 'fastx_toolkit', '0.0.13', 'samtools', '0.1.16', 'cufflinks',

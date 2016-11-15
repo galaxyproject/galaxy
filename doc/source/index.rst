@@ -52,13 +52,12 @@ Indices and tables
 * :ref:`search`
 
 Building this Documentation
-==========================
+===========================
 
 If you have your own copy of the Galaxy source code, you can also generate your own version of this documentation:
 
 ::
 
-    $ cd doc
-    $ make html
+    $ make -C doc/ html
 
 The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser.  Note that you will need to install Sphinx and a fair number of module dependencies before this will produce output.

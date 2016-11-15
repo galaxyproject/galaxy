@@ -25,7 +25,6 @@ var View = Backbone.View.extend({
         this.$title_icon    = this.$( '.portlet-title-icon' );
         this.$header        = this.$( '.portlet-header' );
         this.$content       = this.$( '.portlet-content' );
-        this.$footer        = this.$( '.portlet-footer' );
         this.$backdrop      = this.$( '.portlet-backdrop' );
         this.$buttons       = this.$( '.portlet-buttons' );
         this.$operations    = this.$( '.portlet-operations' );
@@ -112,11 +111,6 @@ var View = Backbone.View.extend({
         return this.$body;
     },
 
-    /** Return footer element */
-    footer: function() {
-        return this.$footer;
-    },
-
     /** Show portlet */
     show: function(){
         this.visible = true;
@@ -126,7 +120,7 @@ var View = Backbone.View.extend({
     /** Hide portlet */
     hide: function(){
         this.visible = false;
-        this.$el.fadeOut( 'fast' );
+        this.$el.hide();
     },
 
     /** Enable a particular button */
@@ -165,7 +159,6 @@ var View = Backbone.View.extend({
         this.collapsed = true;
         this.$content.height( '0%' );
         this.$body.hide();
-        this.$footer.hide();
         this.collapsible_button.setIcon( 'fa-eye-slash' );
     },
 
@@ -174,7 +167,6 @@ var View = Backbone.View.extend({
         this.collapsed = false;
         this.$content.height( '100%' );
         this.$body.fadeIn( 'fast' );
-        this.$footer.fadeIn( 'fast' );
         this.collapsible_button.setIcon( 'fa-eye' );
     },
 
@@ -197,7 +189,6 @@ var View = Backbone.View.extend({
                             .append( $( '<div/>' ).addClass( 'portlet-content' )
                                 .append( $( '<div/>' ).addClass( 'portlet-body' ) )
                                 .append( $( '<div/>' ).addClass( 'portlet-buttons' ) ) )
-                            .append( $( '<div/>' ).addClass( 'portlet-footer' ) )
                             .append( $( '<div/>' ).addClass( 'portlet-backdrop' ) );
     }
 });
