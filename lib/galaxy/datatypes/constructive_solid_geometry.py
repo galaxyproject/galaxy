@@ -10,9 +10,6 @@ from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
 
-from stl import mesh
-import numpy as np
-
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
 COLOR_OPTS = ['COLOR_SCALARS', 'red', 'green', 'blue']
