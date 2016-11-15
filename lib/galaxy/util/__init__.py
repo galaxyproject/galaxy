@@ -447,6 +447,7 @@ def pretty_print_json(json_data, is_json_string=False):
         json_data = json.loads(json_data)
     return json.dumps(json_data, sort_keys=True, indent=4)
 
+
 # characters that are valid
 valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
@@ -523,6 +524,7 @@ def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_ch
         return [ sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) for x in value ]
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
+
 
 valid_filename_chars = set( string.ascii_letters + string.digits + '_.' )
 invalid_filenames = [ '', '.', '..' ]
@@ -799,6 +801,7 @@ def xml_text(root, name=None):
         return text.strip()
     # No luck, return empty string
     return ''
+
 
 # asbool implementation pulled from PasteDeploy
 truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
@@ -1367,6 +1370,7 @@ def safe_str_cmp(a, b):
         rv |= ord(x) ^ ord(y)
     return rv == 0
 
+
 galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 
@@ -1522,6 +1526,7 @@ class ExecutionTimer(object):
     def __str__(self):
         elapsed = (time.time() - self.begin) * 1000.0
         return "(%0.3f ms)" % elapsed
+
 
 if __name__ == '__main__':
     import doctest

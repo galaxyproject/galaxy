@@ -122,6 +122,7 @@ As you can see most of these variables map directly to the command line
 arguments to the NodeJS script. There are a few extra parameters which will
 be needed if you run Galaxy behind an upstream proxy like nginx or
 Apache:
+
 .. code-block:: ini
 
     dynamic_proxy_external_proxy=True
@@ -182,7 +183,7 @@ Please note you will need to be using apache2.4 with ``mod_proxy_wstunnel``.
 
     # Project Jupyter / IPython specific. Other IEs may require their own routes.
     location ~ ^/galaxy/gie_proxy/jupyter/(?<nbtype>[^/]+)/api/kernels(?<rest>.*?)$ {
-        proxy_pass http://localhost:8800/galaxy/gie_proxy/$nbtype/api/kernels$rest;
+        proxy_pass http://localhost:8800/galaxy/gie_proxy/jupyter/$nbtype/api/kernels$rest;
         proxy_redirect off;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

@@ -1,6 +1,6 @@
 <tool id="CONVERTER_gff_to_interval_index_0" name="Convert GFF to Interval Index" version="1.0.0" hidden="true">
 <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">gff_to_interval_index_converter.py $input1 $output1</command>
+  <command interpreter="python">gff_to_interval_index_converter.py '$input1' '$output1'</command>
   <inputs>
     <page>
         <param format="gff" name="input1" type="data" label="Choose GFF file"/>

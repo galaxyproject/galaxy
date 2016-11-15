@@ -122,6 +122,52 @@ var DatasetListItemEdit = _super.extend(
         return $details;
     },
 
+    /************************************************************************** 
+     * Render help button to show tool help text without rerunning the tool.
+     * Issue #2100
+     */
+    _renderToolHelpButton : function() {
+        var datasetID = this.model.attributes.dataset_id;
+        var jobID = this.model.attributes.creating_job;
+
+        var parseToolBuild = function(data) {
+            var toolName = data.name;
+            var toolHelp = (data.help) ? data.help : "No help is available for the tool.";
+            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee; padding: 5px;"><hr><strong>Tool Help for ' + toolName + '</strong><br/><hr>';
+            helpString += toolHelp;
+            helpString += '</div>';
+            $('#dataset-' + datasetID).append($.parseHTML(helpString));
+        };
+        var parseToolID = function(data) {
+            $.ajax({
+                url: '/api/tools/' + data.tool_id + '/build'
+            }).done(function(data){
+                parseToolBuild(data);
+            }).fail(function(){console.log("Failed in api tools build call")});
+        };
+        
+        return faIconButton({
+            title: 'Tool Help',
+            classes: 'icon-btn',
+            href: '#',
+            faIcon: 'fa-question',
+            onclick: function() {
+                var divString = 'thdiv-' + datasetID;
+                if ($("#" + divString).length > 0)
+                {
+                    $("#" + divString).toggle();     
+                } else {
+                    $.ajax({
+                    url: '/api/jobs/' + jobID
+                }).done(function(data){
+                    parseToolID(data);
+                }).fail(function(){console.log('Failed on recovering /api/jobs/' + jobID + ' call.')});
+                }
+            }
+        });
+    },
+    //*************************************************************************
+
     /** Add less commonly used actions in the details section based on state */
     _renderSecondaryActions : function(){
         var actions = _super.prototype._renderSecondaryActions.call( this );
@@ -132,12 +178,12 @@ var DatasetListItemEdit = _super.extend(
             case STATES.ERROR:
                 // error button comes first
                 actions.unshift( this._renderErrButton() );
-                return actions.concat([ this._renderRerunButton() ]);
+                return actions.concat([ this._renderRerunButton(), this._renderToolHelpButton() ]);
             case STATES.OK:
             case STATES.FAILED_METADATA:
-                return actions.concat([ this._renderRerunButton(), this._renderVisualizationsButton() ]);
+                return actions.concat([ this._renderRerunButton(), this._renderVisualizationsButton(), this._renderToolHelpButton() ]);
         }
-        return actions.concat([ this._renderRerunButton() ]);
+        return actions.concat([ this._renderRerunButton(), this._renderToolHelpButton() ]);
     },
 
     /** Render icon-button to report an error on this dataset to the galaxy admin. */

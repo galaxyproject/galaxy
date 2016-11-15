@@ -325,6 +325,7 @@ def _rods_strerror( errno ):
                 irods.__rods_strerror_map[ v ] = name
     return irods.__rods_strerror_map.get( errno, 'GALAXY_NO_ERRNO_MAPPING_FOUND' )
 
+
 if irods is not None:
     irods.strerror = _rods_strerror
 

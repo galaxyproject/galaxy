@@ -68,7 +68,6 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
-        verbose_install_check = _string_as_bool(get_option("verbose_install_check"))
         ensure_channels = get_option("ensure_channels")
         use_path_exec = get_option("use_path_exec")
         if use_path_exec is None:
@@ -96,7 +95,6 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.disabled = not galaxy.tools.deps.installable.ensure_installed(conda_context, install_conda, self.auto_init)
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
-        self.verbose_install_check = verbose_install_check
 
     def resolve(self, name, version, type, **kwds):
         # Check for conda just not being there, this way we can enable
@@ -113,7 +111,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         conda_target = CondaTarget(name, version=version)
         is_installed = is_conda_target_installed(
-            conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
+            conda_target, conda_context=self.conda_context
         )
 
         job_directory = kwds.get("job_directory", None)
@@ -136,7 +134,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         if not is_installed:
             return NullDependency(version=version, name=name)
 
-        # Have installed conda_target and job_directory to send it too.
+        # Have installed conda_target and job_directory to send it to.
         # If dependency is for metadata generation, store environment in conda-metadata-env
         if kwds.get("metadata", False):
             conda_env = "conda-metadata-env"
@@ -149,7 +147,6 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             copy=self.copy_dependencies,
             conda_context=self.conda_context,
         )
-
         if not exit_code:
             return CondaDependency(
                 self.conda_context.activate,
@@ -159,12 +156,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 version
             )
         else:
-            if len(conda_environment) > 79:
-                # TODO: remove this once conda_build version 2 is released and packages have been rebuilt.
-                raise Exception("Conda dependency failed to build job environment. "
-                                "This is most likely a limitation in conda. "
-                                "You can try to shorten the path to the job_working_directory.")
-            raise Exception("Conda dependency seemingly installed but failed to build job environment.")
+            return NullDependency(version=version, name=name)
 
     def list_dependencies(self):
         for install_target in installed_conda_targets(self.conda_context):
@@ -184,7 +176,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         conda_target = CondaTarget(name, version=version)
 
         is_installed = is_conda_target_installed(
-            conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
+            conda_target, conda_context=self.conda_context
         )
 
         if is_installed:
@@ -196,7 +188,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         else:
             # Recheck if installed
             is_installed = is_conda_target_installed(
-                conda_target, conda_context=self.conda_context, verbose_install_check=self.verbose_install_check
+                conda_target, conda_context=self.conda_context
             )
         if not is_installed:
             log.debug("Removing failed conda install of {}, version '{}'".format(name, version))
@@ -244,4 +236,4 @@ def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
 
-__all__ = ('CondaDependencyResolver', )
+__all__ = ('CondaDependencyResolver', 'DEFAULT_ENSURE_CHANNELS')
