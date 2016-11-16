@@ -17,20 +17,22 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
             var changesets = Object.keys(this.options.repository.metadata);
             this.options.current_changeset = this.options.current_changeset || changesets[changesets.length - 1], 
             this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset], 
-            this.options.tools = this.options.current_metadata.tools, this.options.repository_dependencies_template = this.templateRepoDependencies, 
-            this.options.repository_dependency_template = this.templateRepoDependency, this.options.tps_template_global_select = this.templateGlobalSectionSelect, 
-            this.options.tps_template_tool_select = this.templateToolSectionSelect, this.options.tps_select_options = this.templatePanelSelectOptions, 
-            this.options.tool_dependencies = models.get("tool_dependencies"), this.options.shed_tool_conf = this.templateShedToolConf({
+            this.options.current_metadata.tool_shed_url = this.model.tool_shed_url, this.options.tools = this.options.current_metadata.tools, 
+            this.options.repository_dependencies_template = this.templateRepoDependencies, this.options.repository_dependency_template = this.templateRepoDependency, 
+            this.options.tps_template_global_select = this.templateGlobalSectionSelect, this.options.tps_template_tool_select = this.templateToolSectionSelect, 
+            this.options.tps_select_options = this.templatePanelSelectOptions, this.options.tool_dependencies = models.get("tool_dependencies"), 
+            this.options.shed_tool_conf = this.templateShedToolConf({
                 stc_html: models.get("shed_conf")
             }), this.options.panel_section_dict = models.get("panel_section_dict"), this.options.api_url = Galaxy.root + "api/tool_shed_repositories/install?async=True", 
             this.options = _.extend(this.options, options), this.$el.html(repo_details_template(this.options)), 
-            this.bindEvents(), $("#center").css("overflow", "auto");
+            this.checkInstalled(this.options.current_metadata), this.bindEvents(), $("#center").css("overflow", "auto");
         },
         bindEvents: function() {
             var that = this;
             $("#changeset").on("change", function() {
                 that.options.current_changeset = $("#changeset").find("option:selected").text(), 
-                that.reDraw();
+                that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset], 
+                that.checkInstalled(that.options.current_metadata), that.reDraw();
             }), $("#tool_panel_section_select").on("change", function() {
                 that.tpsSelection();
             }), $("#install_repository").on("click", function(ev) {
@@ -77,6 +79,29 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
                 });
             });
         },
+        checkInstalled: function(metadata) {
+            {
+                var that = this, params = {
+                    name: metadata.name,
+                    owner: metadata.owner
+                }, already_installed = !1;
+                that.repoQueued(metadata);
+            }
+            $.get(Galaxy.root + "api/tool_shed_repositories", params, function(data) {
+                for (var index = 0; index < data.length; index++) {
+                    var repository = data[index], installed = !repository.deleted && !repository.uninstalled;
+                    console.log({
+                        csm: metadata
+                    });
+                    var changeset_match = repository.changeset_revision == metadata.changeset_revision || repository.installed_changeset_revision == metadata.changeset_revision;
+                    repository.name == metadata.repository.name && repository.owner == metadata.repository.owner && installed && changeset_match && (already_installed = !0), 
+                    already_installed ? ($("#install_repository").prop("disabled", !0), $("#install_repository").val("This revision is already installed")) : ($("#install_repository").prop("disabled", !1), 
+                    $("#install_repository").val("Install this revision"));
+                }
+            }), that.repoQueued(metadata) || already_installed ? ($("#queue_install").hide(), 
+            $("#queue_install").val("This revision is already in the queue")) : ($("#queue_install").show(), 
+            $("#queue_install").val("Install this revision later"));
+        },
         panelSelect: function(params) {
             var tool_panel_section = {};
             return $("#tool_panel_section_select").length ? params.tool_panel_section_id = $("#tool_panel_section_select").find("option:selected").val() : params.new_tool_panel_section = $("#new_tool_panel_section").val(), 
@@ -93,6 +118,20 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
         },
         reDraw: function(options) {
             this.$el.empty(), this.initialize(options);
+        },
+        repoQueued: function(metadata) {
+            var that = this;
+            if (localStorage.repositories) {
+                var queue_key = (JSON.parse(localStorage.repositories), metadata.changeset_revision, 
+                that.queueKey(metadata));
+                return localStorage.repositories && (queued_repos = JSON.parse(localStorage.repositories)), 
+                queued_repos.hasOwnProperty(queue_key) ? !0 : !1;
+            }
+        },
+        queueKey: function(metadata) {
+            var shed_url = this.model.tool_shed_url;
+            return "/" == shed_url.substr(-1) && (shed_url = shed_url.substr(0, shed_url.length - 1)), 
+            shed_url + "|" + metadata.repository_id + "|" + metadata.changeset_revision;
         },
         tpsSelection: function() {
             new_tps = $("#tool_panel_section_select").find("option:selected").val(), $('.tool_panel_section_picker[default="active"]').each(function() {

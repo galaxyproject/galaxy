@@ -35,6 +35,7 @@ define(['mvc/toolshed/toolshed-model',
             var changesets = Object.keys(this.options.repository.metadata);
             this.options.current_changeset = (this.options.current_changeset || changesets[changesets.length - 1]);
             this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
+            this.options.current_metadata.tool_shed_url =  this.model.tool_shed_url;
             this.options.tools = this.options.current_metadata.tools;
             this.options.repository_dependencies_template = this.templateRepoDependencies;
             this.options.repository_dependency_template = this.templateRepoDependency;
@@ -47,6 +48,7 @@ define(['mvc/toolshed/toolshed-model',
             this.options.api_url = Galaxy.root + 'api/tool_shed_repositories/install?async=True';
             this.options = _.extend(this.options, options);
             this.$el.html(repo_details_template(this.options));
+            this.checkInstalled(this.options.current_metadata);
             this.bindEvents();
             $("#center").css('overflow', 'auto');
         },
@@ -55,6 +57,8 @@ define(['mvc/toolshed/toolshed-model',
             var that = this;
             $('#changeset').on('change', function () {
                 that.options.current_changeset = $('#changeset').find("option:selected").text();
+                that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
+                that.checkInstalled(that.options.current_metadata);
                 that.reDraw();
             });
             $('#tool_panel_section_select').on('change', function() {
@@ -119,6 +123,41 @@ define(['mvc/toolshed/toolshed-model',
             });
         },
 
+        checkInstalled: function(metadata) {
+            var that = this;
+            var params = {name: metadata.name, owner: metadata.owner};
+            var already_installed = false;
+            var queued = that.repoQueued(metadata);
+            $.get(Galaxy.root + 'api/tool_shed_repositories', params, function(data) {
+                for (var index = 0; index < data.length; index++) {
+                    var repository = data[index];
+                    var installed = !repository.deleted && !repository.uninstalled;
+                        console.log({csm: metadata});
+                    var changeset_match = repository.changeset_revision == metadata.changeset_revision ||
+                                          repository.installed_changeset_revision == metadata.changeset_revision;
+                    if (repository.name == metadata.repository.name && repository.owner == metadata.repository.owner && installed && changeset_match) {
+                        already_installed = true;
+                    }
+                    if (already_installed) {
+                        $('#install_repository').prop('disabled', true);
+                        $('#install_repository').val('This revision is already installed');
+                    }
+                    else {
+                        $('#install_repository').prop('disabled', false);
+                        $('#install_repository').val('Install this revision');
+                    }
+                }
+            });
+            if (that.repoQueued(metadata) || already_installed) {
+                $('#queue_install').hide();
+                $('#queue_install').val('This revision is already in the queue');
+            }
+            else {
+                $('#queue_install').show();
+                $('#queue_install').val('Install this revision later');
+            }
+        },
+
         panelSelect: function(params) {
             var tool_panel_section = {};
             if ($('#tool_panel_section_select').length) {
@@ -143,6 +182,32 @@ define(['mvc/toolshed/toolshed-model',
         reDraw: function(options) {
             this.$el.empty();
             this.initialize(options);
+        },
+
+        repoQueued: function(metadata) {
+            var that = this;
+            if (!localStorage.repositories) {
+                return;
+            }
+            var repository_queue = JSON.parse(localStorage.repositories);
+            var changeset = metadata.changeset_revision;
+            var queue_key = that.queueKey(metadata);
+            if (localStorage.repositories) {
+                queued_repos = JSON.parse(localStorage.repositories);
+            }
+            if (queued_repos.hasOwnProperty(queue_key)) {
+                return true;
+            }
+            return false;
+        },
+
+        queueKey: function (metadata) {
+            var shed_url = this.model.tool_shed_url;
+            // Make sure there is never a trailing slash on the shed URL.
+            if (shed_url.substr(-1) == '/') {
+                shed_url = shed_url.substr(0, shed_url.length - 1);
+            }
+            return shed_url + '|' + metadata.repository_id + '|' + metadata.changeset_revision;
         },
 
         tpsSelection: function() {
