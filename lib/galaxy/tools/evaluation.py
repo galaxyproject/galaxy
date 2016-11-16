@@ -454,10 +454,9 @@ class ToolEvaluator( object ):
         """
         Build command line to invoke this tool given a populated param_dict
         """
-	command = self.tool.command
-	param_dict = self.param_dict
-       interpreter = self.tool.interpreter
-        
+        command = self.tool.command
+        param_dict = self.param_dict
+        interpreter = self.tool.interpreter
         command_line = None
         if not command:
             return
@@ -483,7 +482,7 @@ class ToolEvaluator( object ):
             command_line = command_line.replace(executable, abs_executable, 1)
             command_line = interpreter + " " + command_line
         self.command_line = command_line
-    
+
     def __build_config_files( self ):
         """
         Build temporary file for file based parameter transfer if needed

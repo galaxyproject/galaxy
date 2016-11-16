@@ -2,7 +2,7 @@
 API operations for Workflows
 """
 from __future__ import absolute_import
-import ast
+
 import logging
 from six.moves.urllib.parse import unquote_plus
 
@@ -475,17 +475,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow
-	run_configs = build_workflow_run_configs(trans, workflow, payload)
-	index = 0
-	thingy = run_configs[0].param_map
-	
-	for key,value in thingy.iteritems():
-		for key1,val in value.iteritems():
-			if 'JPCNn681vcGV4KuvuT16' == key1:
-				val = '"' + val + '"'
-				workflow.steps[index].tool_inputs[unicode('JPCNn681vcGV4KuvuT16',"utf-8")] = val
-		index = index + 1
-	is_batch = payload.get('batch')
+        run_configs = build_workflow_run_configs(trans, workflow, payload)
+        is_batch = payload.get('batch')
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 

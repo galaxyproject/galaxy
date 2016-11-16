@@ -264,15 +264,27 @@ class TextToolParameter( ToolParameter ):
         d['area'] = self.area
         return d
 
-class PasswordToolParameter(TextToolParameter):
 
-	def get_initial_value(self,trans,context,history=None):
-		return self.value
+class PasswordToolParameter( ToolParameter ):
+    """
+    Parameter that can take on any password value.
 
-	def to_dict(self,trans,view='collection',value_mapper=None,other_values={}):
-		d = super(PasswordToolParameter,self).to_dict(trans)
-		d['type']="password"
-		return d
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch()
+    >>> p = PasswordToolParameter( None, XML( '<param name="_name" type="password" />' ) )
+    >>> print p.name
+    _name
+    >>> sorted( p.to_dict( trans ).items() )
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'PasswordToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'password')]
+    """
+    def from_json( self, value, trans=None, other_values={} ):
+        """Convert a value to a string representation suitable for persisting"""
+        if value:
+            return trans.security.encode_id( value )
+
+    def to_param_dict_string( self, value, other_values={} ):
+        return 'Passwords are only accessible through the shell environment.'
+
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -2071,8 +2083,8 @@ class LibraryDatasetToolParameter( ToolParameter ):
         return d
 
 parameter_types = dict(
-    password=PasswordToolParameter,
     text=TextToolParameter,
+    password=PasswordToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,
     boolean=BooleanToolParameter,

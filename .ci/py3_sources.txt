@@ -66,6 +66,7 @@ lib/galaxy/web/__init__.py
 lib/galaxy/webapps/galaxy/api/tours.py
 lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/userskeys.py
+lib/galaxy/webapps/reports/config.py
 lib/galaxy/webapps/reports/__init__.py
 lib/galaxy/webapps/tool_shed/controllers/user.py
 lib/galaxy/webapps/tool_shed/__init__.py

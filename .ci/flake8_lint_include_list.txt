@@ -264,6 +264,7 @@ lib/galaxy/sample_tracking/__init__.py
 lib/galaxy/sample_tracking/sample.py
 lib/galaxy/security/validate_user_input.py
 lib/galaxy/tags/
+lib/galaxy/tools/actions/__init__.py
 lib/galaxy/tools/actions/metadata.py
 lib/galaxy/tools/cwl/
 lib/galaxy/tools/data_manager/__init__.py
@@ -356,6 +357,7 @@ lib/galaxy/webapps/galaxy/controllers/tool_runner.py
 lib/galaxy/webapps/galaxy/controllers/userskeys.py
 lib/galaxy/webapps/galaxy/__init__.py
 lib/galaxy/webapps/__init__.py
+lib/galaxy/webapps/reports/config.py
 lib/galaxy/webapps/reports/controllers/__init__.py
 lib/galaxy/webapps/reports/controllers/query.py
 lib/galaxy/webapps/reports/__init__.py

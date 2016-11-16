@@ -48,6 +48,7 @@ def handle_outputs(job_directory=None):
             with open(target_path, "w") as f:
                 f.write(json.dumps(output))
 
+
 __all__ = (
     'handle_outputs',
 )
