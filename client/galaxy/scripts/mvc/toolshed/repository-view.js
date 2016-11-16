@@ -234,8 +234,10 @@ define(['mvc/toolshed/toolshed-model',
         },
 
         templateRepoDetails: _.template([
-            '<div class="tab-pane" id="repository_details" data-tsrid="<%= repository.id %>">',
-                '<h2 style="font-weight: normal;">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong></h2>',
+            '<div class="unified-panel-header" unselectable="on">',
+                '<div class="unified-panel-header-inner">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong></div>',
+            '</div>',
+            '<div class="unified-panel-body" id="repository_details" data-tsrid="<%= repository.id %>">',
                 '<form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">',
                     '<input type="hidden" id="repositories" name="<%= repository.id %>" value="ID" />',
                     '<input type="hidden" id="tool_shed_url" name="tool_shed_url" value="<%= tool_shed %>" />',

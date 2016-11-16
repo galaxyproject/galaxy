@@ -28,14 +28,16 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
         },
 
         templateCategoryContents: _.template([
-            '<div class="tab-pane" id="list_repositories">',
+            '<div class="unified-panel-header" unselectable="on">',
+                '<div class="unified-panel-header-inner">Repositories in <%= category.get("name") %></div>',
+            '</div>',
+            '<div class="unified-panel-body" id="list_repositories">',
                 '<div id="standard-search" style="height: 2em; margin: 1em;">',
                     '<span class="ui-widget" >',
                         '<input class="search-box-input" id="category_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />',
                     '</span>',
                 '</div>',
                 '<div style="clear: both; margin-top: 1em;">',
-                    '<h2>Repositories in <%= category.get("name") %></h2>',
                     '<table class="grid">',
                         '<thead id="grid-table-header">',
                             '<tr>',
