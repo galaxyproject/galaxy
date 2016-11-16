@@ -85,29 +85,30 @@ EditorFormView = Backbone.View.extend({
             var nodeType = node.type;
             add_node_icon($el.find('.portlet-title-text'), nodeType);
             var $titleText = $el.find(".portlet-title-text");
-            $titleText.data('last-value', $titleText.text());
-            $titleText.make_text_editable({
-                on_finish: function( newLabel ){
-                    var lastValue = $titleText.data("last-value");
-                    if( newLabel == lastValue ) {
-                        return;
-                    }
-
-                    var workflow = workflowView.workflow;
-                    if( workflow.attemptUpdateNodeLabel( node, newLabel ) ) {
-                        $el.find("input[name='label']").val(newLabel);
-                        $titleText.data("last-value", newLabel);
-                        $el.find('form').submit();
-                        if(newLabel == "") {
-                            // If label unset restore default name as title.
-                            $titleText.text(node.name);
+            if ($titleText.length > 0) {
+                $titleText.data('last-value', $titleText.text());
+                $titleText.make_text_editable({
+                    on_finish: function( newLabel ){
+                        var lastValue = $titleText.data("last-value");
+                        if( newLabel == lastValue ) {
+                            return;
                         }
-                    } else {
-                        Toastr.warning("Step label " + newLabel + " already exists, cannot update label.");
-                        $titleText.text(lastValue);
+                        var workflow = workflowView.workflow;
+                        if( workflow.attemptUpdateNodeLabel( node, newLabel ) ) {
+                            $el.find("input[name='label']").val(newLabel);
+                            $titleText.data("last-value", newLabel);
+                            $el.find('form').submit();
+                            if(newLabel == "") {
+                                // If label unset restore default name as title.
+                                $titleText.text(node.name);
+                            }
+                        } else {
+                            Toastr.warning("Step label " + newLabel + " already exists, cannot update label.");
+                            $titleText.text(lastValue);
+                        }
                     }
-                }
-            });
+                });
+            }
             ($el.find( 'form' ).length > 0) && $el.find( 'form' ).ajaxForm( {
                 type: 'POST',
                 dataType: 'json',
