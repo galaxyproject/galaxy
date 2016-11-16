@@ -73,7 +73,6 @@ def test_reports_conversion_1607_gzip():
             config = yaml.load(f)
         assert "uwsgi" in config
         uwsgi_config = config["uwsgi"]
-        print uwsgi_config
         assert uwsgi_config["http-auto-gzip"] is True, uwsgi_config
 
 
