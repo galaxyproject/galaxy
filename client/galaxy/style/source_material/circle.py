@@ -1,14 +1,13 @@
 #!/usr/bin/env python
-
 """
 usage: %prog width height bg_color hatch_color [color alpha stop_pos] +
 """
-
 from __future__ import division
 
 import sys
-import cairo
 from math import pi
+
+import cairo
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -27,6 +26,7 @@ def parse_css_color( color ):
     else:
         raise Exception( "Color should be 3 hex numbers" )
     return r / 256, g / 256, b / 256
+
 
 size = int( sys.argv[1] )
 

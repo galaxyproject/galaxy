@@ -8,17 +8,19 @@ import os
 import galaxy.tools
 import galaxy.tools.parameters
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.modules import module_types
-from galaxy.workflow.modules import ToolModule
-from galaxy.workflow.modules import WorkflowModuleFactory
+from galaxy.workflow.modules import (
+    module_types,
+    ToolModule,
+    WorkflowModuleFactory
+)
 from galaxy.workflow.render import WorkflowCanvas
 from galaxy.workflow.steps import attach_ordered_steps
-
 from tool_shed.tools import tool_validator
-
-from tool_shed.util import encoding_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
+from tool_shed.util import (
+    encoding_util,
+    metadata_util,
+    repository_util
+)
 
 log = logging.getLogger( __name__ )
 
@@ -143,6 +145,7 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
             module_method_kwds[ 'changeset_revision' ] = changeset_revision
             module_method_kwds[ 'tools_metadata' ] = tools_metadata
         return self.module_types[ type ].from_workflow_step( trans, step, **module_method_kwds )
+
 
 tool_shed_module_types = module_types.copy()
 tool_shed_module_types[ 'tool' ] = RepoToolModule

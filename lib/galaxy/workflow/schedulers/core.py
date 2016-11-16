@@ -1,14 +1,13 @@
 """ The class defines the stock Galaxy workflow scheduling plugin - currently
 it simply schedules the whole workflow up front when offered.
 """
-from ..schedulers import ActiveWorkflowSchedulingPlugin
+import logging
 
 from galaxy.work import context
+from galaxy.workflow import run, run_request
 
-from galaxy.workflow import run
-from galaxy.workflow import run_request
+from ..schedulers import ActiveWorkflowSchedulingPlugin
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -43,4 +42,5 @@ class CoreWorkflowSchedulingPlugin( ActiveWorkflowSchedulingPlugin ):
             workflow_invocation=workflow_invocation,
         )
 
-__all__ = [ 'CoreWorkflowSchedulingPlugin' ]
+
+__all__ = ( 'CoreWorkflowSchedulingPlugin', )

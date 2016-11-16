@@ -45,5 +45,6 @@ def main():
         sys.exit( 1 )
     return create_sequencer_configuration( key, base_url, request_form_filename, sample_form_filename, request_type_filename, email_addresses, return_formatted=True )
 
+
 if __name__ == "__main__":
     main()

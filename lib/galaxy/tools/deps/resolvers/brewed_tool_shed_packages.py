@@ -5,7 +5,6 @@ via shed2tap (e.g. https://github.com/jmchilton/homebrew-toolshed).
 """
 import logging
 import os
-
 from xml.etree import ElementTree as ET
 
 from .resolver_mixins import (
@@ -147,4 +146,4 @@ def build_recipe_name(package_name, package_version, repository_owner, repositor
     return base
 
 
-__all__ = ['HomebrewToolShedDependencyResolver']
+__all__ = ('HomebrewToolShedDependencyResolver', )

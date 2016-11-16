@@ -49,9 +49,8 @@ class Group( object, Dictifiable ):
         """
         raise TypeError( "Not implemented" )
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        # TODO: need to to_dict conditions.
-        group_dict = super( Group, self ).to_dict( view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        group_dict = super( Group, self ).to_dict()
         return group_dict
 
 
@@ -120,11 +119,11 @@ class Repeat( Group ):
             rval.append( rval_dict )
         return rval
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        repeat_dict = super( Repeat, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        repeat_dict = super( Repeat, self ).to_dict( trans )
 
         def input_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         repeat_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return repeat_dict
@@ -173,11 +172,11 @@ class Section( Group ):
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        section_dict = super( Section, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        section_dict = super( Section, self ).to_dict( trans )
 
         def input_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         section_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return section_dict
@@ -586,11 +585,11 @@ class Conditional( Group ):
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        cond_dict = super( Conditional, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        cond_dict = super( Conditional, self ).to_dict( trans )
 
         def nested_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         cond_dict[ "cases" ] = map( nested_to_dict, self.cases )
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
@@ -604,11 +603,11 @@ class ConditionalWhen( object, Dictifiable ):
         self.value = None
         self.inputs = None
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
-        when_dict = super( ConditionalWhen, self ).to_dict( view=view, value_mapper=value_mapper )
+    def to_dict( self, trans ):
+        when_dict = super( ConditionalWhen, self ).to_dict()
 
         def input_to_dict( input ):
-            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+            return input.to_dict( trans )
 
         when_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return when_dict

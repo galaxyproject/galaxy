@@ -128,6 +128,7 @@ class Neo4jDB(Neo4j, Data):
         self.add_composite_file('neostore.schemastore.db.id', is_binary=True)
         self.add_composite_file('neostore.transaction.db.0', is_binary=True)
 
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])

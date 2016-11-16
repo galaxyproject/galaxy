@@ -6,9 +6,10 @@ Created on 15/07/2014
 
 import logging
 
-from galaxy.exceptions import ConfigurationError
-from ..providers import AuthProvider
 from galaxy.auth import _get_bool
+from galaxy.exceptions import ConfigurationError
+
+from ..providers import AuthProvider
 
 log = logging.getLogger(__name__)
 
@@ -197,4 +198,5 @@ class ActiveDirectory(LDAP):
     logic in the future. """
     plugin_type = 'activedirectory'
 
-__all__ = ['LDAP', 'ActiveDirectory']
+
+__all__ = ('LDAP', 'ActiveDirectory')

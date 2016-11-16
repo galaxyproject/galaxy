@@ -11,6 +11,8 @@ documentation. These resources should be used together.
    dependency_resolvers.rst
 
    conda_faq.rst
+   
+   mulled_containers.rst
 
    interactive_environments.rst
 

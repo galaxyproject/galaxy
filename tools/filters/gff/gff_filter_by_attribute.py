@@ -3,7 +3,7 @@
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 # TODO: much of this code is copied from the Filter1 tool (filtering.py in tools/stats/). The commonalities should be
 # abstracted and leveraged in each filtering tool.
-from __future__ import division
+from __future__ import division, print_function
 
 import sys
 from json import loads
@@ -38,10 +38,10 @@ def check_for_executable( text, description='' ):
             if operand in secured:
                 stop_err( "Illegal value '%s' in %s '%s'" % ( operand, description, text ) )
 
+
 #
 # Process inputs.
 #
-
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
 cond_text = sys.argv[3]
@@ -97,6 +97,7 @@ def get_value(name, a_type, values_dict):
     else:
         return None
 
+
 # Read and filter input file, skipping invalid lines
 code = '''
 for i, line in enumerate( open( in_fname ) ):
@@ -125,9 +126,9 @@ for i, line in enumerate( open( in_fname ) ):
         %s
         if %s:
             lines_kept += 1
-            print >> out, line
+            print( line, file=out )
     except Exception as e:
-        print e
+        print( e )
         skipped_lines += 1
         if not invalid_line:
             first_invalid_line = i + 1
@@ -136,7 +137,7 @@ for i, line in enumerate( open( in_fname ) ):
 
 valid_filter = True
 try:
-    exec code
+    exec(code)
 except Exception as e:
     out.close()
     if str( e ).startswith( 'invalid syntax' ):
@@ -148,10 +149,10 @@ except Exception as e:
 if valid_filter:
     out.close()
     valid_lines = total_lines - skipped_lines
-    print 'Filtering with %s, ' % ( cond_text )
+    print('Filtering with %s, ' % ( cond_text ))
     if valid_lines > 0:
-        print 'kept %4.2f%% of %d lines.' % ( 100.0 * lines_kept / valid_lines, total_lines )
+        print('kept %4.2f%% of %d lines.' % ( 100.0 * lines_kept / valid_lines, total_lines ))
     else:
-        print 'Possible invalid filter condition "%s" or non-existent column referenced. See tool tips, syntax and examples.' % cond_text
+        print('Possible invalid filter condition "%s" or non-existent column referenced. See tool tips, syntax and examples.' % cond_text)
     if skipped_lines > 0:
-        print 'Skipped %d invalid lines starting at line #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line )
+        print('Skipped %d invalid lines starting at line #%d: "%s"' % ( skipped_lines, first_invalid_line, invalid_line ))

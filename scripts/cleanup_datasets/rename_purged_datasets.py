@@ -46,5 +46,6 @@ def main():
                 print("# Error, exception " + str( exc ) + " caught attempting to rename " + purged_filename, file=out)
     print("# Renamed " + str( renamed_files ) + " files", file=out)
 
+
 if __name__ == "__main__":
     main()

@@ -1,8 +1,10 @@
 import os
-from paste import request
-from paste import fileapp
-from paste.httpheaders import ETAG
 
+from paste import (
+    fileapp,
+    request
+)
+from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
 
 

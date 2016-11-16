@@ -157,10 +157,18 @@ special purpose.
    serves as an entry point to the high level development of the
    project.
 
--  ``beginner-friendly`` can be used to indicate a nice entry-level
+-  ``friendliness/beginner`` can be used to indicate a nice entry-level
    issue that only requires limited understanding of the larger Galaxy
    framework and ecosystem. This is useful for encouraging new
    contributors.
+   
+-  ``friendliness/intermediate`` can be used to indicate an advanced
+   level issue that requires decent understanding of the larger Galaxy
+   framework and system.
+         
+-  ``friendliness/unfriendly`` can be used to mark issues that require
+   deep understanding of the framework and/or exquisite programming
+   abilities.
 
 -  ``minor`` is a special tag used to generate release notes. It should
    only be applied to pull requests made by committers that fix
@@ -173,6 +181,18 @@ special purpose.
    this should be applied to at most a couple dozen pull requests each
    release and is used to prioritize important items of note for the
    top of release notes sections.
+   
+-  ``merge`` tag used to indicate PR that only merges a change that has
+   been previously added. Used to filter things out of release notes.
+   
+-  ``feature-request`` is used to indicate a request for change or feature.
+
+-  ``triage`` is a tag automatically added by a GalaxyBot to indicate that
+   the issue needs to be evaluated and properly tagged.
+   
+-  ``hacktoberfest`` is a tag that encourages contributions to Galaxy codebase
+   by including these issues in the `Hacktoberfest <https://hacktoberfest.digitalocean.com/>`__ event.
+   Similar to ``friendliness/beginner`` tag in other characteristics.
 
 
 The Roadmap

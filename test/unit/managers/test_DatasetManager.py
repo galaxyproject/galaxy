@@ -1,27 +1,25 @@
 # -*- coding: utf-8 -*-
 """
 """
-import os
-import imp
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 import sqlalchemy
 from six import string_types
 
-from galaxy import model
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model
+)
+from galaxy.managers import rbac_secured
+from galaxy.managers.base import SkipAttribute
+from galaxy.managers.datasets import (
+    DatasetDeserializer,
+    DatasetManager,
+    DatasetSerializer
+)
+from galaxy.managers.roles import RoleManager
 
 from .base import BaseTestCase
-
-from galaxy.managers.base import SkipAttribute
-from galaxy.managers.roles import RoleManager
-from galaxy.managers import rbac_secured
-from galaxy.managers.datasets import (
-    DatasetManager, DatasetSerializer, DatasetDeserializer )
-
 
 # =============================================================================
 default_password = '123456'
@@ -213,6 +211,7 @@ class DatasetRBACPermissionsTestCase( BaseTestCase ):
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
+
 
 DatasetSerializer.url_for = staticmethod( testable_url_for )
 

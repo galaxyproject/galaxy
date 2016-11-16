@@ -426,6 +426,7 @@ class MetadataInDataTableColumnValidator( Validator ):
                 return
         raise ValueError( self.message )
 
+
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
                         in_range=InRangeValidator,

@@ -1,0 +1,210 @@
+@import url(https://fonts.googleapis.com/css?family=Oxygen);
+@import url(https://fonts.googleapis.com/css?family=Consolas);
+@import url(https://fonts.googleapis.com/css?family=Droid+Serif);
+@import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+@import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+body {
+    font-family: 'Oxygen', 'PT Sans', Serif;
+}
+h1, h2, h3 {
+    font-weight: bold;
+}
+h1 {
+    font-size: 3em;
+    color: #ff9300;
+}
+h2 { font-size: 2em; }
+
+.title h1, h2 {
+    margin-bottom: 0px;
+    margin-top: 0px;
+    text-align: center;
+}
+
+.title p {
+    margin-top: 50px;
+    text-align: center;
+}
+
+.centered {
+    text-align: center;
+}
+
+img {
+    max-width: 100%;
+}
+
+.widen_image img {
+    max-width: 100%;
+    width: 100%;
+}
+
+.narrow_image img {
+    height: 500px;
+}
+
+h3 {
+    font-size: 1.8em;
+    position: absolute;
+    top: .5em;
+}
+
+.footnote {
+    position: absolute;
+    bottom: 3em;
+}
+
+.large {
+    font-size: 1.6em;
+}
+
+.larger {
+    font-size: 2em;
+}
+
+
+li p { line-height: 1.25em; }
+
+.normal {
+    font-size: 1em;
+}
+
+.smaller {
+    font-size: .8em;
+}
+
+a, a > code {
+    color: #ff9300;
+    text-decoration: none;
+}
+
+.code > pre, .code > code {
+    white-space: pre-wrap;
+}
+.remark-code, .remark-inline-code {
+    font-family: 'Consolas';
+    color: #ff9300;
+    font-size: 1.1em;
+}
+.slightly-smaller {
+    font-size: .9em;
+}
+    
+.remark-code-line-highlighted     {
+    background-color: #373832;
+}
+.pull-left {
+    float: left;
+    width: 47%;
+}
+.pull-right {
+    float: right;
+    width: 47%;
+}
+.pull-right ~ p {
+    clear: both;
+}
+#slideshow .slide .content code {
+}
+#slideshow .slide .content pre code {
+}
+
+.inverse {
+    background-color: #000;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    color: #ffffff;
+}
+
+i, em, b, strong {
+    color: #ff9300;
+}
+
+.inverse h1, .inverse h2 {
+    color: #f3f3f3;
+    line-height: 0.8em;
+}
+
+.white {
+    background-color: #ffffff;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    color: #000;
+}
+
+.strike {
+    text-decoration: line-through;
+}
+
+/* Slide-specific styling */
+#slide-inverse .footnote {
+    bottom: 12px;
+    left: 20px;
+}
+#slide-how .slides {
+    font-size: 0.9em;
+    position: absolute;
+    top:  151px;
+    right: 140px;
+}
+#slide-how .slides h3 {
+    margin-top: 0.2em;
+}
+#slide-how .slides .first, #slide-how .slides .second {
+    padding: 1px 20px;
+    height: 90px;
+    width: 120px;
+    -moz-box-shadow: 0 0 10px #777;
+    -webkit-box-shadow: 0 0 10px #777;
+    box-shadow: 0 0 10px #777;
+}
+#slide-how .slides .first {
+    background: #fff;
+    position: absolute;
+    top: 20%;
+    left: 20%;
+    z-index: 1;
+}
+#slide-how .slides .second {
+    position: relative;
+    background: #fff;
+    z-index: 0;
+}
+
+/* Two-column layout */
+.left-column {
+    color: #777;
+    width: 20%;
+    height: 92%;
+    float: left;
+}
+.left-column h2:last-of-type, .left-column h3:last-child {
+    color: #000;
+}
+.right-column {
+    width: 75%;
+    float: right;
+    padding-top: 1em;
+}
+
+/*First slide h1 orange, h2 white*/
+.special h1 {
+    color: #ff8800;
+}
+
+.special p {
+    color: #cbcbcb;
+}
+
+.special {
+    color: #ff8800;
+}
+
+/* Emphasis 2 */
+.special2 {
+    color: #00f900;
+}
+

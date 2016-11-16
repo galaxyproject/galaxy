@@ -7,7 +7,6 @@ it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
 import logging
-
 from os import environ, pathsep
 from os.path import exists, isdir, join
 from subprocess import PIPE, Popen
@@ -180,4 +179,5 @@ class ModuleDependency(Dependency):
 def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
-__all__ = ['ModuleDependencyResolver']
+
+__all__ = ('ModuleDependencyResolver', )

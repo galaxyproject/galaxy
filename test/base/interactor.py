@@ -2,12 +2,12 @@ from __future__ import print_function
 
 import os
 import re
+import time
 from json import dumps
 from logging import getLogger
 
-from requests import get, post, delete, patch
-from six import StringIO
-from six import text_type
+from requests import delete, get, patch, post
+from six import StringIO, text_type
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -118,17 +118,30 @@ class GalaxyInteractorApi( object ):
             metadata[ "file_ext" ] = expected_file_type
 
         if metadata:
-            import time
             time.sleep(5)
             dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
             for key, value in metadata.items():
                 try:
                     dataset_value = dataset.get( key, None )
-                    if text_type(dataset_value) != text_type(value):
-                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
-                        msg_params = ( key, value, dataset_value, dataset )
-                        msg = msg % msg_params
-                        raise Exception( msg )
+
+                    def compare(val, expected):
+                        if text_type(val) != text_type(expected):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+
+                    if isinstance(dataset_value, list):
+                        value = text_type(value).split(",")
+                        if len(value) != len(dataset_value):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s], lists differ in length. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+                        for val, expected in zip(dataset_value, value):
+                            compare(val, expected)
+                    else:
+                        compare(dataset_value, value)
                 except KeyError:
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )

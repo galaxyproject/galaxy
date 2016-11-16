@@ -494,6 +494,7 @@ class CollectedDatasetMatch( object ):
         except IndexError:
             return self.collector.default_visible
 
+
 UNSET = object()
 
 
