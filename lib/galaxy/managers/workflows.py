@@ -290,7 +290,6 @@ class WorkflowContentsManager(UsesAnnotations):
         # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
-
         for step_dict in self.__walk_step_dicts( data ):
             module, step = self.__module_from_dict( trans, steps, steps_by_external_id, step_dict )
             is_tool = is_tool_module_type( module.type )
@@ -298,11 +297,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 missing_tool_tup = ( module.tool_id, module.get_name(), module.tool_version, step_dict[ 'id' ] )
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append( missing_tool_tup )
-
-                # Save the entire step_dict in the unused config field, be parsed later
-                # when we do have the tool
-                step.config = json.dumps(step_dict)
-
             if module.get_errors():
                 workflow.has_errors = True
 
