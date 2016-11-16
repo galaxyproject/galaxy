@@ -242,23 +242,20 @@ class DefaultToolState( object ):
         """
         Convert the data to a string
         """
-        # Convert parameters to a dictionary of strings, and save curent
-        # page in that dict
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         return json.dumps( value )
 
-    def decode( self, value, tool, app ):
+    def decode( self, values, tool, app ):
         """
         Restore the state from a string
         """
-        values = json_fix( json.loads( value ) )
-        self.page = values.pop( "__page__" )
-        if '__rerun_remap_job_id__' in values:
-            self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
-        else:
-            self.rerun_remap_job_id = None
+        if isinstance( values, basestring ):
+            values = json_fix( json.loads( values ) )
+        values = values or {}
+        self.page = values.pop( "__page__" ) if "__page__" in values else None
+        self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" ) if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
     def copy( self ):

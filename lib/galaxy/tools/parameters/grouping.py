@@ -540,6 +540,7 @@ class Conditional( Group ):
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
                 return index
+        return 0
         raise ValueError( "No case matched value:", self.name, str_value )
 
     def value_to_basic( self, value, app ):

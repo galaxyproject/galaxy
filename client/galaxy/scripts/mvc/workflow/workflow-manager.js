@@ -189,13 +189,15 @@ function( Connector, Toastr ) {
                     // really a sneaky if statement
                     var cons = []
                     $.each( t.connectors, function ( i, c ) {
-                        var con_dict = { id: c.handle1.node.id, output_name: c.handle1.name };
-                        var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
-                        if( input_subworkflow_step_id !== undefined ) {
-                            con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
+                        if ( c.handle1 ) {
+                            var con_dict = { id: c.handle1.node.id, output_name: c.handle1.name };
+                            var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
+                            if( input_subworkflow_step_id !== undefined ) {
+                                con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
+                            }
+                            cons[i] = con_dict;
+                            input_connections[ t.name ] = cons;
                         }
-                        cons[i] = con_dict;
-                        input_connections[ t.name ] = cons;
                     });
                 });
                 var post_job_actions = {};

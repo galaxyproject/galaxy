@@ -88,7 +88,7 @@ class WorkflowModule( object ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self, state=None ):
+    def get_state( self ):
         """ Return a serializable representation of the persistable state of
         the step - for tools it DefaultToolState.encode returns a string and
         for simpler module types a json description is dumped out.
@@ -157,7 +157,31 @@ class WorkflowModule( object ):
         If `step_updates` are available they describe the runtime properties
         supplied by the workflow runner.
         """
-        raise TypeError( "Abstract method" )
+        state = self.get_runtime_state()
+        step_errors = {}
+        if step_updates:
+
+            def update_value( input, context, prefixed_name, **kwargs ):
+                if prefixed_name in step_updates:
+                    value, error = check_param( trans, input, step_updates.get( prefixed_name ), context )
+                    if error is not None:
+                        step_errors[ prefixed_name ] = error
+                    return value
+                return NO_REPLACEMENT
+
+            visit_input_values( self.get_runtime_inputs(), state.inputs, update_value, no_replacement_value=NO_REPLACEMENT )
+
+        return state, step_errors
+
+    def encode_runtime_state( self, trans, runtime_state ):
+        """ Takes the computed runtime state and serializes it during run request creation. """
+        return runtime_state.encode( Bunch( inputs=self.get_runtime_inputs() ), trans.app )
+
+    def decode_runtime_state( self, trans, runtime_state ):
+        """ Takes the serialized runtime state and decodes it when running the workflow. """
+        state = DefaultToolState()
+        state.decode( runtime_state, Bunch( inputs=self.get_runtime_inputs() ), trans.app )
+        return state
 
     def execute( self, trans, progress, invocation, step ):
         """ Execute the given workflow step in the given workflow invocation.
@@ -194,9 +218,9 @@ class SimpleWorkflowModule( WorkflowModule ):
     @classmethod
     def from_dict( Class, trans, d ):
         module = Class( trans )
-        state = loads( d["tool_state"] )
+        state = loads( d.get( "tool_state" ) )
         module.recover_state( state )
-        module.label = d.get("label", None) or None
+        module.label = d.get( "label" )
         return module
 
     @classmethod
@@ -219,34 +243,11 @@ class SimpleWorkflowModule( WorkflowModule ):
         step.tool_version = None
         step.tool_inputs = self.state
 
-    def get_state( self, state=None ):
-        if isinstance( state, DefaultToolState ):
-            fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-            return state.encode( fake_tool, self.trans.app )
+    def get_state( self ):
         return dumps( self.state )
 
     def update_state( self, incoming ):
         self.recover_state( incoming )
-
-    def recover_runtime_state( self, runtime_state ):
-        """ Take runtime state from persisted invocation and convert it
-        into a DefaultToolState object for use during workflow invocation.
-        """
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        state = DefaultToolState()
-        state.decode( runtime_state, fake_tool, self.trans.app )
-        return state
-
-    def compute_runtime_state( self, trans, step_updates=None ):
-        state = self.get_runtime_state()
-        step_errors = {}
-        if step_updates:
-            for name, param in self.get_runtime_inputs().iteritems():
-                value, error = check_param( trans, param, step_updates.get( name ), step_updates )
-                state.inputs[ name ] = value
-                if error:
-                    step_errors[ name ] = error
-        return state, step_errors
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -262,8 +263,7 @@ class SimpleWorkflowModule( WorkflowModule ):
 
     def get_config_form( self ):
         form = self._abstract_config_form( )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako",
-                                         module=self, form=form )
+        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
 
 class SubWorkflowModule( WorkflowModule ):
@@ -366,25 +366,6 @@ class SubWorkflowModule( WorkflowModule ):
 
     def get_content_id( self ):
         return self.trans.security.encode_id(self.subworkflow.id)
-
-    def recover_runtime_state( self, runtime_state ):
-        """ Take runtime state from persisted invocation and convert it
-        into a DefaultToolState object for use during workflow invocation.
-        """
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        state = DefaultToolState()
-        state.decode( runtime_state, fake_tool, self.trans.app )
-        return state
-
-    def get_state( self, state=None ):
-        if isinstance( state, DefaultToolState ):
-            fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-            return state.encode( fake_tool, self.trans.app )
-
-    def compute_runtime_state( self, trans, step_updates=None ):
-        state = self.get_runtime_state()
-        step_errors = {}
-        return state, step_errors
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -746,6 +727,8 @@ class ToolModule( WorkflowModule ):
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
+        if tool_id == 'aaddValue':
+            self.tool = False
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
@@ -764,15 +747,15 @@ class ToolModule( WorkflowModule ):
 
     @classmethod
     def from_dict( Class, trans, d ):
-        tool_id = d.get( 'content_id' )
+        tool_id = d.get( 'content_id' ) or d.get( 'tool_id' )
         if tool_id is None:
-            tool_id = d.get( 'tool_id' )  # Older workflows will have exported this as tool_id.
-        if tool_id is None:
-            raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
+            raise exceptions.RequestParameterInvalidException( "No tool id could be located for step [%s]." % d )
         tool_version = str( d.get( 'tool_version' ) )
         module = Class( trans, tool_id, tool_version=tool_version )
-        module.state = DefaultToolState()
         module.label = d.get( 'label' ) or None
+        module.recover_state( d.get( 'tool_state' ) )
+        module.post_job_actions = d.get( 'post_job_actions', {} )
+        module.workflow_outputs = d.get( 'workflow_outputs', [] )
         if module.tool:
             message = ""
             if tool_id != module.tool_id:
@@ -782,29 +765,21 @@ class ToolModule( WorkflowModule ):
             if message:
                 log.debug( message )
                 module.version_changes.append( message )
-            if d.get( 'tool_state' ):
-                module.state.decode( d.get( 'tool_state' ), module.tool, module.trans.app )
-        else:
-            module.state.inputs = loads( d.get( 'tool_state' ) )
-        module.post_job_actions = d.get( 'post_job_actions', {} )
-        module.workflow_outputs = d.get( 'workflow_outputs', [] )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step ):
-        toolbox = trans.app.toolbox
-        tool_id = step.tool_id
-        if toolbox:
-            # See if we have access to a different version of the tool.
-            # TODO: If workflows are ever enhanced to use tool version
-            # in addition to tool id, enhance the selection process here
-            # to retrieve the correct version of the tool.
-            matched_tool_id = toolbox.get_tool_id( tool_id )
-            tool_id = matched_tool_id or tool_id
+        tool_id = trans.app.toolbox.get_tool_id( step.tool_id ) or step.tool_id
         tool_version = step.tool_version
         module = Class( trans, tool_id, tool_version=tool_version )
-        message = ""
+        module.label = step.label or None
+        module.workflow_outputs = step.workflow_outputs
+        module.recover_state( step.tool_inputs )
+        module.post_job_actions = {}
+        for pja in step.post_job_actions:
+            module.post_job_actions[pja.action_type] = pja
         if module.tool:
+            message = ""
             if step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split( "/repos/" )[0]
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
@@ -821,49 +796,39 @@ class ToolModule( WorkflowModule ):
             if message:
                 log.debug(message)
                 module.version_changes.append(message)
-        module.recover_state( step.tool_inputs )
-        module.workflow_outputs = step.workflow_outputs
-        module.label = step.label or None
-        pjadict = {}
-        for pja in step.post_job_actions:
-            pjadict[pja.action_type] = pja
-        module.post_job_actions = pjadict
         return module
 
     def recover_state( self, state, **kwds ):
         """ Recover module configuration state property (a `DefaultToolState`
         object) using the tool's `params_from_strings` method.
         """
-        app = self.trans.app
         self.state = DefaultToolState()
-        self.state.inputs = self.tool.params_from_strings( state, app, ignore_errors=kwds.get( "ignore_errors", True ) ) if self.tool else state
+        if self.tool:
+            self.state.decode( state, self.tool, self.trans.app )
+        else:
+            self.state.inputs = state
 
-    def recover_runtime_state( self, runtime_state ):
+    def decode_runtime_state( self, runtime_state ):
         """ Take runtime state from persisted invocation and convert it
         into a DefaultToolState object for use during workflow invocation.
         """
         if self.tool:
-            state = DefaultToolState()
-            app = self.trans.app
-            state.decode( runtime_state, self.tool, app )
+            state = super( ToolModule, self ).decode_runtime_state( self.trans, runtime_state )
             state_dict = loads( runtime_state )
             if RUNTIME_STEP_META_STATE_KEY in state_dict:
                 self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
-                return state
+            return state
         else:
             raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
 
     def save_to_step( self, step ):
-        if self.tool:
-            step.type = self.type
-            step.tool_id = self.tool_id
-            step.tool_version = self.get_tool_version()
-            step.tool_inputs = self.tool.params_to_strings( self.state.inputs, self.trans.app )
-            for k, v in self.post_job_actions.iteritems():
-                pja = self.__to_pja( k, v, step )
-                self.trans.sa_session.add( pja )
-        else:
-            raise ToolMissingException( "Tool %s missing. Cannot save workflow state." % self.tool_id )
+        step.type = self.type
+        step.tool_id = self.tool_id
+        step.tool_version = self.get_tool_version()
+        step.tool_inputs = self.get_state()
+        for k, v in self.post_job_actions.iteritems():
+            pja = self.__to_pja( k, v, step )
+            self.trans.sa_session.add( pja )
 
     def __to_pja( self, key, value, step ):
         if 'output_name' in value:
@@ -886,8 +851,10 @@ class ToolModule( WorkflowModule ):
         return self.tool.version if self.tool else self.tool_version
 
     def get_state( self, state=None ):
-        state = state or self.state
-        return state.encode( self.tool, self.trans.app ) if self.tool else dumps( state.inputs )
+        if self.tool:
+            return self.state.encode( self.tool, self.trans.app )
+        else:
+            return dumps( self.state.inputs )
 
     def get_errors( self ):
         return None if self.tool else "Tool is not installed."
@@ -949,6 +916,9 @@ class ToolModule( WorkflowModule ):
                 )
         return data_outputs
 
+    def get_runtime_state( self ):
+        return self.state
+
     def get_runtime_input_dicts( self, step_annotation ):
         # Step is a tool and may have runtime inputs.
         input_dicts = []
@@ -962,6 +932,9 @@ class ToolModule( WorkflowModule ):
                     if type( partval ) == RuntimeValue:
                         input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
         return input_dicts
+
+    def get_runtime_inputs( self, **kwds ):
+        return self.tool.inputs
 
     def get_post_job_actions( self, incoming ):
         return ActionBox.handle_incoming( incoming )
@@ -977,9 +950,8 @@ class ToolModule( WorkflowModule ):
         self.recover_state( incoming )
 
     def check_and_update_state( self ):
-        inputs = self.state.inputs
         if self.tool:
-            return self.tool.check_and_update_param_values( inputs, self.trans, workflow_building_mode=True )
+            return self.tool.check_and_update_param_values( self.state.inputs, self.trans, workflow_building_mode=True )
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
@@ -988,17 +960,8 @@ class ToolModule( WorkflowModule ):
             state = self.state
             self.runtime_post_job_actions = {}
             if step_updates:
-
-                def update_value( input, context, prefixed_name, **kwargs ):
-                    if prefixed_name in step_updates or '__force_update__' + prefixed_name in step_updates:
-                        value, error = check_param( trans, input, step_updates.get( prefixed_name ), context )
-                        if error is not None:
-                            step_errors[ prefixed_name ] = error
-                        return value
-                    return NO_REPLACEMENT
-
+                state, step_errors = super( ToolModule, self ).compute_runtime_state( trans, step_updates )
                 self.runtime_post_job_actions = step_updates.get( RUNTIME_POST_JOB_ACTIONS_KEY, {} )
-                visit_input_values( self.tool.inputs, state.inputs, update_value, no_replacement_value=NO_REPLACEMENT )
                 step_metadata_runtime_state = self.__step_meta_runtime_state()
                 if step_metadata_runtime_state:
                     state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state

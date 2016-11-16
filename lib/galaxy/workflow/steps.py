@@ -14,7 +14,7 @@ def attach_ordered_steps( workflow, steps ):
     fails - the workflow contains cycles so it mark it as such.
     """
     ordered_steps = order_workflow_steps( steps )
-    workflow.has_cycles = bool( ordered_steps )
+    workflow.has_cycles = not bool( ordered_steps )
     for i, step in enumerate( ordered_steps or steps ):
         step.order_index = i
         workflow.steps.append( step )
