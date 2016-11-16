@@ -4,8 +4,8 @@ import shutil
 import tempfile
 import unittest
 
-from galaxy.util import bunch
 from galaxy.jobs import JobConfiguration
+from galaxy.util import bunch
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.

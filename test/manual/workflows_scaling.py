@@ -20,7 +20,8 @@ from bioblend import galaxy
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
-from api import helpers, yaml_to_workflow
+from api import helpers
+from api.workflows_format_2.converter import python_to_workflow
 
 LONG_TIMEOUT = 1000000000
 DESCRIPTION = "Script to exercise the workflow engine."
@@ -53,7 +54,7 @@ def main(argv=None):
 
     gi = _gi(args)
 
-    workflow = yaml_to_workflow.python_to_workflow(workflow_struct)
+    workflow = python_to_workflow(workflow_struct)
     workflow_info = gi.workflows.import_workflow_json(workflow)
     workflow_id = workflow_info["id"]
 
