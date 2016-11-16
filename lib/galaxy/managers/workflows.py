@@ -339,6 +339,10 @@ class WorkflowContentsManager(UsesAnnotations):
         Builds workflow dictionary used by run workflow form
         """
         workflow = stored.latest_workflow
+        if len( workflow.steps ) == 0:
+            raise exceptions.MessageException( 'Workflow cannot be run because it does not have any steps.' )
+        if workflow.has_cycles:
+            raise exceptions.MessageException( 'Workflow cannot be run because it contains cycles.' )
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector( trans )
         has_upgrade_messages = False
