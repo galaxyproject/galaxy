@@ -8,7 +8,6 @@ done
 
 # Conda Python is in use, do not use virtualenv
 if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' ; then
-    SET_VENV=0
     CONDA_ALREADY_INSTALLED=1
 else
     CONDA_ALREADY_INSTALLED=0
@@ -75,8 +74,8 @@ fi
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
-if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
-    # If .venv does not exist, attempt to create it.
+if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 -a $CONDA_ALREADY_INSTALLED -eq 0]; then
+    # If .venv does not exist, and there is no conda available, attempt to create it.
     if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
     then
         # Ensure Python is a supported version before creating .venv
