@@ -9,7 +9,6 @@ import os
 import re
 import tarfile
 import tempfile
-import time
 import threading
 import urllib
 from datetime import datetime
@@ -120,12 +119,14 @@ class ToolBox( BaseGalaxyToolBox ):
         reload_toolbox(self.app)
 
     def handle_panel_update(self, section_dict):
-        send_control_task(self.app, 'create_panel_section', noop_self=False, kwargs=section_dict)
-        max_wait = 10
-        i = 0
-        while not section_dict['id'] in self._tool_panel and i < max_wait:
-            i += 1
-            time.sleep(1)
+        """
+        Sends a panel update to all threads/processes.
+        """
+        send_control_task(self.app, 'create_panel_section', kwargs=section_dict)
+        # The following local call to self.create_section should be unnecessary
+        # but occasionally the local ToolPanelElements instance appears to not
+        # get updated.
+        self.create_section(section_dict)
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
