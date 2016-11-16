@@ -78,7 +78,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
     if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
     then
         if [ $CONDA_ALREADY_INSTALLED -eq 1 ]; then
-            echo "There is no existing Galaxy virtualenv and Conda is available, so we are skipping virtualenv creation."
+            echo "There is no existing Galaxy virtualenv and Conda is available, so we are skipping virtualenv creation.  Please be aware that this may cause missing dependencies."
             SET_VENV=0
         else
             # If .venv does not exist, and there is no conda available, attempt to create it.
@@ -134,8 +134,6 @@ if [ $SET_VENV -eq 1 ]; then
         echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in $GALAXY_VIRTUAL_ENV, or activate one."
         exit 1
     fi
-elif [ $SET_VENV -eq 0 -a $CONDA_ALREADY_INSTALLED -eq 1 ]; then
-    echo "Warning: You have Conda installed. Skipping virtualenv activation. This could cause missing dependencies."
 fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
