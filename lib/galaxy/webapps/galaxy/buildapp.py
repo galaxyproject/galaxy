@@ -458,53 +458,19 @@ def populate_api_routes( webapp, app ):
     # ===== USERS API =====
     # ================================
 
-    webapp.mapper.connect( 'get_information',
-                           '/api/users/{id}/information',
-                           controller='users',
-                           action='get_information',
-                           conditions=dict( method=["GET"] ) )
-
-    webapp.mapper.connect( 'set_information',
-                           '/api/users/{id}/information',
-                           controller='users',
-                           action='set_information',
-                           conditions=dict( method=["PUT"] ) )
-
-    webapp.mapper.connect( 'password',
-                           '/api/users/{id}/password',
-                           controller='users',
-                           action='password',
-                           conditions=dict( method=["GET", "PUT"] ) )
-
-    webapp.mapper.connect( 'permissions',
-                           '/api/users/{id}/permissions',
-                           controller='users',
-                           action='permissions',
-                           conditions=dict( method=["GET", "PUT"] ) )
-
-    webapp.mapper.connect( 'api_key',
-                           '/api/users/{id}/api_key',
-                           controller='users',
-                           action='api_key',
-                           conditions=dict( method=["GET", "PUT", "POST"] ) )
-
-    webapp.mapper.connect( 'toolbox_filters',
-                           '/api/users/{id}/toolbox_filters',
-                           controller='users',
-                           action='toolbox_filters',
-                           conditions=dict( method=["GET", "PUT"] ) )
-
-    webapp.mapper.connect( 'communication',
-                           '/api/users/{id}/communication',
-                           controller='users',
-                           action='communication',
-                           conditions=dict( method=["GET", "PUT"] ) )
-
-    webapp.mapper.connect( 'logout',
-                           '/api/users/{id}/logout',
-                           controller='users',
-                           action='logout',
-                           conditions=dict( method=["POST"] ) )
+    webapp.mapper.connect( 'api_key', '/api/users/{id}/api_key', controller='users', action='api_key', conditions=dict( method=["POST"] ) )
+    webapp.mapper.connect( 'get_api_key', '/api/users/{id}/api_key', controller='users', action='api_key', conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( 'set_api_key', '/api/users/{id}/api_key', controller='users', action='api_key', conditions=dict( method=["PUT"] ) )
+    webapp.mapper.connect( 'get_information', '/api/users/{id}/information', controller='users', action='get_information', conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( 'set_information', '/api/users/{id}/information', controller='users', action='set_information', conditions=dict( method=["PUT"] ) )
+    webapp.mapper.connect( 'get_password', '/api/users/{id}/password', controller='users', action='get_password', conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( 'set_password', '/api/users/{id}/password', controller='users', action='set_password', conditions=dict( method=["PUT"] ) )
+    webapp.mapper.connect( 'get_permissions', '/api/users/{id}/permissions', controller='users', action='get_permissions', conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( 'set_permissions', '/api/users/{id}/permissions', controller='users', action='set_permissions', conditions=dict( method=["PUT"] ) )
+    webapp.mapper.connect( 'get_toolbox_filters', '/api/users/{id}/toolbox_filters', controller='users', action='get_toolbox_filters', conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( 'set_toolbox_filters', '/api/users/{id}/toolbox_filters', controller='users', action='set_toolbox_filters', conditions=dict( method=["PUT"] ) )
+    webapp.mapper.connect( 'get_communication', '/api/users/{id}/communication', controller='users', action='get_communication', conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( 'set_communication', '/api/users/{id}/communication', controller='users', action='set_communication', conditions=dict( method=["PUT"] ) )
 
     # ========================
     # ===== WEBHOOKS API =====

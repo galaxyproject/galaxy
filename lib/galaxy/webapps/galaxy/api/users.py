@@ -406,119 +406,134 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             return 'Email cannot be more than 255 characters in length.'
 
     @expose_api
-    def password(self, trans, id, payload={}, **kwd):
+    def get_password(self, trans, id, payload={}, **kwd):
+        """
+        Return available password inputs.
+        """
+        return {'message': 'Password unchanged.',
+                'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
+                            {'name': 'password', 'type': 'password', 'label': 'New password'},
+                            {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
+                            {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None} ]}
+
+    @expose_api
+    def set_password(self, trans, id, payload={}, **kwd):
         """
         Allows to change a user password.
         """
-        if trans.get_request_method() == 'PUT':
-            password = payload.get('password')
-            confirm = payload.get('confirm')
-            current = payload.get('current')
-            token = payload.get('token')
-            token_result = None
-            if token:
-                # If a token was supplied, validate and set user
-                token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-                if not token_result or not token_result.expiration_time > datetime.utcnow():
-                    raise MessageException('Invalid or expired password reset token, please request a new one.')
-                user = token_result.user
-            else:
-                # The user is changing their own password, validate their current password
-                user = self._get_user(trans, id)
-                (ok, message) = trans.app.auth_manager.check_change_password(user, current)
-                if not ok:
-                    raise MessageException(message)
-            if user:
-                # Validate the new password
-                message = validate_password(trans, password, confirm)
-                if message:
-                    raise MessageException(message)
-                else:
-                    # Save new password
-                    user.set_password_cleartext(password)
-                    # if we used a token, invalidate it and log the user in.
-                    if token_result:
-                        trans.handle_user_login(token_result.user)
-                        token_result.expiration_time = datetime.utcnow()
-                        trans.sa_session.add(token_result)
-                    # Invalidate all other sessions
-                    for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
-                                                     .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
-                        other_galaxy_session.is_valid = False
-                        trans.sa_session.add(other_galaxy_session)
-                    trans.sa_session.add(user)
-                    trans.sa_session.flush()
-                    trans.log_event('User change password')
-                    return {'message': 'Password has been saved.'}
-            raise MessageException('Failed to determine user, access denied.')
+        password = payload.get('password')
+        confirm = payload.get('confirm')
+        current = payload.get('current')
+        token = payload.get('token')
+        token_result = None
+        if token:
+            # If a token was supplied, validate and set user
+            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
+            if not token_result or not token_result.expiration_time > datetime.utcnow():
+                raise MessageException('Invalid or expired password reset token, please request a new one.')
+            user = token_result.user
         else:
-            return {'message': 'Password unchanged.',
-                    'inputs': [ {'name': 'current', 'type': 'password', 'label': 'Current password'},
-                                {'name': 'password', 'type': 'password', 'label': 'New password'},
-                                {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
-                                {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None} ]}
+            # The user is changing their own password, validate their current password
+            user = self._get_user(trans, id)
+            (ok, message) = trans.app.auth_manager.check_change_password(user, current)
+            if not ok:
+                raise MessageException(message)
+        if user:
+            # Validate the new password
+            message = validate_password(trans, password, confirm)
+            if message:
+                raise MessageException(message)
+            else:
+                # Save new password
+                user.set_password_cleartext(password)
+                # if we used a token, invalidate it and log the user in.
+                if token_result:
+                    trans.handle_user_login(token_result.user)
+                    token_result.expiration_time = datetime.utcnow()
+                    trans.sa_session.add(token_result)
+                # Invalidate all other sessions
+                for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
+                                                 .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                    other_galaxy_session.is_valid = False
+                    trans.sa_session.add(other_galaxy_session)
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+                trans.log_event('User change password')
+                return {'message': 'Password has been saved.'}
+        raise MessageException('Failed to determine user, access denied.')
 
     @expose_api
-    def permissions(self, trans, id, payload={}, **kwd):
+    def get_permissions(self, trans, id, payload={}, **kwd):
+        """
+        Get the user's default permissions for the new histories
+        """
+        user = self._get_user(trans, id)
+        roles = user.all_roles()
+        permitted_actions = trans.app.model.Dataset.permitted_actions.items()
+        inputs = []
+        for index, action in permitted_actions:
+            inputs.append({'type': 'select',
+                           'multiple': True,
+                           'optional': True,
+                           'name': index,
+                           'label': action.action,
+                           'help': action.description,
+                           'options': [(r.name, r.id) for r in roles],
+                           'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
+        return {'message': 'Permissions unchanged.', 'inputs': inputs}
+
+    @expose_api
+    def set_permissions(self, trans, id, payload={}, **kwd):
         """
         Set the user's default permissions for the new histories
         """
         user = self._get_user(trans, id)
         roles = user.all_roles()
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-        if trans.get_request_method() == 'PUT':
-            permissions = {}
-            for index, action in permitted_actions:
-                action_id = trans.app.security_agent.get_action(action.action).action
-                permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in payload.get(index, [])]
-            trans.app.security_agent.user_set_default_permissions(user, permissions)
-            return {'message': 'Permissions have been saved.'}
-        else:
-            inputs = []
-            for index, action in permitted_actions:
-                inputs.append({'type': 'select',
-                               'multiple': True,
-                               'optional': True,
-                               'name': index,
-                               'label': action.action,
-                               'help': action.description,
-                               'options': [(r.name, r.id) for r in roles],
-                               'value': [a.role.id for a in user.default_permissions if a.action == action.action]})
-            return {'message': 'Permissions unchanged.', 'inputs': inputs}
+        permissions = {}
+        for index, action in permitted_actions:
+            action_id = trans.app.security_agent.get_action(action.action).action
+            permissions[action_id] = [trans.sa_session.query(trans.app.model.Role).get(x) for x in (payload.get(index) or [])]
+        trans.app.security_agent.user_set_default_permissions(user, permissions)
+        return {'message': 'Permissions have been saved.'}
 
     @expose_api
-    def toolbox_filters(self, trans, id, payload={}, **kwd):
+    def get_toolbox_filters(self, trans, id, payload={}, **kwd):
         """
         API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
         The user can activate them and the choice is stored in user_preferences.
         """
         user = self._get_user(trans, id)
-        filter_types = odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                              ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_section_filters}),
-                              ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_label_filters})])
-        if trans.get_request_method() == 'PUT':
-            for filter_type in filter_types:
-                new_filters = []
-                for prefixed_name in payload:
-                    prefix = filter_type + '|'
-                    if prefixed_name.startswith(filter_type):
-                        new_filters.append(prefixed_name[len(prefix):])
-                user.preferences[filter_type] = ','.join(new_filters)
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-            return {'message': 'Toolbox filters have been saved.'}
-        else:
-            saved_values = {}
-            for name, value in user.preferences.items():
-                if name in filter_types:
-                    saved_values[name] = listify(value, do_strip=True)
-            inputs = []
-            factory = FilterFactory(trans.app.toolbox)
-            for filter_type in filter_types:
-                self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values)
-            return {'message': 'Toolbox filters unchanged.', 'inputs': inputs}
+        filter_types = self._get_filter_types()
+        saved_values = {}
+        for name, value in user.preferences.items():
+            if name in filter_types:
+                saved_values[name] = listify(value, do_strip=True)
+        inputs = []
+        factory = FilterFactory(trans.app.toolbox)
+        for filter_type in filter_types:
+            self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values)
+        return {'message': 'Toolbox filters unchanged.', 'inputs': inputs}
+
+    @expose_api
+    def set_toolbox_filters(self, trans, id, payload={}, **kwd):
+        """
+        API call to update toolbox filters data.
+        """
+        user = self._get_user(trans, id)
+        filter_types = self._get_filter_types()
+        for filter_type in filter_types:
+            new_filters = []
+            for prefixed_name in payload:
+                prefix = filter_type + '|'
+                if prefixed_name.startswith(filter_type):
+                    new_filters.append(prefixed_name[len(prefix):])
+            user.preferences[filter_type] = ','.join(new_filters)
+        trans.sa_session.add(user)
+        trans.sa_session.flush()
+        return {'message': 'Toolbox filters have been saved.'}
 
     def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
         filter_inputs = list()
@@ -538,50 +553,76 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         if filter_inputs:
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
+    def _get_filter_types(self, trans):
+        return odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
+                      ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_section_filters}),
+                      ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_label_filters})])
+
     @expose_api
     def api_key(self, trans, id, payload={}, **kwd):
         """
-        Get/Create API key.
+        Create API key.
         """
         user = self._get_user(trans, id)
-        if trans.get_request_method() == 'POST':
-            return self.create_api_key(trans, user)
-        elif trans.get_request_method() == 'PUT':
-            self.create_api_key(trans, user)
-            message = 'Generated a new web API key.'
-        else:
-            message = 'API key unchanged.'
-        webapp_name = 'Galaxy' if trans.webapp.name == 'galaxy' else 'the Tool Shed'
+        return self.create_api_key(trans, user)
+
+    @expose_api
+    def get_api_key(self, trans, id, payload={}, **kwd):
+        """
+        Get API key inputs.
+        """
+        user = self._get_user(trans, id)
+        return self._build_inputs_api_key(trans, id, payload, **kwd)
+
+    @expose_api
+    def set_api_key(self, trans, id, payload={}, **kwd):
+        """
+        Get API key inputs with new API key.
+        """
+        user = self._get_user(trans, id)
+        self.create_api_key(trans, user)
+        return self._build_inputs_api_key(user, message='Generated a new web API key.')
+
+    @expose_api
+    def _build_inputs_api_key(self, user, message='' ):
+        """
+        Build API key inputs.
+        """
         inputs = [{'name': 'api-key',
                    'type': 'text',
                    'label': 'Current API key:',
                    'value': user.api_keys[0].key if user.api_keys else 'Not available.',
                    'readonly': True,
-                   'help': ' An API key will allow you to access %s via its web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.' % webapp_name}]
+                   'help': ' An API key will allow you to access via web API. Please note that this key acts as an alternate means to access your account and should be treated with the same care as your login password.'}]
         return {'message': message, 'inputs': inputs}
 
     @expose_api
-    def communication(self, trans, id, payload={}, **kwd):
+    def get_communication(self, trans, id, payload={}, **kwd):
+        """
+        Build communication server inputs.
+        """
+        user = self._get_user(trans, id)
+        return {'message': 'Communication server settings unchanged.',
+                'inputs': [{'name': 'enable',
+                            'type': 'boolean',
+                            'label': 'Enable communication',
+                            'value': user.preferences.get('communication_server', 'false')}]}
+
+    @expose_api
+    def set_communication(self, trans, id, payload={}, **kwd):
         """
         Allows the user to activate/deactivate the communication server.
         """
         user = self._get_user(trans, id)
-        enable = payload.get('enable')
-        if enable is not None:
-            if enable == 'true':
-                message = 'Your communication server has been activated.'
-            else:
-                message = 'Your communication server has been disabled.'
-            user.preferences['communication_server'] = enable
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-            return {'message': message}
+        enable = payload.get('enable', 'false')
+        if enable == 'true':
+            message = 'Your communication server has been activated.'
         else:
-            return {'message': 'Communication server settings unchanged.',
-                    'inputs': [{'name': 'enable',
-                                'type': 'boolean',
-                                'label': 'Enable communication',
-                                'value': user.preferences.get('communication_server', 'false')}]}
+            message = 'Your communication server has been disabled.'
+        user.preferences['communication_server'] = enable
+        trans.sa_session.add(user)
+        trans.sa_session.flush()
+        return {'message': message}
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
