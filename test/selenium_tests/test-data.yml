@@ -1,0 +1,74 @@
+selectors:
+    tooltipBalloon: '.tooltip'
+    editableText: '.editable-text'
+
+    messages:
+        all: '[class*="message"]'
+        error: '.errormessage'
+        done: '.donemessage'
+        info: '.infomessage'
+        donelarge: '.donemessagelarge'
+        infolarge: '.infomessagelarge'
+
+    frames: 
+        main: 'galaxy_main'
+    masthead: 
+        id: '#masthead'
+        adminLink: '#masthead a[href="/admin/index"]'
+        userMenu: 
+            userEmail_xpath: '//a[contains(text(), "Logged in as")]'
+
+        user: '//ul[@id="user"]'
+
+    toolMenu: 
+        container: '.toolMenuContainer'
+    
+    historyPanel: 
+        current: '#current-history-panel'
+    
+    loginPage: 
+        form: 'form#login'
+        submit_xpath: "//input[@value='Login']"
+        url_regex: /\/user\/login/
+    
+    registrationPage: 
+        form: 'registration'
+        submit_xpath: "//input[@value='Submit']"
+        returnLink: '//a[contains(text(),"Return to the home page")]'
+    
+    tools: 
+        general: 
+            form: 'form#tool_form'
+            executeButton_xpath: '//input[@value="Execute"]'
+        
+        upload: 
+            fileInput: 'files_0|file_data'
+
+labels: 
+    masthead: 
+        menus: 
+            analyze: 'Analyze Data'
+            workflow: 'Workflow'
+            libraries: 'Shared Data'
+            visualization: 'Visualization'
+            help: 'Help'
+            user: 'User'
+        
+        userMenu: 
+            register: 'Register'
+            login: 'Login'
+            logout: 'Logout'
+    
+    tools: 
+        upload: 
+            panelLabel : 'Upload File'
+
+text: 
+    registrationPage: 
+        badEmailError: 'Enter a real email address'
+    
+    upload: 
+        success: 'Your upload has been queued'
+    
+    tool: 
+        success: 'The following job has been successfully added to the queue'

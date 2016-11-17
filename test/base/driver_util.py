@@ -1,6 +1,7 @@
 """Scripts for drivers of Galaxy functional tests."""
 
 import collections
+import fcntl
 import httplib
 import json
 import logging
@@ -8,6 +9,7 @@ import os
 import random
 import shutil
 import socket
+import struct
 import sys
 import tempfile
 import threading
@@ -499,7 +501,25 @@ def _stop(self):
 ServerWrapper.stop = _stop
 
 
-def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
+class classproperty(object):
+
+    def __init__(self, f):
+        self.f = f
+
+    def __get__(self, obj, owner):
+        return self.f(owner)
+
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+
+
+def launch_server(app, webapp_factory, kwargs, prefix="GALAXY", config_object=None):
     """Launch a web server for a given app using supplied factory.
 
     Consistently read either GALAXY_TEST_HOST and GALAXY_TEST_PORT or
@@ -510,7 +530,8 @@ def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
 
     host_env_key = "%s_TEST_HOST" % prefix
     port_env_key = "%s_TEST_PORT" % prefix
-    host = os.environ.get(host_env_key, DEFAULT_WEB_HOST)
+    default_web_host = getattr(config_object, "default_web_host", DEFAULT_WEB_HOST)
+    host = os.environ.get(host_env_key, default_web_host)
     port = os.environ.get(port_env_key, None)
 
     webapp = webapp_factory(
@@ -638,6 +659,7 @@ class GalaxyTestDriver(TestDriver):
                 self.app,
                 buildapp.app_factory,
                 galaxy_config,
+                config_object=config_object,
             )
             self.server_wrappers.append(server_wrapper)
             log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
