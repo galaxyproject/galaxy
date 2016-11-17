@@ -8,33 +8,33 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'information': {
                     title           : 'Manage information',
                     description     : 'Edit your email, addresses and custom parameters or change your username.',
-                    url             : 'api/users/' + Galaxy.user.id + '/information',
+                    url             : 'api/users/' + Galaxy.user.id + '/information/inputs',
                     icon            : 'fa-info-circle'
                 },
                 'password': {
                     title           : 'Change password',
                     description     : 'Allows you to change your login credentials.',
                     icon            : 'fa-unlock-alt',
-                    url             : 'api/users/' + Galaxy.user.id + '/password',
+                    url             : 'api/users/' + Galaxy.user.id + '/password/inputs',
                     submit_title    : 'Save password',
                 },
                 'communication': {
                     title           : 'Change communication settings',
                     description     : 'Enable or disable the communication feature to chat with other users.',
-                    url             : 'api/users/' + Galaxy.user.id + '/communication',
+                    url             : 'api/users/' + Galaxy.user.id + '/communication/inputs',
                     icon            : 'fa-child'
                 },
                 'permissions': {
                     title           : 'Change default permissions',
                     description     : 'Grant others default access to newly created histories.',
-                    url             : 'api/users/' + Galaxy.user.id + '/permissions',
+                    url             : 'api/users/' + Galaxy.user.id + '/permissions/inputs',
                     icon            : 'fa-users',
                     submit_title    : 'Save permissions'
                 },
                 'api_key': {
                     title           : 'Manage API key',
                     description     : 'Access your current API key or create a new one.',
-                    url             : 'api/users/' + Galaxy.user.id + '/api_key',
+                    url             : 'api/users/' + Galaxy.user.id + '/api_key/inputs',
                     icon            : 'fa-key',
                     submit_title    : 'Create a new key',
                     submit_icon     : 'fa-check'
@@ -42,7 +42,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'toolbox_filters': {
                     title           : 'Manage Toolbox filters',
                     description     : 'Customize your Toolbox by displaying or omitting sets of Tools.',
-                    url             : 'api/users/' + Galaxy.user.id + '/toolbox_filters',
+                    url             : 'api/users/' + Galaxy.user.id + '/toolbox_filters/inputs',
                     icon            : 'fa-filter',
                     submit_title    : 'Save filters'
                 },
