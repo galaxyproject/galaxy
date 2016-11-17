@@ -10,16 +10,14 @@ from .api_asserts import (
 )
 from .api_util import get_master_api_key, get_user_api_key
 from .interactor import GalaxyInteractorApi as BaseInteractor
-# TODO: We don't need all of TwillTestCase, strip down to a common super class
-# shared by API and Twill test cases.
-from .twilltestcase import TwillTestCase
+from .twilltestcase import FunctionalTestCase
 
 TEST_USER = "user@bx.psu.edu"
 DEFAULT_OTHER_USER = "otheruser@bx.psu.edu"  # A second user for API testing.
 
 
 # TODO: Allow these to point at existing Galaxy instances.
-class ApiTestCase( TwillTestCase ):
+class ApiTestCase( FunctionalTestCase ):
 
     def setUp( self ):
         super( ApiTestCase, self ).setUp( )

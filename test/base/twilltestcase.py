@@ -33,7 +33,7 @@ log = logging.getLogger( __name__ )
 DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
 
 
-class TwillTestCase( unittest.TestCase ):
+class FunctionalTestCase( unittest.TestCase ):
 
     def setUp( self ):
         # Security helper
@@ -58,6 +58,100 @@ class TwillTestCase( unittest.TestCase ):
                 os.makedirs(self.keepOutdir)
             except:
                 pass
+
+    def get_filename( self, filename, shed_tool_id=None ):
+        # For tool tests override get_filename to point at an installed tool if shed_tool_id is set.
+        if shed_tool_id and getattr(self, "shed_tools_dict", None):
+            file_dir = self.shed_tools_dict[ shed_tool_id ]
+            if file_dir:
+                return os.path.abspath( os.path.join( file_dir, filename ) )
+        return self.test_data_resolver.get_filename( filename )
+
+    # TODO: Make this more generic, shouldn't be related to tool stuff I guess.
+    def wait_for( self, func, **kwd ):
+        sleep_amount = 0.2
+        slept = 0
+        walltime_exceeded = kwd.get("maxseconds", None)
+        if walltime_exceeded is None:
+            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
+
+        exceeded = True
+        while slept <= walltime_exceeded:
+            result = func()
+            if result:
+                time.sleep( sleep_amount )
+                slept += sleep_amount
+                sleep_amount *= 2
+            else:
+                exceeded = False
+                break
+
+        if exceeded:
+            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+            log.info(message)
+            raise AssertionError(message)
+
+    # TODO: Move verify_xxx into GalaxyInteractor or some relevant mixin.
+    def verify_hid( self, filename, hda_id, attributes, shed_tool_id, hid="", dataset_fetcher=None):
+        assert dataset_fetcher is not None
+
+        def get_filename(test_filename):
+            return self.get_filename(test_filename, shed_tool_id=shed_tool_id)
+
+        def verify_extra_files(extra_files):
+            self._verify_extra_files_content(extra_files, hda_id, shed_tool_id=shed_tool_id, dataset_fetcher=dataset_fetcher)
+
+        data = dataset_fetcher( hda_id )
+        item_label = "History item %s" % hid
+        verify(
+            item_label,
+            data,
+            attributes=attributes,
+            filename=filename,
+            get_filename=get_filename,
+            keep_outputs_dir=self.keepOutdir,
+            verify_extra_files=verify_extra_files,
+        )
+
+    def _verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, shed_tool_id=None ):
+        assert dataset_fetcher is not None
+
+        def get_filename(test_filename):
+            return self.get_filename(test_filename, shed_tool_id=shed_tool_id)
+
+        data = dataset_fetcher( hda_id, base_name )
+        item_label = "History item %s" % hda_id
+        try:
+            verify(
+                item_label,
+                data,
+                attributes=attributes,
+                filename=file_name,
+                get_filename=get_filename,
+                keep_outputs_dir=self.keepOutdir,
+            )
+        except AssertionError as err:
+            errmsg = 'Composite file (%s) of %s different than expected, difference:\n' % ( base_name, item_label )
+            errmsg += str( err )
+            raise AssertionError( errmsg )
+
+    def _verify_extra_files_content( self, extra_files, hda_id, dataset_fetcher, shed_tool_id=None ):
+        files_list = []
+        for extra_type, extra_value, extra_name, extra_attributes in extra_files:
+            if extra_type == 'file':
+                files_list.append( ( extra_name, extra_value, extra_attributes ) )
+            elif extra_type == 'directory':
+                for filename in os.listdir( self.get_filename( extra_value, shed_tool_id=shed_tool_id ) ):
+                    files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
+            else:
+                raise ValueError( 'unknown extra_files type: %s' % extra_type )
+        for filename, filepath, attributes in files_list:
+            self._verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, shed_tool_id=shed_tool_id )
+
+
+class TwillTestCase( FunctionalTestCase ):
+
+    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def check_for_strings( self, strings_displayed=[], strings_not_displayed=[] ):
         if strings_displayed:
@@ -154,14 +248,6 @@ class TwillTestCase( unittest.TestCase ):
 
     def get_all_history_ids_from_api( self ):
         return [ history['id'] for history in self.json_from_url( '/api/histories' ) ]
-
-    def get_filename( self, filename, shed_tool_id=None ):
-        # For tool tests override get_filename to point at an installed tool if shed_tool_id is set.
-        if shed_tool_id and getattr(self, "shed_tools_dict", None):
-            file_dir = self.shed_tools_dict[ shed_tool_id ]
-            if file_dir:
-                return os.path.abspath( os.path.join( file_dir, filename ) )
-        return self.test_data_resolver.get_filename( filename )
 
     def get_form_controls( self, form ):
         formcontrols = []
@@ -433,62 +519,6 @@ class TwillTestCase( unittest.TestCase ):
         if name:
             self.check_history_for_exact_string( name )
 
-    def verify_composite_datatype_file_content( self, file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, shed_tool_id=None ):
-        dataset_fetcher = dataset_fetcher or self.__default_dataset_fetcher()
-
-        def get_filename(test_filename):
-            return self.get_filename(test_filename, shed_tool_id=shed_tool_id)
-
-        data = dataset_fetcher( hda_id, base_name )
-        item_label = "History item %s" % hda_id
-        try:
-            verify(
-                item_label,
-                data,
-                attributes=attributes,
-                filename=file_name,
-                get_filename=get_filename,
-                keep_outputs_dir=self.keepOutdir,
-            )
-        except AssertionError as err:
-            errmsg = 'Composite file (%s) of %s different than expected, difference:\n' % ( base_name, item_label )
-            errmsg += str( err )
-            raise AssertionError( errmsg )
-
-    def verify_extra_files_content( self, extra_files, hda_id, dataset_fetcher, shed_tool_id=None ):
-        files_list = []
-        for extra_type, extra_value, extra_name, extra_attributes in extra_files:
-            if extra_type == 'file':
-                files_list.append( ( extra_name, extra_value, extra_attributes ) )
-            elif extra_type == 'directory':
-                for filename in os.listdir( self.get_filename( extra_value, shed_tool_id=shed_tool_id ) ):
-                    files_list.append( ( filename, os.path.join( extra_value, filename ), extra_attributes ) )
-            else:
-                raise ValueError( 'unknown extra_files type: %s' % extra_type )
-        for filename, filepath, attributes in files_list:
-            self.verify_composite_datatype_file_content( filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, shed_tool_id=shed_tool_id )
-
-    def verify_hid( self, filename, hda_id, attributes, shed_tool_id, hid="", dataset_fetcher=None):
-        dataset_fetcher = dataset_fetcher or self.__default_dataset_fetcher()
-
-        def get_filename(test_filename):
-            return self.get_filename(test_filename, shed_tool_id=shed_tool_id)
-
-        def verify_extra_files(extra_files):
-            self.verify_extra_files_content(extra_files, hda_id, shed_tool_id=shed_tool_id, dataset_fetcher=dataset_fetcher)
-
-        data = dataset_fetcher( hda_id )
-        item_label = "History item %s" % hid
-        verify(
-            item_label,
-            data,
-            attributes=attributes,
-            filename=filename,
-            get_filename=get_filename,
-            keep_outputs_dir=self.keepOutdir,
-            verify_extra_files=verify_extra_files,
-        )
-
     def visit_url( self, url, params=None, doseq=False, allowed_codes=[ 200 ] ):
         if params is None:
             params = dict()
@@ -513,29 +543,6 @@ class TwillTestCase( unittest.TestCase ):
         """Waits for the tools to finish"""
         return self.wait_for(lambda: self.get_running_datasets(), **kwds)
 
-    def wait_for( self, func, **kwd ):
-        sleep_amount = 0.2
-        slept = 0
-        walltime_exceeded = kwd.get("maxseconds", None)
-        if walltime_exceeded is None:
-            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
-
-        exceeded = True
-        while slept <= walltime_exceeded:
-            result = func()
-            if result:
-                time.sleep( sleep_amount )
-                slept += sleep_amount
-                sleep_amount *= 2
-            else:
-                exceeded = False
-                break
-
-        if exceeded:
-            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
-            log.info(message)
-            raise AssertionError(message)
-
     def write_temp_file( self, content, suffix='.html' ):
         fd, fname = tempfile.mkstemp( suffix=suffix, prefix='twilltestcase-' )
         f = os.fdopen( fd, "w" )
@@ -552,14 +559,3 @@ class TwillTestCase( unittest.TestCase ):
         else:
             msg = output
         return msg
-
-    def __default_dataset_fetcher( self ):
-        def fetcher( hda_id, filename=None ):
-            if filename is None:
-                page_url = "/display?encoded_id=%s" % hda_id
-            else:
-                page_url = "/datasets/%s/display/%s" % ( hda_id, filename )
-            self.visit_url( page_url )
-            data = self.last_page()
-            return data
-        return fetcher
