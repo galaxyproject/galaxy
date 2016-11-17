@@ -80,6 +80,8 @@ def configure_environment():
     if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
         os.environ["TOOL_SHED_TEST_FILE_DIR"] = TOOL_SHED_TEST_DATA
 
+    os.environ["GALAXY_TEST_ENVIRONMENT_CONFIGURED"] = "1"
+
 
 def build_logger():
     """Build a logger for test driver script."""
@@ -688,7 +690,8 @@ class GalaxyTestDriver(TestDriver):
 
 def drive_test(test_driver_class):
     """Instantiate driver class, run, and exit appropriately."""
-    sys.exit(test_driver_class().run())
+    test_driver = test_driver_class()
+    sys.exit(test_driver.run())
 
 
 __all__ = (
