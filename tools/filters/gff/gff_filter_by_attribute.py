@@ -38,10 +38,10 @@ def check_for_executable( text, description='' ):
             if operand in secured:
                 stop_err( "Illegal value '%s' in %s '%s'" % ( operand, description, text ) )
 
+
 #
 # Process inputs.
 #
-
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
 cond_text = sys.argv[3]
@@ -96,6 +96,7 @@ def get_value(name, a_type, values_dict):
         return (a_type)(values_dict[ name ])
     else:
         return None
+
 
 # Read and filter input file, skipping invalid lines
 code = '''

@@ -131,5 +131,6 @@ def main():
     # Print the Job-ID and exit. Galaxy will pick it up from there.
     print(jobId)
 
+
 if __name__ == "__main__":
     main()

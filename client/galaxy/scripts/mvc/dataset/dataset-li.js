@@ -254,6 +254,7 @@ var DatasetListItemView = _super.extend(
         });
     },
 
+
     /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
      *  @returns {jQuery} rendered DOM
      */

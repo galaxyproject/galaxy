@@ -69,6 +69,7 @@ class DatasetCollectionDescription(object):
         self.sort_key = sort_by
         self.sort_comp = sort_comp
 
+
 DEFAULT_DATASET_COLLECTOR_DESCRIPTION = DatasetCollectionDescription(
     default_dbkey=LEGACY_DEFAULT_DBKEY,
 )

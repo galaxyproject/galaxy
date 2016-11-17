@@ -5,8 +5,28 @@ are encapsulated here.
 
 import logging
 
-from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, ForeignKey, Integer,
-    MetaData, not_, Numeric, select, String, Table, Text, TEXT, true, Unicode, UniqueConstraint )
+from sqlalchemy import (
+    and_,
+    asc,
+    Boolean,
+    Column,
+    DateTime,
+    desc,
+    false,
+    ForeignKey,
+    Integer,
+    MetaData,
+    not_,
+    Numeric,
+    select,
+    String,
+    Table,
+    TEXT,
+    Text,
+    true,
+    Unicode,
+    UniqueConstraint
+)
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
@@ -2425,6 +2445,7 @@ simple_mapping( model.Tag,
 def tag_mapping( tag_association_class, backref_name ):
     simple_mapping( tag_association_class, tag=relation( model.Tag, backref=backref_name), user=relation( model.User ) )
 
+
 tag_mapping( model.HistoryTagAssociation, "tagged_histories" )
 tag_mapping( model.DatasetTagAssociation, "tagged_datasets" )
 tag_mapping( model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations" )
@@ -2442,6 +2463,7 @@ def annotation_mapping( annotation_class, **kwds ):
     kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( annotation_class, **dict(user=relation( model.User ), **kwds ) )
 
+
 annotation_mapping( model.HistoryAnnotationAssociation, history=model.History )
 annotation_mapping( model.HistoryDatasetAssociationAnnotationAssociation, hda=model.HistoryDatasetAssociation )
 annotation_mapping( model.StoredWorkflowAnnotationAssociation, stored_workflow=model.StoredWorkflow )
@@ -2458,6 +2480,7 @@ annotation_mapping( model.LibraryDatasetCollectionAnnotationAssociation,
 def rating_mapping( rating_class, **kwds ):
     kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( rating_class, **dict(user=relation( model.User ), **kwds ) )
+
 
 rating_mapping( model.HistoryRatingAssociation, history=model.History )
 rating_mapping( model.HistoryDatasetAssociationRatingAssociation, hda=model.HistoryDatasetAssociation )
@@ -2526,6 +2549,7 @@ def db_next_hid( self, n=1 ):
         trans.rollback()
         raise
 
+
 model.History._next_hid = db_next_hid
 
 
@@ -2535,6 +2559,7 @@ def _workflow_invocation_update( self ):
     now_val = now()
     stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
     conn.execute(stmt)
+
 
 model.WorkflowInvocation.update = _workflow_invocation_update
 

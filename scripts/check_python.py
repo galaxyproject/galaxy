@@ -19,6 +19,7 @@ def check_python():
         print(msg, file=sys.stderr)
         raise
 
+
 if __name__ == '__main__':
     rval = 0
     try:

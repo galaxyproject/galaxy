@@ -198,4 +198,5 @@ class ActiveDirectory(LDAP):
     logic in the future. """
     plugin_type = 'activedirectory'
 
+
 __all__ = ('LDAP', 'ActiveDirectory')

@@ -44,6 +44,7 @@ def getbuilds(url):
         description = " ".join(fields)
         yield [build, description]
 
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         URL = sys.argv[1]

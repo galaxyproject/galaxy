@@ -1,0 +1,19 @@
+<tool id="sam_to_conversion" name="Test sam to bam conversion">
+    <command>
+        cat '$input1' > '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="bam" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="bam"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="sam_with_header.sam" ftype="sam"/>
+            <output name="out_file1" file="bam_from_sam.bam"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

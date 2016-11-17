@@ -73,5 +73,6 @@ def __main__():
     if options.seed is not None:
         print('Used random seed of "%s".' % options.seed)
 
+
 if __name__ == "__main__":
     __main__()

@@ -8,10 +8,10 @@ usage: %prog <options> in_file out_file
     -s, --start-col: start column, default=2
     -e, --end-col: end column, default=3
 """
-
 from __future__ import division
 
 import optparse
+
 from bx.interval_index_file import Indexes
 
 
@@ -45,6 +45,7 @@ def main():
         offset += len(line)
 
     index.write( open(output_fname, "w") )
+
 
 if __name__ == "__main__":
     main()
