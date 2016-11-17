@@ -230,16 +230,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
     def undelete( self, trans, **kwd ):
         raise exceptions.NotImplemented()
 
-    @expose_api
-    def logout(self, trans, id, payload={}, **kwd):
-        trans.handle_user_logout( logout_all=kwd.get( 'all', False ) )
-        redirect_url = url_for( '/' )
-        if util.biostar.biostar_logged_in( trans ):
-            redirect_url = util.biostar.biostar_logout( trans )
-        elif trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
-            redirect_url = trans.app.config.remote_user_logout_href
-        return { 'redirect_url': redirect_url }
-
     # TODO: move to more basal, common resource than this
     def anon_user_api_value( self, trans ):
         """
