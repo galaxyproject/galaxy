@@ -278,9 +278,6 @@ define( [], function() {
                     + minutes;
     };
 
-<<<<<<< HEAD
-});
-=======
     return {
         cssLoadFile: cssLoadFile,
         cssGetAttribute: cssGetAttribute,
@@ -300,4 +297,3 @@ define( [], function() {
         linkify: linkify
     };
 });
->>>>>>> dev
