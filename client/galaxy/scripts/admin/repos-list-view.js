@@ -90,7 +90,7 @@ var AdminReposListView = Backbone.View.extend({
   },
 
   /**
-   * Iterates this view's collection and calls the render
+   * Iterate this view's collection and call the render
    * function for each in case it passes the filter.
    */
   renderAll: function(options){
@@ -105,7 +105,7 @@ var AdminReposListView = Backbone.View.extend({
   },
 
   /**
-   * Creates a view for the given repo and adds it to the list view.
+   * Create a view for the given repo and add it to the list view.
    * @param {Repo} model of the view that will be rendered
    */
   renderOne: function(repo){
@@ -281,6 +281,11 @@ var AdminReposListView = Backbone.View.extend({
                   '</a>',
                   '<span class="sort-icon-name fa fa-sort-asc" style="display: none;"/>',
                 '</th>',
+
+                '<th>',
+                  'Info',
+                '</th>',
+
                 '<th style="width:10%;">',
                   '<a class="sort-repos-owner" data-toggle="tooltip" data-placement="top" title="sort alphabetically" href="#">',
                     'Owner',

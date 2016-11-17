@@ -90,6 +90,12 @@ var AdminReposRowView = Backbone.View.extend({
           '<% } %>',
         '<% } %>',
       '</td>',
+      // Info column
+      '<td>',
+        '<% if( repo.get("tool_shed").indexOf("toolshed.g2.bx.psu.edu") === -1 ) { %>',
+          '<span data-toggle="tooltip" data-placement="top" title="from <%- repo.get("tool_shed") %>" class="fa fa-home icon-inline"/>',
+        '<% } %>',
+      '</td>',
       // Owner column
       '<td>',
         '<% if(repo.get("owner")) { %>',
