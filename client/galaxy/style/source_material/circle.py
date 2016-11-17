@@ -27,6 +27,7 @@ def parse_css_color( color ):
         raise Exception( "Color should be 3 hex numbers" )
     return r / 256, g / 256, b / 256
 
+
 size = int( sys.argv[1] )
 
 surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, size, size )

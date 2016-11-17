@@ -146,6 +146,7 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
             module_method_kwds[ 'tools_metadata' ] = tools_metadata
         return self.module_types[ type ].from_workflow_step( trans, step, **module_method_kwds )
 
+
 tool_shed_module_types = module_types.copy()
 tool_shed_module_types[ 'tool' ] = RepoToolModule
 module_factory = RepoWorkflowModuleFactory( tool_shed_module_types )

@@ -34,13 +34,19 @@ def shell(cmds, env=None, **kwds):
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
-    p = shell_process(cmds, env, **kwds)
     if redirecting_io(sys=sys):
+        p = shell_process(cmds, env, **kwds)
         redirect_aware_commmunicate(p, sys=sys)
         exit = p.returncode
         return exit
     else:
-        return p.wait()
+        kwds['stdout'] = subprocess.PIPE
+        kwds['stderr'] = subprocess.PIPE
+        p = shell_process(cmds, env, **kwds)
+        stdout, stderr = p.communicate()
+        if p.returncode != 0:
+            raise CommandLineException(cmds, stdout, stderr, p.returncode)
+        return p.returncode
 
 
 def shell_process(cmds, env=None, **kwds):
@@ -122,11 +128,12 @@ def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
 class CommandLineException(Exception):
     """An exception indicating a non-zero command-line exit."""
 
-    def __init__(self, command, stdout, stderr):
+    def __init__(self, command, stdout, stderr, returncode):
         """Construct a CommandLineException from command and standard I/O."""
         self.command = command
         self.stdout = stdout
         self.stderr = stderr
+        self.returncode = returncode
         self.message = ("Failed to execute command-line %s, stderr was:\n"
                         "-------->>begin stderr<<--------\n"
                         "%s\n"

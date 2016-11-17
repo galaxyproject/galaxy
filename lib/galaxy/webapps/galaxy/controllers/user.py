@@ -842,6 +842,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             username = trans.user.username
         activation_link = self.prepare_activation_link( trans, escape( email ) )
 
+        host = trans.request.host.split( ':' )[ 0 ]
+        if host in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
+            host = socket.getfqdn()
         body = ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
                 "%s \n\n"
@@ -855,7 +858,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                       trans.app.config.error_email_to,
                                       trans.app.config.instance_resource_url))
         to = email
-        frm = trans.app.config.email_from
+        frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
         subject = 'Galaxy Account Activation'
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )

@@ -24,7 +24,10 @@ from galaxy import model
 from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
-from galaxy.queue_worker import reload_toolbox
+from galaxy.queue_worker import (
+    reload_toolbox,
+    send_control_task
+)
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -114,6 +117,16 @@ class ToolBox( BaseGalaxyToolBox ):
 
     def handle_reload_toolbox(self):
         reload_toolbox(self.app)
+
+    def handle_panel_update(self, section_dict):
+        """
+        Sends a panel update to all threads/processes.
+        """
+        send_control_task(self.app, 'create_panel_section', kwargs=section_dict)
+        # The following local call to self.create_section should be unnecessary
+        # but occasionally the local ToolPanelElements instance appears to not
+        # get updated.
+        self.create_section(section_dict)
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count

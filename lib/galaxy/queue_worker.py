@@ -40,6 +40,15 @@ def send_control_task(app, task, noop_self=False, kwargs={}):
 # just an example method.  Ideally this gets pushed into atomic tasks, whether
 # where they're currently invoked, or elsewhere.  (potentially using a dispatch
 # decorator).
+
+def create_panel_section(app, **kwargs):
+    """
+    Updates in memory toolbox dictionary.
+    """
+    log.debug("Updating in-memory tool panel")
+    app.toolbox.create_section(kwargs)
+
+
 def reload_tool(app, **kwargs):
     params = util.Params(kwargs)
     tool_id = params.get('tool_id', None)
@@ -117,7 +126,9 @@ def admin_job_lock(app, **kwargs):
     log.info("Administrative Job Lock is now set to %s. Jobs will %s dispatch."
              % (job_lock, "not" if job_lock else "now"))
 
-control_message_to_task = { 'reload_tool': reload_tool,
+
+control_message_to_task = { 'create_panel_section': create_panel_section,
+                            'reload_tool': reload_tool,
                             'reload_toolbox': reload_toolbox,
                             'reload_data_managers': reload_data_managers,
                             'reload_display_application': reload_display_application,

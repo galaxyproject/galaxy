@@ -282,7 +282,7 @@ class Configuration( object ):
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
         self.show_welcome_with_login = string_as_bool( kwargs.get( "show_welcome_with_login", "False" ) )
         # Configuration for the message box directly below the masthead.
-        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_visible = string_as_bool( kwargs.get( 'message_box_visible', False ) )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )

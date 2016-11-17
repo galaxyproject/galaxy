@@ -80,5 +80,6 @@ def print_tab_sep(out_file, *args ):
     """Print items in `l` to stdout separated by tabs"""
     print('\t'.join(str( f ) for f in args), file=out_file)
 
+
 if __name__ == "__main__":
     main()

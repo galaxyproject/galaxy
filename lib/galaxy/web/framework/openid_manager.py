@@ -28,6 +28,8 @@ log = logging.getLogger( __name__ )
 
 def oidlog( message, level=0 ):
     log.debug( message )
+
+
 if oidutil is not None:
     oidutil.log = oidlog
 
