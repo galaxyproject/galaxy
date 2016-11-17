@@ -458,7 +458,7 @@ function bind_repository_events() {
     });
     $('#queue_install').click(function() {
         var changeset = get_current_changeset();
-        var repository_metadata = current_metadata;
+        var repository_metadata = merge_dicts(current_metadata, repository_metadata);
         repository_metadata.install_tool_dependencies = $("#install_tool_dependencies").val();
         repository_metadata.install_repository_dependencies = $("#install_repository_dependencies").val();
         repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val();
@@ -578,6 +578,7 @@ function bind_workflow_events() {
         var params = {'tool_ids': tool_ids};
         $.get(api_url, params, function(data) {
             var repository_metadata = data.repository.metadata[data.current_changeset];
+            var repository_data = merge_dicts(repository_metadata, data);
             $('#repository_details').attr('data-shedurl', data.tool_shed_url);
             var queue_key = get_queue_key(repository_metadata);
             var queued_repos = new Object();
@@ -830,6 +831,14 @@ function load_toolshed_list(tool_sheds) {
         load_toolshed(shed_url);
         window.location.hash = 'tab=list_categories&tool_shed_url=' + shed_url;
     });
+}
+function merge_dicts(target, newdict) {
+    _.each(Object.keys(newdict), function(key) {
+        if (!target[key]) {
+            target[key] = newdict[key];
+        }
+    });
+    return target;
 }
 function parse_shed_response(data) {
     var results = [];

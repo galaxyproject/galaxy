@@ -280,6 +280,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
             repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
         repository_data[ 'shed_conf' ] = tool_util.build_shed_tool_conf_select_field( trans.app ).get_html().replace('\n', '')
+        repository_data[ 'shed_conf_list' ] = [ option for option in trans.app.toolbox.dynamic_conf_filenames() ]
         repository_data[ 'panel_section_html' ] = tool_panel_section_select_field.get_html( extra_attr={ 'style': 'width: 30em;' } ).replace( '\n', '' )
         repository_data[ 'panel_section_dict' ] = tool_panel_section_dict
         for changeset, metadata in repository_data[ 'repository' ][ 'metadata' ].items():
