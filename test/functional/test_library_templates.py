@@ -382,6 +382,49 @@ class TestLibraryFeatures( TwillTestCase ):
                 for option_index, option in enumerate( field_dict[ 'selectlist' ] ):
                     self.check_page_for_string( option )
 
+    def upload_file( self, filename, ftype='auto', dbkey='unspecified (?)', space_to_tab=False, metadata=None, composite_data=None, name=None, wait=True ):
+        """
+        Uploads a file.  If shed_tool_id has a value, we're testing tools migrated from the distribution to the tool shed,
+        so the tool-data directory of test data files is contained in the installed tool shed repository.
+        """
+        self.visit_url( "%s/tool_runner?tool_id=upload1" % self.url )
+        try:
+            self.refresh_form( "file_type", ftype )  # Refresh, to support composite files
+            tc.fv( "tool_form", "dbkey", dbkey )
+            if metadata:
+                for elem in metadata:
+                    tc.fv( "tool_form", "files_metadata|%s" % elem.get( 'name' ), elem.get( 'value' ) )
+            if composite_data:
+                for i, composite_file in enumerate( composite_data ):
+                    filename = self.get_filename( composite_file.get( 'value' ) )
+                    tc.formfile( "tool_form", "files_%i|file_data" % i, filename )
+                    tc.fv( "tool_form", "files_%i|space_to_tab" % i, composite_file.get( 'space_to_tab', False ) )
+            else:
+                filename = self.get_filename( filename )
+                tc.formfile( "tool_form", "file_data", filename )
+                tc.fv( "tool_form", "space_to_tab", space_to_tab )
+                if name:
+                    # NAME is a hidden form element, so the following prop must
+                    # set to use it.
+                    tc.config("readonly_controls_writeable", 1)
+                    tc.fv( "tool_form", "NAME", name )
+            tc.submit( "runtool_btn" )
+        except AssertionError as err:
+            errmsg = "Uploading file resulted in the following exception.  Make sure the file (%s) exists.  " % filename
+            errmsg += str( err )
+            raise AssertionError( errmsg )
+        if not wait:
+            return
+        # Make sure every history item has a valid hid
+        hids = self.get_hids_in_history( self.get_latest_history()[ 'id' ] )
+        for hid in hids:
+            try:
+                int( hid )
+            except:
+                raise AssertionError( "Invalid hid (%s) created when uploading file %s" % ( hid, filename ) )
+        # Wait for upload processing to finish (TODO: this should be done in each test case instead)
+        self.wait()
+
     def test_000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
         self.login( email='test1@bx.psu.edu', username='regular-user1' )
