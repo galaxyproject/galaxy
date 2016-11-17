@@ -19,9 +19,12 @@ cat <<EOF
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
-'${0##*/} -unit (test_path)'        for running all unit tests (doctests in lib and tests in test/unit)
+'${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
+'${0##*/} -unit (test_path)'        for running unit tests on specified test path
 '${0##*/} -qunit'                   for running qunit JavaScript tests
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
+'${0##*/} -selenium'                for running all selenium web tests (in test/selenium_tests)
+'${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
 '${0##*/} -casperjs (py_test_path)' for running casperjs JavaScript tests using a Python wrapper for consistency. py_test_path in casperjs_runner.py e.g. 'Test_04_HDAs' or 'Test_04_HDAs.test_00_HDA_states'.
 
 Nose tests will allow specific tests to be selected per the documentation at
@@ -34,6 +37,47 @@ Run all TestUserInfo functional tests:
 Run a specific API test:
     ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
+Run all selenium tests (Under Linux using Docker):
+    # Start selenium chrome Docker container
+    docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum 
+    GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
+
+Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver): 
+    ./run_tests.sh -selenium test/selenium_tests/test_registration.py:RegistrationTestCase.test_reregister_username_fails
+
+Note About Selenium Tests:
+
+If using a local selenium driver such as a Chrome or Firefox based one
+either chromedriver or geckodriver needs to be installed an placed on
+the PATH.
+
+More information on geckodriver can be found at
+https://github.com/mozilla/geckodriver and more information on
+chromedriver can be found at
+https://sites.google.com/a/chromium.org/chromedriver/.
+
+By default Galaxy will check the PATH for these and pick
+whichever it finds. This can be overridden by setting
+GALAXY_TEST_SELENIUM_BROWSER to either FIREFOX, CHROME, or something
+more esoteric (including OPERA and PHANTOMJS).
+
+If PyVirtualDisplay is installed Galaxy will attempt to run this
+browser in a headless mode. This can be disabled by setting
+GALAXY_TEST_SELENIUM_HEADLESS to 0 however.
+
+Selenium can also be setup a remote service - to target a service set
+GALAXY_TEST_SELENIUM_REMOTE to 1. The target service may be configured
+with GALAXY_TEST_SELENIUM_REMOTE_PORT and
+GALAXY_TEST_SELENIUM_REMOTE_HOST. By default Galaxy will assume the
+remote service being targetted is CHROME - but this can be overridden
+with GALAXY_TEST_SELENIUM_BROWSER.
+
+In this remote mode, please ensure that GALAXY_TEST_HOST is set to a
+host that is accessible from the Selenium host. By default under Linux
+if GALAXY_TEST_SELENIUM_REMOTE is set, Galaxy will set this to be the IP
+address Docker exposes localhost on to its child containers. This trick
+doesn't work on Mac OS X and so GALAXY_TEST_HOST will need to be crafted
+carefully ahead of time.
 
 External Tests:
 
@@ -250,6 +294,19 @@ do
               shift 1
           fi
           ;;
+      -selenium|--selenium)
+          with_framework_test_tools_arg="-with_framework_test_tools"
+          test_script="./scripts/functional_tests.py"
+          report_file="./run_selenium_tests.html"
+          selenium_test=1;
+          if [ $# -gt 1 ]; then
+              selenium_script=$2
+              shift 2
+          else
+              selenium_script="./test/selenium_tests"
+              shift 1
+          fi
+          ;;
       -t|-toolshed|--toolshed)
           test_script="./test/shed_functional/functional_tests.py"
           report_file="run_toolshed_tests.html"
@@ -462,6 +519,8 @@ elif [ -n "$installed_test" ] ; then
 elif [ -n "$framework_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
     extra_args="functional.test_toolbox$class -framework"
+elif [ -n "$selenium_test" ] ; then
+    extra_args="$selenium_script -selenium"
 elif [ -n "$data_managers_test" ] ; then
     [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
     extra_args="functional.test_data_managers$class -data_managers"
