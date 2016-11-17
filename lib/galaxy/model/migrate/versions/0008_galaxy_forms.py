@@ -45,6 +45,7 @@ def display_migration_details():
     print("8) sample_event")
     print("========================================")
 
+
 FormDefinitionCurrent_table = Table('form_definition_current', metadata,
                                     Column( "id", Integer, primary_key=True),
                                     Column( "create_time", DateTime, default=now ),

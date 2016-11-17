@@ -4,7 +4,7 @@
     <requirements>
         <requirement type="package">ucsc_tools</requirement>
     </requirements>
-    <command>faToTwoBit $input $output</command>
+    <command>faToTwoBit '$input' '$output'</command>
     <inputs>
         <param name="input" type="data" format="fasta" label="Fasta file"/>
     </inputs>

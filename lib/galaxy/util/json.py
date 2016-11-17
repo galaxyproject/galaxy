@@ -1,7 +1,5 @@
 from __future__ import absolute_import
 
-__all__ = [ "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
-
 import collections
 import copy
 import json
@@ -11,6 +9,8 @@ import random
 import string
 
 from six import iteritems, string_types, text_type
+
+__all__ = ( "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" )
 
 log = logging.getLogger( __name__ )
 

@@ -4,7 +4,7 @@
                                   -c ${input1.metadata.chromCol} 
                                   -s ${input1.metadata.startCol} 
                                   -e ${input1.metadata.endCol} 
-                                  $input1 $bgzip $output1    
+                                  '$input1' '$bgzip' '$output1'
   </command>
   <inputs>
     <page>

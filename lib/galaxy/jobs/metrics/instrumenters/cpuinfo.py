@@ -1,3 +1,4 @@
+"""The module describes the ``cpuinfo`` job metrics plugin."""
 import logging
 import re
 
@@ -59,4 +60,5 @@ class CpuInfoPlugin( InstrumentPlugin ):
     def __instrument_cpuinfo_path( self, job_directory ):
         return self._instrument_file_path( job_directory, "cpuinfo" )
 
-__all__ = [ 'CpuInfoPlugin' ]
+
+__all__ = ( 'CpuInfoPlugin', )

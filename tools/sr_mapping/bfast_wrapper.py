@@ -161,7 +161,7 @@ def __main__():
                     all_index_cmds += " -R"
 
                 if options.indexContigOptions:
-                    index_contig_options = map( int, options.indexContigOptions.split( ',' ) )
+                    index_contig_options = [ int(_) for _ in options.indexContigOptions.split( ',' ) ]
                     if index_contig_options[0] >= 0:
                         all_index_cmds += ' -s "%s"' % index_contig_options[0]
                     if index_contig_options[1] >= 0:
@@ -345,6 +345,7 @@ def __main__():
         # clean up temp dir
         if os.path.exists( tmp_dir ):
             shutil.rmtree( tmp_dir )
+
 
 if __name__ == "__main__":
     __main__()

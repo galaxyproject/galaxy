@@ -90,7 +90,7 @@ def load_microbial_data( GALAXY_DATA_INDEX_DIR, sep='\t' ):
 
 # post processing, set build for data and add additional data to history
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
-    base_dataset = list(out_data.items())[0][1]
+    base_dataset = next(iter(out_data.values()))
     history = base_dataset.history
     if history is None:
         print("unknown history!")
@@ -118,7 +118,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             chr = fields[2]
             dbkey = fields[3]
             file_type = fields[4]
-            name, data = list(out_data.items())[0]
+            data = next(iter(out_data.values()))
             data.set_size()
             basic_name = data.name
             data.name = data.name + " (" + microbe_info[kingdom][org]['chrs'][chr]['data'][description]['feature'] + " for " + microbe_info[kingdom][org]['name'] + ":" + chr + ")"

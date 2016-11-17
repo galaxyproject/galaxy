@@ -276,9 +276,10 @@ def populate_api_routes( webapp, app ):
 
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
+    webapp.mapper.connect( '/api/genomes/{id}/indexes', controller='genomes', action='indexes' )
+    webapp.mapper.connect( '/api/genomes/{id}/sequences', controller='genomes', action='sequences' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.connect( '/api/workflows/build_module', action='build_module', controller="workflows" )
-    webapp.mapper.connect( '/api_internal/workflows/{workflow_id}/run', action='run', controller="workflows", conditions=dict( method=['POST'] ) )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
@@ -457,6 +458,34 @@ def populate_api_routes( webapp, app ):
                            controller='tours',
                            action='update_tour',
                            conditions=dict( method=[ "POST" ] ) )
+
+    # ========================
+    # ===== WEBHOOKS API =====
+    # ========================
+
+    webapp.mapper.connect( 'get_all',
+                           '/api/webhooks',
+                           controller='webhooks',
+                           action='get_all',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'get_random',
+                           '/api/webhooks/{webhook_type}',
+                           controller='webhooks',
+                           action='get_random',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'get_all_by_type',
+                           '/api/webhooks/{webhook_type}/all',
+                           controller='webhooks',
+                           action='get_all_by_type',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'get_data',
+                           '/api/webhooks/{webhook_name}/get_data',
+                           controller='webhooks',
+                           action='get_data',
+                           conditions=dict( method=[ "GET" ] ) )
 
     # =======================
     # ===== LIBRARY API =====

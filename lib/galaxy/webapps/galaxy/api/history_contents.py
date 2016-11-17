@@ -619,7 +619,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         :returns:   archive file for download
 
-        .. note: this is a volatile endpoint and settings and behavior may change.
+        .. note:: this is a volatile endpoint and settings and behavior may change.
         """
         # roughly from: http://stackoverflow.com/a/31976060 (windows, linux)
         invalid_filename_char_regex = re.compile( r'[:<>|\\\/\?\* "]' )

@@ -120,6 +120,7 @@ def main( args ):
     else:
         return 1
 
+
 parser = optparse.OptionParser()
 parser.add_option( '-c', '--config_file', dest='config', action='store', default='config/tool_shed.ini.sample' )
 parser.add_option( '-e', '--execute', dest='method', action='store', default='check_db' )

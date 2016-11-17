@@ -1,6 +1,6 @@
-=================================
+===========================
 Conda for Tool Dependencies
-=================================
+===========================
 
 Galaxy tools (also called wrappers) traditionally use Tool Shed package
 recipes to install their dependencies. At the tool's installation time
@@ -46,16 +46,20 @@ Below we answer some common questions (collected by Lance Parsons):
 
 
 1. How do I enable Conda dependency resolution for Galaxy jobs?
-*********************************************************************************
+***************************************************************
 
 Galaxy's dependency job resolution is managed via
 ``dependency_resolvers_conf.xml`` configuration file. Most Galaxy administrators
-have not set up a dependency resolvers configuration file, which means they are
-using Galaxy's default ( ``dependency_resolvers_conf.xml.sample`` ). With
-release 16.04, Galaxy has enabled Conda dependency resolution by default  when
+should be using Galaxy's default dependency resolvers configuration file
+( ``dependency_resolvers_conf.xml.sample`` ). With
+release 16.04, Galaxy has enabled Conda dependency resolution by default when
 Conda was already installed on the system. Having Conda enabled in
-``dependency_resolvers_conf.xml`` means that Galaxy will look for job
+``dependency_resolvers_conf.xml`` means that Galaxy can look for job
 dependencies using the Conda system when it attempts to run tools.
+
+Note that the order of resolvers in the file matters and the ``<tool_shed_packages />``
+entry should remain first. This means that tools that have specified Tool Shed packages
+as their dependencies will work without a change.
 
 The most common configuration settings related to Conda are listed in Table 1.
 See `galaxy.ini.sample`_ for the complete list.
@@ -99,9 +103,9 @@ See `galaxy.ini.sample`_ for the complete list.
 
 
 2. How do Conda dependencies work? Where do things get installed?
-*********************************************************************************
+*****************************************************************
 
-In contrast to the old dependency system, which was used exclusively by Galaxy,
+In contrast to the TS dependency system, which was used exclusively by Galaxy,
 Conda is a pre-existing, independent project. With Conda, it is possible for an
 admin to install and manage packages without touching Galaxy at all. Galaxy can
 handle these dependencies for you, but admins are not required to use Galaxy for
@@ -150,7 +154,7 @@ be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` fi
 
 
 3. What is required to make use of this? Any specific packages, Galaxy revision, OS version, etc.?
-*********************************************************************************
+**************************************************************************************************
 
 The minimum required version of Galaxy to use Conda is 16.01, however
 version 16.07 or greater is recommended. The 16.07 release of Galaxy has
@@ -165,27 +169,36 @@ systems newer than 2007.
 
 
 4. If I have Conda enabled, what do I need to do to install tools using it? For example, how can I install the latest Trinity? And how will I know the dependencies are installed?
-*********************************************************************************
+**********************************************************************************************************************************************************************************
 
 This depends on your ``galaxy.ini`` setting. Starting with release 16.07, Galaxy
 can automatically install the Conda package manager for you if you have enabled
 ``conda_auto_init``. Galaxy can then install Trinity along with its dependencies
-using one of the methods  listed in question 2 above. Further, if
-``conda_auto_install`` is enabled, Galaxy will install Trinity via Conda only
-when a Trinity job is launched and Trinity is not yet installed.
+using one of the methods listed in question 2 above. In particular, if
+``conda_auto_install`` is True and Trinity is not installed yet, Galaxy will try
+to install it via Conda when a Trinity job is launched.
 
 With release 16.07 you can see which dependencies are being used
 in the “Manage installed tools” section of the Admin panel and you can select
 whether or not to install Conda packages or Tool Shed package recipes when you
 install new tools there, even if ``conda_auto_install`` is disabled.
 
-More improvements to the UI will be coming in future releases. To see if Galaxy
-has created a Trinity environment for you have a look at folder under
+During a tool installation, the Galaxy admin has control over which systems will be used to
+install the tool requirements. The default settings will trigger installation
+of both TS and Conda packages (if Conda is present), thus depending on the
+dependency resolvers configuration with regards to what will actually be used during
+the tool execution.
+
+To check if Galaxy has created a Trinity environment, have a look at folders under
 ``<tool_dependency_dir>/_conda/envs/``(or ``<conda_prefix>/envs`` if you have changed `conda_prefix` in your galaxy.ini file).
+
+We recommend to use Conda on a tool-per-tool basis, by unchecking the checkbox
+for TS dependencies during the tool installation, and for tools where there
+are no available TS dependencies.
 
 
 5. Can I mix traditional Galaxy packages and Conda packages?
-*********************************************************************************
+************************************************************
 
 Yes, the way this works is that Galaxy goes through the list of
 requirements for a tool, and then determines for each requirement if it
@@ -198,24 +211,22 @@ The order in which resolvers are tried is listed in the
 -  Packages manually installed by administrators
 -  Conda packages
 
-The first system that satisfies a requirement will be used.
+The first system that satisfies a requirement will be used. See
+`resolver docs`_ for detailed documentation.
 
 
 6. How do I know what system is being used by a given tool?
-*********************************************************************************
+***********************************************************
 
 The Galaxy log will show which dependency resolution system is used
 to satisfy each tool dependency and you can specify priorities using the
-``dependency_resolution_conf.xml`` file. If you put Conda on
-top, Galaxy will first try to use Conda to resolve a tool dependency;
-if this does not work, the following dependency resolver is used, as
-listed. See `resolver docs`_ for detailed documentation. Starting from Galaxy
+``dependency_resolvers_conf.xml`` file (see question 5 above). Starting from Galaxy
 release 16.07, you can see which dependency will be used (“resolved”) in the
 Admin panel.
 
 
 7. How do I go about specifying Conda dependencies for a tool? All the docs still seem to recommend (or exclusively discuss) the ``tool_dependencies.xml`` method.
-*********************************************************************************
+******************************************************************************************************************************************************************
 
 The simple answer is: you don't need to do much to make Conda work for a tool.
 
@@ -232,7 +243,7 @@ deprecate it everywhere.
 
 
 8. During tool installation what if there is no Conda package available for a given requirement? What if the requirement is resolved in a different software than the original wrapper author meant to use?
-*********************************************************************************
+***********************************************************************************************************************************************************************************************************
 
 If there is no Conda package available during tool installation the tool
 will install automatically, and can be used if its dependencies are
@@ -245,7 +256,7 @@ installed from the Tool Shed.
 
 
 9. Where can I find a list of existing Conda packages that I can point to, so I don't have to reinvent the wheel for common dependencies?
-*********************************************************************************
+*****************************************************************************************************************************************
 
 With Conda package manager installed on your system, run:
 
@@ -259,7 +270,7 @@ Galaxy. If you find your package, you are ready to go. If not please
 
 
 10. How can I create a new Conda package for a dependency?
-*********************************************************************************
+**********************************************************
 
 Adding a package to the BioConda or IUC Conda channels will make it
 available for Galaxy tools to use as a dependency. To learn how, get in
@@ -273,7 +284,7 @@ pypi, cran, or cpan for you (mostly) automatically.
 
 
 11. Is there a way to convert traditional Tool Shed package recipes that are not yet in a Conda channel?
-*********************************************************************************
+********************************************************************************************************
 
 First, you do not need to do anything to your wrapper as long as the
 package name in the requirement tag matches the name of correct
@@ -286,7 +297,7 @@ leave the old versions as they are – simply because of time.
 
 
 12. What is the recommendation for existing installations? Will I continue to maintain both systems or migrate to the new Conda system eventually?
-*********************************************************************************
+**************************************************************************************************************************************************
 
 Old tools will use the traditional installation system; this system will
 stay and will be supported for installing old tools to guarantee sustainability
@@ -294,7 +305,7 @@ and reproducibility. New tools from the IUC, may be Conda only.
 
 
 13. What can I do if Conda doesn't work for me?
-*********************************************************************************
+***********************************************
 
 There is currently a limitation in the way Conda packages are being
 built. This limitation will be addressed shortly by the Conda community,

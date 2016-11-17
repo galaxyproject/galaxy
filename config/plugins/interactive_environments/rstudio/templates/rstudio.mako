@@ -9,8 +9,10 @@ ie_request.load_deploy_config()
 ie_request.attr.docker_port = 80
 # Create tempdir in galaxy
 temp_dir = ie_request.temp_dir
-PASSWORD = ie_request.notebook_pw
-USERNAME = "galaxy"
+PASSWORD = "rstudio"
+USERNAME = "rstudio"
+# Then override it again
+ie_request.notebook_pw = "rstudio"
 
 # Did the user give us an RData file?
 if hda.datatype.__class__.__name__ == "RData":
@@ -31,7 +33,7 @@ ie_request.launch(
 # through proxy.
 notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/auth-public-key')
 notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/')
-notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/auth-do-sign-in')
+notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/auth-sign-in')
 
 %>
 <html>

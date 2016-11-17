@@ -35,5 +35,6 @@ def invoke_create():
     elif config['database'] == 'install':
         create_install_db(config['db_url'])
 
+
 if __name__ == "__main__":
     invoke_create()

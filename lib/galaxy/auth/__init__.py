@@ -156,6 +156,7 @@ class AuthManager(object):
             log.exception( "Active Authenticators Failure" )
             raise
 
+
 Authenticator = namedtuple('Authenticator', ['plugin', 'filter_template', 'options'])
 
 

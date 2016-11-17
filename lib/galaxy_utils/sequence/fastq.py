@@ -364,6 +364,7 @@ class fastqCSSangerRead( fastqSequencingRead ):
             else:
                 self.quality = " ".join( map( str, self.get_decimal_quality_scores()[1:] ) )
 
+
 FASTQ_FORMATS = {}
 for format in [ fastqIlluminaRead, fastqSolexaRead, fastqSangerRead, fastqCSSangerRead ]:
     FASTQ_FORMATS[ format.format ] = format

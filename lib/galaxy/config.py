@@ -102,6 +102,7 @@ class Configuration( object ):
         self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
 
         self.tour_config_dir = resolve_path( kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
+        self.webhooks_dirs = resolve_path( kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
 
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
@@ -166,7 +167,7 @@ class Configuration( object ):
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
 
-        # Fall back to to legacy job_working_directory config variable if set.
+        # Fall back to legacy job_working_directory config variable if set.
         default_jobs_directory = kwargs.get( "job_working_directory", "database/jobs_directory" )
         self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.root )
         self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
@@ -226,6 +227,7 @@ class Configuration( object ):
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
         self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
+
         # Enable new interface for API installations from TS.
         # Admin menu will list both if enabled.
         self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'False' ) )
@@ -277,7 +279,7 @@ class Configuration( object ):
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
         self.show_welcome_with_login = string_as_bool( kwargs.get( "show_welcome_with_login", "False" ) )
         # Configuration for the message box directly below the masthead.
-        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_visible = string_as_bool( kwargs.get( 'message_box_visible', False ) )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
@@ -323,6 +325,19 @@ class Configuration( object ):
         else:
             self.tool_dependency_dir = None
             self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
+
+        self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
+        containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
+        if containers_resolvers_config_file:
+            containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
+        self.containers_resolvers_config_file = containers_resolvers_config_file
+
+        involucro_path = kwargs.get('involucro_path', None)
+        if involucro_path is None:
+            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+        self.involucro_path = resolve_path(involucro_path, self.root)
+        self.involucro_auto_init = string_as_bool(kwargs.get( 'involucro_auto_init', True))
+
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
@@ -650,9 +665,6 @@ class Configuration( object ):
                 except Exception as e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
-        if self.object_store_config_file is None:
-            for path in (self.file_path, self.job_working_directory):
-                self._ensure_directory( path )
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
                      self.nginx_upload_store, self.whoosh_index_dir,
@@ -846,7 +858,11 @@ class ConfiguresGalaxyMixin:
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
-            library_import_dir=self.config.library_import_dir
+            library_import_dir=self.config.library_import_dir,
+            enable_beta_mulled_containers=self.config.enable_beta_mulled_containers,
+            containers_resolvers_config_file=self.config.containers_resolvers_config_file,
+            involucro_path=self.config.involucro_path,
+            involucro_auto_init=self.config.involucro_auto_init,
         )
         self.container_finder = containers.ContainerFinder(app_info)
 

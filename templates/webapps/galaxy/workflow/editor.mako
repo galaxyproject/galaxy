@@ -15,7 +15,8 @@
             'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
             'get_new_module_info' : h.url_for(controller='workflow', action='get_new_module_info' ),
             'workflow_index'      : h.url_for( controller='workflow', action='index' ),
-            'save_workflow'       : h.url_for(controller='workflow', action='save_workflow' )
+            'save_workflow'       : h.url_for(controller='workflow', action='save_workflow' ),
+            'workflow_save_as'    : h.url_for(controller='workflow', action='save_workflow_as') 
         },
         'workflows' : [{
             'id'                  : trans.security.encode_id( workflow.id ),
@@ -379,7 +380,7 @@
             Details
         </div>
     </div>
-    <div class="unified-panel-body" style="overflow: auto;">
+    <div class="unified-panel-body workflow-right" style="overflow: auto;">
         ## Div for elements to modify workflow attributes.
         <div id="edit-attributes" class="metadataForm right-content">
             <div class="metadataFormTitle">Edit Workflow Attributes</div>

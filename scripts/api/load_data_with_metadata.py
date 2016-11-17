@@ -71,6 +71,7 @@ def main(api_key, api_url, in_folder, data_library, uuid_field=None):
                 print("Loading", fullpath)
                 load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("api_key", help="API KEY")

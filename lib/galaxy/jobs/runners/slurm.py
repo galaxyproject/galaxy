@@ -1,18 +1,17 @@
 """
 SLURM job control via the DRMAA API.
 """
-
-import os
-import time
 import logging
+import os
 import subprocess
+import time
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'SlurmJobRunner' ]
+__all__ = ( 'SlurmJobRunner', )
 
 SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
@@ -33,6 +32,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             if p.returncode != 0:
+                stderr = stderr.strip()
                 if stderr == 'SLURM accounting storage is disabled':
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return

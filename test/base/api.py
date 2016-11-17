@@ -1,29 +1,23 @@
 from contextlib import contextmanager
 
-# TODO: We don't need all of TwillTestCase, strip down to a common super class
-# shared by API and Twill test cases.
-from .twilltestcase import TwillTestCase
+from six.moves.urllib.parse import urlencode
 
-from base.interactor import GalaxyInteractorApi as BaseInteractor
-
-from .api_util import get_master_api_key
-from .api_util import get_user_api_key
 from .api_asserts import (
-    assert_status_code_is,
+    assert_error_code_is,
     assert_has_keys,
     assert_not_has_keys,
-    assert_error_code_is,
+    assert_status_code_is,
 )
-
-from urllib import urlencode
-
+from .api_util import get_master_api_key, get_user_api_key
+from .interactor import GalaxyInteractorApi as BaseInteractor
+from .twilltestcase import FunctionalTestCase
 
 TEST_USER = "user@bx.psu.edu"
 DEFAULT_OTHER_USER = "otheruser@bx.psu.edu"  # A second user for API testing.
 
 
 # TODO: Allow these to point at existing Galaxy instances.
-class ApiTestCase( TwillTestCase ):
+class ApiTestCase( FunctionalTestCase ):
 
     def setUp( self ):
         super( ApiTestCase, self ).setUp( )
