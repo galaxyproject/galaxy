@@ -459,8 +459,8 @@ def populate_api_routes( webapp, app ):
     # ================================
 
     webapp.mapper.connect( 'api_key', '/api/users/{id}/api_key', controller='users', action='api_key', conditions=dict( method=["POST"] ) )
-    webapp.mapper.connect( 'get_api_key', '/api/users/{id}/api_key/inputs', controller='users', action='api_key', conditions=dict( method=["GET"] ) )
-    webapp.mapper.connect( 'set_api_key', '/api/users/{id}/api_key/inputs', controller='users', action='api_key', conditions=dict( method=["PUT"] ) )
+    webapp.mapper.connect( 'get_api_key', '/api/users/{id}/api_key/inputs', controller='users', action='get_api_key', conditions=dict( method=["GET"] ) )
+    webapp.mapper.connect( 'set_api_key', '/api/users/{id}/api_key/inputs', controller='users', action='set_api_key', conditions=dict( method=["PUT"] ) )
     webapp.mapper.connect( 'get_information', '/api/users/{id}/information/inputs', controller='users', action='get_information', conditions=dict( method=["GET"] ) )
     webapp.mapper.connect( 'set_information', '/api/users/{id}/information/inputs', controller='users', action='set_information', conditions=dict( method=["PUT"] ) )
     webapp.mapper.connect( 'get_password', '/api/users/{id}/password/inputs', controller='users', action='get_password', conditions=dict( method=["GET"] ) )

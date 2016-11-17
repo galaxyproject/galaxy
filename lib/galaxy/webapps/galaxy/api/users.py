@@ -506,7 +506,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         The user can activate them and the choice is stored in user_preferences.
         """
         user = self._get_user(trans, id)
-        filter_types = self._get_filter_types()
+        filter_types = self._get_filter_types(trans)
         saved_values = {}
         for name, value in user.preferences.items():
             if name in filter_types:
@@ -523,7 +523,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         API call to update toolbox filters data.
         """
         user = self._get_user(trans, id)
-        filter_types = self._get_filter_types()
+        filter_types = self._get_filter_types(trans)
         for filter_type in filter_types:
             new_filters = []
             for prefixed_name in payload:
@@ -572,7 +572,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         Get API key inputs.
         """
         user = self._get_user(trans, id)
-        return self._build_inputs_api_key(trans, id, payload, **kwd)
+        return self._build_inputs_api_key(user)
 
     @expose_api
     def set_api_key(self, trans, id, payload={}, **kwd):
@@ -583,7 +583,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         self.create_api_key(trans, user)
         return self._build_inputs_api_key(user, message='Generated a new web API key.')
 
-    @expose_api
     def _build_inputs_api_key(self, user, message='' ):
         """
         Build API key inputs.
