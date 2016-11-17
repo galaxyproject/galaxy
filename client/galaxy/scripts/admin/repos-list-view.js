@@ -94,6 +94,7 @@ var AdminReposListView = Backbone.View.extend({
    * function for each in case it passes the filter.
    */
   renderAll: function(options){
+    this.select_section.value(this.options.section_filter);
     this.options = _.extend( this.options, options );
     this.collection.switchComparator(this.options.sort_by);
     this.collection.sort();
@@ -184,7 +185,8 @@ var AdminReposListView = Backbone.View.extend({
 
   /**
    * Request all sections from Galaxy toolpanel
-   * and save them in the list for select2 to render.
+   * and save them in the list for select2. Call
+   * render on success callback.
    */
   fetchSections: function(){
     var that = this;
@@ -206,16 +208,20 @@ var AdminReposListView = Backbone.View.extend({
   },
 
   _renderSelectBox: function(){
-    // See this.fetchSections()
-    // TODO switch to common resources:
-    // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
+    /**
+     * Render the toolpanel section select box.
+     *
+     * TODO switch to common resources:
+     * https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
+     */
     var that = this;
     this.select_section = new mod_ui_select.View({
       css: 'admin-section-select',
       data: that.list_sections,
       container: that.$el.find('#admin_section_select'),
       placeholder: "Section Filter",
-      allowClear: true
+      allowClear: true,
+      value: that.options.section_filter
     });
     this.$el.find('#admin_section_select')
       .on("select2-selecting", function(e){
