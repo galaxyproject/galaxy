@@ -14,7 +14,6 @@ from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
-from galaxy.web import url_for
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
@@ -490,7 +489,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         Set the user's default permissions for the new histories
         """
         user = self._get_user(trans, id)
-        roles = user.all_roles()
         permitted_actions = trans.app.model.Dataset.permitted_actions.items()
         permissions = {}
         for index, action in permitted_actions:
