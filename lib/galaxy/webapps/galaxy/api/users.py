@@ -395,12 +395,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
     def _validate_email_publicname(self, email, username):
         ''' Validate email and username using regex '''
+        if email == '' or not isinstance( email, basestring ):
+            return 'Please provide your email address.'
         if not re.match('^[a-z0-9\-]{3,255}$', username):
             return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
         if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
-            return 'Please enter your valid email address.'
-        if email == '':
-            return 'Please enter your email address.'
+            return 'Please provide your valid email address.'
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length.'
 
@@ -625,6 +625,6 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         user = self.get_user(trans, id)
         if not user:
             raise MessageException('Invalid user (%s).' % id)
-        if user != trans.user and trans.user_is_admin():
+        if user != trans.user and not trans.user_is_admin():
             raise MessageException('Access denied.')
         return user

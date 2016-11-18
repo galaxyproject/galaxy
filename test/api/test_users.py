@@ -1,6 +1,6 @@
 import json
 
-from requests import put
+from requests import put, get
 
 from base import api
 
@@ -69,6 +69,24 @@ class UsersApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( update_response, 200 )
         update_json = update_response.json()
         self.assertEqual( update_json[ 'username' ], new_name )
+
+    def test_information( self ):
+        user = self._setup_user( TEST_USER_EMAIL )
+        url = self.__url( "information/inputs", user )
+        response = get( url ).json()
+        self.assertEqual( response[ "username" ], user[ "username" ] )
+        self.assertEqual( response[ "email" ], TEST_USER_EMAIL )
+        put( url, data=json.dumps( dict( username="newname", email="new@email.email" ) ) )
+        response = get( url ).json()
+        self.assertEqual( response[ "username" ], "newname" )
+        self.assertEqual( response[ "email" ], "new@email.email" )
+        put( url, data=json.dumps( dict( username=user[ "username" ], email=TEST_USER_EMAIL ) ) )
+        response = get( url ).json()
+        self.assertEqual( response[ "username" ], user[ "username" ] )
+        self.assertEqual( response[ "email" ], TEST_USER_EMAIL )
+
+    def __url( self, action, user ):
+        return self._api_url( "users/%s/%s" % ( user[ "id" ], action ), params=dict( key=self.master_api_key ) )
 
     def __show( self, user ):
         return self._get( "users/%s" % ( user[ 'id' ] ) )
