@@ -63,7 +63,6 @@ class UsersApiTestCase( api.ApiTestCase ):
     def test_admin_update( self ):
         new_name = 'flexo'
         user = self._setup_user( TEST_USER_EMAIL )
-
         update_url = self._api_url( "users/%s" % ( user[ "id" ] ), params=dict( key=self.master_api_key ) )
         update_response = put( update_url, data=json.dumps( dict( username=new_name ) ) )
         self._assert_status_code_is( update_response, 200 )
@@ -84,6 +83,10 @@ class UsersApiTestCase( api.ApiTestCase ):
         response = get( url ).json()
         self.assertEqual( response[ "username" ], user[ "username" ] )
         self.assertEqual( response[ "email" ], TEST_USER_EMAIL )
+        put( url, data=json.dumps( { "address_0|desc" : "_desc" } ) )
+        response = get( url ).json()
+        self.assertEqual( len( response[ "addresses" ] ), 1 )
+        self.assertEqual( response[ "addresses" ][ 0 ][ "desc" ], "_desc" )
 
     def __url( self, action, user ):
         return self._api_url( "users/%s/%s" % ( user[ "id" ], action ), params=dict( key=self.master_api_key ) )
