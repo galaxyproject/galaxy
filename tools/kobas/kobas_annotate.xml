@@ -1,0 +1,151 @@
+<tool id="kobas_annotate" name="KOBAS Annotate" version="@WRAPPER_VERSION@">
+    <description>KEGG Orthology Based Annotation System</description>
+    <macros>
+        <import>kobas_macros.xml</import>
+    </macros>
+
+    <expand macro="requirements"/>
+
+    <stdio>
+        <exit_code range="0" level="warning" description="BiopythonDeprecationWarning"/>
+        <exit_code range="1" level="fatal" description="Bad input settings or none of the entries was annotated successfully."/>
+    </stdio>
+    <command>
+        <![CDATA[
+
+        ## create the KOBAS directories
+        mkdir sqlite &&
+        mkdir seq_pep &&
+
+        #if $blast_opts.choice == 'local':
+            #set $blast_path = $blast_opts.localdb.fields.path
+        #else if $blast_opts.choice == 'fasta':
+            makeblastdb
+                -in '$blast_opts.fastadb'
+                -dbtype 'prot'
+                -out 'seq_pep/${species}.pep.fasta' &&
+        #else:
+            #set $blast_path = $os.path.join($blast_opts.histdb.extra_files_path,'blastdb')
+        #end if
+
+        ## create the database symlinks to comply with how KOBAS wants them
+        ln -s '$organismdb' sqlite/organism.db &&
+        ln -s '$kobasdb' 'sqlite/${species}.db' &&
+
+        #if $blast_opts.choice != 'fasta':
+            ln -s '${blast_path}.phr' 'seq_pep/${species}.pep.fasta.phr' &&
+            ln -s '${blast_path}.pin' 'seq_pep/${species}.pep.fasta.pin' &&
+            ln -s '${blast_path}.psq' 'seq_pep/${species}.pep.fasta.psq' && ls -l seq_pep/ &&
+        #end if
+
+        ## create the orthologe database symlinks to comply with how KOBAS wants them
+        #if $ortholog.only == 'YES' and str($ortholog.species) != str($species):
+
+            #if $ortholog.blast_opts_ortholog.choice == 'local':
+                #set $blast_path = $ortholog.blast_opts_ortholog.localdb.fields.path
+            #else if $ortholog.blast_opts_ortholog.choice == 'fasta':
+                makeblastdb
+                    -in '$ortholog.blast_opts_ortholog.fastadb'
+                    -dbtype 'prot'
+                    -out 'seq_pep/${ortholog.species}.pep.fasta' &&
+            #else:
+                #set $blast_path = $os.path.join($ortholog.blast_opts_ortholog.histdb.extra_files_path,'blastdb')
+            #end if
+
+            ln -s '$ortholog.kobasdb' 'sqlite/${ortholog.species}.db' &&
+
+            #if $blast_opts.choice != 'fasta':
+                ln -s '${blast_path}.phr' 'seq_pep/${ortholog.species}.pep.fasta.phr' &&
+                ln -s '${blast_path}.pin' 'seq_pep/${ortholog.species}.pep.fasta.pin' &&
+                ln -s '${blast_path}.psq' 'seq_pep/${ortholog.species}.pep.fasta.psq' &&
+            #end if
+        #end if
+
+        kobas-annotate
+            -i '$infile'
+            -t '$intype'
+            -s '$species'
+            -e '$evalue'
+            -r $rank
+            -n "\${GALAXY_SLOTS:-4}"
+            -c $coverage
+            #if $ortholog.only == 'YES':
+                -z '$ortholog.species'
+            #end if
+            -y seq_pep
+            -q sqlite
+            -p blastp
+            -x blastx
+            -o '$output'
+
+        ]]>
+    </command>
+    <inputs>
+        <param format="fasta,tabular,txt" type="data" label="Input file" help="Input data file matching the input type." argument="--infile"/>
+        <param type="select" label="Input type" argument="--intype" help="Input data type, default fasta:pro">
+            <option value="fasta:pro">FASTA protein sequence</option>
+            <option value="fasta:nuc">FASTA nucleotide sequence</option>
+            <option value="blastout:xml">XML BLAST output</option>
+            <option value="blastout:tab">Tabular BLAST output</option>
+            <option value="id:uniprot">UniProtKB AC</option>
+            <option value="id:ensembl">Ensembl Gene ID</option>
+            <option value="id:ncbigene">Entrez Gene ID</option>
+            <option value="id:refseqpro">Refseq Protein ID</option>
+        </param>
+
+        <conditional name="blast_opts">
+            <expand macro="blastdb_selector"/>
+        </conditional>
+
+        <expand macro="input_kobasdb"/>
+
+        <param format="sqlite" name="organismdb" type="data" label="Organism database" help="KOBAS organism database, available at http://kobas.cbi.pku.edu.cn/download.php"/>
+        <param type="text" argument="--evalue" value="1e-5" label="E-value" help="Expect threshold for BLAST, default 1e-5"/>
+        <param type="integer" argument="--rank" value="5" min="0" label="Rank cutoff" help="Rank cutoff for valid hits from BLAST result, default 5"/>
+        <param type="integer" argument="--coverage" value="0" min="0" label="Subject coverage cutoff" help="subject coverage cutoff for BLAST, default 0"/>
+        <conditional name="ortholog">
+            <param name="only" type="select" argument="--ortholog" label="Only use orthologs" help="Whether only use orthologs for cross-species annotation or not, default NO (if only use orthologs, please provide the species abbreviation of your input)">
+                <option value="NO">No</option>
+                <option value="YES">Yes</option>
+            </param>
+            <when value="YES">
+                <expand macro="input_kobasdb"/>
+                <conditional name="blast_opts_ortholog">
+                    <expand macro="blastdb_selector"/>
+                </conditional>
+            </when>
+            <when value="NO"></when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output"/>
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="infile" value="kobas_annotate_input.fasta"/>
+            <param name="intype" value="fasta:pro"/>
+            <conditional name="blast_opts">
+                <param name="choice" value="fasta"/>
+                <param name="fastadb" value="aaa.pep.fasta" />
+            </conditional>
+            <param name="species" value="aaa"/>
+            <param name="kobasdb" value="aaa.db"/>
+            <param name="organismdb" value="organism.db"/>
+            <output name="out_file1" file="kobas_annotate_output.txt"/>
+        </test>
+    </tests>
+
+    <help>
+@HELP_KOBAS_INFO@
+
+**KOBAS Annotate**
+
+Annotates an input set of genes with putative pathways and disease relationships based on mapping to genes with known annotations. It allows for both ID mapping and cross-species sequence similarity mapping.
+
+@HELP_KOBAS_URL@
+    </help>
+
+    <expand macro="kobas_citations"/>
+
+</tool>
