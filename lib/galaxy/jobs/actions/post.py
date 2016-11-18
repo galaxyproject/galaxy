@@ -124,13 +124,16 @@ class RenameDatasetAction(DefaultJobAction):
                 if len(tokens) > 1:
                     input_file_var = tokens[0].strip()
 
-                    # Treat . as special symbol (breaks parameter names anyway)
-                    # to allow access to repeat elements, for instance first
-                    # repeat in cat1 would be something like queries_0.input2.
-                    input_file_var = input_file_var.replace(".", "|")
-
                     for i in range(1, len(tokens)):
                         operations.append(tokens[i].strip())
+
+                # Treat . as special symbol (breaks parameter names anyway)
+                # to allow access to repeat elements, for instance first
+                # repeat in cat1 would be something like queries_0.input2.
+                # TODO: update the help text (input_terminals) on the action to
+                # show correct valid inputs.
+                input_file_var = input_file_var.replace(".", "|")
+
                 replacement = ""
                 #  Lookp through inputs find one with "to_be_replaced" input
                 #  variable name, and get the replacement name
