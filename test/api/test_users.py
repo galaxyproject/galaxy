@@ -88,6 +88,16 @@ class UsersApiTestCase( api.ApiTestCase ):
         self.assertEqual( len( response[ "addresses" ] ), 1 )
         self.assertEqual( response[ "addresses" ][ 0 ][ "desc" ], "_desc" )
 
+    def test_communication( self ):
+        user = self._setup_user( TEST_USER_EMAIL )
+        url = self.__url( "communication/inputs", user )
+        self.assertEqual( self.__filter( get( url ).json(), "enable", "value" ), "false" )
+        put( url, data=json.dumps( dict( enable="true" ) ) )
+        self.assertEqual( self.__filter( get( url ).json(), "enable", "value" ), "true" )
+
+    def __filter( self, response, name, attr ):
+        return [ r[ attr ] for r in response[ "inputs" ] if r[ "name" ] == name ][ 0 ]
+
     def __url( self, action, user ):
         return self._api_url( "users/%s/%s" % ( user[ "id" ], action ), params=dict( key=self.master_api_key ) )
 
