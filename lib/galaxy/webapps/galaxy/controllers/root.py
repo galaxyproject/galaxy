@@ -53,7 +53,6 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
             'active_view'                   : 'analysis',
             'params'                        : dict( trans.request.params ),
             'enable_cloud_launch'           : app.config.get_bool( 'enable_cloud_launch', False ),
-            'search_url'                    : web.url_for( controller='root', action='tool_search' ),
             # TODO: next two should be redundant - why can't we build one from the other?
             'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),
             'toolbox_in_panel'              : app.toolbox.to_dict( trans ),
