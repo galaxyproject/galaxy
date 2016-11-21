@@ -101,6 +101,28 @@ def build_command(
     return commands_builder.build()
 
 
+def __get_env(job_wrapper):
+    """
+    Passwords are not parsed to the command line, they are decoded here,
+    stripped from the database and returned to be placed into the shell environment
+    """
+    set_env = []
+    app = job_wrapper.app
+    sa_session = app.model.context
+    job_parameters = sa_session.query(app.model.JobParameter).filter(app.model.JobParameter.job_id == job_wrapper.job_id)
+
+    def decode_passwords(input, value, prefixed_name, **kwd):
+        if input.type == 'password' and isinstance(value, basestring):
+            set_env.append("export %s=%s" % (prefixed_name, app.security.decode_id(value)))
+            for param in job_parameters.all():
+                param.value = param.value.replace(value, '')
+                sa_session.add(param)
+
+    job_wrapper.tool.visit_inputs(job_wrapper.get_param_dict(), decode_passwords)
+    sa_session.flush()
+    return "\n".join(set_env)
+
+
 def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
     tool_commands = commands_builder.build()
@@ -116,10 +138,11 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     set_e = ""
     if job_wrapper.strict_shell:
         set_e = "set -e\n"
-    script_contents = u"#!%s\n%s%s%s" % (
+    script_contents = u"#!%s\n%s%s%s\n%s" % (
         shell,
         integrity_injection,
         set_e,
+        __get_env(job_wrapper),
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
