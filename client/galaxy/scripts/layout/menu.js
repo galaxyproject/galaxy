@@ -242,7 +242,7 @@ var Collection = Backbone.Collection.extend({
                             if ( Galaxy.config.enable_new_user_preferences && Galaxy.app ) {
                                 Galaxy.app.display( new Preferences.UserPreferences() );
                             } else {
-                                Galaxy.frame.add( { url: 'user?cntrller=user', target: 'galaxy_main' } );
+                                Galaxy.frame.add( { url: Galaxy.root + 'user?cntrller=user', target: 'galaxy_main' } );
                             }
                         }
                     },{
