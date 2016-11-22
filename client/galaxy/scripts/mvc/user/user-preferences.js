@@ -93,7 +93,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 }
                 self._link( self.defs.permissions );
                 self._link( self.defs.api_key );
-                self._link( self.defs.toolbox_filters );
+                if( config.has_user_tool_filters ) {
+                    self._link( self.defs.toolbox_filters );
+                }
                 config.enable_openid && !config.use_remote_user && self._link( self.defs.openids );
                 self._link( self.defs.logout );
                 self.$preferences.append( self._templateFooter( data ) );

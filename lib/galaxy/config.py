@@ -98,8 +98,9 @@ class Configuration( object ):
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
 
         self.user_tool_filters = listify( kwargs.get( "user_tool_filters", [] ), do_strip=True )
-        self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
-        self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+        self.user_tool_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
+        self.user_tool_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+        self.has_user_tool_filters = bool( self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters )
 
         self.tour_config_dir = resolve_path( kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
         self.webhooks_dirs = resolve_path( kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
