@@ -9,7 +9,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     title           : 'Manage information',
                     description     : 'Edit your email, addresses and custom parameters or change your username.',
                     url             : 'api/users/' + Galaxy.user.id + '/information/inputs',
-                    icon            : 'fa-info-circle'
+                    icon            : 'fa-child'
                 },
                 'password': {
                     title           : 'Change password',
@@ -22,7 +22,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     title           : 'Change communication settings',
                     description     : 'Enable or disable the communication feature to chat with other users.',
                     url             : 'api/users/' + Galaxy.user.id + '/communication/inputs',
-                    icon            : 'fa-child'
+                    icon            : 'fa-comments-o'
                 },
                 'permissions': {
                     title           : 'Change default history permissions',
