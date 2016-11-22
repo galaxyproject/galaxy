@@ -846,6 +846,15 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         self._check_simple_cat1_over_nested_collections( history_id, inputs )
 
+    @skip_without_tool( "paired_collection_map_over_structured_like" )
+    def test_paired_input_map_over_nested_collections( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, ["123", "456"] )
+        inputs = {
+            "input1": { 'batch': True, 'values': [ dict( src="hdca", id=hdca_id ) ] },
+        }
+        create = self._run( "paired_collection_map_over_structured_like", history_id, inputs, assert_ok=True )
+
     def _check_simple_cat1_over_nested_collections( self, history_id, inputs ):
         create = self._run_cat1( history_id, inputs=inputs, assert_ok=True )
         outputs = create[ 'outputs' ]
