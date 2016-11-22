@@ -266,11 +266,7 @@ var Collection = Backbone.Collection.extend({
                         title   : 'Saved Pages',
                         url     : 'page/list',
                         target  : '_top'
-                    },{
-                        title   : 'API Keys',
-                        url     : 'user/api_keys?cntrller=user',
-                        target  : 'galaxy_main'
-                }]
+                    }]
             };
 
             options.use_remote_user && userTab.menu.push({
