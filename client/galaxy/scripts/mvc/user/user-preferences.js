@@ -25,7 +25,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     icon            : 'fa-child'
                 },
                 'permissions': {
-                    title           : 'Change default permissions',
+                    title           : 'Change default history permissions',
                     description     : 'Grant others default access to newly created histories.',
                     url             : 'api/users/' + Galaxy.user.id + '/permissions/inputs',
                     icon            : 'fa-users',
