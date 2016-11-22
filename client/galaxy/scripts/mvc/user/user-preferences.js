@@ -9,7 +9,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     title           : 'Manage information',
                     description     : 'Edit your email, addresses and custom parameters or change your username.',
                     url             : 'api/users/' + Galaxy.user.id + '/information/inputs',
-                    icon            : 'fa-child'
+                    icon            : 'fa-user'
                 },
                 'password': {
                     title           : 'Change password',
