@@ -18,26 +18,14 @@
   <tests>
     <test>
       <param name="input1">
-        <collection type="list:paired">
-          <element name="i1">
-            <collection type="paired">
-              <element name="forward" value="simple_line.txt" />
-              <element name="reverse" value="simple_line_alternative.txt" />
-            </collection>
-          </element>
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
         </collection>
       </param>
       <output_collection name="list_output" type="paired">
-          <element name="forward">
-            <assert_contents>
-              <has_text_matching expression="^identifier is i1:forward\n$" />
-            </assert_contents>
-          </element>
-          <element name="reverse">
-            <assert_contents>
-              <has_text_matching expression="^identifier is i1:reverse\n$" />
-            </assert_contents>
-          </element>
+          <element name="forward" file="simple_line.txt" ftype="txt"/>
+          <element name="reverse" file="simple_line_alternative.txt" ftype="txt"/>
       </output_collection>
     </test>
   </tests>
