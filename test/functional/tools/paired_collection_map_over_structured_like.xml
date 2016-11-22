@@ -10,7 +10,7 @@
     <param name="input1" type="data_collection" collection_type="paired" label="Input" help="Input collection..." format="txt" />
   </inputs>
   <outputs>
-    <collection name="list_output" structured_like="input1" type="paired" label="Duplicate List">
+    <collection name="list_output" structured_like="input1" type="paired" label="Duplicate List" inherit_format="true">
       <!-- inherit_format can be used in conjunction with structured_like
            to perserve format. -->
     </collection>
