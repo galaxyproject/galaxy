@@ -1,7 +1,7 @@
 /** User Preferences view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
-    var UserPreferences = Backbone.View.extend({
+    var View = Backbone.View.extend({
 
         initialize: function() {
             this.defs = {
@@ -191,6 +191,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     });
 
     return {
-        UserPreferences: UserPreferences
+        View: View
     };
 });

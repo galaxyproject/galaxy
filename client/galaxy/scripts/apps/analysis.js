@@ -8,6 +8,7 @@ var jQuery = require( 'jquery' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
+    UserPreferences = require( 'mvc/user/user-preferences' );
     Tours = require( 'mvc/tours' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -101,6 +102,7 @@ window.app = function app( options, bootstrapped ){
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
+            '(/)users(/)' : 'show_users',
         },
 
         show_tours : function( tour_id ){
@@ -110,6 +112,10 @@ window.app = function app( options, bootstrapped ){
             else{
                 centerPanel.display( new Tours.ToursView() );
             }
+        },
+
+        show_users : function(){
+            centerPanel.display( new UserPreferences.View() );
         },
 
         /**  */

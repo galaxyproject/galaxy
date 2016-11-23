@@ -1,6 +1,6 @@
 /** Masthead Collection **/
 define(['mvc/tours', 'layout/generic-nav-view', 'mvc/user/user-preferences', 'mvc/webhooks'],
-function( Tours, GenericNav, Preferences, Webhooks ) {
+function( Tours, GenericNav, UserPreferences, Webhooks ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -240,9 +240,9 @@ var Collection = Backbone.Collection.extend({
                         target  : 'galaxy_main',
                         onclick : function() {
                             if ( Galaxy.config.enable_new_user_preferences && Galaxy.app ) {
-                                Galaxy.app.display( new Preferences.UserPreferences() );
+                                Galaxy.app.display( new UserPreferences.View() );
                             } else {
-                                Galaxy.frame.add( { url: Galaxy.root + 'user?cntrller=user', target: 'galaxy_main' } );
+                                window.location = Galaxy.root + 'users';
                             }
                         }
                     },{
