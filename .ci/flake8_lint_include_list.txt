@@ -264,8 +264,7 @@ lib/galaxy/sample_tracking/__init__.py
 lib/galaxy/sample_tracking/sample.py
 lib/galaxy/security/validate_user_input.py
 lib/galaxy/tags/
-lib/galaxy/tools/actions/__init__.py
-lib/galaxy/tools/actions/metadata.py
+lib/galaxy/tools/actions/
 lib/galaxy/tools/cwl/
 lib/galaxy/tools/data_manager/__init__.py
 lib/galaxy/tools/deps/
@@ -425,11 +424,7 @@ scripts/build_toolbox.py
 scripts/build_universe_config.py
 scripts/check_galaxy.py
 scripts/check_python.py
-scripts/cleanup_datasets/cleanup_datasets.py
-scripts/cleanup_datasets/populate_uuid.py
-scripts/cleanup_datasets/remove_renamed_datasets_from_disk.py
-scripts/cleanup_datasets/rename_purged_datasets.py
-scripts/cleanup_datasets/update_metadata.py
+scripts/cleanup_datasets/
 scripts/create_db.py
 scripts/data_libraries/
 scripts/db_shell.py
@@ -485,7 +480,6 @@ test/api/test_libraries.py
 test/api/test_page_revisions.py
 test/api/test_search.py
 test/api/test_tool_data.py
-test/api/test_tools.py
 test/api/test_tours.py
 test/api/test_workflow_extraction.py
 test/api/test_workflows_from_yaml.py
@@ -505,10 +499,8 @@ test/casperjs/
 test/functional/database_contexts.py
 test/functional/__init__.py
 test/functional/test_data_managers.py
-test/functional/test_toolbox.py
 test/functional/tool-data/
 test/functional/tools/
-test/functional/workflow.py
 test/integration/
 test/manual/__init__.py
 test/shed_functional/base/common.py
@@ -550,12 +542,8 @@ test/unit/test_sqlite_utils.py
 test/unit/test_topsort.py
 test/unit/tools/filter_modules/
 test/unit/tools/__init__.py
-test/unit/tools/test_actions.py
 test/unit/tools/test_citations.py
-test/unit/tools/test_collect_primary_datasets.py
 test/unit/tools/test_conda_resolution.py
-test/unit/tools/test_dataset_matcher.py
-test/unit/tools/test_parameter_parsing.py
 test/unit/tools/test_parsing.py
 test/unit/tools/test_select_parameters.py
 test/unit/tools/test_toolbox_filters.py

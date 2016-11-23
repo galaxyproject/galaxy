@@ -11,6 +11,7 @@ python example_watch_folder.py <api_key> <api_url> /tmp/g_inbox/ /tmp/g_inbox/do
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
 from __future__ import print_function
+
 import os
 import shutil
 import sys

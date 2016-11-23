@@ -1,4 +1,5 @@
 import logging
+
 from galaxy.model.item_attrs import UsesItemRatings
 
 log = logging.getLogger( __name__ )

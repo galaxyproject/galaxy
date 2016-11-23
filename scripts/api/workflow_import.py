@@ -5,6 +5,7 @@ Example calls:
 python workflow_import.py <api_key> <galaxy_url> '/path/to/workflow/file [--add_to_menu]'
 """
 from __future__ import print_function
+
 import os
 import sys
 

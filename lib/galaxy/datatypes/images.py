@@ -3,6 +3,7 @@ Image classes
 """
 import logging
 import zipfile
+
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes.binary import Binary
