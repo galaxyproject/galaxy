@@ -238,12 +238,7 @@ var Collection = Backbone.Collection.extend({
                         url     : 'users',
                         target  : 'galaxy_main',
                         onclick : function() {
-                            // This is a temporary solution, we should use controllers instead of navigate
-                            if (Galaxy.router){
-                                Galaxy.router.navigate('users', {'trigger': true});
-                            } else {
-                                window.location = Galaxy.root + "users";
-                            }
+                            window.location = Galaxy.root + 'users';
                         }
                     },{
                         title   : 'Custom Builds',
