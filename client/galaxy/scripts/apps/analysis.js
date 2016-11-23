@@ -79,7 +79,7 @@ window.app = function app( options, bootstrapped ){
 
     // .................................................... routes
     /**  */
-    var router = new ( Backbone.Router.extend({
+    Galaxy.router = new ( Backbone.Router.extend({
         // TODO: not many client routes at this point - fill and remove from server.
         // since we're at root here, this may be the last to be routed entirely on the client.
         initialize : function( options ){
