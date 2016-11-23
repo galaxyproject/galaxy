@@ -239,7 +239,7 @@ var Collection = Backbone.Collection.extend({
                         url     : 'user?cntrller=user',
                         target  : 'galaxy_main',
                         onclick : function() {
-                            if ( Galaxy.config.enable_new_user_preferences && Galaxy.app ) {
+                            if ( Galaxy.app ) {
                                 Galaxy.app.display( new UserPreferences.View() );
                             } else {
                                 window.location = Galaxy.root + 'users';
