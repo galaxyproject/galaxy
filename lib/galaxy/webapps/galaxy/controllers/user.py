@@ -745,22 +745,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         error = ''
         success = True
         if trans.webapp.name == 'galaxy':
-            # Save other information associated with the user, if any
-            user_info_forms = self.get_all_forms( trans,
-                                                  filter=dict( deleted=False ),
-                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            # If there are no user forms available then there is nothing to save
-            if user_info_forms:
-                user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
-                if user_type_fd_id not in [ 'none' ]:
-                    user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
-                    values = self.get_form_values( trans, user, user_type_form_definition, **kwd )
-                    form_values = trans.app.model.FormValues( user_type_form_definition, values )
-                    trans.sa_session.add( form_values )
-                    trans.sa_session.flush()
-                    user.values = form_values
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
             if subscribe_checked:
                 # subscribe user to email list
                 if trans.app.config.smtp_server is None:
@@ -944,14 +928,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         message = "\n".join( [ validate_email( trans, email ),
                                validate_password( trans, password, confirm ),
                                validate_publicname( trans, username ) ] ).rstrip()
-        if not message:
-            if trans.webapp.name == 'galaxy':
-                if self.get_all_forms( trans,
-                                       filter=dict( deleted=False ),
-                                       form_type=trans.app.model.FormDefinition.types.USER_INFO ):
-                    user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-                    if user_type_fd_id in [ 'none' ]:
-                        return "Select the user's type and information"
         return message
 
     @web.expose
