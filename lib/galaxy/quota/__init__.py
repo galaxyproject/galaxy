@@ -1,8 +1,8 @@
 """
 Galaxy Quotas
-
 """
 import logging
+
 import galaxy.util
 
 log = logging.getLogger(__name__)

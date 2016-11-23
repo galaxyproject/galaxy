@@ -2,7 +2,6 @@ import logging
 import os.path
 import threading
 import time
-from galaxy.util.hash_util import md5_hash_file
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -15,6 +14,7 @@ except ImportError:
     PollingObserver = None
     can_watch = False
 
+from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.postfork import register_postfork_function
 
 log = logging.getLogger( __name__ )
