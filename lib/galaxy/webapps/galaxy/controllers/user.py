@@ -1186,22 +1186,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     fasta_hdas=fasta_hdas,
                                     use_panels=kwds.get( 'use_panels', False ) )
 
-    @web.expose
-    @web.require_login()
-    def api_keys( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
-        status = params.get( 'status', 'done' )
-        if params.get( 'new_api_key_button', False ):
-            self.create_api_key( trans, trans.user )
-            message = "Generated a new web API key"
-            status = "done"
-        return trans.fill_template( 'webapps/galaxy/user/api_keys.mako',
-                                    cntrller=cntrller,
-                                    user=trans.user,
-                                    message=message,
-                                    status=status )
-
     def __get_redirect_url( self, redirect ):
         root_url = url_for( '/', qualified=True )
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy

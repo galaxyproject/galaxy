@@ -36,6 +36,22 @@ class User( BaseUser ):
                                     message=message,
                                     status=status )
 
+    @web.expose
+    @web.require_login()
+    def api_keys( self, trans, cntrller, **kwd ):
+        params = util.Params( kwd )
+        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
+        status = params.get( 'status', 'done' )
+        if params.get( 'new_api_key_button', False ):
+            self.create_api_key( trans, trans.user )
+            message = "Generated a new web API key"
+            status = "done"
+        return trans.fill_template( '/webapps/tool_shed/user/api_keys.mako',
+                                    cntrller=cntrller,
+                                    user=trans.user,
+                                    message=message,
+                                    status=status )
+
     # For REMOTE_USER, we need the ability to just edit the username
     @web.expose
     @web.require_login( "to manage the public name" )
