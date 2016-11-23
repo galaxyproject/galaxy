@@ -268,12 +268,6 @@ var Collection = Backbone.Collection.extend({
                         target  : '_top'
                     }]
             };
-
-            options.use_remote_user && userTab.menu.push({
-                title   : 'Public Name',
-                url     : 'user/edit_username?cntrller=user',
-                target  : 'galaxy_main'
-            });
             this.add( userTab );
         }
         var activeView = this.get( options.active_view );

@@ -51,7 +51,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     description     : 'Associate OpenIDs with your account.',
                     icon            : 'fa-openid',
                     onclick         : function() {
-                        $( '#galaxy_main' ).attr( 'src', Galaxy.root + 'user/openid_manage?cntrller=user' );
+                        window.location.href = Galaxy.root + 'user/openid_manage?cntrller=user&use_panels=True';
                     }
                 },
                 'logout': {
@@ -96,7 +96,9 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 if( config.has_user_tool_filters ) {
                     self._link( self.defs.toolbox_filters );
                 }
-                config.enable_openid && !config.use_remote_user && self._link( self.defs.openids );
+                if( config.enable_openid && !config.use_remote_user ) {
+                    self._link( self.defs.openids );
+                }
                 self._link( self.defs.logout );
                 self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );
