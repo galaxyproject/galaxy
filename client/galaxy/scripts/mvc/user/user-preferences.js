@@ -88,7 +88,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     self._link( self.defs.information );
                     self._link( self.defs.password );
                 }
-                if( config.communication_server_host ) {
+                if( config.enable_communication_server ) {
                     self._link( self.defs.communication );
                 }
                 self._link( self.defs.permissions );

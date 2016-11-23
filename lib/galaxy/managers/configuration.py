@@ -52,8 +52,9 @@ class ConfigSerializer( base.ModelSerializer ):
             'biostar_url'                       : _defaults_to( '' ),
             'biostar_url_redirect'              : lambda *a, **c: self.url_for( controller='biostar', action='biostar_redirect', qualified=True ),
 
-            'communication_server_host'         : _defaults_to( None ),
+            'enable_communication_server'       : _defaults_to( False ),
             'communication_server_port'         : _defaults_to( None ),
+            'communication_server_host'         : _defaults_to( None ),
             'persistent_communication_rooms'    : _defaults_to( None ),
             'allow_user_creation'               : _defaults_to( False ),
             'use_remote_user'                   : _defaults_to( None ),
