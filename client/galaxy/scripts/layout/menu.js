@@ -235,13 +235,14 @@ var Collection = Backbone.Collection.extend({
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },{
                         title   : 'Preferences',
-                        url     : 'user?cntrller=user',
+                        url     : 'users',
                         target  : 'galaxy_main',
                         onclick : function() {
-                            if ( Galaxy.app ) {
-                                Galaxy.app.display( new UserPreferences.View() );
+                            // This is a temporary solution, we should use controllers instead of navigate
+                            if (Galaxy.router){
+                                Galaxy.router.navigate('users', {'trigger': true});
                             } else {
-                                window.location = Galaxy.root + 'users';
+                                window.location = Galaxy.root + "users";
                             }
                         }
                     },{
