@@ -12,19 +12,17 @@ from datetime import datetime, timedelta
 from json import dumps, loads
 
 from markupsafe import escape
-from sqlalchemy import and_, or_, true, func
+from sqlalchemy import or_, func
 
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.util import string_as_bool
 from galaxy.exceptions import ObjectInvalid
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
                                                  validate_publicname)
-from galaxy.tools.toolbox.filters import FilterFactory
-from galaxy.util import biostar, hash_util, docstring_trim, listify
+from galaxy.util import biostar, hash_util
 from galaxy.web import url_for
 from galaxy.web.base.controller import (BaseUIController,
                                         CreatesApiKeysMixin,

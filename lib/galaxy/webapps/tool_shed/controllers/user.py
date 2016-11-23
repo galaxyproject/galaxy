@@ -1,13 +1,14 @@
 from markupsafe import escape
-from sqlalchemy import and_, or_, true, func
-from galaxy import model
+from datetime import datetime
+from galaxy.web import url_for
+from sqlalchemy import and_, true
 from galaxy import util
 from galaxy import web
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
-from galaxy.security.validate_user_input import (transform_publicname,
-                                                 validate_email,
+from galaxy.security.validate_user_input import (validate_email,
                                                  validate_password,
                                                  validate_publicname)
+
 
 class User( BaseUser ):
 
