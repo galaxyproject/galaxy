@@ -943,64 +943,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
         return widgets
 
-    @web.expose
-    def manage_user_info( self, trans, cntrller, **kwd ):
-        '''Manage a user's login, password, public username, type, addresses, etc.'''
-        params = util.Params( kwd )
-        user_id = params.get( 'id', None )
-        if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        if not user:
-            raise AssertionError("The user id (%s) is not valid" % str( user_id ))
-        email = util.restore_text( params.get( 'email', user.email ) )
-        username = util.restore_text( params.get( 'username', '' ) )
-        if not username:
-            username = user.username
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
-        status = params.get( 'status', 'done' )
-        if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
-            # user's addresses
-            show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
-            if show_filter == 'All':
-                addresses = [address for address in user.addresses]
-            elif show_filter == 'Deleted':
-                addresses = [address for address in user.addresses if address.deleted]
-            else:
-                addresses = [address for address in user.addresses if not address.deleted]
-            user_info_forms = self.get_all_forms( trans,
-                                                  filter=dict( deleted=False ),
-                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            return trans.fill_template( '/webapps/galaxy/user/manage_info.mako',
-                                        cntrller=cntrller,
-                                        user=user,
-                                        email=email,
-                                        username=username,
-                                        user_type_fd_id_select_field=user_type_fd_id_select_field,
-                                        user_info_forms=user_info_forms,
-                                        user_type_form_definition=user_type_form_definition,
-                                        user_type_fd_id=user_type_fd_id,
-                                        widgets=widgets,
-                                        addresses=addresses,
-                                        show_filter=show_filter,
-                                        message=message,
-                                        status=status )
-        else:
-            return trans.fill_template( '/webapps/tool_shed/user/manage_info.mako',
-                                        cntrller=cntrller,
-                                        user=user,
-                                        email=email,
-                                        username=username,
-                                        message=message,
-                                        status=status )
-
     # For REMOTE_USER, we need the ability to just edit the username
     @web.expose
     @web.require_login( "to manage the public name" )
