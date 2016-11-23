@@ -106,10 +106,9 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_tours : function( tour_id ){
-            if (tour_id){
-                Tours.giveTour(tour_id);
-            }
-            else{
+            if ( tour_id ){
+                Tours.giveTour( tour_id );
+            } else {
                 centerPanel.display( new Tours.ToursView() );
             }
         },
