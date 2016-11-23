@@ -81,8 +81,9 @@ class InstallableDependencyResolver:
 
 
 class Dependency(Dictifiable, object):
-    dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version']
+    dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
     __metaclass__ = ABCMeta
+    cacheable = False
 
     @abstractmethod
     def shell_commands( self, requirement ):
@@ -121,3 +122,7 @@ class NullDependency( Dependency ):
 
     def shell_commands( self, requirement ):
         return None
+
+
+class DependencyException(Exception):
+    pass
