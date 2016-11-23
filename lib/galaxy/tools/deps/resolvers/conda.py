@@ -67,6 +67,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 dependency_manager.default_base_path, DEFAULT_CONDARC_OVERRIDE
             )
 
+        copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
         ensure_channels = get_option("ensure_channels")
@@ -85,7 +86,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             ensure_channels=ensure_channels,
             condarc_override=condarc_override,
             use_path_exec=use_path_exec,
-            copy_dependencies=_string_as_bool(get_option("copy_dependencies"))
+            copy_dependencies=copy_dependencies
         )
         self.ensure_channels = ensure_channels
 
