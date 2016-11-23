@@ -4065,10 +4065,15 @@ of this directive.
     <xs:sequence>
       <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="value" type="xs:string" use="required">
+    <xs:attribute name="value" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Value to match conditional input value
 against.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="datatype_isinstance" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Datatype to match against (if ``value`` is unspecified). This should be the short string describing the format (e.g. ``interval``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
