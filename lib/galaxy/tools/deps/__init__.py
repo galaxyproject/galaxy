@@ -2,12 +2,16 @@
 Dependency management for tools.
 """
 
+import json
 import logging
 import os.path
 
 from collections import OrderedDict
 
-from galaxy.util import plugin_config
+from galaxy.util import (
+    hash_util,
+    plugin_config
+)
 
 from .resolvers import NullDependency
 from .resolvers.conda import CondaDependencyResolver, DEFAULT_ENSURE_CHANNELS
@@ -45,7 +49,11 @@ def build_dependency_manager( config ):
             if value is CONFIG_VAL_NOT_FOUND:
                 value = default_value
             dependency_manager_kwds[key] = value
-        dependency_manager = DependencyManager( **dependency_manager_kwds )
+        if config.use_cached_dependency_manager:
+            dependency_manager_kwds['tool_dependency_cache_dir'] = config.tool_dependency_cache_dir
+            dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
+        else:
+            dependency_manager = DependencyManager( **dependency_manager_kwds )
     else:
         dependency_manager = NullDependencyManager()
 
@@ -109,6 +117,8 @@ class DependencyManager( object ):
                 log.debug(dependency.resolver_msg)
                 if dependency.dependency_type:
                     requirement_to_dependency[requirement] = dependency
+        if 'tool_instance' in kwds:
+            kwds['tool_instance'].dependencies = [dep.to_dict() for dep in requirement_to_dependency.values()]
         return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
@@ -155,3 +165,44 @@ class DependencyManager( object ):
     def __resolvers_dict( self ):
         import galaxy.tools.deps.resolvers
         return plugin_config.plugins_dict( galaxy.tools.deps.resolvers, 'resolver_type' )
+
+
+class CachedDependencyManager(DependencyManager):
+    def __init__(self, default_base_path, conf_file=None, **extra_config):
+        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, conf_file=conf_file, **extra_config)
+
+    def build_cache(self, requirements, **kwds):
+        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        cacheable_dependencies = [dep for req, dep in resolved_dependencies.items() if dep.cacheable]
+        hashed_requirements_dir = self.get_hashed_requirements_path(cacheable_dependencies)
+        [dep.build_cache(hashed_requirements_dir) for dep in cacheable_dependencies]
+
+    def dependency_shell_commands( self, requirements, **kwds ):
+        """
+        Runs a set of requirements through the dependency resolvers and returns
+        a list of commands required to activate the dependencies. If dependencies
+        are cacheable and the cache exists, will generate commands to activate
+        cached environments.
+        """
+        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        cacheable_dependencies = [dep for req, dep in resolved_dependencies.items() if dep.cacheable]
+        hashed_requirements_dir = self.get_hashed_requirements_path(cacheable_dependencies)
+        if os.path.exists(hashed_requirements_dir):
+            [dep.set_cache_path(hashed_requirements_dir) for dep in cacheable_dependencies]
+        commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
+        return commands
+
+    def hash_requirements(self, resolved_dependencies):
+        """Return hash for requirements"""
+        resolved_dependencies = [[(dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies]]
+        hash_str = json.dumps(sorted([resolved_dependencies]))
+        return hash_util.new_secure_hash(hash_str)[:8]  # short hash
+
+    def get_hashed_requirements_path(self, resolved_dependencies):
+        """
+        Returns the path to the hashed requirements directory (but does not evaluate whether the path exists)
+        :param requirements:
+        :return:
+        """
+        req_hashes = self.hash_requirements(resolved_dependencies)
+        return os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes)

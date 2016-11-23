@@ -32,7 +32,6 @@ window.app = function app( options, bootstrapped ){
         toolPanel = new ToolPanel({
             el                  : '#left',
             userIsAnonymous     : Galaxy.user.isAnonymous(),
-            search_url          : config.search_url,
             toolbox             : config.toolbox,
             toolbox_in_panel    : config.toolbox_in_panel,
             stored_workflow_menu_entries : config.stored_workflow_menu_entries,
