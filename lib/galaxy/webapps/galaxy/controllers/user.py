@@ -368,17 +368,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 else:
                     message = error
                     status = 'error'
-        if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
-        else:
-            user_type_fd_id_select_field = None
-            user_type_form_definition = None
-            widgets = []
         return trans.fill_template( '/user/openid_associate.mako',
                                     cntrller=cntrller,
                                     email=email,
@@ -393,9 +382,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     status=status,
                                     active_view="user",
                                     subscribe_checked=False,
-                                    user_type_fd_id_select_field=user_type_fd_id_select_field,
-                                    user_type_form_definition=user_type_form_definition,
-                                    widgets=widgets,
                                     openids=openids )
 
     @web.expose
@@ -731,27 +717,15 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     else:
                         status = 'error'
         if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=None, **kwd )
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( trans, user_type_form_definition, user=None, **kwd )
             #  Warning message that is shown on the registration page.
             registration_warning_message = trans.app.config.registration_warning_message
         else:
-            user_type_fd_id_select_field = None
-            user_type_form_definition = None
-            widgets = []
             registration_warning_message = None
         return trans.fill_template( '/user/register.mako',
                                     cntrller=cntrller,
                                     email=email,
                                     username=transform_publicname( trans, username ),
                                     subscribe_checked=subscribe_checked,
-                                    user_type_fd_id_select_field=user_type_fd_id_select_field,
-                                    user_type_form_definition=user_type_form_definition,
-                                    widgets=widgets,
                                     use_panels=use_panels,
                                     redirect=redirect,
                                     redirect_url=redirect_url,
@@ -914,32 +888,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 #  Tokens don't match. Activation is denied.
                 return trans.show_error_message( "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
         return
-
-    def __get_user_type_form_definition( self, trans, user=None, **kwd ):
-        params = util.Params( kwd )
-        if user and user.values:
-            user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
-        else:
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-        if user_type_fd_id not in [ 'none' ]:
-            user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
-        else:
-            user_type_form_definition = None
-        return user_type_form_definition
-
-    def __get_widgets( self, trans, user_type_form_definition, user=None, **kwd ):
-        widgets = []
-        if user_type_form_definition:
-            if user:
-                if user.values:
-                    widgets = user_type_form_definition.get_widgets( user=user,
-                                                                     contents=user.values.content,
-                                                                     **kwd )
-                else:
-                    widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
-            else:
-                widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
-        return widgets
 
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
@@ -1194,17 +1142,3 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         elif util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):
             redirect = root_url
         return redirect
-
-    # ===== Methods for building SelectFields  ================================
-    def __build_user_type_fd_id_select_field( self, trans, selected_value ):
-        # Get all the user information forms
-        user_info_forms = self.get_all_forms( trans,
-                                              filter=dict( deleted=False ),
-                                              form_type=trans.model.FormDefinition.types.USER_INFO )
-        return build_select_field( trans,
-                                   objs=user_info_forms,
-                                   label_attr='name',
-                                   select_field_name='user_type_fd_id',
-                                   initial_value='none',
-                                   selected_value=selected_value,
-                                   refresh_on_change=True )
