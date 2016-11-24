@@ -3,6 +3,7 @@ If the current installed python version is not 2.7, prints an error
 message to stderr and returns 1
 """
 from __future__ import print_function
+
 import sys
 
 msg = """ERROR: Your Python version is: %s

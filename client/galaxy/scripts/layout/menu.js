@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['mvc/tours', 'layout/generic-nav-view', 'mvc/webhooks'], function( Tours, GenericNav, Webhooks ) {
+define(['layout/generic-nav-view', 'mvc/webhooks'], function( GenericNav, Webhooks ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -176,8 +176,8 @@ var Collection = Backbone.Collection.extend({
                     title   : 'Interactive Tours',
                     url     : 'tours',
                     onclick : function(){
-                        if (Galaxy.app){
-                            Galaxy.app.display(new Tours.ToursView());
+                        if (Galaxy.router){
+                            Galaxy.router.navigate('tours', {'trigger': true});
                         } else {
                             // Redirect and use clientside routing to go to tour index
                             window.location = Galaxy.root + "tours";
