@@ -22,7 +22,7 @@ from galaxy.util import unicodify
 from galaxy.util.checkers import (
     check_binary,
     check_html,
-    is_bzip2,
+    is_bz2,
     is_gzip
 )
 from galaxy.datatypes.binary import Binary

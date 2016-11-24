@@ -21,7 +21,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size
 from galaxy.util.checkers import (
-    is_bzip2,
+    is_bz2,
     is_gzip
 )
 from galaxy.util.image_util import check_image_type
