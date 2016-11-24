@@ -1,4 +1,4 @@
-<tool id="compressed_fastq_cat" name="Confirm fastq.gz is not uncompressed">
+<tool id="compressed_gz_fastq_cat" name="Confirm fastq.gz is not uncompressed">
     <command>
         cat '$input1' > '$out_file1'
     </command>

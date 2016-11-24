@@ -3,6 +3,7 @@ Sequence classes
 """
 
 import gzip
+import bz2
 import json
 import logging
 import os
@@ -572,10 +573,13 @@ class BaseFastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        compressed = is_gzip(dataset.file_name)
+        compressed_gzip = is_gzip(dataset.file_name)
+        compressed_bzip2 = is_bz2(dataset.file_name)
         try:
-            if compressed:
+            if compressed_gzip:
                 in_file = gzip.GzipFile(dataset.file_name)
+            elif compressed_bzip2:
+                in_file = bz2.BZ2File(dataset.file_name)
             else:
                 in_file = open(dataset.file_name)
             for line in in_file:
@@ -615,7 +619,7 @@ class BaseFastq ( Sequence ):
         >>> Fastq().sniff( fname )
         True
         """
-        compressed = is_gzip(filename)
+        compressed = is_gzip(filename) or is_bz2(filename)
         if compressed and not isinstance(self, Binary):
             return False
         headers = get_headers( filename, None )
@@ -741,6 +745,40 @@ class FastqCSSangerGz( FastqGz ):
     """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger.gz"
 Binary.register_sniffable_binary_format("fastqcssanger.gz", "fastqcssanger.gz", FastqCSSangerGz)
+
+
+class FastqBz2 ( BaseFastq, Binary ):
+"""Class representing a generic compressed FASTQ sequence"""
+edam_format = "format_1930"
+file_ext = "fastq.gz"
+Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
+
+
+class FastqSangerBz2( FastqBz2 ):
+"""Class representing a compressed FASTQ sequence ( the Sanger variant )"""
+edam_format = "format_1932"
+file_ext = "fastqsanger.bz2"
+Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
+
+
+class FastqSolexaBz2( FastqBz2 ):
+"""Class representing a compressed FASTQ sequence ( the Solexa variant )"""
+edam_format = "format_1933"
+file_ext = "fastqsolexa.bz2"
+Binary.register_sniffable_binary_format("fastqsolexa.bz2", "fastqsolexa.bz2", FastqSolexaBz2)
+
+
+class FastqIlluminaBz2( FastqBz2 ):
+"""Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
+edam_format = "format_1931"
+file_ext = "fastqillumina.bz2"
+Binary.register_sniffable_binary_format("fastqillumina.bz2", "fastqillumina.bz2", FastqIlluminaBz2)
+
+
+class FastqCSSangerBz2( FastqBz2 ):
+"""Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
+file_ext = "fastqcssanger.bz2"
+Binary.register_sniffable_binary_format("fastqcssanger.bz2", "fastqcssanger.bz2", FastqCSSangerBz2)
 
 
 class Maf( Alignment ):
