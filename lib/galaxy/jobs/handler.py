@@ -6,6 +6,7 @@ import os
 import time
 import logging
 import threading
+import datetime
 from Queue import Queue, Empty
 
 from sqlalchemy.sql.expression import and_, or_, select, func, true, null
@@ -375,6 +376,33 @@ class JobHandlerQueue( object ):
         # job is ready to run, check limits
         # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
         state = self.__check_destination_jobs( job, job_wrapper )
+
+        # Check 
+        jobs_to_check = self.sa_session.query( model.Job ).filter(
+            model.Job.user_id == job.user.id,
+            model.Job.update_time >=
+                datetime.datetime.now() - datetime.timedelta(30),
+            model.Job.state == 'ok'
+        ).all()
+        time_spent = datetime.timedelta(0)
+        for job in jobs_to_check:
+            # History is job.state_history
+            started = None 
+            finished = None
+            for history in sorted(
+                    job.state_history,
+                    key=lambda history: history.update_time):
+                if history.state == "running":
+                    started = history.create_time
+                elif history.state == "ok":
+                    finished = history.create_time
+
+            time_spent += finished - started
+
+        if time_spent > datetime.timedelta(seconds=20):
+            log.debug("Used too much cpu time")
+                    
+
         if state == JOB_READY:
             state = self.__check_user_jobs( job, job_wrapper )
         if state == JOB_READY and self.app.config.enable_quotas:
