@@ -291,7 +291,7 @@ class JobConfiguration( object ):
                         self.limits.destination_user_concurrent_jobs[id] = int(limit.text)
                 elif type == 'total_walltime':
                     self.limits.total_walltime["window"] = (
-                        int(limit.get('window')) or 30
+                        int( limit.get('window') ) or 30
                     )
                     self.limits.total_walltime["raw"] = (
                         types.get(type, str)(limit.text)

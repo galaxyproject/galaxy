@@ -285,12 +285,12 @@ class JobHandlerQueue( object ):
                     log.info( "(%d) Job deleted by user while still queued" % job.id )
                 elif job_state == JOB_ADMIN_DELETED:
                     log.info( "(%d) Job deleted by admin while still queued" % job.id )
-                elif job_state in (JOB_USER_OVER_QUOTA,
-                                   JOB_USER_OVER_TOTAL_WALLTIME):
+                elif job_state in ( JOB_USER_OVER_QUOTA,
+                                    JOB_USER_OVER_TOTAL_WALLTIME ):
                     if job_state == JOB_USER_OVER_QUOTA:
                         log.info( "(%d) User (%s) is over quota: job paused" % ( job.id, job.user_id ) )
                     else:
-                        log.info(  "(%d) User (%s) is over total walltime limit: job paused" % ( job.id, job.user_id ) )
+                        log.info( "(%d) User (%s) is over total walltime limit: job paused" % ( job.id, job.user_id ) )
 
                     job.set_state( model.Job.states.PAUSED )
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
@@ -394,8 +394,8 @@ class JobHandlerQueue( object ):
                 except AssertionError as e:
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
-        if (state == JOB_READY and
-            "delta" in self.app.job_config.limits.total_walltime):
+        if ( state == JOB_READY and
+             "delta" in self.app.job_config.limits.total_walltime ):
             jobs_to_check = self.sa_session.query( model.Job ).filter(
                 model.Job.user_id == job.user.id,
                 model.Job.update_time >= datetime.datetime.now() -
@@ -411,7 +411,7 @@ class JobHandlerQueue( object ):
                 finished = None
                 for history in sorted(
                         job.state_history,
-                        key=lambda history: history.update_time):
+                        key=lambda history: history.update_time ):
                     if history.state == "running":
                         started = history.create_time
                     elif history.state == "ok":
