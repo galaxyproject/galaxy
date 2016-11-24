@@ -265,12 +265,14 @@ class JobConfiguration( object ):
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
                      walltime=str,
+                     total_walltime=str,
                      output_size=util.size_to_bytes)
 
         self.limits = Bunch(registered_user_concurrent_jobs=None,
                             anonymous_user_concurrent_jobs=None,
                             walltime=None,
                             walltime_delta=None,
+                            total_walltime={},
                             output_size=None,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
@@ -287,12 +289,26 @@ class JobConfiguration( object ):
                         self.limits.destination_total_concurrent_jobs[id] = int(limit.text)
                     else:
                         self.limits.destination_user_concurrent_jobs[id] = int(limit.text)
+                elif type == 'total_walltime':
+                    self.limits.total_walltime["window"] = (
+                        int(limit.get('window')) or 30
+                    )
+                    self.limits.total_walltime["raw"] = (
+                        types.get(type, str)(limit.text)
+                    )
                 elif limit.text:
                     self.limits.__dict__[type] = types.get(type, str)(limit.text)
 
         if self.limits.walltime is not None:
             h, m, s = [ int( v ) for v in self.limits.walltime.split( ':' ) ]
             self.limits.walltime_delta = datetime.timedelta( 0, s, 0, 0, m, h )
+
+        if "raw" in self.limits.total_walltime:
+            h, m, s = [ int( v ) for v in
+                        self.limits.total_walltime["raw"].split( ':' ) ]
+            self.limits.total_walltime["delta"] = datetime.timedelta(
+                0, s, 0, 0, m, h
+            )
 
         log.debug('Done loading job configuration')
 
