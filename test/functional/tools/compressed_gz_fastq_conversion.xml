@@ -1,4 +1,4 @@
-<tool id="compressed_fastq_conversion" name="Confirm fastq.gz is converted to fastq on demand">
+<tool id="compressed_gz_fastq_conversion" name="Confirm fastq.gz is converted to fastq on demand">
     <command>
         cat '$input1' > '$out_file1'
     </command>

@@ -99,6 +99,21 @@
     <datatype extension="fastqillumina.gz" type="galaxy.datatypes.sequence:FastqIlluminaGz" display_in_upload="true">
         <converter file="fastqilluminagz_to_fastqillumina.xml" target_datatype="fastqillumina"/>
     </datatype>
+    <datatype extension="fastq.bz2" type="galaxy.datatypes.sequence:FastqBz2" display_in_upload="true">
+        <converter file="fastqbz2_to_fastq.xml" target_datatype="fastq"/>
+    </datatype>
+    <datatype extension="fastqsanger.bz2" type="galaxy.datatypes.sequence:FastqSangerBz2" display_in_upload="true">
+        <converter file="fastqsangerbz2_to_fastqsanger.xml" target_datatype="fastqsanger"/>
+    </datatype>
+    <datatype extension="fastqsolexa.bz2" type="galaxy.datatypes.sequence:FastqSolexaBz2" display_in_upload="true">
+        <converter file="fastqsolexabz2_to_fastqsolexa.xml" target_datatype="fastqsolexa"/>
+    </datatype>
+    <datatype extension="fastqcssanger.bz2" type="galaxy.datatypes.sequence:FastqCSSangerBz2" display_in_upload="true">
+        <converter file="fastqcssangerbz2_to_fastqcssanger.xml" target_datatype="fastqcssanger"/>
+    </datatype>
+    <datatype extension="fastqillumina.bz2" type="galaxy.datatypes.sequence:FastqIlluminaBz2" display_in_upload="true">
+        <converter file="fastqilluminabz2_to_fastqillumina.xml" target_datatype="fastqillumina"/>
+    </datatype>
     <datatype extension="fqtoc" type="galaxy.datatypes.sequence:SequenceSplitLocations" display_in_upload="true"/>
     <datatype extension="eland" type="galaxy.datatypes.tabular:Eland" display_in_upload="true"/>
     <datatype extension="elandmulti" type="galaxy.datatypes.tabular:ElandMulti" display_in_upload="true"/>
@@ -638,6 +653,7 @@
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.sequence:FastqGz"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqBz2"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>
