@@ -20,7 +20,10 @@ from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size
-from galaxy.util.checkers import is_gzip
+from galaxy.util.checkers import (
+    is_bzip2,
+    is_gzip
+)
 from galaxy.util.image_util import check_image_type
 
 from . import data
@@ -748,36 +751,36 @@ Binary.register_sniffable_binary_format("fastqcssanger.gz", "fastqcssanger.gz", 
 
 
 class FastqBz2 ( BaseFastq, Binary ):
-"""Class representing a generic compressed FASTQ sequence"""
-edam_format = "format_1930"
-file_ext = "fastq.gz"
+    """Class representing a generic compressed FASTQ sequence"""
+    edam_format = "format_1930"
+    file_ext = "fastq.gz"
 Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
 class FastqSangerBz2( FastqBz2 ):
-"""Class representing a compressed FASTQ sequence ( the Sanger variant )"""
-edam_format = "format_1932"
-file_ext = "fastqsanger.bz2"
+    """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
+    edam_format = "format_1932"
+    file_ext = "fastqsanger.bz2"
 Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
 
 
 class FastqSolexaBz2( FastqBz2 ):
-"""Class representing a compressed FASTQ sequence ( the Solexa variant )"""
-edam_format = "format_1933"
-file_ext = "fastqsolexa.bz2"
+    """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
+    edam_format = "format_1933"
+    file_ext = "fastqsolexa.bz2"
 Binary.register_sniffable_binary_format("fastqsolexa.bz2", "fastqsolexa.bz2", FastqSolexaBz2)
 
 
 class FastqIlluminaBz2( FastqBz2 ):
-"""Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
-edam_format = "format_1931"
-file_ext = "fastqillumina.bz2"
+    """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
+    edam_format = "format_1931"
+    file_ext = "fastqillumina.bz2"
 Binary.register_sniffable_binary_format("fastqillumina.bz2", "fastqillumina.bz2", FastqIlluminaBz2)
 
 
 class FastqCSSangerBz2( FastqBz2 ):
-"""Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
-file_ext = "fastqcssanger.bz2"
+    """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
+    file_ext = "fastqcssanger.bz2"
 Binary.register_sniffable_binary_format("fastqcssanger.bz2", "fastqcssanger.bz2", FastqCSSangerBz2)
 
 
