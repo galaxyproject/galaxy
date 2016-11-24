@@ -71,15 +71,27 @@ class NullDatasetPathRewriter( object ):
         return None
 
 
-class OutputsToWorkingDirectoryPathRewriter( object ):
+class InputSymlinkPathRewriter( object ):
+    """
+    Rewrites input dataset paths to a path in the working directory
+    """
+    def __init__(self, working_directory):
+        self.working_directory = working_directory
+
+    def rewrite_dataset_path(self, dataset, dataset_type):
+        if dataset_type == 'input':
+            if dataset and dataset.ext and not dataset.datatype.composite_type:
+                return os.path.abspath( os.path.join( self.working_directory, "input_%d.%s" % (dataset.id, dataset.ext) ) )
+            else:
+                return None
+
+
+class OutputsToWorkingDirectoryPathRewriter( InputSymlinkPathRewriter ):
     """ Rewrites all paths to place them in the specified working
     directory for normal jobs when Galaxy is configured with
     app.config.outputs_to_working_directory. Job runner base class
     is responsible for copying these out after job is complete.
     """
-
-    def __init__( self, working_directory ):
-        self.working_directory = working_directory
 
     def rewrite_dataset_path( self, dataset, dataset_type ):
         """ Keep path the same.
@@ -87,6 +99,8 @@ class OutputsToWorkingDirectoryPathRewriter( object ):
         if dataset_type == 'output':
             false_path = os.path.abspath( os.path.join( self.working_directory, "galaxy_dataset_%d.dat" % dataset.id ) )
             return false_path
+        elif dataset_type == 'input':
+            return InputSymlinkPathRewriter.rewrite_dataset_path(self, dataset, dataset_type)
         else:
             return None
 

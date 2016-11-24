@@ -444,6 +444,11 @@ class ToolEvaluator( object ):
             global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
             raise e
         try:
+            self.__build_symlinks( )
+        except Exception as e:
+            global_tool_errors.add_error(self.tool.config_file, "Building Symlinks", e)
+            raise e
+        try:
             self.__build_environment_variables()
         except Exception as e:
             global_tool_errors.add_error(self.tool.config_file, "Building Environment Variables", e)
@@ -483,6 +488,25 @@ class ToolEvaluator( object ):
             command_line = command_line.replace(executable, abs_executable, 1)
             command_line = interpreter + " " + command_line
         self.command_line = command_line
+
+    def __can_build_symlink(self, da):
+        return da.dataset and da.dataset.ext and not da.dataset.datatype.composite_type and self.tool and not self.tool.parallelism
+
+    def __build_symlinks(self):
+        """
+        Constructs commands to symlink input files into working directory as input_<dataset_id>.<extension>.
+        This is complementary to the InputSymlinkPathRewriter class, which rewrites the paths for the tool commandline.
+        We build symlinks only for non-composite datatypes, to avoid issues with broken relative path references.
+        """
+        command_line = self.command_line
+        replacements = {da.dataset.file_name: "input_%d.%s" % (da.dataset.id, da.dataset.ext) for da in self.job.input_datasets if self.__can_build_symlink(da)}
+        library_dataset_replacements = {la.dataset.file_name: "input_%d.%s" % (la.dataset.id, la.dataset.ext) for la in self.job.input_library_datasets if self.__can_build_symlink(la)}
+        replacements.update(library_dataset_replacements)
+        link_cmds = ["ln -sf '%s' '%s' &&" % (fn, os.path.join(self.local_working_directory, symlink)) for fn, symlink in replacements.items()]
+        if link_cmds:
+            for fn, varname in replacements.items():
+                command_line = command_line.replace(fn, varname)
+            self.command_line = "%s %s" % (" ".join(link_cmds), command_line)
 
     def __build_config_files( self ):
         """

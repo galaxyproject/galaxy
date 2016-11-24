@@ -31,8 +31,13 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
 
-from .datasets import (DatasetPath, NullDatasetPathRewriter,
-    OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
+from .datasets import (
+    DatasetPath,
+    InputSymlinkPathRewriter,
+    NullDatasetPathRewriter,
+    OutputsToWorkingDirectoryPathRewriter,
+    TaskPathRewriter
+)
 from .output_checker import check_output
 
 log = logging.getLogger( __name__ )
@@ -793,8 +798,10 @@ class JobWrapper( object ):
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
         if outputs_to_working_directory:
             dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter( working_directory )
+        elif self.tool and not self.tool.parallelism:
+            dataset_path_rewriter = InputSymlinkPathRewriter( working_directory )
         else:
-            dataset_path_rewriter = NullDatasetPathRewriter( )
+            dataset_path_rewriter = NullDatasetPathRewriter()
         return dataset_path_rewriter
 
     @property
