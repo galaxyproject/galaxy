@@ -36,7 +36,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             cmd = ['sacct', '-n', '-o state']
             if cluster:
                 cmd.extend( [ '-M', cluster ] )
-            cmd.extend(['-j', "%s.batch" % job_id])
+            cmd.extend(['-j', job_id])
             p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             if p.returncode != 0:
@@ -45,7 +45,12 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
                 raise Exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
-            return stdout.strip()
+            # First line is for 'job_id'
+            # Second line is for 'job_id.batch' (only available after the batch job is complete)
+            # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
+            first_line = stdout.splitlines()[0]
+            # Strip whitespaces and the final '+' (if present)
+            return first_line.strip().rstrip('+')
 
         def _get_slurm_state():
             cmd = [ 'scontrol', '-o' ]
