@@ -2,11 +2,11 @@
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 
+import datetime
 import os
 import time
 import logging
 import threading
-import datetime
 from Queue import Queue, Empty
 
 from sqlalchemy.sql.expression import and_, or_, select, func, true, null
