@@ -86,6 +86,8 @@ class SlurmJobRunner( DRMAAJobRunner ):
                 if slurm_state == 'NOT_FOUND':
                     log.warning( '(%s/%s) Job not found, assuming job check exceeded MinJobAge and completing as successful', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     drmaa_state = self.drmaa_job_states.DONE
+                elif slurm_state == 'COMPLETED':
+                    drmaa_state = self.drmaa_job_states.DONE
                 elif slurm_state == 'TIMEOUT':
                     log.info( '(%s/%s) Job hit walltime', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
