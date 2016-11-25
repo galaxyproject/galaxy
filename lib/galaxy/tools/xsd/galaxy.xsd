@@ -45,6 +45,8 @@ A ``data_source`` tool contains a few more relevant attributes.
       <xs:all>
         <!-- TODO: Move the anyType further into macros def... -->
         <xs:element name="macros" type="xs:anyType" minOccurs="0"/>
+        <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
+        <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
@@ -5127,4 +5129,54 @@ and ``contains``.</xs:documentation>
       <xs:enumeration value="no"/>
     </xs:restriction>
   </xs:simpleType>
+  <xs:complexType name="EdamTopics">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the ``<edam_topic>`` tags.
+A tool can have any number of EDAM topic references.
+
+```xml
+   <!-- Example: this tool is about 'Statistics and probability' (http://edamontology.org/topic_2269) -->
+  <edam_topics>
+    <edam_topic>topic_2269</edam_topic>
+  </edam_topics>
+```
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="edam_topic" minOccurs="0" maxOccurs="unbounded">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="topic_[0-9]{4}"></xs:pattern>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="EdamOperations">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the ``<edam_operation>`` tags.
+A tool can have any number of EDAM operation references.
+
+```xml
+  <!-- Example: this tool performs a 'Conversion' operation (http://edamontology.org/operation_3434) -->
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+        <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
 </xs:schema>
