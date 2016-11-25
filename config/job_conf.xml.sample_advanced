@@ -763,10 +763,10 @@
          -->
         <limit type="walltime">24:00:00</limit>
 	<!-- total_walltime:
-		Total walltime that jobs may not exceed during during a
-		set period.  If total walltime of finished jobs exceeds
-		this value, any new jobs are paused.  window is a number
-		in days, representing the period.
+		Total walltime that jobs may not exceed during a set period.
+		If total walltime of finished jobs exceeds this value, any
+		new jobs are paused.  `window` is a number in days,
+		representing the period.
          -->
         <limit type="total_walltime" window="30">24:00:00</limit>
         <!-- output_size:
