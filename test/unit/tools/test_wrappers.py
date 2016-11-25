@@ -175,6 +175,7 @@ class MockTool(object):
     def __init__(self, app):
         self.app = app
         self.options = Bunch(sanitize=False)
+        self.parallelism = None
 
 
 class MockApp(object):
