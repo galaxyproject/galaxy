@@ -2,6 +2,7 @@
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <!-- Used on the metadata edit page. -->
     <requirements>
+        <requirement type="package" version="332">ucsc-twobittofa</requirement>
         <requirement type="package">ucsc_tools</requirement>
     </requirements>
     <command>faToTwoBit '$input' '$output'</command>
