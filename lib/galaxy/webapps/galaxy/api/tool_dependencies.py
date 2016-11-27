@@ -167,7 +167,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
     @require_admin
     def clean(self, trans, id=None, **kwds):
         """
-        POST /api/dependencies_resolver/clean
+        POST /api/dependencies_resolver/{index}/clean
 
         Cleans up intermediate files created by resolvers during the dependency
         installation.

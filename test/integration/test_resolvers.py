@@ -97,7 +97,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         self._assert_status_code_is( create_response, 200 )
 
     def test_conda_clean( self ):
-        endpoint = 'dependencies_resolvers/clean'
+        endpoint = 'dependency_resolvers/clean'
         create_response = self._post(endpoint, data={}, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
