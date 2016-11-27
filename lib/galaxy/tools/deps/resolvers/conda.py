@@ -11,7 +11,6 @@ import galaxy.tools.deps.installable
 from ..conda_util import (
     build_isolated_environment,
     cleanup_failed_install,
-    exec_clean,
     CondaContext,
     CondaTarget,
     install_conda,
@@ -100,7 +99,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.copy_dependencies = copy_dependencies
 
     def clean(self, **kwds):
-        return exec_clean()
+        return self.conda_context.exec_clean()
 
     def resolve(self, name, version, type, **kwds):
         # Check for conda just not being there, this way we can enable

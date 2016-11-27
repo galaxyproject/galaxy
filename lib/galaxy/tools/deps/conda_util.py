@@ -219,7 +219,8 @@ class CondaContext(installable.InstallableContext):
         Clean up after conda installation.
         """
         clean_base_args = [
-            "--tarballs"
+            "--tarballs",
+            "-y"
         ]
         clean_base_args.extend(args)
         return self.exec_command("clean", clean_base_args)
