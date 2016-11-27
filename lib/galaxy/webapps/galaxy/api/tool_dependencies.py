@@ -162,3 +162,22 @@ class ToolDependenciesAPIController( BaseAPIController ):
                     the corresponding resolver (keyed on 'index').
         """
         return self._view.manager_requirements()
+
+    @expose_api
+    @require_admin
+    def clean(self, trans, id=None, **kwds):
+        """
+        POST /api/dependencies_resolver/clean
+
+        Cleans up intermediate files created by resolvers during the dependency
+        installation.
+
+        :type   index:    int
+        :param  index:    index of the dependency resolver
+
+        :rtype:     dict
+        :returns:   a dictified description of the requirement that could
+                    be resolved (keyed on 'requirement') and the index of
+                    the corresponding resolver (keyed on 'index').
+        """
+        return self._view.clean(id, **kwds)

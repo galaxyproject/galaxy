@@ -125,5 +125,19 @@ class DependencyResolversView(object):
         """
         return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
 
+
     def get_requirements_status(self, requested_requirements, installed_tool_dependencies=None):
         return [self.manager_dependency(installed_tool_dependencies=installed_tool_dependencies, **req) for req in requested_requirements]
+
+    def clean(self, index=None, **kwds):
+        if index:
+            resolver = self._dependency_resolver(index)
+            if not hasattr(resolver, "clean"):
+                raise NotImplemented()
+            else:
+                resolver.clean()
+                return "OK"
+        else:
+            [resolver.clean(**kwds) for resolver in self._dependency_resolvers if hasattr(resolver, 'clean')]
+            return "OK"
+
