@@ -17,6 +17,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.conda_tmp_prefix = mkdtemp()
+        config["use_cached_dep_manager"] = True
         config["conda_auto_init"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
 
@@ -82,3 +83,15 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
         assert response['dependency_type'] == 'conda' and not response['exact']
+
+    def test_conda_install_through_tools_api( self ):
+        tool_id = 'mulled_example_multi_1'
+        endpoint = "tools/%s/install_dependencies" % tool_id
+        data = {'id': tool_id}
+        create_response = self._post(endpoint, data=data, admin=True)
+        self._assert_status_code_is( create_response, 200 )
+        response = create_response.json()
+        assert any([True for d in response if d['dependency_type'] == 'conda'])
+        endpoint = "tools/%s/build_dependency_cache" % tool_id
+        create_response = self._post(endpoint, data=data, admin=True)
+        self._assert_status_code_is( create_response, 200 )
