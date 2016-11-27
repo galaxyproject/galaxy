@@ -270,6 +270,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict( method=[ "POST" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/requirements', action="manager_requirements", controller="tool_dependencies" )
+    webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies", conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict( method=[ "POST" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/{id}/requirements', action="resolver_requirements", controller="tool_dependencies" )
