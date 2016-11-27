@@ -1306,7 +1306,7 @@ class Tool( object, Dictifiable ):
         visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
-    def build_dependency_cache(self):
+    def build_dependency_cache(self, **kwds):
         if isinstance(self.app.toolbox.dependency_manager, CachedDependencyManager):
             self.app.toolbox.dependency_manager.build_cache(
                 requirements=self.requirements,
@@ -1314,7 +1314,8 @@ class Tool( object, Dictifiable ):
                 tool_dir=self.tool_dir,
                 job_directory=None,
                 metadata=False,
-                tool_instance=self
+                tool_instance=self,
+                **kwds
             )
 
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):

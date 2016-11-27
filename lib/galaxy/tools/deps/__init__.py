@@ -5,6 +5,7 @@ Dependency management for tools.
 import json
 import logging
 import os.path
+import shutil
 
 from collections import OrderedDict
 
@@ -175,6 +176,12 @@ class CachedDependencyManager(DependencyManager):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for req, dep in resolved_dependencies.items() if dep.cacheable]
         hashed_requirements_dir = self.get_hashed_requirements_path(cacheable_dependencies)
+        if kwds.get('force_rebuild', False) and os.path.exists(hashed_requirements_dir):
+            try:
+                shutil.rmtree(hashed_requirements_dir)
+            except Exception:
+                log.warning("Could not delete cached requirements directory '%s'" % hashed_requirements_dir)
+                pass
         [dep.build_cache(hashed_requirements_dir) for dep in cacheable_dependencies]
 
     def dependency_shell_commands( self, requirements, **kwds ):
