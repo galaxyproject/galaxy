@@ -131,12 +131,12 @@ var DatasetListItemEdit = _super.extend(
         var jobID = this.model.attributes.creating_job;
 
         var parseToolBuild = function(data) {
-            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee; padding: 5px;"><hr>'
+            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee; padding: 5px;">'
             if (data.name && data.help){
-                helpString += '<strong>Tool help for ' + data.name + '</strong><br/><hr>';
+                helpString += '<strong>Tool help for ' + data.name + '</strong><hr/>';
                 helpString += data.help;
             } else {
-                helpString += '<strong>Tool help is unavailable for this dataset.</strong><br/><hr>';
+                helpString += '<strong>Tool help is unavailable for this dataset.</strong><hr/>';
             }
             helpString += '</div>';
             $('#dataset-' + datasetID + " > .details").append($.parseHTML(helpString));
