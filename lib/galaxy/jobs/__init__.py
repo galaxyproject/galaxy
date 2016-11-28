@@ -372,6 +372,7 @@ class JobConfiguration( object ):
                             anonymous_user_concurrent_jobs=self.app.config.anonymous_user_job_limit,
                             walltime=self.app.config.job_walltime,
                             walltime_delta=self.app.config.job_walltime_delta,
+                            total_walltime={},
                             output_size=self.app.config.output_size_limit,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
