@@ -98,6 +98,9 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
 
+    def clean(self, **kwds):
+        return self.conda_context.exec_clean()
+
     def resolve(self, name, version, type, **kwds):
         # Check for conda just not being there, this way we can enable
         # conda by default and just do nothing in not configured.
