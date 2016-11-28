@@ -122,7 +122,7 @@ var DatasetListItemEdit = _super.extend(
         return $details;
     },
 
-    /************************************************************************** 
+    /**************************************************************************
      * Render help button to show tool help text without rerunning the tool.
      * Issue #2100
      */
@@ -131,21 +131,27 @@ var DatasetListItemEdit = _super.extend(
         var jobID = this.model.attributes.creating_job;
 
         var parseToolBuild = function(data) {
-            var toolName = data.name;
-            var toolHelp = (data.help) ? data.help : "No help is available for the tool.";
-            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee; padding: 5px;"><hr><strong>Tool Help for ' + toolName + '</strong><br/><hr>';
-            helpString += toolHelp;
+            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee; padding: 5px;"><hr>'
+            if (data.name && data.help){
+                helpString += '<strong>Tool help for ' + data.name + '</strong><br/><hr>';
+                helpString += data.help;
+            } else {
+                helpString += '<strong>Tool help is unavailable for this dataset.</strong><br/><hr>';
+            }
             helpString += '</div>';
-            $('#dataset-' + datasetID).append($.parseHTML(helpString));
+            $('#dataset-' + datasetID + " > .details").append($.parseHTML(helpString));
         };
         var parseToolID = function(data) {
             $.ajax({
                 url: '/api/tools/' + data.tool_id + '/build'
             }).done(function(data){
                 parseToolBuild(data);
-            }).fail(function(){console.log("Failed in api tools build call")});
+            }).fail(function(){
+                console.log("Failed in api tools build call")
+                parseToolBuild({})
+            });
         };
-        
+
         return faIconButton({
             title: 'Tool Help',
             classes: 'icon-btn',
@@ -155,7 +161,7 @@ var DatasetListItemEdit = _super.extend(
                 var divString = 'thdiv-' + datasetID;
                 if ($("#" + divString).length > 0)
                 {
-                    $("#" + divString).toggle();     
+                    $("#" + divString).toggle();
                 } else {
                     $.ajax({
                     url: '/api/jobs/' + jobID
