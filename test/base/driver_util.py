@@ -88,6 +88,17 @@ def build_logger():
     return log
 
 
+def ensure_test_file_dir_set():
+    """Ensure GALAXY_TEST_FILE_DIR setup in environment for test data resolver.
+
+    Return first directory for backward compat.
+    """
+    galaxy_test_file_dir = os.environ.get('GALAXY_TEST_FILE_DIR', GALAXY_TEST_FILE_DIR)
+    os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
+    first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+    return first_test_file_dir
+
+
 def setup_galaxy_config(
     tmpdir,
     use_test_file_dir=False,
@@ -110,9 +121,7 @@ def setup_galaxy_config(
     job_working_directory = tempfile.mkdtemp(prefix='job_working_directory_', dir=tmpdir)
 
     if use_test_file_dir:
-        galaxy_test_file_dir = os.environ.get('GALAXY_TEST_FILE_DIR', GALAXY_TEST_FILE_DIR)
-        os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
-        first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+        first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
             first_test_file_dir = os.path.join(galaxy_root, first_test_file_dir)
         library_import_dir = first_test_file_dir
@@ -643,6 +652,8 @@ class GalaxyTestDriver(TestDriver):
             log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
         else:
             log.info("Functional tests will be run against %s" % self.external_galaxy)
+            # Ensure test file directory setup even though galaxy config isn't built.
+            ensure_test_file_dir_set()
 
     def setup_shed_tools(self, testing_migrated_tools=False, testing_installed_tools=True):
         setup_shed_tools_for_test(
