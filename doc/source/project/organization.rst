@@ -103,8 +103,11 @@ Pull requests changing or clarifying the procedures governing this repository:
 - Must be made to the ``dev`` branch of this repository.
 - Must remain open for at least 192 hours (unless every qualified committer has
   voted).
-- Require binding *+1* votes from at least 25% of qualified *committers* with no
-  *-1* binding votes.
+- Require either:
+  - Binding *+1* votes from at least 25% of qualified *committers* with no
+    *-1* binding votes. -or-
+  - Binding *+1* votes from at least 70% of qualified *committers* irrespective
+    of *-1* binding votes.
 - Should be titled with the prefix *[PROCEDURES]* and tagged with
   the *procedures* tag in Github.
 - Should not be modified once open. If changes are needed, the pull request
@@ -139,11 +142,7 @@ Vetoes
 A note on vetoes (*-1* votes) taken verbatim from the
 `Apache Foundation <http://www.apache.org/foundation/voting.html>`_:
 
-  "A code-modification proposal may be stopped dead in its tracks by a *-1* vote
-  by a qualified voter. This constitutes a veto, and it cannot be overruled nor
-  overridden by anyone. Vetoes stand until and unless withdrawn by their casters.
-  
-  To prevent vetoes from being used capriciously, they must be accompanied by a
+  "To prevent vetoes from being used capriciously, they must be accompanied by a
   technical justification showing why the change is bad (opens a security
   exposure, negatively affects performance, etc. ). A veto without a
   justification is invalid and has no weight."
@@ -152,10 +151,13 @@ For votes regarding non-coding issues such as procedure changes, the requirement
 that a veto is accompanied by a *technical* justification is relaxed somewhat,
 though a well reasoned justification must still be included.
 
+Any veto can be overridden if at least 70% of qualified *committers* register
+binding *+1* votes for the change.
+
 Reversions
 ----------
 
-A *-1* vote on any recently merged pull request requires an immediate
+A new *-1* vote on any recently merged pull request requires an immediate
 reversion of the merged pull request. The backout of such a pull request
 invokes a mandatory, minimum 72 hour, review period.
 
