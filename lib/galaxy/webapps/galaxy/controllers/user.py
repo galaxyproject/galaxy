@@ -28,7 +28,7 @@ from galaxy.web.base.controller import (BaseUIController,
                                         CreatesApiKeysMixin,
                                         CreatesUsersMixin,
                                         UsesFormDefinitionsMixin)
-from galaxy.web.form_builder import build_select_field, CheckboxField
+from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger( __name__ )
