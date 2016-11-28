@@ -161,7 +161,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
       - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version.
 
-      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `{version}` so it properly tags new PRs.
+      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
 
 - [ ] **Deploy and Test Release**
 
@@ -169,7 +169,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
       - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
       - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
       - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
-      - [ ] [Update bioblend testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target - add ``env`` target ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to ``tox.ini``.
+      - [ ] [Update BioBlend CI testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target: add ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to the ``env`` list in ``.travis.yml`` .
 
 - [ ] **Create Release Notes**
 
