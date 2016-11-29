@@ -904,6 +904,15 @@ class InstallRepositoryManager( object ):
             self.install_model.context.refresh( tool_shed_repository )
             metadata = tool_shed_repository.metadata
             if 'tools' in metadata:
+                if install_resolver_dependencies:
+                    requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
+                    [self._view.install_dependency(id=None, **req) for req in requirements]
+                    cached_requirements = []
+                    for tool_d in metadata['tools']:
+                        tool = self.app.toolbox._tools_by_id.get(tool_d['guid'], None)
+                        if tool and tool.requirements not in cached_requirements:
+                            cached_requirements.append(tool.requirements)
+                            tool.build_dependency_cache()
                 # Get the tool_versions from the tool shed for each tool in the installed change set.
                 self.update_tool_shed_repository_status( tool_shed_repository,
                                                          self.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
@@ -913,9 +922,6 @@ class InstallRepositoryManager( object ):
                     error_message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % tool_shed_repository.name
                     error_message += "Reset all of this repository's metadata in the tool shed, then set the installed tool versions "
                     error_message += "from the installed repository's <b>Repository Actions</b> menu.  "
-                if install_resolver_dependencies:
-                    requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
-                    [self._view.install_dependency(id=None, **req) for req in requirements]
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
                 # Install tool dependencies.
