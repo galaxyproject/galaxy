@@ -55,7 +55,7 @@
         sending all necessary information, and appropriate action will be taken.
     </p>
     <p>
-        <a href="https://wiki.galaxyproject.org/ToolShedRepositoryFeatures#Contact_repository_owner" target="_blank">Contact the repository owner</a> for 
+        <a href="https://wiki.galaxyproject.org/ToolShedRepositoryFeatures#Contact_repository_owner" target="_blank">Contact the repository owner</a> for
         general questions or concerns.
     </p>
 </div>
@@ -100,6 +100,7 @@
                         <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
                     </table>
                 </div>
+                <div class="detail-section">
                 <%
                     if len( shed_tool_conf_select_field.options ) == 1:
                         select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "
@@ -116,6 +117,7 @@
                     </div>
                 </div>
                 <div style="clear: both"></div>
+                </div>
             %else:
                 <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf|h}"/>
             %endif
@@ -130,7 +132,7 @@
                 <label>Select existing tool panel section:</label>
                 ${tool_panel_section_select_field.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
-                    Choose an existing section in your tool panel to contain the installed tools (optional).  
+                    Choose an existing section in your tool panel to contain the installed tools (optional).
                 </div>
             </div>
             <div class="form-row">
