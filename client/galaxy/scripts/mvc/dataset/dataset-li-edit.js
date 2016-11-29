@@ -131,7 +131,7 @@ var DatasetListItemEdit = _super.extend(
         var jobID = this.model.attributes.creating_job;
 
         var parseToolBuild = function(data) {
-            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee; padding: 5px;">'
+            var helpString = '<div id="thdiv-' + datasetID + '" class="toolhelp">'
             if (data.name && data.help){
                 helpString += '<strong>Tool help for ' + data.name + '</strong><hr/>';
                 helpString += data.help;
