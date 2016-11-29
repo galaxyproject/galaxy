@@ -207,6 +207,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
     metadata_parameter_file.close()
     return True
 
+
 if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--json_parameter_file', dest='json_parameter_file', action='store', type="string", default=None, help='json_parameter_file' )

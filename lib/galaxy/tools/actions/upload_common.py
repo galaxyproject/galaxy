@@ -1,12 +1,12 @@
 import logging
 import os
 import pwd
-import StringIO
 import subprocess
 import tempfile
 from cgi import FieldStorage
 from json import dumps
 
+from six import StringIO
 from sqlalchemy.orm import eagerload_all
 
 from galaxy import datatypes, util
@@ -25,7 +25,7 @@ def persist_uploads( params ):
         for upload_dataset in params['files']:
             f = upload_dataset['file_data']
             if isinstance( f, FieldStorage ):
-                assert not isinstance( f.file, StringIO.StringIO )
+                assert not isinstance( f.file, StringIO )
                 assert f.file.name != '<fdopen>'
                 local_filename = util.mkstemp_ln( f.file.name, 'upload_file_data_' )
                 f.file.close()
@@ -34,7 +34,7 @@ def persist_uploads( params ):
             elif type( f ) == dict and 'local_filename' not in f:
                 raise Exception( 'Uploaded file was encoded in a way not understood by Galaxy.' )
             if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
-                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file( StringIO.StringIO( upload_dataset['url_paste'] ), prefix="strio_url_paste_" )
+                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file( StringIO( upload_dataset['url_paste'] ), prefix="strio_url_paste_" )
             else:
                 upload_dataset['url_paste'] = None
             new_files.append( upload_dataset )
@@ -153,7 +153,7 @@ def __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, stat
         # Create subfolders if desired
         for name in uploaded_dataset.in_folder.split( os.path.sep ):
             trans.sa_session.refresh( folder )
-            matches = filter( lambda x: x.name == name, active_folders( trans, folder ) )
+            matches = [x for x in active_folders( trans, folder ) if x.name == name]
             if matches:
                 folder = matches[0]
             else:
@@ -300,7 +300,7 @@ def create_paramfile( trans, uploaded_datasets ):
         if uploaded_dataset.type == 'composite':
             # we need to init metadata before the job is dispatched
             data.init_meta()
-            for meta_name, meta_value in uploaded_dataset.metadata.iteritems():
+            for meta_name, meta_value in uploaded_dataset.metadata.items():
                 setattr( data.metadata, meta_name, meta_value )
             trans.sa_session.add( data )
             trans.sa_session.flush()
@@ -311,7 +311,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          metadata=uploaded_dataset.metadata,
                          primary_file=uploaded_dataset.primary_file,
                          composite_file_paths=uploaded_dataset.composite_files,
-                         composite_files=dict( [ ( k, v.__dict__ ) for k, v in data.datatype.get_composite_files( data ).items() ] ) )
+                         composite_files=dict( ( k, v.__dict__ ) for k, v in data.datatype.get_composite_files( data ).items() ) )
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary
@@ -379,7 +379,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
     log.info( 'tool %s created job id %d' % ( tool.id, job.id ) )
     trans.log_event( 'created job id %d' % job.id, tool_id=tool.id )
 
-    for name, value in tool.params_to_strings( params, trans.app ).iteritems():
+    for name, value in tool.params_to_strings( params, trans.app ).items():
         job.add_parameter( name, value )
     job.add_parameter( 'paramfile', dumps( json_file_path ) )
     object_store_id = None
@@ -402,7 +402,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
     job.set_state( job.states.NEW )
     job.set_handler( tool.get_job_handler( None ) )
     if job_params:
-        for name, value in job_params.iteritems():
+        for name, value in job_params.items():
             job.add_parameter( name, value )
     trans.sa_session.add( job )
     trans.sa_session.flush()

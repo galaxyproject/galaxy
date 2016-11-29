@@ -31,7 +31,6 @@ window.app = function app( options, bootstrapped ){
         toolPanel = new ToolPanel({
             el                  : '#left',
             userIsAnonymous     : Galaxy.user.isAnonymous(),
-            search_url          : config.search_url,
             toolbox             : config.toolbox,
             toolbox_in_panel    : config.toolbox_in_panel,
             stored_workflow_menu_entries : config.stored_workflow_menu_entries,
@@ -79,7 +78,7 @@ window.app = function app( options, bootstrapped ){
 
     // .................................................... routes
     /**  */
-    var router = new ( Backbone.Router.extend({
+    Galaxy.router = new ( Backbone.Router.extend({
         // TODO: not many client routes at this point - fill and remove from server.
         // since we're at root here, this may be the last to be routed entirely on the client.
         initialize : function( options ){

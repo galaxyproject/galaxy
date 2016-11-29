@@ -27,6 +27,7 @@ class RemoteGalaxy(object):
         req = requests.post(c_url, data=json.dumps(payload), params=params, headers={'Content-Type': 'application/json'} )
         return req.json()
 
+
 if __name__ == "__main__":
     server = sys.argv[1]
     api_key = sys.argv[2]

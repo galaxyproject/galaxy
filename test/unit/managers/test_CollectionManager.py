@@ -1,23 +1,15 @@
 #!/usr/bin/env python
 """
 """
-import os
-import imp
 import unittest
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-
 from galaxy import model
-
-from base import BaseTestCase
-from base import CreatesCollectionsMixin
-from galaxy.managers.datasets import DatasetManager
-from galaxy.managers.histories import HistoryManager
-from galaxy.managers.hdas import HDAManager
-
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.datasets import DatasetManager
+from galaxy.managers.hdas import HDAManager
+from galaxy.managers.histories import HistoryManager
 
+from .base import BaseTestCase, CreatesCollectionsMixin
 
 # =============================================================================
 default_password = '123456'

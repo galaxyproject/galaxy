@@ -1,4 +1,5 @@
 from __future__ import print_function
+
 import os
 from xml.etree import ElementTree as ET
 
@@ -166,6 +167,7 @@ def assemble():
     toolbox.addElementsTo(toolboxelement)
 
     print(prettify(toolboxelement))
+
 
 if __name__ == "__main__":
     assemble()

@@ -217,6 +217,18 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # of extra disk space usage and extra time spent copying packages.
 #conda_copy_dependencies = False
 
+# Certain dependency resolvers (namely Conda) take a considerable amount of
+# time to build an isolated job environment in the job_working_directory if the
+# job working directory is on a network share.  Set the following option to True
+# to cache the dependencies in a folder. This option is beta and should only be
+# used if you experience long waiting times before a job is actually submitted
+# to your cluster.
+#use_cached_dependency_manager = False
+
+# By default the tool_dependency_cache_dir is the _cache directory
+# of the tool dependency directory
+#tool_dependency_cache_dir = <tool_dependency_dir>/_cache
+
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml

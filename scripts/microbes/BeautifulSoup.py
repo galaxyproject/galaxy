@@ -1531,6 +1531,7 @@ class RobustInsanelyWackAssHTMLParser(MinimalSoup):
 class SimplifyingSOAPParser(BeautifulSOAP):
     pass
 
+
 ######################################################
 #
 # Bonus library: Unicode, Dammit

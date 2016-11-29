@@ -8,9 +8,9 @@
 
 %if users:
     <div class="toolForm">
-            <div class="toolFormTitle">Users informations</div>
+            <div class="toolFormTitle">User Information</div>
             <table class="grid">
-                <thead><th>UID</th><th>email</th></thead>
+                <thead><th>UID</th><th>email</th><th>API Key</th><th>Actions</th></thead>
                 <tbody>
                 %for user in users:
                      <tr>

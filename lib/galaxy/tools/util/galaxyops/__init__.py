@@ -13,6 +13,7 @@ def fail( msg ):
     print >> sys.stderr, msg
     sys.exit( 1 )
 
+
 # Default chrom, start, end, strand cols for a bed file
 BED_DEFAULT_COLS = 0, 1, 2, 5
 

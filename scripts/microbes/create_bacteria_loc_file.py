@@ -68,5 +68,6 @@ def __main__():
             if os.path.exists( os.path.join( org['base_dir'], "%s.Glimmer3.bed" % chr['chromosome'] ) ):
                 print "DATA\t%s_%s_%s\t%s\t%s\t%s\t%s\t%s" % ( build, chr['chromosome'], "Glimmer3", build, chr['chromosome'], "Glimmer3", "bed", os.path.join( org['base_dir'], "%s.Glimmer3.bed" % chr['chromosome'] ) )
 
+
 if __name__ == "__main__":
     __main__()

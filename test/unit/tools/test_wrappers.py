@@ -1,17 +1,20 @@
 import os
 import tempfile
-
 from xml.etree.ElementTree import XML
 
 from galaxy.datatypes.metadata import MetadataSpecCollection
-from galaxy.tools.parameters.basic import DrillDownSelectToolParameter
-from galaxy.tools.parameters.basic import IntegerToolParameter
-from galaxy.tools.parameters.basic import SelectToolParameter
-from galaxy.tools.wrappers import DatasetFilenameWrapper
-from galaxy.tools.wrappers import InputValueWrapper
-from galaxy.tools.wrappers import RawObjectWrapper
-from galaxy.tools.wrappers import SelectToolParameterWrapper
 from galaxy.jobs.datasets import DatasetPath
+from galaxy.tools.parameters.basic import (
+    DrillDownSelectToolParameter,
+    IntegerToolParameter,
+    SelectToolParameter
+)
+from galaxy.tools.wrappers import (
+    DatasetFilenameWrapper,
+    InputValueWrapper,
+    RawObjectWrapper,
+    SelectToolParameterWrapper
+)
 from galaxy.util.bunch import Bunch
 
 

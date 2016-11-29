@@ -32,4 +32,5 @@ def assert_error_code_is( response, error_code ):
     err_code = response[ "err_code" ]
     assert err_code == int( error_code ), ASSERT_FAIL_ERROR_CODE % ( err_code, int( error_code ) )
 
+
 assert_has_key = assert_has_keys

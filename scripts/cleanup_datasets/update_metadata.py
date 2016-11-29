@@ -6,8 +6,10 @@ Updates metadata in the database to match rev 1891.
 Remember to backup your database before running.
 """
 from __future__ import print_function
+
 import os
 import sys
+
 from six.moves import configparser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
@@ -56,6 +58,7 @@ def main():
 
     app.shutdown()
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

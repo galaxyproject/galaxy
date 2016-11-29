@@ -166,5 +166,6 @@ def _doc_or_none(tag):
     else:
         return doc_el.text
 
+
 if __name__ == '__main__':
     main()

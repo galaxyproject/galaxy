@@ -4,6 +4,7 @@ Removes a dataset file ( which was first renamed by appending _purged to the fil
 Usage: python remove_renamed_datasets_from_disk.py renamed.log
 """
 from __future__ import print_function
+
 import os
 import sys
 

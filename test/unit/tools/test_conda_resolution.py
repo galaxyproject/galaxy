@@ -1,12 +1,13 @@
 import os
 import shutil
+import unittest
 from tempfile import mkdtemp
 
-import unittest as unittest
-
-from galaxy.tools.deps import DependencyManager
+from galaxy.tools.deps import (
+    conda_util,
+    DependencyManager
+)
 from galaxy.tools.deps.resolvers.conda import CondaDependencyResolver
-from galaxy.tools.deps import conda_util
 
 
 def skip_unless_environ(var):

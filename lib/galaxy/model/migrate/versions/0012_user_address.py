@@ -35,6 +35,7 @@ def display_migration_details():
     print("which is a string, allowing for more flexibility with request states.")
     print("========================================")
 
+
 UserAddress_table = Table( "user_address", metadata,
                            Column( "id", Integer, primary_key=True),
                            Column( "create_time", DateTime, default=now ),

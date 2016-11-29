@@ -37,7 +37,6 @@ Members
 - John Chilton (@jmchilton)
 - Dave Clements (@tnabtaf)
 - Nate Coraor (@natefoo)
-- Carl Eberhard (@carlfeberhard)
 - Jeremy Goecks (@jgoecks)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
@@ -142,7 +141,7 @@ A note on vetoes (*-1* votes) taken verbatim from the
   "A code-modification proposal may be stopped dead in its tracks by a *-1* vote
   by a qualified voter. This constitutes a veto, and it cannot be overruled nor
   overridden by anyone. Vetoes stand until and unless withdrawn by their casters.
-  
+
   To prevent vetoes from being used capriciously, they must be accompanied by a
   technical justification showing why the change is bad (opens a security
   exposure, negatively affects performance, etc. ). A veto without a

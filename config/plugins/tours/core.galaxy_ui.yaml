@@ -38,8 +38,6 @@ steps:
       element: "button#btn-new"
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
       position: "top"
-      preclick:
-        - ".upload-button"
 
     - title: "Insert URLs"
       element: ".upload-text-content:first"
@@ -97,7 +95,7 @@ steps:
       #backdrop: true
 
     - title: "Tool parameters"
-      element: '#uid-0'
+      element: '#center-panel .ui-portlet-limited'
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
       position: "right"
 
@@ -165,7 +163,7 @@ steps:
         - ".fa-refresh:eq(1)"
 
 
-    - title: "Panel collaps"
+    - title: "Panel collapse"
       element: "#left > div.unified-panel-footer > div.panel-collapse.left"
       intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side. Clicking the panel arrow on the right hand side, collapses the history."
       position: "top"

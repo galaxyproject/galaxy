@@ -126,6 +126,7 @@ def admin_job_lock(app, **kwargs):
     log.info("Administrative Job Lock is now set to %s. Jobs will %s dispatch."
              % (job_lock, "not" if job_lock else "now"))
 
+
 control_message_to_task = { 'create_panel_section': create_panel_section,
                             'reload_tool': reload_tool,
                             'reload_toolbox': reload_toolbox,
