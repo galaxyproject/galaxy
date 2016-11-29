@@ -139,6 +139,7 @@ def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
 
+
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
 cond_text = sys.argv[3]

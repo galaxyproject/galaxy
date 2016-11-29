@@ -268,5 +268,6 @@ def __main__():
     fout_c.seek(0)
     os.system("cat %s %s %s %s %s | cat > %s" % (fcov.name, fout_a.name, fout_t.name, fout_g.name, fout_c.name, out_f3name))
 
+
 if __name__ == "__main__":
     __main__()

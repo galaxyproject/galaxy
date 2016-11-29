@@ -152,6 +152,7 @@ class Pdf( Image ):
         except IndexError:
             return False
 
+
 Binary.register_sniffable_binary_format("pdf", "pdf", Pdf)
 
 

@@ -53,6 +53,7 @@ tools = {
 def usage():
     sys.exit("usage: check_galaxy.py <server>")
 
+
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
 except getopt.GetoptError as e:
@@ -366,9 +367,8 @@ def dprint(str):
     if debug:
         print(str)
 
-# do stuff here
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     dprint("checking %s" % server)
 
     b = Browser()

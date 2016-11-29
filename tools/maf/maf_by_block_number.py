@@ -45,5 +45,6 @@ def __main__():
     if len( failed_lines ) > 0:
         print("Failed to extract from %i lines (%s)." % ( len( failed_lines ), ",".join( failed_lines ) ))
 
+
 if __name__ == "__main__":
     __main__()

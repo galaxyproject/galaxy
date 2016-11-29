@@ -247,5 +247,6 @@ def main():
         if skipped_lines == i:
             print('Consider changing the metadata for the input dataset by clicking on the pencil icon in the history item.')
 
+
 if __name__ == "__main__":
     main()

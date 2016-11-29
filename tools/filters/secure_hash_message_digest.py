@@ -43,5 +43,6 @@ def __main__():
     output.write( '%s\n' % ( '\t'.join( x.hexdigest() for x in algorithms.values() ) ) )
     output.close()
 
+
 if __name__ == "__main__":
     __main__()

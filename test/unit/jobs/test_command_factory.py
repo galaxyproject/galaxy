@@ -1,6 +1,6 @@
 import os
-from os import getcwd
 import shutil
+from os import getcwd
 from tempfile import mkdtemp
 from unittest import TestCase
 
