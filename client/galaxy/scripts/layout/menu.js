@@ -15,7 +15,7 @@ var Collection = Backbone.Collection.extend({
         // Chat server tab
         //
         var extendedNavItem = new GenericNav.GenericNavView();
-        this.add(extendedNavItem.render()); 
+        this.add(extendedNavItem.render());
 
         //
         // Analyze data tab.
@@ -147,7 +147,7 @@ var Collection = Backbone.Collection.extend({
         var helpTab = {
             id              : 'help',
             title           : 'Help',
-            tooltip         : 'Support, contact, and community hubs',
+            tooltip         : 'Support, contact, and community',
             menu            : [{
                     title   : 'Support',
                     url     : options.support_url,
@@ -230,7 +230,7 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : 'User',
                 cls             : 'loggedin-only',
-                tooltip         : 'Account preferences and saved data',
+                tooltip         : 'Account and saved data',
                 menu            : [{
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },{
