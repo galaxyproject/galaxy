@@ -25,7 +25,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     icon            : 'fa-comments-o'
                 },
                 'permissions': {
-                    title           : 'Change default history permissions',
+                    title           : 'Set dataset permissions for new histories',
                     description     : 'Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.',
                     url             : 'api/users/' + Galaxy.user.id + '/permissions/inputs',
                     icon            : 'fa-users',
