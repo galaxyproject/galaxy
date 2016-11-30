@@ -16,6 +16,10 @@ from galaxy.webapps.galaxy.controllers.user import User as BaseUser
 class User( BaseUser ):
 
     @web.expose
+    def index( self, trans, cntrller='user', **kwd ):
+        return trans.fill_template( '/webapps/tool_shed/user/index.mako', cntrller=cntrller )
+
+    @web.expose
     def manage_user_info( self, trans, cntrller, **kwd ):
         '''Manage a user's login, password, public username, type, addresses, etc.'''
         params = util.Params( kwd )

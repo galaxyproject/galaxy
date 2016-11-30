@@ -77,10 +77,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     installed_len_files = None
 
     @web.expose
-    def index( self, trans, cntrller='user', **kwd ):
-        return trans.fill_template( '/user/index.mako', cntrller=cntrller )
-
-    @web.expose
     def openid_auth( self, trans, **kwd ):
         '''Handles user request to access an OpenID provider'''
         if not trans.app.config.enable_openid:
