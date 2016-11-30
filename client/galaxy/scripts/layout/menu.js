@@ -235,8 +235,11 @@ var Collection = Backbone.Collection.extend({
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },{
                         title   : 'Preferences',
-                        url     : 'user?cntrller=user',
-                        target  : 'galaxy_main'
+                        url     : 'users',
+                        target  : 'galaxy_main',
+                        onclick : function() {
+                            window.location = Galaxy.root + 'users';
+                        }
                     },{
                         title   : 'Custom Builds',
                         url     : 'user/dbkeys',
@@ -258,17 +261,8 @@ var Collection = Backbone.Collection.extend({
                         title   : 'Saved Pages',
                         url     : 'page/list',
                         target  : '_top'
-                    },{
-                        title   : 'API Keys',
-                        url     : 'user/api_keys?cntrller=user',
-                        target  : 'galaxy_main'
-                }]
+                    }]
             };
-            options.use_remote_user && userTab.menu.push({
-                title   : 'Public Name',
-                url     : 'user/edit_username?cntrller=user',
-                target  : 'galaxy_main'
-            });
             this.add( userTab );
         }
         var activeView = this.get( options.active_view );

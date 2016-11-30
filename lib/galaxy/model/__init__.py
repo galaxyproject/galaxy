@@ -4208,6 +4208,21 @@ class FormDefinition( object, Dictifiable ):
         self.type = form_type
         self.layout = layout
 
+    def to_dict( self, user=None, values=None, security=None ):
+        values = values or {}
+        form_def = { 'id': security.encode_id( self.id ) if security else self.id, 'name': self.name, 'inputs': [] }
+        for field in self.fields:
+            FieldClass = ( { 'AddressField'         : AddressField,
+                             'CheckboxField'        : CheckboxField,
+                             'HistoryField'         : HistoryField,
+                             'PasswordField'        : PasswordField,
+                             'SelectField'          : SelectField,
+                             'TextArea'             : TextArea,
+                             'TextField'            : TextField,
+                             'WorkflowField'        : WorkflowField } ).get( field[ 'type' ], TextField )
+            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ], field[ 'default' ] ), security=security, **field ).to_dict() )
+        return form_def
+
     def grid_fields( self, grid_index ):
         # Returns a dictionary whose keys are integers corresponding to field positions
         # on the grid and whose values are the field.
@@ -4278,13 +4293,11 @@ class FormDefinition( object, Dictifiable ):
                 field_widget.params = params
             elif field_type == 'SelectField':
                 for option in field[ 'selectlist' ]:
-
                     if option == value:
                         field_widget.add_option( option, option, selected=True )
                     else:
                         field_widget.add_option( option, option )
             elif field_type == 'CheckboxField':
-
                 field_widget.set_checked( value )
             if field[ 'required' ] == 'required':
                 req = 'Required'
@@ -4294,10 +4307,7 @@ class FormDefinition( object, Dictifiable ):
                 helptext = '%s (%s)' % ( field[ 'helptext' ], req )
             else:
                 helptext = '(%s)' % req
-            widgets.append( dict( label=field[ 'label' ],
-
-                                  widget=field_widget,
-                                  helptext=helptext ) )
+            widgets.append( dict( label=field[ 'label' ], widget=field_widget, helptext=helptext ) )
         return widgets
 
     def field_as_html( self, field ):
@@ -4831,6 +4841,18 @@ class UserAddress( object ):
         self.postal_code = postal_code
         self.country = country
         self.phone = phone
+
+    def to_dict( self, trans ):
+        return { 'id'           : trans.security.encode_id( self.id ),
+                 'name'         : sanitize_html( self.name ),
+                 'desc'         : sanitize_html( self.desc ),
+                 'institution'  : sanitize_html( self.institution ),
+                 'address'      : sanitize_html( self.address ),
+                 'city'         : sanitize_html( self.city ),
+                 'state'        : sanitize_html( self.state ),
+                 'postal_code'  : sanitize_html( self.postal_code ),
+                 'country'      : sanitize_html( self.country ),
+                 'phone'        : sanitize_html( self.phone ) }
 
     def get_html(self):
         # This should probably be deprecated eventually.  It should currently

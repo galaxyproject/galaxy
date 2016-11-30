@@ -638,11 +638,9 @@ class AdminToolshed( AdminGalaxy ):
                                                              checked=install_tool_dependencies_check_box_checked )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box_checked = True
+            install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies', checked=True )
         else:
-            install_resolver_dependencies_check_box_checked = False
-        install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies',
-                                                                 checked=install_resolver_dependencies_check_box_checked )
+            install_resolver_dependencies_check_box = None
         return trans.fill_template( '/admin/tool_shed_repository/install_tool_dependencies_with_update.mako',
                                     repository=repository,
                                     updating_repository_id=updating_repository_id,
@@ -1206,11 +1204,9 @@ class AdminToolshed( AdminGalaxy ):
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box_checked = True
+            install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies', checked=True )
         else:
-            install_resolver_dependencies_check_box_checked = False
-        install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies',
-                                                                 checked=install_resolver_dependencies_check_box_checked )
+            install_resolver_dependencies_check_box = None
         encoded_repo_info_dicts = encoding_util.encoding_sep.join( encoded_repo_info_dicts )
         tool_shed_url = kwd[ 'tool_shed_url' ]
         if includes_tools_for_display_in_tool_panel:
@@ -1674,11 +1670,9 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box_checked = True
+            install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies', checked=True )
         else:
-            install_resolver_dependencies_check_box_checked = False
-        install_resolver_dependencies_check_box = CheckboxField( 'install_resolver_dependencies',
-                                                                 checked=install_resolver_dependencies_check_box_checked )
+            install_resolver_dependencies_check_box = None
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
                                     repository=tool_shed_repository,
                                     no_changes_check_box=no_changes_check_box,

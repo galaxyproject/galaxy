@@ -29,7 +29,7 @@ class ConfigurationController( BaseAPIController ):
 
         Note: a more complete list is returned if the user is an admin.
         """
-        is_admin = self.user_manager.is_admin( trans.user )
+        is_admin = trans.user_is_admin()
         serialization_params = self._parse_serialization_params( kwd, 'all' )
         return self.get_config_dict( trans, is_admin, **serialization_params )
 

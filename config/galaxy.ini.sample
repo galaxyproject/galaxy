@@ -1004,6 +1004,9 @@ use_interactive = True
 # Enable new run workflow form
 #run_workflow_toolform_upgrade = True
 
+# Enable new preferences which showcases new UI for the user preferences
+#enable_new_user_preferences = False
+
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
