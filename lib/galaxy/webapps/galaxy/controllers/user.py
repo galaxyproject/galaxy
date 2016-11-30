@@ -12,25 +12,23 @@ from datetime import datetime, timedelta
 from json import dumps, loads
 
 from markupsafe import escape
-from sqlalchemy import and_, or_, true, func
+from sqlalchemy import or_, func
 
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.util import string_as_bool
 from galaxy.exceptions import ObjectInvalid
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
                                                  validate_publicname)
-from galaxy.tools.toolbox.filters import FilterFactory
-from galaxy.util import biostar, hash_util, docstring_trim, listify
+from galaxy.util import biostar, hash_util
 from galaxy.web import url_for
 from galaxy.web.base.controller import (BaseUIController,
                                         CreatesApiKeysMixin,
                                         CreatesUsersMixin,
                                         UsesFormDefinitionsMixin)
-from galaxy.web.form_builder import build_select_field, CheckboxField
+from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger( __name__ )
@@ -77,10 +75,6 @@ class UserOpenIDGrid( grids.Grid ):
 class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
-
-    @web.expose
-    def index( self, trans, cntrller='user', **kwd ):
-        return trans.fill_template( '/user/index.mako', cntrller=cntrller )
 
     @web.expose
     def openid_auth( self, trans, **kwd ):
@@ -370,17 +364,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 else:
                     message = error
                     status = 'error'
-        if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
-        else:
-            user_type_fd_id_select_field = None
-            user_type_form_definition = None
-            widgets = []
         return trans.fill_template( '/user/openid_associate.mako',
                                     cntrller=cntrller,
                                     email=email,
@@ -395,9 +378,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     status=status,
                                     active_view="user",
                                     subscribe_checked=False,
-                                    user_type_fd_id_select_field=user_type_fd_id_select_field,
-                                    user_type_form_definition=user_type_form_definition,
-                                    widgets=widgets,
                                     openids=openids )
 
     @web.expose
@@ -733,27 +713,15 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     else:
                         status = 'error'
         if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=None, **kwd )
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( trans, user_type_form_definition, user=None, **kwd )
             #  Warning message that is shown on the registration page.
             registration_warning_message = trans.app.config.registration_warning_message
         else:
-            user_type_fd_id_select_field = None
-            user_type_form_definition = None
-            widgets = []
             registration_warning_message = None
         return trans.fill_template( '/user/register.mako',
                                     cntrller=cntrller,
                                     email=email,
                                     username=transform_publicname( trans, username ),
                                     subscribe_checked=subscribe_checked,
-                                    user_type_fd_id_select_field=user_type_fd_id_select_field,
-                                    user_type_form_definition=user_type_form_definition,
-                                    widgets=widgets,
                                     use_panels=use_panels,
                                     redirect=redirect,
                                     redirect_url=redirect_url,
@@ -773,22 +741,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         error = ''
         success = True
         if trans.webapp.name == 'galaxy':
-            # Save other information associated with the user, if any
-            user_info_forms = self.get_all_forms( trans,
-                                                  filter=dict( deleted=False ),
-                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            # If there are no user forms available then there is nothing to save
-            if user_info_forms:
-                user_type_fd_id = kwd.get( 'user_type_fd_id', 'none' )
-                if user_type_fd_id not in [ 'none' ]:
-                    user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
-                    values = self.get_form_values( trans, user, user_type_form_definition, **kwd )
-                    form_values = trans.app.model.FormValues( user_type_form_definition, values )
-                    trans.sa_session.add( form_values )
-                    trans.sa_session.flush()
-                    user.values = form_values
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
             if subscribe_checked:
                 # subscribe user to email list
                 if trans.app.config.smtp_server is None:
@@ -917,320 +869,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 return trans.show_error_message( "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
         return
 
-    def __get_user_type_form_definition( self, trans, user=None, **kwd ):
-        params = util.Params( kwd )
-        if user and user.values:
-            user_type_fd_id = trans.security.encode_id( user.values.form_definition.id )
-        else:
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-        if user_type_fd_id not in [ 'none' ]:
-            user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
-        else:
-            user_type_form_definition = None
-        return user_type_form_definition
-
-    def __get_widgets( self, trans, user_type_form_definition, user=None, **kwd ):
-        widgets = []
-        if user_type_form_definition:
-            if user:
-                if user.values:
-                    widgets = user_type_form_definition.get_widgets( user=user,
-                                                                     contents=user.values.content,
-                                                                     **kwd )
-                else:
-                    widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
-            else:
-                widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
-        return widgets
-
-    @web.expose
-    def manage_user_info( self, trans, cntrller, **kwd ):
-        '''Manage a user's login, password, public username, type, addresses, etc.'''
-        params = util.Params( kwd )
-        user_id = params.get( 'id', None )
-        if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        if not user:
-            raise AssertionError("The user id (%s) is not valid" % str( user_id ))
-        email = util.restore_text( params.get( 'email', user.email ) )
-        username = util.restore_text( params.get( 'username', '' ) )
-        if not username:
-            username = user.username
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
-        status = params.get( 'status', 'done' )
-        if trans.webapp.name == 'galaxy':
-            user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
-            user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
-            widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
-            # user's addresses
-            show_filter = util.restore_text( params.get( 'show_filter', 'Active'  ) )
-            if show_filter == 'All':
-                addresses = [address for address in user.addresses]
-            elif show_filter == 'Deleted':
-                addresses = [address for address in user.addresses if address.deleted]
-            else:
-                addresses = [address for address in user.addresses if not address.deleted]
-            user_info_forms = self.get_all_forms( trans,
-                                                  filter=dict( deleted=False ),
-                                                  form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            return trans.fill_template( '/webapps/galaxy/user/manage_info.mako',
-                                        cntrller=cntrller,
-                                        user=user,
-                                        email=email,
-                                        username=username,
-                                        user_type_fd_id_select_field=user_type_fd_id_select_field,
-                                        user_info_forms=user_info_forms,
-                                        user_type_form_definition=user_type_form_definition,
-                                        user_type_fd_id=user_type_fd_id,
-                                        widgets=widgets,
-                                        addresses=addresses,
-                                        show_filter=show_filter,
-                                        message=message,
-                                        status=status )
-        else:
-            return trans.fill_template( '/webapps/tool_shed/user/manage_info.mako',
-                                        cntrller=cntrller,
-                                        user=user,
-                                        email=email,
-                                        username=username,
-                                        message=message,
-                                        status=status )
-
-    # For REMOTE_USER, we need the ability to just edit the username
-    @web.expose
-    @web.require_login( "to manage the public name" )
-    def edit_username( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        user_id = params.get( 'user_id', None )
-        if user_id and is_admin:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        if user and params.get( 'change_username_button', False ):
-            username = kwd.get( 'username', '' )
-            if username:
-                message = validate_publicname( trans, username, user )
-            if message:
-                status = 'error'
-            else:
-                user.username = username
-                trans.sa_session.add( user )
-                trans.sa_session.flush()
-                message = 'The username has been updated with the changes.'
-        return trans.fill_template( '/user/username.mako',
-                                    cntrller=cntrller,
-                                    user=user,
-                                    username=user.username,
-                                    message=message,
-                                    status=status )
-
-    @web.expose
-    def edit_info( self, trans, cntrller, **kwd ):
-        """
-        Edit user information = username, email or password.
-        """
-        params = util.Params( kwd )
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        user_id = params.get( 'user_id', None )
-        if user_id and is_admin:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        elif user_id and ( not trans.user or trans.user.id != trans.security.decode_id( user_id ) ):
-            message = 'Invalid user id'
-            status = 'error'
-            user = None
-        else:
-            user = trans.user
-        if user and params.get( 'login_info_button', False ):
-            # Editing email and username
-            email = util.restore_text( params.get( 'email', '' ) )
-            username = util.restore_text( params.get( 'username', '' ) ).lower()
-
-            # Validate the new values for email and username
-            message = validate_email( trans, email, user )
-            if not message and username:
-                message = validate_publicname( trans, username, user )
-            if message:
-                status = 'error'
-            else:
-                if ( user.email != email ):
-                    # The user's private role name must match the user's login ( email )
-                    private_role = trans.app.security_agent.get_private_user_role( user )
-                    private_role.name = email
-                    private_role.description = 'Private role for ' + email
-                    # Change the email itself
-                    user.email = email
-                    trans.sa_session.add_all( ( user, private_role ) )
-                    trans.sa_session.flush()
-                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                        user.active = False
-                        trans.sa_session.add( user )
-                        trans.sa_session.flush()
-                        is_activation_sent = self.send_verification_email( trans, user.email, user.username )
-                        if is_activation_sent:
-                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-                        else:
-                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                            if trans.app.config.error_email_to is not None:
-                                message += ' Contact: %s' % trans.app.config.error_email_to
-                if ( user.username != username ):
-                    user.username = username
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-                message = 'The login information has been updated with the changes.'
-        elif user and params.get( 'edit_user_info_button', False ):
-            # Edit user information - webapp MUST BE 'galaxy'
-            user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-            if user_type_fd_id not in [ 'none' ]:
-                user_type_form_definition = trans.sa_session.query( trans.app.model.FormDefinition ).get( trans.security.decode_id( user_type_fd_id ) )
-            elif user.values:
-                user_type_form_definition = user.values.form_definition
-            else:
-                # User was created before any of the user_info forms were created
-                user_type_form_definition = None
-            if user_type_form_definition:
-                values = self.get_form_values( trans, user, user_type_form_definition, **kwd )
-            else:
-                values = {}
-            flush_needed = False
-            if user.values:
-                # Editing the user info of an existing user with existing user info
-                user.values.content = values
-                trans.sa_session.add( user.values )
-                flush_needed = True
-            elif values:
-                form_values = trans.model.FormValues( user_type_form_definition, values )
-                trans.sa_session.add( form_values )
-                user.values = form_values
-                flush_needed = True
-            if flush_needed:
-                trans.sa_session.add( user )
-                trans.sa_session.flush()
-            message = "The user information has been updated with the changes."
-        if user and trans.webapp.name == 'galaxy' and is_admin:
-            kwd[ 'user_id' ] = trans.security.encode_id( user.id )
-        kwd[ 'id' ] = user_id
-        if message:
-            kwd[ 'message' ] = util.sanitize_text( message )
-        if status:
-            kwd[ 'status' ] = status
-        return trans.response.send_redirect( web.url_for( controller='user',
-                                                          action='manage_user_info',
-                                                          cntrller=cntrller,
-                                                          **kwd ) )
-
-    @web.expose
-    def change_password( self, trans, token=None, **kwd):
-        """
-        Provides a form with which one can change their password.  If token is
-        provided, don't require current password.
-        """
-        status = None
-        message = kwd.get( 'message', '' )
-        user = None
-        if kwd.get( 'change_password_button', False ):
-            password = kwd.get( 'password', '' )
-            confirm = kwd.get( 'confirm', '' )
-            current = kwd.get( 'current', '' )
-            token_result = None
-            if token:
-                # If a token was supplied, validate and set user
-                token_result = trans.sa_session.query( trans.app.model.PasswordResetToken ).get(token)
-                if token_result and token_result.expiration_time > datetime.utcnow():
-                    user = token_result.user
-                else:
-                    return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
-            else:
-                # The user is changing their own password, validate their current password
-                (ok, message) = trans.app.auth_manager.check_change_password(trans.user, current )
-                if ok:
-                    user = trans.user
-                else:
-                    status = 'error'
-            if user:
-                # Validate the new password
-                message = validate_password( trans, password, confirm )
-                if message:
-                    status = 'error'
-                else:
-                    # Save new password
-                    user.set_password_cleartext( password )
-                    # if we used a token, invalidate it and log the user in.
-                    if token_result:
-                        trans.handle_user_login(token_result.user)
-                        token_result.expiration_time = datetime.utcnow()
-                        trans.sa_session.add(token_result)
-                    # Invalidate all other sessions
-                    for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
-                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                    trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                    trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
-                        other_galaxy_session.is_valid = False
-                        trans.sa_session.add( other_galaxy_session )
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-                    trans.log_event( "User change password" )
-                    if kwd.get('display_top', False) == 'True':
-                        return trans.response.send_redirect( url_for( '/', message='Password has been changed' ))
-                    else:
-                        return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
-
-        return trans.fill_template( '/user/change_password.mako',
-                                    token=token,
-                                    status=status,
-                                    message=message,
-                                    display_top=kwd.get('redirect_home', False)
-                                    )
-
-    @web.expose
-    def change_communication( self, trans, cntrller, **kwd):
-        """
-            Provides a form with which the user can activate/deactivate
-            the commnication server.
-        """
-        params = util.Params( kwd )
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        user_id = params.get( 'user_id', None )
-        activated = ''
-
-        if user_id and is_admin:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-
-        if user and params.get( 'change_communication_button', False ):
-            communication_enabled = kwd.get( 'enable_communication_server', False )
-            if communication_enabled:
-                activated = 'checked'
-                user.preferences['communication_server'] = True
-                message = 'Your communication settings has been updated and activated.'
-            else:
-                activated = ''
-                user.preferences['communication_server'] = False
-                message = 'Your communication settings has been updated and deactivated.'
-            trans.sa_session.add( user )
-            trans.sa_session.flush()
-        else:
-            if string_as_bool( user.preferences.get('communication_server', '0') ):
-                activated = 'checked'
-
-        return trans.fill_template( '/user/communication_settings.mako',
-                                    cntrller=cntrller,
-                                    status=status,
-                                    activated=activated,
-                                    message=message )
-
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
         """Reset the user's password. Send an email with token that allows a password change."""
@@ -1286,147 +924,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         message = "\n".join( [ validate_email( trans, email ),
                                validate_password( trans, password, confirm ),
                                validate_publicname( trans, username ) ] ).rstrip()
-        if not message:
-            if trans.webapp.name == 'galaxy':
-                if self.get_all_forms( trans,
-                                       filter=dict( deleted=False ),
-                                       form_type=trans.app.model.FormDefinition.types.USER_INFO ):
-                    user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
-                    if user_type_fd_id in [ 'none' ]:
-                        return "Select the user's type and information"
         return message
-
-    @web.expose
-    def set_default_permissions( self, trans, cntrller, **kwd ):
-        """Set the user's default permissions for the new histories"""
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        if trans.user:
-            if 'update_roles_button' in kwd:
-                p = util.Params( kwd )
-                permissions = {}
-                for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = p.get( k + '_in', [] )
-                    if not isinstance( in_roles, list ):
-                        in_roles = [ in_roles ]
-                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in in_roles ]
-                    action = trans.app.security_agent.get_action( v.action ).action
-                    permissions[ action ] = in_roles
-                trans.app.security_agent.user_set_default_permissions( trans.user, permissions )
-                message = 'Default new history permissions have been changed.'
-            return trans.fill_template( 'user/permissions.mako',
-                                        cntrller=cntrller,
-                                        message=message,
-                                        status=status )
-        else:
-            # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
-
-    @web.expose
-    @web.require_login()
-    def toolbox_filters( self, trans, cntrller, **kwd ):
-        """
-            Sets the user's default filters for the toolbox.
-            Toolbox filters are specified in galaxy.ini.
-            The user can activate them and the choice is stored in user_preferences.
-        """
-
-        def get_filter_mapping( db_filters, config_filters, factory ):
-            """
-                Compare the allowed filters from the galaxy.ini config file with the previously saved or default filters from the database.
-                We need that to toogle the checkboxes for the formular in the right way.
-                Furthermore we extract all information associated to a filter to display them in the formular.
-            """
-            filters = list()
-            for filter_name in config_filters:
-                function = factory._build_filter_function(filter_name)
-                doc_string = docstring_trim( function.__doc__ )
-                split = doc_string.split('\n\n')
-                if split:
-                    sdesc = split[0]
-                else:
-                    log.error( 'No description specified in the __doc__ string for %s.' % filter_name )
-                if len(split) > 1:
-                    description = split[1]
-                else:
-                    description = ''
-
-                if filter_name in db_filters:
-                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=True ) )
-                else:
-                    filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=False ) )
-            return filters
-
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-
-        user_id = params.get( 'user_id', False )
-        if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-
-        if user:
-            saved_user_tool_filters = list()
-            saved_user_section_filters = list()
-            saved_user_label_filters = list()
-
-            for name, value in user.preferences.items():
-                if name == 'toolbox_tool_filters':
-                    saved_user_tool_filters = listify( value, do_strip=True )
-                elif name == 'toolbox_section_filters':
-                    saved_user_section_filters = listify( value, do_strip=True )
-                elif name == 'toolbox_label_filters':
-                    saved_user_label_filters = listify( value, do_strip=True )
-
-            ff = FilterFactory(trans.app.toolbox)
-            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters, ff )
-            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters, ff )
-            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters, ff )
-
-            return trans.fill_template( 'user/toolbox_filters.mako',
-                                        cntrller=cntrller,
-                                        message=message,
-                                        tool_filters=tool_filters,
-                                        section_filters=section_filters,
-                                        label_filters=label_filters,
-                                        user=user,
-                                        status=status )
-        else:
-            # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change private toolbox filters." )
-
-    @web.expose
-    @web.require_login( "to change the private toolbox filters" )
-    def edit_toolbox_filters( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', '' ) )
-
-        if params.get( 'edit_toolbox_filter_button', False ):
-            tool_filters = list()
-            section_filters = list()
-            label_filters = list()
-            for name, state in params.flatten():
-                if state == 'on':
-                    if name.startswith('t_'):
-                        tool_filters.append( name[2:] )
-                    elif name.startswith('l_'):
-                        label_filters.append( name[2:] )
-                    elif name.startswith('s_'):
-                        section_filters.append( name[2:] )
-            trans.user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
-            trans.user.preferences['toolbox_section_filters'] = ','.join( section_filters )
-            trans.user.preferences['toolbox_label_filters'] = ','.join( label_filters )
-
-            trans.sa_session.add( trans.user )
-            trans.sa_session.flush()
-            message = 'ToolBox filters has been updated.'
-            kwd = dict( message=message, status='done' )
-
-        # Display the ToolBox filters form with the current values filled in
-        return self.toolbox_filters( trans, cntrller, **kwd )
 
     @web.expose
     @web.require_login( "to get most recently used tool" )
@@ -1449,237 +947,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                      "minsizehint": tool.uihints.get( 'minwidth', -1 ),
                      "description": tool.description}
         return tool_info
-
-    @web.expose
-    def manage_addresses(self, trans, **kwd):
-        if trans.user:
-            params = util.Params( kwd )
-            message = util.restore_text( params.get( 'message', '' ) )
-            status = params.get( 'status', 'done' )
-            show_filter = util.restore_text( params.get( 'show_filter', 'Active' ) )
-            if show_filter == 'All':
-                addresses = [address for address in trans.user.addresses]
-            elif show_filter == 'Deleted':
-                addresses = [address for address in trans.user.addresses if address.deleted]
-            else:
-                addresses = [address for address in trans.user.addresses if not address.deleted]
-            return trans.fill_template( 'user/address.mako',
-                                        addresses=addresses,
-                                        show_filter=show_filter,
-                                        message=message,
-                                        status=status)
-        else:
-            # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change your default permitted actions." )
-
-    @web.require_login( "to add addresses" )
-    @web.expose
-    def new_address( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get( 'id', False )
-        if is_admin:
-            if not user_id:
-                return trans.show_error_message( "You must specify a user to add a new address to." )
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
-        name = util.restore_text( params.get( 'name', ''  ) )
-        institution = util.restore_text( params.get( 'institution', ''  ) )
-        address = util.restore_text( params.get( 'address', ''  ) )
-        city = util.restore_text( params.get( 'city', ''  ) )
-        state = util.restore_text( params.get( 'state', ''  ) )
-        postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
-        country = util.restore_text( params.get( 'country', ''  ) )
-        phone = util.restore_text( params.get( 'phone', ''  ) )
-        ok = True
-        if not trans.app.config.allow_user_creation and not is_admin:
-            return trans.show_error_message( 'User registration is disabled.  Please contact your local Galaxy administrator for an account.' )
-        if params.get( 'new_address_button', False ):
-            if not short_desc:
-                ok = False
-                message = 'Enter a short description for this address'
-            elif not name:
-                ok = False
-                message = 'Enter the name'
-            elif not institution:
-                ok = False
-                message = 'Enter the institution associated with the user'
-            elif not address:
-                ok = False
-                message = 'Enter the address'
-            elif not city:
-                ok = False
-                message = 'Enter the city'
-            elif not state:
-                ok = False
-                message = 'Enter the state/province/region'
-            elif not postal_code:
-                ok = False
-                message = 'Enter the postal code'
-            elif not country:
-                ok = False
-                message = 'Enter the country'
-            if ok:
-                user_address = trans.model.UserAddress( user=user,
-                                                        desc=short_desc,
-                                                        name=name,
-                                                        institution=institution,
-                                                        address=address,
-                                                        city=city,
-                                                        state=state,
-                                                        postal_code=postal_code,
-                                                        country=country,
-                                                        phone=phone )
-                trans.sa_session.add( user_address )
-                trans.sa_session.flush()
-                message = 'Address (%s) has been added' % escape( user_address.desc )
-                new_kwd = dict( message=message, status=status )
-                if is_admin:
-                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
-                return trans.response.send_redirect( web.url_for( controller='user',
-                                                                  action='manage_user_info',
-                                                                  cntrller=cntrller,
-                                                                  **new_kwd ) )
-        # Display the address form with the current values filled in
-        return trans.fill_template( 'user/new_address.mako',
-                                    cntrller=cntrller,
-                                    user=user,
-                                    short_desc=short_desc,
-                                    name=name,
-                                    institution=institution,
-                                    address=address,
-                                    city=city,
-                                    state=state,
-                                    postal_code=postal_code,
-                                    country=country,
-                                    phone=phone,
-                                    message=escape(message),
-                                    status=status )
-
-    @web.require_login( "to edit addresses" )
-    @web.expose
-    def edit_address( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get( 'id', False )
-        if is_admin:
-            if not user_id:
-                return trans.show_error_message( "You must specify a user to add a new address to." )
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        address_id = params.get( 'address_id', None )
-        if not address_id:
-            return trans.show_error_message( "Invalid address id." )
-        address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
-        if address_obj.user_id != user.id:
-            return trans.show_error_message( "Invalid address id." )
-        if params.get( 'edit_address_button', False  ):
-            short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
-            name = util.restore_text( params.get( 'name', ''  ) )
-            institution = util.restore_text( params.get( 'institution', ''  ) )
-            address = util.restore_text( params.get( 'address', ''  ) )
-            city = util.restore_text( params.get( 'city', ''  ) )
-            state = util.restore_text( params.get( 'state', ''  ) )
-            postal_code = util.restore_text( params.get( 'postal_code', ''  ) )
-            country = util.restore_text( params.get( 'country', ''  ) )
-            phone = util.restore_text( params.get( 'phone', ''  ) )
-            ok = True
-            if not short_desc:
-                ok = False
-                message = 'Enter a short description for this address'
-            elif not name:
-                ok = False
-                message = 'Enter the name'
-            elif not institution:
-                ok = False
-                message = 'Enter the institution associated with the user'
-            elif not address:
-                ok = False
-                message = 'Enter the address'
-            elif not city:
-                ok = False
-                message = 'Enter the city'
-            elif not state:
-                ok = False
-                message = 'Enter the state/province/region'
-            elif not postal_code:
-                ok = False
-                message = 'Enter the postal code'
-            elif not country:
-                ok = False
-                message = 'Enter the country'
-            if ok:
-                address_obj.desc = short_desc
-                address_obj.name = name
-                address_obj.institution = institution
-                address_obj.address = address
-                address_obj.city = city
-                address_obj.state = state
-                address_obj.postal_code = postal_code
-                address_obj.country = country
-                address_obj.phone = phone
-                trans.sa_session.add( address_obj )
-                trans.sa_session.flush()
-                message = 'Address (%s) has been updated.' % escape( address_obj.desc )
-                new_kwd = dict( message=message, status=status )
-                if is_admin:
-                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
-                return trans.response.send_redirect( web.url_for( controller='user',
-                                                                  action='manage_user_info',
-                                                                  cntrller=cntrller,
-                                                                  **new_kwd ) )
-        # Display the address form with the current values filled in
-        return trans.fill_template( 'user/edit_address.mako',
-                                    cntrller=cntrller,
-                                    user=user,
-                                    address_obj=address_obj,
-                                    message=escape( message ),
-                                    status=status )
-
-    @web.require_login( "to delete addresses" )
-    @web.expose
-    def delete_address( self, trans, cntrller, address_id=None, **kwd ):
-        return self.__delete_undelete_address( trans, cntrller, 'delete', address_id=address_id, **kwd )
-
-    @web.require_login( "to undelete addresses" )
-    @web.expose
-    def undelete_address( self, trans, cntrller, address_id=None, **kwd ):
-        return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
-
-    def __delete_undelete_address( self, trans, cntrller, op, address_id=None, **kwd ):
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = kwd.get( 'id', False )
-        if is_admin:
-            if not user_id:
-                return trans.show_error_message( "You must specify a user to %s an address from." % op )
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
-        try:
-            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
-        except:
-            return trans.show_error_message( "Invalid address id." )
-        if user_address:
-            if user_address.user_id != user.id:
-                return trans.show_error_message( "Invalid address id." )
-            user_address.deleted = True if op == 'delete' else False
-            trans.sa_session.add( user_address )
-            trans.sa_session.flush()
-            message = 'Address (%s) %sd' % ( escape( user_address.desc ), op )
-            status = 'done'
-        return trans.response.send_redirect( web.url_for( controller='user',
-                                                          action='manage_user_info',
-                                                          cntrller=cntrller,
-                                                          id=trans.security.encode_id( user.id ),
-                                                          message=message,
-                                                          status=status ) )
 
     @web.expose
     def set_user_pref_async( self, trans, pref_name, pref_value ):
@@ -1837,22 +1104,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     fasta_hdas=fasta_hdas,
                                     use_panels=kwds.get( 'use_panels', False ) )
 
-    @web.expose
-    @web.require_login()
-    def api_keys( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
-        status = params.get( 'status', 'done' )
-        if params.get( 'new_api_key_button', False ):
-            self.create_api_key( trans, trans.user )
-            message = "Generated a new web API key"
-            status = "done"
-        return trans.fill_template( 'webapps/galaxy/user/api_keys.mako',
-                                    cntrller=cntrller,
-                                    user=trans.user,
-                                    message=message,
-                                    status=status )
-
     def __get_redirect_url( self, redirect ):
         root_url = url_for( '/', qualified=True )
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
@@ -1863,17 +1114,3 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         elif util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):
             redirect = root_url
         return redirect
-
-    # ===== Methods for building SelectFields  ================================
-    def __build_user_type_fd_id_select_field( self, trans, selected_value ):
-        # Get all the user information forms
-        user_info_forms = self.get_all_forms( trans,
-                                              filter=dict( deleted=False ),
-                                              form_type=trans.model.FormDefinition.types.USER_INFO )
-        return build_select_field( trans,
-                                   objs=user_info_forms,
-                                   label_attr='name',
-                                   select_field_name='user_type_fd_id',
-                                   initial_value='none',
-                                   selected_value=selected_value,
-                                   refresh_on_change=True )
