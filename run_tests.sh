@@ -251,6 +251,12 @@ then
     exit $?
 fi
 
+# If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
+if [ -z "$BUILD_NUMBER" ];
+then
+    xunit_report_file="xunit-${BUILD_NUMBER}.xml"
+fi
+
 # Loop through and consume the main arguments.
 # Some loops will consume more than one argument (there are extra "shift"s in some cases).
 while :
@@ -317,6 +323,10 @@ do
               toolshed_script="./test/shed_functional/functional"
               shift 1
           fi
+          ;;
+      -clean_pyc|--clean_pyc)
+          find lib -iname '*pyc' -exec rm -rf {} \;
+          find test -iname '*pyc' -exec rm -rf {} \;
           ;;
       -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
