@@ -122,7 +122,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             inputs : options.inputs,
                             operations: {
                                 'submit': new Ui.ButtonIcon({
-                                    tooltip  : options.submit_tooltip || 'Store user preferences',
+                                    tooltip  : options.submit_tooltip,
                                     title    : options.submit_title || 'Save settings',
                                     icon     : options.submit_icon || 'fa-save',
                                     onclick  : function() { self._submit( form, options ) }
