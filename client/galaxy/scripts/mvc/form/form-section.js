@@ -139,7 +139,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
         _addRow: function( input_def ) {
             var self = this;
             var id = input_def.id;
-            input_def.onchange = function() { self.app.trigger( 'change', id ) };
+            input_def.onchange = input_def.onchange || function() { self.app.trigger( 'change', id ) };
             var field = this.parameters.create( input_def );
             this.app.field_list[ id ] = field;
             var input_element = new InputElement( this.app, {
