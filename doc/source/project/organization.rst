@@ -92,6 +92,17 @@ should not be interpreted as a condemnation of these inactive members but
 merely as a reflection of a desire to keep this group focused enough to remain
 effective.
 
+Direct Commit Access
+--------------------
+
+A *committer* may only commit directly to the Galaxy repository (i.e. outside of
+a pull request and not following the procedures described below) the following
+two categories of changes:
+
+* Patches for serious security vulnerabilities.
+* Cherry-picking and/or merging of existing approved commits to other branches.
+
+
 Handling Pull Requests
 ======================
 
@@ -177,16 +188,6 @@ invokes a mandatory, minimum 72 hour, review period.
   issuer deems the justification technical - regardless of whether they agree
   with justification - that *committer* must then merge the pull request to
   revert.
-
-Direct Commit Access
---------------------
-
-The Galaxy *committers* group may only commit directly to Galaxy (i.e. outside
-of a pull request and not following the procedures described here) the
-following two categories of patches:
-
-* Patches for serious security vulnerabilities.
-* Cherry-picking and/or merging of existing approved commits to other branches.
 
 Labeling and Milestones
 -----------------------
