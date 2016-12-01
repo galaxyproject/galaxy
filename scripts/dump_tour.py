@@ -48,5 +48,6 @@ def _arg_parser():
     parser = cli.add_selenium_arguments(parser)
     return parser
 
+
 if __name__ == "__main__":
     main()
