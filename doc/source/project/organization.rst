@@ -103,6 +103,16 @@ two categories of changes:
 * Cherry-picking and/or merging of existing approved commits to other branches.
 
 
+Release branches
+================
+
+A *release branch* is created every few months from the ``dev`` branch of the
+Galaxy repository. A newly created release branch is in a *freezed* state until
+the committers decide that it is ready for public consumption. At this point, a
+release tag will be assigned to a commit in the branch, changing the release
+state to *tagged*.
+
+
 Handling Pull Requests
 ======================
 
@@ -114,9 +124,10 @@ Votes on pull requests should take the form of
 `+1, 0, -1, and fractions <http://www.apache.org/foundation/voting.html>`_
 as outlined by the Apache Foundation.
 
-Pull requests modifying pre-existing releases should be restricted to bug fixes
-and require at least 2 *+1* binding votes from someone other than the author of
-the pull request with no *-1* binding votes.
+Pull requests modifying freezed and tagged release branches should be restricted
+to bug fixes. Pull requests modifying tagged release branches require at least 2
+*+1* binding votes from someone other than the author of the pull request with
+no *-1* binding votes.
 
 Pull requests changing or clarifying the *Procedure Documents* (listed above):
 
