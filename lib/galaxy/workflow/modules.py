@@ -101,6 +101,15 @@ class WorkflowModule( object ):
         """
         pass
 
+    def recover_state( self, state, **kwds ):
+        """ Recover state `dict` from simple dictionary describing configuration
+        state (potentially from persisted step state).
+
+        Sub-classes should supply `default_state` method and `state_fields`
+        attribute which are used to build up the state `dict`.
+        """
+        raise TypeError( "Abstract method" )
+
     def get_errors( self ):
         """ This returns a step related error message as string or None """
         return None
@@ -250,12 +259,6 @@ class SimpleWorkflowModule( WorkflowModule ):
         self.recover_state( incoming )
 
     def recover_state( self, state, **kwds ):
-        """ Recover state `dict` from simple dictionary describing configuration
-        state (potentially from persisted step state).
-
-        Sub-classes should supply `default_state` method and `state_fields`
-        attribute which are used to build up the state `dict`.
-        """
         self.state = self.default_state()
         for key in self.state_fields:
             if state and key in state:
@@ -368,12 +371,6 @@ class SubWorkflowModule( WorkflowModule ):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def recover_state( self, state, **kwds ):
-        """ Recover state `dict` from simple dictionary describing configuration
-        state (potentially from persisted step state).
-
-        Sub-classes should supply `default_state` method and `state_fields`
-        attribute which are used to build up the state `dict`.
-        """
         self.state = self.default_state()
         for key in self.state_fields:
             if state and key in state:
