@@ -175,7 +175,9 @@ def headless_selenium():
         if driver_factory.is_virtual_display_available():
             return True
         else:
-            return asbool(GALAXY_TEST_SELENIUM_HEADLESS)
+            return False
+    else:
+        return asbool(GALAXY_TEST_SELENIUM_HEADLESS)
 
 
 def get_local_driver():
