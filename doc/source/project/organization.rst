@@ -9,6 +9,17 @@ releases and packaging. This governance does not include infrastructure such
 as Galaxy's Trello board, the Galaxy mailing lists, etc... or other Galaxy-
 related projects belonging to the ``galaxyproject`` organization on GitHub.
 
+
+Procedure Documents
+===================
+
+The documents whose modification requires the special process specified below
+are:
+
+- this document
+- CODE_OF_CONDUCT_.
+
+
 Committers
 ==========
 
@@ -22,9 +33,9 @@ outlined below. In particular, in most cases
 direct commit access is not allowed and this access is restricted to merging
 pull requests issued by others.
 
-Committers may participate in formal votes - these votes typically include
-votes to modify team membership, merge pull requests, and modify or clarify
-the procedures outlined in this document and CODE_OF_CONDUCT_.
+*Committers* may participate in all formal votes, including votes to modify team
+membership, merge pull requests, and modify the *Procedure Documents* listed
+above.
 
 Members
 -------
@@ -47,7 +58,6 @@ Members
 - James Taylor (@jxtx)
 - Nitesh Turaga (@nitesh1989)
 - Marius van den Beek (@mvdbeek)
-
 
 Membership
 ----------
@@ -97,10 +107,10 @@ Pull requests modifying pre-existing releases should be restricted to bug fixes
 and require at least 2 *+1* binding votes from someone other than the author of
 the pull request with no *-1* binding votes.
 
-Pull requests changing or clarifying the procedures governing this repository:
+Pull requests changing or clarifying the *Procedure Documents* (listed above):
 
 - Must be made to the ``dev`` branch of this repository.
-- Must remain open for at least 192 hours (unless every qualified committer has
+- Must remain open for at least 192 hours (unless every qualified *committer* has
   voted).
 - Require binding *+1* votes from at least 25% of qualified *committers* with no
   *-1* binding votes.
@@ -163,9 +173,9 @@ invokes a mandatory, minimum 72 hour, review period.
   things merged without proper review and consensus.
 - The person issuing the *-1* vote will, upon commenting *-1* with technical
   justification per the vetoes section, immediately open a pull request to
-  revert the original merge in question. If any committer other than the *-1*
+  revert the original merge in question. If any *committer* other than the *-1*
   issuer deems the justification technical - regardless of whether they agree
-  with justification - that committer must then merge the pull request to
+  with justification - that *committer* must then merge the pull request to
   revert.
 
 Direct Commit Access
