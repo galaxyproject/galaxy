@@ -2,6 +2,15 @@
 
 TEST_DIRECTORY=`dirname $0`
 
+DEFAULT_COMPOSE_PROJECT_NAME=`basename $TEST_DIRECTORY`
+COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-$DEFAULT_COMPOSE_PROJECT_NAME}
+# If in Jenkins environment, append ${BUILD_NUMBER} to project so builds don't interfer.
+if [ -z "$BUILD_NUMBER" ];
+then
+    COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME}-${BUILD_NUMBER}"
+fi
+export COMPOSE_PROJECT_NAME
+
 echo $TEST_DIRECTORY
 
 find lib -iname '*pyc' -exec rm -rf {} \;
