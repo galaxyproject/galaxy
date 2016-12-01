@@ -56,6 +56,17 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
         self.build_tool_tests()
 
 
+class SeleniumGalaxyTestDriver(DefaultGalaxyTestDriver):
+    """Galaxy-style nose TestDriver for selenium framework testing."""
+
+    framework_tool_and_types = True
+
+    @driver_util.classproperty
+    def default_web_host(cls):
+        dev_ip = driver_util.get_ip_address('docker0')
+        return dev_ip
+
+
 class FrameworkToolsGalaxyTestDriver(DefaultGalaxyTestDriver):
     """Galaxy-style nose TestDriver for testing framework Galaxy tools."""
 
@@ -93,6 +104,7 @@ TEST_DRIVERS = {
     '-framework': FrameworkToolsGalaxyTestDriver,
     '-data_managers': DataManagersGalaxyTestDriver,
     '-workflow': WorkflowGalaxyTestDriver,
+    '-selenium': SeleniumGalaxyTestDriver,
 }
 
 
