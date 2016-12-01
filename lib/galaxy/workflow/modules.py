@@ -144,13 +144,12 @@ class WorkflowModule( object ):
 
     # ---- Run time ---------------------------------------------------------
 
+    def get_runtime_state( self ):
+        raise TypeError( "Abstract method" )
+
     def get_runtime_inputs( self, **kwds ):
         """ Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
-
-        Note: The ToolModule doesn't implement this and these templates contain
-        specialized logic for dealing with the tool and state directly in the
-        case of ToolModules.
         """
         raise TypeError( "Abstract method" )
 
@@ -732,6 +731,8 @@ class ToolModule( WorkflowModule ):
         self.state = None
         self.version_changes = []
 
+    # ---- Creating modules from various representations ---------------------
+
     @classmethod
     def new( Class, trans, content_id=None ):
         module = Class( trans, content_id )
@@ -795,28 +796,7 @@ class ToolModule( WorkflowModule ):
                 module.version_changes.append(message)
         return module
 
-    def recover_state( self, state, **kwds ):
-        """ Recover module configuration state property (a `DefaultToolState`
-        object) using the tool's `params_from_strings` method.
-        """
-        self.state = DefaultToolState()
-        if self.tool:
-            self.state.decode( state, self.tool, self.trans.app )
-        else:
-            self.state.inputs = state
-
-    def decode_runtime_state( self, runtime_state ):
-        """ Take runtime state from persisted invocation and convert it
-        into a DefaultToolState object for use during workflow invocation.
-        """
-        if self.tool:
-            state = super( ToolModule, self ).decode_runtime_state( self.trans, runtime_state )
-            state_dict = loads( runtime_state )
-            if RUNTIME_STEP_META_STATE_KEY in state_dict:
-                self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
-            return state
-        else:
-            raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
+    # ---- Saving in various forms ------------------------------------------
 
     def save_to_step( self, step ):
         step.type = self.type
@@ -827,16 +807,7 @@ class ToolModule( WorkflowModule ):
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )
 
-    def __to_pja( self, key, value, step ):
-        if 'output_name' in value:
-            output_name = value['output_name']
-        else:
-            output_name = None
-        if 'action_arguments' in value:
-            action_arguments = value['action_arguments']
-        else:
-            action_arguments = None
-        return PostJobAction(value['action_type'], step, output_name, action_arguments)
+    # ---- General attributes ------------------------------------------------
 
     def get_name( self ):
         return self.tool.name if self.tool else self.tool_id
@@ -847,18 +818,33 @@ class ToolModule( WorkflowModule ):
     def get_tool_version( self ):
         return self.tool.version if self.tool else self.tool_version
 
-    def get_state( self, state=None ):
+    def get_tooltip( self, static_path='' ):
+        if self.tool and self.tool.help:
+            return self.tool.help.render( host_url=web.url_for('/'), static_path=static_path )
+
+    # ---- Configuration time -----------------------------------------------
+
+    def get_state( self ):
         if self.tool:
             return self.state.encode( self.tool, self.trans.app )
         else:
             return dumps( self.state.inputs )
 
+    def update_state( self, incoming ):
+        self.recover_state( incoming )
+
+    def recover_state( self, state, **kwds ):
+        """ Recover module configuration state property (a `DefaultToolState`
+        object) using the tool's `params_from_strings` method.
+        """
+        self.state = DefaultToolState()
+        if self.tool:
+            self.state.decode( state, self.tool, self.trans.app )
+        else:
+            self.state.inputs = loads( state )
+
     def get_errors( self ):
         return None if self.tool else "Tool is not installed."
-
-    def get_tooltip( self, static_path='' ):
-        if self.tool and self.tool.help:
-            return self.tool.help.render( host_url=web.url_for('/'), static_path=static_path )
 
     def get_data_inputs( self ):
         data_inputs = []
@@ -913,29 +899,6 @@ class ToolModule( WorkflowModule ):
                 )
         return data_outputs
 
-    def get_runtime_state( self ):
-        return self.state
-
-    def get_runtime_input_dicts( self, step_annotation ):
-        # Step is a tool and may have runtime inputs.
-        input_dicts = []
-        for name, val in self.state.inputs.items():
-            input_type = type( val )
-            if input_type == RuntimeValue:
-                input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
-            elif input_type == dict:
-                # Input type is described by a dict, e.g. indexed parameters.
-                for partval in val.values():
-                    if type( partval ) == RuntimeValue:
-                        input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
-        return input_dicts
-
-    def get_runtime_inputs( self, **kwds ):
-        return self.tool.inputs
-
-    def get_post_job_actions( self, incoming ):
-        return ActionBox.handle_incoming( incoming )
-
     def get_config_form( self ):
         if self.tool:
             self.add_dummy_datasets()
@@ -943,12 +906,52 @@ class ToolModule( WorkflowModule ):
         else:
             return "Tool missing. Parameters cannot be edited."
 
-    def update_state( self, incoming ):
-        self.recover_state( incoming )
-
     def check_and_update_state( self ):
         if self.tool:
             return self.tool.check_and_update_param_values( self.state.inputs, self.trans, workflow_building_mode=True )
+
+    def add_dummy_datasets( self, connections=None, steps=None ):
+        if self.tool:
+            if connections:
+                # Store connections by input name
+                input_connections_by_name = dict( ( conn.input_name, conn ) for conn in connections )
+            else:
+                input_connections_by_name = {}
+
+            # Any input needs to have value RuntimeValue or obtain the value from connected steps
+            def callback( input, prefixed_name, context, **kwargs ):
+                if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
+                    if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+                        if prefixed_name in input_connections_by_name:
+                            connection = input_connections_by_name[ prefixed_name ]
+                            output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
+                            if output_step.type.startswith( 'data' ):
+                                output_inputs = output_step.module.get_runtime_inputs( connections=connections )
+                                output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
+                                if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
+                                    return output_value.to_hda_representative()
+                                return output_value
+                            return RuntimeValue()
+                        else:
+                            return input.get_initial_value( self.trans, context )
+                    elif connections is None or prefixed_name in input_connections_by_name:
+                        return RuntimeValue()
+            visit_input_values( self.tool.inputs, self.state.inputs, callback )
+        else:
+            raise ToolMissingException( "Tool %s missing. Cannot add dummy datasets." % self.tool_id )
+
+    def get_post_job_actions( self, incoming ):
+        return ActionBox.handle_incoming( incoming )
+
+    # ---- Run time ---------------------------------------------------------
+
+    def get_runtime_state( self ):
+        state = DefaultToolState()
+        state.inputs = self.state.inputs
+        return state
+
+    def get_runtime_inputs( self, **kwds ):
+        return self.tool.inputs
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
@@ -966,16 +969,32 @@ class ToolModule( WorkflowModule ):
         else:
             raise ToolMissingException( "Tool %s missing. Cannot compute runtime state." % self.tool_id )
 
-    def __step_meta_runtime_state( self ):
-        """ Build a dictionary a of meta-step runtime state (state about how
-        the workflow step - not the tool state) to be serialized with the Tool
-        state.
+    def decode_runtime_state( self, runtime_state ):
+        """ Take runtime state from persisted invocation and convert it
+        into a DefaultToolState object for use during workflow invocation.
         """
-        return { RUNTIME_POST_JOB_ACTIONS_KEY: self.runtime_post_job_actions }
+        if self.tool:
+            state = super( ToolModule, self ).decode_runtime_state( self.trans, runtime_state )
+            state_dict = loads( runtime_state )
+            if RUNTIME_STEP_META_STATE_KEY in state_dict:
+                self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
+            return state
+        else:
+            raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
 
-    def __restore_step_meta_runtime_state( self, step_runtime_state ):
-        if RUNTIME_POST_JOB_ACTIONS_KEY in step_runtime_state:
-            self.runtime_post_job_actions = step_runtime_state[ RUNTIME_POST_JOB_ACTIONS_KEY ]
+    def get_runtime_input_dicts( self, step_annotation ):
+        # Step is a tool and may have runtime inputs.
+        input_dicts = []
+        for name, val in self.state.inputs.items():
+            input_type = type( val )
+            if input_type == RuntimeValue:
+                input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
+            elif input_type == dict:
+                # Input type is described by a dict, e.g. indexed parameters.
+                for partval in val.values():
+                    if type( partval ) == RuntimeValue:
+                        input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
+        return input_dicts
 
     def execute( self, trans, progress, invocation, step ):
         tool = trans.app.toolbox.get_tool( step.tool_id, tool_version=step.tool_version )
@@ -1059,6 +1078,28 @@ class ToolModule( WorkflowModule ):
             raise Exception(message)
         return jobs
 
+    def recover_mapping( self, step, step_invocations, progress ):
+        # Grab a job representing this invocation - for normal workflows
+        # there will be just one job but if this step was mapped over there
+        # may be many.
+        job_0 = step_invocations[ 0 ].job
+
+        outputs = {}
+        for job_output in job_0.output_datasets:
+            replacement_name = job_output.name
+            replacement_value = job_output.dataset
+            # If was a mapping step, grab the output mapped collection for
+            # replacement instead.
+            if replacement_value.hidden_beneath_collection_instance:
+                replacement_value = replacement_value.hidden_beneath_collection_instance
+            outputs[ replacement_name ] = replacement_value
+        for job_output_collection in job_0.output_dataset_collection_instances:
+            replacement_name = job_output_collection.name
+            replacement_value = job_output_collection.dataset_collection_instance
+            outputs[ replacement_name ] = replacement_value
+
+        progress.set_step_outputs( step, outputs )
+
     def _find_collections_to_match( self, tool, progress, step ):
         collections_to_match = matching.CollectionsToMatch()
 
@@ -1101,57 +1142,27 @@ class ToolModule( WorkflowModule ):
         if flush_required:
             self.trans.sa_session.flush()
 
-    def add_dummy_datasets( self, connections=None, steps=None ):
-        if self.tool:
-            if connections:
-                # Store connections by input name
-                input_connections_by_name = dict( ( conn.input_name, conn ) for conn in connections )
-            else:
-                input_connections_by_name = {}
+    def __restore_step_meta_runtime_state( self, step_runtime_state ):
+        if RUNTIME_POST_JOB_ACTIONS_KEY in step_runtime_state:
+            self.runtime_post_job_actions = step_runtime_state[ RUNTIME_POST_JOB_ACTIONS_KEY ]
 
-            # Any input needs to have value RuntimeValue or obtain the value from connected steps
-            def callback( input, prefixed_name, context, **kwargs ):
-                if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                    if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
-                        if prefixed_name in input_connections_by_name:
-                            connection = input_connections_by_name[ prefixed_name ]
-                            output_step = next( output_step for output_step in steps if connection.output_step_id == output_step.id )
-                            if output_step.type.startswith( 'data' ):
-                                output_inputs = output_step.module.get_runtime_inputs( connections=connections )
-                                output_value = output_inputs[ 'input' ].get_initial_value( self.trans, context )
-                                if isinstance( input, DataToolParameter ) and isinstance( output_value, self.trans.app.model.HistoryDatasetCollectionAssociation ):
-                                    return output_value.to_hda_representative()
-                                return output_value
-                            return RuntimeValue()
-                        else:
-                            return input.get_initial_value( self.trans, context )
-                    elif connections is None or prefixed_name in input_connections_by_name:
-                        return RuntimeValue()
-            visit_input_values( self.tool.inputs, self.state.inputs, callback )
+    def __step_meta_runtime_state( self ):
+        """ Build a dictionary a of meta-step runtime state (state about how
+        the workflow step - not the tool state) to be serialized with the Tool
+        state.
+        """
+        return { RUNTIME_POST_JOB_ACTIONS_KEY: self.runtime_post_job_actions }
+
+    def __to_pja( self, key, value, step ):
+        if 'output_name' in value:
+            output_name = value['output_name']
         else:
-            raise ToolMissingException( "Tool %s missing. Cannot add dummy datasets." % self.tool_id )
-
-    def recover_mapping( self, step, step_invocations, progress ):
-        # Grab a job representing this invocation - for normal workflows
-        # there will be just one job but if this step was mapped over there
-        # may be many.
-        job_0 = step_invocations[ 0 ].job
-
-        outputs = {}
-        for job_output in job_0.output_datasets:
-            replacement_name = job_output.name
-            replacement_value = job_output.dataset
-            # If was a mapping step, grab the output mapped collection for
-            # replacement instead.
-            if replacement_value.hidden_beneath_collection_instance:
-                replacement_value = replacement_value.hidden_beneath_collection_instance
-            outputs[ replacement_name ] = replacement_value
-        for job_output_collection in job_0.output_dataset_collection_instances:
-            replacement_name = job_output_collection.name
-            replacement_value = job_output_collection.dataset_collection_instance
-            outputs[ replacement_name ] = replacement_value
-
-        progress.set_step_outputs( step, outputs )
+            output_name = None
+        if 'action_arguments' in value:
+            action_arguments = value['action_arguments']
+        else:
+            action_arguments = None
+        return PostJobAction(value['action_type'], step, output_name, action_arguments)
 
 
 class WorkflowModuleFactory( object ):
