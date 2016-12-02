@@ -327,6 +327,7 @@ do
       -clean_pyc|--clean_pyc)
           find lib -iname '*pyc' -exec rm -rf {} \;
           find test -iname '*pyc' -exec rm -rf {} \;
+          shift
           ;;
       -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
