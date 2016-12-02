@@ -27,7 +27,7 @@ RUN apt-get update -y && apt-get install -y software-properties-common curl && \
             mercurial nginx-extras nmon patch postgresql postgresql \
             postgresql-client postgresql-plpython-9.3 python-boto python-dev \
             python-prettytable python-psycopg2 python-virtualenv python-pip \
-            postgresql-server-dev-9.3 rsync slurm-drmaa-dev supervisor swig sysstat unzip \
+            postgresql-server-dev-9.3 rsync slurm-drmaa-dev swig sysstat unzip \
             wget zlib1g-dev nodejs && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -102,4 +102,5 @@ ADD run_test_wrapper.sh /usr/local/bin/run_test_wrapper.sh
 EXPOSE :9009
 EXPOSE :8080
 EXPOSE :80
+
 ENTRYPOINT ["/bin/bash", "/usr/local/bin/run_test_wrapper.sh"]
