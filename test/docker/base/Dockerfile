@@ -30,14 +30,8 @@ RUN apt-get update -y && apt-get install -y software-properties-common curl && \
             postgresql-server-dev-9.3 rsync slurm-drmaa-dev supervisor swig sysstat unzip \
             wget zlib1g-dev nodejs && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-   
-RUN npm install -g grunt-contrib-qunit grunt grunt-cli && \
-    cd /tmp && \
-    wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-    tar xf phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-    mv phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/phantomjs && \
-    mkdir -p /opt/casperjs /casperjs && wget https://github.com/n1k0/casperjs/tarball/master -O- | tar -xzf- --strip-components=1 -C /opt/casperjs && \
-    ln -sf /opt/casperjs/bin/casperjs /usr/local/bin/casperjs
+
+RUN npm install -g grunt-contrib-qunit grunt grunt-cli
 
 RUN mkdir -p /tmp/ansible && \
     mkdir -p /opt/galaxy/db && \
