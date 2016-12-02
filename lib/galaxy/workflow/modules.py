@@ -714,8 +714,6 @@ class ToolModule( WorkflowModule ):
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
-        if tool_id == 'aaddValue':
-            self.tool = False
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
