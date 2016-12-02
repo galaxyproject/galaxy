@@ -99,7 +99,7 @@ class WorkflowModule( object ):
         """ Update the current state of the module against the user supplied
         parameters in the dict-like object `incoming`.
         """
-        pass
+        self.recover_state( incoming )
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -253,9 +253,6 @@ class SimpleWorkflowModule( WorkflowModule ):
 
     def get_state( self ):
         return dumps( self.state )
-
-    def update_state( self, incoming ):
-        self.recover_state( incoming )
 
     def recover_state( self, state, **kwds ):
         self.state = self.default_state()
@@ -829,9 +826,6 @@ class ToolModule( WorkflowModule ):
             return self.state.encode( self.tool, self.trans.app )
         else:
             return dumps( self.state.inputs )
-
-    def update_state( self, incoming ):
-        self.recover_state( incoming )
 
     def recover_state( self, state, **kwds ):
         """ Recover module configuration state property (a `DefaultToolState`
