@@ -687,7 +687,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             'tool_state': tool_state,
             'label': label or None
         } )
-        module.update_state( incoming )
+        module.recover_state( incoming )
         return {
             'label': module.label,
             'tool_state': module.get_state(),

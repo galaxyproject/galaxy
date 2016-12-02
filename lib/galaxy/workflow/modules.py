@@ -95,12 +95,6 @@ class WorkflowModule( object ):
         """
         return None
 
-    def update_state( self, incoming ):
-        """ Update the current state of the module against the user supplied
-        parameters in the dict-like object `incoming`.
-        """
-        self.recover_state( incoming )
-
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
         state (potentially from persisted step state).

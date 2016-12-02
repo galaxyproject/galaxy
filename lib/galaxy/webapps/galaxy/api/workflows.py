@@ -374,7 +374,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         # create tool model and default tool state (if missing)
         tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
-        module.update_state( tool_model[ 'state_inputs' ] )
+        module.recover_state( tool_model[ 'state_inputs' ] )
         return {
             'tool_model'        : tool_model,
             'tool_state'        : module.get_state(),
