@@ -1,13 +1,15 @@
 """
 Classes related to parameter validation.
 """
-
 import logging
 import re
+
 from six import string_types
 
-from galaxy import model
-from galaxy import util
+from galaxy import (
+    model,
+    util
+)
 
 log = logging.getLogger( __name__ )
 

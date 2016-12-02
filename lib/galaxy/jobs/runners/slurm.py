@@ -13,7 +13,15 @@ log = logging.getLogger( __name__ )
 
 __all__ = ( 'SlurmJobRunner', )
 
+# Error message printed to job stderr when SLURM itself kills a job.
+# See src/common/slurm_jobacct_gather.c and src/slurmd/slurmd/req.c in
+# https://github.com/SchedMD/slurm/
 SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
+# Warning messages which may be printed to job stderr by SLURM after termination
+# of a job step when using the cgroup task plugin. The exceeded memory is not
+# always the cause of the step termination, which can be successful.
+# See src/plugins/task/cgroup/task_cgroup_memory.c in
+# https://github.com/SchedMD/slurm/
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
@@ -28,7 +36,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
             cmd = ['sacct', '-n', '-o state']
             if cluster:
                 cmd.extend( [ '-M', cluster ] )
-            cmd.extend(['-j', "%s.batch" % job_id])
+            cmd.extend(['-j', job_id])
             p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             if p.returncode != 0:
@@ -37,7 +45,12 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
                 raise Exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
-            return stdout.strip()
+            # First line is for 'job_id'
+            # Second line is for 'job_id.batch' (only available after the batch job is complete)
+            # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
+            first_line = stdout.splitlines()[0]
+            # Strip whitespaces and the final '+' (if present)
+            return first_line.strip().rstrip('+')
 
         def _get_slurm_state():
             cmd = [ 'scontrol', '-o' ]
@@ -78,6 +91,9 @@ class SlurmJobRunner( DRMAAJobRunner ):
                 if slurm_state == 'NOT_FOUND':
                     log.warning( '(%s/%s) Job not found, assuming job check exceeded MinJobAge and completing as successful', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     drmaa_state = self.drmaa_job_states.DONE
+                elif slurm_state == 'COMPLETED':
+                    log.debug("(%s/%s) SLURM reported job success, assuming job check exceeded MinJobAge and completing as successful", ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                    drmaa_state = self.drmaa_job_states.DONE
                 elif slurm_state == 'TIMEOUT':
                     log.info( '(%s/%s) Job hit walltime', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
@@ -92,12 +108,13 @@ class SlurmJobRunner( DRMAAJobRunner ):
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
-                    if self.__check_memory_limit( ajs.error_file ):
+                    check_memory_limit_msg = self.__check_memory_limit( ajs.error_file )
+                    if check_memory_limit_msg:
                         log.info( '(%s/%s) Job hit memory limit', ajs.job_wrapper.get_id_tag(), ajs.job_id )
-                        ajs.fail_message = "This job was terminated because it used more memory than it was allocated."
+                        ajs.fail_message = check_memory_limit_msg
                         ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                     else:
-                        log.info( '(%s/%s) Job was cancelled via slurm (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id )
+                        log.info( '(%s/%s) Job was cancelled via SLURM (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                         ajs.fail_message = "This job failed because it was cancelled by an administrator."
                 elif slurm_state in ('PENDING', 'RUNNING'):
                     log.warning( '(%s/%s) Job was reported by drmaa as terminal but job state in SLURM is: %s, returning to monitor queue', ajs.job_wrapper.get_id_tag(), ajs.job_id, slurm_state )
@@ -120,7 +137,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     f.seek(pos)
                     for line in lines:
                         stripped_line = line.strip()
-                        if any([_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS]):
+                        if any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
                             log.debug( '(%s/%s) Job completed, removing SLURM exceeded memory warning: "%s"', ajs.job_wrapper.get_id_tag(), ajs.job_id, stripped_line )
                         else:
                             f.write(line)
@@ -136,14 +153,17 @@ class SlurmJobRunner( DRMAAJobRunner ):
         since we are only searching the last 2K
         """
         try:
-            log.debug( 'Checking %s for exceeded memory message from slurm', efile_path )
+            log.debug( 'Checking %s for exceeded memory message from SLURM', efile_path )
             with open( efile_path ) as f:
                 if os.path.getsize(efile_path) > 2048:
                     f.seek(-2048, os.SEEK_END)
                     f.readline()
                 for line in f.readlines():
-                    if line.strip() == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
-                        return True
+                    stripped_line = line.strip()
+                    if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
+                        return 'This job was terminated because it used more memory than it was allocated.'
+                    elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
+                        return 'This job was cancelled probably because it used more memory than it was allocated.'
         except:
             log.exception('Error reading end of %s:', efile_path)
 

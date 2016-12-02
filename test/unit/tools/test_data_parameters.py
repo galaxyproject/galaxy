@@ -1,10 +1,13 @@
-import imp
 import os
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-import galaxy_mock
+import sys
+
 from galaxy import model
 from galaxy.util import bunch
+
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock
+
 from .test_parameter_parsing import BaseParameterTestCase
 
 

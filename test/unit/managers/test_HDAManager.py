@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-import imp
-import os
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 import sqlalchemy
 from six import string_types

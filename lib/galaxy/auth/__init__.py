@@ -61,7 +61,7 @@ class AuthManager(object):
                 if auth_result is True:
                     break
                 if auth_result is None:
-                    message = 'Invalid email address/username or password'
+                    message = 'Invalid email address/username or password.'
                     status = 'error'
                     break
             elif allow_reg is True:
@@ -134,10 +134,10 @@ class AuthManager(object):
                     if _get_bool(options, "allow-password-change", False):
                         return (True, '')  # accept user
                     else:
-                        return (False, 'Password change not supported')
+                        return (False, 'Password change not supported.')
                 elif auth_result is None:
                     break  # end authentication (skip rest)
-        return (False, 'Invalid current password')
+        return (False, 'Invalid current password.')
 
     def active_authenticators(self, email, username, password):
         """Yields AuthProvider instances for the provided configfile that match the
