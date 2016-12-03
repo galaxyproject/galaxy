@@ -174,7 +174,7 @@
         %endif
         %if job and trans.user_is_admin():
             <% job_metrics = trans.app.job_metrics %>
-            %for metric in job.metrics:
+            %for metric in sorted(job.metrics, key=lambda x:x.metric_name):
                 <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
                 <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
             %endfor
