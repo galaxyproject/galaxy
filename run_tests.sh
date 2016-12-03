@@ -252,7 +252,7 @@ then
 fi
 
 # If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
-if [ -z "$BUILD_NUMBER" ];
+if [ ! -z "$BUILD_NUMBER" ];
 then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
