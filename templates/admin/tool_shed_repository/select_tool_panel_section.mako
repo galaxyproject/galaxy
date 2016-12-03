@@ -65,6 +65,7 @@
             <div class="form-row">
                 <input type="hidden" name="includes_tools" value="${includes_tools}" />
                 <input type="hidden" name="includes_tool_dependencies" value="${includes_tool_dependencies}" />
+                <input type="hidden" name="requirements_status" value="${requirements_status}" />
                 <input type="hidden" name="includes_tools_for_display_in_tool_panel" value="${includes_tools_for_display_in_tool_panel}" />
                 <input type="hidden" name="tool_shed_url" value="${tool_shed_url}" />
                 <input type="hidden" name="encoded_repo_info_dicts" value="${encoded_repo_info_dicts}" />
@@ -85,13 +86,48 @@
                 ${render_readme_section( containers_dict )}
                 <div style="clear: both"></div>
             %endif
-            %if can_display_repository_dependencies or can_display_tool_dependencies or can_display_resolver_installation:
+            <%
+                if requirements_status and install_resolver_dependencies_check_box or includes_tool_dependencies:
+                    display_dependency_confirmation = True
+                else:
+                    display_dependency_confirmation = False
+            %>
+            %if requirements_status:
+                %if not install_resolver_dependencies_check_box and not includes_tool_dependencies:
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <head>
+                            <th>
+                                <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Cannot install dependencies'/>
+                                This repository requires dependencies that cannot be installed through the toolshed
+                            </th>
+                        </head>
+                    </table>
+                </div>
+                <div class="form-row">
+                     <p>This repository defines tool requirements that cannot be installed through the Tool Shed.</p>
+                     <p>Please activate Conda dependency resolution, activate Docker dependency resolution, setup Environment Modules
+or manually satisfy the dependencies listed below.</p>
+                     <p>For details see <a target="_blank" href="https://docs.galaxyproject.org/en/latest/admin/dependency_resolvers.html">the dependency resolver documentation.</a></p>
+                </div>
+                %endif
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <th bgcolor="#EBD9B2">The following tool dependencies are required by the current repository</th>
+                    </table>
+                </div>
+                <div class="form-row">
+                    ${render_tool_dependency_resolver( requirements_status, prepare_for_install=True )}
+                </div>
+                <div style="clear: both"></div>
+            %endif
+            %if can_display_repository_dependencies or display_dependency_confirmation:
                 <div class="form-row">
                     <table class="colored" width="100%">
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>
                     </table>
                 </div>
-                ${render_dependencies_section( install_resolver_dependencies_check_box, install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )}
+                ${render_dependencies_section( install_resolver_dependencies_check_box, install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False, requirements_status=requirements_status )}
                 <div style="clear: both"></div>
             %endif
             %if shed_tool_conf_select_field:
