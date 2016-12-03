@@ -99,7 +99,7 @@
                         <head>
                             <th>
                                 <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Cannot install dependencies'/>
-                                This repository requires dependencies that cannot be installed through the toolshed
+                                This repository requires dependencies that cannot be installed through the Tool Shed
                             </th>
                         </head>
                     </table>
