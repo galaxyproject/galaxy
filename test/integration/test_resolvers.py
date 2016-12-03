@@ -46,7 +46,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         create_response = self._post( "dependency_resolvers/dependency", data=data, admin=True )
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and response['exact']
+        self._assert_dependency_type(response)
 
     def test_dependency_install_not_exact(self):
         """
@@ -58,7 +58,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         create_response = self._post("dependency_resolvers/dependency", data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and not response['exact']
+        self._assert_dependency_type(response, exact=False)
 
     def test_dependency_status_installed_exact( self ):
         """
@@ -69,7 +69,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and response['exact']
+        self._assert_dependency_type(response)
 
     def test_dependency_status_installed_not_exact( self ):
         """
@@ -82,7 +82,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         create_response = self._get( "dependency_resolvers/dependency", data=data, admin=True )
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
-        assert response['dependency_type'] == 'conda' and not response['exact']
+        self._assert_dependency_type(response, exact=False)
 
     def test_conda_install_through_tools_api( self ):
         tool_id = 'mulled_example_multi_1'
@@ -102,3 +102,12 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase, A
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         assert response == "OK"
+
+    def _assert_dependency_type(self, response, type='conda', exact=True):
+        if 'dependency_type' not in response:
+            raise Exception("Response [%s] did not contain key 'dependency_type'" % response)
+        dependency_type = response['dependency_type']
+        assert dependency_type == type, "Dependency type [%s] not the expected value [%s]" % (dependency_type, type)
+        if 'exact' not in response:
+            raise Exception("Response [%s] did not contain key 'exact'" % response)
+        assert response['exact'] is exact
