@@ -310,8 +310,8 @@ define([
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.output_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
             this.app = create_app();
-            this.element = this.app.$newNodeElement( "tool", "newnode" );
-            this.node = new Node( this.app, { element: this.element } );
+            this.node = this.app.prebuildNode( "tool", "newnode" );
+            this.element = this.node.element;
             this.node.input_terminals.i1 = this.input_terminal;
             this.node.output_terminals.o1 = this.output_terminal;
         },
@@ -544,10 +544,10 @@ define([
     } );
 
     test( "tool error styling", function() {
-        this.set_for_node( { tool_errors: false } );
+        this.set_for_node( { errors: false } );
         this.view.render();
         ok( ! this.view.$el.hasClass( "tool-node-error" ) );
-        this.set_for_node( { tool_errors: true } );
+        this.set_for_node( { errors: true } );
         this.view.render();
         ok( this.view.$el.hasClass( "tool-node-error" ) );
     } );
