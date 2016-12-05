@@ -181,10 +181,10 @@ class WorkflowModule( object ):
         """ Takes the computed runtime state and serializes it during run request creation. """
         return runtime_state.encode( Bunch( inputs=self.get_runtime_inputs() ), trans.app )
 
-    def decode_runtime_state( self, trans, runtime_state ):
+    def decode_runtime_state( self, runtime_state ):
         """ Takes the serialized runtime state and decodes it when running the workflow. """
         state = DefaultToolState()
-        state.decode( runtime_state, Bunch( inputs=self.get_runtime_inputs() ), trans.app )
+        state.decode( runtime_state, Bunch( inputs=self.get_runtime_inputs() ), self.trans.app )
         return state
 
     def execute( self, trans, progress, invocation, step ):
@@ -964,7 +964,7 @@ class ToolModule( WorkflowModule ):
         into a DefaultToolState object for use during workflow invocation.
         """
         if self.tool:
-            state = super( ToolModule, self ).decode_runtime_state( self.trans, runtime_state )
+            state = super( ToolModule, self ).decode_runtime_state( runtime_state )
             state_dict = loads( runtime_state )
             if RUNTIME_STEP_META_STATE_KEY in state_dict:
                 self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
