@@ -254,7 +254,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if missing_tool_tups:
             errors = []
             for missing_tool_tup in missing_tool_tups:
-                errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3])+1, missing_tool_tup[0]))
+                errors.append("Step %i: Requires tool '%s'." % (int(missing_tool_tup[3]) + 1, missing_tool_tup[0]))
             raise MissingToolsException(workflow, errors)
 
         # Connect up
@@ -355,7 +355,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if step.type == 'tool' or step.type is None:
                 if step.module.version_changes:
                     step_version_changes.extend( step.module.version_changes )
-                step_errors = step.module.get_errors();
+                step_errors = step.module.get_errors()
                 if step_errors:
                     errors[ step.id ] = step_errors
         if missing_tools:
