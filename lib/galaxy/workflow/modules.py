@@ -11,7 +11,9 @@ from galaxy.dataset_collections import matching
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools.execute import execute
-from galaxy.tools.parameters import check_param, visit_input_values
+from galaxy.tools.parameters import check_param
+from galaxy.tools.parameters import params_to_incoming
+from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import (
     parameter_types,
     DataCollectionToolParameter,
@@ -888,7 +890,9 @@ class ToolModule( WorkflowModule ):
     def get_config_form( self ):
         if self.tool:
             self.add_dummy_datasets()
-            return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self, tool=self.tool, values=self.state.inputs )
+            incoming = {}
+            params_to_incoming( incoming, self.tool.inputs, self.state.inputs, self.trans.app )
+            return dumps( self.tool.to_json( self.trans, incoming, workflow_building_mode=True ) )
         else:
             return "Tool missing. Parameters cannot be edited."
 
