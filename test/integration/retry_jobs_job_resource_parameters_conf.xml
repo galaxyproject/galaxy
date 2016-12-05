@@ -1,0 +1,3 @@
+<parameters>
+  <param label="Test Name" name="test_name" type="text" value="" help="Test name to connect client with simulated backend failures." />
+</parameters>

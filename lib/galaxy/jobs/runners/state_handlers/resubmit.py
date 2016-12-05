@@ -25,10 +25,14 @@ def failure(app, job_runner, job_state):
             # There is a resubmit defined for the destination but
             # its condition is not for the encountered state
             continue
-        log.info("(%s/%s) Job will be resubmitted to '%s' because %s at "
+        external_id = getattr(job_state, "job_id", None)
+        if external_id:
+            job_log_prefix = "(%s/%s)" % (job_state.job_wrapper.job_id, job_state.job_id)
+        else:
+            job_log_prefix = "(%s)" % (job_state.job_wrapper.job_id)
+        log.info("%s Job will be resubmitted to '%s' because %s at "
                  "the '%s' destination",
-                 job_state.job_wrapper.job_id,
-                 job_state.job_id,
+                 job_log_prefix,
                  resubmit['destination'],
                  MESSAGES[job_state.runner_state],
                  job_state.job_wrapper.job_destination.id )
@@ -43,8 +47,8 @@ def failure(app, job_runner, job_state):
         job_state.job_wrapper.invalidate_external_metadata()
         job = job_state.job_wrapper.get_job()
         if resubmit.get('handler', None):
-            log.debug('(%s/%s) Job reassigned to handler %s',
-                      job_state.job_wrapper.job_id, job_state.job_id,
+            log.debug('%s Job reassigned to handler %s',
+                      job_log_prefix,
                       resubmit['handler'])
             job.set_handler(resubmit['handler'])
             job_runner.sa_session.add( job )

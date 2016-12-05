@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+        <plugin id="retry_runner" type="runner" load="integration.retry_runner:RetryJobRunner">
+        </plugin>
+    </plugins>
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+    <destinations default="retry_test_1">
+        <destination id="local" runner="local">
+        </destination>
+        <destination id="retry_test_1" runner="retry_runner">
+            <resubmit condition="walltime_reached" destination="retry_test_more_walltime" />
+            <resubmit condition="memory_limit_reached" destination="retry_test_more_mem" />
+            <param id="dest_name">retry_test_1</param>
+            <param id="try_count">1</param>
+        </destination>
+        <destination id="retry_test_more_mem" runner="retry_runner">
+            <param id="dest_name">retry_test_more_mem</param>
+            <param id="try_count">2</param>
+        </destination>
+        <destination id="retry_test_more_walltime" runner="retry_runner">
+            <param id="dest_name">retry_test_more_walltime</param>
+            <param id="try_count">2</param>
+        </destination>
+    </destinations>
+    <resources default="test">
+      <group id="upload"></group>
+      <group id="test">test_name</group>
+    </resources>
+    <tools>
+        <tool id="upload1" destination="local" resources="upload" />
+    </tools>
+</job_conf>

@@ -764,7 +764,30 @@ class JobConfiguration( object ):
                     log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
 
-class JobWrapper( object ):
+class HasResourceParameters:
+
+    def get_resource_parameters( self, job=None ):
+        # Find the dymically inserted resource parameters and give them
+        # to rule.
+
+        if job is None:
+            job = self.get_job()
+
+        app = self.app
+        param_values = job.get_param_values( app, ignore_errors=True )
+        resource_params = {}
+        try:
+            resource_params_raw = param_values[ "__job_resource" ]
+            if resource_params_raw[ "__job_resource__select" ].lower() in [ "1", "yes", "true" ]:
+                for key, value in resource_params_raw.items():
+                    resource_params[ key ] = value
+        except KeyError:
+            pass
+
+        return resource_params
+
+
+class JobWrapper( object, HasResourceParameters ):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.

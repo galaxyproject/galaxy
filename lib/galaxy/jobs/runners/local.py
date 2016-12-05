@@ -78,9 +78,16 @@ class LocalJobRunner( BaseJobRunner ):
 
     def queue_job( self, job_wrapper ):
         # prepare the job
-        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
+        job_destination = job_wrapper.job_destination
+        include_metadata = asbool( job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
         if not self.prepare_job( job_wrapper, include_metadata=include_metadata ):
             return
+
+        def fail(message):
+            job_state = JobState(job_wrapper, job_destination)
+            job_state.fail_message = message
+            job_state.stop_job = False
+            self.fail_job(job_state, exception=True)
 
         stderr = stdout = ''
         exit_code = 0
@@ -100,7 +107,7 @@ class LocalJobRunner( BaseJobRunner ):
                                      stderr=stderr_file,
                                      env=self._environ,
                                      preexec_fn=os.setpgrp )
-            job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
+            job_wrapper.set_job_destination(job_destination, proc.pid)
             job_wrapper.change_state( model.Job.states.RUNNING )
 
             terminated = self.__poll_if_needed( proc, job_wrapper, job_id )
@@ -123,17 +130,17 @@ class LocalJobRunner( BaseJobRunner ):
             log.debug('execution finished: %s' % command_line)
         except Exception:
             log.exception("failure running job %d" % job_wrapper.job_id)
-            job_wrapper.fail( "failure running job", exception=True )
+            fail("failure running job")
             return
-        external_metadata = not asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
-        if external_metadata:
+
+        if not include_metadata:
             self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job!
         try:
             job_wrapper.finish( stdout, stderr, exit_code )
         except:
             log.exception("Job wrapper finish method failed")
-            job_wrapper.fail("Unable to finish job", exception=True)
+            fail("Unable to finish job")
 
     def stop_job( self, job ):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
