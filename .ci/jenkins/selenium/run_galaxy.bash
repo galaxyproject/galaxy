@@ -2,7 +2,7 @@
 
 set -e
 
-sleep 10  # TODO: wait on something instead of just sleeping...
+sleep 30  # TODO: wait on something instead of just sleeping...
 
 echo `df`
 
