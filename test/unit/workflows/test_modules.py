@@ -93,7 +93,7 @@ def test_data_input_update():
             "name": "Cool Input",
         },
     )
-    module.update_state( dict( name="Awesome New Name" ) )
+    module.recover_state( dict( name="Awesome New Name" ) )
     assert module.state[ 'name' ] == "Awesome New Name"
 
 
@@ -166,7 +166,7 @@ def test_data_collection_input_update():
             'collection_type': 'list:paired',
         }
     )
-    module.update_state( dict( name="New Collection", collection_type="list" ) )
+    module.recover_state( dict( name="New Collection", collection_type="list" ) )
     assert module.state[ 'name' ] == "New Collection"
 
 
