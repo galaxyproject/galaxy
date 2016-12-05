@@ -43,15 +43,15 @@ do
     do
         if docker ps | grep -q "${COMPOSE_PROJECT_NAME}_${service_name}"
         then
-            echo "Service ${service_name} ready."
+            container_id=`docker ps | grep "${COMPOSE_PROJECT_NAME}_${service_name}" | cut -d " " -f 1`
+            eval "${service_name}_container_id=${container_id}"
+            echo "Service ${service_name} ready - with container ID ${container_id}"
             break
         fi
         printf "."
         sleep 1;
     done
 done
-
-docker ps | grep -q 'prickly_x'
 
 
 if [ "$1" = "--debug-running-containers" ];
@@ -70,6 +70,12 @@ do
         if ! docker ps | grep -q "${COMPOSE_PROJECT_NAME}_${service_name}"
         then
             echo "Service ${service_name} stopped, exiting and halting containers."
+            container_id_var="${service_name}_container_id"
+            container_id="${!container_id_var}"
+            echo "Failing container (${container_id}) logs..."
+            echo "---"
+            docker logs "${container_id}"
+            echo "---"
             docker-compose down | true
             exit 1
         fi
