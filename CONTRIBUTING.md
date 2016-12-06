@@ -95,6 +95,8 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
   request](https://help.github.com/articles/creating-a-pull-request/)
   with these changes. You pull request message ideally should include:
 
+   * A short, informative title used as a basis to generate release notes.
+
    * A description of why the changes should be made.
 
    * A description of the implementation of the changes.
