@@ -201,8 +201,8 @@ class CachedDependencyManager(DependencyManager):
 
     def hash_requirements(self, resolved_dependencies):
         """Return hash for requirements"""
-        resolved_dependencies = [[(dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies]]
-        hash_str = json.dumps(sorted([resolved_dependencies]))
+        resolved_dependencies = [(dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies]
+        hash_str = json.dumps(sorted(resolved_dependencies))
         return hash_util.new_secure_hash(hash_str)[:8]  # short hash
 
     def get_hashed_requirements_path(self, resolved_dependencies):

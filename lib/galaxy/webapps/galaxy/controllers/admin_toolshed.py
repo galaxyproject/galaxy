@@ -1112,6 +1112,11 @@ class AdminToolshed( AdminGalaxy ):
         shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans.app, shed_tool_conf )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
+        tool_requirements = suc.get_tool_shed_repo_requirements(app=trans.app,
+                                                                tool_shed_url=tool_shed_url,
+                                                                repo_info_dicts=repo_info_dicts)
+        view = views.DependencyResolversView(self.app)
+        requirements_status = view.get_requirements_status(tool_requirements)
         if len( repo_info_dicts ) == 1:
             # If we're installing or updating a single repository, see if it contains a readme or
             # dependencies that we can display.
@@ -1230,6 +1235,7 @@ class AdminToolshed( AdminGalaxy ):
                                         shed_tool_conf_select_field=shed_tool_conf_select_field,
                                         tool_panel_section_select_field=tool_panel_section_select_field,
                                         tool_shed_url=tool_shed_url,
+                                        requirements_status=requirements_status,
                                         message=message,
                                         status=status )
         else:
@@ -1256,6 +1262,7 @@ class AdminToolshed( AdminGalaxy ):
                                         shed_tool_conf_select_field=shed_tool_conf_select_field,
                                         tool_panel_section_select_field=tool_panel_section_select_field,
                                         tool_shed_url=tool_shed_url,
+                                        tool_requirements=tool_requirements,
                                         message=message,
                                         status=status )
 
