@@ -245,16 +245,17 @@ class SimpleWorkflowModule( WorkflowModule ):
         step.type = self.type
         step.tool_id = None
         step.tool_version = None
-        step.tool_inputs = self.state
+        step.tool_inputs = self.state.inputs
 
     def get_state( self ):
-        return dumps( self.state )
+        return dumps( self.state.inputs )
 
     def recover_state( self, state, **kwds ):
-        self.state = self.default_state()
+        self.state = DefaultToolState()
+        self.state.inputs = self.default_state()
         for key in self.state_fields:
             if state and key in state:
-                self.state[ key ] = state[ key ]
+                self.state.inputs[ key ] = state[ key ]
 
     def get_config_form( self ):
         form = self._abstract_config_form( )
@@ -439,7 +440,7 @@ class InputModule( SimpleWorkflowModule ):
         return state
 
     def get_runtime_input_dicts( self, step_annotation ):
-        name = self.state.get( "name", self.default_name )
+        name = self.state.inputs.get( "name", self.default_name )
         return [ dict( name=name, description=step_annotation ) ]
 
     def get_data_inputs( self ):
@@ -489,7 +490,7 @@ class InputDataModule( InputModule ):
 
     def _abstract_config_form( self ):
         form = formbuilder.FormBuilder( title=self.name ) \
-            .add_text( "name", "Name", value=self.state['name'] )
+            .add_text( "name", "Name", value=self.state.inputs['name'] )
         return form
 
     def get_data_outputs( self ):
@@ -507,7 +508,7 @@ class InputDataModule( InputModule ):
         return ', '.join( filter_set )
 
     def get_runtime_inputs( self, connections=None ):
-        label = self.state.get( "name", "Input Dataset" )
+        label = self.state.inputs.get( "name", "Input Dataset" )
         return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
 
 
@@ -524,8 +525,8 @@ class InputDataCollectionModule( InputModule ):
         return dict( name=Class.default_name, collection_type=Class.default_collection_type )
 
     def get_runtime_inputs( self, **kwds ):
-        label = self.state.get( "name", self.default_name )
-        collection_type = self.state.get( "collection_type", self.default_collection_type )
+        label = self.state.inputs.get( "name", self.default_name )
+        collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
         input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
@@ -538,14 +539,14 @@ class InputDataCollectionModule( InputModule ):
         type_input = formbuilder.DatalistInput(
             name="collection_type",
             label="Collection Type",
-            value=self.state[ "collection_type" ],
+            value=self.state.inputs[ "collection_type" ],
             extra_attributes=dict(refresh_on_change='true'),
             options=type_hints
         )
         form = formbuilder.FormBuilder(
             title=self.name
         ).add_text(
-            "name", "Name", value=self.state['name']
+            "name", "Name", value=self.state.inputs['name']
         )
         form.inputs.append( type_input )
         return form
@@ -556,7 +557,7 @@ class InputDataCollectionModule( InputModule ):
                 name='output',
                 extensions=['input_collection'],
                 collection=True,
-                collection_type=self.state[ 'collection_type' ]
+                collection_type=self.state.inputs[ 'collection_type' ]
             )
         ]
 
@@ -587,9 +588,9 @@ class InputParameterModule( SimpleWorkflowModule ):
         form = formbuilder.FormBuilder(
             title=self.name
         ).add_text(
-            "name", "Name", value=self.state['name']
+            "name", "Name", value=self.state.inputs['name']
         ).add_select(
-            "parameter_type", "Parameter Type", value=self.state['parameter_type'],
+            "parameter_type", "Parameter Type", value=self.state.inputs['parameter_type'],
             options=[
                 ('text', "Text"),
                 ('integer', "Integer"),
@@ -598,15 +599,15 @@ class InputParameterModule( SimpleWorkflowModule ):
                 ('color', "Color"),
             ]
         ).add_checkbox(
-            "optional", "Optional", value=self.state['optional']
+            "optional", "Optional", value=self.state.inputs['optional']
         )
 
         return form
 
     def get_runtime_inputs( self, **kwds ):
-        label = self.state.get( "name", self.default_name )
-        parameter_type = self.state.get("parameter_type", self.default_parameter_type)
-        optional = self.state.get("optional", self.default_optional)
+        label = self.state.inputs.get( "name", self.default_name )
+        parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
+        optional = self.state.inputs.get("optional", self.default_optional)
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
         parameter_class = parameter_types[parameter_type]
@@ -625,7 +626,7 @@ class InputParameterModule( SimpleWorkflowModule ):
         return state
 
     def get_runtime_input_dicts( self, step_annotation ):
-        name = self.state.get( "name", self.default_name )
+        name = self.state.inputs.get( "name", self.default_name )
         return [ dict( name=name, description=step_annotation ) ]
 
     def get_data_inputs( self ):
@@ -666,7 +667,7 @@ class PauseModule( SimpleWorkflowModule ):
     def _abstract_config_form( self ):
         form = formbuilder.FormBuilder(
             title=self.name
-        ).add_text( "name", "Name", value=self.state['name'] )
+        ).add_text( "name", "Name", value=self.state.inputs['name'] )
         return form
 
     def get_runtime_inputs( self, **kwds ):
