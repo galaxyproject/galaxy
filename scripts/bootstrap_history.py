@@ -33,6 +33,7 @@ PROJECT_NAME = "galaxy"
 PROJECT_URL = "https://github.com/%s/%s" % (PROJECT_OWNER, PROJECT_NAME)
 PROJECT_API = "https://api.github.com/repos/%s/%s/" % (PROJECT_OWNER, PROJECT_NAME)
 RELEASES_PATH = os.path.join(PROJECT_DIRECTORY, "doc", "source", "releases")
+RELEASE_DETLA_MONTHS = 4  # Number of months between releases.
 
 # Uncredit pull requestors... kind of arbitrary at this point.
 DEVTEAM = [
@@ -364,9 +365,9 @@ def _issue_to_str(pr):
 def _next_version_params(release_name):
     month = int(release_name.split(".")[1])
     year = release_name.split(".")[0]
-    next_month = (((month - 1) + 3) % 12) + 1
+    next_month = (((month - 1) + RELEASE_DETLA_MONTHS) % 12) + 1
     next_month_name = calendar.month_name[next_month]
-    if next_month < 3:
+    if next_month < RELEASE_DETLA_MONTHS:
         next_year = int(year) + 1
     else:
         next_year = year
