@@ -129,6 +129,7 @@ var DatasetListItemEdit = _super.extend(
     _renderToolHelpButton : function() {
         var datasetID = this.model.attributes.dataset_id;
         var jobID = this.model.attributes.creating_job;
+        var self = this;
 
         var parseToolBuild = function(data) {
             var helpString = '<div id="thdiv-' + datasetID + '" class="toolhelp">'
@@ -139,7 +140,7 @@ var DatasetListItemEdit = _super.extend(
                 helpString += '<strong>Tool help is unavailable for this dataset.</strong><hr/>';
             }
             helpString += '</div>';
-            $('#dataset-' + datasetID + " > .details").append($.parseHTML(helpString));
+            self.$el.find( '.details' ).append($.parseHTML(helpString));
         };
         var parseToolID = function(data) {
             $.ajax({
@@ -147,7 +148,6 @@ var DatasetListItemEdit = _super.extend(
             }).done(function(data){
                 parseToolBuild(data);
             }).fail(function(){
-                console.log("Failed in api tools build call")
                 parseToolBuild({})
             });
         };
@@ -159,15 +159,16 @@ var DatasetListItemEdit = _super.extend(
             faIcon: 'fa-question',
             onclick: function() {
                 var divString = 'thdiv-' + datasetID;
-                if ($("#" + divString).length > 0)
-                {
-                    $("#" + divString).toggle();
+                if (self.$el.find(".toolhelp").length > 0){
+                    self.$el.find(".toolhelp").toggle();
                 } else {
                     $.ajax({
-                    url: '/api/jobs/' + jobID
-                }).done(function(data){
-                    parseToolID(data);
-                }).fail(function(){console.log('Failed on recovering /api/jobs/' + jobID + ' call.')});
+                        url: '/api/jobs/' + jobID
+                    }).done(function(data){
+                        parseToolID(data);
+                    }).fail(function(){
+                       console.log('Failed on recovering /api/jobs/' + jobID + ' call.');
+                    });
                 }
             }
         });
