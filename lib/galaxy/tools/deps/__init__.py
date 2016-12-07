@@ -174,15 +174,19 @@ class CachedDependencyManager(DependencyManager):
 
     def build_cache(self, requirements, **kwds):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
-        cacheable_dependencies = [dep for req, dep in resolved_dependencies.items() if dep.cacheable]
-        hashed_requirements_dir = self.get_hashed_requirements_path(cacheable_dependencies)
-        if kwds.get('force_rebuild', False) and os.path.exists(hashed_requirements_dir):
-            try:
-                shutil.rmtree(hashed_requirements_dir)
-            except Exception:
-                log.warning("Could not delete cached requirements directory '%s'" % hashed_requirements_dir)
-                pass
-        [dep.build_cache(hashed_requirements_dir) for dep in cacheable_dependencies]
+        cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
+        hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
+        if os.path.exists(hashed_dependencies_dir):
+            if kwds.get('force_rebuild', False):
+                try:
+                    shutil.rmtree(hashed_dependencies_dir)
+                except Exception:
+                    log.warning("Could not delete cached dependencies directory '%s'" % hashed_dependencies_dir)
+                    raise
+            else:
+                log.debug("Cached dependencies directory '%s' already exists, skipping build", hashed_dependencies_dir)
+                return
+        [dep.build_cache(hashed_dependencies_dir) for dep in cacheable_dependencies]
 
     def dependency_shell_commands( self, requirements, **kwds ):
         """
@@ -192,24 +196,28 @@ class CachedDependencyManager(DependencyManager):
         cached environments.
         """
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
-        cacheable_dependencies = [dep for req, dep in resolved_dependencies.items() if dep.cacheable]
-        hashed_requirements_dir = self.get_hashed_requirements_path(cacheable_dependencies)
-        if os.path.exists(hashed_requirements_dir):
-            [dep.set_cache_path(hashed_requirements_dir) for dep in cacheable_dependencies]
+        cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
+        hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
+        if os.path.exists(hashed_dependencies_dir):
+            [dep.set_cache_path(hashed_dependencies_dir) for dep in cacheable_dependencies]
         commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
         return commands
 
-    def hash_requirements(self, resolved_dependencies):
-        """Return hash for requirements"""
+    def hash_dependencies(self, resolved_dependencies):
+        """Return hash for dependencies"""
         resolved_dependencies = [(dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies]
         hash_str = json.dumps(sorted(resolved_dependencies))
         return hash_util.new_secure_hash(hash_str)[:8]  # short hash
 
-    def get_hashed_requirements_path(self, resolved_dependencies):
+    def get_hashed_dependencies_path(self, resolved_dependencies):
         """
-        Returns the path to the hashed requirements directory (but does not evaluate whether the path exists)
-        :param requirements:
-        :return:
+        Returns the path to the hashed dependencies directory (but does not evaluate whether the path exists).
+
+        :param resolved_dependencies: list of resolved dependencies
+        :type resolved_dependencies: list
+
+        :return: path
+        :rtype: str
         """
-        req_hashes = self.hash_requirements(resolved_dependencies)
+        req_hashes = self.hash_dependencies(resolved_dependencies)
         return os.path.abspath(os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes))
