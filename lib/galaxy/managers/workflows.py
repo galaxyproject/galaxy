@@ -604,9 +604,23 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict['subworkflow'] = subworkflow_as_dict
 
             # Data inputs
-            step_dict['inputs'] = module.get_runtime_input_dicts( annotation_str )
-            # User outputs
+            input_dicts = []
+            step_state = step.state.inputs
+            if "name" in step_state:
+                name = step_state.get( "name" )
+                    input_dicts.append( { "name": name, "description": annotation_str } )
+            for name, val in step_state.items():
+                input_type = type( val )
+                if input_type == RuntimeValue:
+                    input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % module.get_name() } )
+                elif input_type == dict:
+                    # Input type is described by a dict, e.g. indexed parameters.
+                    for partval in val.values():
+                        if type( partval ) == RuntimeValue:
+                            input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % module.get_name() } )
+            step_dict['inputs'] = input_dicts
 
+            # User outputs
             workflow_outputs_dicts = []
             for workflow_output in step.unique_workflow_outputs:
                 workflow_output_dict = dict(

@@ -117,10 +117,6 @@ class WorkflowModule( object ):
     def get_data_outputs( self ):
         return []
 
-    def get_runtime_input_dicts( self, step_annotation ):
-        """ Get runtime inputs (inputs and parameters) as simple dictionary. """
-        return []
-
     def get_config_form( self ):
         """ Render form that is embedded in workflow editor for modifying the
         step state of a node.
@@ -318,11 +314,10 @@ class SubWorkflowModule( WorkflowModule ):
         inputs = []
         for step in self.subworkflow.input_steps:
             name = step.label
-            if name is None:
+            #if name is None:
                 # trans shouldn't really be needed for data inputs...
-                step_module = module_factory.from_workflow_step(self.trans, step)
-                name = step_module.get_runtime_input_dicts(None)[0]["name"]
-
+                #step_module = module_factory.from_workflow_step(self.trans, step)
+                #name = step_module.get_runtime_input_dicts(None)[0]["name"]
             if not name:
                 raise Exception("Failed to find name for workflow module.")
             step_type = step.type
@@ -354,10 +349,6 @@ class SubWorkflowModule( WorkflowModule ):
             )
             outputs.append(output)
         return outputs
-
-    def get_runtime_input_dicts( self, step_annotation ):
-        """ Get runtime inputs (inputs and parameters) as simple dictionary. """
-        return []
 
     def get_content_id( self ):
         return self.trans.security.encode_id(self.subworkflow.id)
@@ -437,10 +428,6 @@ class InputModule( SimpleWorkflowModule ):
         state = DefaultToolState()
         state.inputs = dict( input=None )
         return state
-
-    def get_runtime_input_dicts( self, step_annotation ):
-        name = self.state.inputs.get( "name", self.default_name )
-        return [ dict( name=name, description=step_annotation ) ]
 
     def get_data_inputs( self ):
         return []
@@ -617,10 +604,6 @@ class InputParameterModule( SimpleWorkflowModule ):
         state.inputs = dict( input=None )
         return state
 
-    def get_runtime_input_dicts( self, step_annotation ):
-        name = self.state.inputs.get( "name", self.default_name )
-        return [ dict( name=name, description=step_annotation ) ]
-
     def get_data_inputs( self ):
         return []
 
@@ -663,9 +646,6 @@ class PauseModule( SimpleWorkflowModule ):
 
     def get_runtime_inputs( self, **kwds ):
         return dict( )
-
-    def get_runtime_input_dicts( self, step_annotation ):
-        return []
 
     def get_runtime_state( self ):
         state = DefaultToolState()
@@ -963,20 +943,6 @@ class ToolModule( WorkflowModule ):
             return state
         else:
             raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
-
-    def get_runtime_input_dicts( self, step_annotation ):
-        # Step is a tool and may have runtime inputs.
-        input_dicts = []
-        for name, val in self.state.inputs.items():
-            input_type = type( val )
-            if input_type == RuntimeValue:
-                input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
-            elif input_type == dict:
-                # Input type is described by a dict, e.g. indexed parameters.
-                for partval in val.values():
-                    if type( partval ) == RuntimeValue:
-                        input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
-        return input_dicts
 
     def execute( self, trans, progress, invocation, step ):
         tool = trans.app.toolbox.get_tool( step.tool_id, tool_version=step.tool_version )
