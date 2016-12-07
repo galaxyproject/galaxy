@@ -11,9 +11,19 @@ Highlighted Enhancements
 
 .. major_feature
 
+* Overhaul of charts visualization - more visualizations, more options, and better user interface.
+  `Pull Request 2875`_, `Pull Request 2820`_
+* Paginate contents of large histories.
+  `Pull Request 2588`_
 * Implement a collection operation tool for merging collections
   (thanks to `@Takadonet <https://github.com/Takadonet>`__).
   `Pull Request 2771`_
+* Replace `reference documentation <https://docs.galaxyproject.org/en/latest/dev/schema.html>`__
+  for tool XML files with automatically generated
+  documentation from a now official Galaxy XSD documentation (with help from many).
+  `Pull Request 2923`_, `Pull Request 2936`_, `Pull Request 3086`_,
+  `Pull Request 2932`_, `Pull Request 2903`_, `Pull Request 3020`_,
+  `Pull Request 3072`_
 * Add a password strength evaluation bar
   (thanks to `@benfulton <https://github.com/benfulton>`__).
   `Pull Request 2687`_
@@ -27,12 +37,6 @@ Highlighted Enhancements
 * Add "Save as" as an option in the workflow editor
   (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
   `Pull Request 3035`_
-* Replace `reference documentation <https://docs.galaxyproject.org/en/latest/dev/schema.html>`__
-  for tool XML files with automatically generated
-  documentation from a now official Galaxy XSD documentation (with help from many).
-  `Pull Request 2923`_, `Pull Request 2936`_, `Pull Request 3086`_,
-  `Pull Request 2932`_, `Pull Request 2903`_, `Pull Request 3020`_,
-  `Pull Request 3072`_
 * Allow naming input datasets and collections during workflow extraction.
   `Pull Request 2943`_
 * Various enhancements for API driven installation of tool shed repositories.
