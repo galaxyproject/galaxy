@@ -105,12 +105,12 @@ Highlights
 New Galaxy repository
   .. code-block:: shell
 
-      $ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
+      $$ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
 Update of existing Galaxy repository
   .. code-block:: shell
 
-      $ git checkout release_${release} && git pull --ff-only origin release_${release}
+      $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
@@ -491,7 +491,7 @@ def main(argv):
         text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
         history = extend(".. github_links", text)
         if owner:
-            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__.)" % (
+            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__)." % (
                 owner, owner,
             )
         to_doc += "\n`Pull Request {0}`_".format(pull_request)
