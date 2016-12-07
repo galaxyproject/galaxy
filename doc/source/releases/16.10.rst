@@ -6,28 +6,11 @@
 
 .. announce_start
 
-Enhancements
--------------------------------
+Highlighted Enhancements
+------------------------
 
 .. major_feature
 
-* Introduce Galaxy Webhooks - plugins for the web UI
-  (including work from `@bgruening <https://github.com/bgruening>`__,
-  and `@anatskiy <https://github.com/anatskiy>`__).
-  `Pull Request 3040`_, `Pull Request 3102`_
-* The workflow run form has been replaced by one backed by the new tool form and the API.
-  `Pull Request 2669`_, `Pull Request 2720`_, `Pull Request 2766`_,
-  `Pull Request 2776`_, `Pull Request 2770`_, `Pull Request 2895`_,
-  `Pull Request 2935`_, `Pull Request 3007`_, `Pull Request 2969`_,
-  `Pull Request 2799`_, `Pull Request 3082`_, `Pull Request 2672`_,
-  `Pull Request 2920`_, `Pull Request 2777`_, `Pull Request 2902`_
-* Overhaul of charts visualization - more visualizations, more options, and better user interface.
-  `Pull Request 2875`_, `Pull Request 2820`_
-* Paginate contents of large histories.
-  `Pull Request 2588`_
-* Reload tools automatically without restarting Galaxy during tool shed installs
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 2840`_, `Pull Request 3025`_
 * Implement a collection operation tool for merging collections
   (thanks to `@Takadonet <https://github.com/Takadonet>`__).
   `Pull Request 2771`_
@@ -44,7 +27,7 @@ Enhancements
 * Add "Save as" as an option in the workflow editor
   (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
   `Pull Request 3035`_
-* Replace `reference documentation <https://docs.galaxyproject.org/en/latest/dev/schema.html>`__ 
+* Replace `reference documentation <https://docs.galaxyproject.org/en/latest/dev/schema.html>`__
   for tool XML files with automatically generated
   documentation from a now official Galaxy XSD documentation (with help from many).
   `Pull Request 2923`_, `Pull Request 2936`_, `Pull Request 3086`_,
@@ -53,6 +36,19 @@ Enhancements
 * Allow naming input datasets and collections during workflow extraction.
   `Pull Request 2943`_
 * Various enhancements for API driven installation of tool shed repositories.
+
+Enhancements
+-------------------------------
+
+* Add "Save as" as an option in the workflow editor
+  (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
+  `Pull Request 3035`_
+* Allow '.' and '_' for public names
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 2947`_
+* Allow naming input datasets and collections during workflow extraction.
+  `Pull Request 2943`_
+* Various enhancements for API driven installation of Tool Shed repositories.
   `Pull Request 2769`_
 * Implement beta support for discovering biocontainer Docker containers automatically for tool dependencies.
   `Pull Request 2986`_
@@ -75,9 +71,6 @@ Enhancements
   collection workflows
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 2978`_
-* Allow '.' and '_' for public names
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 2947`_
 * Add CEL datatype
   (thanks to `@nturaga <https://github.com/nturaga>`__).
   `Pull Request 3073`_
@@ -96,8 +89,6 @@ Enhancements
   on library dataset import
   (thanks to `@SANBI-SA <https://github.com/SANBI-SA>`__).
   `Pull Request 2819`_
-* Fix dataset selector update when deleting history items.
-  `Pull Request 2677`_
 * Add a tutorial on building job runners to the documentation
   (thanks to `@varunshankar <https://github.com/varunshankar>`__).
   `Pull Request 2700`_
@@ -114,11 +105,6 @@ Enhancements
   `Pull Request 2857`_, `Pull Request 2858`_, `Pull Request 2689`_,
   `Pull Request 2865`_, `Pull Request 2952`_, `Pull Request 2695`_,
   `Pull Request 2991`_, `Pull Request 3232`_
-* Various datatypes fixes and enhancements
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 2690`_
-* Various fixes and improvements for galaxy.json.
-  `Pull Request 2697`_
 * Improve samtools usage with ``--version-only`` check
   (thanks to `@remimarenco <https://github.com/remimarenco>`__).
   `Pull Request 2705`_
@@ -163,8 +149,6 @@ Enhancements
   `Pull Request 2832`_
 * Filter disposable mail blacklist on the first domain level only.
   `Pull Request 2839`_
-* Fix link target in admin view of tool lineages.
-  `Pull Request 2862`_
 * Refactor duplicated back-end code to create a new ``trans`` method for
   getting the most recently touched history.
   `Pull Request 2870`_
@@ -181,9 +165,6 @@ Enhancements
   `Pull Request 3016`_
 * Add documentation on optional ``multiple="true"`` data parameters.
   `Pull Request 3024`_
-* Fix tool XSD to accept a help attribute for ``section``s
-  (thanks to `@joachimwolff <https://github.com/joachimwolff>`__).
-  `Pull Request 3131`_
 * In Trackster, read numerical data directly from bigWig files.
   `Pull Request 2880`_
 * Improve wording of tool installation forms
@@ -200,8 +181,6 @@ Enhancements
 * Extend ``PUT /api/workflows/{id}`` with additional workflow properties
   (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
   `Pull Request 3080`_
-* Update the copyright year in the LICENSE.txt.
-  `Pull Request 2926`_
 * Remove unnecessary use of binascii
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 2946`_
@@ -224,19 +203,15 @@ Enhancements
 * Pass dependency shell command errors to log
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3129`_
-* Fix for bioconda recipes depending on conda-forge.
-  `Pull Request 3023`_
 * Increase min number of columns for pileup sniffing to 5
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3033`_
 * Remove outdated warning on ID_SECRET
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3046`_
-* Always display text
-  `Pull Request 3052`_
 * Add Galaxy architecture slides documentation to project.
   `Pull Request 3060`_, `Pull Request 3091`_
-* Add tool XML reload to tool run page - for admins only 
+* Add tool XML reload to tool run page - for admins only
   (thanks to `@tmcgowan <https://github.com/tmcgowan>`__).
   `Pull Request 3070`_, `Issue 943 <https://github.com/galaxyproject/galaxy/issues/943>`__
 * Move thumbnail list view to shared UI elements, revise tabs, add test cases
@@ -255,53 +230,71 @@ Enhancements
   `Pull Request 3169`_, `Pull Request 2888`_
 * Add links to local tours to sample welcome.
   `Pull Request 3176`_
-* Fix history deletion bug when using impersonation.
-  `Pull Request 2654`_
+* Fix dataset selector update when deleting history items.
+  `Pull Request 2677`_
 * Refactor upload dialog to use local CSS classes and avoid model listeners.
   `Pull Request 2711`_
-* Rework tool shed middleware
+* Rework Tool Shed middleware
   `Pull Request 2782`_, `Pull Request 2753`_
 * Refactor - move filelock.py to galaxy.util.
   `Pull Request 2879`_
 * Use requests in driver_util for better proxy handling
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3013`_
+* Add ``download_to_file`` function to ``galaxy.util``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3100`_
+* Quote all paths in converter tool XML files
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3165`_
+* Add routes to get genomes indexes and sequences
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 3109`_
+* Admin installation UX wording fixes.
+  `Pull Request 3226`_
+
+Fixes
+-------------------------------
+
+* Fix for bioconda recipes depending on conda-forge.
+  `Pull Request 3023`_
+* Fix history deletion bug when using impersonation.
+  `Pull Request 2654`_
 * Fix workflow extraction API tests on PostgreSQL
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3039`_
+* Fix link target in admin view of tool lineages.
+  `Pull Request 2862`_
 * Avoid pointless lambda function
   (thanks to `@peterjc <https://github.com/peterjc>`__).
   `Pull Request 3097`_
 * Remove unnecessary ``set_output_history`` parameter
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3155`_
-* Various code fixes for object store and docs
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3119`_
 * Fix BLAST database *.loc files inconsistency
   (thanks to `@peterjc <https://github.com/peterjc>`__).
   `Pull Request 3098`_
-* Add ``download_to_file`` function to ``galaxy.util``
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3100`_
 * Log invalid XML filename
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3124`_
-* Quote all paths in converter tool XML files
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3165`_
-
-Fixes
--------------------------------
-
+* Various code fixes for object store and docs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3119`_
 * Use default job history on ``build_for_rerun`` if current history is unavailable.
   `Pull Request 2668`_
-* Fixing button width on composite upload dialog 
+* Always display text
+  `Pull Request 3052`_
+* Fixing button width on composite upload dialog
   (thanks to `@sszakony <https://github.com/sszakony>`__).
   `Pull Request 2703`_, `Issue 2591 <https://github.com/galaxyproject/galaxy/issues/2591>`__
 * Fix for splitting dataset collections
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 2708`_
+* Various datatypes fixes and enhancements
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 2690`_
+* Various fixes and improvements for galaxy.json.
+  `Pull Request 2697`_
 * Fix tours pasting content into text area.
   `Pull Request 2715`_
 * Slight styling tweak to prevent overflow on the right edge in composite upload dialog.
@@ -380,6 +373,9 @@ Fixes
   `Pull Request 3049`_
 * Remove incorrect communication server check.
   `Pull Request 3053`_
+* Fix tool XSD to accept a help attribute for ``section``s
+  (thanks to `@joachimwolff <https://github.com/joachimwolff>`__).
+  `Pull Request 3131`_
 * Fix import orders for updates to flake8_import_order.
   `Pull Request 3059`_
 * Dataset metadata should not be cached when building chart visualizations.
@@ -388,9 +384,6 @@ Fixes
   `Pull Request 3074`_
 * Fix qunit local testing install -- now runs on modern node (v6.9.1).
   `Pull Request 3089`_
-* Add routes to get genomes indexes and sequences
-  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
-  `Pull Request 3109`_
 * Escape section name when writing to XML
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3122`_
@@ -433,6 +426,10 @@ Fixes
   conda environments and API to manage them
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3227`_
+* Update the copyright year in the LICENSE.txt.
+  `Pull Request 2926`_
+* Fix for ToolShed install when copied sample data target exists, but is broken symlink.
+  `Pull Request 3279`_
 
 .. _Issue 2375: https://github.com/galaxyproject/galaxy/issues/2375
 .. github_links
@@ -676,4 +673,5 @@ Fixes
 .. _Pull Request 3227: https://github.com/galaxyproject/galaxy/pull/3227
 .. _Pull Request 3232: https://github.com/galaxyproject/galaxy/pull/3232
 .. _Pull Request 3262: https://github.com/galaxyproject/galaxy/pull/3262
+.. _Pull Request 3279: https://github.com/galaxyproject/galaxy/pull/3279
 

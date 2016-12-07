@@ -1,5 +1,7 @@
-Galaxy webhooks - tiny plugin interface to extend the Galaxy client
--------------------------------------------------------------------
+Galaxy webhooks
+===============
+
+Tiny plugin interface to extend the Galaxy client.
 
 Galaxy webhooks provides a simple way of inserting icons, links, or other HTML elements into predefined locations.
 For this Galaxy provides some entry points which can be used to extend the client with content. This content
@@ -10,12 +12,12 @@ can consists out of simple HTML, JS or dynamically generated content from a pyth
 
 Plugin activation
 -----------------
-All webhooks that are included in the main Galaxy distribution are located in the `config/plugins/webhooks/demo` folder
+All webhooks that are included in the main Galaxy distribution are located in the ``config/plugins/webhooks/demo`` folder
 and are deactivated by default.
-To activate these demo webhooks make sure this path is added to `webhooks_dir` in your `galaxy.ini`. You can add as many 
-webhook folders as you like as a comma separated list. 
-Webhooks supports one additionl layer of activating/deactivating by changing the `activate: true` in each config of each webhook.
-  
+To activate these demo webhooks make sure this path is added to ``webhooks_dir`` in your ``galaxy.ini``. You can add as many
+webhook folders as you like as a comma separated list.
+Webhooks supports one additionAl layer of activating/deactivating by changing the ``activate: true`` in each config of each webhook.
+
 
 Entry points
 ------------
@@ -31,7 +33,7 @@ For each type there is an example provided:
 
 - Tool and workflow: A comic strip can be shown when a tool or a workflow is running. Right now PhD_ and XKCD_ comics are provided.
 
-.. _PhD: http://phdcomics.com 
+.. _PhD: http://phdcomics.com
 .. _XKCD: http://xkcd.com/
 
  .. image:: images_webhooks/tool.png
@@ -42,11 +44,11 @@ For each type there is an example provided:
 
 - Additional functionality can be added to the top menu. Two dummy buttons are implemented to show the idea:
 
-  - A button that links to biostars 
+  - A button that links to biostars
    .. image:: images_webhooks/masthead.png
       :scale: 50 %
 
-  - A button that shows a pop-up with information about an user. 
+  - A button that shows a pop-up with information about an user.
    .. image:: images_webhooks/masthead_trans_object.png
       :scale: 50 %
 
@@ -72,7 +74,7 @@ Each plugin has the following folder structure:
 
 
 config
-******
+------
 
 The configuration file is just a .yml (or .yaml) file with a few options. The following options are mandatory:
 
@@ -84,7 +86,7 @@ All other options can be anything used by the plugin and accessed later via *web
 
 
 helper/__init__.py
-******************
+------------------
 
 *__init__.py has* to have the **main()** function with the following (or similar) structure:
 
@@ -92,7 +94,7 @@ helper/__init__.py
 
    import logging
    log = logging.getLogger(__name__)
-   
+
    def main(trans, webhook):
       error = ''
       data = {}
@@ -103,16 +105,16 @@ helper/__init__.py
          except ImportError as e:
              log.exception(e)
              return {}
-         # some processing... 
+         # some processing...
       except Exception as e:
-         error = str(e) 
+         error = str(e)
       return {'success': not error, 'error': error, 'data': data}
 
 As an example please take a look at the *phdcomics* example plugin: https://github.com/bgruening/galaxy/blob/feature/plugin-system/config/plugins/webhooks/phdcomics/helper/__init__.py
 
 
 static
-******
+------
 
 The *static* folder contains only two files with the specified above names (otherwise, they won’t be read on Galaxy run).
 
@@ -139,14 +141,14 @@ Issues
 ------
 
 tool/workflow
-*************
+-------------
 
 If a tool or a workflow plugin has script.js and/or styles.css, the content of these files will be read as two strings and sent to the client and appended to DOM’s <head>.
 
 Such approach is a possible bottleneck if the two files are big (however, this shouldn’t ever happen because plugins are supposed to be small and simple).
 
 masthead
-********
+--------
 
 Topbar buttons are hard coded, so they’re rendered only after *make client*.
 
@@ -167,7 +169,7 @@ I found a not very optimal way to add buttons to the topbar (masthead):
   });
 
 history-menu
-************
+------------
 
 History Panel items are again hard coded, but in the current implementation they’re rendered as html elements (so, they’re not even stored in a collection or any other object).
 
