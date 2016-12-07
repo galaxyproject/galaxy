@@ -161,7 +161,10 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     rval = dict()
     param_values = param_values or {}
     for key, value in param_values.items():
-        value = json_fix( loads( value ) )
+        try:
+            value = json_fix( loads( value ) )
+        except ValueError:
+            pass
         if key in params:
             value = params[ key ].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value

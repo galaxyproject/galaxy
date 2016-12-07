@@ -16,6 +16,7 @@ from galaxy.tools.parameters import params_to_incoming
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import (
     parameter_types,
+    TextToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
@@ -92,10 +93,13 @@ class WorkflowModule( object ):
 
     def get_state( self ):
         """ Return a serializable representation of the persistable state of
-        the step - for tools it DefaultToolState.encode returns a string and
-        for simpler module types a json description is dumped out.
+        the step.
         """
-        return None
+        inputs = self.get_inputs()
+        if inputs:
+            return self.state.encode( Bunch( inputs=inputs ), self.trans.app )
+        else:
+            return dumps( self.state.inputs )
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -104,11 +108,20 @@ class WorkflowModule( object ):
         Sub-classes should supply a `default_state` method which contains the
         initial state `dict` with key, value pairs for all available attributes.
         """
-        raise TypeError( "Abstract method" )
+        self.state = DefaultToolState()
+        inputs = self.get_inputs()
+        if inputs:
+            self.state.decode( state, Bunch( inputs=inputs ), self.trans.app )
+        else:
+            self.state.inputs = loads( state )
 
     def get_errors( self ):
         """ This returns a step related error message as string or None """
         return None
+
+    def get_inputs( self ):
+        """ This returns inputs displayed in the workflow editor """
+        return {}
 
     def get_data_inputs( self ):
         """ Get configure time data input descriptions. """
@@ -218,7 +231,7 @@ class SimpleWorkflowModule( WorkflowModule ):
     @classmethod
     def from_dict( Class, trans, d ):
         module = Class( trans )
-        state = loads( d.get( "tool_state" ) )
+        state = d.get( "tool_state" )
         module.recover_state( state )
         module.label = d.get( "label" )
         return module
@@ -243,15 +256,11 @@ class SimpleWorkflowModule( WorkflowModule ):
         step.tool_version = None
         step.tool_inputs = self.state.inputs
 
-    def get_state( self ):
-        return dumps( self.state.inputs )
-
-    def recover_state( self, state, **kwds ):
-        self.state = DefaultToolState()
-        self.state.inputs = self.default_state()
-        for key in self.state.inputs:
-            if state and key in state:
-                self.state.inputs[ key ] = state[ key ]
+    def get_inputs( self ):
+        inputs = dict()
+        for name, default_value in self.default_state().items():
+            inputs[ name ] = TextToolParameter( None, Element( "param", name=name, type="text" ) )
+        return inputs
 
     def get_config_form( self ):
         form = self._abstract_config_form( )
@@ -352,12 +361,6 @@ class SubWorkflowModule( WorkflowModule ):
 
     def get_content_id( self ):
         return self.trans.security.encode_id(self.subworkflow.id)
-
-    def recover_state( self, state, **kwds ):
-        self.state = self.default_state()
-        for key in self.self.state:
-            if state and key in state:
-                self.state[ key ] = state[ key ]
 
     def get_config_form( self ):
         form = self._abstract_config_form( )
@@ -787,24 +790,11 @@ class ToolModule( WorkflowModule ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self ):
-        if self.tool:
-            return self.state.encode( self.tool, self.trans.app )
-        else:
-            return dumps( self.state.inputs )
-
-    def recover_state( self, state, **kwds ):
-        """ Recover module configuration state property (a `DefaultToolState`
-        object) using the tool's `params_from_strings` method.
-        """
-        self.state = DefaultToolState()
-        if self.tool:
-            self.state.decode( state, self.tool, self.trans.app )
-        else:
-            self.state.inputs = loads( state )
-
     def get_errors( self ):
         return None if self.tool else "Tool is not installed."
+
+    def get_inputs( self ):
+        return self.tool.inputs if self.tool else {}
 
     def get_data_inputs( self ):
         data_inputs = []
@@ -913,7 +903,7 @@ class ToolModule( WorkflowModule ):
         return state
 
     def get_runtime_inputs( self, **kwds ):
-        return self.tool.inputs
+        return self.get_inputs()
 
     def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.

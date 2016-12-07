@@ -608,7 +608,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_state = step.state.inputs
             if "name" in step_state:
                 name = step_state.get( "name" )
-                    input_dicts.append( { "name": name, "description": annotation_str } )
+                input_dicts.append( { "name": name, "description": annotation_str } )
             for name, val in step_state.items():
                 input_type = type( val )
                 if input_type == RuntimeValue:
