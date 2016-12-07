@@ -212,4 +212,4 @@ class CachedDependencyManager(DependencyManager):
         :return:
         """
         req_hashes = self.hash_requirements(resolved_dependencies)
-        return os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes)
+        return os.path.abspath(os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes))
