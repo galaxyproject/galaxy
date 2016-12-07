@@ -101,8 +101,8 @@ class WorkflowModule( object ):
         """ Recover state `dict` from simple dictionary describing configuration
         state (potentially from persisted step state).
 
-        Sub-classes should supply `default_state` method and `state_fields`
-        attribute which are used to build up the state `dict`.
+        Sub-classes should supply a `default_state` method which contains the
+        initial state `dict` with key, value pairs for all available attributes.
         """
         raise TypeError( "Abstract method" )
 
@@ -135,7 +135,7 @@ class WorkflowModule( object ):
         pass
 
     def add_dummy_datasets( self, connections=None, steps=None ):
-        # Replaced connected inputs with DummyDataset values.
+        """ Replace connected inputs with placeholder/dummy values. """
         pass
 
     # ---- Run time ---------------------------------------------------------
@@ -253,7 +253,7 @@ class SimpleWorkflowModule( WorkflowModule ):
     def recover_state( self, state, **kwds ):
         self.state = DefaultToolState()
         self.state.inputs = self.default_state()
-        for key in self.state_fields:
+        for key in self.state.inputs:
             if state and key in state:
                 self.state.inputs[ key ] = state[ key ]
 
@@ -263,7 +263,6 @@ class SimpleWorkflowModule( WorkflowModule ):
 
 
 class SubWorkflowModule( WorkflowModule ):
-    state_fields = [ ]
     type = "subworkflow"
     name = "Subworkflow"
     default_name = "Subworkflow"
@@ -365,7 +364,7 @@ class SubWorkflowModule( WorkflowModule ):
 
     def recover_state( self, state, **kwds ):
         self.state = self.default_state()
-        for key in self.state_fields:
+        for key in self.self.state:
             if state and key in state:
                 self.state[ key ] = state[ key ]
 
@@ -482,7 +481,6 @@ class InputDataModule( InputModule ):
     type = "data_input"
     name = "Input dataset"
     default_name = "Input Dataset"
-    state_fields = [ "name" ]
 
     @classmethod
     def default_state( Class ):
@@ -518,7 +516,6 @@ class InputDataCollectionModule( InputModule ):
     type = "data_collection_input"
     name = "Input dataset collection"
     collection_type = default_collection_type
-    state_fields = [ "name", "collection_type" ]
 
     @classmethod
     def default_state( Class ):
@@ -570,11 +567,6 @@ class InputParameterModule( SimpleWorkflowModule ):
     name = default_name
     parameter_type = default_parameter_type
     optional = default_optional
-    state_fields = [
-        "name",
-        "parameter_type",
-        "optional",
-    ]
 
     @classmethod
     def default_state( Class ):
@@ -645,7 +637,6 @@ class PauseModule( SimpleWorkflowModule ):
     type = "pause"
     name = "Pause for dataset review"
     default_name = "Pause for Dataset Review"
-    state_fields = [ "name" ]
 
     @classmethod
     def default_state( Class ):
