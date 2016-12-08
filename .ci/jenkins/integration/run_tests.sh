@@ -1,5 +1,3 @@
 #!/bin/bash
 
-./scripts/common_startup.sh --dev-wheels
-
-nosetests test/integration
+./run_tests.sh --dockerize --db postgres --external_tmp --clean_pyc --integration "$@"
