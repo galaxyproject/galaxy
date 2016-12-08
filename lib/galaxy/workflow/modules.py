@@ -46,6 +46,7 @@ class WorkflowModule( object ):
     def __init__( self, trans, content_id=None, **kwds ):
         self.trans = trans
         self.content_id = content_id
+        self.state = DefaultToolState()
 
     # ---- Creating modules from various representations ---------------------
 
@@ -53,7 +54,6 @@ class WorkflowModule( object ):
     def new( Class, trans, content_id=None ):
         module = Class( trans, content_id )
         inputs = module.get_inputs()
-        module.state = DefaultToolState()
         module.state.initialize( trans, Bunch( inputs=inputs ) )
         module.label = None
         return module
@@ -603,14 +603,13 @@ class ToolModule( WorkflowModule ):
     type = "tool"
 
     def __init__( self, trans, tool_id, tool_version=None, **kwds ):
-        self.trans = trans
+        super( ToolModule, self ).__init__( trans, content_id=tool_id, **kwds )
         self.tool_id = tool_id
         self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
-        self.state = None
         self.version_changes = []
 
     # ---- Creating modules from various representations ---------------------
