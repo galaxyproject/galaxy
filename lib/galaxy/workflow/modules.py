@@ -162,7 +162,7 @@ class WorkflowModule( object ):
         """ Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
         """
-        raise TypeError( "Abstract method" )
+        return {}
 
     def compute_runtime_state( self, trans, step_updates=None ):
         """ Determine the runtime state (potentially different from self.state
@@ -226,6 +226,9 @@ class WorkflowModule( object ):
 
 
 class SubWorkflowModule( WorkflowModule ):
+    # Two step improvements to build runtime inputs for subworkflow modules
+    # - First pass verify nested workflow doesn't have an RuntimeInputs
+    # - Second pass actually turn RuntimeInputs into inputs here if possible.
     type = "subworkflow"
     name = "Subworkflow"
     default_name = "Subworkflow"
@@ -259,16 +262,10 @@ class SubWorkflowModule( WorkflowModule ):
         step.type = self.type
         step.subworkflow = self.subworkflow
 
-    def get_inputs( self ):
-        return dict( )
-
     def get_name( self ):
         if hasattr( self, 'subworkflow' ) and hasattr( self.subworkflow, 'name' ):
             return self.subworkflow.name
         return self.name
-
-    def get_errors( self ):
-        return None
 
     def get_data_inputs( self ):
         """ Get configure time data input descriptions. """
@@ -280,7 +277,7 @@ class SubWorkflowModule( WorkflowModule ):
         inputs = []
         for step in self.subworkflow.input_steps:
             name = step.label
-            #if name is None:
+            #TODO: if name is None:
                 # trans shouldn't really be needed for data inputs...
                 #step_module = module_factory.from_workflow_step(self.trans, step)
                 #name = step_module.get_runtime_input_dicts(None)[0]["name"]
@@ -297,7 +294,6 @@ class SubWorkflowModule( WorkflowModule ):
                 input_type=step_to_input_type[step_type],
             )
             inputs.append(input)
-
         return inputs
 
     def get_data_outputs( self ):
@@ -320,30 +316,8 @@ class SubWorkflowModule( WorkflowModule ):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def get_config_form( self ):
-        form = self._abstract_config_form( )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako",
-                                         module=self, form=form )
-
-    def _abstract_config_form( self ):
         form = formbuilder.FormBuilder( title=self.get_name() )
-        return form
-
-    def check_and_update_state( self ):
-        """
-        If the state is not in sync with the current implementation of the
-        module, try to update. Returns a list of messages to be displayed
-        """
-        return None
-
-    def add_dummy_datasets( self, connections=None, steps=None ):
-        # Replaced connected inputs with DummyDataset values.
-        return None
-
-    def get_runtime_inputs( self, **kwds ):
-        # Two step improvements to this...
-        # - First pass verify nested workflow doesn't have an RuntimeInputs
-        # - Second pass actually turn RuntimeInputs into inputs here if possible.
-        return {}
+        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
     def execute( self, trans, progress, invocation, step ):
         """ Execute the given workflow step in the given workflow invocation.
@@ -362,12 +336,6 @@ class SubWorkflowModule( WorkflowModule ):
 
         progress.set_step_outputs( step, outputs )
         return None
-
-    def recover_mapping( self, step, step_invocations, progress ):
-        """ Re-populate progress object with information about connections
-        from previously executed steps recorded via step_invocations.
-        """
-        raise TypeError( "Abstract method" )
 
     def get_runtime_state( self ):
         state = DefaultToolState()
@@ -596,9 +564,6 @@ class PauseModule( WorkflowModule ):
             title=self.name
         ).add_text( "name", "Name", value=self.state.inputs['name'] )
         return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
-
-    def get_runtime_inputs( self, **kwds ):
-        return dict( )
 
     def get_runtime_state( self ):
         state = DefaultToolState()
