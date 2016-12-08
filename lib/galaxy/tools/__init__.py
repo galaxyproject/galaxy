@@ -238,7 +238,7 @@ class DefaultToolState( object ):
     def __init__( self ):
         self.page = 0
         self.rerun_remap_job_id = None
-        self.inputs = None
+        self.inputs = {}
 
     def initialize( self, trans, tool ):
         """

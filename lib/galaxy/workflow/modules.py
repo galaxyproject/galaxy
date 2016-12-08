@@ -118,7 +118,7 @@ class WorkflowModule( object ):
         inputs = self.get_inputs()
         if inputs:
             self.state.decode( state, Bunch( inputs=inputs ), self.trans.app )
-        else:
+        elif state:
             self.state.inputs = loads( state )
 
     def get_errors( self ):
@@ -228,7 +228,7 @@ class WorkflowModule( object ):
 class SubWorkflowModule( WorkflowModule ):
     # Two step improvements to build runtime inputs for subworkflow modules
     # - First pass verify nested workflow doesn't have an RuntimeInputs
-    # - Second pass actually turn RuntimeInputs into inputs here if possible.
+    # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
     default_name = "Subworkflow"
@@ -614,6 +614,13 @@ class ToolModule( WorkflowModule ):
         self.version_changes = []
 
     # ---- Creating modules from various representations ---------------------
+
+    @classmethod
+    def new( Class, trans, content_id=None ):
+        module = super( ToolModule, Class ).new( trans, content_id )
+        if not module.tool:
+            raise ToolMissingException( "Cannot create module for missing tool %s." % content_id )
+        return module
 
     @classmethod
     def from_dict( Class, trans, d ):

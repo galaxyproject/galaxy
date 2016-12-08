@@ -17,7 +17,7 @@ def test_input_has_no_errors():
 
 def test_valid_new_tool_has_no_errors():
     trans = MockTrans()
-    mock_tool = mock.Mock()
+    mock_tool = __mock_tool()
     trans.app.toolbox.tools[ "cat1" ] = mock_tool
     tool_module = modules.module_factory.new( trans, "tool", content_id="cat1" )
     assert not tool_module.get_errors()
@@ -94,7 +94,7 @@ def test_data_input_update():
         },
     )
     module.recover_state( dict( name="Awesome New Name" ) )
-    assert module.state[ 'name' ] == "Awesome New Name"
+    assert module.state.inputs[ 'name' ] == "Awesome New Name"
 
 
 def test_data_input_get_form():
@@ -167,7 +167,7 @@ def test_data_collection_input_update():
         }
     )
     module.recover_state( dict( name="New Collection", collection_type="list" ) )
-    assert module.state[ 'name' ] == "New Collection"
+    assert module.state.inputs[ 'name' ] == "New Collection"
 
 
 def test_data_collection_input_config_form():
