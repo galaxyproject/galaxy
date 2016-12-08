@@ -277,13 +277,11 @@ class SubWorkflowModule( WorkflowModule ):
         inputs = []
         for step in self.subworkflow.input_steps:
             name = step.label
-            # TODO:
-            # if name is None:
-            # trans shouldn't really be needed for data inputs...
-            # step_module = module_factory.from_workflow_step(self.trans, step)
-            # name = step_module.get_runtime_input_dicts(None)[0]["name"]
+            if name is None:
+                step_module = module_factory.from_workflow_step( self.trans, step )
+                name = step_module.state.inputs.get( "name" )
             if not name:
-                raise Exception("Failed to find name for workflow module.")
+                raise Exception( "Failed to find name for workflow module." )
             step_type = step.type
             assert step_type in step_to_input_type
             input = dict(
