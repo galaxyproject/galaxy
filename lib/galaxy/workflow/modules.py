@@ -76,6 +76,7 @@ class WorkflowModule( object ):
 
     def save_to_step( self, step ):
         step.type = self.type
+        step.tool_inputs = self.get_state()
 
     # ---- General attributes -----------------------------------------------
 
@@ -222,19 +223,6 @@ class WorkflowModule( object ):
         from previously executed steps recorded via step_invocations.
         """
         raise TypeError( "Abstract method" )
-
-
-class SimpleWorkflowModule( WorkflowModule ):
-
-    def save_to_step( self, step ):
-        step.type = self.type
-        step.tool_id = None
-        step.tool_version = None
-        step.tool_inputs = self.get_state()
-
-    def get_config_form( self ):
-        form = self._abstract_config_form( )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
 
 class SubWorkflowModule( WorkflowModule ):
@@ -394,7 +382,7 @@ class SubWorkflowModule( WorkflowModule ):
         return subworkflow
 
 
-class InputModule( SimpleWorkflowModule ):
+class InputModule( WorkflowModule ):
 
     def get_runtime_state( self ):
         state = DefaultToolState()
@@ -444,10 +432,9 @@ class InputDataModule( InputModule ):
     def get_inputs( self ):
         return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
 
-    def _abstract_config_form( self ):
-        form = formbuilder.FormBuilder( title=self.name ) \
-            .add_text( "name", "Name", value=self.state.inputs['name'] )
-        return form
+    def get_config_form( self ):
+        form = formbuilder.FormBuilder( title=self.name ) .add_text( "name", "Name", value=self.state.inputs['name'] )
+        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
@@ -485,7 +472,7 @@ class InputDataCollectionModule( InputModule ):
         input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
-    def _abstract_config_form( self ):
+    def get_config_form( self ):
         type_hints = odict.odict()
         type_hints[ "list" ] = "List of Datasets"
         type_hints[ "paired" ] = "Dataset Pair"
@@ -504,7 +491,7 @@ class InputDataCollectionModule( InputModule ):
             "name", "Name", value=self.state.inputs['name']
         )
         form.inputs.append( type_input )
-        return form
+        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
     def get_data_outputs( self ):
         return [
@@ -517,7 +504,7 @@ class InputDataCollectionModule( InputModule ):
         ]
 
 
-class InputParameterModule( SimpleWorkflowModule ):
+class InputParameterModule( WorkflowModule ):
     default_name = "input_parameter"
     default_parameter_type = "text"
     default_optional = False
@@ -531,7 +518,7 @@ class InputParameterModule( SimpleWorkflowModule ):
                      parameter_type = TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_collection_type ) ),
                      optional = TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_optional ) ) )
 
-    def _abstract_config_form( self ):
+    def get_config_form( self ):
         form = formbuilder.FormBuilder(
             title=self.name
         ).add_text(
@@ -548,8 +535,7 @@ class InputParameterModule( SimpleWorkflowModule ):
         ).add_checkbox(
             "optional", "Optional", value=self.state.inputs['optional']
         )
-
-        return form
+        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
     def get_runtime_inputs( self, **kwds ):
         label = self.state.inputs.get( "name", self.default_name )
@@ -581,7 +567,7 @@ class InputParameterModule( SimpleWorkflowModule ):
         return job
 
 
-class PauseModule( SimpleWorkflowModule ):
+class PauseModule( WorkflowModule ):
     """ Initially this module will unconditionally pause a workflow - will aim
     to allow conditional pausing later on.
     """
@@ -605,11 +591,11 @@ class PauseModule( SimpleWorkflowModule ):
     def get_data_outputs( self ):
         return [ dict( name="output", label="Reviewed Dataset", extensions=['input'] ) ]
 
-    def _abstract_config_form( self ):
+    def get_config_form( self ):
         form = formbuilder.FormBuilder(
             title=self.name
         ).add_text( "name", "Name", value=self.state.inputs['name'] )
-        return form
+        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
     def get_runtime_inputs( self, **kwds ):
         return dict( )
@@ -715,10 +701,9 @@ class ToolModule( WorkflowModule ):
     # ---- Saving in various forms ------------------------------------------
 
     def save_to_step( self, step ):
-        step.type = self.type
+        super( ToolModule, self ).save_to_step( step )
         step.tool_id = self.tool_id
         step.tool_version = self.get_tool_version()
-        step.tool_inputs = self.get_state()
         for k, v in self.post_job_actions.iteritems():
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )
