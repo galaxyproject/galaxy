@@ -53,13 +53,12 @@ define( [], function() {
                             { value   : 's' } ]
         }
     }
-
     return {
         title       : '',
         library     : '',
         tag         : '',
         keywords    : '',
-        datatypes   : [ 'tabular', 'csv' ],
+        datatypes   : [ 'bed', 'bedgraph', 'bedstrict', 'bed6', 'bed12', 'chrint', 'customtrack', 'gff', 'gff3', 'gtf', 'interval', 'encodepeak', 'wig', 'scidx', 'fli', 'csv', 'tsv', 'eland', 'elandmulti', 'picard_interval_list', 'gatk_dbsnp', 'gatk_tranche', 'gatk_recal', 'ct', 'pileup', 'sam', 'taxonomy', 'tabular', 'vcf', 'xls' ],
         use_panels  : 'both',
         settings    : {
             x_axis_label : axisLabel( 'x_axis_label' ),
