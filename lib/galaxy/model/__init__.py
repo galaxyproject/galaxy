@@ -3756,6 +3756,19 @@ class WorkflowStep( object ):
         return content_id
 
     @property
+    def name( self ):
+        identifier = None
+        state = self.tool_inputs
+        if isinstance( self.tool_inputs, basestring ):
+            state = json.loads( state )
+        identifier = state.get( 'name' )
+        try:
+            identifier = json.loads( identifier )
+        except:
+            pass
+        return identifier
+
+    @property
     def input_connections_by_name(self):
         if self._input_connections_by_name is None:
             self.setup_input_connections_by_name()

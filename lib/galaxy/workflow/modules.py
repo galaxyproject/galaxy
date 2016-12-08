@@ -118,8 +118,10 @@ class WorkflowModule( object ):
         inputs = self.get_inputs()
         if inputs:
             self.state.decode( state, Bunch( inputs=inputs ), self.trans.app )
-        elif state:
+        elif isinstance( state, basestring ):
             self.state.inputs = loads( state )
+        elif state:
+            self.state.inputs = state
 
     def get_errors( self ):
         """ This returns a step related error message as string or None """

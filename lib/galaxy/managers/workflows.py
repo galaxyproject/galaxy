@@ -605,7 +605,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # Data inputs
             input_dicts = []
-            step_state = step.state.inputs
+            step_state = module.state.inputs
             if "name" in step_state:
                 name = step_state.get( "name" )
                 input_dicts.append( { "name": name, "description": annotation_str } )
@@ -701,12 +701,15 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            if step_type == "data_input":
+            step_name = step.name
+            if step_name:
+                label = step_name
+            elif step_type == "data_input":
                 label = "Input Dataset"
             elif step_type == "data_collection_input":
                 label = "Input Dataset Collection"
             else:
-                raise ValueError( "Invalid step_type %s." % step_type )
+                raise ValueError( "Invalid step_type %s" % step_type )
             if legacy:
                 index = step.id
             else:
