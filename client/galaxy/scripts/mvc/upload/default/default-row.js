@@ -150,7 +150,7 @@ return Backbone.View.extend({
         var file_mode   = this.model.get('file_mode');
 
         // update title
-        this.$('#title').html(file_name);
+        this.$('#title').html(_.escape(file_name));
 
         // update info
         this.$('#size').html(Utils.bytesToString (file_size));
