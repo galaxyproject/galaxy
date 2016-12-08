@@ -31,12 +31,12 @@ Get Galaxy
 
 The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
 
-To get new Galaxy repository run:
+To get a new Galaxy repository run:
   .. code-block:: shell
 
       $ git clone -b release_16.10 https://github.com/galaxyproject/galaxy.git
 
-To update existing Galaxy repository run:
+To update an existing Galaxy repository run:
   .. code-block:: shell
 
       $ git checkout release_16.10 && git pull --ff-only origin release_16.10
