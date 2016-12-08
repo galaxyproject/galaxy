@@ -60,10 +60,6 @@ class WorkflowModule( object ):
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
-        """
-        Create a new instance of the module initialized from values in the
-        dictionary `d`.
-        """
         module = Class( trans, **kwds )
         module.recover_state( d.get( "tool_state" ) )
         module.label = d.get( "label" )
