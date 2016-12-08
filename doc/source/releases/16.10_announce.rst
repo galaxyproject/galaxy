@@ -9,7 +9,7 @@ Highlights
 ==========
 
 **Galaxu UI plugins - Webhooks**
-  We introduce Galaxy Webhooks - optiuonal plugins for the web UI that allow for better customization of your instance. See the `documentation <https://docs.galaxyproject.org/en/master/admin/webhooks.html>`__.
+  We introduce Galaxy Webhooks - optional plugins for the web UI that allow for better customization of your instance. See the `documentation <https://docs.galaxyproject.org/en/master/admin/webhooks.html>`__.
   Includes work from `@bgruening <https://github.com/bgruening>`__, `@anatskiy <https://github.com/anatskiy>`__, and Joachim Wolff `@joachimwolff <https://github.com/joachimwolff>`__.
   Implemented in `Pull Request 3040`_.
 
@@ -22,24 +22,26 @@ Highlights
   `Pull Request 2920`_, `Pull Request 2777`_, `Pull Request 2902`_.
 
 **Automatic tool reload after installation**
-  Galaxy does not need to be restarted after tool installation anymore. This provides a smoother experience for your users. Yay!
+  Galaxy does not need to be restarted after tool installation anymore. This provides a smoother experience for the users. Yay!
   Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
   Implemented in `Pull Request 2840`_, `Pull Request 3025`_.
 
-`Github <https://github.com/galaxyproject/galaxy>`__
-=====================================================
+Get Galaxy
+==========
 
-New Galaxy repository
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
   .. code-block:: shell
 
       $ git clone -b release_16.10 https://github.com/galaxyproject/galaxy.git
 
-Update of existing Galaxy repository
+To update an existing Galaxy repository run:
   .. code-block:: shell
 
       $ git checkout release_16.10 && git pull --ff-only origin release_16.10
 
-See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code location.
 
 Deprecation Notices
 ===================
