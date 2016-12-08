@@ -484,8 +484,8 @@ class InputParameterModule( WorkflowModule ):
 
     def get_inputs( self ):
         return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
-                     parameter_type=TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_collection_type ) ),
-                     optional=TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_optional ) ) )
+                     parameter_type=TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_parameter_type ) ),
+                     optional=TextToolParameter( None, Element( "param", name="optional", type="text", value=self.default_optional ) ) )
 
     def get_config_form( self ):
         form = formbuilder.FormBuilder(
