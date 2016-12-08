@@ -277,10 +277,11 @@ class SubWorkflowModule( WorkflowModule ):
         inputs = []
         for step in self.subworkflow.input_steps:
             name = step.label
-            #TODO: if name is None:
-                # trans shouldn't really be needed for data inputs...
-                #step_module = module_factory.from_workflow_step(self.trans, step)
-                #name = step_module.get_runtime_input_dicts(None)[0]["name"]
+            # TODO:
+            # if name is None:
+            # trans shouldn't really be needed for data inputs...
+            # step_module = module_factory.from_workflow_step(self.trans, step)
+            # name = step_module.get_runtime_input_dicts(None)[0]["name"]
             if not name:
                 raise Exception("Failed to find name for workflow module.")
             step_type = step.type
@@ -398,7 +399,7 @@ class InputDataModule( InputModule ):
     default_name = "Input Dataset"
 
     def get_inputs( self ):
-        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
 
     def get_config_form( self ):
         form = formbuilder.FormBuilder( title=self.name ) .add_text( "name", "Name", value=self.state.inputs['name'] )
@@ -431,8 +432,8 @@ class InputDataCollectionModule( InputModule ):
     collection_type = default_collection_type
 
     def get_inputs( self ):
-        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
-                     collection_type = TextToolParameter( None, Element( "param", name="collection_type", type="text", value=self.default_collection_type ) ) )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
+                     collection_type=TextToolParameter( None, Element( "param", name="collection_type", type="text", value=self.default_collection_type ) ) )
 
     def get_runtime_inputs( self, **kwds ):
         label = self.state.inputs.get( "name", self.default_name )
@@ -482,9 +483,9 @@ class InputParameterModule( WorkflowModule ):
     optional = default_optional
 
     def get_inputs( self ):
-        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
-                     parameter_type = TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_collection_type ) ),
-                     optional = TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_optional ) ) )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
+                     parameter_type=TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_collection_type ) ),
+                     optional=TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_optional ) ) )
 
     def get_config_form( self ):
         form = formbuilder.FormBuilder(
@@ -544,7 +545,7 @@ class PauseModule( WorkflowModule ):
     default_name = "Pause for Dataset Review"
 
     def get_inputs( self ):
-        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
 
     def get_data_inputs( self ):
         input = dict(
