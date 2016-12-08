@@ -240,6 +240,16 @@ class DefaultToolState( object ):
         self.rerun_remap_job_id = None
         self.inputs = None
 
+    def initialize( self, trans, tool ):
+        """
+        Create a new `DefaultToolState` for this tool. It will be initialized
+        with default values for inputs. Grouping elements are filled in recursively.
+        """
+        self.inputs = {}
+        context = ExpressionContext( self.inputs )
+        for input in tool.inputs.itervalues():
+            self.inputs[ input.name ] = input.get_initial_value( trans, context )
+
     def encode( self, tool, app ):
         """
         Convert the data to a string
@@ -1064,21 +1074,11 @@ class Tool( object, Dictifiable ):
     def new_state( self, trans ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
-        with default values for inputs.
+        with default values for inputs. Grouping elements are filled in recursively.
         """
         state = DefaultToolState()
-        state.inputs = {}
-        self.fill_in_new_state( trans, self.inputs, state.inputs )
+        state.initialize( trans, self )
         return state
-
-    def fill_in_new_state( self, trans, inputs, state, context=None ):
-        """
-        Fill in a tool state dictionary with default values for all parameters
-        in the dictionary `inputs`. Grouping elements are filled in recursively.
-        """
-        context = ExpressionContext( state, context )
-        for input in inputs.itervalues():
-            state[ input.name ] = input.get_initial_value( trans, context )
 
     def get_param( self, key ):
         """

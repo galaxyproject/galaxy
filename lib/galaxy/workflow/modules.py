@@ -43,29 +43,38 @@ NO_REPLACEMENT = object()
 
 class WorkflowModule( object ):
 
-    def __init__( self, trans ):
+    def __init__( self, trans, content_id=None, **kwds ):
         self.trans = trans
+        self.content_id = content_id
 
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
     def new( Class, trans, content_id=None ):
-        """
-        Create a new instance of the module with default state
-        """
-        return Class( trans )
+        module = Class( trans, content_id )
+        inputs = module.get_inputs()
+        module.state = DefaultToolState()
+        module.state.initialize( trans, Bunch( inputs=inputs ) )
+        module.label = None
+        return module
 
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, **kwds ):
         """
         Create a new instance of the module initialized from values in the
         dictionary `d`.
         """
-        return Class( trans )
+        module = Class( trans, **kwds )
+        module.recover_state( d.get( "tool_state" ) )
+        module.label = d.get( "label" )
+        return module
 
     @classmethod
-    def from_workflow_step( Class, trans, step ):
-        return Class( trans )
+    def from_workflow_step( Class, trans, step, **kwds ):
+        module = Class( trans, **kwds )
+        module.recover_state( step.tool_inputs )
+        module.label = step.label
+        return module
 
     # ---- Saving in various forms ------------------------------------------
 
@@ -221,46 +230,11 @@ class WorkflowModule( object ):
 
 class SimpleWorkflowModule( WorkflowModule ):
 
-    @classmethod
-    def new( Class, trans, content_id=None ):
-        module = Class( trans )
-        module.state = Class.default_state()
-        module.label = None
-        return module
-
-    @classmethod
-    def from_dict( Class, trans, d ):
-        module = Class( trans )
-        state = d.get( "tool_state" )
-        module.recover_state( state )
-        module.label = d.get( "label" )
-        return module
-
-    @classmethod
-    def from_workflow_step( Class, trans, step ):
-        module = Class( trans )
-        module.recover_state( step.tool_inputs )
-        module.label = step.label
-        return module
-
-    @classmethod
-    def default_state( Class ):
-        """ This method should return a dictionary describing each
-        configuration property and its default value.
-        """
-        raise TypeError( "Abstract method" )
-
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = None
         step.tool_version = None
-        step.tool_inputs = self.state.inputs
-
-    def get_inputs( self ):
-        inputs = dict()
-        for name, default_value in self.default_state().items():
-            inputs[ name ] = TextToolParameter( None, Element( "param", name=name, type="text" ) )
-        return inputs
+        step.tool_inputs = self.get_state()
 
     def get_config_form( self ):
         form = self._abstract_config_form( )
@@ -291,7 +265,7 @@ class SubWorkflowModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_workflow_step( Class, trans, step ):
+    def from_workflow_step( Class, trans, step, **kwds ):
         module = Class( trans )
         module.subworkflow = step.subworkflow
         module.label = step.label
@@ -301,8 +275,7 @@ class SubWorkflowModule( WorkflowModule ):
         step.type = self.type
         step.subworkflow = self.subworkflow
 
-    @classmethod
-    def default_state( Class ):
+    def get_inputs( self ):
         return dict( )
 
     def get_name( self ):
@@ -472,9 +445,8 @@ class InputDataModule( InputModule ):
     name = "Input dataset"
     default_name = "Input Dataset"
 
-    @classmethod
-    def default_state( Class ):
-        return dict( name=Class.default_name )
+    def get_inputs( self ):
+        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
 
     def _abstract_config_form( self ):
         form = formbuilder.FormBuilder( title=self.name ) \
@@ -507,9 +479,9 @@ class InputDataCollectionModule( InputModule ):
     name = "Input dataset collection"
     collection_type = default_collection_type
 
-    @classmethod
-    def default_state( Class ):
-        return dict( name=Class.default_name, collection_type=Class.default_collection_type )
+    def get_inputs( self ):
+        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
+                     collection_type = TextToolParameter( None, Element( "param", name="collection_type", type="text", value=self.default_collection_type ) ) )
 
     def get_runtime_inputs( self, **kwds ):
         label = self.state.inputs.get( "name", self.default_name )
@@ -558,13 +530,10 @@ class InputParameterModule( SimpleWorkflowModule ):
     parameter_type = default_parameter_type
     optional = default_optional
 
-    @classmethod
-    def default_state( Class ):
-        return dict(
-            name=Class.default_name,
-            parameter_type=Class.default_parameter_type,
-            optional=Class.default_optional,
-        )
+    def get_inputs( self ):
+        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
+                     parameter_type = TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_collection_type ) ),
+                     optional = TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_optional ) ) )
 
     def _abstract_config_form( self ):
         form = formbuilder.FormBuilder(
@@ -624,9 +593,8 @@ class PauseModule( SimpleWorkflowModule ):
     name = "Pause for dataset review"
     default_name = "Pause for Dataset Review"
 
-    @classmethod
-    def default_state( Class ):
-        return dict( name=Class.default_name )
+    def get_inputs( self ):
+        return dict( name = TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
 
     def get_data_inputs( self ):
         input = dict(
@@ -686,7 +654,7 @@ class ToolModule( WorkflowModule ):
 
     type = "tool"
 
-    def __init__( self, trans, tool_id, tool_version=None ):
+    def __init__( self, trans, tool_id, tool_version=None, **kwds ):
         self.trans = trans
         self.tool_id = tool_id
         self.tool_version = tool_version
@@ -700,24 +668,12 @@ class ToolModule( WorkflowModule ):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def new( Class, trans, content_id=None ):
-        module = Class( trans, content_id )
-        if module.tool:
-            module.state = module.tool.new_state( trans )
-            module.label = None
-            return module
-        else:
-            raise ToolMissingException( "Tool %s missing. Cannot create new workflow module." % content_id )
-
-    @classmethod
     def from_dict( Class, trans, d ):
         tool_id = d.get( 'content_id' ) or d.get( 'tool_id' )
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException( "No tool id could be located for step [%s]." % d )
         tool_version = str( d.get( 'tool_version' ) )
-        module = Class( trans, tool_id, tool_version=tool_version )
-        module.label = d.get( 'label' ) or None
-        module.recover_state( d.get( 'tool_state' ) )
+        module = super( ToolModule, Class ).from_dict( trans, d, tool_id=tool_id, tool_version=tool_version )
         module.post_job_actions = d.get( 'post_job_actions', {} )
         module.workflow_outputs = d.get( 'workflow_outputs', [] )
         if module.tool:
@@ -732,13 +688,11 @@ class ToolModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_workflow_step( Class, trans, step ):
+    def from_workflow_step( Class, trans, step, **kwds ):
         tool_id = trans.app.toolbox.get_tool_id( step.tool_id ) or step.tool_id
         tool_version = step.tool_version
-        module = Class( trans, tool_id, tool_version=tool_version )
-        module.label = step.label or None
+        module = super( ToolModule, Class ).from_workflow_step( trans, step, tool_id=tool_id, tool_version=tool_version )
         module.workflow_outputs = step.workflow_outputs
-        module.recover_state( step.tool_inputs )
         module.post_job_actions = {}
         for pja in step.post_job_actions:
             module.post_job_actions[pja.action_type] = pja
