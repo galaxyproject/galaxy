@@ -701,20 +701,18 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            if step.tool_inputs and "name" in step.tool_inputs:
-                label = step.tool_inputs['name']
-            elif step_type == "data_input":
+            if step_type == "data_input":
                 label = "Input Dataset"
             elif step_type == "data_collection_input":
                 label = "Input Dataset Collection"
             else:
-                raise ValueError("Invalid step_type %s" % step_type)
+                raise ValueError( "Invalid step_type %s." % step_type )
             if legacy:
                 index = step.id
             else:
                 index = step.order_index
             step_uuid = str(step.uuid) if step.uuid else None
-            inputs[index] = {'label': label, 'value': "", "uuid": step_uuid}
+            inputs[index] = {'label': label, 'value': '', 'uuid': step_uuid}
         item['inputs'] = inputs
         item['annotation'] = self.get_item_annotation_str( sa_session, stored.user, stored )
         steps = {}
