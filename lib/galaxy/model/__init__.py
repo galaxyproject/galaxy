@@ -3759,7 +3759,7 @@ class WorkflowStep( object ):
     def name( self ):
         identifier = None
         state = self.tool_inputs
-        if isinstance( self.tool_inputs, basestring ):
+        if isinstance( self.tool_inputs, string_types ):
             state = json.loads( state )
         identifier = state.get( 'name' )
         try:
