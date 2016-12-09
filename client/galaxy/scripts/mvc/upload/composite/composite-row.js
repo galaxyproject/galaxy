@@ -157,7 +157,7 @@ return Backbone.View.extend({
 
     // render
     render: function() {
-        this.$('#file_name').html(this.model.get('file_name') || '-');
+        this.$('#file_name').html(_.escape(this.model.get('file_name') || '-'));
         this.$('#file_desc').html(this.model.get('file_desc') || 'Unavailable');
         this.$('#file_size').html(Utils.bytesToString (this.model.get('file_size')));
         this.$('#status').removeClass().addClass(this.status_classes.init);
