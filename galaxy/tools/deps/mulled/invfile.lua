@@ -43,7 +43,7 @@ inv.task('build')
         .run('/bin/sh', '-c', 'conda install '
             .. channel_args .. ' '
             .. target_args
-            .. ' -p /usr/local --copy --yes')
+            .. ' -p /usr/local --copy --yes --quiet')
     .wrap('build/dist')
         .at('/usr/local')
         .inImage('bgruening/busybox-bash:0.1')
