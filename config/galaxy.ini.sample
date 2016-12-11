@@ -207,11 +207,27 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Set to True to instruct Galaxy to look for and install missing tool
 # dependencies before each job runs.
 #conda_auto_install = False
-# Set to True to perform additional checking of installed Conda environment
-#conda_verbose_install_check=False
 # Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
 #conda_auto_init = False
+# You must set this to True if conda_prefix and job_working_directory are not on the same
+# volume, or some conda dependencies will fail to execute at job runtime.
+# Conda will copy packages content instead of creating hardlinks or symlinks.
+# This will prevent problems with some specific packages (perl, R), at the cost
+# of extra disk space usage and extra time spent copying packages.
+#conda_copy_dependencies = False
+
+# Certain dependency resolvers (namely Conda) take a considerable amount of
+# time to build an isolated job environment in the job_working_directory if the
+# job working directory is on a network share.  Set the following option to True
+# to cache the dependencies in a folder. This option is beta and should only be
+# used if you experience long waiting times before a job is actually submitted
+# to your cluster.
+#use_cached_dependency_manager = False
+
+# By default the tool_dependency_cache_dir is the _cache directory
+# of the tool dependency directory
+#tool_dependency_cache_dir = <tool_dependency_dir>/_cache
 
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
