@@ -271,13 +271,14 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         # Build sections for different categories of inputs
         for item in preferences:
             section = preferences[item]
-            for input in section['inputs']:
-                input['help'] = 'Required' if input['required'] else ''
-                field = item + '|' + input['name']
-                for data_item in data:
-                   if field in data_item:
-                       input['value'] = data[data_item]
-            extra_pref_inputs.append({'type': 'section', 'title': section['description'], 'name': item, 'expanded': True, 'inputs': section['inputs']})
+            if section is not None:
+                for input in section['inputs']:
+                    input['help'] = 'Required' if input['required'] else ''
+                    field = item + '|' + input['name']
+                    for data_item in data:
+                       if field in data_item:
+                           input['value'] = data[data_item]
+                extra_pref_inputs.append({'type': 'section', 'title': section['description'], 'name': item, 'expanded': True, 'inputs': section['inputs']})
         return extra_pref_inputs
 
     def _check_if_field_required( self, trans, key ):
@@ -420,16 +421,17 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         # Update values for extra user preference items
         extra_user_pref_data = dict()
         get_extra_pref_keys = self._get_extra_user_preferences( trans )
-        for key in get_extra_pref_keys:
-            key_prefix = key + '|'
-            for item in payload:
-                if item.startswith( key_prefix ):
-                    # Show error message if the required field is empty
-                    if( payload[item] == "" ):
-                        if( self._check_if_field_required( trans, item ) ): 
-                            raise MessageException("Please fill the required field")
-                    extra_user_pref_data[ item ] = payload[ item ]
-        user.preferences[ "extra_user_preferences" ] = json.dumps( extra_user_pref_data )
+        if get_extra_pref_keys is not None:
+            for key in get_extra_pref_keys:
+                key_prefix = key + '|'
+                for item in payload:
+                    if item.startswith( key_prefix ):
+                        # Show error message if the required field is empty
+                        if( payload[item] == "" ):
+                            if( self._check_if_field_required( trans, item ) ): 
+                                raise MessageException("Please fill the required field")
+                        extra_user_pref_data[ item ] = payload[ item ]
+            user.preferences[ "extra_user_preferences" ] = json.dumps( extra_user_pref_data )
 
         # Update user addresses
         address_dicts = {}
