@@ -30,5 +30,6 @@ def main():
 
     index.write( open( out_file, "w" ) )
 
+
 if __name__ == "__main__":
     main()

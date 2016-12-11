@@ -115,6 +115,10 @@
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
 
+  <section id="filter" name="For Tours">
+    <tool file="for_tours/filtering.xml" />
+  </section>
+
   <tool file="mulled_example_multi_1.xml" />
 
   <tool file="simple_constructs.yml" />

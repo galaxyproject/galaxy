@@ -131,6 +131,40 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
     @expose_api
     @web.require_admin
+    def install_dependencies(self, trans, id, **kwds):
+        """
+        POST /api/tools/{tool_id}/install_dependencies
+        Attempts to install requirements via the dependency resolver
+
+        parameters:
+            build_dependency_cache:  If true, attempts to cache dependencies for this tool
+            force_rebuild:           If true and chache dir exists, attempts to delete cache dir
+        """
+        tool = self._get_tool(id)
+        [tool._view.install_dependency(id=None, **req.to_dict()) for req in tool.requirements]
+        if kwds.get('build_dependency_cache'):
+            tool.build_dependency_cache(**kwds)
+        # TODO: rework resolver install system to log and report what has been done.
+        # _view.install_dependency should return a dict with stdout, stderr and success status
+        return tool.tool_requirements_status
+
+    @expose_api
+    @web.require_admin
+    def build_dependency_cache(self, trans, id, **kwds):
+        """
+        POST /api/tools/{tool_id}/build_dependency_cache
+        Attempts to cache installed dependencies.
+
+        parameters:
+            force_rebuild:           If true and chache dir exists, attempts to delete cache dir
+        """
+        tool = self._get_tool(id)
+        tool.build_dependency_cache(**kwds)
+        # TODO: Should also have a more meaningful return.
+        return tool.tool_requirements_status
+
+    @expose_api
+    @web.require_admin
     def diagnostics( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/diagnostics

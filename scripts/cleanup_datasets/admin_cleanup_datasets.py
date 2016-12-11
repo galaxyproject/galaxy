@@ -57,7 +57,7 @@ import galaxy.config
 import galaxy.model.mapping
 import galaxy.util
 
-from cleanup_datasets import CleanupDatasetsApplication
+from cleanup_datasets import CleanupDatasetsApplication  # noqa: I100
 
 log = logging.getLogger()
 log.setLevel(10)

@@ -27,5 +27,6 @@ def main():
     except:
         stop_err("Error encountered with cat.")
 
+
 if __name__ == "__main__":
     main()

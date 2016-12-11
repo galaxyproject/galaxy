@@ -3,6 +3,7 @@ Image classes
 """
 import logging
 import zipfile
+
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes.binary import Binary
@@ -151,6 +152,7 @@ class Pdf( Image ):
                 return False
         except IndexError:
             return False
+
 
 Binary.register_sniffable_binary_format("pdf", "pdf", Pdf)
 

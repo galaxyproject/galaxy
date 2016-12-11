@@ -540,6 +540,13 @@
     <datatype extension="trackhub" type="galaxy.datatypes.tracks:UCSCTrackHub" display_in_upload="true">
         <display file="ucsc/trackhub.xml" />
     </datatype>
+    <datatype extension="blastxml" type="galaxy.datatypes.blast:BlastXml" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="blastdbn" type="galaxy.datatypes.blast:BlastNucDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbp" type="galaxy.datatypes.blast:BlastProtDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbd" type="galaxy.datatypes.blast:BlastDomainDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="maskinfo-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="True" display_in_upload="true" />
+    <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="true" />
+    <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="True" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
@@ -580,6 +587,7 @@
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
+    <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.proteomics:MzML"/>

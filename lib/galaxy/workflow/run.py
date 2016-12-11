@@ -228,6 +228,7 @@ class WorkflowInvoker( object ):
         jobs = step.module.execute( self.trans, self.progress, self.workflow_invocation, step )
         return jobs
 
+
 STEP_OUTPUT_DELAYED = object()
 
 
@@ -396,5 +397,6 @@ class WorkflowProgress( object ):
             step.module.recover_mapping( step, step_invocations, self )
         except modules.DelayedWorkflowEvaluation:
             self.mark_step_outputs_delayed( step )
+
 
 __all__ = ( 'invoke', 'WorkflowRunConfig' )

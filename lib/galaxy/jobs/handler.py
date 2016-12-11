@@ -2,6 +2,7 @@
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 
+import datetime
 import os
 import time
 import logging
@@ -18,7 +19,7 @@ from galaxy.jobs.mapper import JobNotReadyException
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
-JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota'
+JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA, JOB_USER_OVER_TOTAL_WALLTIME = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota', 'user_over_total_walltime'
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
 
 
@@ -284,8 +285,13 @@ class JobHandlerQueue( object ):
                     log.info( "(%d) Job deleted by user while still queued" % job.id )
                 elif job_state == JOB_ADMIN_DELETED:
                     log.info( "(%d) Job deleted by admin while still queued" % job.id )
-                elif job_state == JOB_USER_OVER_QUOTA:
-                    log.info( "(%d) User (%s) is over quota: job paused" % ( job.id, job.user_id ) )
+                elif job_state in ( JOB_USER_OVER_QUOTA,
+                                    JOB_USER_OVER_TOTAL_WALLTIME ):
+                    if job_state == JOB_USER_OVER_QUOTA:
+                        log.info( "(%d) User (%s) is over quota: job paused" % ( job.id, job.user_id ) )
+                    else:
+                        log.info( "(%d) User (%s) is over total walltime limit: job paused" % ( job.id, job.user_id ) )
+
                     job.set_state( model.Job.states.PAUSED )
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
@@ -375,6 +381,7 @@ class JobHandlerQueue( object ):
         # job is ready to run, check limits
         # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
         state = self.__check_destination_jobs( job, job_wrapper )
+
         if state == JOB_READY:
             state = self.__check_user_jobs( job, job_wrapper )
         if state == JOB_READY and self.app.config.enable_quotas:
@@ -386,6 +393,35 @@ class JobHandlerQueue( object ):
                         return JOB_USER_OVER_QUOTA, job_destination
                 except AssertionError as e:
                     pass  # No history, should not happen with an anon user
+        # Check total walltime limits
+        if ( state == JOB_READY and
+             "delta" in self.app.job_config.limits.total_walltime ):
+            jobs_to_check = self.sa_session.query( model.Job ).filter(
+                model.Job.user_id == job.user.id,
+                model.Job.update_time >= datetime.datetime.now() -
+                datetime.timedelta(
+                    self.app.job_config.limits.total_walltime["window"]
+                ),
+                model.Job.state == 'ok'
+            ).all()
+            time_spent = datetime.timedelta(0)
+            for job in jobs_to_check:
+                # History is job.state_history
+                started = None
+                finished = None
+                for history in sorted(
+                        job.state_history,
+                        key=lambda history: history.update_time ):
+                    if history.state == "running":
+                        started = history.create_time
+                    elif history.state == "ok":
+                        finished = history.create_time
+
+                time_spent += finished - started
+
+            if time_spent > self.app.job_config.limits.total_walltime["delta"]:
+                return JOB_USER_OVER_TOTAL_WALLTIME, job_destination
+
         return state, job_destination
 
     def __verify_in_memory_job_inputs( self, job ):

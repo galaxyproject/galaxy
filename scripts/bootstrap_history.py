@@ -33,6 +33,7 @@ PROJECT_NAME = "galaxy"
 PROJECT_URL = "https://github.com/%s/%s" % (PROJECT_OWNER, PROJECT_NAME)
 PROJECT_API = "https://api.github.com/repos/%s/%s/" % (PROJECT_OWNER, PROJECT_NAME)
 RELEASES_PATH = os.path.join(PROJECT_DIRECTORY, "doc", "source", "releases")
+RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
 
 # Uncredit pull requestors... kind of arbitrary at this point.
 DEVTEAM = [
@@ -105,12 +106,12 @@ Highlights
 New Galaxy repository
   .. code-block:: shell
 
-      $ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
+      $$ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
 Update of existing Galaxy repository
   .. code-block:: shell
 
-      $ git checkout release_${release} && git pull --ff-only origin release_${release}
+      $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
@@ -161,7 +162,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
       - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version.
 
-      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `{version}` so it properly tags new PRs.
+      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
 
 - [ ] **Deploy and Test Release**
 
@@ -169,7 +170,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
       - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
       - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
       - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
-      - [ ] [Update bioblend testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target - add ``env`` target ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to ``tox.ini``.
+      - [ ] [Update BioBlend CI testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target: add ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to the ``env`` list in ``.travis.yml`` .
 
 - [ ] **Create Release Notes**
 
@@ -364,9 +365,9 @@ def _issue_to_str(pr):
 def _next_version_params(release_name):
     month = int(release_name.split(".")[1])
     year = release_name.split(".")[0]
-    next_month = (((month - 1) + 3) % 12) + 1
+    next_month = (((month - 1) + RELEASE_DELTA_MONTHS) % 12) + 1
     next_month_name = calendar.month_name[next_month]
-    if next_month < 3:
+    if next_month < RELEASE_DELTA_MONTHS:
         next_year = int(year) + 1
     else:
         next_year = year
@@ -491,7 +492,7 @@ def main(argv):
         text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
         history = extend(".. github_links", text)
         if owner:
-            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__.)" % (
+            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__)." % (
                 owner, owner,
             )
         to_doc += "\n`Pull Request {0}`_".format(pull_request)

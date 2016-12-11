@@ -63,6 +63,7 @@ class VariantCall40( VariantCall33 ):
 class VariantCall41( VariantCall40 ):
     version = 'VCFv4.1'
 
+
 # VCF Format version lookup dict
 VCF_FORMATS = {}
 for format in [ VariantCall33, VariantCall40, VariantCall41 ]:

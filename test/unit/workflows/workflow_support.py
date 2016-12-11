@@ -1,9 +1,10 @@
 from functools import partial
+
 import yaml
 
-from galaxy.util import bunch
 from galaxy import model
 from galaxy.model import mapping
+from galaxy.util import bunch
 from galaxy.web.security import SecurityHelper
 
 
@@ -95,12 +96,12 @@ def yaml_to_model(has_dict, id_offset=100):
             step["subworkflow"] = subworkflow
             id_offset += len(subworkflow.steps)
 
-        for key, value in step.iteritems():
+        for key, value in step.items():
             if key == "input_connections":
                 connections = []
                 for conn_dict in value:
                     conn = model.WorkflowStepConnection()
-                    for conn_key, conn_value in conn_dict.iteritems():
+                    for conn_key, conn_value in conn_dict.items():
                         if conn_key == "@output_step":
                             target_step = workflow.steps[conn_value]
                             conn_value = target_step
@@ -112,7 +113,7 @@ def yaml_to_model(has_dict, id_offset=100):
                     connections.append(conn)
                 value = connections
             if key == "workflow_outputs":
-                value = map(partial(_dict_to_workflow_output, workflow_step), value)
+                value = [partial(_dict_to_workflow_output, workflow_step)(_) for _ in value]
             setattr(workflow_step, key, value)
         workflow.steps.append( workflow_step )
 
@@ -121,6 +122,6 @@ def yaml_to_model(has_dict, id_offset=100):
 
 def _dict_to_workflow_output(workflow_step, as_dict):
     output = model.WorkflowOutput(workflow_step)
-    for key, value in as_dict.iteritems():
+    for key, value in as_dict.items():
         setattr(output, key, value)
     return output

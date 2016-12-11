@@ -75,6 +75,7 @@ class NullJobInstrumenter(object):
     def collect_properties(self, job_id, job_directory):
         return {}
 
+
 NULL_JOB_INSTRUMENTER = NullJobInstrumenter()
 
 

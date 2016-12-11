@@ -2,20 +2,20 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
-
+import logging
 import os.path
-import imp
+import sys
 import unittest
+
 from six import StringIO
 
-import logging
-log = logging.getLogger( __name__ )
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
-import tempfilecache
-
 from galaxy.datatypes.dataproviders import base, exceptions
+
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import tempfilecache, utility
+
+log = logging.getLogger( __name__ )
 
 # TODO: fix imports there after dist and retry
 # TODO: fix off by ones in FilteredDataProvider counters
@@ -52,7 +52,7 @@ class BaseTestCase( unittest.TestCase ):
 
     def format_tmpfile_contents( self, contents=None ):
         contents = contents or self.default_file_contents
-        contents = test_utils.clean_multiline_string( contents )
+        contents = utility.clean_multiline_string( contents )
         log.debug( 'file contents:\n%s', contents )
         return contents
 
@@ -135,7 +135,7 @@ class Test_BaseDataProvider( BaseTestCase ):
     def test_stringio( self ):
         """should work with StringIO
         """
-        contents = test_utils.clean_multiline_string( """
+        contents = utility.clean_multiline_string( """
             One
             Two
             Three
@@ -297,7 +297,7 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
     def contents_and_tmpfile( self, contents=None ):
         # TODO: hmmmm...
         contents = contents or self.default_file_contents
-        contents = test_utils.clean_multiline_string( contents )
+        contents = utility.clean_multiline_string( contents )
         return ( contents, self.tmpfiles.create_tmpfile( contents ) )
 
     def test_multiple_sources( self ):
@@ -323,7 +323,7 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [ test_utils.clean_multiline_string( c ) for c in contents ]
+        contents = [ utility.clean_multiline_string( c ) for c in contents ]
         source_list = [ open( self.tmpfiles.create_tmpfile( c ) ) for c in contents ]
 
         provider = self.provider_class( source_list )
@@ -355,7 +355,7 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [ test_utils.clean_multiline_string( c ) for c in contents ]
+        contents = [ utility.clean_multiline_string( c ) for c in contents ]
         source_list = [ open( self.tmpfiles.create_tmpfile( c ) ) for c in contents ]
 
         def no_Fs( string ):

@@ -16,6 +16,7 @@ def display_migration_details():
     print("This script adds tables needed for Galaxy cloud functionality.")
     print("========================================")
 
+
 CloudImage_table = Table( "cloud_image", metadata,
                           Column( "id", Integer, primary_key=True ),
                           Column( "create_time", DateTime, default=now ),

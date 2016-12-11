@@ -1,6 +1,7 @@
 """Scripts for drivers of Galaxy functional tests."""
 
 import collections
+import fcntl
 import httplib
 import json
 import logging
@@ -8,6 +9,7 @@ import os
 import random
 import shutil
 import socket
+import struct
 import sys
 import tempfile
 import threading
@@ -17,12 +19,11 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
-import requests
 from paste import httpserver
 
 from functional import database_contexts
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.util import asbool
+from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
 from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
@@ -81,10 +82,23 @@ def configure_environment():
     if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
         os.environ["TOOL_SHED_TEST_FILE_DIR"] = TOOL_SHED_TEST_DATA
 
+    os.environ["GALAXY_TEST_ENVIRONMENT_CONFIGURED"] = "1"
+
 
 def build_logger():
     """Build a logger for test driver script."""
     return log
+
+
+def ensure_test_file_dir_set():
+    """Ensure GALAXY_TEST_FILE_DIR setup in environment for test data resolver.
+
+    Return first directory for backward compat.
+    """
+    galaxy_test_file_dir = os.environ.get('GALAXY_TEST_FILE_DIR', GALAXY_TEST_FILE_DIR)
+    os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
+    first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+    return first_test_file_dir
 
 
 def setup_galaxy_config(
@@ -109,9 +123,7 @@ def setup_galaxy_config(
     job_working_directory = tempfile.mkdtemp(prefix='job_working_directory_', dir=tmpdir)
 
     if use_test_file_dir:
-        galaxy_test_file_dir = os.environ.get('GALAXY_TEST_FILE_DIR', GALAXY_TEST_FILE_DIR)
-        os.environ['GALAXY_TEST_FILE_DIR'] = galaxy_test_file_dir
-        first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+        first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
             first_test_file_dir = os.path.join(galaxy_root, first_test_file_dir)
         library_import_dir = first_test_file_dir
@@ -254,9 +266,7 @@ def copy_database_template( source, db_path ):
         shutil.copy(source, db_path)
         assert os.path.exists(db_path)
     elif source.lower().startswith(("http://", "https://", "ftp://")):
-        r = requests.get(source)
-        with open(db_path, 'w') as f:
-            f.write(r.content)
+        download_to_file(source, db_path)
     else:
         raise Exception( "Failed to copy database template from source %s" % source )
 
@@ -481,6 +491,7 @@ def build_shed_app(simple_kwargs):
     log.info( "Embedded Toolshed application started" )
     return app
 
+
 ServerWrapper = collections.namedtuple('ServerWrapper', ['app', 'server', 'name', 'host', 'port'])
 
 
@@ -495,10 +506,29 @@ def _stop(self):
         self.app.shutdown()
         log.info("Application %s stopped." % self.name)
 
+
 ServerWrapper.stop = _stop
 
 
-def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
+class classproperty(object):
+
+    def __init__(self, f):
+        self.f = f
+
+    def __get__(self, obj, owner):
+        return self.f(owner)
+
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+
+
+def launch_server(app, webapp_factory, kwargs, prefix="GALAXY", config_object=None):
     """Launch a web server for a given app using supplied factory.
 
     Consistently read either GALAXY_TEST_HOST and GALAXY_TEST_PORT or
@@ -509,7 +539,8 @@ def launch_server(app, webapp_factory, kwargs, prefix="GALAXY"):
 
     host_env_key = "%s_TEST_HOST" % prefix
     port_env_key = "%s_TEST_PORT" % prefix
-    host = os.environ.get(host_env_key, DEFAULT_WEB_HOST)
+    default_web_host = getattr(config_object, "default_web_host", DEFAULT_WEB_HOST)
+    host = os.environ.get(host_env_key, default_web_host)
     port = os.environ.get(port_env_key, None)
 
     webapp = webapp_factory(
@@ -637,11 +668,14 @@ class GalaxyTestDriver(TestDriver):
                 self.app,
                 buildapp.app_factory,
                 galaxy_config,
+                config_object=config_object,
             )
             self.server_wrappers.append(server_wrapper)
-            log.info("Functional tests will be run against %s:%s" % (server_wrapper.host, server_wrapper.port))
+            log.info("Functional tests will be run against external Galaxy server %s:%s" % (server_wrapper.host, server_wrapper.port))
         else:
-            log.info("Functional tests will be run against %s" % self.external_galaxy)
+            log.info("Functional tests will be run against test managed Galaxy server %s" % self.external_galaxy)
+            # Ensure test file directory setup even though galaxy config isn't built.
+            ensure_test_file_dir_set()
 
     def setup_shed_tools(self, testing_migrated_tools=False, testing_installed_tools=True):
         setup_shed_tools_for_test(
@@ -689,7 +723,8 @@ class GalaxyTestDriver(TestDriver):
 
 def drive_test(test_driver_class):
     """Instantiate driver class, run, and exit appropriately."""
-    sys.exit(test_driver_class().run())
+    test_driver = test_driver_class()
+    sys.exit(test_driver.run())
 
 
 __all__ = (

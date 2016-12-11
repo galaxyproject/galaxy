@@ -6,10 +6,10 @@
       <requirement type="package">bowtie</requirement>
   </requirements>
   <command>
-  mkdir ${output.files_path}
+  mkdir '${output.files_path}'
   &amp;&amp; bowtie-build --quiet
   -f 
-  $input  ${output.files_path}/${output.metadata.base_name}
+  '$input'  '${output.files_path}/${output.metadata.base_name}'
   </command>
   <inputs>
     <param name="input" type="data" format="fasta" label="Fasta file"/>

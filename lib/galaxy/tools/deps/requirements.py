@@ -25,6 +25,9 @@ class ToolRequirement( object ):
         type = dict.get("type", None)
         return ToolRequirement( name=name, type=type, version=version )
 
+    def __eq__(self, other):
+        return self.name == other.name and self.type == other.type and self.version == other.version
+
 
 DEFAULT_CONTAINER_TYPE = "docker"
 DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES = False
