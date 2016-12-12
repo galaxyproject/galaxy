@@ -53,6 +53,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_prefix = os.path.join(
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
+        conda_prefix = os.path.abspath(conda_prefix)
 
         self.conda_prefix_parent = os.path.dirname(conda_prefix)
 
