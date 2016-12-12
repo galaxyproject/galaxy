@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.1.0.dev0
+17.1.0 (2016-12-12)
 ---------------------
 
 * Improved mulled logging thanks to @bgruening.
