@@ -353,6 +353,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
+    >>> fname = get_test_fname('1.gg')
+    >>> guess_ext(fname, sniff_order)
+    'gg'
     """
     file_ext = None
     for datatype in sniff_order:
