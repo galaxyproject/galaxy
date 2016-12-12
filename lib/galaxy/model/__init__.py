@@ -34,6 +34,7 @@ from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.json import safe_loads
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
@@ -3757,16 +3758,11 @@ class WorkflowStep( object ):
 
     @property
     def name( self ):
-        identifier = None
         state = self.tool_inputs
-        if isinstance( self.tool_inputs, string_types ):
-            state = json.loads( state )
-        identifier = state.get( 'name' )
-        try:
-            identifier = json.loads( identifier )
-        except:
-            pass
-        return identifier
+        if state:
+            state = safe_loads( state )
+            identifier = state.get( 'name' )
+            return safe_loads( identifier )
 
     @property
     def input_connections_by_name(self):

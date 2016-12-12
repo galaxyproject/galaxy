@@ -55,6 +55,7 @@ from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
+from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
@@ -263,9 +264,7 @@ class DefaultToolState( object ):
         """
         Restore the state from a string
         """
-        if isinstance( values, basestring ):
-            values = json_fix( json.loads( values ) )
-        values = values or {}
+        values = json_fix( safe_loads( values ) ) or {}
         self.page = values.pop( "__page__" ) if "__page__" in values else None
         self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" ) if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
