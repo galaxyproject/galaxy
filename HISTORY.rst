@@ -6,10 +6,11 @@ History
 .. to_doc
 
 ---------------------
-16.10.11.dev0
+17.1.0.dev0
 ---------------------
 
-    
+* Improved mulled logging thanks to @bgruening.
+* Bring in the latest Galaxy dev changes.
 
 ---------------------
 16.10.10 (2016-10-24)
