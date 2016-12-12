@@ -761,9 +761,7 @@ class ToolModule( WorkflowModule ):
             self.add_dummy_datasets()
             incoming = {}
             params_to_incoming( incoming, self.tool.inputs, self.state.inputs, self.trans.app )
-            return dumps( self.tool.to_json( self.trans, incoming, workflow_building_mode=True ) )
-        else:
-            return "Tool missing. Parameters cannot be edited."
+            return self.tool.to_json( self.trans, incoming, workflow_building_mode=True )
 
     def check_and_update_state( self ):
         if self.tool:

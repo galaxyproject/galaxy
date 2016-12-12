@@ -806,7 +806,7 @@ EditorFormView = Backbone.View.extend({
             }
         },
 
-        showToolForm: function ( text, node ) {
+        showToolForm: function ( content, node ) {
             // initialize tags and identifiers
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
@@ -824,15 +824,15 @@ EditorFormView = Backbone.View.extend({
             if ($container.find('#' + id).length == 0) {
                 var $el = $('<div id="' + id + '" class="' + cls + '"/>');
                 var formView = null;
-                if (node.type == 'tool' && Utils.isJSON(text)) {
-                    var options = JSON.parse(text);
+                if (node.type == 'tool') {
+                    var options = content;
                     options.node = node;
                     options.workflow = this.workflow;
                     options.datatypes = this.datatypes;
                     formView = new ToolForm.View(options);
                 } else {
                     var options = {
-                        html: text,
+                        html: content,
                         node: node,
                         workflowView: this
                     };
