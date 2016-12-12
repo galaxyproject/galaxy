@@ -14,7 +14,7 @@ PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
 WEBPACK_EXEC?=node_modules/webpack/bin/webpack.js
-NODE_PATH?=client/node_modules
+GXY_NODE_MODULES=client/node_modules
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
@@ -95,7 +95,7 @@ client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
 client: grunt style ## Rebuild all client-side artifacts
 
 charts: npm-deps ## Rebuild charts
-	NODE_PATH=$(CURDIR)/$(NODE_PATH) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
+	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
 
 grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client
