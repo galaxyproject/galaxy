@@ -17,6 +17,7 @@ class FailsJobRunner(LocalJobRunner):
         )
         if failure_state is not None:
             job_state.runner_state = failure_state
+        job_state.stop_job = False
         self.fail_job(job_state, exception=True)
 
 

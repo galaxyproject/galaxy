@@ -618,6 +618,15 @@ class Job( object, JobLike, Dictifiable ):
         self.state = state
         self.state_history.append( JobStateHistory( self ) )
 
+    @property
+    def attempt( self ):
+        attempt_count = 1
+        for state in self.state_history:
+            if state.state == Job.states.RESUBMITTED:
+                attempt_count = attempt_count + 1
+
+        return attempt_count
+
     def get_param_values( self, app, ignore_errors=False ):
         """
         Read encoded parameter values from the database and turn back into a

@@ -29,6 +29,7 @@ def eval_condition(condition, job_state):
         "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
         "any_failure": True,
         "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
+        "attempt": job_state.job_wrapper.get_job().attempt,
     }
 
     # Small optimization to eliminate the need to parse AST and eval for simple variables.
