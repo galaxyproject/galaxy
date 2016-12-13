@@ -41,6 +41,22 @@ class JobResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
     def test_unknown_error(self):
         self._assert_job_passes(resource_parameters={"test_name": "test_unknown_error", "failure_state": "unknown_error"})
 
+    def test_condition_expressions(self):
+        self._assert_job_passes(resource_parameters={"test_name": "test_condition_expressions_0",
+                                                     "initial_destination": "fail_first_if_memory_or_walltime",
+                                                     "failure_state": "memory_limit_reached"})
+        self._assert_job_passes(resource_parameters={"test_name": "test_condition_expressions_1",
+                                                     "initial_destination": "fail_first_if_memory_or_walltime",
+                                                     "failure_state": "walltime_reached"})
+        self._assert_job_fails(resource_parameters={"test_name": "test_condition_expressions_2",
+                                                    "initial_destination": "fail_first_if_memory_or_walltime",
+                                                    "failure_state": "unknown_error"})
+
+    def test_condition_any_failure(self):
+        self._assert_job_fails(resource_parameters={"test_name": "test_condition_any_failure",
+                                                    "initial_destination": "fail_first_any_failure",
+                                                    "failure_state": "unknown_error"})
+
     def _assert_job_passes(self, resource_parameters):
         self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
 

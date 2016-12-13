@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 <!-- 
     - Test resubmit without a condition.    
-    - Refactor condition check out into expression language.
-    - Add test for or to condition.
-    - Add variable any_error which is walltime_reached or memory_limit_reached or unknown_error.
     - Add variable ``attempt`` to condition language which is the resubmission count for the current destination.
     - Add variables ``time_since_queued`` and ``time_running`` to condition language.
 -->
@@ -35,6 +32,14 @@
             <resubmit condition="unknown_error" destination="retry_unknown_error" />
         </destination>
 
+        <destination id="fail_first_if_memory_or_walltime" runner="failure_runner">
+            <resubmit condition="walltime_reached or memory_limit_reached" destination="retry_test_generic" />
+        </destination>
+
+        <destination id="fail_first_any_failure" runner="failure_runner">
+            <resubmit condition="any_failure" destination="retry_test_generic" />
+        </destination>
+
         <destination id="fails_without_resubmission" runner="failure_runner">
         </destination>
 
@@ -49,6 +54,11 @@
         <destination id="retry_unknown_error" runner="assertion_runner">
             <param id="dest_name">retry_unknown_error</param>
         </destination>
+
+        <destination id="retry_test_generic" runner="assertion_runner">
+            <param id="dest_name">retry_test_generic</param>
+        </destination>
+
 
         <!-- Upload destination. -->
         <destination id="local" runner="local">

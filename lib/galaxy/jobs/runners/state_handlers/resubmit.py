@@ -5,6 +5,7 @@ __all__ = ('failure', )
 log = logging.getLogger(__name__)
 
 from galaxy.jobs.runners import JobState
+from ._safe_eval import safe_eval
 
 
 MESSAGES = dict(
@@ -14,21 +15,40 @@ MESSAGES = dict(
 )
 
 
-def failure(app, job_runner, job_state):
+def eval_condition(condition, job_state):
     runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
     if (runner_state not in (JobState.runner_states.WALLTIME_REACHED,
                              JobState.runner_states.MEMORY_LIMIT_REACHED,
                              JobState.runner_states.UNKNOWN_ERROR)):
         # not set or not a handleable runner state
-        return
+        return False
+
+    condition_locals = {
+        "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
+        "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
+        "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
+        "any_failure": True,
+        "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
+    }
+
+    # Small optimization to eliminate the need to parse AST and eval for simple variables.
+    if condition in condition_locals:
+        return condition_locals[condition]
+    else:
+        return safe_eval(condition, condition_locals)
+
+
+def failure(app, job_runner, job_state):
+    runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
     # Intercept jobs that hit the walltime and have a walltime or
     # nonspecific resubmit destination configured
     for resubmit in job_state.job_destination.get('resubmit'):
         condition = resubmit.get('condition', None)
-        if condition and condition != runner_state:
+        if condition and not eval_condition(condition, job_state):
             # There is a resubmit defined for the destination but
             # its condition is not for the encountered state
             continue
+
         external_id = getattr(job_state, "job_id", None)
         if external_id:
             job_log_prefix = "(%s/%s)" % (job_state.job_wrapper.job_id, job_state.job_id)
