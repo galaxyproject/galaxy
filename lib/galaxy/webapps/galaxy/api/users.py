@@ -269,16 +269,15 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             data = json.loads(user.preferences[data_key])
         extra_pref_inputs = list()
         # Build sections for different categories of inputs
-        for item in preferences:
-            section = preferences[item]
-            if section is not None:
-                for input in section['inputs']:
+        for item, value in preferences.items():
+            if value is not None:
+                for input in value["inputs"]:
                     input['help'] = 'Required' if input['required'] else ''
                     field = item + '|' + input['name']
                     for data_item in data:
                        if field in data_item:
                            input['value'] = data[data_item]
-                extra_pref_inputs.append({'type': 'section', 'title': section['description'], 'name': item, 'expanded': True, 'inputs': section['inputs']})
+                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
     def _check_if_field_required( self, trans, key ):
