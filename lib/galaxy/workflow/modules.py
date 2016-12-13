@@ -399,11 +399,13 @@ class InputDataModule( InputModule ):
     default_name = "Input Dataset"
 
     def get_inputs( self ):
-        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=self.state.inputs.get( 'name', self.default_name ) ) ) )
 
     def get_config_form( self ):
-        form = formbuilder.FormBuilder( title=self.name ) .add_text( "name", "Name", value=self.state.inputs['name'] )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
+        return {
+            'title' : self.name,
+            'inputs': [ param.to_dict( self.trans ) for param in self.get_inputs().values() ]
+        }
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
