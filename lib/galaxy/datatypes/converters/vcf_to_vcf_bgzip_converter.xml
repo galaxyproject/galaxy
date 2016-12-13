@@ -1,14 +1,12 @@
 <tool id="CONVERTER_vcf_to_vcf_bgzip_0" name="Convert VCF to VCF_BGZIP" version="1.0.1" hidden="true">
-<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">vcf_to_vcf_bgzip.py '$input1' '$output1'</command>
-  <inputs>
-    <page>
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <command>python '$__tool_directory__/vcf_to_vcf_bgzip.py' '$input1' '$output1'</command>
+    <inputs>
         <param format="vcf" name="input1" type="data" label="Choose Vcf file"/>
-    </page>
-   </inputs>
-  <outputs>
-    <data format="vcf_bgzip" name="output1"/>
-  </outputs>
-  <help>
-  </help>
+    </inputs>
+    <outputs>
+        <data format="vcf_bgzip" name="output1"/>
+    </outputs>
+    <help>
+    </help>
 </tool>
