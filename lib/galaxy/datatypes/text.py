@@ -604,5 +604,4 @@ class Smat(Text):
                     # Make sure each item is an integer.
                     if re.match(r"[-+]?\d+$", item) is None:
                         return False
-        fh.close()
         return True
