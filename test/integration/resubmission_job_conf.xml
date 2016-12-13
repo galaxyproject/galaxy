@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<!-- 
+    - Test resubmit without a condition.    
+    - Refactor condition check out into expression language.
+    - Add test for or to condition.
+    - Add variable any_error which is walltime_reached or memory_limit_reached or unknown_error.
+    - Add variable ``attempt`` to condition language which is the resubmission count for the current destination.
+    - Add variables ``time_since_queued`` and ``time_running`` to condition language.
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+        <plugin id="failure_runner" type="runner" load="integration.resubmission_runners:FailsJobRunner" workers="2">
+        </plugin>
+        <plugin id="assertion_runner" type="runner" load="integration.resubmission_runners:AssertionJobRunner" workers="2">
+        </plugin>
+        <plugin id="dynamic" type="runner">
+            <param id="rules_module">integration.resubmission_rules</param>
+        </plugin>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="initial_destination">
+        <destination id="initial_destination" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">initial_destination</param>
+        </destination>
+
+        <destination id="fail_first_try" runner="failure_runner">
+            <resubmit condition="walltime_reached" destination="retry_test_more_walltime" />
+            <resubmit condition="memory_limit_reached" destination="retry_test_more_mem" />
+            <resubmit condition="unknown_error" destination="retry_unknown_error" />
+        </destination>
+
+        <destination id="fails_without_resubmission" runner="failure_runner">
+        </destination>
+
+        <destination id="retry_test_more_mem" runner="assertion_runner">
+            <param id="dest_name">retry_test_more_mem</param>
+        </destination>
+
+        <destination id="retry_test_more_walltime" runner="assertion_runner">
+            <param id="dest_name">retry_test_more_walltime</param>
+        </destination>
+
+        <destination id="retry_unknown_error" runner="assertion_runner">
+            <param id="dest_name">retry_unknown_error</param>
+        </destination>
+
+        <!-- Upload destination. -->
+        <destination id="local" runner="local">
+        </destination>
+
+    </destinations>
+
+    <resources default="test">
+      <group id="upload"></group>
+      <group id="test">test_name,failure_state,initial_destination</group>
+    </resources>
+
+    <tools>
+        <tool id="upload1" destination="local" resources="upload" />
+    </tools>
+
+</job_conf>

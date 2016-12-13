@@ -393,6 +393,7 @@ class JobState( object ):
     runner_states = Bunch(
         WALLTIME_REACHED='walltime_reached',
         MEMORY_LIMIT_REACHED='memory_limit_reached',
+        UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
         OUTPUT_SIZE_LIMIT='output_size_limit'
     )
