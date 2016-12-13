@@ -5,6 +5,7 @@
         <requirement type="package">bedtools</requirement>
     </requirements>
     <command>
+<![CDATA[
         ## Remove comments and sort by chromosome.
         grep -v '^#' '$input1' | sort -k${input1.metadata.chromCol},${input1.metadata.chromCol} |
 
@@ -12,14 +13,15 @@
         awk -v OFS='	' '{print $${input1.metadata.chromCol},$${input1.metadata.startCol},$${input1.metadata.endCol} }' |
 
         ## Generate coverage bedgraph.
-        bedtools genomecov -bg -split -i stdin -g $chromInfo
+        bedtools genomecov -bg -split -i stdin -g '$chromInfo'
 
         ## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
         ## should only be used on systems with large RAM.
-        ## | wigToBigWig stdin $chromInfo '$output'
+        ## | wigToBigWig stdin '$chromInfo' '$output'
 
         ## This can be used anywhere.
-        > temp.bg ; bedGraphToBigWig temp.bg $chromInfo '$output'
+        > temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output'
+]]>
     </command>
     <inputs>
         <param format="interval" name="input1" type="data" label="Choose intervals"/>

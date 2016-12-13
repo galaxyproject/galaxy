@@ -3,7 +3,7 @@
     <requirements>
         <requirement type="package">ucsc_tools</requirement>
     </requirements>
-    <command>grep -v "^track" '$input' | wigToBigWig -clip stdin $chromInfo '$output'</command>
+    <command>grep -v "^track" '$input' | wigToBigWig -clip stdin '$chromInfo' '$output'</command>
     <inputs>
         <param format="bedgraph" name="input" type="data" label="Choose wiggle"/>
     </inputs>
