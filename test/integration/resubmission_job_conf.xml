@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <!-- 
-    - Test resubmit without a condition.
     - Add variables ``time_since_queued`` and ``time_running`` to condition language.
 -->
 <job_conf>
@@ -42,7 +41,7 @@
         <!-- This will fail twice and succeed on walltime reached and will fail twice and fail hard else. -->
         <destination id="fail_two_attempts" runner="failure_runner">
             <param id="test_param">test_value</param>
-            <resubmit condition="attempt &lt; 3" destination="fail_two_attempts" />
+            <resubmit condition="attempt &lt; 3" />
             <resubmit condition="attempt == 3 and walltime_reached" destination="retry_test_generic" />
         </destination>
 
