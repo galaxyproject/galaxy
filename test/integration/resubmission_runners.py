@@ -4,8 +4,8 @@ from galaxy import model
 from galaxy.jobs.runners import (
     JobState
 )
-from galaxy.model.orm.now import now
 from galaxy.jobs.runners.local import LocalJobRunner
+from galaxy.model.orm.now import now
 
 
 class FailsJobRunner(LocalJobRunner):

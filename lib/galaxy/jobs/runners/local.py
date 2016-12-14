@@ -174,7 +174,7 @@ class LocalJobRunner( BaseJobRunner ):
 
     def _handle_metadata_if_needed(self, job_wrapper):
         if not self._embed_metadata(job_wrapper):
-            self._handle_metadata_externally(job_wrapper, resolve_requirements=True)        
+            self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
 
     def _embed_metadata(self, job_wrapper):
         job_destination = job_wrapper.job_destination
