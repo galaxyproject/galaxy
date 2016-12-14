@@ -65,6 +65,16 @@ class JobResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
                                                      "initial_destination": "fail_two_attempts",
                                                      "failure_state": "walltime_reached"})
 
+    def test_condition_seconds_running(self):
+        self._assert_job_passes(resource_parameters={"test_name": "test_condition_seconds_running",
+                                                     "initial_destination": "resubmit_if_short",
+                                                     "failure_state": "walltime_reached",
+                                                     "run_for": "1"})
+        self._assert_job_fails(resource_parameters={"test_name": "test_condition_seconds_running",
+                                                    "initial_destination": "resubmit_if_short",
+                                                    "failure_state": "walltime_reached",
+                                                    "run_for": "15"})
+
     def _assert_job_passes(self, resource_parameters):
         self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
 

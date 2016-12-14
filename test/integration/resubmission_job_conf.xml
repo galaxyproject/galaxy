@@ -40,9 +40,14 @@
 
         <!-- This will fail twice and succeed on walltime reached and will fail twice and fail hard else. -->
         <destination id="fail_two_attempts" runner="failure_runner">
-            <param id="test_param">test_value</param>
             <resubmit condition="attempt &lt; 3" />
             <resubmit condition="attempt == 3 and walltime_reached" destination="retry_test_generic" />
+        </destination>
+
+        <!-- Resubmit only jobs shorter than 5 seconds. -->
+        <destination id="resubmit_if_short" runner="failure_runner">
+            <resubmit condition="seconds_running &lt; 5" destination="retry_test_generic" />
+            <resubmit condition="any_failure" destination="fails_without_resubmission" />
         </destination>
 
         <destination id="fails_without_resubmission" runner="failure_runner">
@@ -73,7 +78,7 @@
 
     <resources default="test">
       <group id="upload"></group>
-      <group id="test">test_name,failure_state,initial_destination</group>
+      <group id="test">test_name,failure_state,initial_destination,run_for</group>
     </resources>
 
     <tools>

@@ -1,3 +1,6 @@
+import time
+
+from galaxy import model
 from galaxy.jobs.runners import (
     JobState
 )
@@ -8,8 +11,17 @@ class FailsJobRunner(LocalJobRunner):
     """Job runner that fails with runner state specified via job resource parameters."""
 
     def queue_job(self, job_wrapper):
+        if not self._prepare_job_local(job_wrapper):
+            return
+
         resource_parameters = job_wrapper.get_resource_parameters()
         failure_state = resource_parameters.get("failure_state", None)
+
+        if failure_state in (JobState.runner_states.WALLTIME_REACHED, JobState.runner_states.MEMORY_LIMIT_REACHED):
+            job_wrapper.change_state(model.Job.states.RUNNING)
+            run_for = int(resource_parameters.get("run_for", 0))
+            if run_for > 0:
+                time.sleep(run_for)
 
         job_state = JobState(
             job_wrapper,
