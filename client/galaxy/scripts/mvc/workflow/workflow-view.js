@@ -831,7 +831,7 @@ EditorFormView = Backbone.View.extend({
                     options.workflow = this.workflow;
                     options.datatypes = this.datatypes;
                     formView = new ToolForm.View(options);
-                } else if (node.type == 'data_input') {
+                } else {
                     window.console.log( content );
                     var options = {
                         html: content,
@@ -839,13 +839,6 @@ EditorFormView = Backbone.View.extend({
                         workflowView: this
                     };
                     formView = new Form(content );
-                } else {
-                    var options = {
-                        html: content,
-                        node: node,
-                        workflowView: this
-                    };
-                    formView = new EditorFormView(options);
                 }
                 $el.append(formView.$el);
                 $container.append($el);

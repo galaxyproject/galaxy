@@ -25,7 +25,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools import DefaultToolState
 from galaxy.tools import ToolInputsNotReadyException
-from galaxy.util import odict
+from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.web.framework import formbuilder
 from tool_shed.util import common_util
@@ -154,6 +154,13 @@ class WorkflowModule( object ):
     def add_dummy_datasets( self, connections=None, steps=None ):
         """ Replace connected inputs with placeholder/dummy values. """
         pass
+
+    def get_config_form( self ):
+        """ Serializes input parameters of a module into input dictionaries. """
+        return {
+            'title' : self.name,
+            'inputs': [ param.to_dict( self.trans ) for param in self.get_inputs().values() ]
+        }
 
     # ---- Run time ---------------------------------------------------------
 
@@ -316,10 +323,6 @@ class SubWorkflowModule( WorkflowModule ):
     def get_content_id( self ):
         return self.trans.security.encode_id(self.subworkflow.id)
 
-    def get_config_form( self ):
-        form = formbuilder.FormBuilder( title=self.get_name() )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
-
     def execute( self, trans, progress, invocation, step ):
         """ Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
@@ -399,13 +402,8 @@ class InputDataModule( InputModule ):
     default_name = "Input Dataset"
 
     def get_inputs( self ):
-        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=self.state.inputs.get( 'name', self.default_name ) ) ) )
-
-    def get_config_form( self ):
-        return {
-            'title' : self.name,
-            'inputs': [ param.to_dict( self.trans ) for param in self.get_inputs().values() ]
-        }
+        name = self.state.inputs.get( 'name', self.default_name )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) )
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
@@ -434,8 +432,10 @@ class InputDataCollectionModule( InputModule ):
     collection_type = default_collection_type
 
     def get_inputs( self ):
-        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
-                     collection_type=TextToolParameter( None, Element( "param", name="collection_type", type="text", value=self.default_collection_type ) ) )
+        name = self.state.inputs.get( "name", self.default_name )
+        collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
+        return odict([( "name", TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=self.default_name ) ) ),
+                      ( "collection_type", TextToolParameter( None, Element( "param", name="collection_type", label="Collection type", type="text", value=collection_type )))])
 
     def get_runtime_inputs( self, **kwds ):
         label = self.state.inputs.get( "name", self.default_name )
@@ -443,12 +443,11 @@ class InputDataCollectionModule( InputModule ):
         input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
-    def get_config_form( self ):
-        type_hints = odict.odict()
+    def get_config_form_todo( self ):
+        type_hints = odict()
         type_hints[ "list" ] = "List of Datasets"
         type_hints[ "paired" ] = "Dataset Pair"
         type_hints[ "list:paired" ] = "List of Dataset Pairs"
-
         type_input = formbuilder.DatalistInput(
             name="collection_type",
             label="Collection Type",
@@ -547,7 +546,8 @@ class PauseModule( WorkflowModule ):
     default_name = "Pause for Dataset Review"
 
     def get_inputs( self ):
-        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ) )
+        name = self.state.inputs.get( "name", self.default_name )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=name ) ) )
 
     def get_data_inputs( self ):
         input = dict(
