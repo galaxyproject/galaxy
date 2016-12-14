@@ -144,14 +144,16 @@ var DatasetListItemEdit = _super.extend(
         };
         var parseToolID = function(data) {
             $.ajax({
-                url: '/api/tools/' + data.tool_id + '/build'
+                url: Galaxy.root + 'api/tools/' + data.tool_id + '/build'
             }).done(function(data){
                 parseToolBuild(data);
             }).fail(function(){
                 parseToolBuild({})
             });
         };
-
+        if (Galaxy.user.id === null){
+            return null
+        }
         return faIconButton({
             title: 'Tool Help',
             classes: 'icon-btn',
@@ -163,11 +165,11 @@ var DatasetListItemEdit = _super.extend(
                     self.$el.find(".toolhelp").toggle();
                 } else {
                     $.ajax({
-                        url: '/api/jobs/' + jobID
+                        url: Galaxy.root + 'api/jobs/' + jobID
                     }).done(function(data){
                         parseToolID(data);
                     }).fail(function(){
-                       console.log('Failed on recovering /api/jobs/' + jobID + ' call.');
+                       console.log('Failed at recovering job information from the  Galaxy API for job id "' + jobID + '".');
                     });
                 }
             }
