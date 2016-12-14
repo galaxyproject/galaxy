@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.1.1.dev0
+17.1.1 (2016-12-14)
 ---------------------
 
 * Revert changes to shell command execution in Galaxy that had unintended consequences for Planemo.    
