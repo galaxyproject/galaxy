@@ -488,7 +488,7 @@ class InputParameterModule( WorkflowModule ):
                      parameter_type=TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_parameter_type ) ),
                      optional=TextToolParameter( None, Element( "param", name="optional", type="text", value=self.default_optional ) ) )
 
-    def get_config_form( self ):
+    def get_config_form_todo( self ):
         form = formbuilder.FormBuilder(
             title=self.name
         ).add_text(
@@ -561,12 +561,6 @@ class PauseModule( WorkflowModule ):
 
     def get_data_outputs( self ):
         return [ dict( name="output", label="Reviewed Dataset", extensions=['input'] ) ]
-
-    def get_config_form( self ):
-        form = formbuilder.FormBuilder(
-            title=self.name
-        ).add_text( "name", "Name", value=self.state.inputs['name'] )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
     def get_runtime_state( self ):
         state = DefaultToolState()
