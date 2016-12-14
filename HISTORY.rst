@@ -9,7 +9,7 @@ History
 17.1.1.dev0
 ---------------------
 
-    
+* Revert changes to shell command execution in Galaxy that had unintended consequences for Planemo.    
 
 ---------------------
 17.1.0 (2016-12-12)
