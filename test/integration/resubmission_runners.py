@@ -4,6 +4,7 @@ from galaxy import model
 from galaxy.jobs.runners import (
     JobState
 )
+from galaxy.model.orm.now import now
 from galaxy.jobs.runners.local import LocalJobRunner
 
 
@@ -52,6 +53,12 @@ class AssertionJobRunner(LocalJobRunner):
             assert job_dest_params["dest_name"] == "retry_test_more_mem"
         elif test_name == "test_unknown_error":
             assert job_dest_params["dest_name"] == "retry_unknown_error"
+        elif test_name == "test_resubmission_after_delay":
+            assert job_dest_params["dest_name"] == "retry_after_delay"
+            job = job_wrapper.get_job()
+            if (now() - job.create_time).total_seconds() < 5:
+                self._fail_job_local(job_wrapper, "Job completed too quickly")
+                return
 
         super(AssertionJobRunner, self).queue_job(job_wrapper)
 

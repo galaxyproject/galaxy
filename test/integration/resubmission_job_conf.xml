@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <!-- 
-    - Add variables ``time_since_queued`` and ``time_running`` to condition language.
+    - Add ready_for_resubmission to job_wrapper.
+    - Use in the handler.
 -->
 <job_conf>
     <plugins>
@@ -50,6 +51,18 @@
             <resubmit condition="any_failure" destination="fails_without_resubmission" />
         </destination>
 
+        <!-- Resubmit after a delay. -->
+        <destination id="resubmit_after_delay" runner="failure_runner">
+            <resubmit condition="any_failure" delay="5" destination="retry_after_delay" />
+        </destination>
+
+        <!-- Resubmit after a couple delays. -->
+        <destination id="resubmit_after_two_delays" runner="failure_runner">
+            <!-- Delay 1.5 seconds and then 3 seconds, then finally send off too another runner. -->
+            <resubmit condition="attempt &lt; 3" delay="attempt * 1.5" />
+            <resubmit condition="any_failure" destination="retry_after_delay" />
+        </destination>
+
         <destination id="fails_without_resubmission" runner="failure_runner">
         </destination>
 
@@ -63,6 +76,10 @@
 
         <destination id="retry_unknown_error" runner="assertion_runner">
             <param id="dest_name">retry_unknown_error</param>
+        </destination>
+
+        <destination id="retry_after_delay" runner="assertion_runner">
+            <param id="dest_name">retry_after_delay</param>
         </destination>
 
         <destination id="retry_test_generic" runner="assertion_runner">

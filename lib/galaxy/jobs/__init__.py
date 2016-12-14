@@ -536,7 +536,8 @@ class JobConfiguration( object ):
             rval.append( dict(
                 condition=resubmit.get('condition'),
                 destination=resubmit.get('destination'),
-                handler=resubmit.get('handler')
+                handler=resubmit.get('handler'),
+                delay=resubmit.get('delay'),
             ) )
         return rval
 
@@ -1115,6 +1116,18 @@ class JobWrapper( object, HasResourceParameters ):
                 self.sa_session.add( dataset_assoc.dataset )
             job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
+
+    def is_ready_for_resubmission( self, job=None ):
+        if job is None:
+            job = self.get_job()
+
+        destination_params = job.destination_params
+        if "__resubmit_delay_seconds" in destination_params:
+            delay = float(destination_params["__resubmit_delay_seconds"])
+            if job.seconds_since_update < delay:
+                return False
+
+        return True
 
     def mark_as_resubmitted( self, info=None ):
         job = self.get_job()

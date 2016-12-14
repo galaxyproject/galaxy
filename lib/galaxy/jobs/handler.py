@@ -266,8 +266,9 @@ class JobHandlerQueue( object ):
             log.debug( '(%s) Job was resubmitted and is being dispatched immediately', job.id )
             # Reassemble resubmit job destination from persisted value
             jw = self.__recover_job_wrapper( job )
-            self.increase_running_job_count(job.user_id, jw.job_destination.id)
-            self.dispatcher.put( jw )
+            if jw.is_ready_for_resubmission(job):
+                self.increase_running_job_count(job.user_id, jw.job_destination.id)
+                self.dispatcher.put( jw )
         # Iterate over new and waiting jobs and look for any that are
         # ready to run
         new_waiting_jobs = []

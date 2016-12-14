@@ -75,6 +75,16 @@ class JobResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
                                                     "failure_state": "walltime_reached",
                                                     "run_for": "15"})
 
+    def test_resubmission_after_delay(self):
+        self._assert_job_passes(resource_parameters={"test_name": "test_resubmission_after_delay",
+                                                     "initial_destination": "resubmit_after_delay",
+                                                     "failure_state": "unknown_error"})
+
+    def test_resubmission_after_delay_expression(self):
+        self._assert_job_passes(resource_parameters={"test_name": "test_resubmission_after_delay_expression",
+                                                     "initial_destination": "resubmit_after_two_delays",
+                                                     "failure_state": "unknown_error"})
+
     def _assert_job_passes(self, resource_parameters):
         self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
 
