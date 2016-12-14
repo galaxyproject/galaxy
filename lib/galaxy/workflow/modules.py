@@ -440,9 +440,9 @@ class InputDataCollectionModule( InputModule ):
         input_collection_type = SelectToolParameter( None, XML(
         '''
         <param name="collection_type" label="Collection type" type="select" value="%s">
-            <option value="list">List of Datasets</option>
-            <option value="paired">Dataset Pair</option>
-            <option value="list:paired">List of Dataset Pairs</option>
+            <option value="list">List of Datasets (list)</option>
+            <option value="paired">Dataset Pair (paired)</option>
+            <option value="list:paired">List of Dataset Pairs (list:paired)</option>
         </param>
         ''' % collection_type ) )
         return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )
