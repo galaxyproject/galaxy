@@ -832,13 +832,13 @@ EditorFormView = Backbone.View.extend({
                     options.datatypes = this.datatypes;
                     formView = new ToolForm.View(options);
                 } else {
-                    window.console.log( content );
                     var options = {
                         html: content,
                         node: node,
                         workflowView: this
                     };
-                    formView = new Form(content );
+                    content.cls = 'ui-portlet-narrow';
+                    formView = new Form( content );
                 }
                 $el.append(formView.$el);
                 $container.append($el);

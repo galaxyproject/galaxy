@@ -4,6 +4,7 @@ Modules used in building workflows
 import logging
 from json import dumps, loads
 from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import XML
 
 from galaxy import exceptions, model, web
 from galaxy.exceptions import ToolMissingException
@@ -17,6 +18,7 @@ from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import (
     parameter_types,
     TextToolParameter,
+    SelectToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
@@ -434,34 +436,22 @@ class InputDataCollectionModule( InputModule ):
     def get_inputs( self ):
         name = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        return odict([( "name", TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=self.default_name ) ) ),
-                      ( "collection_type", TextToolParameter( None, Element( "param", name="collection_type", label="Collection type", type="text", value=collection_type )))])
+        input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) )
+        input_collection_type = SelectToolParameter( None, XML(
+        '''
+        <param name="collection_type" label="Collection type" type="select" value="%s">
+            <option value="list">List of Datasets</option>
+            <option value="paired">Dataset Pair</option>
+            <option value="list:paired">List of Dataset Pairs</option>
+        </param>
+        ''' % collection_type ) )
+        return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )
 
     def get_runtime_inputs( self, **kwds ):
         label = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
         input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
-
-    def get_config_form_todo( self ):
-        type_hints = odict()
-        type_hints[ "list" ] = "List of Datasets"
-        type_hints[ "paired" ] = "Dataset Pair"
-        type_hints[ "list:paired" ] = "List of Dataset Pairs"
-        type_input = formbuilder.DatalistInput(
-            name="collection_type",
-            label="Collection Type",
-            value=self.state.inputs[ "collection_type" ],
-            extra_attributes=dict(refresh_on_change='true'),
-            options=type_hints
-        )
-        form = formbuilder.FormBuilder(
-            title=self.name
-        ).add_text(
-            "name", "Name", value=self.state.inputs['name']
-        )
-        form.inputs.append( type_input )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
 
     def get_data_outputs( self ):
         return [
@@ -484,28 +474,23 @@ class InputParameterModule( WorkflowModule ):
     optional = default_optional
 
     def get_inputs( self ):
-        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=self.default_name ) ),
-                     parameter_type=TextToolParameter( None, Element( "param", name="parameter_type", type="text", value=self.default_parameter_type ) ),
-                     optional=TextToolParameter( None, Element( "param", name="optional", type="text", value=self.default_optional ) ) )
-
-    def get_config_form_todo( self ):
-        form = formbuilder.FormBuilder(
-            title=self.name
-        ).add_text(
-            "name", "Name", value=self.state.inputs['name']
-        ).add_select(
-            "parameter_type", "Parameter Type", value=self.state.inputs['parameter_type'],
-            options=[
-                ('text', "Text"),
-                ('integer', "Integer"),
-                ('float', "Float"),
-                ('boolean', "Boolean (True or False)"),
-                ('color', "Color"),
-            ]
-        ).add_checkbox(
-            "optional", "Optional", value=self.state.inputs['optional']
-        )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako", module=self, form=form )
+        # TODO: Use an external xml or yaml file to load the parameter definition
+        name = self.state.inputs.get( "name", self.default_name )
+        parameter_type = self.state.inputs.get( "parameter_type", self.default_parameter_type )
+        optional = self.state.inputs.get( "optional", self.default_optional )
+        input_parameter_type = SelectToolParameter( None, XML(
+        '''
+        <param name="parameter_type" label="Parameter type" type="select" value="%s">
+            <option value="text">Text</option>
+            <option value="integer">Integer</option>
+            <option value="float">Float</option>
+            <option value="boolean">Boolean (True or False)</option>
+            <option value="color">Color</option>
+        </param>
+        ''' % parameter_type ) )
+        return odict([( "name", TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) ),
+                      ( "parameter_type", input_parameter_type ),
+                      ( "optional", BooleanToolParameter( None, Element( "param", name="optional", label="Optional", type="boolean", value=optional )))])
 
     def get_runtime_inputs( self, **kwds ):
         label = self.state.inputs.get( "name", self.default_name )
