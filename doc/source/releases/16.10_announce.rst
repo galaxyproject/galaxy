@@ -49,6 +49,32 @@ Deprecation Notices
 * API-like endpoints (returning JSON) that start with ``<galaxy>/root/`` in the URL are now deprecated and will be removed in future releases. Please use proper API (e.g. ``/api/histories`` or ``/api/tools``) to replace your implementations.
 * The ``jsonp`` parameter for search API endpoints in Tool Shed is deprecated and will be removed in the future. Instead the presence of a ``callback`` argument will trigger the JSONP format to be returned.
 
+Security
+========
+
+An arbitrary code execution vulnerability in two tools and an XSS vulnerability
+with the upload tool were identified this release cycle and have been fixed
+concurrently with the release. In addition, the fixes have been backported to
+older releases.
+
+The Galaxy Committers would like to thank David Wyde for disclosing these
+vulnerabilities. Details follow:
+
+1. The vulnerable tools are "Filter GFF data by attribute" and "Filter GFF data
+   by feature count", both of which are provided with and enabled by default in
+   the Galaxy server. These two tools share code with each other and the more
+   general "Filter data on any column using simple expressions" tool. The
+   latter was fixed in a previous security disclosure but these GFF variants of
+   the tool were missed when updating the Filter tool. These tools use the
+   Python ``eval`` and ``exec`` functions and do not properly sanitize input to
+   these functions. The fix for this issue has been applied to Galaxy releases
+   back to v14.10 and can be found in `Commit c1e3087`_
+
+2. An uploaded file's name was not properly sanitized, and so a specially
+   crafted filename uploaded to the Galaxy server could be used as an XSS
+   attack vector. The fix for this issue has been applied to Galaxy releases
+   back to v16.07 and can be found in `Pull Request 3278`_.
+
 Release Notes
 =============
 
