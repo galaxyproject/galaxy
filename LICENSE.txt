@@ -1,4 +1,4 @@
-Copyright (c) 2005-2015 Galaxy Contributors (see CONTRIBUTORS.md)
+Copyright (c) 2005-2016 Galaxy Contributors (see CONTRIBUTORS.md)
 
 Licensed under the Academic Free License version 3.0
 

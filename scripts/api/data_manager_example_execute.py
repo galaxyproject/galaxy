@@ -51,6 +51,7 @@ def dataset_is_terminal( hda_id, api_key, galaxy_url ):
     dataset_state = get_dataset_state( hda_id, api_key, galaxy_url )
     return dataset_state in [ 'ok', 'error' ]
 
+
 if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option( '-k', '--key', dest='api_key', action='store', type="string", default=None, help='API Key.' )

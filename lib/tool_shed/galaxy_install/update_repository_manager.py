@@ -7,11 +7,11 @@ import threading
 from sqlalchemy import false
 
 import tool_shed.util.shed_util_common as suc
+from galaxy import util
+from galaxy.util.postfork import register_postfork_function
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import repository_util
-from galaxy import util
-from galaxy.util.postfork import register_postfork_function
 
 log = logging.getLogger( __name__ )
 

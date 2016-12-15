@@ -241,7 +241,6 @@ var CenterPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
                 search  : location.search,
                 hash    : location.hash
             });
-            this.trigger( 'galaxy_main:load', location );
         }
     },
 
@@ -260,7 +259,7 @@ var CenterPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
             this.prev = view;
             this.$( '#galaxy_main' ).attr( 'src', 'about:blank' ).hide();
             this.$( '#center-panel' ).scrollTop( 0 ).append( view.$el ).show();
-            this.trigger( 'center-panel:load', view );
+            Galaxy.trigger( 'center-panel:load', view );
 
         } else {
             if( view ){

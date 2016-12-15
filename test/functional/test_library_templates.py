@@ -1,17 +1,17 @@
-from base.twilltestcase import TwillTestCase
+import galaxy.model
 from base.test_db_util import (
-    get_user,
-    get_private_role,
-    get_form,
-    get_library,
     get_folder,
-    get_user_address,
-    get_latest_ldda_by_name,
+    get_form,
     get_latest_hda,
+    get_latest_ldda_by_name,
+    get_library,
+    get_private_role,
+    get_user,
+    get_user_address,
     mark_obj_deleted,
     refresh
 )
-import galaxy.model
+from base.twilltestcase import TwillTestCase
 
 AddressField_form = None
 CheckboxField_form = None

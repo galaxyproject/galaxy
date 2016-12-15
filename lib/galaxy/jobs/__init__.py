@@ -8,6 +8,7 @@ import os
 import pwd
 import random
 import shutil
+import string
 import subprocess
 import sys
 import time
@@ -15,6 +16,8 @@ import traceback
 from abc import ABCMeta, abstractmethod
 from json import loads
 from xml.etree import ElementTree
+
+import six
 
 import galaxy
 from galaxy import model, util
@@ -28,11 +31,9 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
 
+from .datasets import (DatasetPath, NullDatasetPathRewriter,
+    OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
 from .output_checker import check_output
-from .datasets import TaskPathRewriter
-from .datasets import OutputsToWorkingDirectoryPathRewriter
-from .datasets import NullDatasetPathRewriter
-from .datasets import DatasetPath
 
 log = logging.getLogger( __name__ )
 
@@ -207,7 +208,7 @@ class JobConfiguration( object ):
         if not self.handlers:
             raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
-        self.default_handler_id = self.__get_default(handlers, self.handlers.keys())
+        self.default_handler_id = self.__get_default(handlers, list(self.handlers.keys()))
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -238,7 +239,7 @@ class JobConfiguration( object ):
                     self.destinations[tag].append(job_destination)
 
         # Determine the default destination
-        self.default_destination_id = self.__get_default(destinations, self.destinations.keys())
+        self.default_destination_id = self.__get_default(destinations, list(self.destinations.keys()))
 
         # Parse resources...
         resources = root.find('resources')
@@ -469,13 +470,20 @@ class JobConfiguration( object ):
         rval = {}
         for param in parent.findall('param'):
             key = param.get('id')
-            param_value = param.text
+            if key in ["container", "container_override"]:
+                from galaxy.tools.deps import requirements
+                containers = map(requirements.container_from_element, list(param))
+                param_value = map(lambda c: c.to_dict(), containers)
+            else:
+                param_value = param.text
+
             if 'from_environ' in param.attrib:
                 environ_var = param.attrib['from_environ']
                 param_value = os.environ.get(environ_var, param_value)
             elif 'from_config' in param.attrib:
                 config_val = param.attrib['from_config']
                 param_value = self.app.config.config_dict.get(config_val, param_value)
+
             rval[key] = param_value
         return rval
 
@@ -533,9 +541,8 @@ class JobConfiguration( object ):
         a list of IDs, the JobToolConfigurations for the first id in ``ids``
         matching a tool definition.
 
-        .. note::
-
-            You should not mix tool shed tool IDs, versionless tool shed IDs, and tool config tool IDs that refer to the same tool.
+        .. note:: You should not mix tool shed tool IDs, versionless tool shed
+             IDs, and tool config tool IDs that refer to the same tool.
 
         :param ids: Tool ID or IDs to fetch the JobToolConfiguration of.
         :type ids: list or str.
@@ -755,6 +762,7 @@ class JobWrapper( object ):
         self.sa_session = self.app.model.context
         self.extra_filenames = []
         self.command_line = None
+        self.dependencies = []
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
@@ -777,7 +785,7 @@ class JobWrapper( object ):
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
-        self.__commands_in_new_shell = self.app.config.commands_in_new_shell
+        self.__commands_in_new_shell = True
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
@@ -794,6 +802,10 @@ class JobWrapper( object ):
         """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
         """
         return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
+
+    @property
+    def requires_containerization(self):
+        return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -902,12 +914,15 @@ class JobWrapper( object ):
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
+        job.dependencies = self.tool.dependencies
         self.sa_session.add( job )
         self.sa_session.flush()
         # Return list of all extra files
         self.param_dict = tool_evaluator.param_dict
-        version_string_cmd = self.tool.version_string_cmd
-        if version_string_cmd:
+        version_string_cmd_raw = self.tool.version_string_cmd
+        if version_string_cmd_raw:
+            version_command_template = string.Template(version_string_cmd_raw)
+            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": compute_environment.tool_directory() })
             self.write_version_cmd = "%s > %s 2>&1" % ( version_string_cmd, compute_environment.version_path() )
         else:
             self.write_version_cmd = None
@@ -1298,11 +1313,10 @@ class JobWrapper( object ):
                             dataset.set_peek( is_multi_byte=True )
                         else:
                             dataset.set_peek()
-                    try:
-                        # set the name if provided by the tool
-                        dataset.name = context['name']
-                    except:
-                        pass
+                    for context_key in ['name', 'info', 'dbkey']:
+                        if context_key in context:
+                            context_value = context[context_key]
+                            setattr(dataset, context_key, context_value)
                 else:
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
@@ -1470,8 +1484,8 @@ class JobWrapper( object ):
         per_plugin_properties = self.app.job_metrics.collect_properties( job.destination_id, self.job_id, self.working_directory )
         if per_plugin_properties:
             log.info( "Collecting metrics for %s %s" % ( type(has_metrics).__name__, getattr( has_metrics, 'id', None ) ) )
-        for plugin, properties in per_plugin_properties.iteritems():
-            for metric_name, metric_value in properties.iteritems():
+        for plugin, properties in per_plugin_properties.items():
+            for metric_name, metric_value in properties.items():
                 if metric_value is not None:
                     has_metrics.add_metric( plugin, metric_name, metric_value )
 
@@ -1555,7 +1569,7 @@ class JobWrapper( object ):
     def get_mutable_output_fnames( self ):
         if self.output_paths is None:
             self.compute_outputs()
-        return filter( lambda dsp: dsp.mutable, self.output_paths )
+        return [dsp for dsp in self.output_paths if dsp.mutable]
 
     def get_output_hdas_and_fnames( self ):
         if self.output_hdas_and_paths is None:
@@ -1986,11 +2000,11 @@ class TaskWrapper(JobWrapper):
         return os.path.join( self.working_directory, os.path.basename( output_path ) )
 
 
+@six.add_metaclass(ABCMeta)
 class ComputeEnvironment( object ):
     """ Definition of the job as it will be run on the (potentially) remote
     compute server.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def output_paths( self ):
@@ -2098,7 +2112,7 @@ class ParallelismInfo(object):
     def __init__(self, tag):
         self.method = tag.get('method')
         if isinstance(tag, dict):
-            items = tag.iteritems()
+            items = tag.items()
         else:
             items = tag.attrib.items()
         self.attributes = dict( [ item for item in items if item[ 0 ] != 'method' ])

@@ -267,6 +267,29 @@
                         </div>
                     </div>
                     <div style="clear: both"></div>
+                    <!-- Convert from universal line endings to Posix line endings. -->
+                    <div class="form-row">
+                        <label>
+                            Convert universal line endings to Posix line endings:
+                        </label>
+                        <div class="form-row-input">
+                            <%
+                                if to_posix_lines == 'true':
+                                    checked = ' checked'
+                                else:
+                                    checked = ''
+                                if upload_option == 'upload_file':
+                                    name = 'files_0|to_posix_lines'
+                                else:
+                                    name = 'to_posix_lines'
+                                uni2posix = '<input type="checkbox" name="%s" value="true"%s/>Yes' % ( name, checked )
+                            %>
+                            ${uni2posix}
+                        </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                            Use this option if you need your datasets to be converted from uni to posix line endings.
+                        </div>
+                    </div>
                     <div class="form-row">
                         <label>Genome:</label>
                         <div class="form-row-input">

@@ -1,11 +1,16 @@
 """
 API operations on the contents of a history.
 """
+import os
+import re
 
 from galaxy import exceptions
 from galaxy import util
+from galaxy.util.streamball import StreamBall
+from galaxy.util.json import safe_dumps
 
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_raw as expose_api_raw
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 
 from galaxy.web.base.controller import BaseAPIController
@@ -261,9 +266,6 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             self.history_manager.error_unless_accessible( original.history, trans.user, current_history=trans.history )
             hda = self.hda_manager.copy( original, history=history )
 
-            # data_copy = original.copy( copy_children=True )
-            # hda = history.add_dataset( data_copy )
-
         trans.sa_session.flush()
         if not hda:
             return None
@@ -305,7 +307,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             for ld in traverse( folder ):
                 hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
                 hda_dict = self.hda_serializer.serialize_to_view( hda,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                    user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
                 rval.append( hda_dict )
         else:
             message = "Invalid 'source' parameter in request %s" % source
@@ -337,6 +339,12 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         else:
             message = "Invalid 'source' parameter in request %s" % source
             raise exceptions.RequestParameterInvalidException(message)
+
+        # if the consumer specified keys or view, use the secondary serializer
+        if 'view' in kwd or 'keys' in kwd:
+            return self.hdca_serializer.serialize_to_view( dataset_collection_instance,
+                user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+
         return self.__collection_dict( trans, dataset_collection_instance, view="element" )
 
     @expose_api_anonymous
@@ -543,7 +551,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         """
         rval = []
 
-        history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
+        history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user,
+            current_history=trans.history )
 
         filter_params = self.parse_filter_params( kwd )
         filters = self.history_contents_filters.parse_filters( filter_params )
@@ -593,3 +602,122 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if ORDER_BY_SEP_CHAR in order_by_string:
             return [ manager.parse_order_by( o ) for o in order_by_string.split( ORDER_BY_SEP_CHAR ) ]
         return manager.parse_order_by( order_by_string )
+
+    @expose_api_raw
+    def archive( self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd ):
+        """
+        archive( self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd )
+        * GET /api/histories/{history_id}/contents/archive/{id}
+        * GET /api/histories/{history_id}/contents/archive/{filename}.{format}
+            build and return a compressed archive of the selected history contents
+
+        :type   filename:  string
+        :param  filename:  (optional) archive name (defaults to history name)
+        :type   dry_run:   boolean
+        :param  dry_run:   (optional) if True, return the archive and file paths only
+                           as json and not an archive file
+
+        :returns:   archive file for download
+
+        .. note:: this is a volatile endpoint and settings and behavior may change.
+        """
+        # roughly from: http://stackoverflow.com/a/31976060 (windows, linux)
+        invalid_filename_char_regex = re.compile( r'[:<>|\\\/\?\* "]' )
+        # path format string - dot separator between id and name
+        id_name_format = u'{}.{}'
+
+        def name_to_filename( name, max_length=150, replace_with=u'_' ):
+            # TODO: seems like shortening unicode with [:] would cause unpredictable display strings
+            return invalid_filename_char_regex.sub( replace_with, name )[0:max_length]
+
+        # given a set of parents for a dataset (HDCAs, DC, DCEs, etc.) - build a directory structure that
+        # (roughly) recreates the nesting in the contents using the parent names and ids
+        def build_path_from_parents( parents ):
+            parent_names = []
+            for parent in parents:
+                # an HDCA
+                if hasattr( parent, 'hid' ):
+                    name = name_to_filename( parent.name )
+                    parent_names.append( id_name_format.format( parent.hid, name ) )
+                # a DCE
+                elif hasattr( parent, 'element_index' ):
+                    name = name_to_filename( parent.element_identifier )
+                    parent_names.append( id_name_format.format( parent.element_index, name ) )
+            # NOTE: DCs are skipped and use the wrapping DCE info instead
+            return parent_names
+
+        # get the history used for the contents query and check for accessibility
+        history = self.history_manager.get_accessible( trans.security.decode_id( history_id ), trans.user )
+        archive_base_name = filename or name_to_filename( history.name )
+
+        # this is the fn applied to each dataset contained in the query
+        paths_and_files = []
+
+        def build_archive_files_and_paths( content, *parents ):
+            archive_path = archive_base_name
+            if not self.hda_manager.is_accessible( content, trans.user ):
+                # if the underlying dataset is not accessible, skip it silently
+                return
+
+            content_container_id = content.hid
+            content_name = name_to_filename( content.name )
+            if parents:
+                if hasattr( parents[0], 'element_index' ):
+                    # if content is directly wrapped in a DCE, strip it from parents (and the resulting path)
+                    # and instead replace the content id and name with the DCE index and identifier
+                    parent_dce, parents = parents[0], parents[1:]
+                    content_container_id = parent_dce.element_index
+                    content_name = name_to_filename( parent_dce.element_identifier )
+                # reverse for path from parents: oldest parent first
+                archive_path = os.path.join( archive_path, *build_path_from_parents( parents )[::-1] )
+                # TODO: this is brute force - building the path each time instead of re-using it
+                # possibly cache
+
+            # add the name as the last element in the archive path
+            content_id_and_name = id_name_format.format( content_container_id, content_name )
+            archive_path = os.path.join( archive_path, content_id_and_name )
+
+            # ---- for composite files, we use id and name for a directory and, inside that, ...
+            if self.hda_manager.is_composite( content ):
+                # ...save the 'main' composite file (gen. html)
+                paths_and_files.append( ( content.file_name, os.path.join( archive_path, content.name + '.html' ) ) )
+                for extra_file in self.hda_manager.extra_files( content ):
+                    extra_file_basename = os.path.basename( extra_file )
+                    archive_extra_file_path = os.path.join( archive_path, extra_file_basename )
+                    # ...and one for each file in the composite
+                    paths_and_files.append( ( extra_file, archive_extra_file_path ) )
+
+            # ---- for single files, we add the true extension to id and name and store that single filename
+            else:
+                # some dataset names can contain their original file extensions, don't repeat
+                if not archive_path.endswith( '.' + content.extension ):
+                    archive_path += '.' + content.extension
+                paths_and_files.append( ( content.file_name, archive_path ) )
+
+        # filter the contents that contain datasets using any filters possible from index above and map the datasets
+        filter_params = self.parse_filter_params( kwd )
+        filters = self.history_contents_filters.parse_filters( filter_params )
+        self.history_contents_manager.map_datasets( history, build_archive_files_and_paths, filters=filters )
+
+        # if dry_run, return the structure as json for debugging
+        if dry_run == 'True':
+            trans.response.headers['Content-Type'] = 'application/json'
+            return safe_dumps( paths_and_files )
+
+        # create the archive, add the dataset files, then stream the archive as a download
+        archive_type_string = 'w|gz'
+        archive_ext = 'tgz'
+        if self.app.config.upstream_gzip:
+            archive_type_string = 'w|'
+            archive_ext = 'tar'
+        archive = StreamBall( archive_type_string )
+
+        for file_path, archive_path in paths_and_files:
+            archive.add( file_path, archive_path )
+
+        archive_name = '.'.join([ archive_base_name, archive_ext ])
+        trans.response.set_content_type( "application/x-tar" )
+        trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="{}"'.format( archive_name )
+        archive.wsgi_status = trans.response.wsgi_status()
+        archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+        return archive.stream

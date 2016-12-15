@@ -1,8 +1,9 @@
 from __future__ import print_function
-from collections import namedtuple
+
 import functools
-from json import dumps, loads
 import operator
+from collections import namedtuple
+from json import dumps, loads
 
 from .helpers import skip_without_tool
 from .test_workflows import BaseWorkflowsApiTestCase
@@ -215,7 +216,7 @@ test_data:
   text_input2: "samp1\t30.0\nsamp2\t40.0\n"
 """)
         tool_ids = [ "cat1", "collection_split_on_column", "cat_list" ]
-        job_ids = list(map( functools.partial(self._job_id_for_tool, jobs_summary.jobs ), tool_ids ))
+        job_ids = [ functools.partial(self._job_id_for_tool, jobs_summary.jobs )(_) for _ in tool_ids ]
         downloaded_workflow = self._extract_and_download_workflow(
             dataset_ids=[ "1", "2" ],
             job_ids=job_ids,
@@ -265,7 +266,7 @@ test_data:
         content: "samp1\t30.0\nsamp2\t40.0\n"
 """)
         tool_ids = [ "cat1", "collection_creates_pair", "cat_collection", "cat_list" ]
-        job_ids = list(map( functools.partial(self._job_id_for_tool, jobs_summary.jobs ), tool_ids ))
+        job_ids = [ functools.partial(self._job_id_for_tool, jobs_summary.jobs )(_) for _ in tool_ids ]
         downloaded_workflow = self._extract_and_download_workflow(
             dataset_collection_ids=[ "3" ],
             job_ids=job_ids,

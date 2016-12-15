@@ -266,7 +266,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                        strings_displayed=strings_displayed )
 
     def test_0060_uninstall_column_repository( self ):
-        '''Uninstall column_maker. Verify that convert_chars is installed and missing repository dependencies, and column_maker was in the right tool panel section.'''
+        '''Uninstall column_maker. Verify that convert_chars is installed and missing repository dependencies.'''
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name,
                                                                                             common.test_user_1_name )
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name,
@@ -283,7 +283,6 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         self.display_installed_repository_manage_page( installed_convert_repository,
                                                        strings_displayed=strings_displayed )
         self.test_db_util.install_session.refresh( installed_column_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_column_repository, 'column_maker' )
 
     def test_0065_reinstall_column_repository( self ):
         '''Reinstall column_maker without repository dependencies, verify both convert_chars and column_maker are installed.'''
@@ -329,7 +328,6 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         self.display_installed_repository_manage_page( installed_column_repository,
                                                        strings_displayed=strings_displayed )
         self.test_db_util.install_session.refresh( installed_convert_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_convert_repository, 'convert_chars' )
 
     def test_0075_uninstall_column_repository( self ):
         '''Uninstall column_maker, verify that both convert_chars and column_maker are uninstalled.'''
@@ -377,16 +375,3 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                               'Installed repository dependencies' ]
         self.display_installed_repository_manage_page( installed_convert_repository,
                                                        strings_displayed=strings_displayed )
-
-    def test_0085_uninstall_all_repositories( self ):
-        '''Uninstall convert_chars and column_maker to verify that they are in the right tool panel sections.'''
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name,
-                                                                                            common.test_user_1_name )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name,
-                                                                                            common.test_user_1_name )
-        self.deactivate_repository( installed_column_repository )
-        self.deactivate_repository( installed_convert_repository )
-        self.test_db_util.install_session.refresh( installed_column_repository )
-        self.test_db_util.install_session.refresh( installed_convert_repository )
-        self.check_galaxy_repository_tool_panel_section( installed_column_repository, '' )
-        self.check_galaxy_repository_tool_panel_section( installed_convert_repository, 'convert_chars' )

@@ -18,5 +18,6 @@ def invoke_migrate_main():
 
     main( repository=repo, url=db_url )
 
+
 if __name__ == "__main__":
     invoke_migrate_main()

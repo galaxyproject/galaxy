@@ -2,16 +2,24 @@
 Dependency management for tools.
 """
 
-import os.path
-
+import json
 import logging
-log = logging.getLogger( __name__ )
+import os.path
+import shutil
+
+from collections import OrderedDict
+
+from galaxy.util import (
+    hash_util,
+    plugin_config
+)
 
 from .resolvers import NullDependency
+from .resolvers.conda import CondaDependencyResolver, DEFAULT_ENSURE_CHANNELS
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
-from .resolvers.conda import CondaDependencyResolver
-from galaxy.util import plugin_config
+
+log = logging.getLogger( __name__ )
 
 # TODO: Load these from the plugins. Would require a two step initialization of
 # DependencyManager - where the plugins are loaded first and then the config
@@ -20,7 +28,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_prefix': None,
     'conda_exec': None,
     'conda_debug': None,
-    'conda_ensure_channels': 'conda-forge,r,bioconda,iuc',
+    'conda_ensure_channels': DEFAULT_ENSURE_CHANNELS,
     'conda_auto_install': False,
     'conda_auto_init': False,
     'conda_copy_dependencies': False,
@@ -42,7 +50,11 @@ def build_dependency_manager( config ):
             if value is CONFIG_VAL_NOT_FOUND:
                 value = default_value
             dependency_manager_kwds[key] = value
-        dependency_manager = DependencyManager( **dependency_manager_kwds )
+        if config.use_cached_dependency_manager:
+            dependency_manager_kwds['tool_dependency_cache_dir'] = config.tool_dependency_cache_dir
+            dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
+        else:
+            dependency_manager = DependencyManager( **dependency_manager_kwds )
     else:
         dependency_manager = NullDependencyManager()
 
@@ -88,22 +100,27 @@ class DependencyManager( object ):
         self.dependency_resolvers = self.__build_dependency_resolvers( conf_file )
 
     def dependency_shell_commands( self, requirements, **kwds ):
-        commands = []
+        requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
+        return [dependency.shell_commands(requirement) for requirement, dependency in requirement_to_dependency.items()]
+
+    def requirements_to_dependencies(self, requirements, **kwds):
+        """
+        Takes a list of requirements and returns a dictionary
+        with requirements as key and dependencies as value.
+        """
+        requirement_to_dependency = OrderedDict()
         for requirement in requirements:
-            log.debug( "Building dependency shell command for dependency '%s'", requirement.name )
-            dependency = NullDependency(version=requirement.version, name=requirement.name)
             if requirement.type in [ 'package', 'set_environment' ]:
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,
                                             type=requirement.type,
                                             **kwds )
                 log.debug(dependency.resolver_msg)
-            dependency_commands = dependency.shell_commands( requirement )
-            if not dependency_commands:
-                log.warning( "Failed to resolve dependency on '%s', ignoring", requirement.name )
-            else:
-                commands.append( dependency_commands )
-        return commands
+                if dependency.dependency_type:
+                    requirement_to_dependency[requirement] = dependency
+        if 'tool_instance' in kwds:
+            kwds['tool_instance'].dependencies = [dep.to_dict() for dep in requirement_to_dependency.values()]
+        return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
         return any( map( lambda r: isinstance( r, ToolShedPackageDependencyResolver ), self.dependency_resolvers ) )
@@ -149,3 +166,58 @@ class DependencyManager( object ):
     def __resolvers_dict( self ):
         import galaxy.tools.deps.resolvers
         return plugin_config.plugins_dict( galaxy.tools.deps.resolvers, 'resolver_type' )
+
+
+class CachedDependencyManager(DependencyManager):
+    def __init__(self, default_base_path, conf_file=None, **extra_config):
+        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, conf_file=conf_file, **extra_config)
+
+    def build_cache(self, requirements, **kwds):
+        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
+        hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
+        if os.path.exists(hashed_dependencies_dir):
+            if kwds.get('force_rebuild', False):
+                try:
+                    shutil.rmtree(hashed_dependencies_dir)
+                except Exception:
+                    log.warning("Could not delete cached dependencies directory '%s'" % hashed_dependencies_dir)
+                    raise
+            else:
+                log.debug("Cached dependencies directory '%s' already exists, skipping build", hashed_dependencies_dir)
+                return
+        [dep.build_cache(hashed_dependencies_dir) for dep in cacheable_dependencies]
+
+    def dependency_shell_commands( self, requirements, **kwds ):
+        """
+        Runs a set of requirements through the dependency resolvers and returns
+        a list of commands required to activate the dependencies. If dependencies
+        are cacheable and the cache exists, will generate commands to activate
+        cached environments.
+        """
+        resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
+        cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
+        hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
+        if os.path.exists(hashed_dependencies_dir):
+            [dep.set_cache_path(hashed_dependencies_dir) for dep in cacheable_dependencies]
+        commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
+        return commands
+
+    def hash_dependencies(self, resolved_dependencies):
+        """Return hash for dependencies"""
+        resolved_dependencies = [(dep.name, dep.version, dep.exact, dep.dependency_type) for dep in resolved_dependencies]
+        hash_str = json.dumps(sorted(resolved_dependencies))
+        return hash_util.new_secure_hash(hash_str)[:8]  # short hash
+
+    def get_hashed_dependencies_path(self, resolved_dependencies):
+        """
+        Returns the path to the hashed dependencies directory (but does not evaluate whether the path exists).
+
+        :param resolved_dependencies: list of resolved dependencies
+        :type resolved_dependencies: list
+
+        :return: path
+        :rtype: str
+        """
+        req_hashes = self.hash_dependencies(resolved_dependencies)
+        return os.path.abspath(os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes))

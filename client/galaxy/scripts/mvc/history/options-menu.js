@@ -2,8 +2,9 @@ define([
     "mvc/ui/popup-menu",
     "mvc/history/copy-dialog",
     "mvc/base-mvc",
-    "utils/localization"
-], function( PopupMenu, historyCopyDialog, BASE_MVC, _l ){
+    "utils/localization",
+    "mvc/webhooks"
+], function( PopupMenu, historyCopyDialog, BASE_MVC, _l, Webhooks ){
 
 'use strict';
 
@@ -23,7 +24,7 @@ var menu = [
     },
 
     {
-        html    : _l( 'History Actions' ),
+        html    : _l( 'Current History' ),
         header  : true,
         anon    : true
     },
@@ -59,15 +60,23 @@ var menu = [
     },
     {
         html    : _l( 'Delete' ),
-        confirm : _l( 'Really delete the current history?' ),
-        href    : 'history/delete_current',
+        anon    : true,
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete the current history?' ) ) ){
+                galaxy_main.window.location.href = 'history/delete?id=' + Galaxy.currHistoryPanel.model.id;
+            }
+        },
     },
     {
         html    : _l( 'Delete Permanently' ),
-        confirm : _l( 'Really delete the current history permanently? This cannot be undone.' ),
-        href    : 'history/delete_current?purge=True',
         purge   : true,
         anon    : true,
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel
+            &&  confirm( _l( 'Really delete the current history permanently? This cannot be undone.' ) ) ){
+                galaxy_main.window.location.href = 'history/delete?purge=True&id=' + Galaxy.currHistoryPanel.model.id;
+            }
+        },
     },
 
 
@@ -167,6 +176,35 @@ var menu = [
         href    : 'history/import_archive',
     }
 ];
+
+// Webhooks
+Webhooks.add({
+    url: 'api/webhooks/history-menu/all',
+    async: false,   // (hypothetically) slows down the performance
+    callback: function(webhooks) {
+        var webhooks_menu = [];
+
+        $.each(webhooks.models, function(index, model) {
+            var webhook = model.toJSON();
+            if (webhook.activate) {
+                webhooks_menu.push({
+                    html : _l( webhook.config.title ),
+                    // func: function() {},
+                    anon : true
+                });
+            }
+        });
+
+        if (webhooks_menu.length > 0) {
+            webhooks_menu.unshift({
+                html   : _l( 'Webhooks' ),
+                header : true
+            });
+            $.merge(menu, webhooks_menu);
+        }
+    }
+});
+
 
 function buildMenu( isAnon, purgeAllowed, urlRoot ){
     return _.clone( menu ).filter( function( menuOption ){

@@ -15,12 +15,12 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[0:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
 from base import driver_util
-log = driver_util.build_logger()
 
 # This is for the tool shed application.
-from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 from galaxy.web import buildapp as galaxybuildapp
+from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 
+log = driver_util.build_logger()
 
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>

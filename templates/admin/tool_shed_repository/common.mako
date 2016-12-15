@@ -13,7 +13,7 @@
                 onPostInit: function(isReloading, isError) {
                     // Re-fire onActivate, so the text is updated
                     this.reactivate();
-                }, 
+                },
                 fx: { height: "toggle", duration: 200 },
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='admin_toolshed', action='open_folder' )}",
@@ -65,17 +65,33 @@
     </script>
 </%def>
 
-<%def name="render_dependencies_section( install_resolver_dependencies_check_box, repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False )">
+<%def name="render_dependencies_section( install_resolver_dependencies_check_box, repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict, revision_label=None, export=False, requirements_status=None )">
     <style type="text/css">
         #dependency_table{ table-layout:fixed;
                            width:100%;
                            overflow-wrap:normal;
                            overflow:hidden;
-                           border:0px; 
+                           border:0px;
                            word-break:keep-all;
                            word-wrap:break-word;
                            line-break:strict; }
     </style>
+    <script type="text/javascript">
+         $(function(){
+             $(".detail-section").hide();
+             var hidden = true;
+             $(".toggle-detail-section").click(function(e){
+                 e.preventDefault();
+                 hidden = !hidden;
+                 if (hidden === true){
+                     $(".toggle-detail-section").text('Display Details');
+                 } else{
+                     $(".toggle-detail-section").text('Hide Details');
+                 }
+                 $(".detail-section").toggle();
+             })
+         });
+     </script>
     <%
         from markupsafe import escape
         class RowCounter( object ):
@@ -98,19 +114,32 @@
             revision_label_str = ' '
     %>
     <div class="form-row">
+        <p>
+            By default Galaxy will install all needed dependencies for${revision_label_str}the repository. See the
+            <a target="_blank" href="https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html">
+                dependency resolver documentation
+            </a>.
+        </p>
+        <p>
+            You can control how dependencies are installed (this is an advanced option, if in doubt, use the default)
+            <button class="toggle-detail-section">
+                Display Details
+            </button>
+        </p>
+        <p>
+        </p>
+     </div>
+   %if export:
+    <div class="form-row">
         <div class="toolParamHelp" style="clear: both;">
             <p>
-                %if export:
-                    The following additional repositories are required by${revision_label_str}the <b>${repository.name|h}</b> repository
-                    and they can be exported as well.
-                %else:
-                    These dependencies can be automatically handled with${revision_label_str}the installed repository, providing significant
-                    benefits, and Galaxy includes various features to manage them.
-                %endif
+                The following additional repositories are required by${revision_label_str}the <b>${repository.name|h}</b> repository and they can be exported as well.
             </p>
         </div>
     </div>
+    %endif
     <div style="clear: both"></div>
+    <div class="detail-section">
     %if repository_dependencies_root_folder or missing_repository_dependencies_root_folder:
         %if repository_dependencies_check_box:
             <div class="form-row">
@@ -122,9 +151,9 @@
                 ${repository_dependencies_check_box.get_html()}
                 <div class="toolParamHelp" style="clear: both;">
                     %if export:
-                        Un-check to skip exporting the following additional repositories that are required by this repository.
+                        Select to export the following additional repositories that are required by this repository.
                     %else:
-                        Un-check to skip automatic installation of these additional repositories required by this repository.
+                        Select to automatically install these additional Tool Shed repositories required by this repository.
                     %endif
                 </div>
             </div>
@@ -154,14 +183,14 @@
     %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         %if install_tool_dependencies_check_box is not None:
             <div class="form-row">
-                <label>When available, install tool shed managed dependencies?</label>
+                <label>When available, install Tool Shed managed tool dependencies?</label>
                 <% disabled = trans.app.config.tool_dependency_dir is None %>
                 ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
                 <div class="toolParamHelp" style="clear: both;">
                     %if disabled:
                         Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
                     %else:
-                        Un-check to skip automatic handling of these tool dependencies.
+                        Select to automatically handle tool dependencies via Tool Shed.
                     %endif
                 </div>
             <div style="clear: both"></div>
@@ -189,15 +218,16 @@
     </div>
     %endif
     <div style="clear: both"></div>
-    %if install_resolver_dependencies_check_box:
+    %if requirements_status and install_resolver_dependencies_check_box:
     <div class="form-row">
-        <label>When available, install externally managed dependencies (e.g. conda)? <i>Beta</i></label>
+        <label>When available, install <a href="https://docs.galaxyproject.org/en/master/admin/conda_faq.html" target="_blank">Conda</a> managed tool dependencies?</label>
         ${install_resolver_dependencies_check_box.get_html()}
         <div class="toolParamHelp" style="clear: both;">
-            Un-check to skip automatic installation of tool dependencies.
+            Select to automatically install tool dependencies via Conda.
         </div>
     </div>
     %endif
+    </div>
 </%def>
 
 <%def name="render_readme_section( containers_dict )">
@@ -225,8 +255,8 @@
 
 <%def name="dependency_status_updater()">
     <script type="text/javascript">
-        // Tool dependency status updater - used to update the installation status on the Tool Dependencies Grid. 
-        // Looks for changes in tool dependency installation status using an async request. Keeps calling itself 
+        // Tool dependency status updater - used to update the installation status on the Tool Dependencies Grid.
+        // Looks for changes in tool dependency installation status using an async request. Keeps calling itself
         // (via setTimeout) until dependency installation status is neither 'Installing' nor 'Building'.
         var tool_dependency_status_updater = function( dependency_status_list ) {
             // See if there are any items left to track
@@ -264,7 +294,7 @@
                         cell1.html( val[ 'html_status' ] );
                         dependency_status_list[ index ] = val;
                     });
-                    tool_dependency_status_updater( dependency_status_list ); 
+                    tool_dependency_status_updater( dependency_status_list );
                 },
             });
         };
@@ -273,7 +303,7 @@
 
 <%def name="repository_installation_status_updater()">
     <script type="text/javascript">
-        // Tool shed repository status updater - used to update the installation status on the Repository Installation Grid. 
+        // Tool shed repository status updater - used to update the installation status on the Repository Installation Grid.
         // Looks for changes in repository installation status using an async request. Keeps calling itself (via setTimeout) until
         // repository installation status is not one of: 'New', 'Cloning', 'Setting tool versions', 'Installing tool dependencies',
         // 'Loading proprietary datatypes'.
@@ -319,7 +349,7 @@
                         cell1.html( val[ 'html_status' ] );
                         repository_status_list[ index ] = val;
                     });
-                    tool_shed_repository_status_updater( repository_status_list ); 
+                    tool_shed_repository_status_updater( repository_status_list );
                 },
             });
         };
@@ -327,7 +357,7 @@
 </%def>
 
 <%def name="tool_dependency_installation_updater()">
-    <% 
+    <%
         can_update = False
         if query.count():
             # Get the first tool dependency to get to the tool shed repository.

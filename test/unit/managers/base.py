@@ -2,19 +2,19 @@
 """
 from __future__ import print_function
 
-import os
-import imp
 import json
-
-from six import string_types
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-import galaxy_mock
+import os
+import sys
+import unittest
 
 import sqlalchemy
+from six import string_types
 
 from galaxy.managers.users import UserManager
+
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock
 
 # =============================================================================
 admin_email = 'admin@admin.admin'
@@ -23,7 +23,7 @@ default_password = '123456'
 
 
 # =============================================================================
-class BaseTestCase( test_utils.unittest.TestCase ):
+class BaseTestCase( unittest.TestCase ):
 
     @classmethod
     def setUpClass( cls ):
@@ -34,7 +34,7 @@ class BaseTestCase( test_utils.unittest.TestCase ):
         print( '\n', '-' * 20, 'end class', cls )
 
     def __init__( self, *args ):
-        test_utils.unittest.TestCase.__init__( self, *args )
+        unittest.TestCase.__init__( self, *args )
 
     def setUp( self ):
         self.log( '.' * 20, 'begin test', self )
@@ -137,4 +137,4 @@ class CreatesCollectionsMixin( object ):
 # =============================================================================
 if __name__ == '__main__':
     # or more generally, nosetests test_resourcemanagers.py -s -v
-    test_utils.unittest.main()
+    unittest.main()

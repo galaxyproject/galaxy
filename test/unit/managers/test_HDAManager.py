@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-import imp
-import os
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 import sqlalchemy
 from six import string_types
@@ -350,6 +345,7 @@ class HDAManagerTestCase( HDATestCase ):
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
+
 
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 

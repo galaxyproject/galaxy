@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy import and_, or_
 
+from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_util
@@ -111,3 +112,4 @@ class ToolVersionManager( object ):
                                                                        parent_id=tool_version_using_parent_id.id )
                     context.add( tool_version_association )
                     context.flush()
+        self.app.tool_version_cache = ToolVersionCache(self.app)

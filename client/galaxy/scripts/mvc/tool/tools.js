@@ -351,7 +351,6 @@ var ToolSearch = Backbone.Model.extend({
         search_hint_string: "search tools",
         min_chars_for_search: 3,
         clear_btn_url: "",
-        search_url: "",
         visible: true,
         query: "",
         results: null,
@@ -633,6 +632,12 @@ var ToolSearchView = Backbone.View.extend({
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
+
+        // Adjust top for issue 2907 depending on whether the messagebox is visible.
+        if ($("#messagebox").is(":visible")) {
+            this.$el.css("top","95px");
+        }
+
         this.$el.find('[title]').tooltip();
         return this;
     },

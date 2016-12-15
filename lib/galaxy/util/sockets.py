@@ -1,7 +1,7 @@
+import random
 import shlex
 import socket
 import subprocess
-import random
 
 
 def unused_port(range=None):

@@ -72,7 +72,6 @@
     padding: 2px 10px 2px 10px;
     margin-top: @ui-margin-vertical-large;
     margin-bottom: 0px;
-    float: left;
     width: 100%;
     display: none;
 }
@@ -201,6 +200,48 @@
     }
 }
 
+// thumbnails
+.ui-thumbnails {
+    margin-bottom: 10px;
+    .ui-thumbnails-grid {
+        .ui-thumbnails-item {
+            padding: 5px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius:5px;
+            .ui-thumbnails-title {
+                text-align: center;
+                font-size: 0.9em;
+                word-wrap: break-work;
+                font-weight: bold;
+                width: 100px;
+            }
+            .ui-thumbnails-image {
+                padding: 10px;
+                width: 100px;
+                height: 86px;
+            }
+            .ui-thumbnails-description-title {
+                font-weight: bold;
+            }
+            .ui-thumbnails-description-text {
+                word-wrap: break-word;
+            }
+        }
+        .ui-thumbnail-current {
+            border-color:#66afe9;
+            background-color:#EEEEFF;
+            outline:0;
+            -webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+            box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
+        }
+        .ui-thumbnails-item-float {
+            float: left;
+            height: 140px;
+        }
+    }
+}
+
 // tables
 .ui-table {
     &:extend(.grid);
@@ -254,6 +295,7 @@
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
     overflow: visible;
+    clear: both;
     .ui-form-title {
         word-wrap: break-word;
         font-weight: bold;
@@ -299,8 +341,13 @@
         margin-top: @ui-margin-vertical;
         border-color: transparent !important;
         box-shadow: none !important;
+        height: auto !important;
+    }
+    .workflow-right .right-content {
+        margin-bottom: 10px;
     }
 }
+
 .ui-form-element-disabled {
     &:extend(.ui-form-element all);
     .ui-form-title {
@@ -339,6 +386,12 @@
     }
 }
 
+.ui-form-section {
+    border-left: solid 3px @form-heading-bg;
+    border-radius: @border-radius-large !important;
+    padding-left: 10px;
+}
+
 .ui-form-composite {
     max-width: 900px;
     .ui-form-header {
@@ -349,7 +402,7 @@
         }
     }
     .ui-steps {
-        overflow: scroll;
+        overflow: auto;
         margin-top: 15px;
         border: dashed 1px darken(@form-heading-bg, 30%);
         border-radius: @border-radius-base;
@@ -386,7 +439,6 @@
         border-bottom: solid @form-border 1px;
         padding: 2px 8px;
         overflow: visible;
-        float: right;
         width:100%;
         .portlet-title {
             word-wrap: break-word;
@@ -430,11 +482,6 @@
     .portlet-content.nopadding, .portlet-body.nopadding {
         padding: 0px;
     }
-    .portlet-footer {
-        margin-top: 5px;
-        padding-left: 10px;
-        padding-right: 10px;
-    }
     .portlet-backdrop {
         display: none;
         z-index: 10;
@@ -468,9 +515,6 @@
     .portlet-content {
         padding-right: 0px;
     }
-    .portlet-footer {
-        margin-top: 0px;
-    }
 }
 
 .ui-portlet-panel {
@@ -493,6 +537,7 @@
 .ui-portlet-narrow {
     &:extend(.ui-portlet-limited all);
     border: none;
+    margin-bottom: @ui-margin-vertical-large;
     .portlet-header {
         border-radius: @border-radius-base;
         .portlet-operations {

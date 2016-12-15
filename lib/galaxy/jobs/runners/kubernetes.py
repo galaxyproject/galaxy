@@ -3,29 +3,33 @@ Offload jobs to a Kubernetes cluster.
 """
 
 import logging
+from os import environ as os_environ
+
+from six import text_type
 
 from galaxy import model
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
-from os import environ as os_environ
-from six import text_type
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState
+)
 
 # pykube imports:
 try:
-    import operator
-
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
-    from pykube.objects import Job
-    from pykube.objects import Pod
+    from pykube.objects import (
+        Job,
+        Pod
+    )
 except ImportError as exc:
-    operator = None
+    KubeConfig = None
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
 
 log = logging.getLogger(__name__)
 
-__all__ = ['KubernetesJobRunner']
+__all__ = ('KubernetesJobRunner', )
 
 
 class KubernetesJobRunner(AsynchronousJobRunner):
@@ -36,7 +40,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __init__(self, app, nworkers, **kwargs):
         # Check if pykube was importable, fail if not
-        assert operator is not None, K8S_IMPORT_MESSAGE
+        assert KubeConfig is not None, K8S_IMPORT_MESSAGE
         runner_param_specs = dict(
             k8s_config_path=dict(map=str, default=os_environ.get('KUBECONFIG', None)),
             k8s_use_service_account=dict(map=bool, default=False),

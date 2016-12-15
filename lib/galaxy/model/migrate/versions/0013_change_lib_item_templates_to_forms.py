@@ -51,6 +51,7 @@ def display_migration_details():
     print("an index with a shortened name.")
     print("========================================")
 
+
 LibraryInfoAssociation_table = Table( 'library_info_association', metadata,
                                       Column( "id", Integer, primary_key=True),
                                       Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),

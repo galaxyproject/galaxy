@@ -3,22 +3,22 @@ tool evaluation. Such extensive "fixtures" are something of an anti-pattern
 so use of this should be limitted to tests of very 'extensive' classes.
 """
 
-from collections import defaultdict
 import os.path
-import tempfile
 import shutil
 import string
+import tempfile
+from collections import defaultdict
 
-from galaxy.util.bunch import Bunch
-from galaxy.web.security import SecurityHelper
+import galaxy.datatypes.registry
 import galaxy.model
+from galaxy.jobs import NoopQueue
 from galaxy.model import mapping
 from galaxy.tools import Tool
-from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.jobs import NoopQueue
-from galaxy.tools.parser import get_tool_source
 from galaxy.tools.deps.containers import NullContainerFinder
-import galaxy.datatypes.registry
+from galaxy.tools.parser import get_tool_source
+from galaxy.util.bunch import Bunch
+from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.web.security import SecurityHelper
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -119,6 +119,7 @@ class MockApp( object ):
             len_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' ),
             builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
             migrated_tools_config=os.path.join(test_directory, "migrated_tools_conf.xml"),
+            server_name="test_server",
         )
 
         # Setup some attributes for downstream extension by specific tests.
@@ -151,6 +152,25 @@ class MockApp( object ):
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self.name = "galaxy"
+        self._toolbox_lock = MockLock()
+        self.tool_version_cache = Bunch(app=self,
+                                        tool_version_by_id={},
+                                        tool_version_by_tool_id={},
+                                        tool_id_to_parent_id={},
+                                        parent_id_to_tool_id={})
+
+    def wait_for_toolbox_reload(self, toolbox):
+        # TODO: If the tpm test case passes, does the operation really
+        # need to wait.
+        return True
+
+
+class MockLock( object ):
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, traceback):
+        pass
 
 
 class MockContext(object):
@@ -187,4 +207,4 @@ class MockQuery(object):
         return self.class_objects.get(id, None)
 
 
-__all__ = [ UsesApp ]
+__all__ = ( 'UsesApp', )

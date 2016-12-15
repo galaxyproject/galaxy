@@ -1,6 +1,6 @@
-from galaxy.util import bunch
 from galaxy import model
 from galaxy.tools.parameters import basic
+from galaxy.util import bunch
 
 from .test_parameter_parsing import BaseParameterTestCase
 
