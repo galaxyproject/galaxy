@@ -28,7 +28,7 @@ TOOL_TYPES_NO_TEST = ( DataManagerTool, )
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
 
-    def do_it( self, testdef ):
+    def do_it( self, testdef, resource_parameters={} ):
         """
         Run through a tool test case.
         """
@@ -53,7 +53,7 @@ class ToolTestCase( TwillTestCase ):
         expected_failure_occurred = False
         try:
             try:
-                tool_response = galaxy_interactor.run_tool( testdef, test_history )
+                tool_response = galaxy_interactor.run_tool( testdef, test_history, resource_parameters=resource_parameters )
                 data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
                 data_collection_list = tool_response.output_collections
             except RunToolException as e:

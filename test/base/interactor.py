@@ -218,7 +218,7 @@ class GalaxyInteractorApi( object ):
         self.uploads[ os.path.basename(fname) ] = self.uploads[ fname ] = self.uploads[ name ] = {"src": "hda", "id": hid}
         return self.__wait_for_history( history_id )
 
-    def run_tool( self, testdef, history_id ):
+    def run_tool( self, testdef, history_id, resource_parameters={} ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
 
@@ -235,6 +235,11 @@ class GalaxyInteractorApi( object ):
                 else:
                     new_values.append( value )
             inputs_tree[ key ] = new_values
+
+        if resource_parameters:
+            inputs_tree["__job_resource|__job_resource__select"] = "yes"
+            for key, value in resource_parameters.items():
+                inputs_tree["__job_resource|%s" % key] = value
 
         # HACK: Flatten single-value lists. Required when using expand_grouping
         for key, value in inputs_tree.items():

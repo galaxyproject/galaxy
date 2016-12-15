@@ -442,6 +442,17 @@ do
               shift 1
           fi
           ;;
+      -i|-integration|--integration)
+          report_file="run_integration_tests.html"
+          test_script="./scripts/nosetests.py"
+          if [ $# -gt 1 ]; then
+              integration_extra=$2
+              shift 2
+          else
+              integration_extra='test/integration'
+              shift 1
+          fi
+          ;;
       -q|-qunit|--qunit)
           # Requires grunt installed and dependencies configured see
           # test/qunit/README.txt for more information.
@@ -559,6 +570,8 @@ elif [ -n "$test_id" ]; then
     extra_args="functional.test_toolbox$class"
 elif [ -n "$unit_extra" ]; then
     extra_args="--with-doctest $unit_extra"
+elif [ -n "$integration_extra" ]; then
+    extra_args="$integration_extra"
 elif [ -n "$1" ] ; then
     extra_args="$1"
 else
