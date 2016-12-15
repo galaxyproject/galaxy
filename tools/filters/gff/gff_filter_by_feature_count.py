@@ -8,7 +8,93 @@ Usage:
 import sys
 from galaxy import eggs
 from galaxy.datatypes.util.gff_util import GFFReaderWrapper
+
 from bx.intervals.io import GenomicInterval
+
+from ast import Module, parse, walk
+
+AST_NODE_TYPE_WHITELIST = [
+    'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
+    'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
+    'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
+    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript',
+    'Name',
+]
+
+
+BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
+STRING_AND_LIST_METHODS = [ name for name in dir('') + dir([]) if not name.startswith('_') ]
+VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
+# Name blacklist isn't strictly needed - but provides extra peace of mind.
+NAME_BLACKLIST = ["exec", "eval", "globals", "locals", "__import__", "__builtins__"]
+
+
+def __check_name( ast_node ):
+    name = ast_node.id
+    return name not in NAME_BLACKLIST
+
+
+def check_expression( text ):
+    """
+
+    >>> check_expression("c1=='chr1' and c3-c2>=2000 and c6=='+'")
+    True
+    >>> check_expression("eval('1+1')")
+    False
+    >>> check_expression("import sys")
+    False
+    >>> check_expression("[].__str__")
+    False
+    >>> check_expression("__builtins__")
+    False
+    >>> check_expression("'x' in globals")
+    False
+    >>> check_expression("'x' in [1,2,3]")
+    True
+    >>> check_expression("c3=='chr1' and c5>5")
+    True
+    >>> check_expression("c3=='chr1' and d5>5")
+    True
+    >>> check_expression("c3=='chr1' and c5>5 or exec")
+    False
+    >>> check_expression("type(c1) != type(1)")
+    False
+    >>> check_expression("c1.split(',')[1] == '1'")
+    False
+    >>> check_expression("exec 1")
+    False
+    >>> check_expression("str(c2) in [\\\"a\\\",\\\"b\\\"]")
+    False
+    >>> check_expression("__import__('os').system('touch /tmp/OOPS')")
+    False
+    """
+    try:
+        module = parse( text )
+    except SyntaxError:
+        return False
+
+    if not isinstance(module, Module):
+        return False
+    statements = module.body
+    if not len( statements ) == 1:
+        return False
+    expression = statements[0]
+    if expression.__class__.__name__ != 'Expr':
+        return False
+
+    for ast_node in walk( expression ):
+        ast_node_class = ast_node.__class__.__name__
+
+        # Toss out everything that is not a "simple" expression,
+        # imports, error handling, etc...
+        if ast_node_class not in AST_NODE_TYPE_WHITELIST:
+            return False
+
+        if ast_node_class == "Name" and not __check_name(ast_node):
+            return False
+
+    return True
+
 
 # Valid operators, ordered so that complex operators (e.g. '>=') are
 # recognized before simple operators (e.g. '>')
@@ -68,7 +154,12 @@ def __main__():
         for interval in feature.intervals:
             if interval.feature == feature_name:
                 count += 1
-        if eval( '%s %s' % ( count, condition ) ):
+        eval_text = '%s %s' % ( count, condition )
+        if not check_expression(eval_text):
+            print >> sys.stderr, "Invalid condition: %s, cannot filter." % condition
+            sys.exit(1)
+
+        if eval(eval_text):
             # Keep feature.
             for interval in feature.intervals:
                 out.write( "\t".join(interval.fields) + '\n' )
