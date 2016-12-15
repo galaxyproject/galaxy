@@ -574,22 +574,36 @@
             <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
         </destination>
 
-        <!-- Jobs that hit the walltime on one destination can be automatically
-             resubmitted to another destination. Walltime detection is
-             currently only implemented in the slurm runner.
+        <!-- Jobs can be re-submitted for various reasons (to the same destination or others,
+             with or without a short delay). For instance, jobs that hit the walltime on one
+             destination can be automatically resubmitted to another destination. Re-submission
+             is defined on a per-destination basis using ``resubmit`` tags. Re-submission only
+             happens currently in response to problems in the job runner - so for instance if a
+             job fails to allocate memory but the job runner doesn't detect this and completes
+             the job normally but the exit code indicates the error - the job failure
+             re-submission won't run yet (this will be added in the future).
 
-             Multiple resubmit tags can be defined, the first resubmit matching
-             the terminal condition of a job will be used.
+             Multiple `resubmit` tags can be defined, the first resubmit condition that is true
+             (i.e. evaluates to a Python truthy value) will be used for a particular job failure.
 
-             The 'condition' attribute is optional, if not present, the
-             resubmit destination will be used for all conditions. The
-             conditions currently implemented are:
+             The ``condition`` attribute is optional, if not present, the
+             resubmit destination will be used for all relevant failure types.
+             Conditions are expressed as Python-like expressions (a fairly safe subset of Python
+             is available). These expressions include math and logical operators, numbers,
+             strings, etc.... The following variables are available in these expressions:
 
-               - "walltime_reached"
-               - "memory_limit_reached"
+               - "walltime_reached" (True if and only if the job runner indicates a walltime maximum was reached)
+               - "memory_limit_reached" (True if and only if the job runner indicates a memory limit was hit)
+               - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
+               - "attempt" (the re-submission attempt number this is)
+               - "seconds_since_queued" (the number of seconds since the last time the job was in a queued state within Galaxy)
+               - "seconds_running" (the number of seconds the job was in a running state within Galaxy)
 
-             The 'handler' tag is optional, if not present, the job's original
-             handler will be reused for the resubmitted job.
+             The ``handler`` attribute is optional, if not present, the job's original
+             handler will be reused for the resubmitted job. The ``destination`` attriubte
+             is optional, if not present the job's original destination will be reused for the
+             re-submission. The ``delay`` attribute is optional, if present it will cause the job to
+             delay for that number of seconds before being re-submitted. 
         -->
         <destination id="short_fast" runner="slurm">
             <param id="nativeSpecification">--time=00:05:00 --nodes=1</param>
@@ -602,6 +616,11 @@
         <destination id="smallmem" runner="slurm">
             <param id="nativeSpecification">--mem-per-cpu=512</param>
             <resubmit condition="memory_limit_reached" destination="bigmem" />
+        </destination>
+        <destination id="retry_on_unknown_problems" runner="slurm">
+            <!-- Just retry the job 5 times if un-categories errors occur backing
+                 off by 30 more seconds between attempts. -->
+            <resubmit condition="unknown_error and attempt &lt;= 5" delay="attempt * 30" />
         </destination>
         <!-- Any tag param in this file can be set using an environment variable or using
              values from galaxy.ini using the from_environ and from_config attributes
