@@ -11,7 +11,7 @@
 
 cd `dirname $0`
 
-./scripts/common_startup.sh --skip-samples
+. ./scripts/common_startup.sh --skip-samples
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 

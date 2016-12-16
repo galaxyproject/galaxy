@@ -2,7 +2,7 @@
 
 cd `dirname $0`
 
-./scripts/common_startup.sh
+. ./scripts/common_startup.sh
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
