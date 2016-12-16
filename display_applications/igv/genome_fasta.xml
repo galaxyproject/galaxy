@@ -89,4 +89,4 @@ ${site_link}?sessionURL=${fasta_file.qp}&amp;genome=${fasta_file.qp}&amp;merge=t
         <param type="data" name="fasta_file" url="galaxy_${DATASET_HASH}.${dataset.ext}" />
     </dynamic_links>
 </display>
-<!-- Dan Blankenberg -->
+<!-- Delphine Lariviere - Dan Blankenberg -->
