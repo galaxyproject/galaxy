@@ -542,3 +542,66 @@ class SnpSiftDbNSFP( Text ):
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'
+
+
+class Smat(Text):
+    file_ext = "smat"
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "ESTScan scores matrices (%s)" % (nice_size(dataset.get_size()))
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.blurb = "ESTScan scores matrices"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff(self, filename):
+        """
+        The use of ESTScan implies the creation of scores matrices which
+        reflect the codons preferences in the studied organisms.  The
+        ESTScan package includes scripts for generating these files.  The
+        output of these scripts consists of the matrices, one for each
+        isochor, and which look like this:
+
+        FORMAT: hse_4is.conf CODING REGION 6 3 1 s C+G: 0 44
+        -1 0 2 -2
+        2 1 -8 0
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test_space.txt')
+        >>> Smat().sniff(fname)
+        False
+        >>> fname = get_test_fname('test_tab.bed')
+        >>> Smat().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.smat')
+        >>> Smat().sniff(fname)
+        True
+        """
+        line_no = 0
+        with open(filename, "r") as fh:
+            line_no += 1
+            if line_no > 10000:
+                return True
+            line = fh.readline(500)
+            if line_no == 1 and not line.startswith('FORMAT'):
+                # The first line is always the start of a format section.
+                return False
+            if not line.startswith('FORMAT'):
+                if line.find('\t') >= 0:
+                    # Smat files are not tabular.
+                    return False
+                items = line.split()
+                if len(items) != 4:
+                    return False
+                for item in items:
+                    # Make sure each item is an integer.
+                    if re.match(r"[-+]?\d+$", item) is None:
+                        return False
+        return True
