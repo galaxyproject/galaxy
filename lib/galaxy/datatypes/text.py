@@ -108,7 +108,7 @@ class Ipynb( Json ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
-            dataset.blurb = "IPython Notebook"
+            dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -129,7 +129,7 @@ class Ipynb( Json ):
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         config = trans.app.config
-        trust = getattr( config, 'trust_ipython_notebook_conversion', False )
+        trust = getattr( config, 'trust_jupyter_notebook_conversion', False )
         if trust:
             return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
         else:
@@ -144,13 +144,13 @@ class Ipynb( Json ):
             ofilename = ofile_handle.name
             ofile_handle.close()
             try:
-                cmd = 'ipython nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
+                cmd = 'jupyter nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
                 log.info("Calling command %s" % cmd)
                 subprocess.call(cmd, shell=True)
                 ofilename = '%s.html' % ofilename
             except:
                 ofilename = dataset.file_name
-                log.exception( 'Command "%s" failed. Could not convert the IPython Notebook to HTML, defaulting to plain text.' % cmd )
+                log.exception( 'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.' % cmd )
             return open( ofilename )
 
     def set_meta( self, dataset, **kwd ):

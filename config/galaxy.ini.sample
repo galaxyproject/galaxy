@@ -785,8 +785,8 @@ nglims_config_file = tool-data/nglims.yaml
 # notebooks in Galaxy histories.  This process may allow users to execute
 # arbitrary code or serve arbitrary HTML.  If enabled, IPython must be
 # available and on Galaxy's PATH, to do this run
-# `pip install jinja2 pygments ipython` in Galaxy's virtualenv.
-#trust_ipython_notebook_conversion = False
+# `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
+#trust_jupyter_notebook_conversion = False
 
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It

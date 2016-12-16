@@ -229,8 +229,8 @@ Docker host with
     $ docker -H tcp://gx-docker:4243 run -it busybox sh
 
 So far so good! Now we need to configure Galaxy to use our new Docker host
-to start the Interactive Environments. For that we need to edit the IPython GIE
-configuration, ``ipython.ini`` to use our custom docker host
+to start the Interactive Environments. For that we need to edit the Jupyter GIE
+configuration, ``jupyter.ini`` to use our custom docker host
 
 .. code-block:: ini
 
