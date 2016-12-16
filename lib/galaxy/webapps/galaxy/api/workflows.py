@@ -357,34 +357,47 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         POST /api/workflows/build_module
         Builds module details including a tool model for the workflow editor.
         """
+        type = payload.get( 'type' )
+        inputs = payload.get( 'inputs', {} )
+        annotation = inputs.get( 'annotation', '' )
+        label = inputs.get( 'label', '' )
         tool_id = payload.get( 'tool_id' )
-        tool_version = payload.get( 'tool_version' )
-        tool_inputs = payload.get( 'inputs', {} )
-        annotation = payload.get( 'annotation', tool_inputs.get( 'annotation', '' ) )
-
-        # load tool
-        tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
-
-        # initialize module
-        module = module_factory.from_dict( trans, {
-            'type'          : 'tool',
-            'tool_id'       : tool.id,
-            'tool_state'    : None
-        } )
-
-        # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
-        module.recover_state( tool_model[ 'state_inputs' ] )
-        return {
-            'tool_model'        : tool_model,
-            'tool_state'        : module.get_state(),
-            'data_inputs'       : module.get_data_inputs(),
-            'data_outputs'      : module.get_data_outputs(),
-            'tool_errors'       : module.get_errors(),
-            'form_html'         : module.get_config_form(),
-            'annotation'        : annotation,
-            'post_job_actions'  : module.get_post_job_actions(tool_inputs)
-        }
+        if tool_id:
+            tool_version = payload.get( 'tool_version' )
+            tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
+            module = module_factory.from_dict( trans, {
+                'type'          : 'tool',
+                'tool_id'       : tool.id,
+                'tool_state'    : None
+            } )
+            tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
+            module.recover_state( tool_model[ 'state_inputs' ] )
+            return {
+                'tool_model'        : tool_model,
+                'tool_state'        : module.get_state(),
+                'data_inputs'       : module.get_data_inputs(),
+                'data_outputs'      : module.get_data_outputs(),
+                'tool_errors'       : module.get_errors(),
+                'form_html'         : module.get_config_form(),
+                'annotation'        : annotation,
+                'post_job_actions'  : module.get_post_job_actions(inputs)
+            }
+        else:
+            print payload
+            module = module_factory.from_dict( trans, {
+                'type'          : type,
+                'label'         : label
+            } )
+            module.recover_state( inputs )
+            return {
+                'label'         : module.label,
+                'tool_state'    : module.get_state(),
+                'data_inputs'   : module.get_data_inputs(),
+                'data_outputs'  : module.get_data_outputs(),
+                'tool_errors'   : module.get_errors(),
+                'form_html'     : module.get_config_form(),
+                'annotation'    : annotation
+            }
 
     #
     # -- Helper methods --
