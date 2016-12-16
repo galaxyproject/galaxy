@@ -1,5 +1,9 @@
 #!/bin/sh
 
+: ${GALAXY_VIRTUAL_ENV:=.venv}
+printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
+. "$GALAXY_VIRTUAL_ENV/bin/activate"
+
 cd `dirname $0`
 for file in $1/split_info*.json
 do
