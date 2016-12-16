@@ -107,15 +107,18 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             var wp_count = 0;
             this.wp_inputs = {};
             function _handleWorkflowParameter( value, callback ) {
-                var wp_name = self._isWorkflowParameter( value );
-                wp_name && callback( self.wp_inputs[ wp_name ] = self.wp_inputs[ wp_name ] || {
-                    label   : wp_name,
-                    name    : wp_name,
-                    type    : 'text',
-                    color   : 'hsl( ' + ( ++wp_count * 100 ) + ', 70%, 30% )',
-                    style   : 'ui-form-wp-source',
-                    links   : []
-                });
+                var re = /\$\{(.+?)\}/g;
+                while ( match = re.exec( String( value ) ) ) {
+                    var wp_name = match[ 1 ];
+                    callback( self.wp_inputs[ wp_name ] = self.wp_inputs[ wp_name ] || {
+                        label   : wp_name,
+                        name    : wp_name,
+                        type    : 'text',
+                        color   : 'hsl( ' + ( ++wp_count * 100 ) + ', 70%, 30% )',
+                        style   : 'ui-form-wp-source',
+                        links   : []
+                    });
+                }
             }
             _.each( this.steps, function( step, i ) {
                 _.each( self.parms[ i ], function( input, name ) {
@@ -467,13 +470,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.wp_form && this.wp_form.portlet[ enabled ? 'enable' : 'disable' ]();
             this.history_form && this.history_form.portlet[ enabled ? 'enable' : 'disable' ]();
             _.each( this.forms, function( form ) { form && form.portlet[ enabled ? 'enable' : 'disable' ]() } );
-        },
-
-        /** Handle workflow parameter */
-        _isWorkflowParameter: function( value ) {
-            if ( String( value ).substring( 0, 1 ) === '$' ) {
-                return Utils.sanitize( value.substring( 2,  value.length - 1 ) )
-            }
         },
 
         /** Is data input module/step */
