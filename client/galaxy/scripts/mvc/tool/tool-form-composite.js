@@ -316,7 +316,10 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                 _.each( input.wp_linked, function( wp_link ) {
                                     var wp_field = self.wp_form.field_list[ self.wp_form.data.match( wp_link ) ];
                                     if ( wp_field ) {
-                                        new_value = new_value.replace( new RegExp( '\\${' + wp_link + '}', 'g' ), wp_field.value() );
+                                        wp_value = wp_field.value();
+                                        if ( wp_value ) {
+                                            new_value = new_value.replace( new RegExp( '\\${' + wp_link + '}', 'g' ), wp_field.value() );
+                                        }
                                     }
                                 });
                             }
