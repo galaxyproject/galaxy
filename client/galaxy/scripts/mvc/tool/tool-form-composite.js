@@ -124,8 +124,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 _.each( self.parms[ i ], function( input, name ) {
                     _handleWorkflowParameter( input.value, function( wp_input ) {
                         wp_input.links.push( step );
-                        input.wp_linked = input.wp_linked || [];
-                        input.wp_linked.push( wp_input.name );
+                        input.wp_linked = true;
                         input.type      = 'text';
                         input.backdrop  = true;
                         input.style     = 'ui-form-wp-target';
@@ -312,16 +311,15 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                     new_value = { values: [ new_value.values[ 0 ] ] };
                                 }
                             } else if ( input.wp_linked ) {
-                                new_value = String( input.value || '' );
-                                _.each( input.wp_linked, function( wp_link ) {
-                                    var wp_field = self.wp_form.field_list[ self.wp_form.data.match( wp_link ) ];
-                                    if ( wp_field ) {
-                                        wp_value = wp_field.value();
-                                        if ( wp_value ) {
-                                            new_value = new_value.replace( new RegExp( '\\${' + wp_link + '}', 'g' ), wp_field.value() );
-                                        }
+                                new_value = input.value;
+                                var re = /\$\{(.+?)\}/g;
+                                while ( match = re.exec( input.value ) ) {
+                                    var wp_field = self.wp_form.field_list[ self.wp_form.data.match( match[ 1 ] ) ];
+                                    var wp_value = wp_field && wp_field.value();
+                                    if ( wp_value ) {
+                                        new_value = new_value.replace( new RegExp( '\\' + match[ 0 ], 'g' ), wp_value );
                                     }
-                                });
+                                }
                             }
                             if ( new_value !== undefined ) {
                                 field.value( new_value );
