@@ -124,10 +124,9 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 _.each( self.parms[ i ], function( input, name ) {
                     _handleWorkflowParameter( input.value, function( wp_input ) {
                         wp_input.links.push( step );
-                        input.wp_linked = wp_input.name;
-                        input.color     = wp_input.color;
+                        input.wp_linked = input.wp_linked || [];
+                        input.wp_linked.push( wp_input.name );
                         input.type      = 'text';
-                        input.value     = null;
                         input.backdrop  = true;
                         input.style     = 'ui-form-wp-target';
                     });
@@ -313,8 +312,13 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                                     new_value = { values: [ new_value.values[ 0 ] ] };
                                 }
                             } else if ( input.wp_linked ) {
-                                var wp_field = self.wp_form.field_list[ self.wp_form.data.match( input.wp_linked ) ];
-                                wp_field && ( new_value = wp_field.value() );
+                                new_value = String( input.value || '' );
+                                _.each( input.wp_linked, function( wp_link ) {
+                                    var wp_field = self.wp_form.field_list[ self.wp_form.data.match( wp_link ) ];
+                                    if ( wp_field ) {
+                                        new_value = new_value.replace( new RegExp( '\\${' + wp_link + '}', 'g' ), wp_field.value() );
+                                    }
+                                });
                             }
                             if ( new_value !== undefined ) {
                                 field.value( new_value );
