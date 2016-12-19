@@ -707,7 +707,7 @@ class GalaxyTestDriver(TestDriver):
         )
         return functional.test_toolbox
 
-    def run_tool_test(self, tool_id, index=0):
+    def run_tool_test(self, tool_id, index=0, resource_parameters={}):
         import functional.test_toolbox
         functional.test_toolbox.toolbox = self.app.toolbox
         tool = self.app.toolbox.get_tool(tool_id)
@@ -718,7 +718,7 @@ class GalaxyTestDriver(TestDriver):
         test_case.master_api_key = get_master_api_key()
         test_case.user_api_key = get_user_api_key()
         test_case.setUp()
-        test_case.do_it(testdef)
+        test_case.do_it(testdef, resource_parameters=resource_parameters)
 
 
 def drive_test(test_driver_class):

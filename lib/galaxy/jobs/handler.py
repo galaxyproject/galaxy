@@ -149,21 +149,26 @@ class JobHandlerQueue( object ):
                     self.queue.put( ( job.id, job.tool_id ) )
             else:
                 # Already dispatched and running
-                job_wrapper = self.job_wrapper( job )
-                # Use the persisted destination as its params may differ from
-                # what's in the job_conf xml
-                job_destination = JobDestination(id=job.destination_id, runner=job.job_runner_name, params=job.destination_params)
-                # resubmits are not persisted (it's a good thing) so they
-                # should be added back to the in-memory destination on startup
-                try:
-                    config_job_destination = self.app.job_config.get_destination( job.destination_id )
-                    job_destination.resubmit = config_job_destination.resubmit
-                except KeyError:
-                    log.warning( '(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)', job.id, job.destination_id )
-                job_wrapper.job_runner_mapper.cached_job_destination = job_destination
+                job_wrapper = self.__recover_job_wrapper( job )
                 self.dispatcher.recover( job, job_wrapper )
         if self.sa_session.dirty:
             self.sa_session.flush()
+
+    def __recover_job_wrapper(self, job):
+        # Already dispatched and running
+        job_wrapper = self.job_wrapper( job )
+        # Use the persisted destination as its params may differ from
+        # what's in the job_conf xml
+        job_destination = JobDestination(id=job.destination_id, runner=job.job_runner_name, params=job.destination_params)
+        # resubmits are not persisted (it's a good thing) so they
+        # should be added back to the in-memory destination on startup
+        try:
+            config_job_destination = self.app.job_config.get_destination( job.destination_id )
+            job_destination.resubmit = config_job_destination.resubmit
+        except KeyError:
+            log.debug( '(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)', job.id, job.destination_id )
+        job_wrapper.job_runner_mapper.cached_job_destination = job_destination
+        return job_wrapper
 
     def __monitor( self ):
         """
@@ -260,10 +265,10 @@ class JobHandlerQueue( object ):
         for job in resubmit_jobs:
             log.debug( '(%s) Job was resubmitted and is being dispatched immediately', job.id )
             # Reassemble resubmit job destination from persisted value
-            jw = self.job_wrapper( job )
-            jw.job_runner_mapper.cached_job_destination = JobDestination( id=job.destination_id, runner=job.job_runner_name, params=job.destination_params )
-            self.increase_running_job_count(job.user_id, jw.job_destination.id)
-            self.dispatcher.put( jw )
+            jw = self.__recover_job_wrapper( job )
+            if jw.is_ready_for_resubmission(job):
+                self.increase_running_job_count(job.user_id, jw.job_destination.id)
+                self.dispatcher.put( jw )
         # Iterate over new and waiting jobs and look for any that are
         # ready to run
         new_waiting_jobs = []

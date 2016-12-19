@@ -14,6 +14,7 @@ august 20 2007
 
 import logging
 import os
+import re
 import sys
 import urllib
 from cgi import escape
@@ -27,6 +28,9 @@ from galaxy.web import url_for
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
+
+# https://genome.ucsc.edu/goldenpath/help/hgGenomeHelp.html
+VALID_GENOME_GRAPH_MARKERS = re.compile('^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
 
 
 class GenomeGraphs( Tabular ):
@@ -172,16 +176,25 @@ class GenomeGraphs( Tabular ):
         >>> GenomeGraphs().sniff( fname )
         True
         """
-        f = open(filename, 'r')
-        f.readline()  # header
-        rows = [f.readline().split()[1:] for x in range(3)]  # small sample, trimming first column
+        with open(filename, 'r') as f:
+            buf = f.read(1024)
+
+        rows = [l.split() for l in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
+
+        if len(rows) < 1:
+            return False
+
         for row in rows:
-            if len(row) < 1:
-                # Must actually have at least one value
+            if len(row) < 2:
+                # Must actually have a marker and at least one numeric value
                 return False
+            first_val = row[0]
+            if not VALID_GENOME_GRAPH_MARKERS.match(first_val):
+                return False
+            rest_row = row[1:]
             try:
-                [float(x) for x in row]  # first col has been removed
-            except:
+                [float(x) for x in rest_row]  # first col has been removed
+            except ValueError:
                 return False
         return True
 

@@ -9,6 +9,17 @@ releases and packaging. This governance does not include infrastructure such
 as Galaxy's Trello board, the Galaxy mailing lists, etc... or other Galaxy-
 related projects belonging to the ``galaxyproject`` organization on GitHub.
 
+
+Procedure Documents
+===================
+
+The documents whose modification requires the special process specified below
+are:
+
+- this document
+- CODE_OF_CONDUCT_.
+
+
 Committers
 ==========
 
@@ -22,9 +33,9 @@ outlined below. In particular, in most cases
 direct commit access is not allowed and this access is restricted to merging
 pull requests issued by others.
 
-Committers may participate in formal votes - these votes typically include
-votes to modify team membership, merge pull requests, and modify or clarify
-the procedures outlined in this document and CODE_OF_CONDUCT_.
+*Committers* may participate in all formal votes, including votes to modify team
+membership, merge pull requests, and modify the *Procedure Documents* listed
+above.
 
 Members
 -------
@@ -45,9 +56,8 @@ Members
 - Eric Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
-- Nitesh Turaga (@nitesh1989)
+- Nitesh Turaga (@nturaga)
 - Marius van den Beek (@mvdbeek)
-
 
 Membership
 ----------
@@ -82,6 +92,27 @@ should not be interpreted as a condemnation of these inactive members but
 merely as a reflection of a desire to keep this group focused enough to remain
 effective.
 
+Direct Commit Access
+--------------------
+
+A *committer* may only commit directly to the Galaxy repository (i.e. outside of
+a pull request and not following the procedures described below) the following
+two categories of changes:
+
+* Patches for serious security vulnerabilities.
+* Cherry-picking and/or merging of existing approved commits to other branches.
+
+
+Release branches
+================
+
+A *release branch* is created every few months from the ``dev`` branch of the
+Galaxy repository. A newly created release branch is in a *freezed* state until
+the committers decide that it is ready for public consumption. At this point, a
+release tag will be assigned to a commit in the branch, changing the release
+state to *tagged*.
+
+
 Handling Pull Requests
 ======================
 
@@ -93,14 +124,15 @@ Votes on pull requests should take the form of
 `+1, 0, -1, and fractions <http://www.apache.org/foundation/voting.html>`_
 as outlined by the Apache Foundation.
 
-Pull requests modifying pre-existing releases should be restricted to bug fixes
-and require at least 2 *+1* binding votes from someone other than the author of
-the pull request with no *-1* binding votes.
+Pull requests modifying freezed and tagged release branches should be restricted
+to bug fixes. Pull requests modifying tagged release branches require at least 2
+*+1* binding votes from someone other than the author of the pull request with
+no *-1* binding votes.
 
-Pull requests changing or clarifying the procedures governing this repository:
+Pull requests changing or clarifying the *Procedure Documents* (listed above):
 
 - Must be made to the ``dev`` branch of this repository.
-- Must remain open for at least 192 hours (unless every qualified committer has
+- Must remain open for at least 192 hours (unless every qualified *committer* has
   voted).
 - Require binding *+1* votes from at least 25% of qualified *committers* with no
   *-1* binding votes.
@@ -163,20 +195,10 @@ invokes a mandatory, minimum 72 hour, review period.
   things merged without proper review and consensus.
 - The person issuing the *-1* vote will, upon commenting *-1* with technical
   justification per the vetoes section, immediately open a pull request to
-  revert the original merge in question. If any committer other than the *-1*
+  revert the original merge in question. If any *committer* other than the *-1*
   issuer deems the justification technical - regardless of whether they agree
-  with justification - that committer must then merge the pull request to
+  with justification - that *committer* must then merge the pull request to
   revert.
-
-Direct Commit Access
---------------------
-
-The Galaxy *committers* group may only commit directly to Galaxy (i.e. outside
-of a pull request and not following the procedures described here) the
-following two categories of patches:
-
-* Patches for serious security vulnerabilities.
-* Cherry-picking and/or merging of existing approved commits to other branches.
 
 Labeling and Milestones
 -----------------------

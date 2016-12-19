@@ -234,12 +234,6 @@
                 .icon-btn {
                     margin-right: @icon-btn-margin;
                 }
-                // have to reapply here - dropdown wrapped in div
-                .icon-btn.visualization-btn {
-                    margin-left: 0px;
-                    border-radius: 0px 3px 3px 0px;
-                    border-right: 1px solid @icon-btn-border;
-                }
             }
             .right {
                 .icon-btn-group();
@@ -295,6 +289,14 @@
             .display-application:last-child {
                 .list-item .vertical-spacing;
             }
+        }
+
+        .toolhelp {
+            width: 100%;
+            background:#eee;
+            border-radius: 3px;
+            margin-top: 5px;
+            padding: 3px;
         }
 
         .dataset-peek {

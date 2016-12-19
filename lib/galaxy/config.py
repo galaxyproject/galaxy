@@ -276,7 +276,11 @@ class Configuration( object ):
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
-        self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
+        if "trust_jupyter_notebook_conversion" in kwargs:
+            trust_jupyter_notebook_conversion = string_as_bool( kwargs.get( 'trust_jupyter_notebook_conversion', False ) )
+        else:
+            trust_jupyter_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
+        self.trust_jupyter_notebook_conversion = trust_jupyter_notebook_conversion
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
@@ -706,7 +710,7 @@ class Configuration( object ):
         return resolve_path( path, self.root )
 
     def guess_galaxy_port(self):
-        # Code derived from IPython work ie.mako
+        # Code derived from Jupyter work ie.mako
         config = configparser.SafeConfigParser({'port': '8080'})
         if self.config_file:
             config.read( self.config_file )

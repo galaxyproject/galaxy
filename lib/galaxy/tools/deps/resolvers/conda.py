@@ -31,7 +31,7 @@ from ..resolvers import (
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "conda-forge,r,bioconda,iuc"
+DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,r,defaults,conda-forge"
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +53,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_prefix = os.path.join(
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
+        conda_prefix = os.path.abspath(conda_prefix)
 
         self.conda_prefix_parent = os.path.dirname(conda_prefix)
 

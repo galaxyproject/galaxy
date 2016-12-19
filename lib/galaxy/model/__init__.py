@@ -733,6 +733,10 @@ class Job( object, JobLike, Dictifiable ):
             config_value = default
         return config_value
 
+    @property
+    def seconds_since_update( self ):
+        return (galaxy.model.orm.now.now() - self.update_time).total_seconds()
+
 
 class Task( object, JobLike ):
     """

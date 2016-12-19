@@ -39,10 +39,10 @@ Run a specific API test:
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
-    docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum 
+    docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
     GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
 
-Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver): 
+Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
     ./run_tests.sh -selenium test/selenium_tests/test_registration.py:RegistrationTestCase.test_reregister_username_fails
 
 Note About Selenium Tests:
@@ -81,7 +81,7 @@ carefully ahead of time.
 
 External Tests:
 
-A small subset of tests can be run against an existing Galxy
+A small subset of tests can be run against an existing Galaxy
 instance. The external Galaxy instance URL can be configured with
 --external_url. If this is set, either --external_master_key or
 --external_user_key must be set as well - more tests can be executed
@@ -247,6 +247,7 @@ then
        DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
        shift
     fi
+    echo "Launching docker container for testing..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi
@@ -327,6 +328,7 @@ do
       -clean_pyc|--clean_pyc)
           find lib -iname '*pyc' -exec rm -rf {} \;
           find test -iname '*pyc' -exec rm -rf {} \;
+          shift
           ;;
       -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
@@ -437,6 +439,17 @@ do
               shift 2
           else
               unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners --exclude dictobj --exclude=jstree lib test/unit'
+              shift 1
+          fi
+          ;;
+      -i|-integration|--integration)
+          report_file="run_integration_tests.html"
+          test_script="./scripts/nosetests.py"
+          if [ $# -gt 1 ]; then
+              integration_extra=$2
+              shift 2
+          else
+              integration_extra='test/integration'
               shift 1
           fi
           ;;
@@ -557,6 +570,8 @@ elif [ -n "$test_id" ]; then
     extra_args="functional.test_toolbox$class"
 elif [ -n "$unit_extra" ]; then
     extra_args="--with-doctest $unit_extra"
+elif [ -n "$integration_extra" ]; then
+    extra_args="$integration_extra"
 elif [ -n "$1" ] ; then
     extra_args="$1"
 else
@@ -599,4 +614,3 @@ else
     # functional tests.
     grunt --gruntfile=$gruntfile $grunt_task $grunt_args
 fi
-

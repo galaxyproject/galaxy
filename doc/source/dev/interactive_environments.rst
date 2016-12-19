@@ -14,21 +14,21 @@ plugins, for those familiar with developing those
 
 .. code-block:: console
 
-    $ tree $GALAXY_ROOT/config/plugins/interactive_environments/ipython/
-    config/plugins/interactive_environments/ipython/
+    $ tree $GALAXY_ROOT/config/plugins/interactive_environments/jupyter
+    config/plugins/interactive_environments/jupyter
     ├── config
-    │   ├── ipython.ini
-    │   ├── ipython.ini.sample
-    │   └── ipython.xml
+    │   ├── jupyter.ini
+    │   ├── jupyter.ini.sample
+    │   └── jupyter.xml
     ├── static
     │   └── js
-    │       └── ipython.js
+    │       └── jupyter.js
     └── templates
-        ├── ipython.mako
+        ├── jupyter.mako
         └── notebook.ipynb
 
 We'll use the variable ``{gie}`` to stand in for the name of your GIE. It
-should match ``[a-z]+``, like ``ipython`` or ``rstudio``. Here you can see the
+should match ``[a-z]+``, like ``jupyter`` or ``rstudio``. Here you can see the
 ``config/`` directory with a ``{gie}.ini.sample`` providing docker and image
 configuration, and then ``{gie}.xml`` which outlines that it is a GIE.
 
@@ -37,7 +37,7 @@ you are actively developing a GIE, you'll need to restart Galaxy after adding
 any resources to that file, before they can be accessed in the browser.
 
 Lastly, and most importantly, there's the templates folder. This normally just
-contains ``{gie}.mako``, however the IPython file needs an extra template file.
+contains ``{gie}.mako``, however the Jupyter file needs an extra template file.
 
 First Steps, Configuration
 --------------------------
@@ -186,9 +186,9 @@ We'll continue appending to our ``helloworld.mako`` the HTML code that's actuall
     </body>
     </html>
 
-We've glossed over some of the features of this file, but most IEs do a significant amount of "magic" in the top half of the mako template. For instance, the IPython notebook:
+We've glossed over some of the features of this file, but most IEs do a significant amount of "magic" in the top half of the mako template. For instance, the Jupyter notebook:
 
-- If the user is trying to run the IPython GIE Visualization on an existing notebook in their history, then that gets loaded into the docker container via the temp directory and set as the default notebook
+- If the user is trying to run the Jupyter GIE Visualization on an existing notebook in their history, then that gets loaded into the docker container via the temp directory and set as the default notebook
 - Otherwise a default notebook is built for the user.
 
 The RStudio notebook:
@@ -252,7 +252,7 @@ This function is very short. Historically, the GIE process involved a complex da
 
 Since the NodeJS proxy takes care of authentication/authorization, we can
 reduce the helloworld ``_handle_notebook_loading`` function to a simple
-``append_notebook`` call. You may wish to look at the IPython and RStudio GIEs
+``append_notebook`` call. You may wish to look at the Jupyter and RStudio GIEs
 for examples of the complex things that can be done at every step.
 
 The GIE Container
@@ -301,7 +301,7 @@ Here's an example Dockerfile for our helloworld container
     ADD ./startup.sh /startup.sh
     ADD ./monitor_traffic.sh /monitor_traffic.sh
 
-    # /import will be the universal mount-point for IPython
+    # /import will be the universal mount-point for Jupyter
     # The Galaxy instance can copy in data that needs to be present to the
     # container
     RUN mkdir /import
@@ -426,11 +426,11 @@ As you can see, a LOT is going on! We'll break it down further:
 
     - The user's API key is provided, allowing you to access datasets and
       submit jobs on their behalf. If you have an environment like
-      IPython/RStudio, it is **highly recommended** that you provide some magic
+      Jupyter/RStudio, it is **highly recommended** that you provide some magic
       by which the user can use their API key without embedding it in the
       notebook. If you do embed it somehow in a document that gets saved to
       their history, anyone can impersonate that user if they get a hold of it.
-      In the IPython GIE we have a variable that just runs
+      In the Jupyter GIE we have a variable that just runs
       ``os.environ.get('API_KEY')`` to avoid embedding it in their notebook.
     - A CORS Origin is provided for very strict servers, but it may be easier
       to simply void CORS requirements within the nginx proxy in your
@@ -449,7 +449,7 @@ As you can see, a LOT is going on! We'll break it down further:
       which is a small utility script to provide API access to Galaxy to get
       and fetch data, based on those environment variables.
     - The ``HISTORY_ID`` of the current history the user is on is provided. In
-      the IPython/RStudio containers, we provide a dead simple method for users
+      the Jupyter/RStudio containers, we provide a dead simple method for users
       to download datasets from their current history which will be visible to
       them on the right hand side of their screen.
     - A ``PROXY_PREFIX`` is provided which should be used in the nginx conf.
@@ -466,9 +466,9 @@ As you can see, a LOT is going on! We'll break it down further:
 Most of this information is usually required to build friendly, easy-to-use
 GIEs. One of the strong points of GIEs is their magic interaction with Galaxy.
 Here we've mounted a volume read-only, but in real life you may wish to provide
-connectivity like IPython and RStudio provide, allowing the user to load
+connectivity like Jupyter and RStudio provide, allowing the user to load
 datasets on demand for interactive analysis, and then to store analysis
-artefacts (and a log of what was done inside the container, à la IPython's
+artefacts (and a log of what was done inside the container, à la Jupyter's
 "notebooks") back to their current history.
 
 If everything went well, at this point you should see a directory listing show up:
