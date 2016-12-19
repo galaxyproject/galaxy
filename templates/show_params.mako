@@ -126,16 +126,16 @@
     </td>
 </%def>
 
+<h2>
+% if tool:
+    ${tool.name | h}
+% else:
+    Unknown Tool
+% endif
+</h2>
+
+<h3>Dataset Information</h3>
 <table class="tabletip">
-    <thead>
-        <tr><th colspan="2" style="font-size: 120%;">
-            % if tool:
-                Tool: ${tool.name | h}
-            % else:
-                Unknown Tool
-            % endif
-        </th></tr>
-    </thead>
     <tbody>
         <%
         encoded_hda_id = trans.security.encode_id( hda.id )
@@ -148,6 +148,12 @@
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
         <tr><td>Format:</td><td>${hda.ext | h}</td></tr>
+    </tbody>
+</table>
+
+<h3>Job Information</h3>
+<table class="tabletip">
+    <tbody>
         %if job:
             <tr><td>Galaxy Tool ID:</td><td>${ job.tool_id | h }</td></tr>
             <tr><td>Galaxy Tool Version:</td><td>${ job.tool_version | h }</td></tr>
@@ -169,19 +175,10 @@
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
             <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
         %endif
-        %if job and job.command_line and trans.user_is_admin():
-            <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
-        %endif
-        %if job and trans.user_is_admin():
-            <% job_metrics = trans.app.job_metrics %>
-            %for metric in sorted(job.metrics, key=lambda x:x.metric_name):
-                <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
-                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
-            %endfor
-        %endif
+    </tbody>
 </table>
-<br />
 
+<h3>Tool Parameters</h3>
 <table class="tabletip">
     <thead>
         <tr>
@@ -205,8 +202,51 @@
     ${ render_msg( 'One or more of your original parameters may no longer be valid or displayed properly.', status='warning' ) }
 %endif
 
+
+<h3>Inheritance Chain</h3>
+<div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
+
+% for dep in inherit_chain:
+    <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
+    <div class="inherit">
+        '${dep[0].name | h}' in ${dep[1]}<br/>
+    </div>
+% endfor
+
+
+
+<h3>Command Line</h3>
+%if job and job.command_line and trans.user_is_admin():
+<pre style="white-space: pre-wrap; background: #1d1f21; color: white; padding: 1em;">
+${ job.command_line | h }</pre>
+%endif
+
+<style type="text/css">
+table.info_data_table {
+    table-layout: fixed;
+    word-break: break-word;
+}
+table.info_data_table td:nth-child(1) {
+    width: 25%;
+}
+</style>
+
+%if job and trans.user_is_admin():
+<h3>Job Metrics</h3>
+<table class="tabletip info_data_table">
+    <tbody>
+        <% job_metrics = trans.app.job_metrics %>
+        %for metric in sorted(job.metrics, key=lambda x:x.metric_name):
+            <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
+            <% metric_title = metric_title.replace(' (runtime environment variable)', '') %>
+            <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
+        %endfor
+    </tbody>
+</table>
+%endif
+
 %if job and job.dependencies:
-    <br>
+<h3>Job Dependencies</h3>
     <table class="tabletip">
         <thead>
         <tr>
@@ -226,8 +266,9 @@
 
         </tbody>
     </table>
-    <br />
 %endif
+
+
 
 <script type="text/javascript">
 $(function(){
@@ -239,13 +280,3 @@ $(function(){
     })
 });
 </script>
-
-    <h3>Inheritance Chain</h3>
-    <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
-
-    % for dep in inherit_chain:
-        <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
-        <div class="inherit">
-            '${dep[0].name | h}' in ${dep[1]}<br/>
-        </div>
-    % endfor
