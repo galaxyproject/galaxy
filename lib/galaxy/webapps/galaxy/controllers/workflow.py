@@ -693,7 +693,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
             'data_inputs': module.get_data_inputs(),
             'data_outputs': module.get_data_outputs(),
-            'form_html': module.get_config_form(),
+            'config_form': module.get_config_form(),
             'annotation': ""
         }
 

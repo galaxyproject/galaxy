@@ -436,11 +436,11 @@ class WorkflowContentsManager(UsesAnnotations):
             annotation_str = ""
             if step_annotation:
                 annotation_str = step_annotation.annotation
-            form_html = None
+            config_form = None
             if trans.history:
                 # If in a web session, attach form html. No reason to do
                 # so for API requests.
-                form_html = module.get_config_form()
+                config_form = module.get_config_form()
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -452,7 +452,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'errors': module.get_errors(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
-                'form_html': form_html,
+                'config_form': config_form,
                 'annotation': annotation_str,
                 'post_job_actions': {},
                 'uuid': str(step.uuid) if step.uuid else None,

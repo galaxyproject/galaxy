@@ -665,7 +665,7 @@ define([
             var new_parameter_content = "";
             var matches = [];
             $.each(this.workflow.nodes, function (k, node){
-                var form_matches = node.form_html.match(parameter_re);
+                var form_matches = node.config_form.match(parameter_re);
                 if (form_matches){
                     matches = matches.concat(form_matches);
                 }
@@ -714,7 +714,6 @@ define([
             if ($current.length > 0 && $current.find('.section-row').length == 0) {
                 $current.remove();
             }
-
             // check if tool form already exists
             if ($container.find('#' + id).length == 0) {
                 var $el = $('<div id="' + id + '" class="' + cls + '"/>');
@@ -725,13 +724,12 @@ define([
                     options.workflow = this.workflow;
                     options.datatypes = this.datatypes;
                     form = new ToolForm.View(options);
-                } else if ( content.inputs ) {
+                } else if ( content && content.inputs ) {
                     var options = {
                         html: content,
                         node: node,
                         workflowView: this
                     };
-                    window.console.log( node );
                     content.cls = 'ui-portlet-narrow';
                     content.inputs.push({
                         type    : 'text',
@@ -799,7 +797,7 @@ define([
             node.content_id = content_id;
             var tmp = "<div><img height='16' align='middle' src='" + Galaxy.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
             $f.find(".toolFormBody").append(tmp);
-            node.form_html = tmp;
+            node.config_form = tmp;
             // Fix width to computed width
             // Now add floats
             var buttons = $("<div class='buttons' style='float: right;'></div>");

@@ -336,7 +336,7 @@ function( Connector, Toastr ) {
             if ( this.active_node != node ) {
                 this.check_changes_in_active_form();
                 this.clear_active_node();
-                this.app.showToolForm( node.form_html, node );
+                this.app.showToolForm( node.config_form, node );
                 node.make_active();
                 this.active_node = node;
             }
@@ -346,7 +346,7 @@ function( Connector, Toastr ) {
             if ( this.active_node == node && force ) {
                 // Force changes to be saved even on new connection (previously dumped)
                 this.check_changes_in_active_form();
-                this.app.showToolForm( node.form_html, node );
+                this.app.showToolForm( node.config_form, node );
             }
         },
         layout : function () {

@@ -377,13 +377,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'tool_state'        : module.get_state(),
                 'data_inputs'       : module.get_data_inputs(),
                 'data_outputs'      : module.get_data_outputs(),
-                'tool_errors'       : module.get_errors(),
-                'form_html'         : module.get_config_form(),
+                'config_form'       : module.get_config_form(),
                 'annotation'        : annotation,
                 'post_job_actions'  : module.get_post_job_actions(inputs)
             }
         else:
-            print payload
             module = module_factory.from_dict( trans, {
                 'type'          : type,
                 'label'         : label
@@ -394,8 +392,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'tool_state'    : module.get_state(),
                 'data_inputs'   : module.get_data_inputs(),
                 'data_outputs'  : module.get_data_outputs(),
-                'tool_errors'   : module.get_errors(),
-                'form_html'     : module.get_config_form(),
+                'config_form'   : module.get_config_form(),
                 'annotation'    : annotation
             }
 
