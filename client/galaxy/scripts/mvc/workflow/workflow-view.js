@@ -701,7 +701,7 @@ define([
             }*/
         },
 
-        showToolForm: function ( content, node ) {
+        showForm: function ( content, node ) {
             // initialize tags and identifiers
             var cls = 'right-content';
             var id  = cls + '-' + node.id;

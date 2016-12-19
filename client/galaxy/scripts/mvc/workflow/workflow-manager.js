@@ -330,13 +330,13 @@ function( Connector, Toastr ) {
                 this.active_node.make_inactive();
                 this.active_node = null;
             }
-            this.app.showToolForm( "<div>No node selected</div>", {id: 'no-node'} );
+            this.app.showForm( "<div>No node selected</div>", {id: 'no-node'} );
         },
         activate_node : function( node ) {
             if ( this.active_node != node ) {
                 this.check_changes_in_active_form();
                 this.clear_active_node();
-                this.app.showToolForm( node.config_form, node );
+                this.app.showForm( node.config_form, node );
                 node.make_active();
                 this.active_node = node;
             }
@@ -346,7 +346,7 @@ function( Connector, Toastr ) {
             if ( this.active_node == node && force ) {
                 // Force changes to be saved even on new connection (previously dumped)
                 this.check_changes_in_active_form();
-                this.app.showToolForm( node.config_form, node );
+                this.app.showForm( node.config_form, node );
             }
         },
         layout : function () {
