@@ -9,12 +9,16 @@ import yaml
 from requests import delete, put
 
 from base import api
+from base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+    skip_without_tool,
+    WorkflowPopulator
+)
 from galaxy.exceptions import error_codes
 from galaxy.tools.verify.test_data import TestDataResolver
 
-from .helpers import (DatasetCollectionPopulator, DatasetPopulator,
-    skip_without_tool, WorkflowPopulator)
-from .workflows_format_2 import (
+from base.workflows_format_2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
@@ -1216,11 +1220,9 @@ test_data:
     def test_workflow_stability( self ):
         # Run this index stability test with following command:
         #   ./run_tests.sh test/api/test_workflows.py:WorkflowsApiTestCase.test_workflow_stability
-        from pkg_resources import resource_string
         num_tests = 1
-        for workflow_file in [ "test_workflow_topoambigouity.ga", "test_workflow_topoambigouity_auto_laidout.ga" ]:
-            workflow_str = resource_string( __name__, workflow_file )
-            workflow = self.workflow_populator.load_workflow( "test1", content=workflow_str )
+        for workflow_file in [ "test_workflow_topoambigouity", "test_workflow_topoambigouity_auto_laidout" ]:
+            workflow = self.workflow_populator.load_workflow_from_resource( workflow_file )
             last_step_map = self._step_map( workflow )
             for i in range(num_tests):
                 uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )

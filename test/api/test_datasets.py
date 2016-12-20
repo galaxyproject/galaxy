@@ -3,8 +3,7 @@ from __future__ import print_function
 import textwrap
 
 from base import api
-
-from .helpers import TestsDatasets
+from base.populators import TestsDatasets
 
 
 class DatasetsApiTestCase( api.ApiTestCase, TestsDatasets ):

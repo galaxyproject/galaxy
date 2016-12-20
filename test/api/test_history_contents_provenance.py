@@ -1,6 +1,5 @@
 from base import api
-
-from .helpers import DatasetPopulator
+from base.populators import DatasetPopulator
 
 
 class TestProvenance( api.ApiTestCase ):

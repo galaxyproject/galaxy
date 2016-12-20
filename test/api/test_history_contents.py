@@ -5,8 +5,7 @@ import json
 from requests import delete, put
 
 from base import api
-
-from .helpers import DatasetCollectionPopulator, LibraryPopulator, TestsDatasets
+from base.populators import DatasetCollectionPopulator, LibraryPopulator, TestsDatasets
 
 
 # TODO: Test anonymous access.

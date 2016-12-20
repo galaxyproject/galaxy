@@ -2,10 +2,13 @@
 import json
 
 from base import api
+from base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+    LibraryPopulator,
+    skip_without_tool
+)
 from galaxy.tools.verify.test_data import TestDataResolver
-
-from .helpers import (DatasetCollectionPopulator, DatasetPopulator,
-    LibraryPopulator, skip_without_tool)
 
 
 class ToolsTestCase( api.ApiTestCase ):

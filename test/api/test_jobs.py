@@ -4,8 +4,7 @@ import time
 from operator import itemgetter
 
 from base import api
-
-from .helpers import TestsDatasets
+from base.populators import TestsDatasets
 
 
 class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
