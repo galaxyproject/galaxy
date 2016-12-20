@@ -1113,6 +1113,13 @@ use_interactive = True
 # Details" option in the history.  Administrators can always see this.
 #expose_dataset_path = False
 
+# This option allows users to see the job metrics (except for environment
+# variables).
+#expose_job_metrics = False
+
+# This option allows users to see the built command line.
+#expose_job_command_line = False
+
 # Data manager configuration options
 # Allow non-admin users to view available Data Manager options.
 #enable_data_manager_user_view = False
