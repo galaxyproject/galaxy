@@ -151,15 +151,6 @@
 
 <h3>Dataset Information</h3>
 <table class="tabletip" id="dataset-details">
-    <thead>
-        <tr><th colspan="2" style="font-size: 120%;">
-            % if tool:
-                Tool: ${tool.name | h}
-            % else:
-                Unknown Tool
-            % endif
-        </th></tr>
-    </thead>
     <tbody>
         <%
         encoded_hda_id = trans.security.encode_id( hda.id )
