@@ -226,22 +226,29 @@ table.info_data_table {
     table-layout: fixed;
     word-break: break-word;
 }
-table.info_data_table td:nth-child(1) {
-    width: 25%;
-}
 </style>
 
 %if job and trans.user_is_admin():
 <h3>Job Metrics</h3>
-<table class="tabletip info_data_table">
-    <tbody>
-        <% job_metrics = trans.app.job_metrics %>
-        %for metric in sorted(job.metrics, key=lambda x:x.metric_name):
-            <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
-            <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
-        %endfor
-    </tbody>
-</table>
+<% job_metrics = trans.app.job_metrics %>
+<% plugins = set([metric.plugin for metric in job.metrics]) %>
+    %for plugin in sorted(plugins):
+    <h4>Plugin: ${ plugin | h }</h4>
+    <table class="tabletip info_data_table">
+        <thead>
+            <tr>
+                <th style="width: 25%">Metric Name</th>
+                <th>Metric Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            %for metric in sorted(filter(lambda x: x.plugin == plugin, job.metrics), key=lambda x:x.metric_name):
+                <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
+                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
+            %endfor
+        </tbody>
+    </table>
+    %endfor
 %endif
 
 %if job and job.dependencies:
