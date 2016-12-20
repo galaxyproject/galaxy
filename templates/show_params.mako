@@ -215,8 +215,8 @@
 
 
 
-<h3>Command Line</h3>
 %if job and job.command_line and trans.user_is_admin():
+<h3>Command Line</h3>
 <pre style="white-space: pre-wrap; background: #1d1f21; color: white; padding: 1em;">
 ${ job.command_line | h }</pre>
 %endif
