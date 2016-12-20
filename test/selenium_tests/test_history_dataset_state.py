@@ -4,28 +4,7 @@ from .framework import SeleniumTestCase
 from .framework import selenium_test
 
 
-class HistoryDatasetStateTestCase(SeleniumTestCase):
-
-    @selenium_test
-    def test_dataset_state(self):
-        self.register()
-        self.perform_upload(self.get_filename("1.fasta"))
-        self.wait_for_history()
-        hda_id = self.latest_history_item()["id"]
-        item_selector = self.hda_div_selector(hda_id)
-        self.assert_item_name(item_selector, "1.fasta")
-        self.assert_item_hid(item_selector, "1")
-        self.assert_title_buttons(item_selector)
-
-        self.click_hda_title(hda_id, wait=True)
-        hda_body_selector = self.hda_body_selector(hda_id)
-        self.wait_for_selector_visible(hda_body_selector)
-
-        self.assert_item_summary_includes(hda_body_selector, "1 sequence")
-        self.assert_dbkey_display_as(hda_body_selector, "?")
-        self.assert_info_includes(hda_body_selector, 'uploaded fasta file')
-        self.assert_action_buttons(hda_body_selector)
-        self.assert_peek_includes(hda_body_selector, ">hg17")
+class UsesHistoryItemAssertions:
 
     def assert_action_buttons(self, body_selector, expected_buttons=["info", "download"]):
         buttons_selector = body_selector + " " + self.test_data["historyPanel"]["selectors"]["hda"]["primaryActionButtons"]
@@ -80,3 +59,27 @@ class HistoryDatasetStateTestCase(SeleniumTestCase):
         button_item = self.wait_for_selector_visible("%s %s" % (buttons_area, selector))
         expected_tooltip = button_def.get("tooltip")
         self.assert_tooltip_text(button_item, expected_tooltip)
+
+
+class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+
+    @selenium_test
+    def test_dataset_state(self):
+        self.register()
+        self.perform_upload(self.get_filename("1.fasta"))
+        self.wait_for_history()
+        hda_id = self.latest_history_item()["id"]
+        item_selector = self.hda_div_selector(hda_id)
+        self.assert_item_name(item_selector, "1.fasta")
+        self.assert_item_hid(item_selector, "1")
+        self.assert_title_buttons(item_selector)
+
+        self.click_hda_title(hda_id, wait=True)
+        hda_body_selector = self.hda_body_selector(hda_id)
+        self.wait_for_selector_visible(hda_body_selector)
+
+        self.assert_item_summary_includes(hda_body_selector, "1 sequence")
+        self.assert_dbkey_display_as(hda_body_selector, "?")
+        self.assert_info_includes(hda_body_selector, 'uploaded fasta file')
+        self.assert_action_buttons(hda_body_selector)
+        self.assert_peek_includes(hda_body_selector, ">hg17")
