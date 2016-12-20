@@ -238,7 +238,6 @@ table.info_data_table td:nth-child(1) {
         <% job_metrics = trans.app.job_metrics %>
         %for metric in sorted(job.metrics, key=lambda x:x.metric_name):
             <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
-            <% metric_title = metric_title.replace(' (runtime environment variable)', '') %>
             <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
         %endfor
     </tbody>
