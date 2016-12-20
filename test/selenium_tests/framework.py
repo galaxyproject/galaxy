@@ -3,9 +3,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import datetime
+import json
 import os
+import time
 
 from functools import wraps
+
+import requests
 
 from galaxy_selenium import (
     driver_factory,
@@ -19,8 +23,13 @@ except ImportError:
 
 from six.moves.urllib.parse import urljoin
 
-from base.twilltestcase import FunctionalTestCase
+from base import populators
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address
+from base.twilltestcase import FunctionalTestCase
+from base.workflows_format_2 import (
+    ImporterGalaxyInterface,
+    convert_and_import_workflow,
+)
 
 from galaxy.util import asbool
 
@@ -90,6 +99,7 @@ def selenium_test(f):
 class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
 
     framework_tool_and_types = True
+    ensure_registered = False
 
     def setUp(self):
         super(SeleniumTestCase, self).setUp()
@@ -101,6 +111,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
             self.target_url_from_selenium = self.url
         self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
         self.driver = get_driver()
+
+        if self.ensure_registered:
+            self.register()
 
     def tearDown(self):
         exception = None
@@ -163,6 +176,59 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy):
         assert empty_msg_element.is_displayed()
         assert empty_msg_str in empty_msg_element.text
 
+    @property
+    def workflow_populator(self):
+        return SeleniumSessionWorkflowPopulator(self)
+
+
+class UsesHistoryItemAssertions:
+
+    def assert_item_peek_includes(self, hid, expected):
+        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
+        peek_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["peek"]
+        peek_selector = self.wait_for_selector_visible(peek_selector)
+
+    def assert_item_info_includes(self, hid, expected):
+        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
+        info_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["info"]
+        info_element = self.wait_for_selector_visible(info_selector)
+        text = info_element.text
+        assert expected in text, "Failed to find expected info text [%s] in info [%s]" % (expected, text)
+
+    def assert_item_dbkey_displayed_as(self, hid, dbkey):
+        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
+        dbkey_selector = item_body_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["dbkey"]
+        dbkey_element = self.wait_for_selector_visible(dbkey_selector)
+        assert dbkey in dbkey_element.text
+
+    def assert_item_summary_includes(self, hid, expected_text):
+        item_body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
+        summary_selector = "%s %s" % (item_body_selector, self.test_data["historyPanel"]["selectors"]["hda"]["summary"])
+        summary_element = self.wait_for_selector_visible(summary_selector)
+        text = summary_element.text
+        assert expected_text in text, "Expected summary [%s] not found in [%s]." % (expected_text, text)
+
+    def assert_item_name(self, hid, name):
+        item_selector = self.history_panel_item_selector(hid, wait=True)
+        title_selector = item_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["name"]
+        title_element = self.wait_for_selector_visible(title_selector)
+        assert title_element.text == name, title_element.text
+
+    def assert_item_hid_text(self, hid):
+        # Check the text HID matches HID returned from API.
+        item_selector = self.history_panel_item_selector(hid, wait=True)
+        hid_selector = item_selector + ' ' + self.test_data["historyPanel"]["selectors"]["hda"]["hid"]
+        hid_element = self.wait_for_selector_visible(hid_selector)
+        assert hid_element.text == str(hid), hid_element.text
+
+    def _assert_item_button(self, buttons_area, expected_button, button_def):
+        selector = button_def["selector"]
+        # Let old tooltip expire, etc...
+        time.sleep(1)
+        button_item = self.wait_for_selector_visible("%s %s" % (buttons_area, selector))
+        expected_tooltip = button_def.get("tooltip")
+        self.assert_tooltip_text(button_item, expected_tooltip)
+
 
 def default_web_host_for_selenium_tests():
     if asbool(GALAXY_TEST_SELENIUM_REMOTE):
@@ -205,3 +271,65 @@ def get_remote_driver():
         port=GALAXY_TEST_SELENIUM_REMOTE_PORT,
         browser=GALAXY_TEST_SELENIUM_BROWSER,
     )
+
+
+class SeleniumSessionGetPostMixin:
+    """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
+
+    def _get(self, route):
+        return self.selenium_test_case.api_get(route)
+
+    def _post(self, route, data={}):
+        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
+        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        return response
+
+    def __url(self, route):
+        return self._gi.url + "/" + route
+
+
+class SeleniumSessionDatasetPopulator(populators.BaseDatasetPopulator, SeleniumSessionGetPostMixin):
+
+    """Implementation of BaseDatasetPopulator backed by bioblend."""
+
+    def __init__(self, selenium_test_case):
+        """Construct a dataset populator from a bioblend GalaxyInstance."""
+        self.selenium_test_case = selenium_test_case
+
+
+class SeleniumSessionDatasetCollectionPopulator(populators.BaseDatasetCollectionPopulator, SeleniumSessionGetPostMixin):
+
+    """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
+
+    def __init__(self, selenium_test_case):
+        """Construct a dataset collection populator from a bioblend GalaxyInstance."""
+        self.selenium_test_case = selenium_test_case
+        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
+
+    def _create_collection(self, payload):
+        create_response = self._post( "dataset_collections", data=payload )
+        return create_response
+
+
+class SeleniumSessionWorkflowPopulator(populators.BaseWorkflowPopulator, SeleniumSessionGetPostMixin, ImporterGalaxyInterface):
+
+    """Implementation of BaseWorkflowPopulator backed by bioblend."""
+
+    def __init__(self, selenium_test_case):
+        """Construct a workflow populator from a bioblend GalaxyInstance."""
+        self.selenium_test_case = selenium_test_case
+        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
+
+    def import_workflow(self, workflow, **kwds):
+        workflow_str = json.dumps(workflow, indent=4)
+        data = {
+            'workflow': workflow_str,
+        }
+        data.update(**kwds)
+        upload_response = self._post("workflows", data=data)
+        assert upload_response.status_code == 200
+        return upload_response.json()
+
+    def upload_yaml_workflow(self, has_yaml, **kwds):
+        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+        return workflow[ "id" ]
