@@ -9,6 +9,21 @@
         text-align: center;
         background-color: #eee;
     }
+
+    table.info_data_table {
+        table-layout: fixed;
+        word-break: break-word;
+    }
+    table.info_data_table td:nth-child(1) {
+        width: 25%;
+    }
+
+    .code {
+        white-space: pre-wrap;
+        background: #1d1f21;
+        color: white;
+        padding: 1em;
+    }
 </style>
 
 <%def name="inputs_recursive( input_params, param_values, depth=1, upgrade_messages=None )">
@@ -217,19 +232,9 @@
 
 %if job and job.command_line and trans.user_is_admin():
 <h3>Command Line</h3>
-<pre style="white-space: pre-wrap; background: #1d1f21; color: white; padding: 1em;">
+<pre class="code">
 ${ job.command_line | h }</pre>
 %endif
-
-<style type="text/css">
-table.info_data_table {
-    table-layout: fixed;
-    word-break: break-word;
-}
-table.info_data_table td:nth-child(1) {
-    width: 25%;
-}
-</style>
 
 %if job and trans.user_is_admin():
 <h3>Job Metrics</h3>
