@@ -37,7 +37,6 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
         number_found = name_found = format_found = False
         for key, value in dataset_details_key_value_pairs:
-            print hda
             if "Number:" in key.text:
                 assert str(hda["hid"]) in value.text
                 number_found = True
