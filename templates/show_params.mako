@@ -253,8 +253,12 @@ ${ job.command_line | h }</pre>
     <h4>${ plugin | h }</h4>
     <table class="tabletip info_data_table">
         <tbody>
-            %for metric in sorted(filter(lambda x: x.plugin == plugin, job.metrics), key=lambda x:x.metric_name):
-                <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
+        <%
+            plugin_metrics = filter(lambda x: x.plugin == plugin, job.metrics)
+            plugin_metric_displays = [job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) for metric in plugin_metrics]
+            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0])  # Sort on displayed title
+        %>
+            %for metric_title, metric_value in plugin_metric_displays:
                 <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
             %endfor
         </tbody>
