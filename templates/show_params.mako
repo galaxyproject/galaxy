@@ -9,6 +9,21 @@
         text-align: center;
         background-color: #eee;
     }
+
+    table.info_data_table {
+        table-layout: fixed;
+        word-break: break-word;
+    }
+    table.info_data_table td:nth-child(1) {
+        width: 25%;
+    }
+
+    .code {
+        white-space: pre-wrap;
+        background: #1d1f21;
+        color: white;
+        padding: 1em;
+    }
 </style>
 
 <%def name="inputs_recursive( input_params, param_values, depth=1, upgrade_messages=None )">
@@ -126,16 +141,16 @@
     </td>
 </%def>
 
-<table class="tabletip">
-    <thead>
-        <tr><th colspan="2" style="font-size: 120%;">
-            % if tool:
-                Tool: ${tool.name | h}
-            % else:
-                Unknown Tool
-            % endif
-        </th></tr>
-    </thead>
+<h2>
+% if tool:
+    ${tool.name | h}
+% else:
+    Unknown Tool
+% endif
+</h2>
+
+<h3>Dataset Information</h3>
+<table class="tabletip" id="dataset-details">
     <tbody>
         <%
         encoded_hda_id = trans.security.encode_id( hda.id )
@@ -148,6 +163,12 @@
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
         <tr><td>Format:</td><td>${hda.ext | h}</td></tr>
+    </tbody>
+</table>
+
+<h3>Job Information</h3>
+<table class="tabletip">
+    <tbody>
         %if job:
             <tr><td>Galaxy Tool ID:</td><td>${ job.tool_id | h }</td></tr>
             <tr><td>Galaxy Tool Version:</td><td>${ job.tool_version | h }</td></tr>
@@ -169,20 +190,11 @@
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
             <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
         %endif
-        %if job and job.command_line and trans.user_is_admin():
-            <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
-        %endif
-        %if job and trans.user_is_admin():
-            <% job_metrics = trans.app.job_metrics %>
-            %for metric in sorted(job.metrics, key=lambda x:x.metric_name):
-                <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>
-                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
-            %endfor
-        %endif
+    </tbody>
 </table>
-<br />
 
-<table class="tabletip">
+<h3>Tool Parameters</h3>
+<table class="tabletip" id="tool-parameters">
     <thead>
         <tr>
             <th>Input Parameter</th>
@@ -205,8 +217,48 @@
     ${ render_msg( 'One or more of your original parameters may no longer be valid or displayed properly.', status='warning' ) }
 %endif
 
+
+<h3>Inheritance Chain</h3>
+<div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
+
+% for dep in inherit_chain:
+    <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
+    <div class="inherit">
+        '${dep[0].name | h}' in ${dep[1]}<br/>
+    </div>
+% endfor
+
+
+
+%if job and job.command_line and trans.user_is_admin():
+<h3>Command Line</h3>
+<pre class="code">
+${ job.command_line | h }</pre>
+%endif
+
+%if job and trans.user_is_admin():
+<h3>Job Metrics</h3>
+<% job_metrics = trans.app.job_metrics %>
+<% plugins = set([metric.plugin for metric in job.metrics]) %>
+    %for plugin in sorted(plugins):
+    <h4>${ plugin | h }</h4>
+    <table class="tabletip info_data_table">
+        <tbody>
+        <%
+            plugin_metrics = filter(lambda x: x.plugin == plugin, job.metrics)
+            plugin_metric_displays = [job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) for metric in plugin_metrics]
+            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0])  # Sort on displayed title
+        %>
+            %for metric_title, metric_value in plugin_metric_displays:
+                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
+            %endfor
+        </tbody>
+    </table>
+    %endfor
+%endif
+
 %if job and job.dependencies:
-    <br>
+<h3>Job Dependencies</h3>
     <table class="tabletip">
         <thead>
         <tr>
@@ -226,8 +278,9 @@
 
         </tbody>
     </table>
-    <br />
 %endif
+
+
 
 <script type="text/javascript">
 $(function(){
@@ -239,13 +292,3 @@ $(function(){
     })
 });
 </script>
-
-    <h3>Inheritance Chain</h3>
-    <div class="inherit" style="background-color: #fff; font-weight:bold;">${hda.name | h}</div>
-
-    % for dep in inherit_chain:
-        <div style="font-size: 36px; text-align: center; position: relative; top: 3px">&uarr;</div>
-        <div class="inherit">
-            '${dep[0].name | h}' in ${dep[1]}<br/>
-        </div>
-    % endfor

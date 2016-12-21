@@ -770,7 +770,15 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
             if collection_name in input_dataset_collections:
                 try:
                     input_collection = input_dataset_collections[collection_name][0][0]
-                    input_dataset = input_collection.collection[element_index].element_object
+                    input_collection_collection = input_collection.collection
+                    try:
+                        input_element = input_collection_collection[element_index]
+                    except KeyError:
+                        for element in input_collection_collection.dataset_elements:
+                            if element.element_identifier == element_index:
+                                input_element = element
+                                break
+                    input_dataset = input_element.element_object
                     input_extension = input_dataset.ext
                     ext = input_extension
                 except Exception as e:

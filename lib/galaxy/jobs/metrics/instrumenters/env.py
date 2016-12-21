@@ -9,9 +9,7 @@ log = logging.getLogger( __name__ )
 
 
 class EnvFormatter( formatting.JobMetricFormatter ):
-
-    def format( self, key, value ):
-        return ( "%s (runtime environment variable)" % key, value )
+    pass
 
 
 class EnvPlugin( InstrumentPlugin ):

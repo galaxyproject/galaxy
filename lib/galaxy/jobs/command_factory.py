@@ -86,7 +86,10 @@ def build_command(
     if create_tool_working_directory:
         # usually working will already exist, but it will not for task
         # split jobs.
-        commands_builder.prepend_command("mkdir -p working; cd working")
+
+        # Remove the working directory incase this is for instance a SLURM re-submission.
+        # xref https://github.com/galaxyproject/galaxy/issues/3289
+        commands_builder.prepend_command("rm -rf working; mkdir -p working; cd working")
 
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)

@@ -62,12 +62,15 @@
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="True" display_in_upload="False"/>
     <datatype extension="dbn" type="galaxy.datatypes.sequence:DotBracket" display_in_upload="true" description="Dot-Bracket format is a text-based format for storing both an RNA sequence and its corresponding 2D structure." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Dbn"/>
+    <datatype extension="fai" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="True" description="A Fasta Index File is a text file consisting of lines each with five TAB-delimited columns : Name, Length, offset, linebases, Linewidth" description_url="http://www.htslib.org/doc/faidx.html" />
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true" description="A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('>') symbol in the first column. All lines should be shorter than 80 characters." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fasta">
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
       <converter file="fasta_to_bowtie_base_index_converter.xml" target_datatype="bowtie_base_index"/>
       <converter file="fasta_to_bowtie_color_index_converter.xml" target_datatype="bowtie_color_index"/>
       <converter file="fasta_to_2bit.xml" target_datatype="twobit"/>
       <converter file="fasta_to_len.xml" target_datatype="len"/>
+      <converter file="fasta_to_fai.xml" target_datatype="fai"/>
+      <display file="igv/genome_fasta.xml" inherit="True"/>
     </datatype>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
@@ -399,7 +402,7 @@
     <datatype extension="embl" type="galaxy.datatypes.data:Text" subclass="True"/>
     <datatype extension="fitch" type="galaxy.datatypes.data:Text" subclass="True"/>
     <datatype extension="gcg" type="galaxy.datatypes.data:Text" subclass="True"/>
-    <datatype extension="genbank" type="galaxy.datatypes.data:Text" subclass="True" edam_format="format_1936"/>
+    <datatype extension="genbank" type="galaxy.datatypes.sequence:Genbank" edam_format="format_1936"/>
     <datatype extension="hennig86" type="galaxy.datatypes.data:Text" subclass="True"/>
     <datatype extension="ig" type="galaxy.datatypes.data:Text" subclass="True"/>
     <datatype extension="jackknifer" type="galaxy.datatypes.data:Text" subclass="True"/>
@@ -547,6 +550,8 @@
     <datatype extension="maskinfo-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="True" display_in_upload="true" />
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="True" display_in_upload="true" />
+    <!-- PlantTribes datatypes -->
+    <datatype extension="smat" type="galaxy.datatypes.estscan:Smat" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
@@ -556,6 +561,7 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
+    <sniffer type="galaxy.datatypes.estscan:Smat"/>
     <sniffer type="galaxy.datatypes.mothur:Sabund"/>
     <sniffer type="galaxy.datatypes.mothur:Otu"/>
     <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
@@ -626,6 +632,7 @@
     <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>
     <sniffer type="galaxy.datatypes.sequence:Axt"/>
+    <sniffer type="galaxy.datatypes.sequence:Genbank"/>
     <sniffer type="galaxy.datatypes.interval:Bed"/>
     <sniffer type="galaxy.datatypes.interval:CustomTrack"/>
     <sniffer type="galaxy.datatypes.interval:Gtf"/>

@@ -56,7 +56,7 @@ Members
 - Eric Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
-- Nitesh Turaga (@nitesh1989)
+- Nitesh Turaga (@nturaga)
 - Marius van den Beek (@mvdbeek)
 
 Membership

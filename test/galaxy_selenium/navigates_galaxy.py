@@ -200,6 +200,29 @@ class NavigatesGalaxy(HasDriver):
         close_button = self.wait_for_selector("button#btn-close")
         close_button.click()
 
+    def tool_open(self, tool_id):
+        link_element = self.wait_for_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
+        link_element.click()
+
+    def tool_parameter_div(self, expanded_parameter_id):
+        return self.wait_for_selector("div.ui-form-element[tour_id$='%s']" % expanded_parameter_id)
+
+    def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
+        div_element = self.tool_parameter_div(expanded_parameter_id)
+        assert div_element
+        if expected_type == "data":
+            div_selector = "div.ui-form-element[tour_id$='%s']" % expanded_parameter_id
+            self.select2_set_value(div_selector, value)
+        else:
+            input_element = div_element.find_element_by_css_selector("input")
+            # Clear default value
+            input_element.clear()
+            input_element.send_keys(value)
+
+    def tool_execute(self):
+        execute_button = self.wait_for_selector("button#execute")
+        execute_button.click()
+
     def click_masthead_user(self):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["user"])
 
@@ -239,6 +262,18 @@ class NavigatesGalaxy(HasDriver):
 
     def hda_body_selector(self, hda_id):
         return "%s %s" % (self.hda_div_selector(hda_id), self.test_data["historyPanel"]["selectors"]["hda"]["body"])
+
+    def hda_click_primary_action_button(self, hda_id, button_key):
+        self.click_hda_title(hda_id, wait=True)
+        body_selector = self.hda_body_selector(hda_id)
+
+        buttons_selector = body_selector + " " + self.test_data["historyPanel"]["selectors"]["hda"]["primaryActionButtons"]
+        self.wait_for_selector_visible(buttons_selector)
+
+        button_def = self.test_data["historyPanel"]["hdaPrimaryActionButtons"][button_key]
+        button_selector = button_def["selector"]
+        button_item = self.wait_for_selector_visible("%s %s" % (buttons_selector, button_selector))
+        return button_item.click()
 
     def click_hda_title(self, hda_id, wait=False):
         expand_target = "%s .title" % self.hda_div_selector(hda_id)
@@ -345,3 +380,27 @@ class NavigatesGalaxy(HasDriver):
             print("(Post)Clicking %s" % postclick_selector)
             element = self.tour_wait_for_clickable_element(postclick_selector)
             element.click()
+
+    def select2_set_value(self, container_selector, value, with_click=True):
+        # There are two hacky was to select things from the select2 widget -
+        #   with_click=True: This simulates the mouse click after the suggestion contains
+        #                    only the selected value.
+        #   with_click=False: This presses enter on the selection. Not sure
+        #                     why.
+        # with_click seems to work in all situtations - the enter methods
+        # doesn't seem to work with the tool form for some reason.
+        container_elem = self.wait_for_selector(container_selector)
+        text_element = container_elem.find_element_by_css_selector("input[type='text']")
+        text_element.send_keys(value)
+        # Wait for select2 options to load and then click to add this one.
+        drop_elem = self.wait_for_selector_visible("#select2-drop")
+        # Sleep seems to be needed - at least for send_enter.
+        time.sleep(.5)
+        if not with_click:
+            # Wait for select2 options to load and then click to add this one.
+            self.send_enter(text_element)
+        else:
+            select_elem = drop_elem.find_elements_by_css_selector(".select2-result-label")[0]
+            action_chains = self.action_chains()
+            action_chains.move_to_element(select_elem).click().perform()
+        self.wait_for_selector_absent_or_hidden("#select2-drop")

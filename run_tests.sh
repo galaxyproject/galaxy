@@ -39,10 +39,10 @@ Run a specific API test:
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
-    docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum 
+    docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
     GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
 
-Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver): 
+Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
     ./run_tests.sh -selenium test/selenium_tests/test_registration.py:RegistrationTestCase.test_reregister_username_fails
 
 Note About Selenium Tests:
@@ -81,7 +81,7 @@ carefully ahead of time.
 
 External Tests:
 
-A small subset of tests can be run against an existing Galxy
+A small subset of tests can be run against an existing Galaxy
 instance. The external Galaxy instance URL can be configured with
 --external_url. If this is set, either --external_master_key or
 --external_user_key must be set as well - more tests can be executed
@@ -442,6 +442,17 @@ do
               shift 1
           fi
           ;;
+      -i|-integration|--integration)
+          report_file="run_integration_tests.html"
+          test_script="./scripts/nosetests.py"
+          if [ $# -gt 1 ]; then
+              integration_extra=$2
+              shift 2
+          else
+              integration_extra='test/integration'
+              shift 1
+          fi
+          ;;
       -q|-qunit|--qunit)
           # Requires grunt installed and dependencies configured see
           # test/qunit/README.txt for more information.
@@ -559,6 +570,8 @@ elif [ -n "$test_id" ]; then
     extra_args="functional.test_toolbox$class"
 elif [ -n "$unit_extra" ]; then
     extra_args="--with-doctest $unit_extra"
+elif [ -n "$integration_extra" ]; then
+    extra_args="$integration_extra"
 elif [ -n "$1" ] ; then
     extra_args="$1"
 else
@@ -601,4 +614,3 @@ else
     # functional tests.
     grunt --gruntfile=$gruntfile $grunt_task $grunt_args
 fi
-

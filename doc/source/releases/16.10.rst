@@ -41,6 +41,16 @@ Highlighted Enhancements
   `Pull Request 2943`_
 * Various enhancements for API driven installation of tool shed repositories.
 
+Security
+-------------------------------
+
+.. security
+
+* Fix an ACE vulnerability with gff filter tools (thanks to David Wyde).
+  `Commit c1e3087`_
+* Escape filename in upload dialog, default and composite (thanks to David Wyde).
+  `Pull Request 3278`_
+
 Enhancements
 -------------------------------
 
@@ -679,3 +689,5 @@ Fixes
 .. _Pull Request 3262: https://github.com/galaxyproject/galaxy/pull/3262
 .. _Pull Request 3279: https://github.com/galaxyproject/galaxy/pull/3279
 
+.. _Commit c1e3087: https://github.com/galaxyproject/galaxy/commit/c1e3087ca35dbca1b0328954fe4769d666d3f934
+.. _Pull Request 3278: https://github.com/galaxyproject/galaxy/pull/3278

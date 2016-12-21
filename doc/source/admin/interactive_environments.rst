@@ -1,11 +1,6 @@
 Galaxy Interactive Environments (GIEs)
 ======================================
 
-GIEs were a new feature back in Galaxy 15.05, leading with the release of the
-IPython IE. They were presented at GCC2015, and the RStudio IE was released as
-part of 15.07. The IPython IE was superceded by a Project Jupyter IE in
-Galaxy XXXXX.
-
 A GIE is a Docker container, launched by Galaxy, proxied by Galaxy, with some
 extra sugar inside the container to allow users to interact easily with their
 Galaxy histories.
@@ -181,7 +176,7 @@ Please note you will need to be using apache2.4 with ``mod_proxy_wstunnel``.
         proxy_redirect off;
     }
 
-    # Project Jupyter / IPython specific. Other IEs may require their own routes.
+    # Project Jupyter specific. Other IEs may require their own routes.
     location ~ ^/galaxy/gie_proxy/jupyter/(?<nbtype>[^/]+)/api/kernels(?<rest>.*?)$ {
         proxy_pass http://localhost:8800/galaxy/gie_proxy/jupyter/$nbtype/api/kernels$rest;
         proxy_redirect off;
@@ -229,8 +224,8 @@ Docker host with
     $ docker -H tcp://gx-docker:4243 run -it busybox sh
 
 So far so good! Now we need to configure Galaxy to use our new Docker host
-to start the Interactive Environments. For that we need to edit the IPython GIE
-configuration, ``ipython.ini`` to use our custom docker host
+to start the Interactive Environments. For that we need to edit the Jupyter GIE
+configuration, ``jupyter.ini`` to use our custom docker host
 
 .. code-block:: ini
 
