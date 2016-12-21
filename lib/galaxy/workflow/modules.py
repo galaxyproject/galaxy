@@ -437,12 +437,12 @@ class InputDataCollectionModule( InputModule ):
         name = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
         input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) )
-        input_collection_type = SelectToolParameter( None, XML(
+        input_collection_type = TextToolParameter( None, XML(
         '''
-        <param name="collection_type" label="Collection type" type="select" value="%s">
-            <option value="list">List of Datasets (list)</option>
-            <option value="paired">Dataset Pair (paired)</option>
-            <option value="list:paired">List of Dataset Pairs (list:paired)</option>
+        <param name="collection_type" label="Collection type" type="text" value="%s">
+            <option value="list">List of Datasets</option>
+            <option value="paired">Dataset Pair</option>
+            <option value="list:paired">List of Dataset Pairs</option>
         </param>
         ''' % collection_type ) )
         return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )

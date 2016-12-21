@@ -240,6 +240,9 @@ class TextToolParameter( ToolParameter ):
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
+        self.datalist = []
+        for ( title, value, selected ) in input_source.parse_static_options():
+            self.datalist.append( { 'label' : title, 'value': value } )
         self.value = input_source.get( 'value' )
         self.area = input_source.get_bool( 'area', False )
 
@@ -262,6 +265,7 @@ class TextToolParameter( ToolParameter ):
     def to_dict( self, trans, other_values={} ):
         d = super(TextToolParameter, self).to_dict(trans)
         d['area'] = self.area
+        d['datalist'] = self.datalist
         return d
 
 

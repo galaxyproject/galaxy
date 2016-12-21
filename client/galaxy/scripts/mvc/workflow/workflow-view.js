@@ -726,8 +726,8 @@ define([
                     form = new ToolForm.View(options);
                 } else if ( content && content.inputs ) {
                     var options = {
-                        html: content,
-                        node: node,
+                        html    : content,
+                        node    : node,
                         workflowView: this
                     };
                     content.cls = 'ui-portlet-narrow';

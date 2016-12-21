@@ -194,7 +194,6 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.errors = data.errors;
             this.annotation = data['annotation'];
             this.setLabel(data.label);
-
             if( "post_job_actions" in data ) {
                 // Won't be present in response for data inputs
                 var pja_in = $.parseJSON(data.post_job_actions);
@@ -223,12 +222,10 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
                 nodeView.updateDataOutput( data.data_outputs[ 0 ] );
             }
             old_body.replaceWith( new_body );
-
             if( "workflow_outputs" in data ) {
                 // Won't be present in response for data inputs
                 this.workflow_outputs = workflow_outputs ? workflow_outputs : [];
             }
-
             // If active, reactivate with new config_form
             this.markChanged();
             this.redraw();
