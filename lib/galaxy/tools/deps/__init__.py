@@ -192,13 +192,17 @@ class CachedDependencyManager(DependencyManager):
         """
         Runs a set of requirements through the dependency resolvers and returns
         a list of commands required to activate the dependencies. If dependencies
-        are cacheable and the cache exists, will generate commands to activate
-        cached environments.
+        are cacheable and the cache does not exist, will try to create it.
+        If cached environment exists or is successfully created, will generate
+        commands to activate it.
         """
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
-        if os.path.exists(hashed_dependencies_dir):
+        if not os.path.exists(hashed_dependencies_dir):
+            # Cache not present, try to create it
+            self.build_cache(requirements, **kwds)
+        if os.path.exists(hashed_dependencies_dir): # Check caching was successfull
             [dep.set_cache_path(hashed_dependencies_dir) for dep in cacheable_dependencies]
         commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
         return commands
