@@ -230,6 +230,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # of the tool dependency directory
 #tool_dependency_cache_dir = <tool_dependency_dir>/_cache
 
+# By default the dependencies are cached only when installing tools.
+# Set this to True to allow dependencies to be cached the first time they are used
+#build_cache_on_first_run = False
+
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml

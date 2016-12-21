@@ -334,6 +334,7 @@ class Configuration( object ):
             self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
         self.use_cached_dependency_manager = string_as_bool(kwargs.get("use_cached_dependency_manager", 'False'))
         self.tool_dependency_cache_dir = kwargs.get( 'tool_dependency_cache_dir', os.path.join(self.tool_dependency_dir, '_cache'))
+        self.build_cache_on_first_run = string_as_bool(kwargs.get("build_cache_on_first_run", 'False'))
 
         self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
         containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
