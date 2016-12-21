@@ -200,7 +200,7 @@ class CachedDependencyManager(DependencyManager):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
-        if not os.path.exists(hashed_dependencies_dir) and self.extra_config['build_cache_on_first_run'] == True:
+        if not os.path.exists(hashed_dependencies_dir) and self.extra_config['build_cache_on_first_run']:
             # Cache not present, try to create it
             self.build_cache(requirements, **kwds)
         if os.path.exists(hashed_dependencies_dir):
