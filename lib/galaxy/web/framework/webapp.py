@@ -48,6 +48,14 @@ UCSC_SERVERS = (
     'hgw6.cse.ucsc.edu',
     'hgw7.cse.ucsc.edu',
     'hgw8.cse.ucsc.edu',
+    'hgw1.soe.ucsc.edu',
+    'hgw2.soe.ucsc.edu',
+    'hgw3.soe.ucsc.edu',
+    'hgw4.soe.ucsc.edu',
+    'hgw5.soe.ucsc.edu',
+    'hgw6.soe.ucsc.edu',
+    'hgw7.soe.ucsc.edu',
+    'hgw8.soe.ucsc.edu',
 )
 
 
