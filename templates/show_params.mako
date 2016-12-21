@@ -230,13 +230,13 @@
 
 
 
-%if job and job.command_line and (trans.user_is_admin() or trans.app.config.expose_job_command_line):
+%if job and job.command_line and (trans.user_is_admin() or trans.app.config.expose_dataset_path):
 <h3>Command Line</h3>
 <pre class="code">
 ${ job.command_line | h }</pre>
 %endif
 
-%if job and (trans.user_is_admin() or trans.app.config.expose_job_metrics):
+%if job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics):
 <h3>Job Metrics</h3>
 <% job_metrics = trans.app.job_metrics %>
 <% plugins = set([metric.plugin for metric in job.metrics]) %>
