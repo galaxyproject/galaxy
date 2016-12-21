@@ -105,9 +105,40 @@ class ToolBoxSearch( object ):
         # Hyphens are wildcards in Whoosh causing bad things
         if q.find( '-' ) != -1:
             q = (' ').join( [ token.text for token in self.rex( to_unicode( q ) ) ] )
-        # Perform the search
-        hits = searcher.search( parser.parse( '*' + q + '*' ), limit=float( tool_search_limit ) )
-        return [ hit[ 'id' ] for hit in hits ]
+        # Fuzzy search using q-grams
+        qgram_length = 3
+        number_qgrams = len(q) - qgram_length + 1
+        # If qgram is just one then it is equivalent to search in the else part
+        if number_qgrams > 1:
+            qgrams = []
+            hits_with_score = {}
+            # Make qgrams
+            for i in range(0, number_qgrams):
+                qgrams.append( q[ i:i + qgram_length ] )
+            # Search for each qgrams
+            for query in qgrams:
+                # Get the tool list with respective scores for each qgram
+                curr_hits = searcher.search( parser.parse( '*' + query + '*' ), limit=float( tool_search_limit ) )
+                for i, curr_hit in enumerate(curr_hits):
+                    is_present = False
+                    for prev_hit in hits_with_score:
+                        # Check if the tool appears again for the next qgram search
+                        if curr_hit['id'] == prev_hit:
+                            is_present = True
+                            # Add the current score with the previous one if the
+                            # tool appears again for the next qgram
+                            hits_with_score[ prev_hit ] = curr_hits.score(i) + hits_with_score[ prev_hit ]
+                    # Add the tool if not present to the collection with its score
+                    if not is_present:
+                        hits_with_score[ curr_hit['id'] ] = curr_hits.score(i)
+            # Sort the results based on aggregated BM25 score in decreasing order of scores
+            hits_with_score = sorted(hits_with_score.items(), key=lambda x: x[1], reverse=True)
+            # Return the tool ids
+            return [item[0] for item in hits_with_score]
+        else:
+            # Perform the search
+            hits = searcher.search( parser.parse( '*' + q + '*' ), limit=float( tool_search_limit ) )
+            return [ hit[ 'id' ] for hit in hits ]
 
 
 def _temp_storage(self, name=None):
