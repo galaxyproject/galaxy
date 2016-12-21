@@ -330,7 +330,7 @@ function( Connector, Toastr ) {
                 this.active_node.make_inactive();
                 this.active_node = null;
             }
-            this.app.showForm( "<div>No node selected</div>", {id: 'no-node'} );
+            this.app.showAttributes();
         },
         activate_node : function( node ) {
             if ( this.active_node != node ) {

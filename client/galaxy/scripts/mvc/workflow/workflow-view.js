@@ -302,11 +302,8 @@ define([
                 "Run": function() {
                     window.location = self.urls.run_workflow;
                 },
-                //"Create New" : create_new_workflow_dialog,
-                "Edit Attributes" : edit_workflow_attributes,
-                //"Edit Workflow Outputs": edit_workflow_outputs,
+                "Edit Attributes" : function() { self.workflow.clear_active_node() },
                 "Auto Re-layout": layout_editor,
-                //"Load a Workflow" : load_workflow,
                 "Close": close_editor
             });
 
@@ -349,7 +346,6 @@ define([
                         new_content += "<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step " + node.id + " - " + node.name + "</div>";
                         for (var ot_key in node.output_terminals){
                             var output = node.output_terminals[ot_key];
-                            // if (node.workflow_outputs[node.id + "|" + output.name]){
                             if (node.isWorkflowOutput(output.name)) {
                                 new_content += "<p>"+output.name +"<input type='checkbox' name='"+ node.id + "|" + output.name +"' checked /></p>";
                             }
@@ -380,12 +376,6 @@ define([
                 self.workflow.fit_canvas_to_nodes();
                 self.scroll_to_nodes();
                 self.canvas_manager.draw_overview();
-            }
-
-            function edit_workflow_attributes() {
-                self.workflow.clear_active_node();
-                $('.right-content').hide();
-                $('#edit-attributes').show();
             }
 
             // On load, set the size to the pref stored in local storage if it exists
@@ -701,37 +691,27 @@ define([
             }*/
         },
 
+        showAttributes: function() {
+            $( '.right-content' ).hide();
+            $( '#edit-attributes' ).show();
+        },
+
         showForm: function ( content, node ) {
-            // initialize tags and identifiers
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
-
-            // grab panel container
-            var $container = $('#' + cls);
-
-            // remove previous notifications
-            var $current = $container.find('#' + id);
-            if ($current.length > 0 && $current.find('.section-row').length == 0) {
-                $current.remove();
-            }
-            // check if tool form already exists
-            if ($container.find('#' + id).length == 0) {
-                var $el = $('<div id="' + id + '" class="' + cls + '"/>');
+            var $container = $( '#' + cls );
+            if ( $container.find( '#' + id ).length == 0 ) {
+                var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
                 var form = null;
-                if (node.type == 'tool') {
+                if ( node.type == 'tool' ) {
                     var options = content;
                     options.node = node;
                     options.workflow = this.workflow;
                     options.datatypes = this.datatypes;
-                    form = new ToolForm.View(options);
+                    form = new ToolForm.View( options );
                 } else if ( content && content.inputs ) {
-                    var options = {
-                        html    : content,
-                        node    : node,
-                        workflowView: this
-                    };
                     content.cls = 'ui-portlet-narrow';
-                    content.inputs.push({
+                    content.inputs.unshift({
                         type    : 'text',
                         name    : 'label',
                         label   : 'Label',
@@ -763,16 +743,12 @@ define([
                     form = new Form( content );
                 }
                 if ( form ) {
-                    $el.append(form.$el);
-                    $container.append($el);
+                    $el.append( form.$el );
+                    $container.append( $el );
                 }
             }
-
-            // hide everything
-            $('.' + cls).hide();
-
-            // show current form
-            $container.find('#' + id).show();
+            $( '.' + cls ).hide();
+            $container.find( '#' + id ).show();
             $container.show();
             $container.scrollTop();
         },
