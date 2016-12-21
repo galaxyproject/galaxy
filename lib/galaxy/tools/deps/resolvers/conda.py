@@ -164,6 +164,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 log.warning("Conda dependency resolver not sent job directory.")
                 return NullDependency(version=version, name=name)
 
+        preserve_python_environment = kwds.get("preserve_python_environment", False)
+
         if not is_installed and self.auto_install:
             is_installed = self.install_dependency(name=name, version=version, type=type)
 
@@ -190,7 +192,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 conda_environment,
                 exact,
                 name,
-                version
+                version,
+                preserve_python_environment,
             )
         else:
             if len(conda_environment) > 79:
@@ -247,12 +250,13 @@ class CondaDependency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path', 'name', 'version']
     dependency_type = 'conda'
 
-    def __init__(self, activate, environment_path, exact, name=None, version=None):
+    def __init__(self, activate, environment_path, exact, name=None, version=None, preserve_python_environment=False):
         self.activate = activate
         self.environment_path = environment_path
         self._exact = exact
         self._name = name
         self._version = version
+        self._preserve_python_environment = preserve_python_environment
 
     @property
     def exact(self):
@@ -267,11 +271,19 @@ class CondaDependency(Dependency):
         return self._version
 
     def shell_commands(self, requirement):
-        return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' 2>&1 """ % (
-            self.environment_path,
-            self.activate,
-            self.environment_path
-        )
+        if self._preserve_python_environment:
+            # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
+            # fine with just appending the PATH as done below. Other tools may require additional
+            # variables in the future.
+            return """export PATH=$PATH:'%s/bin' """ % (
+                self.environment_path,
+            )
+        else:
+            return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' 2>&1 """ % (
+                self.environment_path,
+                self.activate,
+                self.environment_path
+            )
 
 
 def _string_as_bool( value ):
