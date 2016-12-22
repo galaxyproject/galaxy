@@ -26,3 +26,9 @@ class TestStockToursTestCase(SeleniumTestCase):
         self.run_tour(
             os.path.join(STOCK_TOURS_DIRECTORY, "core.scratchbook.yaml"),
         )
+
+    @selenium_test
+    def test_core_history(self):
+        self.run_tour(
+            os.path.join(STOCK_TOURS_DIRECTORY, "core.history.yaml"),
+        )
