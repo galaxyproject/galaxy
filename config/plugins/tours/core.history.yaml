@@ -91,12 +91,12 @@ steps:
       postclick:
         - "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.delete-btn"
 
-    - element: "#current-history-panel > div.controls > div.subtitle > a"
+    - element: "#current-history-panel > .controls > .subtitle .toggle-deleted-link"
       title: "Include all deleted datasets"
       intro: "By default your history will hide all deleted datasets from you. You can visualize them by toggling this button."
       position: "bottom"
       postclick:
-        - "#current-history-panel > div.controls > div.subtitle > a"
+        - "#current-history-panel > .controls > .subtitle .toggle-deleted-link"
 
     - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.warnings > div > a"
       title: "Undeleting a dataset"
@@ -107,12 +107,12 @@ steps:
       postclick:
         - "#current-history-panel > ul.list-items > div:nth-child(1) > div.warnings > div > a"
 
-    - element: "#current-history-panel > div.controls > div.subtitle > a"
+    - element: "#current-history-panel > div.controls > .subtitle .toggle-deleted-link"
       title: "Hiding all deleted datasets"
       intro: "Hiding datasets that were previously deleted works in the same way."
       position: "bottom"
       preclick:
-        - "#current-history-panel > div.controls > div.subtitle > a"
+        - "#current-history-panel > div.controls > .subtitle .toggle-deleted-link"
 
     - element: "#current-history-panel > div.controls > div.title > div"
       title: "Change your History name"
