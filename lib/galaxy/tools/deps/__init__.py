@@ -32,7 +32,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_auto_install': False,
     'conda_auto_init': False,
     'conda_copy_dependencies': False,
-    'build_cache_on_first_run': False,
+    'precache_dependencies': True,
 }
 
 CONFIG_VAL_NOT_FOUND = object()
@@ -200,7 +200,7 @@ class CachedDependencyManager(DependencyManager):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
-        if not os.path.exists(hashed_dependencies_dir) and self.extra_config['build_cache_on_first_run']:
+        if not os.path.exists(hashed_dependencies_dir) and self.extra_config['precache_dependencies']:
             # Cache not present, try to create it
             self.build_cache(requirements, **kwds)
         if os.path.exists(hashed_dependencies_dir):
