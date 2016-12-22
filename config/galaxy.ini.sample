@@ -1110,8 +1110,13 @@ use_interactive = True
 #enable_quotas = False
 
 # This option allows users to see the full path of datasets via the "View
-# Details" option in the history.  Administrators can always see this.
+# Details" option in the history. This option also exposes the command line to
+# non-administrative users. Administrators can always see dataset paths.
 #expose_dataset_path = False
+
+# This option allows users to see the job metrics (except for environment
+# variables).
+#expose_potentially_sensitive_job_metrics = False
 
 # Data manager configuration options
 # Allow non-admin users to view available Data Manager options.

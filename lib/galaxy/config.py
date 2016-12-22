@@ -217,6 +217,7 @@ class Configuration( object ):
         self.track_jobs_in_database = string_as_bool( kwargs.get( 'track_jobs_in_database', 'True') )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
+        self.expose_potentially_sensitive_job_metrics = string_as_bool( kwargs.get( 'expose_potentially_sensitive_job_metrics', 'False' ) )
         self.enable_communication_server = string_as_bool( kwargs.get( 'enable_communication_server', 'False' ) )
         self.communication_server_host = kwargs.get( 'communication_server_host', 'http://localhost' )
         self.communication_server_port = int( kwargs.get( 'communication_server_port', '7070' ) )
