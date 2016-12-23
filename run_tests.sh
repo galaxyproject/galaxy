@@ -14,7 +14,6 @@ cat <<EOF
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
-'${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
@@ -346,16 +345,6 @@ do
           GALAXY_TEST_USER_API_KEY=$2
           shift 2
           ;;
-      -w|-workflow|--workflow)
-          if [ $# -gt 1 ]; then
-              workflow_file=$2
-              workflow_test=1
-              shift 2
-          else
-              echo "--workflow requires an argument" 1>&2
-              exit 1
-          fi
-          ;;
       -f|-framework|--framework)
           report_file="run_framework_tests.html"
           framework_test=1;
@@ -547,9 +536,6 @@ elif [ -n "$selenium_test" ] ; then
 elif [ -n "$data_managers_test" ] ; then
     [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
     extra_args="functional.test_data_managers$class -data_managers"
-elif [ -n "$workflow_test" ]; then
-    GALAXY_TEST_WORKFLOW_FILE="$workflow_file"
-    extra_args="functional.workflow:WorkflowTestCase"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
