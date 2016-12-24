@@ -73,7 +73,9 @@ class Configuration( object ):
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
-        tempfile.tempdir = self.new_file_path
+        override_tempdir = string_as_bool( kwargs.get( "override_tempdir", "True" ) )
+        if override_tempdir:
+            tempfile.tempdir = self.new_file_path
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # Galaxy OpenID settings
