@@ -89,18 +89,23 @@ define([], function() {
             this.field.collapsed || this.model.get( 'disabled' ) ? this.$field.hide() : this.$field.show();
             // render input field color and style
             this.field.model && this.field.model.set( { 'color': this.model.get( 'color' ), 'style': this.model.get( 'style' ) } );
+            var label = this.model.get( 'label' );
             // render collapsible options
             if ( !this.model.get( 'disabled' ) && this.model.get( 'collapsible_value' ) !== undefined ) {
                 var collapsible_state = this.field.collapsed ? 'enable' : 'disable';
                 this.$title_text.hide();
                 this.$collapsible.show();
-                this.$collapsible_text.text( this.model.get( 'label' ) );
+                if(label != false) {
+                    this.$collapsible_text.text( label );
+                }
                 this.$collapsible_icon.removeClass().addClass( 'icon' )
                                       .addClass( this.model.get( 'cls_' +  collapsible_state ) )
                                       .attr( 'data-original-title', this.model.get( 'text_' + collapsible_state ) )
                                       .tooltip( { placement: 'bottom' } );
             } else {
-                this.$title_text.show().text( this.model.get( 'label' ) );
+                if(label != false) {
+                    this.$title_text.show().text( label );
+                }
                 this.$collapsible.hide();
             }
         },

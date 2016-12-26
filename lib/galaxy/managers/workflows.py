@@ -391,9 +391,10 @@ class WorkflowContentsManager(UsesAnnotations):
                 } for pja in step.post_job_actions ]
             else:
                 inputs = step.module.get_runtime_inputs( connections=step.output_connections )
+                label = step.module.label or step.module.name
                 step_model = {
-                    'name'   : step.module.name,
-                    'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
+                    'name'      : label,
+                    'inputs'    : [ input.to_dict( trans ) for input in inputs.itervalues() ]
                 }
             step_model[ 'step_type' ] = step.type
             step_model[ 'step_index' ] = step.order_index

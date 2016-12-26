@@ -142,9 +142,16 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             input_def.onchange = input_def.onchange || function() { self.app.trigger( 'change', id ) };
             var field = this.parameters.create( input_def );
             this.app.field_list[ id ] = field;
+            var label = input_def.label;
+            console.log(input_def);
+            // If we explicitly set the label to false instead of null or empty string
+            // do not display it.
+            if( ! label && label != false ) {
+                label = input_def.name;
+            }
             var input_element = new InputElement( this.app, {
                 name                : input_def.name,
-                label               : input_def.label || input_def.name,
+                label               : label,
                 value               : input_def.value,
                 text_value          : input_def.text_value,
                 collapsible_value   : input_def.collapsible_value,
