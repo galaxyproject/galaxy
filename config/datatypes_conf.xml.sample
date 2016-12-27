@@ -151,6 +151,7 @@
     <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="True"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="True"/>
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="True" display_in_upload="True"/>
+    <datatype extension="jar" type="galaxy.datatypes.binary:JarArchive" subclass="True" display_in_upload="True"/>
     <!-- Proteomics Datatypes -->
     <datatype extension="pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" display_in_upload="True"/>
     <datatype extension="raw_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="True"/>
