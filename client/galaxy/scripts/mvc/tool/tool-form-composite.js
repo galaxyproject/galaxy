@@ -272,7 +272,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             );
                     }
                 } else {
-                    _.each( step.inputs, function( input ) { input.flavor = 'module' } );
+                    var is_simple_input = ([ 'data_input', 'data_collection_input' ]).indexOf( step.step_type ) != -1;
+                    _.each( step.inputs, function( input ) { input.flavor = 'module'; input.hide_label = is_simple_input; } );
                     form = new Form( Utils.merge({
                         title    : '<b>' + step.name + '</b>',
                         onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
