@@ -366,11 +366,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             tool_version = payload.get( 'tool_version' )
             tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
             module = module_factory.from_dict( trans, {
-                'type'          : 'tool',
-                'tool_id'       : tool.id,
-                'tool_state'    : None
+                'type'              : 'tool',
+                'tool_id'           : tool.id,
+                'tool_state'        : None
             } )
-            tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
+            tool_model = module.tool.to_json( trans, inputs, workflow_building_mode=True )
             module.recover_state( tool_model[ 'state_inputs' ] )
             return {
                 'tool_model'        : tool_model,
@@ -383,17 +383,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             }
         else:
             module = module_factory.from_dict( trans, {
-                'type'          : type,
-                'label'         : label
+                'type'              : type,
+                'label'             : label
             } )
             module.recover_state( inputs )
             return {
-                'label'         : module.label,
-                'tool_state'    : module.get_state(),
-                'data_inputs'   : module.get_data_inputs(),
-                'data_outputs'  : module.get_data_outputs(),
-                'config_form'   : module.get_config_form(),
-                'annotation'    : annotation
+                'label'             : module.label,
+                'tool_state'        : module.get_state(),
+                'data_inputs'       : module.get_data_inputs(),
+                'data_outputs'      : module.get_data_outputs(),
+                'config_form'       : module.get_config_form(),
+                'annotation'        : annotation
             }
 
     #

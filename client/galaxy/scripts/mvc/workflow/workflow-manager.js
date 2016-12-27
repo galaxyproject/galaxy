@@ -348,6 +348,7 @@ function( Connector, Toastr ) {
                 this.check_changes_in_active_form();
                 this.app.showForm( node.config_form, node );
             }
+            this.app.showWorkflowParameters();
         },
         layout : function () {
             this.check_changes_in_active_form();

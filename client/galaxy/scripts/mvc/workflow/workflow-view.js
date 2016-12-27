@@ -648,6 +648,7 @@ define([
         },
 
         showWorkflowParameters: function () {
+            //window.console.log( this.workflow.nodes );
             /*var parameter_re = /\$\{.+?\}/g;
             var workflow_parameters = [];
             var wf_parm_container = $("#workflow-parameters-container");
@@ -709,43 +710,46 @@ define([
                     options.workflow = this.workflow;
                     options.datatypes = this.datatypes;
                     form = new ToolForm.View( options );
-                } else if ( content && content.inputs ) {
+                } else {
                     content.cls = 'ui-portlet-narrow';
-                    content.inputs.unshift({
-                        type    : 'text',
-                        name    : 'label',
-                        label   : 'Label',
-                        value   : node.label,
-                        help    : 'Add a step label.'
-                    });
-                    content.inputs.push({
-                        type    : 'text',
-                        name    : 'annotation',
-                        label   : 'Annotation',
-                        value   : node.annotation,
-                        area    : true,
-                        help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
-                    });
-                    content.onchange = function() {
-                        Utils.request({
-                            type    : 'POST',
-                            url     :  Galaxy.root + 'api/workflows/build_module',
-                            data    : {
-                                id      : node.id,
-                                type    : node.type,
-                                inputs  : form.data.create()
-                            },
-                            success : function( data ) {
-                                node.update_field_data( data );
-                            }
+                    if ( content.inputs && content.inputs.length > 0 ) {
+                        content.inputs.unshift({
+                            type    : 'text',
+                            name    : 'label',
+                            label   : 'Label',
+                            value   : node.label,
+                            help    : 'Add a step label.'
                         });
-                    };
+                        content.inputs.push({
+                            type    : 'text',
+                            name    : 'annotation',
+                            label   : 'Annotation',
+                            value   : node.annotation,
+                            area    : true,
+                            help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
+                        });
+                        content.onchange = function() {
+                            Utils.request({
+                                type    : 'POST',
+                                url     :  Galaxy.root + 'api/workflows/build_module',
+                                data    : {
+                                    id      : node.id,
+                                    type    : node.type,
+                                    inputs  : form.data.create()
+                                },
+                                success : function( data ) {
+                                    node.update_field_data( data );
+                                }
+                            });
+                        };
+                    } else {
+                        content.message = 'No inputs available for this module.';
+                        content.message_status = 'info';
+                    }
                     form = new Form( content );
                 }
-                if ( form ) {
-                    $el.append( form.$el );
-                    $container.append( $el );
-                }
+                $el.append( form.$el );
+                $container.append( $el );
             }
             $( '.' + cls ).hide();
             $container.find( '#' + id ).show();
@@ -761,7 +765,7 @@ define([
 
         prebuildNode: function ( type, title_text, content_id ) {
             var self = this;
-            var $f = $("<div class='toolForm toolFormInCanvas'></div>");
+            var $f = $("<div class='toolForm toolFormInCanvas'/>");
             var $title = $("<div class='toolFormTitle unselectable'><span class='nodeTitle'>" + title_text + "</div></div>" );
             add_node_icon($title.find('.nodeTitle'), type);
             $f.append( $title );
@@ -773,7 +777,7 @@ define([
             node.content_id = content_id;
             var tmp = "<div><img height='16' align='middle' src='" + Galaxy.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
             $f.find(".toolFormBody").append(tmp);
-            node.config_form = tmp;
+            node.config_form = {title: title_text, inputs: []};
             // Fix width to computed width
             // Now add floats
             var buttons = $("<div class='buttons' style='float: right;'></div>");
