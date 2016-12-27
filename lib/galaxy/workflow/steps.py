@@ -53,7 +53,12 @@ def edgelist_for_workflow_steps( steps ):
     for step in steps:
         edges.append( ( steps_to_index[step], steps_to_index[step] ) )
         for conn in step.input_connections:
-            edges.append( ( steps_to_index[conn.output_step], steps_to_index[conn.input_step] ) )
+            output_index = steps_to_index[conn.output_step]
+            input_index = steps_to_index[conn.input_step]
+            # self connection - a cycle not detectable by topsort function.
+            if output_index == input_index:
+                raise CycleError([], 0, 0)
+            edges.append( ( output_index, input_index ) )
     return edges
 
 
