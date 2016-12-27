@@ -362,6 +362,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         annotation = inputs.get( 'annotation', '' )
         label = inputs.get( 'label', '' )
         tool_id = payload.get( 'tool_id' )
+        content_id = payload.get( 'content_id' )
         if tool_id:
             tool_version = payload.get( 'tool_version' )
             tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
@@ -384,7 +385,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             module = module_factory.from_dict( trans, {
                 'type'              : type,
-                'label'             : label
+                'label'             : label,
+                'content_id'        : content_id
             } )
             module.recover_state( inputs )
             return {

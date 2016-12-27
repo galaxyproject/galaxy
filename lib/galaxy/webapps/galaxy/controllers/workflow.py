@@ -673,31 +673,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return trans.fill_template( "workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
 
     @web.json
-    def get_new_module_info( self, trans, type, **kwargs ):
-        """
-        Get the info for a new instance of a module initialized with default
-        parameters (any keyword arguments will be passed along to the module).
-        Result includes data inputs and outputs, html representation
-        of the initial form, and the initial tool state (with default values).
-        This is called asynchronously whenever a new node is added.
-        """
-        trans.workflow_building_mode = True
-        module = module_factory.new( trans, type, **kwargs )
-        tool_model = None
-        return {
-            'type': module.type,
-            'name': module.get_name(),
-            'content_id': module.get_content_id(),
-            'tool_state': module.get_state(),
-            'tool_model': tool_model,
-            'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
-            'data_inputs': module.get_data_inputs(),
-            'data_outputs': module.get_data_outputs(),
-            'config_form': module.get_config_form(),
-            'annotation': ""
-        }
-
-    @web.json
     def load_workflow( self, trans, id ):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and

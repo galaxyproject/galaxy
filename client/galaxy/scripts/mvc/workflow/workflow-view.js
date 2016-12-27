@@ -567,12 +567,26 @@ define([
         },
 
         _moduleInitAjax: function(node, request_data) {
-            $.ajax( {
-                url: this.urls.get_new_module_info,
+            var self = this;
+            Utils.request({
+                type    : 'POST',
+                url     : Galaxy.root + 'api/workflows/build_module',
+                data    : request_data,
+                success : function( data ) {
+                    window.console.log( data );
+                    node.init_field_data( data );
+                    node.update_field_data( data );
+                    self.workflow.activate_node( node );
+                }
+            });
+
+            /*$.ajax( {
+                url: Galaxy.root + 'api/workflows/new_module',
                 data: request_data,
                 global: false,
                 dataType: "json",
                 success: function( data ) {
+                    window.console.log( data );
                     node.init_field_data( data );
                 },
                 error: function( x, e ) {
@@ -582,13 +596,13 @@ define([
                     }
                     node.error( m );
                 }
-            });
+            });*/
         },
 
         // Add a new step to the workflow by tool id
         add_node_for_tool: function ( id, title ) {
             node = this.workflow.create_node( 'tool', title, id );
-            this._moduleInitAjax(node, { type: "tool", content_id: id, "_": "true" });
+            this._moduleInitAjax(node, { type: "tool", tool_id: id, "_": "true" });
         },
 
         // Add a new step to the workflow by tool id
@@ -700,8 +714,10 @@ define([
         showForm: function ( content, node ) {
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
+            window.console.log( 'attempt to show' );
+            window.console.log( content );
             var $container = $( '#' + cls );
-            if ( $container.find( '#' + id ).length == 0 ) {
+            if ( $container.find( '#' + id ).length == 0 && content.inputs && _.size( content.inputs ) ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
                 var form = null;
                 if ( node.type == 'tool' ) {
@@ -777,7 +793,7 @@ define([
             node.content_id = content_id;
             var tmp = "<div><img height='16' align='middle' src='" + Galaxy.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
             $f.find(".toolFormBody").append(tmp);
-            node.config_form = {title: title_text, inputs: []};
+            node.config_form = {title: title_text, prebuild: true};
             // Fix width to computed width
             // Now add floats
             var buttons = $("<div class='buttons' style='float: right;'></div>");

@@ -453,7 +453,7 @@ class InputDataCollectionModule( InputModule ):
                 name='output',
                 extensions=['input_collection'],
                 collection=True,
-                collection_type=self.state.inputs[ 'collection_type' ]
+                collection_type=self.state.inputs.get( 'collection_type', self.default_collection_type )
             )
         ]
 
