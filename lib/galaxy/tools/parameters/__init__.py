@@ -2,7 +2,7 @@
 Classes encapsulating Galaxy tool parameters.
 """
 import re
-from json import dumps, loads
+from json import dumps
 
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix

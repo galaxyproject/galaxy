@@ -52,6 +52,7 @@ def swap_inf_nan( val ):
     else:
         return val
 
+
 def safe_loads( arg ):
     """
     This is a wrapper around loads that returns the parsed value instead of
@@ -62,6 +63,7 @@ def safe_loads( arg ):
     except ( TypeError, ValueError ):
         loaded = arg
     return loaded
+
 
 def safe_dumps( *args, **kwargs ):
     """

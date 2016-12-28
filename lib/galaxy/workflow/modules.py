@@ -17,6 +17,7 @@ from galaxy.tools.parameters import params_to_incoming
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import (
     parameter_types,
+    BooleanToolParameter,
     TextToolParameter,
     SelectToolParameter,
     DataCollectionToolParameter,
@@ -29,7 +30,6 @@ from galaxy.tools import DefaultToolState
 from galaxy.tools import ToolInputsNotReadyException
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
-from galaxy.web.framework import formbuilder
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
