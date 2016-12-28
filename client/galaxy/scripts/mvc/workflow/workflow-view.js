@@ -717,7 +717,7 @@ define([
             window.console.log( 'attempt to show' );
             window.console.log( content );
             var $container = $( '#' + cls );
-            if ( $container.find( '#' + id ).length == 0 && content.inputs && _.size( content.inputs ) ) {
+            if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
                 var form = null;
                 if ( node.type == 'tool' ) {
@@ -793,7 +793,6 @@ define([
             node.content_id = content_id;
             var tmp = "<div><img height='16' align='middle' src='" + Galaxy.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
             $f.find(".toolFormBody").append(tmp);
-            node.config_form = {title: title_text, prebuild: true};
             // Fix width to computed width
             // Now add floats
             var buttons = $("<div class='buttons' style='float: right;'></div>");
