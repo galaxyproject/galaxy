@@ -174,10 +174,12 @@ def test_data_collection_input_config_form():
     assert result[ 'inputs' ][ 0 ][ 'value' ], 'Cool Collection'
     assert result[ 'inputs' ][ 1 ][ 'value' ], 'list:paired'
 
+
 def test_cannot_create_tool_modules_for_missing_tools():
     trans = MockTrans()
     module = modules.module_factory.from_dict( trans, { "type": "tool", "tool_id": "cat1" } )
     assert not module.tool
+
 
 def test_updated_tool_version():
     trans = MockTrans()
