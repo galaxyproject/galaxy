@@ -30,6 +30,7 @@ from galaxy.tools import DefaultToolState
 from galaxy.tools import ToolInputsNotReadyException
 from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
+from galaxy.util.json import safe_loads
 from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
@@ -112,10 +113,8 @@ class WorkflowModule( object ):
         inputs = self.get_inputs()
         if inputs:
             self.state.decode( state, Bunch( inputs=inputs ), self.trans.app )
-        elif isinstance( state, basestring ):
-            self.state.inputs = loads( state )
-        elif state:
-            self.state.inputs = state
+        else:
+            self.state.inputs = safe_loads( state )
 
     def get_errors( self ):
         """ This returns a step related error message as string or None """
@@ -417,13 +416,13 @@ class InputDataCollectionModule( InputModule ):
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
         input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) )
         input_collection_type = TextToolParameter( None, XML(
-        '''
-        <param name="collection_type" label="Collection type" type="text" value="%s">
-            <option value="list">List of Datasets</option>
-            <option value="paired">Dataset Pair</option>
-            <option value="list:paired">List of Dataset Pairs</option>
-        </param>
-        ''' % collection_type ) )
+            '''
+            <param name="collection_type" label="Collection type" type="text" value="%s">
+                <option value="list">List of Datasets</option>
+                <option value="paired">Dataset Pair</option>
+                <option value="list:paired">List of Dataset Pairs</option>
+            </param>
+            ''' % collection_type ) )
         return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )
 
     def get_runtime_inputs( self, **kwds ):
@@ -458,15 +457,15 @@ class InputParameterModule( WorkflowModule ):
         parameter_type = self.state.inputs.get( "parameter_type", self.default_parameter_type )
         optional = self.state.inputs.get( "optional", self.default_optional )
         input_parameter_type = SelectToolParameter( None, XML(
-        '''
-        <param name="parameter_type" label="Parameter type" type="select" value="%s">
-            <option value="text">Text</option>
-            <option value="integer">Integer</option>
-            <option value="float">Float</option>
-            <option value="boolean">Boolean (True or False)</option>
-            <option value="color">Color</option>
-        </param>
-        ''' % parameter_type ) )
+            '''
+            <param name="parameter_type" label="Parameter type" type="select" value="%s">
+                <option value="text">Text</option>
+                <option value="integer">Integer</option>
+                <option value="float">Float</option>
+                <option value="boolean">Boolean (True or False)</option>
+                <option value="color">Color</option>
+            </param>
+            ''' % parameter_type ) )
         return odict([( "name", TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) ),
                       ( "parameter_type", input_parameter_type ),
                       ( "optional", BooleanToolParameter( None, Element( "param", name="optional", label="Optional", type="boolean", value=optional )))])
