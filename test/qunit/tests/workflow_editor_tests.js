@@ -377,7 +377,7 @@ define([
                 data_outputs: [],
                 type: "tool",
                 name: "cat1",
-                form_html: "<form>",
+                config_form: "{}",
                 tool_state: "ok",
                 tool_errors: false,
                 tooltip: "tool tooltip",
@@ -388,7 +388,7 @@ define([
             node.init_field_data( data );
             equal( node.type, "tool" );
             equal( node.name, "cat1" );
-            equal( node.form_html, "<form>" );
+            equal( node.config_form, "{}" );
             equal( node.tool_state, "ok" );
             equal( node.tooltip, "tool tooltip" );
             equal( node.annotation, "tool annotation" );
