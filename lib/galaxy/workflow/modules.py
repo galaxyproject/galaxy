@@ -53,14 +53,6 @@ class WorkflowModule( object ):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def new( Class, trans, content_id=None ):
-        module = Class( trans, content_id )
-        inputs = module.get_inputs()
-        module.state.initialize( trans, Bunch( inputs=inputs ) )
-        module.label = None
-        return module
-
-    @classmethod
     def from_dict( Class, trans, d, **kwds ):
         module = Class( trans, **kwds )
         module.recover_state( d.get( "tool_state" ) )
@@ -237,13 +229,6 @@ class SubWorkflowModule( WorkflowModule ):
     type = "subworkflow"
     name = "Subworkflow"
     default_name = "Subworkflow"
-
-    @classmethod
-    def new( Class, trans, content_id=None ):
-        module = Class( trans )
-        module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
-        module.label = None
-        return module
 
     @classmethod
     def from_dict( Class, trans, d ):
@@ -588,13 +573,6 @@ class ToolModule( WorkflowModule ):
         self.version_changes = []
 
     # ---- Creating modules from various representations ---------------------
-
-    @classmethod
-    def new( Class, trans, content_id=None ):
-        module = super( ToolModule, Class ).new( trans, content_id )
-        if not module.tool:
-            raise ToolMissingException( "Cannot create module for missing tool %s." % content_id )
-        return module
 
     @classmethod
     def from_dict( Class, trans, d ):
@@ -987,14 +965,6 @@ class WorkflowModuleFactory( object ):
 
     def __init__( self, module_types ):
         self.module_types = module_types
-
-    def new( self, trans, type, content_id=None ):
-        """
-        Return module for type and (optional) tool_id intialized with
-        new / default state.
-        """
-        assert type in self.module_types
-        return self.module_types[type].new( trans, content_id )
 
     def from_dict( self, trans, d, **kwargs ):
         """
