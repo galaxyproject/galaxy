@@ -3,11 +3,14 @@
 # Network) in the context of the OpenMinTeD project (openminted.eu)
 
 import logging
+import os
+import shutil
 from kamaki.clients import astakos, pithos, utils, ClientError
-from galaxy.exceptions import ObjectInvalid
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     safe_relpath,
+    umask_fix_perms,
 )
 from ..objectstore import ObjectStore
 
@@ -151,16 +154,211 @@ class PithosObjectStore(ObjectStore):
             rel_path = os.path.join(rel_path, an)
         return rel_path
 
-    def exists(self, obj, **kwargs):
+    def _get_cache_path(self, rel_path):
+        return os.path.abspath(os.path.join(self.staging_path, rel_path))
+
+    def _in_cache(self, rel_path):
+        """Check if the given dataset is in the local cache and return True if
+           so.
         """
+        cache_path = self._get_cache_path(rel_path)
+        return os.path.exists(cache_path)
+
+    def _fix_permissions(self, rel_path):
+        """ Set permissions on rel_path"""
+        for basedir, _, files in os.walk(rel_path):
+            umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
+            for filename in files:
+                path = os.path.join(basedir, filename)
+                # Ignore symlinks
+                if os.path.islink(path):
+                    continue
+                umask_fix_perms(
+                    path, self.config.umask, 0o666, self.config.gid)
+
+    def _pull_into_cache(self, rel_path):
+        # Ensure the cache directory structure exists (e.g., dataset_#_files/)
+        rel_path_dir = os.path.dirname(rel_path)
+        rel_cache_path_dir = self._get_cache_path(rel_path_dir)
+        if not os.path.exists(rel_cache_path_dir):
+            os.makedirs(self._get_cache_path(rel_path_dir))
+        # Now pull in the file
+        cache_path = self._get_cache_path(rel_path_dir)
+        self.pithos.download_object(rel_path, cache_path)
+        self._fix_permissions(cache_path)
+        return cache_path
+
+    # No need to overwrite "shutdown"
+
+    def exists(self, obj, **kwargs):
+        """Check if file exists, fix if file in cache and not on Pithos+
         :returns: weather the file exists remotely or in cache
         """
-        # TODO: Check if file exists in cache
         path = self._construct_path(obj, **kwargs)
         try:
             self.pithos.get_object_info(path)
+            return True
         except ClientError as ce:
             if ce.status not in (404, ):
                 raise
+
+        in_cache = self._in_cache(path)
+        dir_only = kwargs.get('dir_only', False)
+        if dir_only:
+            base_dir = kwargs.get('base_dir', None)
+            if in_cache:
+                return True
+            elif base_dir:  # for JOB_WORK directory
+                if not os.path.exists(path):
+                    os.makedirs(path)
+                return True
             return False
-        return True
+
+        if in_cache:
+            cache_path = self._get_cache_path(path)
+            # Maybe the upload should have happened in some thread elsewhere?
+            with open(cache_path) as f:
+                self.pithos.upload_object(path, f)
+            return True
+        return False
+
+    def create(self, obj, **kwargs):
+        """Touch a file (aka create empty), if it doesn't exist"""
+        if not self.exists(obj, **kwargs):
+            # Pull out locally used fields
+            extra_dir = kwargs.get('extra_dir', None)
+            extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
+            dir_only = kwargs.get('dir_only', False)
+            alt_name = kwargs.get('alt_name', None)
+
+            # Construct hashed path
+            rel_path = os.path.join(*directory_hash_id(obj.id))
+
+            # Optionally append extra_dir
+            if extra_dir is not None:
+                if extra_dir_at_root:
+                    rel_path = os.path.join(extra_dir, rel_path)
+                else:
+                    rel_path = os.path.join(rel_path, extra_dir)
+
+            # Create given directory in cache
+            cache_dir = os.path.join(self.staging_path, rel_path)
+            if not os.path.exists(cache_dir):
+                os.makedirs(cache_dir)
+
+            if dir_only:
+                self.pithos.upload_from_string(
+                    rel_path, '', content_type='application/directory')
+            else:
+                rel_path = os.path.join(
+                    rel_path,
+                    alt_name if alt_name else 'dataset_{0}.dat'.format(obj.id))
+                new_file = os.path.join(self.staging_path, rel_path)
+                open(new_file, 'w').close()
+                self.pithos.upload_from_string(rel_path, '')
+
+    def empty(self, obj, **kwargs):
+        """
+        :returns: weather the object has content
+        :raises ObjectNotFound:
+        """
+        if not self.exists(obj, **kwargs):
+            raise ObjectNotFound(
+                'objectstore.empty, object does not exist: {obj}, '
+                'kwargs: {kwargs}'.format(obj=obj, kwargs=kwargs))
+        return bool(self.size(obj, **kwargs))
+
+    def size(self, obj, **kwargs):
+        """
+        :returns: The size of the object, or 0 if it doesn't exist (sorry for
+            that, not our fault, the ObjectStore interface is like that some
+            times)
+        """
+        path = self._construct_path(obj, **kwargs)
+        if self._in_cache(path):
+            try:
+                return os.path.getsize(self._get_cache_path(path))
+            except OSError as ex:
+                log.warning(
+                    'Could not get size of file {path} in local cache,'
+                    'will try Pithos. Error: {err}'.format(path=path, err=ex))
+        try:
+            file = self.pithos.get_object_info(path)
+        except ClientError as ce:
+            if ce.status not in (404, ):
+                raise
+            return 0
+        return int(file['content-length'])
+
+    def delete(self, obj, **kwargs):
+        """Delete the object
+        :returns: weather the object was deleted
+        """
+        path = self._construct_path(obj, **kwargs)
+        base_dir = kwargs.get('base_dir', None)
+        dir_only = kwargs.get('dir_only', False)
+        obj_dir = kwargs.get('obj_dir', False)
+        try:
+            if all((base_dir, dir_only, obj_dir)):
+                shutil.rmtree(os.path.abspath(path))
+                return True
+            cache_path = self._get_cache_path(path)
+
+            entire_dir = kwargs.get('entire_dir', False)
+            extra_dir = kwargs.get('extra_dir', False)
+            if entire_dir and extra_dir:
+                shutil.rmtree(cache_path)
+                log.debug('On Pithos: delete -r {path}/'.format(path=path))
+                self.pithos.del_object(path, delimiter='/')
+                return True
+            else:
+                os.unlink(cache_path)
+                self.pithos.del_object(path)
+        except OSError:
+            log.exception(
+                '{0} delete error'.format(self.get_filename(obj, **kwargs)))
+        except ClientError as ce:
+            log.exception('Could not delete {path} from Pithos, {err}'.format(
+                path=path, err=ce))
+        return False
+
+    def get_data(self, obj, start=0, count=-1, **kwargs):
+        """Fetch (e.g., download) data
+        :param start: Chunk of data starts here
+        :param count: Fetch at most as many data, fetch all if negative
+        """
+        path = self._construct_path(obj, **kwargs)
+        if self._in_cache(path):
+            cache_path = self._pull_into_cache(path)
+        else:
+            cache_path = self._get_cache_path(path)
+        data_file = open(cache_path, 'r')
+        data_file.seek(start)
+        content = data_file.read(count)
+        data_file.close()
+        return content
+
+    def get_filename(self, obj, **kwargs):
+        """Get the expected filename with absolute path"""
+        base_dir = kwargs.get('base_dir', None)
+        dir_only = kwargs.get('dir_only', False)
+        obj_dir = kwargs.get('obj_dir', False)
+        path = self._construct_path(obj, **kwargs)
+
+        # for JOB_WORK directory
+        if base_dir and dir_only and obj_dir:
+            return os.path.abspath(path)
+        cache_path = self._get_cache_path(path)
+        if dir_only:
+            if not os.path.exists(cache_path):
+                os.makedirs(cache_path)
+            return cache_path
+        if self._in_cache(path):
+            return cache_path
+        elif self.exists(obj, **kwargs):
+            if not dir_only:
+                self._pull_into_cache(path)
+                return cache_path
+        raise ObjectNotFound(
+            'objectstore.get_filename, no cache_path: {obj}, '
+            'kwargs: {kwargs}'.format(obj, kwargs))
