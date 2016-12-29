@@ -184,6 +184,7 @@ def setup_galaxy_config(
         library_import_dir=library_import_dir,
         log_destination="stdout",
         new_file_path=new_file_path,
+        override_tempdir=False,
         master_api_key=master_api_key,
         running_functional_tests=True,
         shed_tool_data_table_config=shed_tool_data_table_config,
