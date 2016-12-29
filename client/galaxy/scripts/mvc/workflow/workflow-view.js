@@ -714,8 +714,6 @@ define([
         showForm: function ( content, node ) {
             var cls = 'right-content';
             var id  = cls + '-' + node.id;
-            window.console.log( 'attempt to show' );
-            window.console.log( content );
             var $container = $( '#' + cls );
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );

@@ -521,7 +521,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 'tooltip',
                 'data_inputs',
                 'data_outputs',
-                'form_html',
+                'config_form',
                 'annotation',
                 'post_job_actions',
                 'workflow_outputs',
