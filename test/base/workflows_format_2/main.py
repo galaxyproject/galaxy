@@ -31,9 +31,12 @@ def convert_and_import_workflow(has_workflow, **kwds):
         workflow = yaml_to_workflow(has_workflow, galaxy_interface, workflow_directory)
 
     publish = kwds.get("publish", False)
+    exact_tools = kwds.get("exact_tools", False)
     import_kwds = {}
     if publish:
         import_kwds["publish"] = True
+    if exact_tools:
+        import_kwds["exact_tools"] = True
     return galaxy_interface.import_workflow(workflow, **import_kwds)
 
 
