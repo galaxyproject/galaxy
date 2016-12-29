@@ -65,8 +65,23 @@ def selenium_test(f):
                     os.makedirs(GALAXY_TEST_ERRORS_DIRECTORY)
                 result_name = f.__name__ + datetime.datetime.now().strftime("%Y%m%d%H%M%s")
                 target_directory = os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, result_name)
+
+                def write_file(name, content):
+                    with open(os.path.join(target_directory, name), "wb") as buf:
+                        buf.write(content.encode("utf-8"))
+
                 os.makedirs(target_directory)
                 self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
+                write_file("page_source.txt", self.driver.page_source)
+                write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
+                iframes = self.driver.find_elements_by_css_selector("iframe")
+                for iframe in iframes:
+                    pass
+                    # TODO: Dump content out for debugging in the future.
+                    # iframe_id = iframe.get_attribute("id")
+                    # if iframe_id:
+                    #     write_file("iframe_%s" % iframe_id, "My content")
+
             raise
 
     return func_wrapper
