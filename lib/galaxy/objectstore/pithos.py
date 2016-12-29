@@ -362,3 +362,54 @@ class PithosObjectStore(ObjectStore):
         raise ObjectNotFound(
             'objectstore.get_filename, no cache_path: {obj}, '
             'kwargs: {kwargs}'.format(obj, kwargs))
+
+    def update_from_file(self, obj, **kwargs):
+        """Update the store when a file is updated"""
+        if kwargs.get('create'):
+            self.create(obj, **kwargs)
+        if not self.exists(obj, **kwargs):
+            raise ObjectNotFound(
+                'objectstore.update_from_file, object does not exist: {obj}, '
+                'kwargs: {kwargs}'.format(obj, kwargs))
+
+        path = self._construct_path(obj, **kwargs)
+        cache_path = self._get_cache_path(path)
+        file_name = kwargs.get('file_name')
+        if file_name:
+            source_path = os.path.abspath(file_name)
+            try:
+                if source_path != cache_path:
+                    shutil.copy2(source_path, cache_path)
+                self._fix_permissions(cache_path)
+            except OSError:
+                log.exception(
+                    'Trouble copying source file "{source}" to cache "{cache}"'
+                    ''.format(source=source_path, cache=cache_path))
+        else:
+            with open(cache_path) as f:
+                self.pithos.upload_object(obj, f)
+
+    def get_object_url(self, obj, **kwargs):
+        """
+        :returns: URL for direct access, None if no object
+        """
+        if self.exists(obj, **kwargs):
+            path = self._construct_path(obj, **kwargs)
+            try:
+                return self.pithos.publish_object(path)
+            except ClientError as ce:
+                log.exception(
+                    'Trouble generating URL for dataset "{}"'.format(path))
+                log.exception('Kamaki: {0}'.format(ce))
+        return None
+
+    def get_store_usage_percent(self):
+        """
+        :returns: percentage indicating how full the store is
+        """
+        quotas = self.astakos.get_quotas()
+        project = self.config_dict['container']['project']
+        pithos_quotas = quotas[project]['pithos.diskspace']
+        usage = pithos_quotas['usage']
+        limit = min(pithos_quotas['limit'], pithos_quotas['project_limit'])
+        return (100.0 * usage) / limit
