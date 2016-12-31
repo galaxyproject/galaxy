@@ -744,7 +744,7 @@ class ToolsTestCase( api.ApiTestCase ):
     @skip_without_tool( "identifier_single" )
     def test_identifier_outside_map( self ):
         history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123', name="Plain HDA" )
         inputs = {
             "input1": { 'src': 'hda', 'id': new_dataset1["id"] },
         }
@@ -759,7 +759,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( implicit_collections ), 0 )
         output1 = outputs[ 0 ]
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
-        self.assertEquals( output1_content.strip(), "Pasted Entry" )
+        self.assertEquals( output1_content.strip(), "Plain HDA" )
 
     @skip_without_tool( "identifier_multiple" )
     def test_identifier_in_multiple_reduce( self ):
@@ -784,8 +784,8 @@ class ToolsTestCase( api.ApiTestCase ):
     @skip_without_tool( "identifier_multiple" )
     def test_identifier_with_multiple_normal_datasets( self ):
         history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
-        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123', name="Normal HDA1" )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456', name="Normal HDA2" )
         inputs = {
             "input1": [
                 { 'src': 'hda', 'id': new_dataset1["id"] },
@@ -803,7 +803,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( implicit_collections ), 0 )
         output1 = outputs[ 0 ]
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
-        self.assertEquals( output1_content.strip(), "Pasted Entry\nPasted Entry" )
+        self.assertEquals( output1_content.strip(), "Normal HDA1\nNormal HDA2" )
 
     @skip_without_tool( "identifier_collection" )
     def test_identifier_with_data_collection( self ):
