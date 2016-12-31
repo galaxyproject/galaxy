@@ -24,7 +24,7 @@ var menu = [
     },
 
     {
-        html    : _l( 'History Actions' ),
+        html    : _l( 'Current History' ),
         header  : true,
         anon    : true
     },

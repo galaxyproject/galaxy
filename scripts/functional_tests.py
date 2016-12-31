@@ -56,6 +56,17 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
         self.build_tool_tests()
 
 
+class SeleniumGalaxyTestDriver(driver_util.GalaxyTestDriver):
+    """Galaxy-style nose TestDriver for selenium framework testing."""
+
+    framework_tool_and_types = True
+
+    @driver_util.classproperty
+    def default_web_host(cls):
+        from selenium_tests.framework import default_web_host_for_selenium_tests
+        return default_web_host_for_selenium_tests()
+
+
 class FrameworkToolsGalaxyTestDriver(DefaultGalaxyTestDriver):
     """Galaxy-style nose TestDriver for testing framework Galaxy tools."""
 
@@ -77,22 +88,12 @@ class DataManagersGalaxyTestDriver(driver_util.GalaxyTestDriver):
         )
 
 
-class WorkflowGalaxyTestDriver(driver_util.GalaxyTestDriver):
-    """Galaxy-style nose TestDriver for testing a Galaxy workflow."""
-
-    def build_tests(self):
-        """Setup WorkflowTestCase for test execution."""
-        import functional.workflow
-        functional.workflow.WorkflowTestCase.master_api_key = get_master_api_key()
-        functional.workflow.WorkflowTestCase.user_api_key = get_user_api_key()
-
-
 TEST_DRIVERS = {
     '-migrated': MigratedToolsGalaxyTestDriver,
     '-installed': InstalledToolsGalaxyTestDriver,
     '-framework': FrameworkToolsGalaxyTestDriver,
     '-data_managers': DataManagersGalaxyTestDriver,
-    '-workflow': WorkflowGalaxyTestDriver,
+    '-selenium': SeleniumGalaxyTestDriver,
 }
 
 

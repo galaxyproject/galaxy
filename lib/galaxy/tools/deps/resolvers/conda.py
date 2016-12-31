@@ -31,7 +31,7 @@ from ..resolvers import (
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "conda-forge,r,bioconda,iuc"
+DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,r,defaults,conda-forge"
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +53,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_prefix = os.path.join(
                 dependency_manager.default_base_path, DEFAULT_BASE_PATH_DIRECTORY
             )
+        conda_prefix = os.path.abspath(conda_prefix)
 
         self.conda_prefix_parent = os.path.dirname(conda_prefix)
 
@@ -119,6 +120,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_target, conda_context=self.conda_context
         )
 
+        preserve_python_environment = kwds.get("preserve_python_environment", False)
+
         job_directory = kwds.get("job_directory", None)
         if not is_installed and self.auto_install and job_directory:
             is_installed = self.install_dependency(name=name, version=version, type=type)
@@ -143,7 +146,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             conda_environment,
             exact,
             name,
-            version
+            version,
+            preserve_python_environment=preserve_python_environment,
         )
 
     def list_dependencies(self):
@@ -194,7 +198,7 @@ class CondaDependency(Dependency):
     dependency_type = 'conda'
     cacheable = True
 
-    def __init__(self, conda_context, environment_path, exact, name=None, version=None):
+    def __init__(self, conda_context, environment_path, exact, name=None, version=None, preserve_python_environment=False):
         self.activate = conda_context.activate
         self.conda_context = conda_context
         self.environment_path = environment_path
@@ -202,6 +206,7 @@ class CondaDependency(Dependency):
         self._name = name
         self._version = version
         self.cache_path = None
+        self._preserve_python_environment = preserve_python_environment
 
     @property
     def exact(self):
@@ -242,11 +247,19 @@ class CondaDependency(Dependency):
         if not self.cache_path:
             # Build an isolated environment if not using a cached dependency manager
             self.build_environment()
-        return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' > conda_activate.log 2>&1 """ % (
-            self.environment_path,
-            self.activate,
-            self.environment_path
-        )
+        if self._preserve_python_environment:
+            # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
+            # fine with just appending the PATH as done below. Other tools may require additional
+            # variables in the future.
+            return """export PATH=$PATH:'%s/bin' """ % (
+                self.environment_path,
+            )
+        else:
+            return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' > conda_activate.log 2>&1 """ % (
+                self.environment_path,
+                self.activate,
+                self.environment_path
+            )
 
 
 def _string_as_bool( value ):

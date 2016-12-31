@@ -40,3 +40,7 @@ command_inject = --sig-proxy=true -e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=12
 # share data between the IE and Galaxy.
 #docker_galaxy_temp_dir = None
 
+# If your Docker container exposes more then one port, Galaxy needs to know to
+# which ports it needs to connect. With this option you can specify the port number
+# inside your container to which Galaxy should connect the UI.
+# docker_connect_port = None

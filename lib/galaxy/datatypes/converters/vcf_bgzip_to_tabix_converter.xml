@@ -1,14 +1,12 @@
 <tool id="CONVERTER_vcf_bgzip_to_tabix_0" name="Convert BGZ VCF to tabix" version="1.0.0" hidden="true">
-<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">interval_to_tabix_converter.py -P 'vcf' '' '$input1' '$output1'</command>
-  <inputs>
-    <page>
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <command>python '$__tool_directory__/interval_to_tabix_converter.py' -P 'vcf' '' '$input1' '$output1'</command>
+    <inputs>
         <param format="vcf_bgzip" name="input1" type="data" label="Choose BGZIP'd VCF file"/>
-    </page>
-   </inputs>
-  <outputs>
-    <data format="tabix" name="output1"/>
-  </outputs>
-  <help>
-  </help>
+    </inputs>
+    <outputs>
+        <data format="tabix" name="output1"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

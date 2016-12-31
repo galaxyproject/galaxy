@@ -265,12 +265,14 @@ class JobConfiguration( object ):
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
                      walltime=str,
+                     total_walltime=str,
                      output_size=util.size_to_bytes)
 
         self.limits = Bunch(registered_user_concurrent_jobs=None,
                             anonymous_user_concurrent_jobs=None,
                             walltime=None,
                             walltime_delta=None,
+                            total_walltime={},
                             output_size=None,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
@@ -287,12 +289,26 @@ class JobConfiguration( object ):
                         self.limits.destination_total_concurrent_jobs[id] = int(limit.text)
                     else:
                         self.limits.destination_user_concurrent_jobs[id] = int(limit.text)
+                elif type == 'total_walltime':
+                    self.limits.total_walltime["window"] = (
+                        int( limit.get('window') ) or 30
+                    )
+                    self.limits.total_walltime["raw"] = (
+                        types.get(type, str)(limit.text)
+                    )
                 elif limit.text:
                     self.limits.__dict__[type] = types.get(type, str)(limit.text)
 
         if self.limits.walltime is not None:
             h, m, s = [ int( v ) for v in self.limits.walltime.split( ':' ) ]
             self.limits.walltime_delta = datetime.timedelta( 0, s, 0, 0, m, h )
+
+        if "raw" in self.limits.total_walltime:
+            h, m, s = [ int( v ) for v in
+                        self.limits.total_walltime["raw"].split( ':' ) ]
+            self.limits.total_walltime["delta"] = datetime.timedelta(
+                0, s, 0, 0, m, h
+            )
 
         log.debug('Done loading job configuration')
 
@@ -356,6 +372,7 @@ class JobConfiguration( object ):
                             anonymous_user_concurrent_jobs=self.app.config.anonymous_user_job_limit,
                             walltime=self.app.config.job_walltime,
                             walltime_delta=self.app.config.job_walltime_delta,
+                            total_walltime={},
                             output_size=self.app.config.output_size_limit,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
@@ -519,7 +536,8 @@ class JobConfiguration( object ):
             rval.append( dict(
                 condition=resubmit.get('condition'),
                 destination=resubmit.get('destination'),
-                handler=resubmit.get('handler')
+                handler=resubmit.get('handler'),
+                delay=resubmit.get('delay'),
             ) )
         return rval
 
@@ -747,7 +765,30 @@ class JobConfiguration( object ):
                     log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
 
-class JobWrapper( object ):
+class HasResourceParameters:
+
+    def get_resource_parameters( self, job=None ):
+        # Find the dymically inserted resource parameters and give them
+        # to rule.
+
+        if job is None:
+            job = self.get_job()
+
+        app = self.app
+        param_values = job.get_param_values( app, ignore_errors=True )
+        resource_params = {}
+        try:
+            resource_params_raw = param_values[ "__job_resource" ]
+            if resource_params_raw[ "__job_resource__select" ].lower() in [ "1", "yes", "true" ]:
+                for key, value in resource_params_raw.items():
+                    resource_params[ key ] = value
+        except KeyError:
+            pass
+
+        return resource_params
+
+
+class JobWrapper( object, HasResourceParameters ):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
@@ -1075,6 +1116,18 @@ class JobWrapper( object ):
                 self.sa_session.add( dataset_assoc.dataset )
             job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
+
+    def is_ready_for_resubmission( self, job=None ):
+        if job is None:
+            job = self.get_job()
+
+        destination_params = job.destination_params
+        if "__resubmit_delay_seconds" in destination_params:
+            delay = float(destination_params["__resubmit_delay_seconds"])
+            if job.seconds_since_update < delay:
+                return False
+
+        return True
 
     def mark_as_resubmitted( self, info=None ):
         job = self.get_job()

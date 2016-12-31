@@ -40,7 +40,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                         // state stored on the client with. User needs to save
                         // for this to take effect.
                         self.node.update_field_data( data );
-                        self.form.errors( data && data.tool_model )
+                        self.form.errors( data && data.tool_model );
                     }
                 }));
                 this.$el.append( this.form.$el );
