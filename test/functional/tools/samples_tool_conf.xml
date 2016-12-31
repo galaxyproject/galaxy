@@ -114,6 +114,7 @@
   <tool file="for_workflows/cat_interleave.xml" />
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
+  <tool file="for_workflows/mapper2.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
 
