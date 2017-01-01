@@ -29,7 +29,7 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "3.19.3"
+CONDA_VERSION = "4.2.13"
 
 
 def conda_link():
