@@ -38,6 +38,7 @@
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
+    <datatype extension="dmnddb" type="galaxy.datatypes.binary:Binary" subclass="True" display_in_upload="false"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml" />
       <display file="igb/bb.xml" />
