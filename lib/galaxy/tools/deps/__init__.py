@@ -32,6 +32,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_auto_install': False,
     'conda_auto_init': False,
     'conda_copy_dependencies': False,
+    'precache_dependencies': True,
 }
 
 CONFIG_VAL_NOT_FOUND = object()
@@ -192,12 +193,16 @@ class CachedDependencyManager(DependencyManager):
         """
         Runs a set of requirements through the dependency resolvers and returns
         a list of commands required to activate the dependencies. If dependencies
-        are cacheable and the cache exists, will generate commands to activate
-        cached environments.
+        are cacheable and the cache does not exist, will try to create it.
+        If cached environment exists or is successfully created, will generate
+        commands to activate it.
         """
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
+        if not os.path.exists(hashed_dependencies_dir) and self.extra_config['precache_dependencies']:
+            # Cache not present, try to create it
+            self.build_cache(requirements, **kwds)
         if os.path.exists(hashed_dependencies_dir):
             [dep.set_cache_path(hashed_dependencies_dir) for dep in cacheable_dependencies]
         commands = [dep.shell_commands(req) for req, dep in resolved_dependencies.items()]
