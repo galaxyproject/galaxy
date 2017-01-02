@@ -196,7 +196,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.setLabel(data.label);
             if( "post_job_actions" in data ) {
                 // Won't be present in response for data inputs
-                var pja_in = $.parseJSON(data.post_job_actions);
+                var pja_in = data.post_job_actions;
                 this.post_job_actions = pja_in ? pja_in : {};
             }
             node.nodeView.renderToolErrors();

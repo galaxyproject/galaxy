@@ -671,7 +671,7 @@ define([
             $.each(this.workflow.nodes, function ( k, node ){
                 if ( node.config_form && node.config_form.inputs ) {
                     Utils.deepeach( node.config_form.inputs, function( d ) {
-                        if ( typeof( d.value ) == 'string' ) {
+                        if ( typeof d.value == 'string' ) {
                             var form_matches = d.value.match( parameter_re );
                             if ( form_matches ) {
                                 matches = matches.concat( form_matches );
@@ -690,13 +690,13 @@ define([
                             });
                         }
                     });
-                    if (matches){
-                        $.each(matches, function(k, element){
-                            if ($.inArray(element, workflow_parameters) === -1){
-                                workflow_parameters.push(element);
-                            }
-                        });
-                    }
+                }
+                if (matches){
+                    $.each(matches, function(k, element){
+                        if ($.inArray(element, workflow_parameters) === -1){
+                            workflow_parameters.push(element);
+                        }
+                    });
                 }
             });
             if (workflow_parameters && workflow_parameters.length !== 0){

@@ -380,7 +380,7 @@ class ActionBox(object):
             else:
                 # Not pja stuff.
                 pass
-        return dumps(npd)
+        return npd
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):
