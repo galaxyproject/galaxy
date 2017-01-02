@@ -149,11 +149,14 @@ def mull_targets(
         test_bind = []
         for test_file in test_files:
             if ':' not in test_file:
-                test_bind.append("%s:%s/%s" % (test_file, DEFAULT_WORKING_DIR, test_file))
+                if os.path.exists(test_file):
+                    test_bind.append("%s:%s/%s" % (test_file, DEFAULT_WORKING_DIR, test_file))
             else:
-                test_bind.append(test_file)
-        involucro_args.insert(6, '-set')
-        involucro_args.insert(7, "TEST_BINDS='%s'" % ",".join(test_bind))
+                if os.path.exists(test_file.split(':')[0]):
+                    test_bind.append(test_file)
+        if test_bind:
+            involucro_args.insert(6, '-set')
+            involucro_args.insert(7, "TEST_BINDS='%s'" % ",".join(test_bind))
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
         ensure_installed(involucro_context, True)
