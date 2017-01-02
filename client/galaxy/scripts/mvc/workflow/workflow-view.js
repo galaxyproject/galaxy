@@ -662,17 +662,22 @@ define([
         },
 
         showWorkflowParameters: function () {
-            //window.console.log( this.workflow.nodes );
-            /*var parameter_re = /\$\{.+?\}/g;
+            var parameter_re = /\$\{.+?\}/g;
             var workflow_parameters = [];
-            var wf_parm_container = $("#workflow-parameters-container");
-            var wf_parm_box = $("#workflow-parameters-box");
-            var new_parameter_content = "";
+            var wf_parm_container = $( '#workflow-parameters-container' );
+            var wf_parm_box = $( '#workflow-parameters-box' );
+            var new_parameter_content = '';
             var matches = [];
-            $.each(this.workflow.nodes, function (k, node){
-                var form_matches = node.config_form.match(parameter_re);
-                if (form_matches){
-                    matches = matches.concat(form_matches);
+            $.each(this.workflow.nodes, function ( k, node ){
+                if ( node.config_form && node.config_form.inputs ) {
+                    Utils.deepeach( node.config_form.inputs, function( d ) {
+                        if ( typeof( d.value ) == 'string' ) {
+                            var form_matches = d.value.match( parameter_re );
+                            if ( form_matches ) {
+                                matches = matches.concat( form_matches );
+                            }
+                        }
+                    });
                 }
                 if (node.post_job_actions){
                     $.each(node.post_job_actions, function(k, pja){
@@ -703,7 +708,7 @@ define([
             }else{
                 wf_parm_container.html(new_parameter_content);
                 wf_parm_box.hide();
-            }*/
+            }
         },
 
         showAttributes: function() {
