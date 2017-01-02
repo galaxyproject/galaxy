@@ -34,6 +34,7 @@ DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
 DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
+DEFAULT_WORKING_DIR = '/source/'
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 
@@ -113,7 +114,7 @@ def conda_versions(pkg_name, file_name):
 def mull_targets(
     targets, involucro_context=None,
     command="build", channels=DEFAULT_CHANNELS, namespace="mulled",
-    test='true', image_build=None, name_override=None,
+    test='true', test_files=None, image_build=None, name_override=None,
     repository_template=DEFAULT_REPOSITORY_TEMPLATE, dry_run=False,
     binds=DEFAULT_BINDS
 ):
@@ -144,6 +145,15 @@ def mull_targets(
         '-set', "BINDS='%s'" % bind_str,
         command,
     ]
+    if test_files:
+        test_bind = []
+        for test_file in test_files:
+            if ':' not in test_file:
+                test_bind.append("%s:%s/%s" % (test_file, DEFAULT_WORKING_DIR, test_file))
+            else:
+                test_bind.append(test_file)
+        involucro_args.insert(6, '-set')
+        involucro_args.insert(7, "TEST_BINDS='%s'" % ",".join(test_bind))
     print(" ".join(involucro_context.build_command(involucro_args)))
     if not dry_run:
         ensure_installed(involucro_context, True)
@@ -252,6 +262,9 @@ def args_to_mull_targets_kwds(args):
         kwds["dry_run"] = args.dry_run
     if hasattr(args, "test"):
         kwds["test"] = args.test
+    if hasattr(args, "test_files"):
+        if args.test_files:
+            kwds["test_files"] = args.test_files.split(",")
     if hasattr(args, "channel"):
         channels = [args.channel]
         if hasattr(args, "extra_channels"):
@@ -276,6 +289,8 @@ def main(argv=None):
     parser.add_argument('targets', metavar="TARGETS", default=None, help="Build a single container with specific package(s).")
     parser.add_argument('--repository-name', dest="repository_name", default=None, help="Name of mulled container (leave blank to auto-generate based on packages - recommended).")
     parser.add_argument('--test', help='Provide a test command for the container.')
+    parser.add_argument('--test-files', help='Provide test-files that may be required to run the test command. Individual mounts are separated by comma.'
+                                             'The source:dest docker syntax is respected. If relative file paths are given, files will be mounted in /source/<relative_file_path>')
     args = parser.parse_args()
     targets = target_str_to_targets(args.targets)
     sys.exit(mull_targets(targets, **args_to_mull_targets_kwds(args)))
