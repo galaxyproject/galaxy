@@ -2,12 +2,12 @@
 <datatypes>
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="True" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
-    <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false" />
+    <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="False" />
     <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="True" />
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="True" />
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="True" />
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="True" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
-    <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
+    <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="False"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="True" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
       <converter file="bam_to_bai.xml" target_datatype="bai"/>
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
@@ -137,13 +137,13 @@
     <datatype extension="gatk_recal" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
     <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
     <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff" display_in_upload="True"/>
-    <datatype extension="tf2" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="false"/>
-    <datatype extension="tf8" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="false"/>
-    <datatype extension="btf" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="false"/>
-    <datatype extension="tif" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="false"/>
-    <datatype extension="svs" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="false"/>
-    <datatype extension="scn" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="false"/>
-    <datatype extension="bif" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="false"/>
+    <datatype extension="tf2" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="tf8" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="btf" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="tif" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="svs" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="scn" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="bif" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
     <datatype extension="vms" type="galaxy.datatypes.images:Hamamatsu" mimetype="image/hamamatsu"/>
     <datatype extension="mrxs" type="galaxy.datatypes.images:Mirax" mimetype="image/mirax"/>
     <datatype extension="svslide" type="galaxy.datatypes.images:Sakura" mimetype="image/sakura"/>
@@ -173,7 +173,7 @@
         subclass="True" display_in_upload="True" description="Quality control data in XML format (https://code.google.com/p/qcml/)."/>
     <datatype extension="pepxml.tsv" type="galaxy.datatypes.proteomics:PepXmlReport" display_in_upload="True" />
     <datatype extension="protxml.tsv" type="galaxy.datatypes.proteomics:ProtXmlReport" display_in_upload="True" />
-    <datatype extension="mascotdat" type="galaxy.datatypes.proteomics:MascotDat" display_in_upload="false" />
+    <datatype extension="mascotdat" type="galaxy.datatypes.proteomics:MascotDat" display_in_upload="False" />
     <datatype extension="mzid" type="galaxy.datatypes.proteomics:MzIdentML" mimetype="application/xml" display_in_upload="True" />
     <datatype extension="idxml" type="galaxy.datatypes.proteomics:IdXML" mimetype="application/xml" display_in_upload="True" />
     <datatype extension="tandem" type="galaxy.datatypes.proteomics:TandemXML" mimetype="application/xml" display_in_upload="True" />
@@ -230,13 +230,13 @@
     <datatype extension="qualillumina" type="galaxy.datatypes.qualityscore:QualityScoreIllumina" display_in_upload="True"/>
     <datatype extension="qualsolid" type="galaxy.datatypes.qualityscore:QualityScoreSOLiD" display_in_upload="True"/>
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="True"/>
-    <datatype extension="Roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
+    <datatype extension="Roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="False"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="True">
         <converter file="sam_to_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="True" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
-    <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
+    <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="False"/>
     <datatype extension="snpeffdb" type="galaxy.datatypes.text:SnpEffDb" display_in_upload="True"/>
     <datatype extension="snpsiftdbnsfp" type="galaxy.datatypes.text:SnpSiftDbNSFP" display_in_upload="True"/>
     <datatype extension="dbnsfp.tabular" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True">
@@ -251,7 +251,7 @@
     <datatype extension="sqlite" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="True"/>
     <datatype extension="gemini.sqlite" type="galaxy.datatypes.binary:GeminiSQLite" mimetype="application/octet-stream" display_in_upload="True" />
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="True" description="Any text file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Plain_text"/>
-    <datatype extension="linecount" type="galaxy.datatypes.data:LineCount" display_in_upload="false"/>
+    <datatype extension="linecount" type="galaxy.datatypes.data:LineCount" display_in_upload="False"/>
     <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="True"/>
     <datatype extension="cisml" type="galaxy.datatypes.xml:CisML" mimetype="application/xml" display_in_upload="True"/>
     <datatype extension="xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" display_in_upload="True"/>
@@ -271,7 +271,7 @@
     <datatype extension="bcf_bgzip" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="True">
       <converter file="bcf_bgzip_to_bcf_converter.xml" target_datatype="bcf"/>
     </datatype>
-    <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
+    <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="False"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="True" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
@@ -332,7 +332,7 @@
     <datatype extension="xgmml" type="galaxy.datatypes.graph:Xgmml" display_in_upload="True"/>
     <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="True"/>
     <!-- datatypes storing triples -->
-    <datatype extension="triples" type="galaxy.datatypes.triples:Triples" display_in_upload="false"/>
+    <datatype extension="triples" type="galaxy.datatypes.triples:Triples" display_in_upload="False"/>
     <datatype extension="hdt" type="galaxy.datatypes.triples:HDT" display_in_upload="True"/>
     <datatype extension="nt" type="galaxy.datatypes.triples:NTriples" display_in_upload="True"/>
     <datatype extension="n3" type="galaxy.datatypes.triples:N3" display_in_upload="True"/>
@@ -549,14 +549,14 @@
     <datatype extension="mothur.axes" type="galaxy.datatypes.mothur:Axes" display_in_upload="True"/>
     <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="True"/>
     <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="True"/>
-    <datatype extension="neostore" type="galaxy.datatypes.neo4j:Neo4jDB" mimetype="text/html"  display_in_upload="false"/>
+    <datatype extension="neostore" type="galaxy.datatypes.neo4j:Neo4jDB" mimetype="text/html"  display_in_upload="False"/>
     <datatype extension="trackhub" type="galaxy.datatypes.tracks:UCSCTrackHub" display_in_upload="True">
         <display file="ucsc/trackhub.xml" />
     </datatype>
     <datatype extension="blastxml" type="galaxy.datatypes.blast:BlastXml" mimetype="application/xml" display_in_upload="True"/>
-    <datatype extension="blastdbn" type="galaxy.datatypes.blast:BlastNucDb" mimetype="text/html" display_in_upload="false"/>
-    <datatype extension="blastdbp" type="galaxy.datatypes.blast:BlastProtDb" mimetype="text/html" display_in_upload="false"/>
-    <datatype extension="blastdbd" type="galaxy.datatypes.blast:BlastDomainDb" mimetype="text/html" display_in_upload="false"/>
+    <datatype extension="blastdbn" type="galaxy.datatypes.blast:BlastNucDb" mimetype="text/html" display_in_upload="False"/>
+    <datatype extension="blastdbp" type="galaxy.datatypes.blast:BlastProtDb" mimetype="text/html" display_in_upload="False"/>
+    <datatype extension="blastdbd" type="galaxy.datatypes.blast:BlastDomainDb" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="maskinfo-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="True" display_in_upload="True" />
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="True" display_in_upload="True" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="True" display_in_upload="True" />
