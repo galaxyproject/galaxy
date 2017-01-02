@@ -137,14 +137,16 @@
     <datatype extension="gatk_recal" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True"/>
     <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
     <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff" display_in_upload="True"/>
-    <datatype extension="tf2" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
-    <datatype extension="tf8" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
-    <datatype extension="btf" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
-    <datatype extension="tif" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
-    <datatype extension="svs" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
-    <datatype extension="scn" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
-    <datatype extension="bif" type="galaxy.datatypes.binary:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="tf2" type="galaxy.datatypes.images:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="tf8" type="galaxy.datatypes.images:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="btf" type="galaxy.datatypes.images:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="tif" type="galaxy.datatypes.images:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="svs" type="galaxy.datatypes.images:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="scn" type="galaxy.datatypes.images:Tiff" subclass="True" display_in_upload="False"/>
+    <datatype extension="bif" type="galaxy.datatypes.images:Tiff" subclass="True" display_in_upload="False"/>
     <datatype extension="vms" type="galaxy.datatypes.images:Hamamatsu" mimetype="image/hamamatsu"/>
+    <datatype extension="vmu" type="galaxy.datatypes.images:Hamamatsu" subclass="True" display_in_upload="False"/>
+    <datatype extension="ndpi" type="galaxy.datatypes.images:Hamamatsu" subclass="True" display_in_upload="False"/>
     <datatype extension="mrxs" type="galaxy.datatypes.images:Mirax" mimetype="image/mirax"/>
     <datatype extension="svslide" type="galaxy.datatypes.images:Sakura" mimetype="image/sakura"/>
     <datatype extension="bmp" type="galaxy.datatypes.images:Bmp" mimetype="image/bmp"/>

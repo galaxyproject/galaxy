@@ -69,7 +69,7 @@ class Tiff( Image ):
 
 
 class Hamamatsu( Image ):
-    file_ext = "vms" # also allowed: .vmu, .ndpi
+    file_ext = "vms"
 
 
 class Mirax( Image ):
