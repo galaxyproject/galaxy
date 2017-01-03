@@ -201,12 +201,15 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
                     elements.append( ( identifier, content ) )
                 # TODO: make this collection_type
                 collection_type = value["type"]
+                new_collection_kwds = {}
+                if "name" in value:
+                    new_collection_kwds["name"] = value["name"]
                 if collection_type == "list:paired":
-                    hdca = self.dataset_collection_populator.create_list_of_pairs_in_history( history_id ).json()
+                    hdca = self.dataset_collection_populator.create_list_of_pairs_in_history( history_id, **new_collection_kwds ).json()
                 elif collection_type == "list":
-                    hdca = self.dataset_collection_populator.create_list_in_history( history_id, contents=elements ).json()
+                    hdca = self.dataset_collection_populator.create_list_in_history( history_id, contents=elements, **new_collection_kwds ).json()
                 else:
-                    hdca = self.dataset_collection_populator.create_pair_in_history( history_id, contents=elements ).json()
+                    hdca = self.dataset_collection_populator.create_pair_in_history( history_id, contents=elements, **new_collection_kwds ).json()
                 label_map[key] = self._ds_entry( hdca )
                 inputs[key] = hdca
                 has_uploads = True
@@ -1355,6 +1358,49 @@ test_data:
         content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
         name = content[ "name" ]
         assert name == "fastq1 suffix", name
+
+    @skip_without_tool( "mapper2" )
+    def test_run_rename_based_on_input_collection( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: fasta_input
+  - id: fastq_inputs
+steps:
+  - tool_id: mapper2
+    state:
+      fastq_input:
+        fastq_input_selector: paired_collection
+        fastq_input1:
+          $link: fastq_inputs
+      reference:
+        $link: fasta_input
+    outputs:
+      out_file1:
+        # Wish it was qualified for conditionals but it doesn't seem to be. -John
+        # rename: "#{fastq_input.fastq_input1 | basename} suffix"
+        rename: "#{fastq_input1} suffix"
+test_data:
+  fasta_input:
+    value: 1.fasta
+    type: File
+    name: fasta1
+    file_type: fasta
+  fastq_inputs:
+    type: list
+    name: the_dataset_pair
+    elements:
+      - identifier: forward
+        value: 1.fastq
+        type: File
+      - identifier: reverse
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+        content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
+        name = content[ "name" ]
+        assert name == "the_dataset_pair suffix", name
 
     @skip_without_tool( "cat1" )
     def test_run_with_runtime_pja( self ):

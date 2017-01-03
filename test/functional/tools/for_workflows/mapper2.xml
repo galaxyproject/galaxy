@@ -3,7 +3,7 @@
         cp $__tool_directory__/1.bam $out_file1
     </command>
     <inputs>
-        <!-- Conditional input block from bwa-mem. -->
+        <!-- Conditional input block loosely based on bwa-mem. -->
         <conditional name="fastq_input">
           <param name="fastq_input_selector" type="select" label="Single or Paired-end reads">
             <option value="paired">Paired</option>
@@ -12,17 +12,17 @@
             <option value="paired_iv">Paired Interleaved</option>
           </param>
           <when value="paired">
-            <param name="fastq_input1" type="data" format="fastqsanger" label="Select first set of reads" />
-            <param name="fastq_input2" type="data" format="fastqsanger" label="Select second set of reads" />
+            <param name="fastq_input1" type="data" format="fastq" label="Select first set of reads" />
+            <param name="fastq_input2" type="data" format="fastq" label="Select second set of reads" />
           </when>
           <when value="single">
-            <param name="fastq_input1" type="data" format="fastqsanger" label="Select fastq dataset"/>
+            <param name="fastq_input1" type="data" format="fastq" label="Select fastq dataset"/>
           </when>
           <when value="paired_collection">
-            <param name="fastq_input1" format="fastqsanger" type="data_collection" collection_type="paired" label="Select a paired collection" />
+            <param name="fastq_input1" format="fastq" type="data_collection" collection_type="paired" label="Select a paired collection" />
           </when>
           <when value="paired_iv">
-            <param name="fastq_input1" type="data" format="fastqsanger" label="Select fastq dataset" />
+            <param name="fastq_input1" type="data" format="fastq" label="Select fastq dataset" />
           </when>
         </conditional>
         <param name="reference" type="data" format="fasta" label="Fasta Input"/>

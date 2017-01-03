@@ -142,6 +142,15 @@ class RenameDatasetAction(DefaultJobAction):
                     if input_assoc.name == input_file_var:
                         replacement = input_assoc.dataset.name
 
+                # Ditto for collections...
+                for input_assoc in job.input_dataset_collections:
+                    if input_assoc.name == input_file_var:
+                        if input_assoc.dataset_collection:
+                            hdca = input_assoc.dataset_collection
+                            replacement = hdca.name
+
+                # In case name was None.
+                replacement = replacement or ''
                 #  Do operations on replacement
                 #  Any control that is not defined will be ignored.
                 #  This should be moved out to a class or module function
