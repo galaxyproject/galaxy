@@ -188,9 +188,9 @@ class WorkflowModule( object ):
 
         return state, step_errors
 
-    def encode_runtime_state( self, trans, runtime_state ):
+    def encode_runtime_state( self, runtime_state ):
         """ Takes the computed runtime state and serializes it during run request creation. """
-        return runtime_state.encode( Bunch( inputs=self.get_runtime_inputs() ), trans.app )
+        return runtime_state.encode( Bunch( inputs=self.get_runtime_inputs() ), self.trans.app )
 
     def decode_runtime_state( self, runtime_state ):
         """ Takes the serialized runtime state and decodes it when running the workflow. """

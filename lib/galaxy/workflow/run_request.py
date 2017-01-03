@@ -328,7 +328,7 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
     steps_by_id = {}
     for step in workflow.steps:
         steps_by_id[step.id] = step
-        serializable_runtime_state = step.module.encode_runtime_state( trans, step.state )
+        serializable_runtime_state = step.module.encode_runtime_state( step.state )
 
         step_state = model.WorkflowRequestStepState()
         step_state.workflow_step = step
