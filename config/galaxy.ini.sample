@@ -1192,6 +1192,18 @@ use_interactive = True
 # option (Linux) or -actimeo=0 (Solaris).
 #retry_job_output_collection = 0
 
+# In the past Galaxy would preserve its Python environment when running jobs (
+# and still does for internal tools packaged with Galaxy). This behavior exposes
+# Galaxy internals to tools and could result in problems when activating
+# Python environments for tools (such as with Conda packaging). The default
+# legacy_only will restrict this behavior to tools identified by the Galaxy
+# team as requiring this environment. Set this to "always" to restore the
+# previous behavior (and potentially break Conda dependency resolution for many
+# tools). Set this to legacy_and_local to preserve the environment for legacy
+# tools and locally managed tools (this might be useful for instance if you are
+# installing software into Galaxy's virtualenv for tool development).
+#python_environment_problem = legacy_only
+
 # Clean up various bits of jobs left on the filesystem after completion.  These
 # bits include the job working directory, external metadata temporary files,
 # and DRM stdout and stderr files (if using a DRM).  Possible values are:
