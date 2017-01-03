@@ -5,7 +5,6 @@ immediate_actions listed below.  Currently only used in workflows.
 import datetime
 import logging
 import socket
-from json import dumps
 
 from markupsafe import escape
 
