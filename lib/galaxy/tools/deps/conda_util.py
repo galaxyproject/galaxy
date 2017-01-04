@@ -29,7 +29,7 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "3.19.3"
+CONDA_VERSION = "4.2.13"
 
 
 def conda_link():
@@ -54,7 +54,7 @@ class CondaContext(installable.InstallableContext):
 
     def __init__(self, conda_prefix=None, conda_exec=None,
                  shell_exec=None, debug=False, ensure_channels='',
-                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT):
+                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT, copy_dependencies=False):
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
             conda_exec = commands.which("conda")
@@ -63,6 +63,7 @@ class CondaContext(installable.InstallableContext):
         self.conda_exec = conda_exec
         self.debug = debug
         self.shell_exec = shell_exec or commands.shell
+        self.copy_dependencies = copy_dependencies
 
         if conda_prefix is None:
             info = self.conda_info()
@@ -183,7 +184,12 @@ class CondaContext(installable.InstallableContext):
         condarc_override = self.condarc_override
         if condarc_override:
             env["CONDARC"] = condarc_override
-        return self.shell_exec(command, env=env)
+        log.debug("Executing command: %s", command)
+        try:
+            return self.shell_exec(command, env=env)
+        except commands.CommandLineException as e:
+            log.warning(e)
+            return e.returncode
 
     def exec_create(self, args):
         create_base_args = [
@@ -207,6 +213,17 @@ class CondaContext(installable.InstallableContext):
         ]
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
+
+    def exec_clean(self, args=[]):
+        """
+        Clean up after conda installation.
+        """
+        clean_base_args = [
+            "--tarballs",
+            "-y"
+        ]
+        clean_base_args.extend(args)
+        return self.exec_command("clean", clean_base_args)
 
     def export_list(self, name, path):
         return self.exec_command("list", [
@@ -418,33 +435,19 @@ def is_target_available(conda_target, conda_context=None, channels_override=None
         return False
 
 
-def is_conda_target_installed(conda_target, conda_context=None, verbose_install_check=False):
+def is_conda_target_installed(conda_target, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     # fail by default
-    success = False
     if conda_context.has_env(conda_target.install_environment):
-        if not verbose_install_check:
-            return True
-        # because export_list directs output to a file we
-        # need to make a temporary file, not use StringIO
-        f, package_list_file = tempfile.mkstemp(suffix='.env_packages')
-        os.close(f)
-        conda_context.export_list(conda_target.install_environment, package_list_file)
-        search_pattern = conda_target.package_specifier + '='
-        with open(package_list_file) as input_file:
-            for line in input_file:
-                if line.startswith(search_pattern):
-                    success = True
-                    break
-        os.remove(package_list_file)
-    return success
+        return True
+    else:
+        return False
 
 
-def filter_installed_targets(conda_targets, conda_context=None, verbose_install_check=False):
+def filter_installed_targets(conda_targets, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     installed = functools.partial(is_conda_target_installed,
-                                  conda_context=conda_context,
-                                  verbose_install_check=verbose_install_check)
+                                  conda_context=conda_context)
     return list(filter(installed, conda_targets))
 
 
@@ -496,6 +499,7 @@ def build_isolated_environment(
 
         return (path or tempdir_name, exit_code)
     finally:
+        conda_context.exec_clean()
         shutil.rmtree(tempdir)
 
 

@@ -81,7 +81,7 @@ def main():
     """
     need to work with rgenetics composite datatypes
     so in and out are html files with data in extrafiles path
-    <command interpreter="python">lped_to_pbed_converter.py '$input1/$input1.metadata.base_name'
+    <command>python '$__tool_directory__/lped_to_pbed_converter.py' '$input1/$input1.metadata.base_name'
     '$output1' '$output1.extra_files_path' '${GALAXY_DATA_INDEX_DIR}/rg/bin/plink'
     </command>
     """

@@ -1,10 +1,11 @@
 import logging
 from json import dumps
 
-from __init__ import ToolAction
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.util.odict import odict
+
+from . import ToolAction
 
 log = logging.getLogger( __name__ )
 
@@ -29,7 +30,7 @@ class SetMetadataToolAction( ToolAction ):
         """
         Execute using application.
         """
-        for name, value in incoming.iteritems():
+        for name, value in incoming.items():
             if isinstance( value, app.model.HistoryDatasetAssociation ):
                 dataset = value
                 dataset_name = name
@@ -86,7 +87,7 @@ class SetMetadataToolAction( ToolAction ):
                                                                       max_metadata_value_size=app.config.max_metadata_value_size,
                                                                       kwds={ 'overwrite' : overwrite } )
         incoming[ '__SET_EXTERNAL_METADATA_COMMAND_LINE__' ] = cmd_line
-        for name, value in tool.params_to_strings( incoming, app ).iteritems():
+        for name, value in tool.params_to_strings( incoming, app ).items():
             job.add_parameter( name, value )
         # add the dataset to job_to_input_dataset table
         if type == 'hda':

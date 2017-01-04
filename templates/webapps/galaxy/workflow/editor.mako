@@ -272,7 +272,11 @@
                     from galaxy.workflow.modules import load_module_sections
                     module_sections = load_module_sections( trans )
                 %>
-                <div id="tool-search">
+                %if trans.app.config.message_box_visible:
+                    <div id="tool-search" style="top: 95px;">
+                %else:
+                    <div id="tool-search">
+                %endif
                     <input type="text" name="query" placeholder="search tools" id="tool-search-query" class="search-query parent-width" />
                     <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
                 </div>
@@ -380,7 +384,7 @@
             Details
         </div>
     </div>
-    <div class="unified-panel-body" style="overflow: auto;">
+    <div class="unified-panel-body workflow-right" style="overflow: auto;">
         ## Div for elements to modify workflow attributes.
         <div id="edit-attributes" class="metadataForm right-content">
             <div class="metadataFormTitle">Edit Workflow Attributes</div>

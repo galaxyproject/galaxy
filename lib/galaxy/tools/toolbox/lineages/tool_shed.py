@@ -93,4 +93,5 @@ class ToolShedLineage(ToolLineage):
 def get_installed_tool_version( app, tool_id ):
     return app.tool_version_cache.tool_version_by_tool_id.get(tool_id, None)
 
+
 __all__ = ( "ToolShedLineage", )

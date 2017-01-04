@@ -13,6 +13,8 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
 GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
+WEBPACK_EXEC?=node_modules/webpack/bin/webpack.js
+GXY_NODE_MODULES=client/node_modules
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
@@ -22,6 +24,11 @@ SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /c
 all: help
 	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
 
+# Building docs requires sphinx and utilities be installed (see issue 3166) as well as pandoc.
+# Run following commands to setup the Python portion of these requirements:
+#   $ ./scripts/common_startup.sh
+#   $ . .venv/bin/activate
+#   $ pip install sphinx sphinx_rtd_theme lxml recommonmark
 docs: ## generate Sphinx HTML documentation, including API docs
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
@@ -86,6 +93,9 @@ client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
 	cd client && $(GRUNT_EXEC) install-libs
 
 client: grunt style ## Rebuild all client-side artifacts
+
+charts: npm-deps ## Rebuild charts
+	NODE_PATH=$(GXY_NODE_MODULES) client/$(WEBPACK_EXEC) -p --config config/plugins/visualizations/charts/webpack.config.js
 
 grunt-docker-image: ## Build docker image for running grunt
 	docker build -t ${GRUNT_DOCKER_NAME} client

@@ -1,40 +1,40 @@
 /** User Preferences view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
-    var UserPreferences = Backbone.View.extend({
+    var View = Backbone.View.extend({
 
         initialize: function() {
             this.defs = {
                 'information': {
                     title           : 'Manage information',
                     description     : 'Edit your email, addresses and custom parameters or change your username.',
-                    url             : 'api/users/' + Galaxy.user.id + '/information',
-                    icon            : 'fa-info-circle'
+                    url             : 'api/users/' + Galaxy.user.id + '/information/inputs',
+                    icon            : 'fa-user'
                 },
                 'password': {
                     title           : 'Change password',
                     description     : 'Allows you to change your login credentials.',
                     icon            : 'fa-unlock-alt',
-                    url             : 'api/users/' + Galaxy.user.id + '/password',
+                    url             : 'api/users/' + Galaxy.user.id + '/password/inputs',
                     submit_title    : 'Save password',
                 },
                 'communication': {
                     title           : 'Change communication settings',
                     description     : 'Enable or disable the communication feature to chat with other users.',
-                    url             : 'api/users/' + Galaxy.user.id + '/communication',
-                    icon            : 'fa-child'
+                    url             : 'api/users/' + Galaxy.user.id + '/communication/inputs',
+                    icon            : 'fa-comments-o'
                 },
                 'permissions': {
-                    title           : 'Change default permissions',
-                    description     : 'Grant others default access to newly created histories.',
-                    url             : 'api/users/' + Galaxy.user.id + '/permissions',
+                    title           : 'Set dataset permissions for new histories',
+                    description     : 'Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.',
+                    url             : 'api/users/' + Galaxy.user.id + '/permissions/inputs',
                     icon            : 'fa-users',
                     submit_title    : 'Save permissions'
                 },
                 'api_key': {
                     title           : 'Manage API key',
                     description     : 'Access your current API key or create a new one.',
-                    url             : 'api/users/' + Galaxy.user.id + '/api_key',
+                    url             : 'api/users/' + Galaxy.user.id + '/api_key/inputs',
                     icon            : 'fa-key',
                     submit_title    : 'Create a new key',
                     submit_icon     : 'fa-check'
@@ -42,7 +42,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'toolbox_filters': {
                     title           : 'Manage Toolbox filters',
                     description     : 'Customize your Toolbox by displaying or omitting sets of Tools.',
-                    url             : 'api/users/' + Galaxy.user.id + '/toolbox_filters',
+                    url             : 'api/users/' + Galaxy.user.id + '/toolbox_filters/inputs',
                     icon            : 'fa-filter',
                     submit_title    : 'Save filters'
                 },
@@ -51,7 +51,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     description     : 'Associate OpenIDs with your account.',
                     icon            : 'fa-openid',
                     onclick         : function() {
-                        $( '#galaxy_main' ).attr( 'src', Galaxy.root + 'user/openid_manage?cntrller=user' );
+                        window.location.href = Galaxy.root + 'user/openid_manage?cntrller=user&use_panels=True';
                     }
                 },
                 'logout': {
@@ -64,12 +64,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             body    : 'Do you want to continue and sign out of all active sessions?',
                             buttons : {
                                 'Cancel'    : function() { Galaxy.modal.hide(); },
-                                'Sign out'  : function() {
-                                    $.ajax( { url : 'api/users/' + Galaxy.user.id + '/logout', method: 'POST', data: { all: true } } )
-                                     .done( function( response ) {
-                                        window.location.href = response.redirect_url || Galaxy.root;
-                                    });
-                                }
+                                'Sign out'  : function() { window.location.href = Galaxy.root + 'user/logout'; }
                             }
                         });
                     }
@@ -93,11 +88,17 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     self._link( self.defs.information );
                     self._link( self.defs.password );
                 }
-                self._link( self.defs.communication );
+                if( config.enable_communication_server ) {
+                    self._link( self.defs.communication );
+                }
                 self._link( self.defs.permissions );
                 self._link( self.defs.api_key );
-                self._link( self.defs.toolbox_filters );
-                config.enable_openid && !config.use_remote_user && self._link( self.defs.openids );
+                if( config.has_user_tool_filters ) {
+                    self._link( self.defs.toolbox_filters );
+                }
+                if( config.enable_openid && !config.use_remote_user ) {
+                    self._link( self.defs.openids );
+                }
                 self._link( self.defs.logout );
                 self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );
@@ -121,7 +122,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             inputs : options.inputs,
                             operations: {
                                 'submit': new Ui.ButtonIcon({
-                                    tooltip  : options.submit_tooltip || 'Store user preferences',
+                                    tooltip  : options.submit_tooltip,
                                     title    : options.submit_title || 'Save settings',
                                     icon     : options.submit_icon || 'fa-save',
                                     onclick  : function() { self._submit( form, options ) }
@@ -192,6 +193,6 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     });
 
     return {
-        UserPreferences: UserPreferences
+        View: View
     };
 });

@@ -92,7 +92,7 @@ def _wait(cmds, **popen_kwds):
     p = subprocess.Popen(cmds, **popen_kwds)
     stdout, stderr = p.communicate()
     if p.returncode != 0:
-        raise CommandLineException(argv_to_str(cmds), stdout, stderr)
+        raise CommandLineException(argv_to_str(cmds), stdout, stderr, p.returncode)
     return stdout
 
 
@@ -122,11 +122,12 @@ def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
 class CommandLineException(Exception):
     """An exception indicating a non-zero command-line exit."""
 
-    def __init__(self, command, stdout, stderr):
+    def __init__(self, command, stdout, stderr, returncode):
         """Construct a CommandLineException from command and standard I/O."""
         self.command = command
         self.stdout = stdout
         self.stderr = stderr
+        self.returncode = returncode
         self.message = ("Failed to execute command-line %s, stderr was:\n"
                         "-------->>begin stderr<<--------\n"
                         "%s\n"

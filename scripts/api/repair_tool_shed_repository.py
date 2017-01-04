@@ -6,6 +6,7 @@ Here is a working example of how to use this script to repair a repository insta
 ./repair_tool_shed_repository.py --api <api key> --local <galaxy base url> --url http://testtoolshed.g2.bx.psu.edu --name gregs_filter --owner greg --revision f28d5018f9cb
 """
 from __future__ import print_function
+
 import argparse
 
 from common import display, submit
@@ -46,6 +47,7 @@ def main( options ):
         submit( options.api, url, data )
     else:
         print("Invalid tool_shed / name / owner / changeset_revision.")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Installation of tool shed repositories via the Galaxy API.' )

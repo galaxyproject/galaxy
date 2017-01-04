@@ -1066,3 +1066,20 @@ class DotBracket ( Sequence ):
 
         # Number of lines is less than 3
         return False
+
+
+class Genbank(data.Text):
+    """Class representing a Genbank sequence"""
+    edam_format = "format_1936"
+    edam_data = "data_0849"
+    file_ext = "genbank"
+
+    def sniff(self, filename):
+        try:
+            with open(filename, 'r') as handle:
+                line = handle.readline().strip()
+                return line.startswith('LOCUS ')
+        except:
+            pass
+
+        return False

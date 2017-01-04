@@ -73,7 +73,9 @@ class Configuration( object ):
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
-        tempfile.tempdir = self.new_file_path
+        override_tempdir = string_as_bool( kwargs.get( "override_tempdir", "True" ) )
+        if override_tempdir:
+            tempfile.tempdir = self.new_file_path
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # Galaxy OpenID settings
@@ -98,8 +100,9 @@ class Configuration( object ):
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
 
         self.user_tool_filters = listify( kwargs.get( "user_tool_filters", [] ), do_strip=True )
-        self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
-        self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+        self.user_tool_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
+        self.user_tool_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+        self.has_user_tool_filters = bool( self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters )
 
         self.tour_config_dir = resolve_path( kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
         self.webhooks_dirs = resolve_path( kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
@@ -172,6 +175,11 @@ class Configuration( object ):
         self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.root )
         self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
+        preserve_python_environment = kwargs.get( "preserve_python_environment", "legacy_only" )
+        if preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
+            log.warn("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
+            preserve_python_environment = "legacy_only"
+        self.preserve_python_environment = preserve_python_environment
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
@@ -216,11 +224,11 @@ class Configuration( object ):
         self.track_jobs_in_database = string_as_bool( kwargs.get( 'track_jobs_in_database', 'True') )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
+        self.expose_potentially_sensitive_job_metrics = string_as_bool( kwargs.get( 'expose_potentially_sensitive_job_metrics', 'False' ) )
         self.enable_communication_server = string_as_bool( kwargs.get( 'enable_communication_server', 'False' ) )
         self.communication_server_host = kwargs.get( 'communication_server_host', 'http://localhost' )
         self.communication_server_port = int( kwargs.get( 'communication_server_port', '7070' ) )
         self.persistent_communication_rooms = listify( kwargs.get( "persistent_communication_rooms", [] ), do_strip=True )
-        self.enable_new_user_preferences = string_as_bool( kwargs.get( 'enable_new_user_preferences', 'False' ) )
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', 'False' ) )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', 'False' ) )
         # External Service types used in sample tracking
@@ -276,13 +284,17 @@ class Configuration( object ):
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
-        self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
+        if "trust_jupyter_notebook_conversion" in kwargs:
+            trust_jupyter_notebook_conversion = string_as_bool( kwargs.get( 'trust_jupyter_notebook_conversion', False ) )
+        else:
+            trust_jupyter_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
+        self.trust_jupyter_notebook_conversion = trust_jupyter_notebook_conversion
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
         self.show_welcome_with_login = string_as_bool( kwargs.get( "show_welcome_with_login", "False" ) )
         # Configuration for the message box directly below the masthead.
-        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_visible = string_as_bool( kwargs.get( 'message_box_visible', False ) )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
@@ -328,6 +340,9 @@ class Configuration( object ):
         else:
             self.tool_dependency_dir = None
             self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
+        self.use_cached_dependency_manager = string_as_bool(kwargs.get("use_cached_dependency_manager", 'False'))
+        self.tool_dependency_cache_dir = kwargs.get( 'tool_dependency_cache_dir', os.path.join(self.tool_dependency_dir, '_cache'))
+        self.precache_dependencies = string_as_bool(kwargs.get("precache_dependencies", 'True'))
 
         self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
         containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
@@ -705,7 +720,7 @@ class Configuration( object ):
         return resolve_path( path, self.root )
 
     def guess_galaxy_port(self):
-        # Code derived from IPython work ie.mako
+        # Code derived from Jupyter work ie.mako
         config = configparser.SafeConfigParser({'port': '8080'})
         if self.config_file:
             config.read( self.config_file )

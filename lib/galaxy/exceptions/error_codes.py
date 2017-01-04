@@ -40,6 +40,7 @@ def _from_dict(entry):
     message = entry.get("message")
     return (name, ErrorCode(code, message))
 
+
 error_codes_json = resource_string(__name__, 'error_codes.json').decode("UTF-8")
 for entry in loads(error_codes_json):
     name, error_code_obj = _from_dict(entry)

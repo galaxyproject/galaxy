@@ -4,18 +4,15 @@ import string
 import unittest
 
 import routes
-
 from six import string_types
 
 import tools_support
-
 from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tools import ToolBox
 from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
 from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
-
 
 from .test_toolbox_filters import mock_trans
 
@@ -442,6 +439,9 @@ class SimplifiedToolBox( ToolBox ):
             app,
         )
         self._tool_conf_watcher = get_tool_conf_watcher(dummy_callback)
+
+    def handle_panel_update(self, section_dict):
+        self.create_section(section_dict)
 
 
 def dummy_callback():

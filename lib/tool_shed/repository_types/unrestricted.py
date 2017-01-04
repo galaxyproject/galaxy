@@ -1,4 +1,5 @@
 import logging
+
 import tool_shed.repository_types.util as rt_util
 from tool_shed.repository_types.metadata import Metadata
 

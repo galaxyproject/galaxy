@@ -2,12 +2,13 @@
 Actions to be run at job completion (or output hda creation, as in the case of
 immediate_actions listed below.  Currently only used in workflows.
 """
-
 import datetime
 import logging
 import socket
 from json import dumps
+
 from markupsafe import escape
+
 from galaxy.util import send_mail
 
 log = logging.getLogger( __name__ )
@@ -124,13 +125,16 @@ class RenameDatasetAction(DefaultJobAction):
                 if len(tokens) > 1:
                     input_file_var = tokens[0].strip()
 
-                    # Treat . as special symbol (breaks parameter names anyway)
-                    # to allow access to repeat elements, for instance first
-                    # repeat in cat1 would be something like queries_0.input2.
-                    input_file_var = input_file_var.replace(".", "|")
-
                     for i in range(1, len(tokens)):
                         operations.append(tokens[i].strip())
+
+                # Treat . as special symbol (breaks parameter names anyway)
+                # to allow access to repeat elements, for instance first
+                # repeat in cat1 would be something like queries_0.input2.
+                # TODO: update the help text (input_terminals) on the action to
+                # show correct valid inputs.
+                input_file_var = input_file_var.replace(".", "|")
+
                 replacement = ""
                 #  Lookp through inputs find one with "to_be_replaced" input
                 #  variable name, and get the replacement name
@@ -159,7 +163,7 @@ class RenameDatasetAction(DefaultJobAction):
                 new_name = new_name.replace("#{%s}" % to_be_replaced, replacement)
 
             if replacement_dict:
-                for k, v in replacement_dict.iteritems():
+                for k, v in replacement_dict.items():
                     new_name = new_name.replace("${%s}" % k, v)
             for dataset_assoc in job.output_datasets:
                 if action.output_name == '' or dataset_assoc.name == action.output_name:
@@ -225,7 +229,7 @@ class ColumnSetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Set the following metadata values:<br/>" + "<br/>".join(['%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.iteritems()])
+        return "Set the following metadata values:<br/>" + "<br/>".join('%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.items())
 
 
 class SetMetadataAction(DefaultJobAction):
@@ -359,7 +363,7 @@ class ActionBox(object):
     @classmethod
     def handle_incoming(cls, incoming):
         npd = {}
-        for key, val in incoming.iteritems():
+        for key, val in incoming.items():
             if key.startswith('pja'):
                 sp = key.split('__')
                 ao_key = sp[2] + sp[1]

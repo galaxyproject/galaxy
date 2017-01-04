@@ -2,3 +2,4 @@ nose
 NoseHTML
 twill==0.9.1
 mock
+selenium

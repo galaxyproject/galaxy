@@ -4,6 +4,7 @@ check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
 from __future__ import print_function
+
 import filecmp
 import formatter
 import getopt
@@ -52,6 +53,7 @@ tools = {
 # handle arg(s)
 def usage():
     sys.exit("usage: check_galaxy.py <server>")
+
 
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
@@ -366,9 +368,8 @@ def dprint(str):
     if debug:
         print(str)
 
-# do stuff here
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     dprint("checking %s" % server)
 
     b = Browser()

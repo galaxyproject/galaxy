@@ -58,6 +58,7 @@ class NullHandler(logging.Handler):
     def createLock(self):
         self.lock = None
 
+
 logger.addHandler(NullHandler())
 
 # -----------------------------------------------

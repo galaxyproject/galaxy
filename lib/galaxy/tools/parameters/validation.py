@@ -1,13 +1,15 @@
 """
 Classes related to parameter validation.
 """
-
 import logging
 import re
+
 from six import string_types
 
-from galaxy import model
-from galaxy import util
+from galaxy import (
+    model,
+    util
+)
 
 log = logging.getLogger( __name__ )
 
@@ -425,6 +427,7 @@ class MetadataInDataTableColumnValidator( Validator ):
             if value.metadata.spec[self.metadata_name].param.to_string( value.metadata.get( self.metadata_name ) ) in self.valid_values:
                 return
         raise ValueError( self.message )
+
 
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,

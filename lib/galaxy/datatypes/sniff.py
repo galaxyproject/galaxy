@@ -261,14 +261,14 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
-    >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> from galaxy.datatypes import registry
     >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
     >>> datatypes_registry = registry.Registry()
     >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
     >>> sniff_order = datatypes_registry.sniff_order
+    >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
-    'xml'
+    'blastxml'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname, sniff_order)
     'interval'
@@ -353,6 +353,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
+    >>> fname = get_test_fname('1.gg')
+    >>> guess_ext(fname, sniff_order)
+    'gg'
     """
     file_ext = None
     for datatype in sniff_order:
@@ -465,6 +468,7 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
         raise InappropriateDatasetContentError( 'The uploaded file contains inappropriate HTML content.' )
     return ext
 
+
 AUTO_DETECT_EXTENSIONS = [ 'auto' ]  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
 COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
@@ -476,6 +480,7 @@ for exts in COMPRESSION_DATATYPES.values():
 
 class InappropriateDatasetContentError( Exception ):
     pass
+
 
 if __name__ == '__main__':
     import doctest
