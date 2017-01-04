@@ -573,30 +573,11 @@ define([
                 url     : Galaxy.root + 'api/workflows/build_module',
                 data    : request_data,
                 success : function( data ) {
-                    window.console.log( data );
                     node.init_field_data( data );
                     node.update_field_data( data );
                     self.workflow.activate_node( node );
                 }
             });
-
-            /*$.ajax( {
-                url: Galaxy.root + 'api/workflows/new_module',
-                data: request_data,
-                global: false,
-                dataType: "json",
-                success: function( data ) {
-                    window.console.log( data );
-                    node.init_field_data( data );
-                },
-                error: function( x, e ) {
-                    var m = "error loading field data";
-                    if ( x.status === 0 ) {
-                        m += ", server unavailable";
-                    }
-                    node.error( m );
-                }
-            });*/
         },
 
         // Add a new step to the workflow by tool id
