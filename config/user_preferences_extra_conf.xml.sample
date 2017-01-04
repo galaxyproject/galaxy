@@ -12,6 +12,13 @@ preferences:
               type: text
               # by defaul all inputs are required
               required: True
+            - name: appollo_text
+              label: Apollo Text
+              # type of input field that will be displayed to the user
+              # can be string or password
+              type: text
+              # by defaul all inputs are required
+              required: True
 
     openstack_account:
         description: Your own Open Stack account
@@ -28,3 +35,19 @@ preferences:
               label: Open Stack URL
               type: text
               required: True
+            - name: url_2
+              label: Open Stack URL 2
+              type: text
+              required: True
+
+    bioinfo_account:
+        description: Your BioInformatics Account
+        inputs:
+            - name: username
+              label: BioInfo Username
+              type: text
+              required: False
+            - name: password
+              label: BioInfo Password
+              type: password
+              required: False

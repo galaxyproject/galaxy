@@ -266,19 +266,31 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         # Get data if present
         data_key = "extra_user_preferences"
         if data_key in user.preferences:
-            data = json.loads(user.preferences["extra_user_preferences"])
+            data = json.loads(user.preferences[data_key])
         extra_pref_inputs = list()
         # Build sections for different categories of inputs
-        for item in preferences:
-            section = preferences[item]
-            for input in section['inputs']:
-                input['help'] = 'Required' if input['required'] else ''
-                field = item + '|' + input['name']
-                for data_item in data:
-                   if field in data_item:
-                       input['value'] = data[data_item]
-            extra_pref_inputs.append({'type': 'section', 'title': section['description'], 'name': item, 'expanded': True, 'inputs': section['inputs']})
+        for item, value in preferences.items():
+            if value is not None:
+                for input in value["inputs"]:
+                    input['help'] = 'Required' if input['required'] else ''
+                    field = item + '|' + input['name']
+                    for data_item in data:
+                       if field in data_item:
+                           input['value'] = data[data_item]
+                extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
+
+    def _check_if_field_required( self, trans, key ):
+        """
+        Return true if the required field is empty while saving the form
+        """
+        preferences = self._get_extra_user_preferences( trans )
+        keys = key.split("|");
+        section = preferences[keys[0]]
+        for input in section['inputs']:
+            if( input['name'] == keys[1] and input['required'] ):
+                return True
+        return False
 
     @expose_api
     def get_information(self, trans, id, **kwd):
@@ -329,8 +341,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     info_field['cases'].append({'value': info_form['id'], 'inputs': info_form['inputs']})
                 inputs.append(info_field)
 
-            # Build sections for extra user preferences
-            extra_user_pref = self._build_extra_user_pref_inputs(self._get_extra_user_preferences(trans), user)
+            # Build input sections for extra user preferences
+            extra_user_pref = self._build_extra_user_pref_inputs( self._get_extra_user_preferences( trans ), user )
             for item in extra_user_pref:
                 inputs.append(item)
 
@@ -407,13 +419,19 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
 
         # Update values for extra user preference items
         extra_user_pref_data = dict()
-        get_extra_pref_keys = self._get_extra_user_preferences(trans)
-        for key in get_extra_pref_keys:
-            key_prefix = key + '|'
-            for item in payload:
-                if item.startswith(key_prefix):
-                    extra_user_pref_data[item] = payload[item]
-        user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
+        get_extra_pref_keys = self._get_extra_user_preferences( trans )
+        if get_extra_pref_keys is not None:
+            for key in get_extra_pref_keys:
+                key_prefix = key + '|'
+                for item in payload:
+                    if item.startswith( key_prefix ):
+                        # Show error message if the required field is empty
+                        if( payload[item] == "" ):
+                            if( self._check_if_field_required( trans, item ) ): 
+                                raise MessageException("Please fill the required field")
+                        extra_user_pref_data[ item ] = payload[ item ]
+            user.preferences[ "extra_user_preferences" ] = json.dumps( extra_user_pref_data )
+
         # Update user addresses
         address_dicts = {}
         address_count = 0
