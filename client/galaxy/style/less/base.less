@@ -329,6 +329,7 @@ div.unified-panel-body-background {
         background: url(../images/dropdownarrow.png) no-repeat right 7px;
     }
 }
+
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
 #dd-helper {
     background: white;
@@ -341,7 +342,9 @@ div.unified-panel-body-background {
     height: 100%;
     display: none;
 }
+
 // Messages for message box, slightly different style
+
 .panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
 {
     height: @panel-message-height;
@@ -668,6 +671,10 @@ div.form-row-error-message {
     margin-top: 5px;
 }
 
+.workflow-right .right-content .section-row {
+    margin-bottom: 10px;
+}
+
 // Selects
 select {
     //border: 1px solid @input-border;
@@ -827,6 +834,7 @@ input[type="submit"], button {
     min-height: 15px;
     background: url(error_small.png) no-repeat;
 }
+
 .warningmark {
     background-image: url(warn_small.png);
 }
@@ -1011,6 +1019,7 @@ div.debug {
     height: 18px;
     vertical-align: middle;
     margin-left: 2px;
+
 }
 .search-box-input {
     border: 0;
@@ -1038,13 +1047,18 @@ div.debug {
     position : fixed;
     display: none;
 }
+
+
 div.odd_row {
     background: @table-bg-accent;
 }
+
 #footer {
   display: none;
 }
+
 // Tool panel stuff
+
 // Extra label colors
 .label-beta {
   .label-warning();
@@ -1411,10 +1425,13 @@ div.permissionContainer {
     display:inline-block;
     margin-left:10px;
 }
+
 .icon-button.multiinput.disabled{
     background:url(../images/documents-stack-faded.png) no-repeat;
     cursor:pointer;
 }
+
+
 .icon-button.link{
     background:url(../images/silk/link.png) no-repeat;
     cursor:pointer;
@@ -1422,6 +1439,7 @@ div.permissionContainer {
     display:inline-block;
     margin-left:10px;
 }
+
 .icon-button.link-broken{
     background:url(../images/silk/link_break.png) no-repeat;
     cursor:pointer;
@@ -1429,12 +1447,14 @@ div.permissionContainer {
     display:inline-block;
     margin-left:10px;
 }
+
 .workflow-invocation-complete{
     border:solid 1px #6A6;
     border-left-width:5px;
     margin:10px 0;
     padding-left:5px;
 }
+
 // ============================================================================ History
 @import "ui/icon-btn.less";
 @import "list-item.less";
@@ -1442,13 +1462,18 @@ div.permissionContainer {
 @import "history.less";
 @import "collection.less";
 @import "job.less";
+
 @import "ui/paired-collection-creator.less";
+
 @import "ui/search-input.less";
 @import "ui/dataset-choice.less";
 @import "ui/peek-column-selector.less";
 @import "ui/pagination.less";
 @import "ui/error-modal.less";
+
+
 // ==== Tool menu styles
+
 .toolMenuContainer
 {
     color: @base-text-color;
@@ -1456,6 +1481,7 @@ div.permissionContainer {
     min-height: 100%;
     padding: 35px 10px;
 }
+
 div.toolSectionPad
 {
     margin: 0;
@@ -1463,18 +1489,22 @@ div.toolSectionPad
     height: 5px;
     font-size: 0px;
 }
+
 div.toolSectionWrapper {
     margin-bottom: 5px;
 }
+
 div.toolSectionDetailsInner
 {
   margin-left: 5px;
   margin-right: 5px;
 }
+
 div.toolSectionTitle
 {
   font-weight: bold;
 }
+
 div.toolPanelLabel
 {
   padding-top: 10px;
@@ -1483,6 +1513,7 @@ div.toolPanelLabel
   color: gray;
   text-transform: uppercase;
 }
+
 div.toolTitle
 {
   padding-top: 5px;
@@ -1496,6 +1527,7 @@ div.toolTitle
     margin-left: 2px;
   }
 }
+
 div.toolSectionBody div.toolPanelLabel
 {
   padding-top: 5px;
@@ -1505,11 +1537,13 @@ div.toolSectionBody div.toolPanelLabel
   display: list-item;
   list-style: none outside;
 }
+
 div.toolTitleNoSection
 {
   padding-bottom: 5px;
   font-weight: bold;
 }
+
 #tool-search {
     padding-top: 5px;
     padding-bottom: 10px;
@@ -1517,7 +1551,9 @@ div.toolTitleNoSection
     top: 65px;
     width: 210px;
 }
+
 // Dataset Display Styles
+
 #loading_indicator{
     position:fixed;
     right:10px;
@@ -1527,32 +1563,41 @@ div.toolTitleNoSection
     display:none;
     background:url(largespinner.gif);
 }
+
 #content_table td{
     text-align:right;
     white-space:nowrap;
     padding:2px 10px;
 }
+
 #content_table th{
     white-space:nowrap;
     padding:2px 10px;
 }
+
 #content_table td.stringalign{
     text-align:left;
 }
+
 #content_table .dark_row{
     background-color: #DDD;
 }
+
 #content_table th{
     background-color: #AAA;
 }
+
 // ==== Integrated tool form styles
+
 .toolMenuAndView .toolForm
 {
     float: left;
     background-color: white;
     margin: 10px;
 }
+
 // @import "base_sprites";
+
 .text-and-autocomplete-select {
     // -sprite-group: fugue;
     // -sprite-image: fugue/control-270.png;
@@ -1571,20 +1616,25 @@ div.toolTitleNoSection
         .opacity(80);
     }
 }
+
 .icon-button.general-question{
     background: url(question-octagon-frame.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
+
 .icon-button.tag-question{
     background: url(question-balloon.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
+
 // ==== General Sprites ====
+
 @import "sprite-fugue.less";
+
 .icon-button.tag {
     .sprite(@tag-label);
 }
@@ -1663,6 +1713,7 @@ div.toolTitleNoSection
 .icon-button.chevron-expand {
     .sprite(@chevron-expand-bw);
 }
+
 // noscript overlay - displayed when javascript is disabled
 .noscript-overlay {
     position: absolute;
@@ -1674,30 +1725,37 @@ div.toolTitleNoSection
         margin: 64px 0px 0px 64px;
     }
 }
+
 // honeypot for registration form
 #for_bears {
     display: none;
 }
+
 // communication channel bootstrap modal 
 .chat-modal {
     overflow: hidden;
 }
+
 .modal-header-body {
     padding: 2px;
 }
+
 .communication-iframe {
     width: 100%;
     height: 100%;
 }
+
 .close-modal {
     float: right; 
     cursor: pointer;
 }
+
 .expand-compress-modal {
     cursor: pointer;
     font-size: 12px;
     margin-left: 93.2%;
 }
+
 // password complexity monitor
 #change_password, #registrationForm {
     .progress {
