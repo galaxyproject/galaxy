@@ -143,7 +143,7 @@ test_data:
 
         collection_step = self._get_steps_of_type( downloaded_workflow, "data_collection_input", expected_len=1 )[ 0 ]
         collection_step_state = loads( collection_step[ "tool_state" ] )
-        self.assertEqual( loads( collection_step_state[ "collection_type" ] ), "paired" )
+        self.assertEqual( collection_step_state[ "collection_type" ], "paired" )
 
     @skip_without_tool( "cat_collection" )
     def test_subcollection_mapping( self ):
@@ -183,7 +183,7 @@ test_data:
 
         collection_step = self._get_steps_of_type( downloaded_workflow, "data_collection_input", expected_len=1 )[ 0 ]
         collection_step_state = loads( collection_step[ "tool_state" ] )
-        self.assertEqual( loads( collection_step_state[ "collection_type" ] ), "list:paired" )
+        self.assertEqual( collection_step_state[ "collection_type" ], "list:paired" )
 
     @skip_without_tool( "collection_split_on_column" )
     def test_extract_workflow_with_output_collections( self ):
@@ -370,7 +370,7 @@ test_data:
         collection_steps = self._get_steps_of_type( downloaded_workflow, "data_collection_input", expected_len=1 )
         collection_step = collection_steps[ 0 ]
         collection_step_state = loads( collection_step[ "tool_state" ] )
-        self.assertEqual( loads( collection_step_state[ "collection_type" ] ), "paired" )
+        self.assertEqual( collection_step_state[ "collection_type" ], "paired" )
         collect_step_idx = collection_step[ "id" ]
         return collect_step_idx
 
