@@ -356,6 +356,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('1.gg')
     >>> guess_ext(fname, sniff_order)
     'gg'
+    >>> fname = get_test_fname('test.dmnd')
+    >>> guess_ext(fname, sniff_order)
+    'dmnd'
     """
     file_ext = None
     for datatype in sniff_order:
