@@ -1454,10 +1454,11 @@ class DMND( Binary ):
 
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
-        self._magic = binascii.unhexlify("24af8a415ee186dllu")
+        self._magic = binascii.unhexlify("24af8a415ee186d")
 
     def sniff( self, filename ):
-        # The first 8 bytes of any hdf5 file are 0x24af8a415ee186dllu
+        # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
+
         try:
             header = open( filename, 'rb' ).read(8)
             if header == self._magic:
