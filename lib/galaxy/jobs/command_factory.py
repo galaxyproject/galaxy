@@ -16,6 +16,21 @@ log = getLogger( __name__ )
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
+SETUP_GALAXY_FOR_METADATA = """
+if [ "$GALAXY_LIB" != "None" ]; then
+    if [ -n "$PYTHONPATH" ]; then
+        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
+    else
+        PYTHONPATH="$GALAXY_LIB"
+    fi
+    export PYTHONPATH
+fi
+if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" \
+     -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
+GALAXY_PYTHON=`which python`
+"""
 
 
 def build_command(
@@ -194,6 +209,8 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     ) or ''
     metadata_command = metadata_command.strip()
     if metadata_command:
+        # Place Galaxy and its dependencies in environment for metadata regardless of tool.
+        metadata_command = "%s%s" % (SETUP_GALAXY_FOR_METADATA, metadata_command)
         commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 

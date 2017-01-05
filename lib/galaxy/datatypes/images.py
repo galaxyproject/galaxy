@@ -68,6 +68,18 @@ class Tiff( Image ):
     file_ext = "tiff"
 
 
+class Hamamatsu( Image ):
+    file_ext = "vms"
+
+
+class Mirax( Image ):
+    file_ext = "mrxs"
+
+
+class Sakura( Image ):
+    file_ext = "svslide"
+
+
 class Bmp( Image ):
     edam_format = "format_3592"
     file_ext = "bmp"
