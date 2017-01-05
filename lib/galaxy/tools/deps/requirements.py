@@ -10,20 +10,48 @@ class ToolRequirement( object ):
     run (for example, a program, package, or library).  Requirements can
     optionally assert a specific version.
     """
-    def __init__( self, name=None, type=None, version=None ):
+    def __init__( self, name=None, type=None, version=None, specs=[] ):
         self.name = name
         self.type = type
         self.version = version
+        self.specs = specs
 
     def to_dict( self ):
-        return dict(name=self.name, type=self.type, version=self.version)
+        specs = [s.to_dict() for s in self.specs]
+        return dict(name=self.name, type=self.type, version=self.version, specs=specs)
 
     @staticmethod
     def from_dict( dict ):
         version = dict.get( "version", None )
         name = dict.get("name", None)
         type = dict.get("type", None)
-        return ToolRequirement( name=name, type=type, version=version )
+        specs = [RequirementSpecification.from_dict(s) for s in dict.get("specs", [])]
+        return ToolRequirement( name=name, type=type, version=version, specs=specs )
+
+
+class RequirementSpecification(object):
+    """Refine a requirement using a URI."""
+
+    def __init__(self, uri, version=None):
+        self.uri = uri
+        self.version = version
+
+    @property
+    def specifies_version(self):
+        return self.version is not None
+
+    @property
+    def short_name(self):
+        return self.uri.split("/")[-1]
+
+    def to_dict(self):
+        return dict(uri=self.uri, version=self.version)
+
+    @staticmethod
+    def from_dict(dict):
+        uri = dict.get["uri"]
+        version = dict.get("version", None)
+        return RequirementSpecification(uri=uri, version=version)
 
     def __eq__(self, other):
         return self.name == other.name and self.type == other.type and self.version == other.version
@@ -107,10 +135,29 @@ def parse_requirements_from_xml( xml_root ):
 
     requirements = []
     for requirement_elem in requirement_elems:
-        name = xml_text( requirement_elem )
+        if "name" in requirement_elem.attrib:
+            name = requirement_elem.get( "name" )
+            spec_elems = requirement_elem.findall("specification")
+            specs = map(specification_from_element, spec_elems)
+        else:
+            name = xml_text( requirement_elem )
+            spec_uris_raw = requirement_elem.attrib.get("specification_uris", "")
+            specs = []
+            for spec_uri in spec_uris_raw.split(","):
+                if not spec_uri:
+                    continue
+                version = None
+                if "@" in spec_uri:
+                    uri, version = spec_uri.split("@", 1)
+                else:
+                    uri = spec_uri
+                uri = uri.strip()
+                if version:
+                    version = version.strip()
+                specs.append(RequirementSpecification(uri, version))
         type = requirement_elem.get( "type", DEFAULT_REQUIREMENT_TYPE )
         version = requirement_elem.get( "version", DEFAULT_REQUIREMENT_VERSION )
-        requirement = ToolRequirement( name=name, type=type, version=version )
+        requirement = ToolRequirement( name=name, type=type, version=version, specs=specs )
         requirements.append( requirement )
 
     container_elems = []
@@ -120,6 +167,12 @@ def parse_requirements_from_xml( xml_root ):
     containers = map(container_from_element, container_elems)
 
     return requirements, containers
+
+
+def specification_from_element(specification_elem):
+    uri = specification_elem.get("uri", None)
+    version = specification_elem.get("version", None)
+    return RequirementSpecification(uri, version)
 
 
 def container_from_element(container_elem):

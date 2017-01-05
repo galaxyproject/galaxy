@@ -122,6 +122,8 @@
   </section>
 
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="requirement_specification_1.xml" />
+  <tool file="requirement_specification_2.xml" />
 
   <tool file="simple_constructs.yml" />
 

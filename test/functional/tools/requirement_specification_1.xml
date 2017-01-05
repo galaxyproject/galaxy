@@ -1,0 +1,18 @@
+<tool id="requirement_specification_1" name="requirement_specification_1" version="0.1.0" profile="16.10">
+    <command><![CDATA[
+        blastn -help > $out_file1 ;
+        echo "Moo" >> $out_file1 ;
+    ]]></command>
+    <requirements>
+        <requirement type="package" version="2.2.31" name="blast+">
+            <specification uri="https://anaconda.org/bioconda/blast" />
+            <specification uri="https://packages.debian.org/sid/ncbi-blast+" version="2.2.31-3" />
+        </requirement>
+    </requirements>
+    <inputs>
+        <param name="input1" type="data" optional="true" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>

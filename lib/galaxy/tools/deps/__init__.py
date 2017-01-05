@@ -115,6 +115,7 @@ class DependencyManager( object ):
                 dependency = self.find_dep( name=requirement.name,
                                             version=requirement.version,
                                             type=requirement.type,
+                                            specs=requirement.specs,
                                             **kwds )
                 log.debug(dependency.resolver_msg)
                 if dependency.dependency_type:
@@ -130,7 +131,14 @@ class DependencyManager( object ):
         log.debug('Find dependency %s version %s' % (name, version))
         index = kwds.get('index', None)
         require_exact = kwds.get('exact', False)
+        specs = kwds.get("specs", [])
         for i, resolver in enumerate(self.dependency_resolvers):
+            if hasattr(resolver, "find_specification"):
+                spec = resolver.find_specification(specs)
+                if spec is not None:
+                    name = spec.short_name
+                    version = spec.version or version
+
             if index is not None and i != index:
                 continue
             dependency = resolver.resolve( name, version, type, **kwds )
