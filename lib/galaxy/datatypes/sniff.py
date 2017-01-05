@@ -356,7 +356,7 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('1.gg')
     >>> guess_ext(fname, sniff_order)
     'gg'
-    >>> fname = get_test_fname('test.dmnd')
+    >>> fname = get_test_fname('diamond_db.dmnd')
     >>> guess_ext(fname, sniff_order)
     'dmnd'
     """
