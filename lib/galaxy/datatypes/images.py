@@ -79,6 +79,8 @@ class Mirax( Image ):
 class Sakura( Image ):
     file_ext = "svslide"
 
+class Nrrd( Image ):
+    file_ext = "nhdr"
 
 class Bmp( Image ):
     edam_format = "format_3592"
