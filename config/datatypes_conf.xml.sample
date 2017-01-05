@@ -160,6 +160,8 @@
     <datatype extension="rgb" type="galaxy.datatypes.images:Rgb" mimetype="image/rgb"/>
     <datatype extension="pbm" type="galaxy.datatypes.images:Pbm" mimetype="image/pbm"/>
     <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
+    <datatype extension="nrrd" type="galaxy.datatypes.images:Nrrd" mimetype="image/nrrd"/>
+    <datatype extension="nhdr" type="galaxy.datatypes.images:Nrrd" subclass="true"/>
     <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true"/>
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
