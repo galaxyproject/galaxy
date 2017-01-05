@@ -261,7 +261,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         Add values to the fields if present
         """
         if not preferences:
-           return []
+            return []
         data = []
         # Get data if present
         data_key = "extra_user_preferences"
@@ -275,8 +275,8 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     input['help'] = 'Required' if input['required'] else ''
                     field = item + '|' + input['name']
                     for data_item in data:
-                       if field in data_item:
-                           input['value'] = data[data_item]
+                        if field in data_item:
+                            input['value'] = data[data_item]
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
@@ -285,7 +285,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         Return true if the required field is empty while saving the form
         """
         preferences = self._get_extra_user_preferences( trans )
-        keys = key.split("|");
+        keys = key.split("|")
         section = preferences[keys[0]]
         for input in section['inputs']:
             if( input['name'] == keys[1] and input['required'] ):
@@ -427,7 +427,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                     if item.startswith( key_prefix ):
                         # Show error message if the required field is empty
                         if( payload[item] == "" ):
-                            if( self._check_if_field_required( trans, item ) ): 
+                            if( self._check_if_field_required( trans, item ) ):
                                 raise MessageException("Please fill the required field")
                         extra_user_pref_data[ item ] = payload[ item ]
             user.preferences[ "extra_user_preferences" ] = json.dumps( extra_user_pref_data )
