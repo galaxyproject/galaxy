@@ -1436,3 +1436,34 @@ class NetCDF( Binary ):
 
 
 Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
+
+class DMND( Binary ):
+    """
+    Class describing an DMND file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.dmnd' )
+    >>> DMND().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> DMND().sniff( fname )
+    False
+    """
+
+    file_ext = "dmnd"
+    edam_format = ""
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+        self._magic = binascii.unhexlify("24af8a415ee186dllu")
+
+    def sniff( self, filename ):
+        # The first 8 bytes of any hdf5 file are 0x24af8a415ee186dllu
+        try:
+            header = open( filename, 'rb' ).read(8)
+            if header == self._magic:
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)
