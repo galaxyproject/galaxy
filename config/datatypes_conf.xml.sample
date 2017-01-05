@@ -445,7 +445,6 @@
     <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="true" />
     <datatype extension="xmfa" type="galaxy.datatypes.msa:MauveXmfa" display_in_upload="true" />
     <datatype extension="cel" type="galaxy.datatypes.binary:Cel" display_in_upload="true" />
-
     <datatype extension="RData" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxling" type="galaxy.datatypes.binary:OxliNodeGraph" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -454,6 +453,7 @@
     <datatype extension="oxliss" type="galaxy.datatypes.binary:OxliSubset" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxligl" type="galaxy.datatypes.binary:OxliGraphLabels" mimetype="application/octet-stream" display_in_upload="true"/>
     <!-- Constructive solid geometry datatypes -->
+    <datatype extension="stl" type="galaxy.datatypes.constructive_solid_geometry:STL" display_in_upload="true"/>
     <datatype extension="plyascii" type="galaxy.datatypes.constructive_solid_geometry:PlyAscii" display_in_upload="true" />
     <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
