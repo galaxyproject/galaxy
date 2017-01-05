@@ -80,7 +80,7 @@ class Sakura( Image ):
     file_ext = "svslide"
 
 class Nrrd( Image ):
-    file_ext = "nhdr"
+    file_ext = "nrrd"
 
 class Bmp( Image ):
     edam_format = "format_3592"
