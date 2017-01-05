@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+deluser galaxy | true
+groupadd -r galaxy -g "$GALAXY_TEST_UID"
+useradd -u $GALAXY_TEST_UID -r -g galaxy -d /home/galaxy -c "Galaxy User" galaxy -s /bin/bash
+echo "galaxy:galaxy" | chpasswd
+chown -R galaxy:galaxy /galaxy_venv
+
 GALAXY_TEST_DATABASE_TYPE=${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
 then
@@ -36,17 +42,19 @@ export TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
-./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
+sudo -E -u galaxy ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
 
 dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt
 [ -f $dev_requirements ] && $GALAXY_VIRTUAL_ENV/bin/pip install -r $dev_requirements
 
-sh manage_db.sh upgrade
-sh manage_db.sh upgrade tool_shed
+echo "Upgrading test database..."
+sudo -E -u galaxy sh manage_db.sh upgrade
+echo "Upgrading tool shed database... $TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION"
+sudo -E -u galaxy sh manage_db.sh upgrade tool_shed
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
-    sh run_tests.sh --skip-common-startup $@
+    sudo -E -u galaxy sh run_tests.sh --skip-common-startup $@
 else
     GALAXY_CONFIG_MASTER_API_KEY=${GALAXY_CONFIG_MASTER_API_KEY:-"testmasterapikey"}
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}
