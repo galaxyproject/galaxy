@@ -135,6 +135,23 @@ class DependencyManager( object ):
             if index is not None and i != index:
                 continue
 
+            if len(requirement_to_dependency) == len(resolvable_requirements):
+                # Shortcut - resolution complete.
+                break
+
+            # Check requirements all at once
+            all_unmet = len(requirement_to_dependency) == 0
+            if all_unmet and hasattr(resolver, "resolve_all"):
+                dependencies = resolver.resolve_all(resolvable_requirements, **kwds)
+                if dependencies:
+                    assert len(dependencies) == len(resolvable_requirements)
+                    for requirement, dependency in zip(resolvable_requirements, dependencies):
+                        requirement_to_dependency[requirement] = dependency
+
+                    # Shortcut - resolution complete.
+                    break
+
+            # Check individual requirements
             for requirement in resolvable_requirements:
                 if requirement in requirement_to_dependency:
                     continue
