@@ -205,6 +205,9 @@ class JobContext( object ):
         else:
             primary_data.init_meta()
 
+        primary_data.set_meta()
+        primary_data.set_peek()
+
         return primary_data
 
 
