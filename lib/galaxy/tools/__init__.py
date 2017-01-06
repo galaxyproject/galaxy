@@ -399,6 +399,16 @@ class Tool( object, Dictifiable ):
     def valid_input_states( self ):
         return model.Dataset.valid_input_states
 
+    @property
+    def requires_galaxy_python_environment(self):
+        """Indicates this tool's runtime requires Galaxy's Python environment."""
+        # All special tool types (data source, history import/export, etc...)
+        # seem to require Galaxy's Python.
+        return self.tool_type != "default" or self.id in [
+            "__SET_METADATA__",
+            "upload1",
+        ]
+
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
 
@@ -1327,6 +1337,7 @@ class Tool( object, Dictifiable ):
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
+            preserve_python_environment=self.requires_galaxy_python_environment,
             metadata=metadata,
             tool_instance=self
         )

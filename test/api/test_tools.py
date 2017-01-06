@@ -464,10 +464,14 @@ class ToolsTestCase( api.ApiTestCase ):
         output_collection = get_collection_response.json()
         self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
         assert output_collection[ "populated" ]
-        assert len( output_collection[ "elements" ] ) == 2
         self.assertEquals( output_collection[ "name" ], "Table split on first column" )
 
-        # TODO: verify element identifiers
+        assert len( output_collection[ "elements" ] ) == 2
+        output_element_0 = output_collection["elements"][0]
+        assert output_element_0["element_index"] == 0
+        assert output_element_0["element_identifier"] == "samp1"
+        output_element_hda_0 = output_element_0["object"]
+        assert output_element_hda_0["metadata_column_types"] is not None
 
     @skip_without_tool( "cat1" )
     def test_run_cat1_with_two_inputs( self ):
