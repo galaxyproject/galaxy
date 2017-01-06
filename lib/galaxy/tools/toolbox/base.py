@@ -728,6 +728,9 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
 
         tool_loaded = False
         for name in os.listdir( directory ):
+            if name.startswith('.' or '_'):
+                # Very unlikely that we want to load tools from a hidden or private folder
+                continue
             child_path = os.path.join(directory, name)
             if os.path.isdir(child_path) and recursive:
                 self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)

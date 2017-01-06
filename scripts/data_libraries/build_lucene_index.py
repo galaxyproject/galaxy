@@ -105,5 +105,6 @@ def get_sa_session( ini_file ):
                                        create_tables=False )
     return model.context.current, ini_config
 
+
 if __name__ == "__main__":
     main( *sys.argv[1:] )

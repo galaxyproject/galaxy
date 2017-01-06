@@ -135,5 +135,6 @@ def __main__():
     if invalid_positions:
         print("Skipped stats computation for %d read positions." % invalid_positions)
 
+
 if __name__ == "__main__":
     __main__()

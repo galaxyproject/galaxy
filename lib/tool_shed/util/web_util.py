@@ -1,4 +1,5 @@
 from markupsafe import escape as raw_escape
+
 from galaxy.util import smart_str
 
 ALLOWED_ELEMENTS = ["<b>", "</b>", "<br/>"]

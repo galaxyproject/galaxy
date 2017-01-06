@@ -47,6 +47,7 @@ def get_tool_dependency_dirs( app ):
         dependency_paths.append( tool_dependency.installation_directory( app ) )
     return dependency_paths
 
+
 if __name__ == '__main__':
     description = 'Clean out or list the contents any tool dependency directory under the provided'
     description += 'tool dependency path. Remove any non-empty directories found if the '

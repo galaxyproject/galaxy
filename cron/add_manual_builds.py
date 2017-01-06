@@ -43,6 +43,7 @@ def add_manual_builds(input_file, build_file, chr_dir):
             continue
     build_file_out.close()
 
+
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         sys.exit("USAGE: python add_manual_builds.py input_file builds.txt chrom_length_dir")

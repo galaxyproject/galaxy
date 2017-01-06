@@ -69,5 +69,6 @@ def __main__():
     tmpf.close()
     sys.stdout.write('converted SOLiD data')
 
+
 if __name__ == "__main__":
     __main__()

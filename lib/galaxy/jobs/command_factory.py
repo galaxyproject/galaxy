@@ -16,6 +16,21 @@ log = getLogger( __name__ )
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
+SETUP_GALAXY_FOR_METADATA = """
+if [ "$GALAXY_LIB" != "None" ]; then
+    if [ -n "$PYTHONPATH" ]; then
+        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
+    else
+        PYTHONPATH="$GALAXY_LIB"
+    fi
+    export PYTHONPATH
+fi
+if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" \
+     -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
+GALAXY_PYTHON=`which python`
+"""
 
 
 def build_command(
@@ -86,7 +101,10 @@ def build_command(
     if create_tool_working_directory:
         # usually working will already exist, but it will not for task
         # split jobs.
-        commands_builder.prepend_command("mkdir -p working; cd working")
+
+        # Remove the working directory incase this is for instance a SLURM re-submission.
+        # xref https://github.com/galaxyproject/galaxy/issues/3289
+        commands_builder.prepend_command("rm -rf working; mkdir -p working; cd working")
 
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
@@ -191,6 +209,8 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     ) or ''
     metadata_command = metadata_command.strip()
     if metadata_command:
+        # Place Galaxy and its dependencies in environment for metadata regardless of tool.
+        metadata_command = "%s%s" % (SETUP_GALAXY_FOR_METADATA, metadata_command)
         commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 
@@ -241,5 +261,6 @@ class CommandsBuilder(object):
         if self.return_code_captured:
             self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
+
 
 __all__ = ( "build_command", )

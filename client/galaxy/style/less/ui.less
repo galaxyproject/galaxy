@@ -177,6 +177,25 @@
     padding-right: 3px !important;
 }
 
+// panel
+.ui-panel {
+    .ui-panel-table {
+        margin-left: 20px;
+        margin-right: 20px;
+        .ui-panel-icon {
+            margin: 10px;
+            margin-right: 20px;
+            font-size: 1.6em;
+        }
+        .ui-panel-anchor {
+            font-weight: bold;
+        }
+    }
+    .ui-panel-footer {
+        margin-top: 10px;
+    }
+}
+
 // tabs
 .ui-tabs {
     .tab-operations {
@@ -343,7 +362,11 @@
         box-shadow: none !important;
         height: auto !important;
     }
+    .workflow-right .right-content {
+        margin-bottom: 10px;
+    }
 }
+
 .ui-form-element-disabled {
     &:extend(.ui-form-element all);
     .ui-form-title {
@@ -440,6 +463,7 @@
             word-wrap: break-word;
             display: inline;
             vertical-align: middle;
+            font-weight: bold;
             .portlet-title-text {
                 vertical-align: middle;
                 line-height: 22px;

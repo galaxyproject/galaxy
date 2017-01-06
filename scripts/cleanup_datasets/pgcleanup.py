@@ -14,13 +14,12 @@ import shutil
 import sys
 from optparse import OptionParser
 
+import psycopg2
 from six.moves.configparser import ConfigParser
+from sqlalchemy.engine.url import make_url
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
-
-import psycopg2
-from sqlalchemy.engine.url import make_url
 
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound
@@ -768,6 +767,7 @@ class Cleanup(object):
                         self._log('Removal of %s failed with error: %s' % (extra_files_dir, e))
 
         self._close_logfile()
+
 
 if __name__ == '__main__':
     cleanup = Cleanup()

@@ -49,6 +49,7 @@ def main( args ):
         print 'No empty tool dependency installation directories found.'
     return 0
 
+
 if __name__ == '__main__':
     description = 'Determine if there are any tool dependency installation paths that should be removed. Remove them if '
     description += 'the --delete command line argument is provided.'

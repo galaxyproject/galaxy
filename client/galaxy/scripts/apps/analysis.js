@@ -8,6 +8,7 @@ var jQuery = require( 'jquery' ),
     HistoryPanel = require( './history-panel' ),
     PAGE = require( 'layout/page' ),
     ToolForm = require( 'mvc/tool/tool-form' ),
+    UserPreferences = require( 'mvc/user/user-preferences' );
     Tours = require( 'mvc/tours' );
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -31,7 +32,6 @@ window.app = function app( options, bootstrapped ){
         toolPanel = new ToolPanel({
             el                  : '#left',
             userIsAnonymous     : Galaxy.user.isAnonymous(),
-            search_url          : config.search_url,
             toolbox             : config.toolbox,
             toolbox_in_panel    : config.toolbox_in_panel,
             stored_workflow_menu_entries : config.stored_workflow_menu_entries,
@@ -79,7 +79,7 @@ window.app = function app( options, bootstrapped ){
 
     // .................................................... routes
     /**  */
-    var router = new ( Backbone.Router.extend({
+    Galaxy.router = new ( Backbone.Router.extend({
         // TODO: not many client routes at this point - fill and remove from server.
         // since we're at root here, this may be the last to be routed entirely on the client.
         initialize : function( options ){
@@ -101,15 +101,19 @@ window.app = function app( options, bootstrapped ){
             // TODO: remove annoying 'root' from root urls
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
+            '(/)users(/)' : 'show_users',
         },
 
         show_tours : function( tour_id ){
-            if (tour_id){
-                Tours.giveTour(tour_id);
-            }
-            else{
+            if ( tour_id ){
+                Tours.giveTour( tour_id );
+            } else {
                 centerPanel.display( new Tours.ToursView() );
             }
+        },
+
+        show_users : function(){
+            centerPanel.display( new UserPreferences.View() );
         },
 
         /**  */

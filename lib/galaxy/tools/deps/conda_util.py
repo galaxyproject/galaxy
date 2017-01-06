@@ -29,7 +29,7 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "3.19.3"
+CONDA_VERSION = "4.2.13"
 
 
 def conda_link():
@@ -54,7 +54,7 @@ class CondaContext(installable.InstallableContext):
 
     def __init__(self, conda_prefix=None, conda_exec=None,
                  shell_exec=None, debug=False, ensure_channels='',
-                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT):
+                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT, copy_dependencies=False):
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
             conda_exec = commands.which("conda")
@@ -63,6 +63,7 @@ class CondaContext(installable.InstallableContext):
         self.conda_exec = conda_exec
         self.debug = debug
         self.shell_exec = shell_exec or commands.shell
+        self.copy_dependencies = copy_dependencies
 
         if conda_prefix is None:
             info = self.conda_info()
@@ -212,6 +213,17 @@ class CondaContext(installable.InstallableContext):
         ]
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
+
+    def exec_clean(self, args=[]):
+        """
+        Clean up after conda installation.
+        """
+        clean_base_args = [
+            "--tarballs",
+            "-y"
+        ]
+        clean_base_args.extend(args)
+        return self.exec_command("clean", clean_base_args)
 
     def export_list(self, name, path):
         return self.exec_command("list", [
@@ -487,6 +499,7 @@ def build_isolated_environment(
 
         return (path or tempdir_name, exit_code)
     finally:
+        conda_context.exec_clean()
         shutil.rmtree(tempdir)
 
 

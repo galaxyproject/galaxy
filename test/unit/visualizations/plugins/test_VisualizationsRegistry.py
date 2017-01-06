@@ -1,22 +1,23 @@
 """
 Test lib/galaxy/visualization/plugins/registry.
 """
-import imp
 import os
 import re
+import sys
+import unittest
 
 from six import string_types
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), os.pardir, os.pardir, 'unittest_utils', 'utility.py' ) )
-import galaxy_mock
 
 from galaxy import model
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock, utility
+
 # -----------------------------------------------------------------------------
-glx_dir = test_utils.get_galaxy_root()
+glx_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, os.pardir ) )
 template_cache_dir = os.path.join( glx_dir, 'database', 'compiled_templates' )
 addtional_templates_dir = os.path.join( glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates' )
 vis_reg_path = 'config/plugins/visualizations'
@@ -41,7 +42,7 @@ config1 = """\
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
+class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
     def test_plugin_load_from_repo( self ):
         """should attempt load if criteria met"""
@@ -93,11 +94,6 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
                         'vis1.xml': 'blerbler'
                     },
                 },
-                'not_a_vis1': {
-                    # no config
-                    'static': {},
-                    'templates': {},
-                },
                 # empty
                 'not_a_vis2': {},
                 'not_a_vis3': 'blerbler',
@@ -106,6 +102,11 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
                     'config': {
                         'not_a_vis4.xml': 'blerbler'
                     }
+                },
+                'not_a_vis5': {
+                    # no config
+                    'static': {},
+                    'templates': {},
                 },
             }
         })
@@ -145,10 +146,10 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
     def test_interactive_environ_plugin_load( self ):
         """
         """
-        ipython_config = test_utils.clean_multiline_string( """\
+        jupyter_config = utility.clean_multiline_string( """\
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
-        <interactive_environment name="IPython">
+        <interactive_environment name="Jupyter">
             <data_sources>
                 <data_source>
                     <model_class>HistoryDatasetAssociation</model_class>
@@ -160,15 +161,15 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
             <params>
                 <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
             </params>
-            <template>ipython.mako</template>
+            <template>jupyter.mako</template>
         </interactive_environment>
         """ )
 
         mock_app_dir = {
             'plugins': {
-                'ipython': {
+                'jupyter': {
                     'config': {
-                        'ipython.xml': ipython_config
+                        'jupyter.xml': jupyter_config
                     },
                     'templates': {}
                 },
@@ -176,8 +177,8 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
         }
 
         # going to use a fake template here to simplify testing
-        ipython_template = "${ ie_request }-${ get_api_key() }"
-        mock_app_dir[ 'plugins' ][ 'ipython' ][ 'templates' ][ 'ipython.mako' ] = ipython_template
+        jupyter_template = "${ ie_request }-${ get_api_key() }"
+        mock_app_dir[ 'plugins' ][ 'jupyter' ][ 'templates' ][ 'jupyter.mako' ] = jupyter_template
         # so that we don't create a cached version of that fake template in the real mako caches
         #   we'll set up a cache in the temp dir
         mock_app_dir[ 'caches' ] = {}
@@ -190,26 +191,26 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 
         # ...then start testing
         expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
-        expected_plugin_names = [ 'ipython' ]
+        expected_plugin_names = [ 'jupyter' ]
 
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
         self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertEqual( sorted(plugin_mgr.plugins.keys()), expected_plugin_names )
 
-        ipython = plugin_mgr.plugins[ 'ipython' ]
-        config = ipython.config
+        jupyter = plugin_mgr.plugins[ 'jupyter' ]
+        config = jupyter.config
 
-        self.assertEqual( ipython.name, 'ipython' )
+        self.assertEqual( jupyter.name, 'jupyter' )
         self.assertEqual( config.get( 'plugin_type' ), 'interactive_environment' )
 
         # get_api_key needs a user, fill_template a trans
         user = model.User( email="blah@bler.blah", password="dockerDockerDOCKER" )
         trans = galaxy_mock.MockTrans( user=user )
         # use a mock request factory - this will be written into the filled template to show it was used
-        ipython.INTENV_REQUEST_FACTORY = lambda t, p: 'mock'
+        jupyter.INTENV_REQUEST_FACTORY = lambda t, p: 'mock'
 
         # should return the (new) api key for the above user (see the template above)
-        response = ipython._render( {}, trans=trans )
+        response = jupyter._render( {}, trans=trans )
         response.strip()
         self.assertIsInstance( response, string_types )
         self.assertTrue( '-' in response )
@@ -225,7 +226,7 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 
     def test_script_entry( self ):
         """"""
-        script_entry_config = test_utils.clean_multiline_string( """\
+        script_entry_config = utility.clean_multiline_string( """\
         <?xml version="1.0" encoding="UTF-8"?>
         <visualization name="js-test">
             <data_sources>
@@ -273,4 +274,4 @@ class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 # TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':
-    test_utils.unittest.main()
+    unittest.main()

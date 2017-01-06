@@ -6,7 +6,152 @@
 from __future__ import division, print_function
 
 import sys
+
+from ast import Module, parse, walk
 from json import loads
+
+AST_NODE_TYPE_WHITELIST = [
+    'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',
+    'Or', 'GtE', 'LtE', 'Lt', 'Gt', 'BinOp', 'Add', 'Div', 'Sub', 'Mult', 'Mod',
+    'Pow', 'LShift', 'GShift', 'BitAnd', 'BitOr', 'BitXor', 'UnaryOp', 'Invert',
+    'Not', 'NotIn', 'In', 'Is', 'IsNot', 'List', 'Index', 'Subscript',
+    'Name',
+]
+
+
+BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
+STRING_AND_LIST_METHODS = [ name for name in dir('') + dir([]) if not name.startswith('_') ]
+VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
+# Name blacklist isn't strictly needed - but provides extra peace of mind.
+NAME_BLACKLIST = ["exec", "eval", "globals", "locals", "__import__", "__builtins__"]
+
+
+def __check_name( ast_node ):
+    name = ast_node.id
+    return name not in NAME_BLACKLIST
+
+
+def check_simple_name( text ):
+    """
+
+    >>> check_simple_name("col_name")
+    True
+    >>> check_simple_name("c1=='chr1' and c3-c2>=2000 and c6=='+'")
+    False
+    >>> check_simple_name("eval('1+1')")
+    False
+    >>> check_simple_name("import sys")
+    False
+    >>> check_simple_name("[].__str__")
+    False
+    >>> check_simple_name("__builtins__")
+    False
+    >>> check_simple_name("'x' in globals")
+    False
+    >>> check_simple_name("'x' in [1,2,3]")
+    False
+    >>> check_simple_name("c3=='chr1' and c5>5")
+    False
+    >>> check_simple_name("c3=='chr1' and d5>5")
+    False
+    >>> check_simple_name("c3=='chr1' and c5>5 or exec")
+    False
+    >>> check_simple_name("type(c1) != type(1)")
+    False
+    >>> check_simple_name("c1.split(',')[1] == '1'")
+    False
+    >>> check_simple_name("exec 1")
+    False
+    >>> check_simple_name("str(c2) in [\\\"a\\\",\\\"b\\\"]")
+    False
+    >>> check_simple_name("__import__('os').system('touch /tmp/OOPS')")
+    False
+    """
+    try:
+        module = parse( text )
+    except SyntaxError:
+        return False
+
+    if not isinstance(module, Module):
+        return False
+    statements = module.body
+    if not len( statements ) == 1:
+        return False
+    expression = statements[0]
+    if expression.__class__.__name__ != 'Expr':
+        return False
+
+    for ast_node in walk( expression ):
+        ast_node_class = ast_node.__class__.__name__
+        if ast_node_class not in ["Expr", "Name", "Load"]:
+            return False
+
+        if ast_node_class == "Name" and not __check_name(ast_node):
+            return False
+
+    return True
+
+
+def check_expression( text ):
+    """
+
+    >>> check_expression("c1=='chr1' and c3-c2>=2000 and c6=='+'")
+    True
+    >>> check_expression("eval('1+1')")
+    False
+    >>> check_expression("import sys")
+    False
+    >>> check_expression("[].__str__")
+    False
+    >>> check_expression("__builtins__")
+    False
+    >>> check_expression("'x' in globals")
+    False
+    >>> check_expression("'x' in [1,2,3]")
+    True
+    >>> check_expression("c3=='chr1' and c5>5")
+    True
+    >>> check_expression("c3=='chr1' and d5>5")
+    True
+    >>> check_expression("c3=='chr1' and c5>5 or exec")
+    False
+    >>> check_expression("type(c1) != type(1)")
+    False
+    >>> check_expression("c1.split(',')[1] == '1'")
+    False
+    >>> check_expression("exec 1")
+    False
+    >>> check_expression("str(c2) in [\\\"a\\\",\\\"b\\\"]")
+    False
+    >>> check_expression("__import__('os').system('touch /tmp/OOPS')")
+    False
+    """
+    try:
+        module = parse( text )
+    except SyntaxError:
+        return False
+
+    if not isinstance(module, Module):
+        return False
+    statements = module.body
+    if not len( statements ) == 1:
+        return False
+    expression = statements[0]
+    if expression.__class__.__name__ != 'Expr':
+        return False
+
+    for ast_node in walk( expression ):
+        ast_node_class = ast_node.__class__.__name__
+
+        # Toss out everything that is not a "simple" expression,
+        # imports, error handling, etc...
+        if ast_node_class not in AST_NODE_TYPE_WHITELIST:
+            return False
+
+        if ast_node_class == "Name" and not __check_name(ast_node):
+            return False
+
+    return True
 
 
 #
@@ -38,10 +183,10 @@ def check_for_executable( text, description='' ):
             if operand in secured:
                 stop_err( "Illegal value '%s' in %s '%s'" % ( operand, description, text ) )
 
+
 #
 # Process inputs.
 #
-
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
 cond_text = sys.argv[3]
@@ -50,6 +195,8 @@ attribute_types = loads( sys.argv[4] )
 # Convert types from str to type objects.
 for name, a_type in attribute_types.items():
     check_for_executable(a_type)
+    if not check_simple_name( a_type ):
+        stop_err("Problem with attribute type [%s]" % a_type)
     attribute_types[ name ] = eval( a_type )
 
 # Unescape if input has been escaped
@@ -68,6 +215,9 @@ for key, value in mapped_str.items():
 
 # Attempt to determine if the condition includes executable stuff and, if so, exit.
 check_for_executable( cond_text, 'condition')
+
+if not check_expression(cond_text):
+    stop_err( "Illegal/invalid in condition '%s'" % ( cond_text ) )
 
 # Prepare the column variable names and wrappers for column data types. Only
 # prepare columns up to largest column in condition.
@@ -96,6 +246,7 @@ def get_value(name, a_type, values_dict):
         return (a_type)(values_dict[ name ])
     else:
         return None
+
 
 # Read and filter input file, skipping invalid lines
 code = '''

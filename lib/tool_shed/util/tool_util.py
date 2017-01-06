@@ -57,7 +57,7 @@ def copy_sample_file( app, filename, dest_path=None ):
         shutil.copy( full_source_path, full_destination_path )
     # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it
     # contains stuff proprietary to the local instance.
-    if not os.path.exists( os.path.join( dest_path, copied_file ) ):
+    if not os.path.lexists( os.path.join( dest_path, copied_file ) ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 
 

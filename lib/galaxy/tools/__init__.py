@@ -9,7 +9,6 @@ import os
 import re
 import tarfile
 import tempfile
-import time
 import threading
 import urllib
 from datetime import datetime
@@ -35,6 +34,7 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.deps import views
+from galaxy.tools.deps import CachedDependencyManager
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -73,6 +73,45 @@ log = logging.getLogger( __name__ )
 
 HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
+# Tools that require Galaxy's Python environment to be preserved.
+GALAXY_LIB_TOOLS = [
+    "upload1",
+    # Legacy tools bundled with Galaxy.
+    "vcf_to_maf_customtrack1",
+    "laj_1",
+    "meme_fimo",
+    "secure_hash_message_digest",
+    "join1",
+    "gff2bed1",
+    "gff_filter_by_feature_count",
+    "Extract genomic DNA 1",
+    "aggregate_scores_in_intervals2",
+    "Interval_Maf_Merged_Fasta2",
+    "maf_stats1",
+    "Interval2Maf1",
+    "MAF_To_Interval1",
+    "MAF_filter",
+    "MAF_To_Fasta1",
+    "MAF_Reverse_Complement_1",
+    "MAF_split_blocks_by_species1",
+    "maf_limit_size1",
+    "maf_by_block_number1",
+    # Tools improperly migrated to the tool shed (devteam)
+    "lastz_wrapper_2",
+    "qualityFilter",
+    "winSplitter",
+    "pileup_interval",
+    "count_gff_features",
+    "Convert characters1",
+    "lastz_paired_reads_wrapper",
+    "subRate1",
+    "substitutions1",
+    "sam_pileup",
+    "find_diag_hits",
+    "cufflinks",
+    # Tools improperly migrated to the tool shed (iuc)
+    "tabular_to_dbnsfp",
+]
 
 
 class ToolErrorLog:
@@ -120,12 +159,14 @@ class ToolBox( BaseGalaxyToolBox ):
         reload_toolbox(self.app)
 
     def handle_panel_update(self, section_dict):
-        send_control_task(self.app, 'create_panel_section', noop_self=False, kwargs=section_dict)
-        max_wait = 10
-        i = 0
-        while not section_dict['id'] in self._tool_panel and i < max_wait:
-            i += 1
-            time.sleep(1)
+        """
+        Sends a panel update to all threads/processes.
+        """
+        send_control_task(self.app, 'create_panel_section', kwargs=section_dict)
+        # The following local call to self.create_section should be unnecessary
+        # but occasionally the local ToolPanelElements instance appears to not
+        # get updated.
+        self.create_section(section_dict)
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
@@ -396,6 +437,23 @@ class Tool( object, Dictifiable ):
     @property
     def valid_input_states( self ):
         return model.Dataset.valid_input_states
+
+    @property
+    def requires_galaxy_python_environment(self):
+        """Indicates this tool's runtime requires Galaxy's Python environment."""
+        # All special tool types (data source, history import/export, etc...)
+        # seem to require Galaxy's Python.
+        if self.tool_type != "default":
+            return True
+
+        config = self.app.config
+        preserve_python_environment = config.preserve_python_environment
+        if preserve_python_environment == "always":
+            return True
+        elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
+            return True
+        else:
+            return self.old_id in GALAXY_LIB_TOOLS
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
@@ -1304,17 +1362,31 @@ class Tool( object, Dictifiable ):
         visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
+    def build_dependency_cache(self, **kwds):
+        if isinstance(self.app.toolbox.dependency_manager, CachedDependencyManager):
+            self.app.toolbox.dependency_manager.build_cache(
+                requirements=self.requirements,
+                installed_tool_dependencies=self.installed_tool_dependencies,
+                tool_dir=self.tool_dir,
+                job_directory=None,
+                metadata=False,
+                tool_instance=self,
+                **kwds
+            )
+
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
-        """Return a list of commands to be run to populate the current environment to include this tools requirements."""
-        requirements_to_dependencies = self.app.toolbox.dependency_manager.requirements_to_dependencies(
-            self.requirements,
+        """
+        Return a list of commands to be run to populate the current environment to include this tools requirements.
+        """
+        return self.app.toolbox.dependency_manager.dependency_shell_commands(
+            requirements=self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
+            preserve_python_environment=self.requires_galaxy_python_environment,
             metadata=metadata,
+            tool_instance=self
         )
-        self.dependencies = [dep.to_dict() for dep in requirements_to_dependencies.values()]
-        return [dep.shell_commands(req) for req, dep in requirements_to_dependencies.items()]
 
     @property
     def installed_tool_dependencies(self):

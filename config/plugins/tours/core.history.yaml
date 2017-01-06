@@ -54,65 +54,65 @@ steps:
         - "div.title-bar.clear:eq(0)"
 
     - title: "Metadata"
-      element: "#current-history-panel > div.list-items > div:nth-child(1) > div.details > div.summary > div.datatype > label"
+      element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.summary > div.datatype > label"
       intro: "Galaxy has assigned a datatype to your dataset during upload, which you can see here."
       position: "left"
 
-    - element: "#current-history-panel > div.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.download-btn.icon-btn"
+    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.download-btn.icon-btn"
       title: "Download your dataset"
       intro: "You can download every dataset by using the floppy disc symbol."
       position: "left"
 
-    - element: "#current-history-panel > div.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.icon-btn.params-btn"
+    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.icon-btn.params-btn"
       title: "Even more information"
       intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
       position: "left"
       preclick:
-        - "#current-history-panel > div.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.icon-btn.params-btn"
+        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.details > div.actions.clear > div.left > a.icon-btn.params-btn"
 
-    - element: "#current-history-panel > div.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.display-btn"
+    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.display-btn"
       title: "Inspect your data"
       intro: "The eye symbol can be used to look at your data."
       position: "left"
       preclick:
-        - "#current-history-panel > div.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.display-btn"
+        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.display-btn"
 
-    - element: "#current-history-panel > div.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.edit-btn"
+    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.edit-btn"
       title: "Edit metadata"
       intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
       position: "left"
       preclick:
-        - "#current-history-panel > div.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.edit-btn"
+        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.edit-btn"
 
-    - element: "#current-history-panel > div.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.delete-btn"
+    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.delete-btn"
       title: "Remove datasets"
       intro: "You can remove a dataset from the history with the cross symbol."
       position: "left"
       postclick:
-        - "#current-history-panel > div.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.delete-btn"
+        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.primary-actions > a.icon-btn.delete-btn"
 
-    - element: "#current-history-panel > div.controls > div.subtitle > a"
+    - element: "#current-history-panel > .controls > .subtitle .toggle-deleted-link"
       title: "Include all deleted datasets"
       intro: "By default your history will hide all deleted datasets from you. You can visualize them by toggling this button."
       position: "bottom"
       postclick:
-        - "#current-history-panel > div.controls > div.subtitle > a"
+        - "#current-history-panel > .controls > .subtitle .toggle-deleted-link"
 
-    - element: "#current-history-panel > div.list-items > div:nth-child(1) > div.warnings > div > a"
+    - element: "#current-history-panel > ul.list-items > div:nth-child(1) > div.warnings > div > a"
       title: "Undeleting a dataset"
       intro: |
             Galaxy datasets are only marked as deleled and can be recovered by clicking this link.
             Please note that datasets marked as deleted can be purged by your administrator at any time.
       position: "bottom"
       postclick:
-        - "#current-history-panel > div.list-items > div:nth-child(1) > div.warnings > div > a"
+        - "#current-history-panel > ul.list-items > div:nth-child(1) > div.warnings > div > a"
 
-    - element: "#current-history-panel > div.controls > div.subtitle > a"
+    - element: "#current-history-panel > div.controls > .subtitle .toggle-deleted-link"
       title: "Hiding all deleted datasets"
       intro: "Hiding datasets that were previously deleted works in the same way."
       position: "bottom"
       preclick:
-        - "#current-history-panel > div.controls > div.subtitle > a"
+        - "#current-history-panel > div.controls > .subtitle .toggle-deleted-link"
 
     - element: "#current-history-panel > div.controls > div.title > div"
       title: "Change your History name"

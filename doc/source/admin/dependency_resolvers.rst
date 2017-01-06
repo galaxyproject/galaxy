@@ -182,7 +182,7 @@ debug
 ensure_channels
     conda channels to enable by default. See
     http://conda.pydata.org/docs/custom-channels.html for more
-    information about channels. (default: conda-forge,r,bioconda,iuc).
+    information about channels. (default: iuc,bioconda,r,defaults,conda-forge).
 
 auto_install
     Set to True to instruct Galaxy to look for and install missing tool

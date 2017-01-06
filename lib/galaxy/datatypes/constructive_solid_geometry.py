@@ -130,6 +130,7 @@ class PlyBinary(Ply, Binary):
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
+
 Binary.register_sniffable_binary_format("plybinary", "plybinary", PlyBinary)
 
 
@@ -456,7 +457,12 @@ class VtkBinary(Vtk, Binary):
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
+
 Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
+
+
+class STL(data.Data):
+    file_ext = "stl"
 
 
 # Utility functions

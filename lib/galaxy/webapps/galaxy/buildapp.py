@@ -71,6 +71,7 @@ def paste_app_factory( global_conf, **kwargs ):
 
     webapp.add_client_route( '/tours' )
     webapp.add_client_route( '/tours/{tour_id}' )
+    webapp.add_client_route( '/users' )
 
     # STANDARD CONTROLLER ROUTES
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
@@ -262,12 +263,16 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
+    webapp.mapper.connect( '/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict( method=[ "POST" ] ))
+    webapp.mapper.connect( '/api/tools/{id:.+?}/build_dependency_cache', action='build_dependency_cache', controller="tools", conditions=dict( method=[ "POST" ] ))
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
 
+    webapp.mapper.connect( '/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict( method=[ "POST" ]) )
     webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict( method=[ "POST" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/requirements', action="manager_requirements", controller="tool_dependencies" )
+    webapp.mapper.connect( '/api/dependency_resolvers/{id}/clean', action="clean", controller="tool_dependencies", conditions=dict( method=[ "POST" ]) )
     webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="resolver_dependency", controller="tool_dependencies", conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/{id}/dependency', action="install_dependency", controller="tool_dependencies", conditions=dict( method=[ "POST" ] ) )
     webapp.mapper.connect( '/api/dependency_resolvers/{id}/requirements', action="resolver_requirements", controller="tool_dependencies" )
@@ -322,10 +327,6 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( "history_archive_download",
                            "/api/histories/{id}/exports/{jeha_id}", controller="histories",
                            action="archive_download", conditions=dict( method=[ "GET" ] ) )
-
-    webapp.mapper.connect( "create_api_key", "/api/users/{user_id}/api_key",
-                           controller="users", action="api_key", user_id=None,
-                           conditions=dict( method=["POST"] ) )
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
@@ -457,6 +458,88 @@ def populate_api_routes( webapp, app ):
                            controller='tours',
                            action='update_tour',
                            conditions=dict( method=[ "POST" ] ) )
+
+    # ================================
+    # ===== USERS API =====
+    # ================================
+
+    webapp.mapper.connect( 'api_key',
+                           '/api/users/{id}/api_key',
+                           controller='users',
+                           action='api_key',
+                           conditions=dict( method=["POST"] ) )
+
+    webapp.mapper.connect( 'get_api_key',
+                           '/api/users/{id}/api_key/inputs',
+                           controller='users',
+                           action='get_api_key',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'set_api_key',
+                           '/api/users/{id}/api_key/inputs',
+                           controller='users',
+                           action='set_api_key',
+                           conditions=dict( method=["PUT"] ) )
+
+    webapp.mapper.connect( 'get_information',
+                           '/api/users/{id}/information/inputs',
+                           controller='users',
+                           action='get_information',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'set_information',
+                           '/api/users/{id}/information/inputs',
+                           controller='users',
+                           action='set_information',
+                           conditions=dict( method=["PUT"] ) )
+
+    webapp.mapper.connect( 'get_password',
+                           '/api/users/{id}/password/inputs',
+                           controller='users',
+                           action='get_password',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'set_password',
+                           '/api/users/{id}/password/inputs',
+                           controller='users',
+                           action='set_password',
+                           conditions=dict( method=["PUT"] ) )
+
+    webapp.mapper.connect( 'get_permissions',
+                           '/api/users/{id}/permissions/inputs',
+                           controller='users',
+                           action='get_permissions',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'set_permissions',
+                           '/api/users/{id}/permissions/inputs',
+                           controller='users',
+                           action='set_permissions',
+                           conditions=dict( method=["PUT"] ) )
+
+    webapp.mapper.connect( 'get_toolbox_filters',
+                           '/api/users/{id}/toolbox_filters/inputs',
+                           controller='users',
+                           action='get_toolbox_filters',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'set_toolbox_filters',
+                           '/api/users/{id}/toolbox_filters/inputs',
+                           controller='users',
+                           action='set_toolbox_filters',
+                           conditions=dict( method=["PUT"] ) )
+
+    webapp.mapper.connect( 'get_communication',
+                           '/api/users/{id}/communication/inputs',
+                           controller='users',
+                           action='get_communication',
+                           conditions=dict( method=["GET"] ) )
+
+    webapp.mapper.connect( 'set_communication',
+                           '/api/users/{id}/communication/inputs',
+                           controller='users',
+                           action='set_communication',
+                           conditions=dict( method=["PUT"] ) )
 
     # ========================
     # ===== WEBHOOKS API =====

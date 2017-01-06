@@ -14,14 +14,16 @@ cat <<EOF
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
-'${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
-'${0##*/} -unit (test_path)'        for running all unit tests (doctests in lib and tests in test/unit)
+'${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
+'${0##*/} -unit (test_path)'        for running unit tests on specified test path
 '${0##*/} -qunit'                   for running qunit JavaScript tests
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
+'${0##*/} -selenium'                for running all selenium web tests (in test/selenium_tests)
+'${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
 '${0##*/} -casperjs (py_test_path)' for running casperjs JavaScript tests using a Python wrapper for consistency. py_test_path in casperjs_runner.py e.g. 'Test_04_HDAs' or 'Test_04_HDAs.test_00_HDA_states'.
 
 Nose tests will allow specific tests to be selected per the documentation at
@@ -34,10 +36,51 @@ Run all TestUserInfo functional tests:
 Run a specific API test:
     ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
+Run all selenium tests (Under Linux using Docker):
+    # Start selenium chrome Docker container
+    docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
+    GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
+
+Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
+    ./run_tests.sh -selenium test/selenium_tests/test_registration.py:RegistrationTestCase.test_reregister_username_fails
+
+Note About Selenium Tests:
+
+If using a local selenium driver such as a Chrome or Firefox based one
+either chromedriver or geckodriver needs to be installed an placed on
+the PATH.
+
+More information on geckodriver can be found at
+https://github.com/mozilla/geckodriver and more information on
+chromedriver can be found at
+https://sites.google.com/a/chromium.org/chromedriver/.
+
+By default Galaxy will check the PATH for these and pick
+whichever it finds. This can be overridden by setting
+GALAXY_TEST_SELENIUM_BROWSER to either FIREFOX, CHROME, or something
+more esoteric (including OPERA and PHANTOMJS).
+
+If PyVirtualDisplay is installed Galaxy will attempt to run this
+browser in a headless mode. This can be disabled by setting
+GALAXY_TEST_SELENIUM_HEADLESS to 0 however.
+
+Selenium can also be setup a remote service - to target a service set
+GALAXY_TEST_SELENIUM_REMOTE to 1. The target service may be configured
+with GALAXY_TEST_SELENIUM_REMOTE_PORT and
+GALAXY_TEST_SELENIUM_REMOTE_HOST. By default Galaxy will assume the
+remote service being targetted is CHROME - but this can be overridden
+with GALAXY_TEST_SELENIUM_BROWSER.
+
+In this remote mode, please ensure that GALAXY_TEST_HOST is set to a
+host that is accessible from the Selenium host. By default under Linux
+if GALAXY_TEST_SELENIUM_REMOTE is set, Galaxy will set this to be the IP
+address Docker exposes localhost on to its child containers. This trick
+doesn't work on Mac OS X and so GALAXY_TEST_HOST will need to be crafted
+carefully ahead of time.
 
 External Tests:
 
-A small subset of tests can be run against an existing Galxy
+A small subset of tests can be run against an existing Galaxy
 instance. The external Galaxy instance URL can be configured with
 --external_url. If this is set, either --external_master_key or
 --external_user_key must be set as well - more tests can be executed
@@ -203,8 +246,15 @@ then
        DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
        shift
     fi
-    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
+    echo "Launching docker container for testing..."
+    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
+fi
+
+# If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
+if [ -n "$BUILD_NUMBER" ];
+then
+    xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
 
 # Loop through and consume the main arguments.
@@ -250,6 +300,19 @@ do
               shift 1
           fi
           ;;
+      -selenium|--selenium)
+          with_framework_test_tools_arg="-with_framework_test_tools"
+          test_script="./scripts/functional_tests.py"
+          report_file="./run_selenium_tests.html"
+          selenium_test=1;
+          if [ $# -gt 1 ]; then
+              selenium_script=$2
+              shift 2
+          else
+              selenium_script="./test/selenium_tests"
+              shift 1
+          fi
+          ;;
       -t|-toolshed|--toolshed)
           test_script="./test/shed_functional/functional_tests.py"
           report_file="run_toolshed_tests.html"
@@ -260,6 +323,11 @@ do
               toolshed_script="./test/shed_functional/functional"
               shift 1
           fi
+          ;;
+      -clean_pyc|--clean_pyc)
+          find lib -iname '*pyc' -exec rm -rf {} \;
+          find test -iname '*pyc' -exec rm -rf {} \;
+          shift
           ;;
       -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
@@ -276,16 +344,6 @@ do
       --external_user_key)
           GALAXY_TEST_USER_API_KEY=$2
           shift 2
-          ;;
-      -w|-workflow|--workflow)
-          if [ $# -gt 1 ]; then
-              workflow_file=$2
-              workflow_test=1
-              shift 2
-          else
-              echo "--workflow requires an argument" 1>&2
-              exit 1
-          fi
           ;;
       -f|-framework|--framework)
           report_file="run_framework_tests.html"
@@ -370,6 +428,17 @@ do
               shift 2
           else
               unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners --exclude dictobj --exclude=jstree lib test/unit'
+              shift 1
+          fi
+          ;;
+      -i|-integration|--integration)
+          report_file="run_integration_tests.html"
+          test_script="./scripts/nosetests.py"
+          if [ $# -gt 1 ]; then
+              integration_extra=$2
+              shift 2
+          else
+              integration_extra='test/integration'
               shift 1
           fi
           ;;
@@ -462,12 +531,11 @@ elif [ -n "$installed_test" ] ; then
 elif [ -n "$framework_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
     extra_args="functional.test_toolbox$class -framework"
+elif [ -n "$selenium_test" ] ; then
+    extra_args="$selenium_script -selenium"
 elif [ -n "$data_managers_test" ] ; then
     [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
     extra_args="functional.test_data_managers$class -data_managers"
-elif [ -n "$workflow_test" ]; then
-    GALAXY_TEST_WORKFLOW_FILE="$workflow_file"
-    extra_args="functional.workflow:WorkflowTestCase"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
@@ -488,6 +556,8 @@ elif [ -n "$test_id" ]; then
     extra_args="functional.test_toolbox$class"
 elif [ -n "$unit_extra" ]; then
     extra_args="--with-doctest $unit_extra"
+elif [ -n "$integration_extra" ]; then
+    extra_args="$integration_extra"
 elif [ -n "$1" ] ; then
     extra_args="$1"
 else
@@ -530,4 +600,3 @@ else
     # functional tests.
     grunt --gruntfile=$gruntfile $grunt_task $grunt_args
 fi
-

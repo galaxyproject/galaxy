@@ -4,8 +4,8 @@ API operations for Workflows
 from __future__ import absolute_import
 
 import logging
-from six.moves.urllib.parse import unquote_plus
 
+from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
 
 from galaxy import (

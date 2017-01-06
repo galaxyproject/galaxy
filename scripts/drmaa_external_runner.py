@@ -6,6 +6,7 @@ defining any or all of the following: args, remoteCommand, outputPath,
 errorPath, nativeSpecification, name, email, project
 """
 from __future__ import print_function
+
 import errno
 import json
 import os
@@ -130,6 +131,7 @@ def main():
 
     # Print the Job-ID and exit. Galaxy will pick it up from there.
     print(jobId)
+
 
 if __name__ == "__main__":
     main()

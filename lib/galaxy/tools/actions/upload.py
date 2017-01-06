@@ -1,9 +1,10 @@
-from __init__ import ToolAction
-from galaxy.tools.actions import upload_common
+import logging
 
+from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
 
-import logging
+from . import ToolAction
+
 log = logging.getLogger( __name__ )
 
 
@@ -11,7 +12,7 @@ class UploadToolAction( ToolAction ):
 
     def execute( self, tool, trans, incoming={}, set_output_hid=True, history=None, **kwargs ):
         dataset_upload_inputs = []
-        for input_name, input in tool.inputs.iteritems():
+        for input_name, input in tool.inputs.items():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append( input )
         assert dataset_upload_inputs, Exception( "No dataset upload groups were found." )

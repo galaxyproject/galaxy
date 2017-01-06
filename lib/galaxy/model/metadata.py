@@ -340,6 +340,7 @@ class MetadataElementSpec( object ):
         spec_dict.update( self.__dict__ )
         return ( "{name} ({param_class}): {desc}, defaults to '{default}'".format( **spec_dict ) )
 
+
 # create a statement class that, when called,
 #   will add a new MetadataElementSpec to a class's metadata_spec
 MetadataElement = Statement( MetadataElementSpec )
@@ -871,6 +872,7 @@ class JobExternalOutputMetadataWrapper( object ):
             metadata_files.job_runner_external_pid = pid
             sa_session.add( metadata_files )
             sa_session.flush()
+
 
 __all__ = (
     "Statement",

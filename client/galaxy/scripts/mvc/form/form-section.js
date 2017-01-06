@@ -104,7 +104,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             // add parsed/minimum number of repeat blocks
             //
             var n_cache = _.size( input_def.cache );
-            for ( var i = 0; i < Math.max( Math.max( n_cache, input_def.min ), input_def.default || 0 ); i++ ) {
+            for ( var i = 0; i < Math.max( Math.max( n_cache, input_def.min || 0 ), input_def.default || 0 ); i++ ) {
                 create( i < n_cache ? input_def.cache[ i ] : input_def.inputs );
             }
 
@@ -139,7 +139,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
         _addRow: function( input_def ) {
             var self = this;
             var id = input_def.id;
-            input_def.onchange = function() { self.app.trigger( 'change', id ) };
+            input_def.onchange = input_def.onchange || function() { self.app.trigger( 'change', id ) };
             var field = this.parameters.create( input_def );
             this.app.field_list[ id ] = field;
             var input_element = new InputElement( this.app, {

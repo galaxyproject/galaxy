@@ -68,4 +68,3 @@ ecdsa==0.13
 
 # Flexible BAM index naming
 pysam==0.8.4+gx5
-
