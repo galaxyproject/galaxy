@@ -207,3 +207,20 @@ class ToolShedController( BaseAPIController ):
         repository_data[ 'tool_dependencies' ] = tool_dependencies
         return repository_data
 
+    @expose_api
+    @web.require_admin
+    def search( self, trans, **kwd ):
+        """
+        GET /api/tool_shed/search
+        Search for a specific repository in the toolshed.
+        :param q:          the query string to search for
+        :param q:          str
+        :param tool_shed_url:   the URL of the toolshed to search
+        :param tool_shed_url:   str
+        """
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
+        q = kwd.get( 'term', None )
+        if None in [ q, tool_shed_url ]:
+            return {}
+        response = json.loads( util.url_get( tool_shed_url, params=dict( q=q ), pathspec=[ 'api', 'repositories' ] ) )
+        return response

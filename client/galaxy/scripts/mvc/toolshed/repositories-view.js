@@ -1,4 +1,4 @@
-define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
+define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_model, toolshed_util) {
 
     var ToolShedCategoryContentsView = Backbone.View.extend({
 
@@ -20,6 +20,25 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             var category_contents_template = this.templateCategoryContents;
             this.$el.html(category_contents_template({category: this.model.models[0], tool_shed: this.model.tool_shed}));
             $("#center").css('overflow', 'auto');
+            this.bindEvents();
+        },
+
+        bindEvents: function() {
+            var that = this;
+            // toolshed_util.searchShed();
+            console.log('that.selector');
+            require(['libs/jquery/jquery-ui'], function() {
+                $("search_box").autocomplete({
+                    source: function(req, res) {console.log('blop' + req);},
+                    minLength: 3,
+                    select: function(event, ui) {
+                        var tsr_id = ui.item.value;
+                        var api_url = Galaxy.root + 'api/tool_shed/repository';
+                        var params = {"tool_shed_url": this.model.tool_shed, "tsr_id": tsr_id};
+                        toolshed_util.loadRepo(tsr_id, this.model.tool_shed, api_url, params);
+                    },
+                });
+            });
         },
 
         reDraw: function(options){
@@ -34,7 +53,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
             '<div class="unified-panel-body" id="list_repositories">',
                 '<div id="standard-search" style="height: 2em; margin: 1em;">',
                     '<span class="ui-widget" >',
-                        '<input class="search-box-input" id="category_search" name="search" placeholder="Search repositories by name or id" size="60" type="text" />',
+                        '<input class="search-box-input" id="search_box" name="search" data-shedurl="<%= tool_shed.replace(/%2f/g, "/") %>" placeholder="Search repositories by name or id" size="60" type="text" />',
                     '</span>',
                 '</div>',
                 '<div style="clear: both; margin-top: 1em;">',
