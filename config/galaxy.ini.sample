@@ -1148,6 +1148,20 @@ use_interactive = True
 # be configured through the job configuration file.
 #job_config_file = config/job_conf.xml
 
+# When jobs fail due to job runner problems, Galaxy can be configured to retry
+# these or reroute the jobs to new destinations. Very fine control of this is
+# available with resubmit declarations in job_conf.xml. For simple deployments
+# of Galaxy though, the following attribute can define resubmission conditions
+# for all job destinations. If any job destination defines even one
+# resubmission condition explicitly in job_conf.xml - the condition described
+# by this option will not apply to that destination. For instance, the condition:
+# 'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
+# would retry up to two times jobs that didn't fail due to detected memory or
+# walltime limits but did fail quickly (either while queueing or running). The
+# commented out default below results in no default job resubmission condition,
+# failing jobs are just failed outright.
+#default_job_resubmission_condition = 
+
 # In multiprocess configurations, notification between processes about new jobs
 # must be done via the database.  In single process configurations, this can be
 # done in memory, which is a bit quicker.

@@ -356,6 +356,11 @@ class Configuration( object ):
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get( 'involucro_auto_init', True))
 
+        default_job_resubmission_condition = kwargs.get( 'default_job_resubmission_condition', '')
+        if not default_job_resubmission_condition.strip():
+            default_job_resubmission_condition = None
+        self.default_job_resubmission_condition = default_job_resubmission_condition
+
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
