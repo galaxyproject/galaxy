@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 def main(trans, webhook):
     error = ''
-    data = {}
+    comic_src = ''
 
     try:
         # Third-party dependencies
@@ -16,7 +16,7 @@ def main(trans, webhook):
             from bs4 import BeautifulSoup
         except ImportError as e:
             log.exception(e)
-            return {}
+            return {'success': False, 'error': str(e)}
 
         # Get latest id
         if 'latest_id' not in webhook.config.keys():
@@ -33,11 +33,16 @@ def main(trans, webhook):
         url = 'http://www.phdcomics.com/comics/archive.php?comicid=%d' % \
             random_id
         content = urllib.urlopen(url).read()
-        soap = BeautifulSoup(content, 'html.parser')
-        comics_src = soap.find_all('img', id='comic')[0].attrs.get('src')
-        data = {'src': comics_src}
+        soup = BeautifulSoup(content, 'html.parser')
+        comic_img = soup.find_all('img', id='comic2')
+
+        try:
+            comic_src = comic_img[0].attrs.get('src')
+        except IndexError:
+            pattern = '<img id=comic2 name=comic2 src=([\w:\/\.]+)'
+            comic_src = re.search(pattern, content).group(1)
 
     except Exception as e:
         error = str(e)
 
-    return {'success': not error, 'error': error, 'data': data}
+    return {'success': not error, 'error': error, 'src': comic_src}
