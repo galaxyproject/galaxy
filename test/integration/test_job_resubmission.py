@@ -6,10 +6,27 @@ from base import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_RESUBMISSION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_conf.xml")
+JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_default_job_conf.xml")
 JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_resource_parameters_conf.xml")
 
 
-class JobResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
+class _BaseResubmissionIntegerationTestCase(integration_util.IntegrationTestCase):
+    framework_tool_and_types = True
+
+    def _assert_job_passes(self, resource_parameters):
+        self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
+
+    def _assert_job_fails(self, resource_parameters):
+        exception_thrown = False
+        try:
+            self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
+        except Exception:
+            exception_thrown = True
+
+        assert exception_thrown
+
+
+class JobResubmissionIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
 
     framework_tool_and_types = True
 
@@ -85,14 +102,16 @@ class JobResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
                                                      "initial_destination": "resubmit_after_two_delays",
                                                      "failure_state": "unknown_error"})
 
-    def _assert_job_passes(self, resource_parameters):
-        self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
 
-    def _assert_job_fails(self, resource_parameters):
-        exception_thrown = False
-        try:
-            self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
-        except Exception:
-            exception_thrown = True
+class JobResubmissionDefaultIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
 
-        assert exception_thrown
+    framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["default_job_resubmission_condition"] = "attempt < 2"
+        config["job_config_file"] = JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE
+        config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
+
+    def test_default_resubmission(self):
+        self._assert_job_passes(resource_parameters={"test_name": "test_default_resubmission"})

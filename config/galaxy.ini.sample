@@ -230,6 +230,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # of the tool dependency directory
 #tool_dependency_cache_dir = <tool_dependency_dir>/_cache
 
+# By default, when using a cached dependency manager, the dependencies are cached
+# when installing new tools and when using tools for the first time.
+# Set this to False if you prefer dependencies to be cached only when installing new tools.
+#precache_dependencies = True
+
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml
@@ -1143,6 +1148,20 @@ use_interactive = True
 # be configured through the job configuration file.
 #job_config_file = config/job_conf.xml
 
+# When jobs fail due to job runner problems, Galaxy can be configured to retry
+# these or reroute the jobs to new destinations. Very fine control of this is
+# available with resubmit declarations in job_conf.xml. For simple deployments
+# of Galaxy though, the following attribute can define resubmission conditions
+# for all job destinations. If any job destination defines even one
+# resubmission condition explicitly in job_conf.xml - the condition described
+# by this option will not apply to that destination. For instance, the condition:
+# 'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
+# would retry up to two times jobs that didn't fail due to detected memory or
+# walltime limits but did fail quickly (either while queueing or running). The
+# commented out default below results in no default job resubmission condition,
+# failing jobs are just failed outright.
+#default_job_resubmission_condition = 
+
 # In multiprocess configurations, notification between processes about new jobs
 # must be done via the database.  In single process configurations, this can be
 # done in memory, which is a bit quicker.
@@ -1186,6 +1205,18 @@ use_interactive = True
 # waiting 1 second between tries.  For NFS, you may want to try the -noac mount
 # option (Linux) or -actimeo=0 (Solaris).
 #retry_job_output_collection = 0
+
+# In the past Galaxy would preserve its Python environment when running jobs (
+# and still does for internal tools packaged with Galaxy). This behavior exposes
+# Galaxy internals to tools and could result in problems when activating
+# Python environments for tools (such as with Conda packaging). The default
+# legacy_only will restrict this behavior to tools identified by the Galaxy
+# team as requiring this environment. Set this to "always" to restore the
+# previous behavior (and potentially break Conda dependency resolution for many
+# tools). Set this to legacy_and_local to preserve the environment for legacy
+# tools and locally managed tools (this might be useful for instance if you are
+# installing software into Galaxy's virtualenv for tool development).
+#python_environment_problem = legacy_only
 
 # Clean up various bits of jobs left on the filesystem after completion.  These
 # bits include the job working directory, external metadata temporary files,

@@ -230,7 +230,7 @@ class SubWorkflowModule( WorkflowModule ):
     default_name = "Subworkflow"
 
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, **kwds ):
         module = Class( trans )
         if "subworkflow" in d:
             module.subworkflow = d["subworkflow"]
@@ -561,11 +561,14 @@ class ToolModule( WorkflowModule ):
 
     type = "tool"
 
-    def __init__( self, trans, tool_id, tool_version=None, **kwds ):
+    def __init__( self, trans, tool_id, tool_version=None, exact_tools=False, **kwds ):
         super( ToolModule, self ).__init__( trans, content_id=tool_id, **kwds )
         self.tool_id = tool_id
         self.tool_version = tool_version
-        self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
+        self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version, exact=exact_tools )
+        if tool_version and exact_tools and str(tool.version) != str(tool_version):
+            log.debug("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]" % (tool_id, tool_version))
+            self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
@@ -574,12 +577,13 @@ class ToolModule( WorkflowModule ):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, **kwds ):
         tool_id = d.get( 'content_id' ) or d.get( 'tool_id' )
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException( "No tool id could be located for step [%s]." % d )
         tool_version = str( d.get( 'tool_version' ) )
-        module = super( ToolModule, Class ).from_dict( trans, d, tool_id=tool_id, tool_version=tool_version )
+        exact_tools = kwds.get( 'exact_tools', False )
+        module = super( ToolModule, Class ).from_dict( trans, d, tool_id=tool_id, tool_version=tool_version, exact_tools=exact_tools )
         module.post_job_actions = d.get( 'post_job_actions', {} )
         module.workflow_outputs = d.get( 'workflow_outputs', [] )
         if module.tool:

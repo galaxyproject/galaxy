@@ -144,7 +144,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             this.app.field_list[ id ] = field;
             var input_element = new InputElement( this.app, {
                 name                : input_def.name,
-                label               : input_def.label || input_def.name,
+                label               : input_def.hide_label ? '' : input_def.label || input_def.name,
                 value               : input_def.value,
                 text_value          : input_def.text_value,
                 collapsible_value   : input_def.collapsible_value,

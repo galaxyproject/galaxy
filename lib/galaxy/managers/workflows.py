@@ -190,6 +190,7 @@ class WorkflowContentsManager(UsesAnnotations):
         add_to_menu=False,
         publish=False,
         create_stored_workflow=True,
+        exact_tools=False,
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = True
@@ -202,6 +203,7 @@ class WorkflowContentsManager(UsesAnnotations):
             trans,
             data,
             name=name,
+            exact_tools=exact_tools,
         )
         if 'uuid' in data:
             workflow.uuid = data['uuid']
@@ -270,7 +272,7 @@ class WorkflowContentsManager(UsesAnnotations):
             errors.append( "This workflow contains cycles" )
         return workflow, errors
 
-    def _workflow_from_dict(self, trans, data, name):
+    def _workflow_from_dict(self, trans, data, name, exact_tools=False):
         if isinstance(data, string_types):
             data = json.loads(data)
 
@@ -291,7 +293,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts( data ):
-            module, step = self.__module_from_dict( trans, steps, steps_by_external_id, step_dict )
+            module, step = self.__module_from_dict( trans, steps, steps_by_external_id, step_dict, exact_tools=exact_tools )
             is_tool = is_tool_module_type( module.type )
             if is_tool and module.tool is None:
                 missing_tool_tup = ( module.tool_id, module.get_name(), module.tool_version, step_dict[ 'id' ] )
@@ -368,6 +370,10 @@ class WorkflowContentsManager(UsesAnnotations):
         step_models = []
         for i, step in enumerate( workflow.steps ):
             step_model = None
+
+            def step_title(step, default_name):
+                return "%d: %s" % (step.order_index + 1, step.label or default_name)
+
             if step.type == 'tool':
                 incoming = {}
                 tool = trans.app.toolbox.get_tool( step.tool_id )
@@ -379,10 +385,11 @@ class WorkflowContentsManager(UsesAnnotations):
                     'output_name'       : pja.output_name,
                     'action_arguments'  : pja.action_arguments
                 } for pja in step.post_job_actions ]
+                step_model["name"] = step_title(step, step_model.get("name"))
             else:
                 inputs = step.module.get_runtime_inputs( connections=step.output_connections )
                 step_model = {
-                    'name'   : step.module.name,
+                    'name'   : step_title(step, step.module.name),
                     'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
                 }
             step_model[ 'step_type' ] = step.type
@@ -812,7 +819,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __module_from_dict( self, trans, steps, steps_by_external_id, step_dict ):
+    def __module_from_dict( self, trans, steps, steps_by_external_id, step_dict, exact_tools=False ):
         """ Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
@@ -830,7 +837,7 @@ class WorkflowContentsManager(UsesAnnotations):
             )
             step_dict["subworkflow"] = subworkflow
 
-        module = module_factory.from_dict( trans, step_dict )
+        module = module_factory.from_dict( trans, step_dict, exact_tools=exact_tools )
         module.save_to_step( step )
 
         annotation = step_dict[ 'annotation' ]

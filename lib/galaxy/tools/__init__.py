@@ -74,6 +74,45 @@ log = logging.getLogger( __name__ )
 
 HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
+# Tools that require Galaxy's Python environment to be preserved.
+GALAXY_LIB_TOOLS = [
+    "upload1",
+    # Legacy tools bundled with Galaxy.
+    "vcf_to_maf_customtrack1",
+    "laj_1",
+    "meme_fimo",
+    "secure_hash_message_digest",
+    "join1",
+    "gff2bed1",
+    "gff_filter_by_feature_count",
+    "Extract genomic DNA 1",
+    "aggregate_scores_in_intervals2",
+    "Interval_Maf_Merged_Fasta2",
+    "maf_stats1",
+    "Interval2Maf1",
+    "MAF_To_Interval1",
+    "MAF_filter",
+    "MAF_To_Fasta1",
+    "MAF_Reverse_Complement_1",
+    "MAF_split_blocks_by_species1",
+    "maf_limit_size1",
+    "maf_by_block_number1",
+    # Tools improperly migrated to the tool shed (devteam)
+    "lastz_wrapper_2",
+    "qualityFilter",
+    "winSplitter",
+    "pileup_interval",
+    "count_gff_features",
+    "Convert characters1",
+    "lastz_paired_reads_wrapper",
+    "subRate1",
+    "substitutions1",
+    "sam_pileup",
+    "find_diag_hits",
+    "cufflinks",
+    # Tools improperly migrated to the tool shed (iuc)
+    "tabular_to_dbnsfp",
+]
 
 
 class ToolErrorLog:
@@ -410,10 +449,17 @@ class Tool( object, Dictifiable ):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        return self.tool_type != "default" or self.id in [
-            "__SET_METADATA__",
-            "upload1",
-        ]
+        if self.tool_type != "default":
+            return True
+
+        config = self.app.config
+        preserve_python_environment = config.preserve_python_environment
+        if preserve_python_environment == "always":
+            return True
+        elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
+            return True
+        else:
+            return self.old_id in GALAXY_LIB_TOOLS
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.

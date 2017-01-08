@@ -483,7 +483,6 @@ test/api/test_tool_data.py
 test/api/test_tours.py
 test/api/test_workflow_extraction.py
 test/api/test_workflows_from_yaml.py
-test/api/workflows_format_2/
 test/base/api_asserts.py
 test/base/api.py
 test/base/api_util.py
@@ -495,6 +494,7 @@ test/base/nose_util.py
 test/base/test_logging.py
 test/base/tool_shed_util.py
 test/base/twilltestcase.py
+test/base/workflows_format_2/
 test/casperjs/
 test/functional/database_contexts.py
 test/functional/__init__.py
