@@ -60,12 +60,7 @@ else
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}
     TOOL_SHED_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/tool_shed.ini.sample}
     GALAXY_CONFIG_CHECK_MIGRATE_TOOLS=false
-    if [ -z "$GALAXY_MULTI_PROCESS" ];
-    then
-        GALAXY_CONFIG_JOB_CONFIG_FILE=${GALAXY_CONFIG_JOB_CONFIG_FILE:-config/job_conf.xml.sample}
-    else
-        GALAXY_CONFIG_JOB_CONFIG_FILE=/etc/galaxy/job_conf.xml
-    fi
+    GALAXY_CONFIG_JOB_CONFIG_FILE=${GALAXY_CONFIG_JOB_CONFIG_FILE:-config/job_conf.xml.sample}
     GALAXY_CONFIG_FILE_PATH=${GALAXY_CONFIG_FILE_PATH:-/tmp/gx1}
     GALAXY_CONFIG_NEW_FILE_PATH=${GALAXY_CONFIG_NEW_FILE_PATH:-/tmp/gxtmp}
 
@@ -77,10 +72,5 @@ else
     export GALAXY_CONFIG_FILE_PATH
     export GALAXY_CONFIG_NEW_FILE_PATH
 
-    if [ -z "$GALAXY_MULTI_PROCESS" ];
-    then
-        sh run.sh $@
-    else
-        /usr/bin/supervisord
-    fi
+    sh run.sh $@
 fi
