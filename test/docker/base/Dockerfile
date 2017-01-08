@@ -85,13 +85,11 @@ RUN . $GALAXY_VIRTUAL_ENV/bin/activate && \
     echo "Prepopulating mysql database" && \
     GALAXY_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/galaxy?unix_socket=/var/run/mysqld/mysqld.sock" bash create_db.sh && \
     echo "Prepopulating toolshed postgres database" && \
-    su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
-    GALAXY_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/toolshed" bash create_db.sh tool_shed && \
+    TOOL_SHED_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/toolshed" bash create_db.sh tool_shed && \
     echo "Prepopulating toolshed sqlite database" && \
-    GALAXY_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/toolshed.sqlite" bash create_db.sh tool_shed && \
-    sh /opt/galaxy/start_mysql.sh && \
+    TOOL_SHED_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/toolshed.sqlite" bash create_db.sh tool_shed && \
     echo "Prepopulating toolshed mysql database" && \
-    GALAXY_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/toolshed?unix_socket=/var/run/mysqld/mysqld.sock" bash create_db.sh tool_shed
+    TOOL_SHED_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/toolshed?unix_socket=/var/run/mysqld/mysqld.sock" bash create_db.sh tool_shed
 
 # bcftools for Galaxy.
 RUN mkdir -p /tmp/install && \
