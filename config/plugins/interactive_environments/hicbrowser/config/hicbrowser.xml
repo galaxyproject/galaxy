@@ -5,8 +5,6 @@
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
             <test type="isinstance" test_attr="datatype" result_type="datatype">binary.CompressedArchive</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">binary.Binary</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">data.Text</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
