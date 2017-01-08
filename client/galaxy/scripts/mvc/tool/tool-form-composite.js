@@ -1,6 +1,7 @@
 /** This is the run workflow tool form view. */
-define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal', 'mvc/webhooks' ],
-    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal, Webhooks ) {
+define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/form/form-data', 'mvc/tool/tool-form-base', 'mvc/ui/ui-modal', 'mvc/webhooks', 'mvc/workflow/workflow-icons' ],
+    function( Utils, Deferred, Ui, Form, FormData, ToolFormBase, Modal, Webhooks, WorkflowIcons ) {
+
     var View = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -37,10 +38,11 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.parms = [];
             _.each( this.model.get( 'steps' ), function( step, i ) {
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Preparing workflow step.' );
+                var icon = WorkflowIcons[step.step_type];
                 step = Utils.merge( {
                     index                   : i,
-                    name                    : 'Step ' + ( parseInt( i ) + 1 ) + ': ' + step.name,
-                    icon                    : '',
+                    name                    : step.name,
+                    icon                    : icon || '',
                     help                    : null,
                     description             : step.annotation && ' - ' + step.annotation || step.description,
                     citations               : null,
@@ -270,7 +272,8 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             );
                     }
                 } else {
-                    _.each( step.inputs, function( input ) { input.flavor = 'module' } );
+                    var is_simple_input = ([ 'data_input', 'data_collection_input' ]).indexOf( step.step_type ) != -1;
+                    _.each( step.inputs, function( input ) { input.flavor = 'module'; input.hide_label = is_simple_input; } );
                     form = new Form( Utils.merge({
                         title    : '<b>' + step.name + '</b>',
                         onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
