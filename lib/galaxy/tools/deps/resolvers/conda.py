@@ -120,7 +120,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         return is_installed
 
-    def _get_conda_targets(self, requirements):
+    def resolve_all(self, requirements, **kwds):
         if len(requirements) == 0:
             return False
 
@@ -138,15 +138,6 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 version = None
 
             conda_targets.append(CondaTarget(requirement.name, version=version))
-        return conda_targets
-
-    def get_targets(self, requirements):
-        return self._get_conda_targets(requirements)
-
-    def resolve_all(self, requirements, **kwds):
-        conda_targets = self.get_targets(requirements)
-        if not conda_targets:
-            return False
 
         preserve_python_environment = kwds.get("preserve_python_environment", False)
 
