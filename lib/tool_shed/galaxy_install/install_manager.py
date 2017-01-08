@@ -905,14 +905,13 @@ class InstallRepositoryManager( object ):
             if 'tools' in metadata and install_resolver_dependencies:
                 self.update_tool_shed_repository_status( tool_shed_repository,
                                                          self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
-                requirements = suc.get_unique_requirements_from_repository(tool_shed_repository)
-                [self._view.install_dependency(id=None, **req) for req in requirements]
-                if self.app.config.use_cached_dependency_manager:
-                    cached_requirements = []
-                    for tool_d in metadata['tools']:
-                        tool = self.app.toolbox._tools_by_id.get(tool_d['guid'], None)
-                        if tool and tool.requirements not in cached_requirements:
-                            cached_requirements.append(tool.requirements)
+                installed_requirements = []
+                for tool_d in metadata['tools']:
+                    tool = self.app.toolbox._tools_by_id.get(tool_d['guid'], None)
+                    if tool and tool.requirements not in installed_requirements:
+                        installed_requirements.append(tool.requirements)
+                        self._view.install_dependencies(None, tool.requirements)
+                        if self.app.config.use_cached_dependency_manager:
                             tool.build_dependency_cache()
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
