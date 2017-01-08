@@ -141,11 +141,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             force_rebuild:           If true and chache dir exists, attempts to delete cache dir
         """
         tool = self._get_tool(id)
-        [tool._view.install_dependency(id=None, **req.to_dict()) for req in tool.requirements]
-        if kwds.get('build_dependency_cache'):
-            tool.build_dependency_cache(**kwds)
+        tool._view.install_dependencies(None, tool.requirements)
         # TODO: rework resolver install system to log and report what has been done.
-        # _view.install_dependency should return a dict with stdout, stderr and success status
+        # _view.install_dependencies should return a dict with stdout, stderr and success status
         return tool.tool_requirements_status
 
     @expose_api

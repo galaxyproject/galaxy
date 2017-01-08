@@ -45,6 +45,11 @@ class DependencyResolversView(object):
     def resolver_dependency(self, index, **kwds):
         return self._dependency(**kwds)
 
+    def install_dependencies(self, index, requirements):
+        is_installed = self._dependency_manager.install_all(requirements)
+        if not is_installed:
+            return [self.install_dependency(index, req) for req in requirements]
+
     def install_dependency(self, index=None, **payload):
         """
         Installs dependency using highest priority resolver that supports dependency installation

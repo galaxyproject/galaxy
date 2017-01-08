@@ -118,6 +118,19 @@ class DependencyManager( object ):
 
         return requirement_to_dependency
 
+    def install_all(self, requirements):
+        """
+        Attempt to install all requirements at once.
+        If sucessfull returns True, else returns False
+        """
+        for resolver in self.dependency_resolvers:
+            if hasattr(resolver, 'get_targets') and hasattr(resolver, 'install_all'):
+                targets = resolver.get_targets(requirements)
+                is_installed = resolver.install_all(targets)
+                if is_installed:
+                    return True
+        return False
+
     def _requirements_to_dependencies_dict(self, requirements, **kwds):
         """Build simple requirements to dependencies dict for resolution."""
         requirement_to_dependency = OrderedDict()
