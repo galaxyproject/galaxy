@@ -349,7 +349,7 @@ class LibraryPopulator( object ):
 
 class BaseDatasetCollectionPopulator( object ):
 
-    def create_list_from_pairs( self, history_id, pairs ):
+    def create_list_from_pairs( self, history_id, pairs, name="Dataset Collection from pairs" ):
         element_identifiers = []
         for i, pair in enumerate( pairs ):
             element_identifiers.append( dict(
@@ -363,6 +363,7 @@ class BaseDatasetCollectionPopulator( object ):
             history_id=history_id,
             element_identifiers=json.dumps(element_identifiers),
             collection_type="list:paired",
+            name=name,
         )
         return self.__create( payload )
 
@@ -400,6 +401,9 @@ class BaseDatasetCollectionPopulator( object ):
 
         if "element_identifiers" not in kwds:
             kwds[ "element_identifiers" ] = json.dumps( identifiers_func( history_id, contents=contents ) )
+
+        if "name" not in kwds:
+            kwds["name"] = "Test Dataset Collection"
 
         payload = dict(
             history_id=history_id,

@@ -593,8 +593,8 @@ class Job( object, JobLike, Dictifiable ):
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
 
-    def add_input_dataset_collection( self, name, dataset ):
-        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
+    def add_input_dataset_collection( self, name, dataset_collection ):
+        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset_collection ) )
 
     def add_output_dataset_collection( self, name, dataset_collection_instance ):
         self.output_dataset_collection_instances.append( JobToOutputDatasetCollectionAssociation( name, dataset_collection_instance ) )
@@ -924,9 +924,9 @@ class JobToOutputDatasetAssociation( object ):
 
 
 class JobToInputDatasetCollectionAssociation( object ):
-    def __init__( self, name, dataset ):
+    def __init__( self, name, dataset_collection ):
         self.name = name
-        self.dataset = dataset
+        self.dataset_collection = dataset_collection
 
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given
