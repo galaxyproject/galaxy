@@ -272,7 +272,7 @@ class WorkflowContentsManager(UsesAnnotations):
             errors.append( "This workflow contains cycles" )
         return workflow, errors
 
-    def _workflow_from_dict(self, trans, data, name, exact_tools=False):
+    def _workflow_from_dict(self, trans, data, name, **kwds):
         if isinstance(data, string_types):
             data = json.loads(data)
 
@@ -293,7 +293,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts( data ):
-            module, step = self.__module_from_dict( trans, steps, steps_by_external_id, step_dict, exact_tools=exact_tools )
+            module, step = self.__module_from_dict( trans, steps, steps_by_external_id, step_dict, **kwds )
             is_tool = is_tool_module_type( module.type )
             if is_tool and module.tool is None:
                 missing_tool_tup = ( module.tool_id, module.get_name(), module.tool_version, step_dict[ 'id' ] )
@@ -819,7 +819,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __module_from_dict( self, trans, steps, steps_by_external_id, step_dict, exact_tools=False ):
+    def __module_from_dict( self, trans, steps, steps_by_external_id, step_dict, **kwds ):
         """ Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
@@ -837,7 +837,7 @@ class WorkflowContentsManager(UsesAnnotations):
             )
             step_dict["subworkflow"] = subworkflow
 
-        module = module_factory.from_dict( trans, step_dict, exact_tools=exact_tools )
+        module = module_factory.from_dict( trans, step_dict, **kwds )
         module.save_to_step( step )
 
         annotation = step_dict[ 'annotation' ]
