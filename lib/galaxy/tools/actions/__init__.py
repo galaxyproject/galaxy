@@ -41,7 +41,7 @@ class ToolAction( object ):
 class DefaultToolAction( object ):
     """Default tool action is to run an external command"""
 
-    def collect_input_datasets( self, tool, param_values, trans, current_user_roles=None ):
+    def _collect_input_datasets( self, tool, param_values, trans, history, current_user_roles=None ):
         """
         Collect any dataset inputs from incoming. Returns a mapping from
         parameter name to Dataset instance for each tool parameter that is
@@ -66,7 +66,7 @@ class DefaultToolAction( object ):
                         if converted_dataset:
                             data = converted_dataset
                         else:
-                            data = data.get_converted_dataset( trans, target_ext, target_context=parent )
+                            data = data.get_converted_dataset( trans, target_ext, target_context=parent, history=history )
 
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                     raise Exception( "User does not have permission to use a dataset (%s) provided for input." % data.id )
@@ -189,7 +189,7 @@ class DefaultToolAction( object ):
         # input datasets can process these normally.
         inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming )
         # Collect any input datasets from the incoming parameters
-        inp_data = self.collect_input_datasets( tool, incoming, trans, current_user_roles=current_user_roles )
+        inp_data = self._collect_input_datasets( tool, incoming, trans, history=history, current_user_roles=current_user_roles )
 
         return history, inp_data, inp_dataset_collections
 
