@@ -204,8 +204,6 @@ def build_workflow_run_configs( trans, workflow, payload ):
         raise exceptions.MessageException( "Workflow cannot be run because it does not have any steps" )
     if workflow.has_cycles:
         raise exceptions.MessageException( "Workflow cannot be run because it contains cycles" )
-    if workflow.has_errors:
-        raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
     if 'step_parameters' in payload and 'parameters' in payload:
         raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
