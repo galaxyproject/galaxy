@@ -145,7 +145,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         dependencies = []
 
         is_installed = self.conda_context.has_env(env)
-        if not is_installed and self.auto_install:
+        if not is_installed and (self.auto_install or kwds.get('install', False)):
             is_installed = self.install_all(conda_targets)
 
         if is_installed:
@@ -191,7 +191,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         preserve_python_environment = kwds.get("preserve_python_environment", False)
 
         job_directory = kwds.get("job_directory", None)
-        if not is_installed and self.auto_install and job_directory:
+        if not is_installed and (self.auto_install or kwds.get('install', False)):
             is_installed = self.install_dependency(name=name, version=version, type=type)
 
         if not is_installed:
