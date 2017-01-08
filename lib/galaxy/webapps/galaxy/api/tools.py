@@ -142,8 +142,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         """
         tool = self._get_tool(id)
         tool._view.install_dependencies(None, tool.requirements)
-        if kwds.get('build_dependency_cache'):
-            tool.build_dependency_cache(**kwds)
         # TODO: rework resolver install system to log and report what has been done.
         # _view.install_dependencies should return a dict with stdout, stderr and success status
         return tool.tool_requirements_status
