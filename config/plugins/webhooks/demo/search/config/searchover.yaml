@@ -1,0 +1,17 @@
+name: searchover
+type:
+  - masthead
+activate: true
+
+icon: fa-search
+tooltip: Click to activate search and press Ctrl + Alt + q to open the overlay
+
+function: >
+  $.getJSON("/api/webhooks/masthead", function( data ) {
+      if( data.script ) {
+          $('<script/>', {type: 'text/javascript'}).text(data.script).appendTo('head');
+      }
+      if( data.script ) {
+          $('<style/>', {type: 'text/css'}).text(data.styles).appendTo('head');
+      }
+  });

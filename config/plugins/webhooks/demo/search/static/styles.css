@@ -1,0 +1,156 @@
+.overlay-wrapper {
+    margin-top: -5%; 
+}
+
+.search-screen { 
+    position: fixed; 
+    z-index: 202;
+    width:100%; 
+    height:100%;
+    display:none;
+}
+
+.search-screen-overlay { 
+    position: fixed; 
+    top:0; 
+    left:0; 
+    background:rgba(0,0,0,0.9); 
+    z-index: 201; 
+    width:100%; 
+    height:100%; 
+    display:none;
+    opacity: 2;
+}
+
+.overlay-filters {
+    margin: 1% 0% 1% 41%;
+}
+
+.overlay-filters ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.overlay-filters li {
+    float: left;
+}
+
+.overlay-filters li a {
+    display: block;
+    text-decoration: none;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 5px 5px;
+}
+
+.overlay-filters li a:hover i {
+    color: gold;
+}
+
+.overlay-filters li a i {
+    font-size: 1.5em;
+}
+
+.txtbx-search-data {
+    margin-left: 35%;
+    margin-top: 10%;
+    height: 30px;
+    width: 25%;
+    padding:2px;
+    font-size: 0.875em;
+}
+
+.search-section {
+    color: white;
+    margin-top: 1%;
+    font-weight: bold;
+}
+
+.search-results,
+.removed-items {
+    margin: -1% 2% 2% 2%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 75%;
+    width: 96%;
+    display: none;
+}
+
+.tool-search-link,
+.history-search-link,
+.datalib-search-link,
+.workflow-search-link {
+    margin: 0.2%;
+}
+
+.actions {
+    width: 8%;
+    margin-left: 1%;
+}
+
+.link-tile {
+    width: 200px;
+    height: 75px;
+}
+
+.link-tile .actions {
+    float: right;
+}
+
+.link-tile .actions:hover {
+    color: gold;
+}
+
+.pin-item, .remove-item {
+    padding: 0 2px 0 2px;
+}
+
+.most-used-tools {
+    margin: 2px;
+}
+
+.filter-active {
+    color: gold;
+}
+
+.filter-active i {
+    color: gold;
+}
+
+.filter-inactive {
+    color: white;
+}
+
+.filter-inactive i {
+    font-size: 0.875em;
+    color: white;
+}
+
+.rotate {
+    transform: rotate(180deg);
+}
+
+.pinned-item {
+    color: gold;
+    transform: rotate(60deg);
+}
+
+.hide {
+    display: none;
+}
+
+.show {
+    display: block;
+}
+
+.no-results {
+    color: white;
+    margin-top: 0.8%;
+}
+
+.btn-primary {
+    margin-top: 0.5%
+}
