@@ -1454,7 +1454,7 @@ class DMND( Binary ):
 
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
-        self._magic = binascii.unhexlify("24af8a415ee186d")
+        self._magic = binascii.unhexlify("6d18ee15a4f84a02")
 
     def sniff( self, filename ):
         # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
