@@ -56,6 +56,7 @@ $(document).ready(function() {
 	        if ( ( e.which === 81 || e.keyCode === 81 ) && e.ctrlKey && e.altKey ) {
                     self.clearSearchResults();
                     self.showOverlay();
+                    self.showSearchResult();
                     self.setActiveFilter( class_allfilter );
                     self.showDefaultLinks();
 	        }
@@ -68,9 +69,10 @@ $(document).ready(function() {
 
         /** Display favourites and most used tools if present for home filter */
         showDefaultLinks: function() {
-            var class_search_results = '.search-results';
+            var class_search_results = '.search-results',
+                class_fav_header = '.fav-header';
             defaultLinks = new SearchItemsView({});
-            defaultLinks.showPinnedItems( class_search_results );
+            defaultLinks.showPinnedItems( class_fav_header );
             defaultLinks.buildMostUsedTools( class_search_results );
         },
 
@@ -301,10 +303,10 @@ $(document).ready(function() {
 
         /** Template for search overlay */
         _template: function() {
-            return '<div class="overlay-wrapper">' + 
+            return '<div class="overlay-wrapper">' +
 	           '<div id="search_screen_overlay" class="search-screen-overlay"></div>' +
 	           '<div id="search_screen" class="search-screen">' +
-	               '<input class="txtbx-search-data form-control" type="text" value="" ' + 
+	               '<input class="txtbx-search-data form-control" type="text" value="" ' +
                            'placeholder="Give at least 3 letters to search" />' + 
                        '<div class="overlay-filters">' +
                            '<ul>' +
@@ -614,6 +616,11 @@ $(document).ready(function() {
                     $el_this.addClass( 'pinned-item' );
                     $el_this.attr( 'title', 'Added to favourites' );
                     $el_this.parent().find( '.remove-item' ).removeClass( 'show' ).addClass( 'hide' );
+                    // Append the pinned item to favorites section
+                    // but only when home filter is selected
+                    if( self.getActiveFilter() === "all" ) {
+                        self.showPinnedItems( '.fav-header' );
+                    }
                 }
 	    });
         },
@@ -656,11 +663,11 @@ $(document).ready(function() {
         },
 
         /** Display pinned items */
-        showPinnedItems: function( el ) {
+        showPinnedItems: function( class_name ) {
             var self = this,
 	        pinned_results = {},
+                $el_search_results = $( '.search-results' ),
 	        html_text = "",
-                $el_pinned_result = $( el ),
                 fav_header = "",
                 title = 'Remove from favourites';
             pinned_results = self.getStorageObject( self, window.Galaxy.user.id, 'pinned_results' );
@@ -670,20 +677,30 @@ $(document).ready(function() {
 	    }
             // Build section only if there is at least an item
             if( html_text.length > 0 ) {
-                $el_pinned_result.show();
-                fav_header = self._buildHeaderTemplate( 'fav_header', 'Favourites', 'search-section fav-header' );
-                $el_pinned_result.append( fav_header );
-                $el_pinned_result.find( '.fav-header' ).append( "<div>" + html_text + "</div>" );
+                $el_search_results.show();
+                // If header is present, remove all items
+                // else build header and append to the main section
+                if( $( class_name ).length ) {
+                    $( class_name ).find( '.link-tile' ).remove();
+                }
+                else {
+                    fav_header = self._buildHeaderTemplate( 'fav_header', 'Favourites', 'search-section fav-header' );
+                    $el_search_results.prepend( fav_header );
+                }
+                $( class_name ).append( "<div>" + html_text + "</div>" );
                 // Update items in html text
-                $el_pinned_result.find( '.pin-item' ).remove();
-                $el_pinned_result.find( '.remove-item' ).addClass( 'remove-fav' ).removeClass( 'remove-item' );
-                $el_pinned_result.find( '.remove-fav' ).attr( 'title', title );
+                $( class_name ).find( '.pin-item' ).remove();
+                $( class_name ).find( '.remove-item' ).addClass( 'remove-fav' ).removeClass( 'remove-item' );
+                $( class_name ).find( '.remove-fav' ).attr( 'title', title );
 	        // Register events
                 self.registerRemoveLinkClicks( self );
                 self.registerToolLinkClick( self );
-                $el_pinned_result.find( '.history-search-link' ).click(function( e ) {
+                $( class_name ).find( '.history-search-link' ).click(function( e ) {
                     self.removeOverlay();
                 });
+            }
+            else {
+                $( class_name ).remove();
             }
         },
 
@@ -985,10 +1002,10 @@ $(document).ready(function() {
 		               "' minsizehint='" + min_width +
 		               "' data-formstyle='" + form_style;
 	        }
-                template = template + "'><span class='fa fa-thumb-tack pin-item actions " + bookmark_class + "' " +
+                template = template + "'><span class='fa fa-thumb-tack pin-item item-actions " + bookmark_class + "' " +
                            "title='"+ bookmark_title +"'></span>" +
-                           ( ( isBookmarked ) ? "<span class='fa fa-trash remove-item actions hide' title='Exclude from search'></span>" :
-                                               " <span class='fa fa-trash remove-item actions show' title='Exclude from search'></span>" ) +
+                           ( ( isBookmarked ) ? "<span class='fa fa-trash remove-item item-actions hide' title='Exclude from search'></span>" :
+                                               " <span class='fa fa-trash remove-item item-actions show' title='Exclude from search'></span>" ) +
                            name +  " " + (description ? description : "") + "</a>";
 	    return template;
         },

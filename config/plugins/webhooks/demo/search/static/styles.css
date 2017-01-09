@@ -86,7 +86,7 @@
     margin: 0.2%;
 }
 
-.actions {
+.item-actions {
     width: 8%;
     margin-left: 1%;
 }
@@ -96,11 +96,11 @@
     height: 75px;
 }
 
-.link-tile .actions {
+.link-tile .item-actions {
     float: right;
 }
 
-.link-tile .actions:hover {
+.link-tile .item-actions:hover {
     color: gold;
 }
 
