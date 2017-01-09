@@ -7,11 +7,15 @@ icon: fa-search
 tooltip: Click to activate search and press Ctrl + Alt + q to open the overlay
 
 function: >
-  $.getJSON("/api/webhooks/masthead", function( data ) {
-      if( data.script ) {
-          $('<script/>', {type: 'text/javascript'}).text(data.script).appendTo('head');
-      }
-      if( data.script ) {
-          $('<style/>', {type: 'text/css'}).text(data.styles).appendTo('head');
+  $.getJSON("/api/webhooks", function( data ) {
+      for( var item in data ) {
+          var webhook = data[item];
+          if( webhook.name === "searchover" ) {
+              if( webhook.script  ) {
+                  $(  '<script/>', { type: 'text/javascript' } ).text( webhook.script ).appendTo( 'head' );
+                  $( '<style/>', { type: 'text/css' } ).text( webhook.styles ).appendTo( 'head' );
+              }
+              break;
+          }
       }
   });
