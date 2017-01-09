@@ -45,10 +45,8 @@ class DependencyResolversView(object):
     def resolver_dependency(self, index, **kwds):
         return self._dependency(**kwds)
 
-    def install_dependencies(self, index, requirements):
-        is_installed = self._dependency_manager.install_all(requirements)
-        if not is_installed:
-            return [self.install_dependency(index, req) for req in requirements]
+    def install_dependencies(self, requirements):
+        return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
 
     def install_dependency(self, index=None, **payload):
         """

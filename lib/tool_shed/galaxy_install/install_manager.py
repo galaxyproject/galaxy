@@ -909,10 +909,11 @@ class InstallRepositoryManager( object ):
                 for tool_d in metadata['tools']:
                     tool = self.app.toolbox._tools_by_id.get(tool_d['guid'], None)
                     if tool and tool.requirements not in installed_requirements:
+                        self._view.install_dependencies(tool.requirements)
                         installed_requirements.append(tool.requirements)
-                        self._view.install_dependencies(None, tool.requirements)
                         if self.app.config.use_cached_dependency_manager:
                             tool.build_dependency_cache()
+
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
                 # Install tool dependencies.
