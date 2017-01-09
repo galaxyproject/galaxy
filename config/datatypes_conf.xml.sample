@@ -38,7 +38,7 @@
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
-    <datatype extension="dmnddb" type="galaxy.datatypes.binary:Binary" subclass="True" display_in_upload="false"/>
+    <datatype extension="dmnd" type="galaxy.datatypes.binary:Binary:DMND" subclass="True" display_in_upload="false"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml" />
       <display file="igb/bb.xml" />
@@ -593,6 +593,7 @@
     <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
+    <sniffer type="galaxy.datatypes.binary:DMND" />
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
