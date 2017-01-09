@@ -1937,6 +1937,20 @@ rendered on the tool form as a text area instead of a single line text box.
 <param name="foo" type="text" area="True" size="5x25" />
 ```
 
+As of 17.01, ``text`` parameters can also supply a static list of preset
+defaults options. The user **may** be presented with the option to select one of
+these but will be allowed to supply an arbitrary text value.
+
+```xml
+<param name="foo" type="text" value="foo 1">
+    <option value="foo 1">Foo 1 Display</option>
+    <option value="foo 2">Foo 2 Display</option>
+</param>
+```
+
+See [param_text_option.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/param_text_option.xml)
+for a demonstration of this.
+
 $attribute_list:value,size,area:5
 
 #### ``integer`` and ``float``
