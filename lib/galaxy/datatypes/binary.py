@@ -1437,6 +1437,7 @@ class NetCDF( Binary ):
 
 Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
 
+
 class DMND( Binary ):
     """
     Class describing an DMND file
@@ -1448,7 +1449,6 @@ class DMND( Binary ):
     >>> DMND().sniff( fname )
     False
     """
-
     file_ext = "dmnd"
     edam_format = ""
 
@@ -1466,5 +1466,6 @@ class DMND( Binary ):
             return False
         except:
             return False
+
 
 Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)
