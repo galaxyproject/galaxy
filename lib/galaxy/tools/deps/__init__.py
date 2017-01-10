@@ -14,6 +14,7 @@ from galaxy.util import (
     plugin_config
 )
 
+from .requirements import ToolRequirement
 from .resolvers import NullDependency
 from .resolvers.conda import CondaDependencyResolver, DEFAULT_ENSURE_CHANNELS
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
@@ -107,20 +108,63 @@ class DependencyManager( object ):
     def requirements_to_dependencies(self, requirements, **kwds):
         """
         Takes a list of requirements and returns a dictionary
-        with requirements as key and dependencies as value.
+        with requirements as key and dependencies as value caching
+        these on the tool instance if supplied.
         """
-        requirement_to_dependency = OrderedDict()
-        for requirement in requirements:
-            if requirement.type in [ 'package', 'set_environment' ]:
-                dependency = self.find_dep( name=requirement.name,
-                                            version=requirement.version,
-                                            type=requirement.type,
-                                            **kwds )
-                log.debug(dependency.resolver_msg)
-                if dependency.dependency_type:
-                    requirement_to_dependency[requirement] = dependency
+        requirement_to_dependency = self._requirements_to_dependencies_dict(requirements, **kwds)
+
         if 'tool_instance' in kwds:
             kwds['tool_instance'].dependencies = [dep.to_dict() for dep in requirement_to_dependency.values()]
+
+        return requirement_to_dependency
+
+    def _requirements_to_dependencies_dict(self, requirements, **kwds):
+        """Build simple requirements to dependencies dict for resolution."""
+        requirement_to_dependency = OrderedDict()
+        index = kwds.get('index', None)
+        require_exact = kwds.get('exact', False)
+
+        resolvable_requirements = []
+        for requirement in requirements:
+            if requirement.type in ['package', 'set_environment']:
+                resolvable_requirements.append(requirement)
+            else:
+                log.debug("Unresolvable requirement type [%s] found, will be ignored." % requirement.type)
+
+        for i, resolver in enumerate(self.dependency_resolvers):
+            if index is not None and i != index:
+                continue
+
+            if len(requirement_to_dependency) == len(resolvable_requirements):
+                # Shortcut - resolution complete.
+                break
+
+            # Check requirements all at once
+            all_unmet = len(requirement_to_dependency) == 0
+            if all_unmet and hasattr(resolver, "resolve_all"):
+                dependencies = resolver.resolve_all(resolvable_requirements, **kwds)
+                if dependencies:
+                    assert len(dependencies) == len(resolvable_requirements)
+                    for requirement, dependency in zip(resolvable_requirements, dependencies):
+                        requirement_to_dependency[requirement] = dependency
+
+                    # Shortcut - resolution complete.
+                    break
+
+            # Check individual requirements
+            for requirement in resolvable_requirements:
+                if requirement in requirement_to_dependency:
+                    continue
+
+                if requirement.type in ['package', 'set_environment']:
+                    dependency = resolver.resolve( requirement.name, requirement.version, requirement.type, **kwds )
+                    if require_exact and not dependency.exact:
+                        continue
+
+                    log.debug(dependency.resolver_msg)
+                    if not isinstance(dependency, NullDependency):
+                        requirement_to_dependency[requirement] = dependency
+
         return requirement_to_dependency
 
     def uses_tool_shed_dependencies(self):
@@ -128,17 +172,12 @@ class DependencyManager( object ):
 
     def find_dep( self, name, version=None, type='package', **kwds ):
         log.debug('Find dependency %s version %s' % (name, version))
-        index = kwds.get('index', None)
-        require_exact = kwds.get('exact', False)
-        for i, resolver in enumerate(self.dependency_resolvers):
-            if index is not None and i != index:
-                continue
-            dependency = resolver.resolve( name, version, type, **kwds )
-            if require_exact and not dependency.exact:
-                continue
-            if not isinstance(dependency, NullDependency):
-                return dependency
-        return NullDependency(version=version, name=name)
+        requirement = ToolRequirement(name=name, version=version, type=type)
+        dep_dict = self._requirements_to_dependencies_dict([requirement], **kwds)
+        if len(dep_dict) > 0:
+            return dep_dict.values()[0]
+        else:
+            return NullDependency(name=name, version=version)
 
     def __build_dependency_resolvers( self, conf_file ):
         if not conf_file:

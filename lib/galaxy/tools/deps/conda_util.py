@@ -364,6 +364,17 @@ def install_conda(conda_context=None):
             os.remove(script_path)
 
 
+def install_conda_targets(conda_targets, env_name, conda_context=None):
+    conda_context = _ensure_conda_context(conda_context)
+    conda_context.ensure_channels_configured()
+    create_args = [
+        "--name", env_name,  # enviornment for package
+    ]
+    for conda_target in conda_targets:
+        create_args.append(conda_target.package_specifier)
+    return conda_context.exec_create(create_args)
+
+
 def install_conda_target(conda_target, conda_context=None):
     """ Install specified target into a its own environment.
     """
@@ -376,10 +387,14 @@ def install_conda_target(conda_target, conda_context=None):
     return conda_context.exec_create(create_args)
 
 
-def cleanup_failed_install(conda_target, conda_context=None):
+def cleanup_failed_install_of_environment(env, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    if conda_context.has_env(conda_target.install_environment):
-        conda_context.exec_remove([conda_target.install_environment])
+    if conda_context.has_env(env):
+        conda_context.exec_remove([env])
+
+
+def cleanup_failed_install(conda_target, conda_context=None):
+    cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
 def best_search_result(conda_target, conda_context=None, channels_override=None):

@@ -123,6 +123,7 @@
   </section>
 
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
 
