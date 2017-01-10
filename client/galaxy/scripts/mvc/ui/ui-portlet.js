@@ -16,7 +16,7 @@ var View = Backbone.View.extend({
             collapsible         : false,
             collapsible_button  : false,
             collapsed           : false,
-            editable_title      : false
+            onchange_title      : null
         } ).set( options );
         this.setElement( this._template() );
 
@@ -66,6 +66,14 @@ var View = Backbone.View.extend({
             this.$title_text.on( 'click', function() { self[ self.collapsed ? 'expand' : 'collapse' ]() } );
             options.collapsed ? this.collapse() : this.expand();
         }
+
+        // allow title editing
+        this.$title_text.prop( 'disabled', !options.onchange_title );
+        options.onchange_title && this.$title_text.make_text_editable({
+            on_finish: function( new_title ) {
+                options.onchange_title( new_title );
+            }
+        });
 
         // render buttons
         if ( options.buttons ) {

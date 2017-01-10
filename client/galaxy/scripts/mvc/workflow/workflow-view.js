@@ -704,6 +704,9 @@ define([
                     form = new ToolForm.View( options );
                 } else {
                     content.cls = 'ui-portlet-narrow';
+                    content.onchange_title = function( new_title ) {
+                        alert( new_title );
+                    };
                     if ( content.inputs && content.inputs.length > 0 ) {
                         content.inputs.unshift({
                             type    : 'text',

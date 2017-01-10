@@ -127,13 +127,14 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
             this.message = new Ui.Message();
             this.section = new FormSection.View( this, { inputs: this.options.inputs } );
             this.portlet = new Portlet.View({
-                icon        : this.options.icon,
-                title       : this.options.title,
-                cls         : this.options.cls,
-                operations  : this.options.operations,
-                buttons     : this.options.buttons,
-                collapsible : this.options.collapsible,
-                collapsed   : this.options.collapsed
+                icon            : this.options.icon,
+                title           : this.options.title,
+                cls             : this.options.cls,
+                operations      : this.options.operations,
+                buttons         : this.options.buttons,
+                collapsible     : this.options.collapsible,
+                collapsed       : this.options.collapsed,
+                onchange_title  : this.options.onchange_title
             });
             this.portlet.append( this.message.$el );
             this.portlet.append( this.section.$el );
