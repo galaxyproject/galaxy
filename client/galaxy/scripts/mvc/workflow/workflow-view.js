@@ -696,6 +696,7 @@ define([
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
                 var form = null;
+                content.icon = WorkflowIcons[ node.type ];
                 if ( node.type == 'tool' ) {
                     var options = content;
                     options.node = node;
@@ -703,7 +704,6 @@ define([
                     options.datatypes = this.datatypes;
                     form = new ToolForm.View( options );
                 } else {
-                    content.icon = WorkflowIcons[ node.type ];
                     content.cls = 'ui-portlet-narrow';
                     if ( content.inputs && content.inputs.length > 0 ) {
                         content.inputs.unshift({
