@@ -79,22 +79,25 @@
     display: none;
 }
 
+.link-tile {
+    width: 17.5%;
+    height: 75px;
+}
+
 .tool-search-link,
 .history-search-link,
 .datalib-search-link,
-.workflow-search-link {
+.workflow-search-link, 
+.most-used-tools {
     margin: 0.2%;
 }
 
 .item-actions {
-    width: 8%;
-    margin-left: 1%;
+    width: 6%;
+    margin-left: 1.2%;
 }
 
-.link-tile {
-    width: 200px;
-    height: 75px;
-}
+
 
 .link-tile .item-actions {
     float: right;
@@ -106,10 +109,6 @@
 
 .pin-item, .remove-item {
     padding: 0 2px 0 2px;
-}
-
-.most-used-tools {
-    margin: 2px;
 }
 
 .filter-active {
@@ -151,6 +150,14 @@
     margin-top: 0.8%;
 }
 
-.btn-primary {
-    margin-top: 0.5%
+.link-tile.btn-primary {
+    margin-top: 0.5%;
+    border-radius: 0px;
+    background-color: #3B5998;
+    font-size: 1.05em;
+    border-style: none;
+}
+
+.link-tile.btn-primary: hover {
+    border-color: gray;
 }
