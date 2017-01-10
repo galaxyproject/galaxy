@@ -359,8 +359,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         type = payload.get( 'type' )
         inputs = payload.get( 'inputs', {} )
-        annotation = inputs.get( 'annotation', '' )
-        label = inputs.get( 'label', '' )
+        annotation = payload.get( 'annotation', '' )
+        label = payload.get( 'label', '' )
         tool_id = payload.get( 'tool_id' )
         content_id = payload.get( 'content_id' )
         if tool_id:
