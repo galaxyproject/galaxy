@@ -15,7 +15,8 @@ var View = Backbone.View.extend({
             operations          : null,
             collapsible         : false,
             collapsible_button  : false,
-            collapsed           : false
+            collapsed           : false,
+            editable_title      : false
         } ).set( options );
         this.setElement( this._template() );
 
