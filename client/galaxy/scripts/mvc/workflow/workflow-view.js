@@ -703,6 +703,7 @@ define([
                     options.datatypes = this.datatypes;
                     form = new ToolForm.View( options );
                 } else {
+                    content.icon = WorkflowIcons[ node.type ];
                     content.cls = 'ui-portlet-narrow';
                     content.onchange_title = function( new_title ) {
                         alert( new_title );
