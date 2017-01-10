@@ -602,25 +602,29 @@ $(document).ready(function() {
 	    });
 
             $el.find( ".pin-item" ).click(function( e ) {
-                var $el_this = $( this );
+                var $el_this = $( this ),
+                    class_pinned = 'pinned-item',
+                    title_add = 'Add to favourites',
+                    titles_added = 'Added to favourites',
+                    class_removeitem = '.remove-item';
                 e.preventDefault();
 	        e.stopPropagation();
-                if( $el_this.hasClass( 'pinned-item' ) ) {
+                if( $el_this.hasClass( class_pinned ) ) {
                     self.removeFromDataStorage( self, $el_this.parent(), 'pinned_results' );
-                    $el_this.removeClass( 'pinned-item' );
-                    $el_this.attr( 'title', 'Add to favourites' );
-                    $el_this.parent().find( '.remove-item' ).removeClass( 'hide' ).addClass( 'show' );
+                    $el_this.removeClass( class_pinned );
+                    $el_this.attr( 'title', title_add );
+                    $el_this.parent().find( class_removeitem ).removeClass( 'hide' ).addClass( 'show' );
                 }
                 else {
                     self.setPinnedItemsStorage( self, $el_this.parent() );
-                    $el_this.addClass( 'pinned-item' );
-                    $el_this.attr( 'title', 'Added to favourites' );
-                    $el_this.parent().find( '.remove-item' ).removeClass( 'show' ).addClass( 'hide' );
-                    // Append the pinned item to favorites section
-                    // but only when home filter is selected
-                    if( self.getActiveFilter() === "all" ) {
-                        self.showPinnedItems( '.fav-header' );
-                    }
+                    $el_this.addClass( class_pinned );
+                    $el_this.attr( 'title', titles_added );
+                    $el_this.parent().find( class_removeitem ).removeClass( 'show' ).addClass( 'hide' );
+                }
+                // Append/ remove the pinned item to/ from favorites section
+                // but only when home filter is selected
+                if( self.getActiveFilter() === "all" ) {
+                    self.showPinnedItems( '.fav-header' );
                 }
 	    });
         },
@@ -638,7 +642,8 @@ $(document).ready(function() {
                 $el_removed_result = $( '.removed-items' ),
                 html_text = "",
                 $el_span = null,
-                removed_results_html = null;
+                removed_results_html = null,
+                title_restore_search = "Restore to search";
             $el_removed_result.html( "" );
 	    // Build the removed result from web storage
             removed_results_html = self.getStorageObject( self, window.Galaxy.user.id, 'removed_results' );
@@ -654,7 +659,7 @@ $(document).ready(function() {
                 $el_span = $el_removed_result.find( 'span' );
                 $el_span.removeClass( 'remove-item' ).addClass( 'restore-item' );
                 // Update the title of the delete icon
-                $el_span.attr( 'title', 'Restore to search' );
+                $el_span.attr( 'title', title_restore_search );
 	        self.registerRemoveLinkClicks( self );
             }
             else {

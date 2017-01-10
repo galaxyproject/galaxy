@@ -11,9 +11,10 @@ function: >
       for( var item in data ) {
           var webhook = data[item];
           if( webhook.name === "searchover" ) {
-              if( webhook.script  ) {
+              if( webhook.script && !window.static_search ) {
                   $(  '<script/>', { type: 'text/javascript' } ).text( webhook.script ).appendTo( 'head' );
                   $( '<style/>', { type: 'text/css' } ).text( webhook.styles ).appendTo( 'head' );
+                  window.static_search = true;
               }
               break;
           }
