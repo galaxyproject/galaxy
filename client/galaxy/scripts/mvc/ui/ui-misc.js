@@ -115,7 +115,7 @@ define(['utils/utils',
                     .attr( 'placeholder', this.model.get( 'placeholder' ) )
                     .css( 'color', this.model.get( 'color' ) || '' )
                     .css( 'border-color', this.model.get( 'color' ) || '' )
-                    .autocomplete( { source : this.model.get( 'datalist' ) } );
+                    .autocomplete( { source : function( request, response ) { response( self.model.get( 'datalist' ) ) } } );
             if ( this.model.get( 'value' ) !== this.$el.val() ) {
                 this.$el.val( this.model.get( 'value' ) );
             }
