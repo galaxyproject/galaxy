@@ -194,7 +194,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     };
     var autocomplete_options = { selectFirst: false, formatItem: format_item_func,
             autoFill: false, highlight: false };
-    tag_input_field.autocomplete(settings.ajax_autocomplete_tag_url, autocomplete_options);
+    tag_input_field.autocomplete_verheul(settings.ajax_autocomplete_tag_url, autocomplete_options);
 
 
     // Initialize delete tag images for current tags.
