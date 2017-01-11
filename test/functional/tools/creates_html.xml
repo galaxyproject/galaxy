@@ -1,0 +1,14 @@
+<tool id="creates_html" name="creates_html" version="1.0.0" profile="16.04">
+  <command>
+    mkdir '$output.extra_files_path';
+    cp '$__tool_directory__/creates_html_index.html' '$output';
+    cp '$__tool_directory__/creates_html_image.png' '$output.extra_files_path/image.png';
+  </command>
+  <inputs>
+    <param name="inttest" type="integer" value="7" />
+  </inputs>
+  <outputs>
+    <data format="html" name="output" label="Output HTML">
+    </data>
+  </outputs>
+</tool>
