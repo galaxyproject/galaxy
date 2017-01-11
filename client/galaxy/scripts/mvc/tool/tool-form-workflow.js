@@ -36,8 +36,8 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                     postchange      : function( process, form ) {
                         var self = this;
                         var current_state = {
-                            tool_id         : form.options.id,
-                            tool_version    : form.options.version,
+                            tool_id         : options.id,
+                            tool_version    : options.version,
                             inputs          : $.extend( true, {}, form.data.create() ),
                             label           : self.node.label,
                             annotation      : self.node.annotation
