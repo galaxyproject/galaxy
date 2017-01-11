@@ -358,11 +358,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Builds module details including a tool model for the workflow editor.
         """
         type = payload.get( 'type' )
-        inputs = payload.get( 'inputs', {} )
-        annotation = payload.get( 'annotation', '' )
-        label = payload.get( 'label', '' )
         tool_id = payload.get( 'tool_id' )
         content_id = payload.get( 'content_id' )
+        inputs = payload.get( 'inputs', {} )
+        annotation = inputs.get( '__annotation', '' )
+        label = inputs.get( '__label', '' )
         if tool_id:
             tool_version = payload.get( 'tool_version' )
             tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )

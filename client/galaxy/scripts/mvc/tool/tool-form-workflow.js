@@ -33,15 +33,37 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                     initial_errors  : true,
                     sustain_version : true,
                     cls             : 'ui-portlet-narrow',
-                    update_url      : Galaxy.root + 'api/workflows/build_module',
-                    update          : function( data ) {
-                        // This hasn't modified the workflow, just returned
-                        // module information for the tool to update the workflow
-                        // state stored on the client with. User needs to save
-                        // for this to take effect.
-                        self.node.update_field_data( data );
-                        self.form.errors( data && data.tool_model );
-                    }
+                    postchange      : function( process, form ) {
+                        var self = this;
+                        var current_state = {
+                            tool_id         : form.options.id,
+                            tool_version    : form.options.version,
+                            inputs          : $.extend( true, {}, form.data.create() ),
+                            label           : self.node.label,
+                            annotation      : self.node.annotation
+                        }
+                        Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Sending current state.', current_state );
+                        Utils.request({
+                            type    : 'POST',
+                            url     : Galaxy.root + 'api/workflows/build_module',
+                            data    : current_state,
+                            success : function( data ) {
+                                form.update( data.tool_model );
+                                form.errors( data.tool_model );
+                                // This hasn't modified the workflow, just returned
+                                // module information for the tool to update the workflow
+                                // state stored on the client with. User needs to save
+                                // for this to take effect.
+                                self.node.update_field_data( data );
+                                Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Received new model.', data );
+                                process.resolve();
+                            },
+                            error   : function( response ) {
+                                Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Refresh request failed.', response );
+                                process.reject();
+                            }
+                        });
+                    },
                 }));
                 this.$el.append( this.form.$el );
             } else {
@@ -55,7 +77,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
             var datatypes = options.datatypes;
             inputs[ Utils.uid() ] = {
                 label   : 'Annotation / Notes',
-                name    : 'annotation',
+                name    : '__annotation',
                 type    : 'text',
                 area    : true,
                 help    : 'Add an annotation or note for this step. It will be shown with the workflow.',

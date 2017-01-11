@@ -19,20 +19,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // listen to history panel
             if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
                 this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
-                    this.refresh();
+                    self.trigger( 'change' );
                 });
             }
             // destroy dom elements
             this.$el.on( 'remove', function() { self.remove() } );
-        },
-
-        /** Listen to history panel changes and update the tool form */
-        refresh: function() {
-            var self = this;
-            self.deferred.reset();
-            this.deferred.execute( function (process){
-                self._updateModel( process)
-            });
         },
 
         /** Wait for deferred build processes before removal */
@@ -54,7 +45,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
                 operations      : !this.options.hide_operations && this._operations(),
                 onchange        : function() {
-                    self.refresh();
+                    self.deferred.reset();
+                    self.deferred.execute( function ( process ) {
+                        self.options.postchange( process, self );
+                    });
                 }
             }, this.options);
             this.options.customize && this.options.customize( this.options );
@@ -64,8 +58,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             }
         },
 
-        /** Builds a new model through api call and recreates the entire form
-        */
+        /** Builds a new model through api call and recreates the entire form */
         _buildModel: function(process, options, hide_message) {
             var self = this;
             this.options.id = options.id;
@@ -131,43 +124,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             });
         },
 
-        /** Request a new model for an already created tool form and updates the form inputs
-        */
-        _updateModel: function(process) {
-            // link this
-            var self = this;
-            var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
-            var current_state = {
-                tool_id         : this.options.id,
-                tool_version    : this.options.version,
-                inputs          : $.extend(true, {}, self.data.create())
-            }
-            this.wait(true);
-
-            // log tool state
-            Galaxy.emit.debug('tool-form-base::_updateModel()', 'Sending current state.', current_state);
-
-            // post job
-            Utils.request({
-                type    : 'POST',
-                url     : model_url,
-                data    : current_state,
-                success : function(new_model) {
-                    self.update(new_model['tool_model'] || new_model);
-                    self.options.update && self.options.update(new_model);
-                    self.wait(false);
-                    Galaxy.emit.debug('tool-form-base::_updateModel()', 'Received new model.', new_model);
-                    process.resolve();
-                },
-                error   : function(response) {
-                    Galaxy.emit.debug('tool-form-base::_updateModel()', 'Refresh request failed.', response);
-                    process.reject();
-                }
-            });
-        },
-
-        /** Create tool operation menu
-        */
+        /** Create tool operation menu */
         _operations: function() {
             var self = this;
             var options = this.options;
@@ -315,8 +272,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             }
         },
 
-        /** Create footer
-        */
+        /** Create footer */
         _footer: function() {
             var options = this.options;
             var $el = $( '<div/>' ).append( this._templateHelp( options ) );
@@ -332,8 +288,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             return $el;
         },
 
-        /** Templates
-        */
+        /** Templates */
         _templateHelp: function( options ) {
             var $tmpl = $( '<div/>' ).addClass( 'ui-form-help' ).append( options.help );
             $tmpl.find( 'a' ).attr( 'target', '_blank' );

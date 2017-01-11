@@ -711,11 +711,7 @@ define([
                             name    : '__label',
                             label   : 'Label',
                             value   : node.label,
-                            help    : 'Add a step label.',
-                            onchange: function( label ) {
-                                node.label = label;
-                                form.trigger( 'change' );
-                            }
+                            help    : 'Add a step label.'
                         });
                         content.inputs.push({
                             type    : 'text',
@@ -723,11 +719,7 @@ define([
                             label   : 'Annotation',
                             value   : node.annotation,
                             area    : true,
-                            help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.',
-                            onchange: function( annotation ) {
-                                node.annotation = annotation;
-                                form.trigger( 'change' );
-                            }
+                            help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
                         });
                         content.onchange = function() {
                             Utils.request({
@@ -736,9 +728,7 @@ define([
                                 data    : {
                                     id          : node.id,
                                     type        : node.type,
-                                    inputs      : form.data.create(),
-                                    label       : node.label,
-                                    annotation  : node.annotation
+                                    inputs      : form.data.create()
                                 },
                                 success : function( data ) {
                                     node.update_field_data( data );

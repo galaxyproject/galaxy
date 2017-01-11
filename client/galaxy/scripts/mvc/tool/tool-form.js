@@ -40,6 +40,31 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                             help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.'
                         }
                     }
+                },
+                postchange          : function( process, form ) {
+                    var self = this;
+                    var current_state = {
+                        tool_id         : options.id,
+                        tool_version    : options.version,
+                        inputs          : $.extend(true, {}, form.data.create())
+                    }
+                    form.wait( true );
+                    Galaxy.emit.debug( 'tool-form::ajax()', 'Sending current state.', current_state );
+                    Utils.request({
+                        type    : 'POST',
+                        url     : Galaxy.root + 'api/tools/' + options.id + '/build',
+                        data    : current_state,
+                        success : function( data ) {
+                            form.update( data );
+                            form.wait( false );
+                            Galaxy.emit.debug( 'tool-form::postchange()', 'Received new model.', data );
+                            process.resolve();
+                        },
+                        error   : function( response ) {
+                            Galaxy.emit.debug( 'tool-form::postchange()', 'Refresh request failed.', response );
+                            process.reject();
+                        }
+                    });
                 }
             }, options ) );
             this.deferred = this.form.deferred;
