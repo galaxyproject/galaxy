@@ -564,6 +564,7 @@ $(document).ready(function() {
 
         /** Register clicks for removed links from custom section */
         registerRemoveLinkClicks: function( self ) {
+            // Register click of trash icon in elements of excluded section
             $( '.restore-item' ).click(function( e ) {
                 var $el_removeditems = $( '.removed-items' );
                 self.removeItems( self, this, e, 'removed_results' );
@@ -571,12 +572,27 @@ $(document).ready(function() {
                     $el_removeditems.append( self._templateNoItems() );
                 }
 	    });
+            // Register the click of trash icon in elements of favorites section
             $( '.remove-fav' ).click(function( e ) {
-                var $el_favourites = $( '.fav-header' );
+                var $el_favourites = $( '.fav-header' ),
+                    item_id = $( this ).parent().attr( 'data-id' );
                 self.removeItems( self, this, e, 'pinned_results' );
                 if( $el_favourites.children().children().length == 0 ) {
                     $el_favourites.remove();
                 }
+                // Looks for the removed pinned element from favorites in the
+                // search result and revert the pinned status to unpinned if any
+                $( '.pinned-item' ).each( function() {
+                    var $el_this = $( this ).parent(),
+                        id = $el_this.attr( 'data-id' ),
+                        $el_pin_item = $el_this.find( '.pin-item' ),
+                        $el_remove_item = $el_this.find( '.remove-item' );
+                    if( id === item_id ) {
+                        $el_pin_item.removeClass( 'pinned-item' );
+                        $el_pin_item.attr( 'title', "Add to favourites" );
+                        $el_remove_item.removeClass( 'hide' ).addClass( 'show' );
+                    }
+                });
 	    });
         },
 
@@ -590,6 +606,8 @@ $(document).ready(function() {
  
         /** Register remove and pin action clicks */
         registerLinkActionClickEvent: function( self, $el, $el_parent_section ) {
+            // Register click of trash icon in search results
+            // and move item to excluded section
 	    $el.find( ".remove-item" ).click(function( e ) {
 	        e.preventDefault();
 	        e.stopPropagation();
@@ -600,7 +618,7 @@ $(document).ready(function() {
                     $el_parent_section.remove();
                 }
 	    });
-
+            // Register click of pin icon to add the element to favorites section
             $el.find( ".pin-item" ).click(function( e ) {
                 var $el_this = $( this ),
                     class_pinned = 'pinned-item',
@@ -609,6 +627,8 @@ $(document).ready(function() {
                     class_removeitem = '.remove-item';
                 e.preventDefault();
 	        e.stopPropagation();
+                // Toggle between pin and unpin
+                // If pinned, then unpin and vice-versa
                 if( $el_this.hasClass( class_pinned ) ) {
                     self.removeFromDataStorage( self, $el_this.parent(), 'pinned_results' );
                     $el_this.removeClass( class_pinned );

@@ -82,22 +82,13 @@
 .link-tile {
     width: 17.5%;
     height: 75px;
-}
-
-.tool-search-link,
-.history-search-link,
-.datalib-search-link,
-.workflow-search-link, 
-.most-used-tools {
-    margin: 0.2%;
+    margin: 0 0.2% 0 0.2%;
 }
 
 .item-actions {
     width: 6%;
     margin-left: 1.2%;
 }
-
-
 
 .link-tile .item-actions {
     float: right;
