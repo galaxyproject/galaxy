@@ -115,7 +115,8 @@ define(['utils/utils',
                     .attr( 'placeholder', this.model.get( 'placeholder' ) )
                     .css( 'color', this.model.get( 'color' ) || '' )
                     .css( 'border-color', this.model.get( 'color' ) || '' );
-            if ( self.model.get( 'datalist' ) ) {
+            var datalist = this.model.get( 'datalist' );
+            if ( $.isArray( datalist ) && datalist.length > 0 ) {
                 this.$el.autocomplete( { source : function( request, response ) { response( self.model.get( 'datalist' ) ) } } );
             }
             if ( this.model.get( 'value' ) !== this.$el.val() ) {
