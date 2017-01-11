@@ -296,6 +296,39 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.__api_import_new_workflow( trans, payload, **kwd )
 
     @expose_api
+    def save( self, trans, id, payload, **kwd ):
+        """
+        POST /api/workflows/id/save
+        Save the workflow described by `workflow_data` with id `id`.
+        """
+        print payload
+        # Get the stored workflow
+        stored = self.__get_stored_workflow( trans, id )
+        try:
+            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                trans,
+                stored,
+                payload,
+            )
+        except workflows.MissingToolsException as e:
+            return dict(
+                name=e.workflow.name,
+                message="This workflow includes missing or invalid tools. It cannot be saved until the following steps are removed or the missing tools are enabled.",
+                errors=e.errors,
+            )
+        if workflow.has_errors:
+            errors.append( "Some steps in this workflow have validation errors." )
+        if workflow.has_cycles:
+            errors.append( "This workflow contains cycles." )
+        if errors:
+            rval = dict( message="Workflow saved, but will not be runnable due to the following errors.",
+                         errors=errors )
+        else:
+            rval = dict( message="Workflow saved." )
+        rval['name'] = workflow.name
+        return rval
+
+    @expose_api
     def update( self, trans, id, payload, **kwds ):
         """
         * PUT /api/workflows/{id}

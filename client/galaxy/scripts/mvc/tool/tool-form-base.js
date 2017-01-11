@@ -80,18 +80,18 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             Utils.get({
                 url     : build_url,
                 data    : build_data,
-                success : function( new_model ) {
-                    if( !new_model.display ) {
+                success : function( data ) {
+                    if( !data.display ) {
                         window.location = Galaxy.root;
                         return;
                     }
-                    self._buildForm( new_model );
+                    self._buildForm( data );
                     !hide_message && self.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + ', id \'' + self.options.id + '\'.',
                         persistent  : false
                     });
-                    Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', new_model);
+                    Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
                     process.resolve();
                 },
                 error   : function( response, status ) {

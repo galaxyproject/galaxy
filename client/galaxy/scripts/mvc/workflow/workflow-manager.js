@@ -11,47 +11,9 @@ function( Connector, Toastr ) {
         this.name = null;
         this.has_changes = false;
         this.active_form_has_changes = false;
-        this.nodeLabels = {};
         this.workflowOutputLabels = {};
     }
     $.extend( Workflow.prototype, {
-        canLabelNodeWith: function( label ) {
-            if( label ) {
-                return ! (label in this.nodeLabels);
-            } else {
-                // empty labels are non-exclusive, so allow this one.
-                return true;
-            }
-        },
-        registerNodeLabel: function( label ) {
-            if( label ) {
-                this.nodeLabels[label] = true;
-            }
-        },
-        unregisterNodeLabel: function( label ) {
-            if( label ) {
-                delete this.nodeLabels[label];
-            }
-        },
-        updateNodeLabel: function( fromLabel, toLabel ) {
-            if( fromLabel ) {
-                this.unregisterNodeLabel( fromLabel );
-            }
-            if( ! this.canLabelNodeWith( toLabel ) ) {
-                Toastr.warning("Workflow contains duplicate node labels " + toLabel + ". This must be fixed before it can be saved.");
-            }
-            if( toLabel ) {
-                this.registerNodeLabel( toLabel );
-            }
-        },
-        attemptUpdateNodeLabel: function( node, label ) {
-            if( this.canLabelNodeWith( label ) ) {
-                node.setLabel( label );
-                return true;
-            } else {
-                return false;
-            }
-        },
         canLabelOutputWith: function( label ) {
             if( label ) {
                 return ! (label in this.workflowOutputLabels);

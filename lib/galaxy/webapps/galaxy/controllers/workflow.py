@@ -684,40 +684,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
         return workflow_contents_manager.workflow_to_dict( trans, stored, style="editor" )
 
-    @web.json
-    def save_workflow( self, trans, id, workflow_data ):
-        """
-        Save the workflow described by `workflow_data` with id `id`.
-        """
-        # Get the stored workflow
-        stored = self.get_stored_workflow( trans, id )
-        workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
-        try:
-            workflow, errors = workflow_contents_manager.update_workflow_from_dict(
-                trans,
-                stored,
-                workflow_data,
-            )
-        except workflows.MissingToolsException as e:
-            return dict(
-                name=e.workflow.name,
-                message="This workflow includes missing or invalid tools. "
-                        "It cannot be saved until the following steps are removed or the missing tools are enabled.",
-                errors=e.errors,
-            )
-
-        if workflow.has_errors:
-            errors.append( "Some steps in this workflow have validation errors" )
-        if workflow.has_cycles:
-            errors.append( "This workflow contains cycles" )
-        if errors:
-            rval = dict( message="Workflow saved, but will not be runnable due to the following errors",
-                         errors=errors )
-        else:
-            rval = dict( message="Workflow saved" )
-        rval['name'] = workflow.name
-        return rval
-
     @web.expose
     @web.require_login( "use workflows" )
     def export_to_myexp( self, trans, id, myexp_username, myexp_password ):
