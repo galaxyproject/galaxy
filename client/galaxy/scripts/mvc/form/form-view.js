@@ -105,7 +105,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
             this.options.initial_errors && this.errors( this.options );
             // add listener which triggers on checksum change, and reset the form input wrappers
             var current_check = this.data.checksum();
-            this.on('change', function( input_id ) {
+            this.on( 'change', function( input_id ) {
                 var input = self.input_list[ input_id ];
                 if ( !input || input.refresh_on_change || self.options.always_refresh ) {
                     var new_check = self.data.checksum();

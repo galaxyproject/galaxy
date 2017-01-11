@@ -1,25 +1,30 @@
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
-        'mvc/citation/citation-model', 'mvc/citation/citation-view'],
+define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
     function(Utils, Deferred, Ui, FormBase, CitationModel, CitationView) {
     return FormBase.extend({
         initialize: function(options) {
             var self = this;
-            FormBase.prototype.initialize.call(this, options);
             this.deferred = new Deferred();
-            if (options.inputs) {
-                this._buildForm(options);
+            options.onchange = function() {
+                self.deferred.reset();
+                self.deferred.execute( function ( process ) {
+                    self.options.postchange( process, self );
+                });
+            };
+            FormBase.prototype.initialize.call( this, options );
+            if ( options.inputs ) {
+                this._buildForm( options );
             } else {
-                this.deferred.execute(function(process) {
-                    self._buildModel(process, options, true);
+                this.deferred.execute( function( process ) {
+                    self._buildModel( process, options, true );
                 });
             }
             // listen to history panel
             if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
                 this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
-                    self.trigger( 'change' );
+                    options.onchange();
                 });
             }
             // destroy dom elements
@@ -30,27 +35,21 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         remove: function() {
             var self = this;
             this.$el.hide();
-            this.deferred.execute(function(){
-                FormBase.prototype.remove.call(self);
-                Galaxy.emit.debug('tool-form-base::remove()', 'Destroy view.');
+            this.deferred.execute( function() {
+                FormBase.prototype.remove.call( self );
+                Galaxy.emit.debug( 'tool-form-base::remove()', 'Destroy view.' );
             });
         },
 
         /** Build form */
-        _buildForm: function(options) {
+        _buildForm: function( options ) {
             var self = this;
-            this.options = Utils.merge(options, this.options);
+            this.options = Utils.merge( options, this.options );
             this.options = Utils.merge({
                 icon            : options.icon,
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations      : !this.options.hide_operations && this._operations(),
-                onchange        : function() {
-                    self.deferred.reset();
-                    self.deferred.execute( function ( process ) {
-                        self.options.postchange( process, self );
-                    });
-                }
-            }, this.options);
+                operations      : !this.options.hide_operations && this._operations()
+            }, this.options );
             this.options.customize && this.options.customize( this.options );
             this.render();
             if ( !this.options.collapsible ) {
@@ -59,7 +58,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         },
 
         /** Builds a new model through api call and recreates the entire form */
-        _buildModel: function(process, options, hide_message) {
+        _buildModel: function( process, options, hide_message ) {
             var self = this;
             this.options.id = options.id;
             this.options.version = options.version;
@@ -81,32 +80,31 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             Utils.get({
                 url     : build_url,
                 data    : build_data,
-                success : function(new_model) {
-                    new_model = new_model.tool_model || new_model;
+                success : function( new_model ) {
                     if( !new_model.display ) {
                         window.location = Galaxy.root;
                         return;
                     }
-                    self._buildForm(new_model);
+                    self._buildForm( new_model );
                     !hide_message && self.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + ', id \'' + self.options.id + '\'.',
                         persistent  : false
                     });
-                    Galaxy.emit.debug('tool-form-base::initialize()', 'Initial tool model ready.', new_model);
+                    Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', new_model);
                     process.resolve();
                 },
-                error   : function(response, status) {
+                error   : function( response, status ) {
                     var error_message = ( response && response.err_msg ) || 'Uncaught error.';
                     if ( status == 401 ) {
                         window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + self.options.id });
-                    } else if ( self.$el.is(':empty') ) {
-                        self.$el.prepend((new Ui.Message({
+                    } else if ( self.$el.is( ':empty' ) ) {
+                        self.$el.prepend( ( new Ui.Message({
                             message     : error_message,
                             status      : 'danger',
                             persistent  : true,
                             large       : true
-                        })).$el);
+                        }) ).$el );
                     } else {
                         Galaxy.modal && Galaxy.modal.show({
                             title   : 'Tool request failed',
@@ -118,7 +116,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             }
                         });
                     }
-                    Galaxy.emit.debug('tool-form::initialize()', 'Initial tool model request failed.', response);
+                    Galaxy.emit.debug( 'tool-form-base::_buildModel()', 'Initial tool model request failed.', response );
                     process.reject();
                 }
             });

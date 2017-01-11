@@ -38,9 +38,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                         var current_state = {
                             tool_id         : options.id,
                             tool_version    : options.version,
-                            inputs          : $.extend( true, {}, form.data.create() ),
-                            label           : self.node.label,
-                            annotation      : self.node.annotation
+                            inputs          : $.extend( true, {}, form.data.create() )
                         }
                         Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Sending current state.', current_state );
                         Utils.request({
