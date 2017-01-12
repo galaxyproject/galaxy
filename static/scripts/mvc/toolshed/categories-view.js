@@ -1,13 +1,14 @@
-define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed_model) {
+define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed_model, toolshed_util) {
     var ToolShedCategories = Backbone.View.extend({
         el: "#center",
         defaults: {
             tool_shed: "https://toolshed.g2.bx.psu.edu/"
         },
         initialize: function(options) {
+            var shed = options.tool_shed.replace(/\//g, "%2f");
             this.options = _.defaults(this.options || options, this.defaults), this.model = new toolshed_model.Categories(), 
             this.listenTo(this.model, "sync", this.render), this.model.url = this.model.url + "?tool_shed_url=" + this.options.tool_shed, 
-            this.model.fetch();
+            this.model.tool_shed = shed, this.model.fetch();
         },
         render: function(options) {
             this.options = _.extend(this.options, options), this.options.categories = this.model.models;
@@ -15,7 +16,34 @@ define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed
             this.$el.html(category_list_template(this.options)), $("#center").css("overflow", "auto"), 
             this.bindEvents();
         },
-        bindEvents: function() {},
+        bindEvents: function() {
+            var that = this;
+            require([ "libs/jquery/jquery-ui" ], function() {
+                $("#search_box").autocomplete({
+                    source: function(request, response) {
+                        var shed_url = that.model.tool_shed.replace(/%2f/g, "/"), base_url = Galaxy.root + "api/tool_shed/search", params = {
+                            term: request.term,
+                            tool_shed_url: shed_url
+                        };
+                        $.post(base_url, params, function(data) {
+                            console.log(data), result_list = toolshed_util.shedParser(data), response(result_list);
+                        });
+                    },
+                    minLength: 3,
+                    select: function(event, ui) {
+                        var tsr_id = ui.item.value, new_route = (Galaxy.root + "api/tool_shed/repository", 
+                        {
+                            tool_shed_url: that.model.tool_shed,
+                            tsr_id: tsr_id
+                        }, "repository/s/" + that.model.tool_shed + "/r/" + tsr_id);
+                        Backbone.history.navigate(new_route, {
+                            trigger: !0,
+                            replace: !0
+                        });
+                    }
+                });
+            });
+        },
         reDraw: function(options) {
             this.$el.empty(), this.model.url = this.model.url + "?tool_shed_url=" + this.options.tool_shed, 
             this.initialize(options);

@@ -21,7 +21,7 @@ define([ "mvc/toolshed/toolshed-model" ], function(toolshed_model) {
         reDraw: function(options) {
             this.$el.empty(), this.render(options);
         },
-        templateToolshedList: _.template([ '<div class="unified-panel-header" unselectable="on">', '<div class="unified-panel-header-inner">Accessible Galaxy tool sheds</div>', "</div>", '<div class="unified-panel-body" id="list_toolsheds">', '<div class="form-row">', '<table class="grid">', "<% _.each(tool_sheds, function(shed) { console.log(shed); %>", '<tr class="libraryTitle">', "<td>", '<div style="float: left; margin-left: 1px;" class="menubutton split">', '<a class="view-info shed-selector" href="#/categories/s/<%= shed.get("url") %>"><%= shed.get("name") %></a>', "</div>", "</td>", "</tr>", "<% }); %>", "</table>", "</div>", '<div style="clear: both"></div>', "</div>" ].join(""))
+        templateToolshedList: _.template([ '<div class="unified-panel-header" unselectable="on">', '<div class="unified-panel-header-inner">Accessible Galaxy tool sheds</div>', "</div>", '<div class="unified-panel-body" id="list_toolsheds">', '<div class="form-row">', '<table class="grid">', "<% _.each(tool_sheds, function(shed) { %>", '<tr class="libraryTitle">', "<td>", '<div style="float: left; margin-left: 1px;" class="menubutton split">', '<a class="view-info shed-selector" href="#/categories/s/<%= shed.get("url") %>"><%= shed.get("name") %></a>', "</div>", "</td>", "</tr>", "<% }); %>", "</table>", "</div>", '<div style="clear: both"></div>', "</div>" ].join(""))
     });
     return {
         ShedListView: View

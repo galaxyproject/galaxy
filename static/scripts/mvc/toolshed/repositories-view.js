@@ -16,18 +16,29 @@ define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed
             })), $("#center").css("overflow", "auto"), this.bindEvents();
         },
         bindEvents: function() {
-            console.log("that.selector"), require([ "libs/jquery/jquery-ui" ], function() {
-                $("search_box").autocomplete({
-                    source: function(req) {
-                        console.log("blop" + req);
+            var that = this;
+            require([ "libs/jquery/jquery-ui" ], function() {
+                $("#search_box").autocomplete({
+                    source: function(request, response) {
+                        var shed_url = that.model.tool_shed.replace(/%2f/g, "/"), base_url = Galaxy.root + "api/tool_shed/search", params = {
+                            term: request.term,
+                            tool_shed_url: shed_url
+                        };
+                        $.post(base_url, params, function(data) {
+                            result_list = toolshed_util.shedParser(data), response(result_list);
+                        });
                     },
                     minLength: 3,
                     select: function(event, ui) {
-                        var tsr_id = ui.item.value, api_url = Galaxy.root + "api/tool_shed/repository", params = {
-                            tool_shed_url: this.model.tool_shed,
+                        var tsr_id = ui.item.value, new_route = (Galaxy.root + "api/tool_shed/repository", 
+                        {
+                            tool_shed_url: that.model.tool_shed,
                             tsr_id: tsr_id
-                        };
-                        toolshed_util.loadRepo(tsr_id, this.model.tool_shed, api_url, params);
+                        }, "repository/s/" + that.model.tool_shed + "/r/" + tsr_id);
+                        Backbone.history.navigate(new_route, {
+                            trigger: !0,
+                            replace: !0
+                        });
                     }
                 });
             });

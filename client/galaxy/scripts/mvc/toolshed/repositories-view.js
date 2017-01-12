@@ -25,17 +25,24 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
 
         bindEvents: function() {
             var that = this;
-            // toolshed_util.searchShed();
-            console.log('that.selector');
             require(['libs/jquery/jquery-ui'], function() {
-                $("search_box").autocomplete({
-                    source: function(req, res) {console.log('blop' + req);},
+                $("#search_box").autocomplete({
+                    source: function(request, response) {
+                        var shed_url = that.model.tool_shed.replace(/%2f/g, '/');
+                        var base_url = Galaxy.root + 'api/tool_shed/search';
+                        var params = {term: request.term, tool_shed_url: shed_url};
+                        $.post(base_url, params, function(data) {
+                            result_list = toolshed_util.shedParser(data);
+                            response(result_list);
+                        });
+                    },
                     minLength: 3,
                     select: function(event, ui) {
                         var tsr_id = ui.item.value;
                         var api_url = Galaxy.root + 'api/tool_shed/repository';
-                        var params = {"tool_shed_url": this.model.tool_shed, "tsr_id": tsr_id};
-                        toolshed_util.loadRepo(tsr_id, this.model.tool_shed, api_url, params);
+                        var params = {"tool_shed_url": that.model.tool_shed, "tsr_id": tsr_id};
+                        var new_route = 'repository/s/' + that.model.tool_shed + '/r/' + tsr_id;
+                        Backbone.history.navigate(new_route, {trigger: true, replace:true});
                     },
                 });
             });

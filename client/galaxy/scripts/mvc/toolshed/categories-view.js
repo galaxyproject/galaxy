@@ -10,10 +10,12 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
 
         initialize: function(options) {
             var self = this;
+            var shed = options.tool_shed.replace(/\//g, '%2f');
             this.options = _.defaults(this.options || options, this.defaults);
             this.model = new toolshed_model.Categories();
             this.listenTo(this.model, 'sync', this.render);
             this.model.url = this.model.url + '?tool_shed_url=' + this.options.tool_shed;
+            this.model.tool_shed = shed;
             this.model.fetch();
         },
 
@@ -27,7 +29,29 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         bindEvents: function() {
-            // toolshed_util.initSearch('search_box');
+            var that = this;
+            require(['libs/jquery/jquery-ui'], function() {
+                $("#search_box").autocomplete({
+                    source: function(request, response) {
+                        var shed_url = that.model.tool_shed.replace(/%2f/g, '/');
+                        var base_url = Galaxy.root + 'api/tool_shed/search';
+                        var params = {term: request.term, tool_shed_url: shed_url};
+                        $.post(base_url, params, function(data) {
+                            console.log(data);
+                            result_list = toolshed_util.shedParser(data);
+                            response(result_list);
+                        });
+                    },
+                    minLength: 3,
+                    select: function(event, ui) {
+                        var tsr_id = ui.item.value;
+                        var api_url = Galaxy.root + 'api/tool_shed/repository';
+                        var params = {"tool_shed_url": that.model.tool_shed, "tsr_id": tsr_id};
+                        var new_route = 'repository/s/' + that.model.tool_shed + '/r/' + tsr_id;
+                        Backbone.history.navigate(new_route, {trigger: true, replace:true});
+                    },
+                });
+            });
         },
 
         reDraw: function(options) {

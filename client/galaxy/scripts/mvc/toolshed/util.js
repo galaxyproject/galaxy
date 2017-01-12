@@ -6,7 +6,7 @@ define([], function() {
         console.log(d);
     };
 
-    var searchShed = function(request) {
+    var searchShed = function(request, response) {
         var that = this;
         console.log('shed_url');
         var shed_url = this.shed_url;
@@ -24,7 +24,9 @@ define([], function() {
         $.each(hits, function(hit) {
             var record = hits[hit];
             var label = record.repository.name + ' by ' + record.repository.repo_owner_username + ': ' + record.repository.description;
+            console.log(record);
             result = {value: record.repository.id, label: label};
+            console.log(result);
             results.push(result);
         });
         return results;

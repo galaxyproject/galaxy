@@ -132,7 +132,6 @@ define(['mvc/toolshed/toolshed-model',
                 for (var index = 0; index < data.length; index++) {
                     var repository = data[index];
                     var installed = !repository.deleted && !repository.uninstalled;
-                        console.log({csm: metadata});
                     var changeset_match = repository.changeset_revision == metadata.changeset_revision ||
                                           repository.installed_changeset_revision == metadata.changeset_revision;
                     if (repository.name == metadata.repository.name && repository.owner == metadata.repository.owner && installed && changeset_match) {

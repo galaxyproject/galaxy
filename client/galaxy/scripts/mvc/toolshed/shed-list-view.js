@@ -34,7 +34,7 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
             '<div class="unified-panel-body" id="list_toolsheds">',
                 '<div class="form-row">',
                     '<table class="grid">',
-                        '<% _.each(tool_sheds, function(shed) { console.log(shed); %>',
+                        '<% _.each(tool_sheds, function(shed) { %>',
                             '<tr class="libraryTitle">',
                                 '<td>',
                                     '<div style="float: left; margin-left: 1px;" class="menubutton split">',

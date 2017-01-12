@@ -89,11 +89,7 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
             }
             $.get(Galaxy.root + "api/tool_shed_repositories", params, function(data) {
                 for (var index = 0; index < data.length; index++) {
-                    var repository = data[index], installed = !repository.deleted && !repository.uninstalled;
-                    console.log({
-                        csm: metadata
-                    });
-                    var changeset_match = repository.changeset_revision == metadata.changeset_revision || repository.installed_changeset_revision == metadata.changeset_revision;
+                    var repository = data[index], installed = !repository.deleted && !repository.uninstalled, changeset_match = repository.changeset_revision == metadata.changeset_revision || repository.installed_changeset_revision == metadata.changeset_revision;
                     repository.name == metadata.repository.name && repository.owner == metadata.repository.owner && installed && changeset_match && (already_installed = !0), 
                     already_installed ? ($("#install_repository").prop("disabled", !0), $("#install_repository").val("This revision is already installed")) : ($("#install_repository").prop("disabled", !1), 
                     $("#install_repository").val("Install this revision"));
