@@ -62,7 +62,7 @@ define(['utils/utils',
                 this.$el.addClass( 'alert' ).addClass( 'alert-' + status );
             }
             if ( this.model.get( 'message' ) ) {
-                this.$el.html( this.model.get( 'message' ) );
+                this.$el.html( _.escape( this.model.get( 'message' ) ) );
                 this.$el[ this.model.get( 'fade' ) ? 'fadeIn' : 'show' ]();
                 this.timeout && window.clearTimeout( this.timeout );
                 if ( !this.model.get( 'persistent' ) ) {
