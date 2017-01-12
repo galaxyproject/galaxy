@@ -363,13 +363,9 @@ class Data( object ):
         if not os.path.exists( data.file_name ):
             raise paste.httpexceptions.HTTPNotFound( "File Not Found (%s)." % data.file_name )
         max_peek_size = 1000000  # 1 MB
-        if isinstance(data.datatype, datatypes.text.Html) or isinstance(data.datatype, datatypes.text.Markdown):
+        if isinstance(data.datatype, datatypes.text.Html):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool( preview )
-        if trans.response.get_content_type() == "text/markdown":
-            trans.response.set_content_type( "text/html" )
-            return trans.stream_template_mako( "/dataset/markdown.mako",
-                                               data=open(data.file_name).read())
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.

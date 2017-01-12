@@ -57,23 +57,6 @@ class Html( Text ):
             return True
 
 
-class Markdown( Text ):
-    """Class describing a Markdown file"""
-    file_ext = "md"
-
-    def set_peek( self, dataset, is_multi_byte=False ):
-        if not dataset.dataset.purged:
-            dataset.peek = "Markdown file"
-            dataset.blurb = nice_size( dataset.get_size() )
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'text/markdown'
-
-
 class Json( Text ):
     edam_format = "format_3464"
     file_ext = "json"

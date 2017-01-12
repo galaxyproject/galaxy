@@ -24,7 +24,6 @@ module.exports = function( grunt ){
             'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],
             'jquery.complexify':     [ 'jquery.complexify.js', 'jquery.complexify.js' ],
 
-            'showdown': ['dist/showdown.js', 'showdown.js'],
             // these need to be updated and tested
             //'jquery-form': [ 'jquery.form.js', 'jquery/jquery.form.js' ],
             //'jquery-autocomplete': [ 'src/jquery.autocomplete.js', 'jquery/jquery.autocomplete.js' ],
