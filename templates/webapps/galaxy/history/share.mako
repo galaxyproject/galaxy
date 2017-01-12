@@ -38,7 +38,13 @@
                 <div class="form-row">
                     <% existing_emails = ','.join([ d.user.email for d in history.users_shared_with ]) %>
                     <label>Galaxy user emails with which to share histories</label>
+                    %if trans.app.config.expose_user_email or trans.app.config.expose_user_name or trans.user_is_admin():
                     <input type="hidden" id="email_select" name="email" value="${ existing_emails }" style="float: left; width: 250px; margin-right: 10px;">
+                    </input>
+                    %else:
+                    <input type="text" name="email" value="${ existing_emails }" size="40">
+                    </input>
+                    %endif
                     </input>
                     <div class="toolParamHelp" style="clear: both;">
                         Enter a Galaxy user email address or a comma-separated list of addresses if sharing with multiple users
