@@ -301,7 +301,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         POST /api/workflows/id/save
         Save the workflow described by `workflow_data` with id `id`.
         """
-        print payload
         # Get the stored workflow
         stored = self.__get_stored_workflow( trans, id )
         try:
