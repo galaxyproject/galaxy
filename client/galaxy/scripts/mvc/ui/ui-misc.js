@@ -117,7 +117,8 @@ define(['utils/utils',
                     .css( 'border-color', this.model.get( 'color' ) || '' );
             var datalist = this.model.get( 'datalist' );
             if ( $.isArray( datalist ) && datalist.length > 0 ) {
-                this.$el.autocomplete( { source : function( request, response ) { response( self.model.get( 'datalist' ) ) } } );
+                this.$el.autocomplete( { source : function( request, response ) { response( self.model.get( 'datalist' ) ) },
+                                         change : function() { self._onchange() } } );
             }
             if ( this.model.get( 'value' ) !== this.$el.val() ) {
                 this.$el.val( this.model.get( 'value' ) );
