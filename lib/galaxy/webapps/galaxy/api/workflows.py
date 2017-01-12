@@ -320,8 +320,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if workflow.has_cycles:
             errors.append( "This workflow contains cycles." )
         if errors:
-            rval = dict( message="Workflow saved, but will not be runnable due to the following errors.",
-                         errors=errors )
+            rval = dict( message="Workflow saved, but will not be runnable due to the following errors.", errors=errors )
         else:
             rval = dict( message="Workflow saved." )
         rval['name'] = workflow.name
