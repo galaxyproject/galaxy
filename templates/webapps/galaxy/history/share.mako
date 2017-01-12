@@ -45,7 +45,6 @@
                     <input type="text" name="email" value="${ existing_emails }" size="40">
                     </input>
                     %endif
-                    </input>
                     <div class="toolParamHelp" style="clear: both;">
                         Enter a Galaxy user email address or a comma-separated list of addresses if sharing with multiple users
                     </div>
