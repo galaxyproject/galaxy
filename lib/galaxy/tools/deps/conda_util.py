@@ -358,6 +358,7 @@ def install_conda(conda_context=None):
     fix_version_cmd = "%s install -y -q conda=%s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), CONDA_VERSION)
     full_command = "%s && %s && %s" % (download_cmd, install_cmd, fix_version_cmd)
     try:
+        log.info("Installing Conda, this may take several minutes.")
         return conda_context.shell_exec(full_command)
     finally:
         if os.path.exists(script_path):
