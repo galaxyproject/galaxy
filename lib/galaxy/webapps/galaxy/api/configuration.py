@@ -26,11 +26,10 @@ class ConfigurationController( BaseAPIController ):
     @expose_api_anonymous
     def whoami( self, trans, **kwd ):
         """
-        def whoami( self, trans, **kwd )
-        * GET /api/authenticate/whoami
-          returns information about the current authenticated user
+        GET /api/authenticate/whoami
+        Return information about the current authenticated user.
 
-        :returns: user information in json format
+        :returns: dictionary with user information
         :rtype:   dict
         """
         current_user = self.user_manager.current_user( trans )
