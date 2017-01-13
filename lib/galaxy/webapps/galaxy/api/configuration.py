@@ -45,16 +45,15 @@ class ConfigurationController( BaseAPIController ):
         :rtype:     dict
         :returns:   dictionary with major version keyed on 'version_major'
         """
-        extra={}
+        extra = {}
         try:
-            version_file=os.environ.get("GALAXY_VERSION_JSON_FILE",self.app.container_finder.app_info.galaxy_root_dir+"/version.json")
-            f=open(version_file)
+            version_file = os.environ.get("GALAXY_VERSION_JSON_FILE", self.app.container_finder.app_info.galaxy_root_dir+"/version.json")
+            f = open(version_file)
             extra = json.load(f)
             f.close()
         except:
             pass
-        return {"version_major": self.app.config.version_major , "extra": extra}
-
+        return {"version_major": self.app.config.version_major, "extra": extra}
 
     def get_config_dict( self, trans, return_admin=False, view=None, keys=None, default_view='all' ):
         """
