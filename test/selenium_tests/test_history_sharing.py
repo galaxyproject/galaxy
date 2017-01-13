@@ -108,5 +108,8 @@ class HistorySharingTestCase(SeleniumTestCase):
         self.navigate_to_history_user_share_page()
         form_selector = "form#share"
         form = self.wait_for_selector(form_selector)
-        self.select2_set_value(form_selector, email)
+        # If expose_user_info is on would fill form out with this
+        # line, in future dispatch on actual select2 div present or not.
+        # self.select2_set_value(form_selector, email)
+        self.fill(form, {"email": email})
         self.click_submit(form)
