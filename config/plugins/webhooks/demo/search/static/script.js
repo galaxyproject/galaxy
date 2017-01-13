@@ -525,7 +525,7 @@ $(document).ready(function() {
 	    var is_present = false;
 	    _.each( collection, function( item ) {
 	        if( id === item.id ) {
-		    item.template = item.template + " " + text;
+		    item.template = item.template + text;
 		    is_present = true;
 	        }
 	    });
