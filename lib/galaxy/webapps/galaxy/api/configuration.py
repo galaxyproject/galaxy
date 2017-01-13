@@ -48,10 +48,9 @@ class ConfigurationController( BaseAPIController ):
         extra = {}
         try:
             version_file = os.environ.get("GALAXY_VERSION_JSON_FILE", self.app.container_finder.app_info.galaxy_root_dir + "/version.json")
-            f = open(version_file)
-            extra = json.load(f)
-            f.close()
-        except:
+            with open(version_file, "r") as f:
+                extra = json.load(f)
+        except Exception:
             pass
         return {"version_major": self.app.config.version_major, "extra": extra}
 
