@@ -62,7 +62,7 @@ define(['utils/utils',
                 this.$el.addClass( 'alert' ).addClass( 'alert-' + status );
             }
             if ( this.model.get( 'message' ) ) {
-                this.$el.html( this.message_for_display() );
+                this.$el.html( this.messageForDisplay() );
                 this.$el[ this.model.get( 'fade' ) ? 'fadeIn' : 'show' ]();
                 this.timeout && window.clearTimeout( this.timeout );
                 if ( !this.model.get( 'persistent' ) ) {
@@ -76,13 +76,13 @@ define(['utils/utils',
             }
             return this;
         },
-        message_for_display: function() {
+        messageForDisplay: function() {
             return _.escape( this.model.get( 'message' ) );
         }
     });
 
     var UnescapedMessage = Message.extend({
-        message_for_display: function() {
+        messageForDisplay: function() {
             return this.model.get( 'message' );
         }
     });
