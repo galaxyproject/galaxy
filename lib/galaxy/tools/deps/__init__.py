@@ -123,6 +123,7 @@ class DependencyManager( object ):
         requirement_to_dependency = OrderedDict()
         index = kwds.get('index', None)
         require_exact = kwds.get('exact', False)
+        return_null_dependencies = kwds.get('return_null', False)
 
         resolvable_requirements = []
         for requirement in requirements:
@@ -163,6 +164,8 @@ class DependencyManager( object ):
 
                     log.debug(dependency.resolver_msg)
                     if not isinstance(dependency, NullDependency):
+                        requirement_to_dependency[requirement] = dependency
+                    elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
                         requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
