@@ -95,20 +95,21 @@
 }
 
 .item-actions {
-    width: 6%;
-    margin-left: 1.2%;
+    margin: 1%;
 }
 
-.link-tile .item-actions {
-    float: right;
-}
-
-.link-tile .item-actions:hover {
+.item-actions:hover {
     color: gold;
 }
 
-.pin-item, .remove-item {
-    padding: 0 2px 0 2px;
+.pin-item {
+    float: left;
+}
+
+.restore-item,
+.remove-fav,
+.remove-item {
+    float: right;
 }
 
 .filter-active {
