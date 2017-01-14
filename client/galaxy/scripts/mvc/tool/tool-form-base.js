@@ -1,30 +1,24 @@
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
-    function(Utils, Deferred, Ui, FormBase, CitationModel, CitationView) {
+define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/citation/citation-model', 'mvc/citation/citation-view' ],
+    function( Utils, Deferred, Ui, FormBase, CitationModel, CitationView ) {
     return FormBase.extend({
-        initialize: function(options) {
+        initialize: function( options ) {
             var self = this;
             this.deferred = new Deferred();
-            options.onchange = function() {
-                self.deferred.reset();
-                self.deferred.execute( function ( process ) {
-                    self.options.postchange( process, self );
-                });
-            };
             FormBase.prototype.initialize.call( this, options );
-            if ( options.inputs ) {
-                this._buildForm( options );
+            if ( this.model.get( 'inputs' ) ) {
+                this._buildForm( this.model.attributes );
             } else {
                 this.deferred.execute( function( process ) {
-                    self._buildModel( process, options, true );
+                    self._buildModel( process, self.model.attributes, true );
                 });
             }
             // listen to history panel
-            if ( options.listen_to_history && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
+            if ( this.model.get( 'listen_to_history' ) && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
                 this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
-                    options.onchange();
+                    self.model.get( 'onchange' )();
                 });
             }
             // destroy dom elements
@@ -44,24 +38,30 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Build form */
         _buildForm: function( options ) {
             var self = this;
-            this.options = Utils.merge( options, this.options );
-            this.options = Utils.merge({
-                icon            : options.icon,
-                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations      : !this.options.hide_operations && this._operations()
-            }, this.options );
-            this.options.customize && this.options.customize( this.options );
+            this.model.set( options );
+            this.model.set({
+                title       : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
+                operations  : !this.model.get( 'hide_operations' ) && this._operations(),
+                onchange    : function() {
+                    self.deferred.reset();
+                    self.deferred.execute( function ( process ) {
+                        self.model.get( 'postchange' )( process, self );
+                    });
+                }
+            });
+            this.model.get( 'customize' ) && this.model.get( 'customize' )( this );
             this.render();
-            if ( !this.options.collapsible ) {
+            if ( !this.model.get( 'collapsible' ) ) {
                 this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
             }
         },
 
         /** Builds a new model through api call and recreates the entire form */
-        _buildModel: function( process, options, hide_message ) {
+        _buildModel: function( process, new_options, hide_message ) {
             var self = this;
-            this.options.id = options.id;
-            this.options.version = options.version;
+            var options = this.model.attributes;
+            options.version = new_options.version;
+            options.id = new_options.id;
 
             // build request url
             var build_url = '';
@@ -88,7 +88,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     self._buildForm( data );
                     !hide_message && self.message.update({
                         status      : 'success',
-                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + ', id \'' + self.options.id + '\'.',
+                        message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
                         persistent  : false
                     });
                     Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
@@ -97,7 +97,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 error   : function( response, status ) {
                     var error_message = ( response && response.err_msg ) || 'Uncaught error.';
                     if ( status == 401 ) {
-                        window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + self.options.id });
+                        window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + options.id });
                     } else if ( self.$el.is( ':empty' ) ) {
                         self.$el.prepend( ( new Ui.Message({
                             message     : error_message,
@@ -125,7 +125,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Create tool operation menu */
         _operations: function() {
             var self = this;
-            var options = this.options;
+            var options = this.model.attributes;
 
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
@@ -221,7 +221,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                                 buttons : { 'Close' : function() { modalMessage.hide() } }
                             });
                             window.setTimeout(function(){modalMessage.hide();}, 2000);
-
                         }).fail(function(error){
                             modalMessage.show({
                                 title: "Tool XML Reload AJAX Error",
@@ -272,7 +271,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
         /** Create footer */
         _footer: function() {
-            var options = this.options;
+            var options = this.model.attributes;
             var $el = $( '<div/>' ).append( this._templateHelp( options ) );
             if ( options.citations ) {
                 var $citations = $( '<div/>' );

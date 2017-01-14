@@ -34,7 +34,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                     sustain_version : true,
                     cls             : 'ui-portlet-narrow',
                     postchange      : function( process, form ) {
-                        var self = this;
+                        var options = form.model.attributes;
                         var current_state = {
                             tool_id         : options.id,
                             tool_version    : options.version,
@@ -73,17 +73,17 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
         _makeSections: function( options ){
             var inputs = options.inputs;
             var datatypes = options.datatypes;
-            inputs[ Utils.uid() ] = {
+            inputs.push({
                 label   : 'Annotation / Notes',
                 name    : '__annotation',
                 type    : 'text',
                 area    : true,
                 help    : 'Add an annotation or note for this step. It will be shown with the workflow.',
                 value   : this.node.annotation
-            }
+            });
             var output_id = this.node.output_terminals && Object.keys( this.node.output_terminals )[ 0 ];
             if ( output_id ) {
-                inputs[ Utils.uid() ] = {
+                inputs.push({
                     name        : 'pja__' + output_id + '__EmailAction',
                     label       : 'Email notification',
                     type        : 'boolean',
@@ -93,17 +93,17 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                     payload     : {
                         'host'  : window.location.host
                     }
-                };
-                inputs[ Utils.uid() ] = {
+                });
+                inputs.push({
                     name        : 'pja__' + output_id + '__DeleteIntermediatesAction',
                     label       : 'Output cleanup',
                     type        : 'boolean',
                     value       : String( Boolean( this.post_job_actions[ 'DeleteIntermediatesAction' + output_id ] ) ),
                     ignore      : 'false',
                     help        : 'Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.'
-                };
+                });
                 for ( var i in this.node.output_terminals ) {
-                    inputs[ Utils.uid() ] = this._makeSection( i, datatypes );
+                    inputs.push( this._makeSection( i, datatypes ) );
                 }
             }
         },

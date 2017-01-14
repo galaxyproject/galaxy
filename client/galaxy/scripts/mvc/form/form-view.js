@@ -5,13 +5,13 @@ define( [ 'utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/form/form-s
 function( Utils, Portlet, Ui, FormSection, FormData ) {
     return Backbone.View.extend({
         initialize: function( options ) {
-            this.options = Utils.merge( options, {
+            this.model = new Backbone.Model({
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
                 icon            : null,
                 always_refresh  : true,
                 message_status  : 'warning'
-            });
+            }).set( options );
             this.setElement( '<div/>' );
             this.render();
         },
@@ -102,16 +102,16 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
             this.data = new FormData.Manager( this );
             this._renderForm();
             this.data.create();
-            this.options.initial_errors && this.errors( this.options );
+            this.model.get( 'initial_errors' ) && this.errors( this.model.attributes );
             // add listener which triggers on checksum change, and reset the form input wrappers
             var current_check = this.data.checksum();
             this.on( 'change', function( input_id ) {
                 var input = self.input_list[ input_id ];
-                if ( !input || input.refresh_on_change || self.options.always_refresh ) {
+                if ( !input || input.refresh_on_change || self.model.get( 'always_refresh' ) ) {
                     var new_check = self.data.checksum();
                     if ( new_check != current_check ) {
                         current_check = new_check;
-                        self.options.onchange && self.options.onchange();
+                        self.model.get( 'onchange' ) && self.model.get( 'onchange' )();
                     }
                 }
             });
@@ -124,23 +124,24 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
         /** Renders/appends dom elements of the form */
         _renderForm: function() {
             $( '.tooltip' ).remove();
+            var options = this.model.attributes;
             this.message = new Ui.Message();
-            this.section = new FormSection.View( this, { inputs: this.options.inputs } );
+            this.section = new FormSection.View( this, { inputs: options.inputs } );
             this.portlet = new Portlet.View({
-                icon            : this.options.icon,
-                title           : this.options.title,
-                cls             : this.options.cls,
-                operations      : this.options.operations,
-                buttons         : this.options.buttons,
-                collapsible     : this.options.collapsible,
-                collapsed       : this.options.collapsed,
-                onchange_title  : this.options.onchange_title
+                icon            : options.icon,
+                title           : options.title,
+                cls             : options.cls,
+                operations      : options.operations,
+                buttons         : options.buttons,
+                collapsible     : options.collapsible,
+                collapsed       : options.collapsed,
+                onchange_title  : options.onchange_title
             });
             this.portlet.append( this.message.$el );
             this.portlet.append( this.section.$el );
             this.$el.empty();
-            this.options.inputs && this.$el.append( this.portlet.$el );
-            this.options.message && this.message.update( { persistent: true, status: this.options.message_status, message: this.options.message } );
+            options.inputs && this.$el.append( this.portlet.$el );
+            options.message && this.message.update( { persistent: true, status: options.message_status, message: options.message } );
             Galaxy.emit.debug( 'form-view::initialize()', 'Completed' );
         }
     });

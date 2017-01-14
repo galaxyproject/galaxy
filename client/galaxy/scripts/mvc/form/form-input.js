@@ -5,7 +5,7 @@ define([], function() {
     return Backbone.View.extend({
         initialize: function( app, options ) {
             this.app = app;
-            this.app_options = app.options || {};
+            this.app_options = app.model.attributes;
             this.field = options && options.field || new Backbone.View();
             this.model = options && options.model || new Backbone.Model({
                 text_enable     : this.app_options.text_enable   || 'Enable',
