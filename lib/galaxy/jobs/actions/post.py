@@ -5,7 +5,6 @@ immediate_actions listed below.  Currently only used in workflows.
 import datetime
 import logging
 import socket
-from json import dumps
 
 from markupsafe import escape
 
@@ -390,7 +389,7 @@ class ActionBox(object):
             else:
                 # Not pja stuff.
                 pass
-        return dumps(npd)
+        return npd
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

@@ -9,7 +9,8 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
                 initial_errors  : false,
                 cls             : 'ui-portlet-limited',
                 icon            : null,
-                always_refresh  : true
+                always_refresh  : true,
+                message_status  : 'warning'
             });
             this.setElement( '<div/>' );
             this.render();
@@ -138,7 +139,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
             this.portlet.append( this.section.$el );
             this.$el.empty();
             this.options.inputs && this.$el.append( this.portlet.$el );
-            this.options.message && this.message.update( { persistent: true, status: 'warning', message: this.options.message } );
+            this.options.message && this.message.update( { persistent: true, status: this.options.message_status, message: this.options.message } );
             Galaxy.emit.debug( 'form-view::initialize()', 'Completed' );
         }
     });

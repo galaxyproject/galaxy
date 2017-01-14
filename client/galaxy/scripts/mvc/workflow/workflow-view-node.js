@@ -21,7 +21,7 @@ define(['libs/underscore', 'mvc/workflow/workflow-view-terminals', 'mvc/workflow
         },
 
         renderToolErrors: function() {
-            this.node.tool_errors ? this.$el.addClass( 'tool-node-error' ) : this.$el.removeClass( 'tool-node-error' );
+            this.node.errors ? this.$el.addClass( 'tool-node-error' ) : this.$el.removeClass( 'tool-node-error' );
         },
 
         newInputsDiv: function() {
