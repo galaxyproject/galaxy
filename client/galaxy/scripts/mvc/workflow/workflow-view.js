@@ -665,11 +665,10 @@ define([
                 content.icon = WorkflowIcons[ node.type ];
                 content.cls = 'ui-portlet-narrow';
                 if ( node.type == 'tool' ) {
-                    var options = content;
-                    options.node = node;
-                    options.workflow = this.workflow;
-                    options.datatypes = this.datatypes;
-                    form = new ToolForm.View( options );
+                    content.node = node;
+                    content.workflow = this.workflow;
+                    content.datatypes = this.datatypes;
+                    form = new ToolForm.View( content );
                 } else {
                     if ( content.inputs && content.inputs.length > 0 ) {
                         content.inputs.unshift({

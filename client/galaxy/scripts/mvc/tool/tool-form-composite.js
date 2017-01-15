@@ -462,7 +462,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ( response && response.err_data ) {
                             for ( var i in self.forms ) {
                                 var form = self.forms[ i ];
-                                var step_related_errors = response.err_data[ form.options.step_index ];
+                                var step_related_errors = response.err_data[ form.model.get( 'step_index' ) ];
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {
