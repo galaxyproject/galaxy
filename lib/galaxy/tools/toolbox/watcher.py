@@ -134,7 +134,7 @@ class NullToolConfWatcher(object):
     def monitor(self, conf_path):
         pass
 
-    def watch_file(self, tool_file, tool_id):
+    def watch_file(self, tool_file):
         pass
 
 

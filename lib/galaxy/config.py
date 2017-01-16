@@ -405,6 +405,8 @@ class Configuration( object ):
                 os.path.join(self.root, "lib", "galaxy", "tools", "deps", "resolvers", "default_conda_mapping.yml"),
             ]
 
+        self.ensure_tools_installed = kwargs.get( "ensure_tools_installed", "upload1" )
+
         self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
         containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
         if containers_resolvers_config_file:
@@ -877,6 +879,16 @@ def configure_logging( config ):
         register_postfork_function(root.addHandler, sentry_handler)
 
 
+def build_toolbox_from_config(app, config, tool_conf_watcher=None):
+    tool_configs = config.tool_configs
+    if config.migrated_tools_config not in tool_configs:
+        tool_configs.append(config.migrated_tools_config)
+
+    from galaxy import tools
+    toolbox = tools.ToolBox(tool_configs, config.tool_path, app, tool_conf_watcher=tool_conf_watcher)
+    return toolbox
+
+
 class ConfiguresGalaxyMixin:
     """ Shared code for configuring Galaxy-like app objects.
     """
@@ -896,13 +908,8 @@ class ConfiguresGalaxyMixin:
     def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
 
-        tool_configs = self.config.tool_configs
-        if self.config.migrated_tools_config not in tool_configs:
-            tool_configs.append( self.config.migrated_tools_config )
-
-        from galaxy import tools
         old_toolbox = self.toolbox
-        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        self.toolbox = build_toolbox_from_config(self, self.config)
         self.reindex_tool_search()
         if old_toolbox:
             old_toolbox.shutdown()

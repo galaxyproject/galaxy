@@ -478,6 +478,9 @@ class Tool( object, Dictifiable ):
         else:
             return self.old_id in GALAXY_LIB_TOOLS
 
+    def install_dependencies(self):
+        return self._view.install_dependencies(self.requirements)
+
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
 

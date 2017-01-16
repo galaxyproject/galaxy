@@ -7,6 +7,7 @@
   <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
   <requirements>
       <requirement type="package">samtools</requirement>
+      <requirement type="package">bcftools</requirement>
   </requirements>
   <command interpreter="python">
       upload.py $GALAXY_ROOT_DIR $GALAXY_DATATYPES_CONF_FILE $paramfile
