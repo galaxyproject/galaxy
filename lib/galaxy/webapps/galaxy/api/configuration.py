@@ -5,9 +5,10 @@ and configuration settings.
 
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api as expose_api_anonymous
 from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.managers import configuration
+from galaxy.managers import configuration, users
 from galaxy.queue_worker import send_control_task
 
 import logging
@@ -20,6 +21,19 @@ class ConfigurationController( BaseAPIController ):
         super( ConfigurationController, self ).__init__( app )
         self.config_serializer = configuration.ConfigSerializer( app )
         self.admin_config_serializer = configuration.AdminConfigSerializer( app )
+        self.user_manager = users.UserManager( app )
+
+    @expose_api_anonymous
+    def whoami( self, trans, **kwd ):
+        """
+        GET /api/whoami
+        Return information about the current authenticated user.
+
+        :returns: dictionary with user information
+        :rtype:   dict
+        """
+        current_user = self.user_manager.current_user( trans )
+        return current_user.to_dict()
 
     @expose_api_anonymous_and_sessionless
     def index( self, trans, **kwd ):
