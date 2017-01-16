@@ -5,16 +5,23 @@ installed within this Galaxy.
 import logging
 import re
 import tempfile
-
-from galaxy.web.framework.helpers import to_unicode
 from datetime import datetime
 
-from whoosh.filedb.filestore import RamStorage, FileStorage
-from whoosh.fields import KEYWORD, Schema, STORED, TEXT
-from whoosh.scoring import BM25F
-from whoosh.qparser import MultifieldParser
 from whoosh import analysis
+from whoosh.fields import (
+    KEYWORD,
+    Schema,
+    STORED,
+    TEXT
+)
+from whoosh.filedb.filestore import (
+    FileStorage,
+    RamStorage
+)
+from whoosh.qparser import MultifieldParser
+from whoosh.scoring import BM25F
 
+from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
 
