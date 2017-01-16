@@ -1021,6 +1021,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.app.object_store.create( new_len.dataset )
                     except ObjectInvalid:
                         raise Exception( 'Unable to create output dataset: object store is full' )
+
                     trans.sa_session.flush()
                     counter = 0
                     f = open(new_len.file_name, "w")
@@ -1037,9 +1038,16 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         except ValueError:
                             lines_skipped += 1
                             continue
+
+                        if chrom != escape(chrom):
+                            message = 'Invalid chromosome(s) with HTML detected and skipped'
+                            lines_skipped += 1
+                            continue
+
                         counter += 1
                         f.write("%s\t%s\n" % (chrom, length))
                     f.close()
+
                     build_dict.update( { "len": new_len.id, "count": counter } )
                 else:
                     dataset_id = trans.security.decode_id( dataset_id )
