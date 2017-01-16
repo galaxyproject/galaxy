@@ -210,7 +210,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #conda_auto_install = False
 # Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
-#conda_auto_init = False
+#conda_auto_init = True
 # You must set this to True if conda_prefix and job_working_directory are not on the same
 # volume, or some conda dependencies will fail to execute at job runtime.
 # Conda will copy packages content instead of creating hardlinks or symlinks.

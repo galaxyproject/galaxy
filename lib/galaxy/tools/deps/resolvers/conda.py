@@ -52,7 +52,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         'debug': None,
         'ensure_channels': DEFAULT_ENSURE_CHANNELS,
         'auto_install': False,
-        'auto_init': False,
+        'auto_init': True,
         'copy_dependencies': False,
     }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
