@@ -320,12 +320,12 @@ class UploadDataset( Group ):
                                 dataset_info = 'uploaded url'
                             yield Bunch( type='url', path=line, name=dataset_name )
                 else:
-                    dataset_name = dataset_info = precreated_name = 'Pasted Entry'  # we need to differentiate between various url pastes here
+                    dataset_name = dataset_info = 'Pasted Entry'  # we need to differentiate between various url pastes here
                     if override_name:
                         dataset_name = override_name
                     if override_info:
                         dataset_info = override_info
-                    yield Bunch( type='file', path=url_paste_file, name=precreated_name )
+                    yield Bunch( type='file', path=url_paste_file, name=dataset_name )
 
         def get_one_filename( context ):
             data_file = context['file_data']

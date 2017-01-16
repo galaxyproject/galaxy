@@ -5,7 +5,8 @@ import operator
 from collections import namedtuple
 from json import dumps, loads
 
-from .helpers import skip_without_tool
+from base.populators import skip_without_tool
+
 from .test_workflows import BaseWorkflowsApiTestCase
 
 

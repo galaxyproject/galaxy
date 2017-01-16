@@ -107,6 +107,13 @@ class NavigatesGalaxy(HasDriver):
             assert final_state == "ok", final_state
         return final_state
 
+    def history_panel_wait_for_hid_ok(self, hid, timeout=30):
+        current_history_id = self.current_history_id()
+        contents = self.api_get("histories/%s/contents" % current_history_id)
+        history_item = [d for d in contents if d["hid"] == hid][0]
+        history_item_selector_okay = "#%s-%s.state-ok" % (history_item["history_content_type"], history_item["id"])
+        self.wait_for_selector_visible(history_item_selector_okay)
+
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
@@ -200,6 +207,37 @@ class NavigatesGalaxy(HasDriver):
         close_button = self.wait_for_selector("button#btn-close")
         close_button.click()
 
+    def workflow_index_open(self):
+        self.home()
+        self.click_masthead_workflow()
+
+    def workflow_index_table_elements(self):
+        self.wait_for_selector_visible(".manage-table tbody")
+        table_elements = self.driver.find_elements_by_css_selector(".manage-table tbody > tr")
+        # drop header
+        return table_elements[1:]
+
+    def workflow_index_click_option(self, option_title, workflow_index=0):
+        table_elements = self.workflow_index_table_elements()
+        workflow_row = table_elements[workflow_index]
+        workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
+        workflow_button.click()
+        menu_element = self.wait_for_selector_visible(".popmenu-wrapper .dropdown-menu")
+        menu_options = menu_element.find_elements_by_css_selector("li a")
+        found_option = False
+        for menu_option in menu_options:
+            if option_title in menu_option.text:
+                menu_option.click()
+                found_option = True
+                break
+
+        if not found_option:
+            raise AssertionError("Failed to find workflow action option with title [%s]" % option_title)
+
+    def workflow_run_submit(self):
+        button = self.wait_for_selector(".ui-form-header button")
+        button.click()
+
     def tool_open(self, tool_id):
         link_element = self.wait_for_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
         link_element.click()
@@ -257,15 +295,36 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    def history_panel_item_selector(self, hid, wait=False):
+        current_history_id = self.current_history_id()
+        contents = self.api_get("histories/%s/contents" % current_history_id)
+        try:
+            history_item = [d for d in contents if d["hid"] == hid][0]
+        except IndexError:
+            raise Exception("Could not find history item with hid [%s] in contents [%s]" % (hid, contents))
+        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+        if wait:
+            self.wait_for_selector_visible(history_item_selector)
+        return history_item_selector
+
+    def modal_body_selector(self):
+        return ".modal-body"
+
+    def history_panel_item_body_selector(self, hid, wait=False):
+        selector = "%s %s" % (self.history_panel_item_selector(hid), self.test_data["historyPanel"]["selectors"]["hda"]["body"])
+        if wait:
+            self.wait_for_selector_visible(selector)
+        return selector
+
     def hda_div_selector(self, hda_id):
         return "#dataset-%s" % hda_id
 
     def hda_body_selector(self, hda_id):
         return "%s %s" % (self.hda_div_selector(hda_id), self.test_data["historyPanel"]["selectors"]["hda"]["body"])
 
-    def hda_click_primary_action_button(self, hda_id, button_key):
-        self.click_hda_title(hda_id, wait=True)
-        body_selector = self.hda_body_selector(hda_id)
+    def hda_click_primary_action_button(self, hid, button_key):
+        self.history_panel_click_item_title(hid=hid, wait=True)
+        body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
 
         buttons_selector = body_selector + " " + self.test_data["historyPanel"]["selectors"]["hda"]["primaryActionButtons"]
         self.wait_for_selector_visible(buttons_selector)
@@ -275,13 +334,21 @@ class NavigatesGalaxy(HasDriver):
         button_item = self.wait_for_selector_visible("%s %s" % (buttons_selector, button_selector))
         return button_item.click()
 
-    def click_hda_title(self, hda_id, wait=False):
-        expand_target = "%s .title" % self.hda_div_selector(hda_id)
-        hda_element = self.wait_for_selector(expand_target)
-        hda_element.click()
-        if wait:
+    def history_panel_click_item_title(self, **kwds):
+        if "hda_id" in kwds:
+            item_selector = self.hda_div_selector(kwds["hda_id"])
+        else:
+            item_selector = self.history_panel_item_selector(kwds["hid"])
+        title_selector = "%s .title" % item_selector
+        title_element = self.wait_for_selector(title_selector)
+        title_element.click()
+        if kwds.get("wait", False):
             # Find a better way to wait for transition
             time.sleep(.5)
+
+    def click_hda_title(self, hda_id, wait=False):
+        # TODO: Replace with calls to history_panel_click_item_title.
+        return self.history_panel_click_item_title(hda_id=hda_id, wait=wait)
 
     def logout_if_needed(self):
         if self.is_logged_in():
@@ -348,7 +415,13 @@ class NavigatesGalaxy(HasDriver):
         assert text == expected, "Tooltip text [%s] was not expected text [%s]." % (text, expected)
 
     def assert_error_message(self, contains=None):
-        element = self.wait_for_selector(self.test_data["selectors"]["messages"]["error"])
+        return self._assert_message("error", contains=contains)
+
+    def assert_warning_message(self, contains=None):
+        return self._assert_message("warning", contains=contains)
+
+    def _assert_message(self, type, contains=None):
+        element = self.wait_for_selector(self.test_data["selectors"]["messages"][type])
         assert element, "No error message found, one expected."
         if contains is not None:
             assert contains in element.text

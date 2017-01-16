@@ -93,9 +93,15 @@
                             Email address of user to share with
                         </label>
                         <div style="float: left; width: 100%;  margin-right: 10px;">
+                            %if trans.app.config.expose_user_email or trans.app.config.expose_user_name:
                             <input type="hidden" id="email_select" name="email" >
                             </input>
+                            %else:
+                            <input type="text" name="email" value="${email | h}" size="40">
+                            </input>
+                            %endif
                         </div>
+
                         <div style="clear: both"></div>
                     </div>
                     <div class="form-row">
