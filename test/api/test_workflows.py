@@ -1290,6 +1290,32 @@ test_data:
         assert name == "fasta1 suffix", name
 
     @skip_without_tool( "cat" )
+    def test_run_rename_based_on_input_recursive( self ):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        rename: "#{input1} #{input1 | upper} suffix"
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: '#{input1}'
+""", history_id=history_id)
+        content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
+        name = content[ "name" ]
+        assert name == "#{input1} #{INPUT1} suffix", name
+
+    @skip_without_tool( "cat" )
     def test_run_rename_based_on_input_repeat( self ):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""

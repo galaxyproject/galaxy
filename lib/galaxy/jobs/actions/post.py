@@ -111,11 +111,12 @@ class RenameDatasetAction(DefaultJobAction):
             #      "replace" option so you can replace a portion of the name,
             #      support multiple #{name} in one rename action...
 
-            while new_name.find("#{") > -1:
+            start_pos = 0
+            while new_name.find("#{", start_pos) > -1:
                 to_be_replaced = ""
                 #  This assumes a single instance of #{variable} will exist
-                start_pos = new_name.find("#{") + 2
-                end_pos = new_name.find("}")
+                start_pos = new_name.find("#{", start_pos) + 2
+                end_pos = new_name.find("}", start_pos)
                 to_be_replaced = new_name[start_pos:end_pos]
                 input_file_var = to_be_replaced
                 #  Pull out the piped controls and store them for later

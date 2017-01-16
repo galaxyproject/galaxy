@@ -72,6 +72,7 @@
   <tool file="validation_repeat.xml" />
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
+  <tool file="implicit_conversion.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_collection.xml" />
@@ -123,6 +124,7 @@
   </section>
 
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
 

@@ -8,7 +8,7 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>${hda.name} | ${visualization_name}</title>
+        <title>${hda.name | h} | ${visualization_name}</title>
         ${h.js( 'libs/jquery/jquery',
                 'libs/jquery/jquery-ui',
                 'libs/jquery/select2',
