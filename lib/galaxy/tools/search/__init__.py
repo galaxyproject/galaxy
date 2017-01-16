@@ -106,7 +106,6 @@ class ToolBoxSearch( object ):
         # Hyphens are wildcards in Whoosh causing bad things
         if q.find( '-' ) != -1:
             q = (' ').join( [ token.text for token in self.rex( to_unicode( q ) ) ] )
-
         # Perform tool search with ngrams if set to true in the config file
         if ( tool_enable_ngram_search is True or tool_enable_ngram_search == "True" ):
             hits_with_score = {}
@@ -135,6 +134,7 @@ class ToolBoxSearch( object ):
             # Perform the search
             hits = searcher.search( parser.parse( '*' + q + '*' ), limit=float( tool_search_limit ) )
             return [ hit[ 'id' ] for hit in hits ]
+
 
 def _temp_storage(self, name=None):
     path = tempfile.mkdtemp()
