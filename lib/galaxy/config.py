@@ -325,6 +325,9 @@ class Configuration( object ):
         self.tool_stub_boost = kwargs.get( "tool_stub_boost", 5 )
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
+        self.tool_enable_ngram_search = kwargs.get( "tool_enable_ngram_search", False )
+        self.tool_ngram_minsize = kwargs.get( "tool_ngram_minsize", 3 )
+        self.tool_ngram_maxsize = kwargs.get( "tool_ngram_maxsize", 4 )
         # Location for tool dependencies.
         # Location for tool dependencies.
         tool_dependency_dir = kwargs.get( "tool_dependency_dir", "database/dependencies" )
