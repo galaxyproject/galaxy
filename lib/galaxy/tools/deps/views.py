@@ -45,6 +45,16 @@ class DependencyResolversView(object):
     def resolver_dependency(self, index, **kwds):
         return self._dependency(**kwds)
 
+    def show_dependencies(self, requirements, installed_tool_dependencies=None):
+        """
+        Resolves dependencies to build a requirements status in the admin panel/API
+        """
+        kwds = {'install': False,
+                'return_null': True,
+                'installed_tool_dependencies': installed_tool_dependencies}
+        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(dependencies, **kwds) for tool, dependencies in requirements.items()}
+        return dependencies_per_tool
+
     def install_dependencies(self, requirements):
         return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
 
@@ -129,7 +139,18 @@ class DependencyResolversView(object):
         return [index for index, resolver in enumerate(self._dependency_resolvers) if hasattr(resolver, "install_dependency") and not resolver.disabled ]
 
     def get_requirements_status(self, requested_requirements, installed_tool_dependencies=None):
-        return [self.manager_dependency(installed_tool_dependencies=installed_tool_dependencies, **req) for req in requested_requirements]
+        dependencies = self.show_dependencies(requested_requirements, installed_tool_dependencies)
+        # dependencies is a dict keyed on tool_ids, values are lists of ToolRequirements for that tool.
+        # we collapse requested requirements to single set,
+        # then use collapsed requirements to get resolved dependencies without duplicates.
+        flat_tool_requirements = set([r for requirement_list in requested_requirements.values() for r in requirement_list])
+        flat_dependencies = []
+        for requirements_odict in dependencies.values():
+            for requirement in requirements_odict:
+                if requirement in flat_tool_requirements:
+                    flat_dependencies.append(requirements_odict[requirement])
+                    flat_tool_requirements.remove(requirement)
+        return [d.to_dict() for d in flat_dependencies]
 
     def clean(self, index=None, **kwds):
         if index:

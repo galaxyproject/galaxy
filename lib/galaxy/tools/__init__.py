@@ -1401,7 +1401,7 @@ class Tool( object, Dictifiable ):
         """
         Return all requiremens of type package
         """
-        reqs = [req.to_dict() for req in self.requirements if req.type == 'package']
+        reqs = [req for req in self.requirements if req.type == 'package']
         return reqs
 
     @property
@@ -1409,7 +1409,7 @@ class Tool( object, Dictifiable ):
         """
         Return a list of dictionaries for all tool dependencies with their associated status
         """
-        return self._view.get_requirements_status(self.tool_requirements, self.installed_tool_dependencies)
+        return self._view.get_requirements_status({self.id: self.tool_requirements}, self.installed_tool_dependencies)
 
     def build_redirect_url_params( self, param_dict ):
         """

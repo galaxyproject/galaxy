@@ -153,7 +153,7 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
                 dependency = MergedCondaDependency(
                     self.conda_context,
                     self.conda_context.env_path(env),
-                    exact=self.versionless or requirement.version is None,
+                    exact=not self.versionless or requirement.version is None,
                     name=requirement.name,
                     version=requirement.version,
                     preserve_python_environment=preserve_python_environment,
