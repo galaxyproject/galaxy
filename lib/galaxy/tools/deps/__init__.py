@@ -31,7 +31,7 @@ EXTRA_CONFIG_KWDS = {
     'conda_debug': None,
     'conda_ensure_channels': DEFAULT_ENSURE_CHANNELS,
     'conda_auto_install': False,
-    'conda_auto_init': False,
+    'conda_auto_init': True,
     'conda_copy_dependencies': False,
     'precache_dependencies': True,
 }
