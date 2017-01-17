@@ -781,7 +781,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                 reinstalling=False,
                                                                                 required_repo_info_dicts=None )
         view = views.DependencyResolversView(self.app)
-        requirements = suc.get_unique_requirements_from_repository(repository)
+        requirements = suc.get_requirements_from_repository(repository)
         requirements_status = view.get_requirements_status(requirements, repository.installed_tool_dependencies)
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,

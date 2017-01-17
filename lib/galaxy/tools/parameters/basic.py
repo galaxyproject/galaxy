@@ -1,29 +1,38 @@
 """
 Basic tool parameters.
 """
-
 import logging
-import re
 import os
 import os.path
-from six import string_types
+import re
 from xml.etree.ElementTree import XML
 
-from galaxy import util
-from galaxy.util import string_as_bool, sanitize_param, unicodify
-from galaxy.util.expressions import ExpressionContext
-from sanitize import ToolParameterSanitizer
-import validation
-import galaxy.tools.parser
-from ..parser import get_input_source as ensure_input_source
-from ..parameters import history_query
-from ..parameters import dynamic_options
-from .dataset_matcher import DatasetMatcher
-from .dataset_matcher import DatasetCollectionMatcher
-from galaxy.web import url_for
-from galaxy.util.dictifiable import Dictifiable
+from six import string_types
+
 import galaxy.model
+import galaxy.tools.parser
+from galaxy import util
+from galaxy.util import (
+    sanitize_param,
+    string_as_bool,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
+from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.expressions import ExpressionContext
+from galaxy.web import url_for
+
+from . import validation
+from .dataset_matcher import (
+    DatasetCollectionMatcher,
+    DatasetMatcher
+)
+from .sanitize import ToolParameterSanitizer
+from ..parameters import (
+    dynamic_options,
+    history_query
+)
+from ..parser import get_input_source as ensure_input_source
 
 log = logging.getLogger( __name__ )
 
@@ -802,7 +811,7 @@ class SelectToolParameter( ToolParameter ):
     def from_json( self, value, trans, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
         workflow_building_mode = trans.workflow_building_mode
-        for context_value in other_values.itervalues():
+        for context_value in other_values.values():
             if isinstance( context_value, RuntimeValue ):
                 workflow_building_mode = True
                 break
@@ -852,7 +861,7 @@ class SelectToolParameter( ToolParameter ):
         if isinstance( value, list ):
             if not self.multiple:
                 raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
-            value = map( str, value )
+            value = list(map( str, value ))
         else:
             value = str( value )
         if self.tool is None or self.tool.options.sanitize:
@@ -1049,7 +1058,7 @@ class ColumnListParameter( SelectToolParameter ):
                         column2 = column2.strip()
                         if column2:
                             column_list.append( column2 )
-                value = map( ColumnListParameter._strip_c, column_list )
+                value = list(map( ColumnListParameter._strip_c, column_list ))
             else:
                 value = []
         else:
@@ -1101,7 +1110,7 @@ class ColumnListParameter( SelectToolParameter ):
             if column_list is None:
                 column_list = this_column_list
             else:
-                column_list = filter( lambda c: c in this_column_list, column_list )
+                column_list = [c for c in column_list if c in this_column_list]
         return column_list
 
     def get_options( self, trans, other_values ):
@@ -1252,12 +1261,12 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 options = self._get_options_from_code( trans=trans, value=value, other_values=other_values )
             else:
                 options = []
-            for filter_key, filter_value in self.filtered.iteritems():
+            for filter_key, filter_value in self.filtered.items():
                 dataset = other_values.get(filter_key)
                 if dataset.__class__.__name__.endswith( "DatasetFilenameWrapper" ):  # this is a bad way to check for this, but problems importing class ( due to circular imports? )
                     dataset = dataset.dataset
                 if dataset:
-                    for meta_key, meta_dict in filter_value.iteritems():
+                    for meta_key, meta_dict in filter_value.items():
                         if hasattr( dataset, 'metadata' ) and hasattr( dataset.metadata, 'spec' ):
                             check_meta_val = dataset.metadata.spec[ meta_key ].param.to_string( dataset.metadata.get( meta_key ) )
                             if check_meta_val in meta_dict:
@@ -1391,7 +1400,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         """
         Get the *names* of the other params this param depends on.
         """
-        return self.filtered.keys()
+        return list(self.filtered.keys())
 
     def to_dict( self, trans, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
@@ -1766,8 +1775,8 @@ class DataToolParameter( BaseDataToolParameter ):
         datatypes_registery = self._datatypes_registery( trans, self.tool )
         all_edam_formats = datatypes_registery.edam_formats if hasattr( datatypes_registery, 'edam_formats' ) else {}
         all_edam_data = datatypes_registery.edam_data if hasattr( datatypes_registery, 'edam_formats' ) else {}
-        edam_formats = map(lambda ext: all_edam_formats.get(ext, None), extensions)
-        edam_data = map(lambda ext: all_edam_data.get(ext, None), extensions)
+        edam_formats = [all_edam_formats.get(ext, None) for ext in extensions]
+        edam_data = [all_edam_data.get(ext, None) for ext in extensions]
 
         d['extensions'] = extensions
         d['edam'] = {'edam_formats': edam_formats, 'edam_data': edam_data}
