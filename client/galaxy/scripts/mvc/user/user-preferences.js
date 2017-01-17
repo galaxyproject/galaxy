@@ -174,8 +174,11 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 });
                 self.$el.empty().append( form.$el );
             }).fail( function( response ) {
-                // redirect to preference form panel
-                //self.message.update( { message: 'Failed to load resource ' + self.page.url + '.', status: 'danger' } );
+                self.$el.empty().append( new Ui.Message({
+                    message     : 'Failed to load resource ' + self.page.url + '.',
+                    status      : 'danger',
+                    persistent  : true
+                }).$el );
             });
         },
 
