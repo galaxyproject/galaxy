@@ -1,10 +1,10 @@
 /** User Preferences view */
 define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
-    var View = Backbone.View.extend({
-
+    /** Contains descriptive dictionaries describing user forms */
+    var Model = Backbone.Model.extend({
         initialize: function() {
-            this.defs = {
+            this.set({
                 'information': {
                     title           : 'Manage information',
                     description     : 'Edit your email, addresses and custom parameters or change your username.',
@@ -69,7 +69,15 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         });
                     }
                 }
-            }
+            });
+        }
+    });
+
+    /** View of the main user preference panel with links to individual user forms */
+    var View = Backbone.View.extend({
+
+        initialize: function() {
+            this.model = new Model();
             this.message = new Ui.Message();
             this.setElement( '<div/>' );
             this.render();
@@ -85,102 +93,38 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                                                  .append( $( '<p/>' ).append( 'You are logged in as <strong>' +  _.escape( data.email ) + '</strong>.' ) )
                                                  .append( self.$table = $( '<table/>' ).addClass( 'ui-panel-table' ) );
                 if( !config.use_remote_user ) {
-                    self._link( self.defs.information );
-                    self._link( self.defs.password );
+                    self._addLink( 'information' );
+                    self._addLink( 'password' );
                 }
                 if( config.enable_communication_server ) {
-                    self._link( self.defs.communication );
+                    self._addLink( 'communication' );
                 }
-                self._link( self.defs.permissions );
-                self._link( self.defs.api_key );
+                self._addLink( 'permissions' );
+                self._addLink( 'api_key' );
                 if( config.has_user_tool_filters ) {
-                    self._link( self.defs.toolbox_filters );
+                    self._addLink( 'toolbox_filters' );
                 }
                 if( config.enable_openid && !config.use_remote_user ) {
-                    self._link( self.defs.openids );
+                    self._addLink( 'openids' );
                 }
-                self._link( self.defs.logout );
+                self._addLink( 'logout' );
                 self.$preferences.append( self._templateFooter( data ) );
                 self.$el.empty().append( self.$preferences );
             });
         },
 
-        _link: function( page ) {
-            var self = this;
-            var $page_item = $( this._templateRow( page ) );
-            this.$table.append( $page_item );
-            $page_item.find( 'a' ).on( 'click', function() {
-                if ( page.url ) {
-                    $.ajax({
-                        url     : Galaxy.root + page.url,
-                        type    : 'GET'
-                    }).done( function( response ) {
-                        var options = $.extend( {}, page, response );
-                        var form = new Form({
-                            title  : options.title,
-                            icon   : options.icon,
-                            inputs : options.inputs,
-                            operations: {
-                                'submit': new Ui.ButtonIcon({
-                                    tooltip  : options.submit_tooltip,
-                                    title    : options.submit_title || 'Save settings',
-                                    icon     : options.submit_icon || 'fa-save',
-                                    onclick  : function() { self._submit( form, options ) }
-                                }),
-                                'back': new Ui.ButtonIcon({
-                                    icon     : 'fa-caret-left',
-                                    tooltip  : 'Return to user preferences',
-                                    title    : 'Preferences',
-                                    onclick  : function() { form.remove(); self.$preferences.show(); }
-                                })
-                            }
-                        });
-                        self.$preferences.hide();
-                        self.$el.append( form.$el );
-                    }).fail( function( response ) {
-                        self.message.update( { message: 'Failed to load resource ' + page.url + '.', status: 'danger' } );
-                    })
-                } else {
-                    page.onclick();
-                }
-            });
-        },
-
-        _submit: function( form, options ) {
-            var self = this;
-            $.ajax( {
-                url         : options.url,
-                data        : JSON.stringify(form.data.create()),
-                type        : 'PUT',
-                contentType : 'application/json'
-            }).done( function( response ) {
-                var updated_values = false;
-                form.data.matchModel( response, function ( input, input_id ) {
-                    form.field_list[ input_id ].value( input.value );
-                    updated_values = true;
-                });
-                if ( updated_values ) {
-                    form.message.update( { message: response.message, status: 'success' } );
-                } else {
-                    form.remove();
-                    self.$preferences.show();
-                    self.message.update( { message: response.message, status: 'success' } );
-                }
-            }).fail( function( response ) {
-                form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
-            });
-        },
-
-        _templateRow: function( options ) {
-            return  '<tr>' +
-                        '<td>' +
-                            '<div class="ui-panel-icon fa ' + options.icon + '">' +
-                        '</td>' +
-                        '<td>' +
-                            '<a class="ui-panel-anchor" href="javascript:void(0)">' + options.title + '</a>' +
-                            '<div class="ui-form-info">' + options.description + '</div>' +
-                        '</td>' +
-                    '</tr>';
+        _addLink: function( action ) {
+            var options = this.model.get( action );
+            var tmpl =  '<tr>' +
+                            '<td>' +
+                                '<div class="ui-panel-icon fa ' + options.icon + '">' +
+                            '</td>' +
+                            '<td>' +
+                                '<a class="ui-panel-anchor" href="' + Galaxy.root + '/user/' + action + '">' + options.title + '</a>' +
+                                '<div class="ui-form-info">' + options.description + '</div>' +
+                            '</td>' +
+                        '</tr>';
+            this.$table.append( tmpl );
         },
 
         _templateFooter: function( options ) {
@@ -192,7 +136,81 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
         }
     });
 
+    /** View of individual user forms */
+    var Forms = Backbone.View.extend({
+
+        initialize: function( options ) {
+            this.model = new Model();
+            this.page = this.model.get( options.form_id );
+            this.setElement( '<div/>' );
+            this.render();
+        },
+
+        render: function() {
+            var self = this;
+            $.ajax({
+                url     : Galaxy.root + this.page.url,
+                type    : 'GET'
+            }).done( function( response ) {
+                var options = $.extend( {}, self.page, response );
+                var form = new Form({
+                    title  : options.title,
+                    icon   : options.icon,
+                    inputs : options.inputs,
+                    operations: {
+                        'submit': new Ui.ButtonIcon({
+                            tooltip  : options.submit_tooltip,
+                            title    : options.submit_title || 'Save settings',
+                            icon     : options.submit_icon || 'fa-save',
+                            onclick  : function() { self._submit( form, options ) }
+                        }),
+                        'back': new Ui.ButtonIcon({
+                            icon     : 'fa-caret-left',
+                            tooltip  : 'Return to user preferences',
+                            title    : 'Preferences',
+                            onclick  : function() {
+                                // redirect to preference form panel
+                            }
+                        })
+                    }
+                });
+                self.$el.empty().append( form.$el );
+            }).fail( function( response ) {
+                // redirect to preference form panel
+                //self.message.update( { message: 'Failed to load resource ' + self.page.url + '.', status: 'danger' } );
+            });
+        },
+
+        _submit: function( form, options ) {
+            var self = this;
+            $.ajax( {
+                url         : Galaxy.root + options.url,
+                data        : JSON.stringify( form.data.create() ),
+                type        : 'PUT',
+                contentType : 'application/json'
+            }).done( function( response ) {
+                var updated_values = false;
+                form.data.matchModel( response, function ( input, input_id ) {
+                    form.field_list[ input_id ].value( input.value );
+                    updated_values = true;
+                });
+                if ( updated_values ) {
+                    form.message.update( { message: response.message, status: 'success' } );
+                } else {
+                    // redirect to preference form panel
+                    //form.remove();
+                    //self.$preferences.show();
+                    //self.message.update( { message: response.message, status: 'success' } );
+                }
+            }).fail( function( response ) {
+                window.console.log( response );
+                form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
+            });
+        }
+    });
+
     return {
-        View: View
+        View  : View,
+        Forms : Forms
     };
 });

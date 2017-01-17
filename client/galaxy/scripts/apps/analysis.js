@@ -102,6 +102,7 @@ window.app = function app( options, bootstrapped ){
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
             '(/)users(/)' : 'show_users',
+            '(/)users(/)(:form_id)' : 'show_user_form',
         },
 
         show_tours : function( tour_id ){
@@ -114,6 +115,10 @@ window.app = function app( options, bootstrapped ){
 
         show_users : function(){
             centerPanel.display( new UserPreferences.View() );
+        },
+
+        show_user_form : function( form_id ) {
+            centerPanel.display( new UserPreferences.Forms( { form_id: form_id } ) );
         },
 
         /**  */
