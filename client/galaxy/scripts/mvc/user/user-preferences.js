@@ -120,7 +120,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                                 '<div class="ui-panel-icon fa ' + options.icon + '">' +
                             '</td>' +
                             '<td>' +
-                                '<a class="ui-panel-anchor" href="' + Galaxy.root + '/user/' + action + '">' + options.title + '</a>' +
+                                '<a class="ui-panel-anchor" href="' + Galaxy.root + 'users/' + action + '">' + options.title + '</a>' +
                                 '<div class="ui-form-info">' + options.description + '</div>' +
                             '</td>' +
                         '</tr>';
@@ -168,9 +168,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                             icon     : 'fa-caret-left',
                             tooltip  : 'Return to user preferences',
                             title    : 'Preferences',
-                            onclick  : function() {
-                                // redirect to preference form panel
-                            }
+                            onclick  : function() { window.location.href = Galaxy.root + 'users' }
                         })
                     }
                 });
@@ -194,14 +192,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                     form.field_list[ input_id ].value( input.value );
                     updated_values = true;
                 });
-                if ( updated_values ) {
-                    form.message.update( { message: response.message, status: 'success' } );
-                } else {
-                    // redirect to preference form panel
-                    //form.remove();
-                    //self.$preferences.show();
-                    //self.message.update( { message: response.message, status: 'success' } );
-                }
+                form.message.update( { message: response.message, status: 'success' } );
             }).fail( function( response ) {
                 window.console.log( response );
                 form.message.update( { message: response.responseJSON.err_msg, status: 'danger' } );
