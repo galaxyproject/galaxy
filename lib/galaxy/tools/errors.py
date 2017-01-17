@@ -1,9 +1,14 @@
 """
 Functionality for dealing with tool errors.
 """
-import string
-from galaxy import model, util, web
 import cgi
+import string
+
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.util import unicodify
 
 error_report_template = """

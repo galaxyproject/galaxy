@@ -1,24 +1,25 @@
 """ Code allowing tools to define extra files associated with an output datset.
 """
-import os
-import re
-import operator
 import glob
 import json
+import logging
+import operator
+import os
+import re
 
 from galaxy import jobs
 from galaxy import util
-from galaxy.util import odict
-from galaxy.util import ExecutionTimer
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
 )
+from galaxy.util import (
+    ExecutionTimer,
+    odict
+)
 
 DATASET_ID_TOKEN = "DATASET_ID"
 
-
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -105,7 +106,7 @@ class JobContext( object ):
         filenames = self.find_files( collection, dataset_collectors )
 
         element_datasets = []
-        for filename, extra_file_collector in filenames.iteritems():
+        for filename, extra_file_collector in filenames.items():
             create_dataset_timer = ExecutionTimer()
             fields_match = extra_file_collector.match( collection, os.path.basename( filename ) )
             if not fields_match:
@@ -248,7 +249,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext, in
         if 'job_working_directory' in app.config.collect_outputs_from:
             for path, extra_file_collector in walk_over_extra_files( dataset_collectors, job_working_directory, outdata ):
                 filenames[ path ] = extra_file_collector
-        for filename_index, ( filename, extra_file_collector ) in enumerate( filenames.iteritems() ):
+        for filename_index, ( filename, extra_file_collector ) in enumerate( filenames.items() ):
             fields_match = extra_file_collector.match( outdata, os.path.basename( filename ) )
             if not fields_match:
                 # Before I guess pop() would just have thrown an IndexError
