@@ -181,6 +181,11 @@ def app_factory( global_conf, **kwargs ):
                            controller='tools',
                            action='index',
                            conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'json',
+                           '/api/tools/json',
+                           controller='tools',
+                           action='json',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( "version", "/api/version", controller="configuration", action="version", conditions=dict( method=[ "GET" ] ) )
 
     webapp.finalize_config()

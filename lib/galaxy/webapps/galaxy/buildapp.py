@@ -2,10 +2,11 @@
 Provides factory methods to assemble the Galaxy web application
 """
 
+import atexit
+import logging
 import os
 import sys
 import threading
-import atexit
 
 try:
     import configparser
@@ -13,21 +14,20 @@ except:
     import ConfigParser as configparser
 
 
+from paste import httpexceptions
 import galaxy.app
+import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping
-import galaxy.datatypes.registry
 import galaxy.web.framework
 import galaxy.web.framework.webapp
-from galaxy.webapps.util import build_template_error_formatters
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.postfork import process_is_uwsgi, register_postfork_function
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.util import build_template_error_formatters
 
-from paste import httpexceptions
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -739,6 +739,18 @@ def populate_api_routes( webapp, app ):
                            '/api/tool_shed_repositories/shed_category',
                            controller='tool_shed_repositories',
                            action='shed_category',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'shed_search',
+                           '/api/tool_shed_repositories/shed_search',
+                           controller='tool_shed_repositories',
+                           action='shed_search',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'shed_tool_json',
+                           '/api/tool_shed_repositories/shed_tool_json',
+                           controller='tool_shed_repositories',
+                           action='shed_tool_json',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'shed_repository',

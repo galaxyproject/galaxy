@@ -5,10 +5,12 @@ from time import strftime
 
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 
+from sqlalchemy import and_
 import tool_shed.util.shed_util_common as suc
 from galaxy import util
 from galaxy import web
 from galaxy import exceptions
+
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
@@ -18,11 +20,10 @@ from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryM
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import workflow_util
-from tool_shed.util import tool_util
 from tool_shed.util import repository_util
+from tool_shed.util import tool_util
+from tool_shed.util import workflow_util
 
-from sqlalchemy import and_
 
 log = logging.getLogger( __name__ )
 
@@ -225,8 +226,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         category_id = kwd.get( 'category_id', '' )
+        params = dict( installable=True )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
-        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories', category_id, 'repositories' ] )
+        url = util.build_url( tool_shed_url, pathspec=[ 'api', 'categories', category_id, 'repositories' ], params=params )
         category = json.loads( util.url_get( url ) )
         return category
 
@@ -238,12 +240,22 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
         Get details about the specified repository from its shed.
 
-        :param tsr_id: the tool_shed_repository_id
+        :param tsr_id:          the tool_shed_repository_id
+        :param tsr_id:          str
+
+        :param tool_shed_url:   the URL of the toolshed whence to retrieve repository details
+        :param tool_shed_url:   str
+
+        :param tool_ids:         (optional) comma-separated list of tool IDs
+        :param tool_ids:         str
         """
         tool_dependencies = dict()
         tools = dict()
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
-        tsr_id = kwd.get( 'tsr_id', '' )
+        tsr_id = kwd.get( 'tsr_id', None )
+        tool_ids = kwd.get( 'tool_ids', None )
+        if tool_ids is not None:
+            tool_ids = util.listify( tool_ids )
         tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         tool_panel_section_dict = { 'name': tool_panel_section_select_field.name,
                                     'id': tool_panel_section_select_field.field_id,
@@ -251,9 +263,24 @@ class ToolShedRepositoriesController( BaseAPIController ):
         for name, id, _ in tool_panel_section_select_field.options:
             tool_panel_section_dict['sections'].append( dict( id=id, name=name ) )
         repository_data = dict()
-        repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
-        repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
+        if tool_ids is not None:
+            if len( tool_shed_url ) == 0:
+                # By design, this list should always be from the same toolshed. If
+                # this is ever not the case, this code will need to be updated.
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_ids[ 0 ].split( '/' )[ 0 ] )
+            found_repository = json.loads( util.url_get( tool_shed_url, params=dict( tool_ids=','.join( tool_ids ) ), pathspec=[ 'api', 'repositories' ] ) )
+            fr_keys = found_repository.keys()
+            tsr_id = found_repository[ fr_keys[0] ][ 'repository_id' ]
+            repository_data[ 'current_changeset' ] = found_repository[ 'current_changeset' ]
+            repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+            del found_repository[ 'current_changeset' ]
+            repository_data[ 'repository' ][ 'metadata' ] = found_repository
+            repository_data[ 'tool_shed_url' ] = tool_shed_url
+        else:
+            repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id ] ) )
+            repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', tsr_id, 'metadata' ] ) )
         repository_data[ 'shed_conf' ] = tool_util.build_shed_tool_conf_select_field( trans.app ).get_html().replace('\n', '')
+        repository_data[ 'shed_conf_list' ] = [ option for option in trans.app.toolbox.dynamic_conf_filenames() ]
         repository_data[ 'panel_section_html' ] = tool_panel_section_select_field.get_html( extra_attr={ 'style': 'width: 30em;' } ).replace( '\n', '' )
         repository_data[ 'panel_section_dict' ] = tool_panel_section_dict
         for changeset, metadata in repository_data[ 'repository' ][ 'metadata' ].items():
@@ -279,12 +306,63 @@ class ToolShedRepositoriesController( BaseAPIController ):
                     del( dependency_dict[ 'readme' ] )
                 if dependency_dict not in tool_dependencies[ changeset ]:
                     tool_dependencies[ changeset ].append( dependency_dict )
-                    # log.debug(tool_dependencies)
             if metadata[ 'has_repository_dependencies' ]:
                 for repository_dependency in metadata[ 'repository_dependencies' ]:
                     tool_dependencies[ changeset ] = self.__get_tool_dependencies( repository_dependency, tool_dependencies[ changeset ] )
         repository_data[ 'tool_dependencies' ] = tool_dependencies
         return repository_data
+
+    @expose_api
+    @web.require_admin
+    def shed_search( self, trans, **kwd ):
+        """
+        GET /api/tool_shed_repositories/shed_search
+
+        Search for a specific repository in the toolshed.
+
+        :param q:          the query string to search for
+        :param q:          str
+
+        :param tool_shed_url:   the URL of the toolshed to search
+        :param tool_shed_url:   str
+        """
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
+        q = kwd.get( 'term', None )
+        if None in [ q, tool_shed_url ]:
+            return {}
+        response = json.loads( util.url_get( tool_shed_url, params=dict( q=q ), pathspec=[ 'api', 'repositories' ] ) )
+        return response
+
+    @expose_api
+    @web.require_admin
+    def shed_tool_json( self, trans, **kwd ):
+        """
+        GET /api/tool_shed_repositories/shed_tool_json
+
+        Get the tool form JSON for a tool in a toolshed repository.
+
+        :param guid:          the GUID of the tool
+        :param guid:          str
+
+        :param tsr_id:        the ID of the repository
+        :param tsr_id:        str
+
+        :param changeset:        the changeset at which to load the tool json
+        :param changeset:        str
+
+        :param tool_shed_url:   the URL of the toolshed to load from
+        :param tool_shed_url:   str
+        """
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
+        tsr_id = kwd.get( 'tsr_id', None )
+        guid = kwd.get( 'guid', None )
+        changeset = kwd.get( 'changeset', None )
+        if None in [ tool_shed_url, tsr_id, guid, changeset ]:
+            message = 'Tool shed URL, changeset, repository ID, and tool GUID are all required parameters.'
+            trans.response.status = 400
+            return { 'status': 'error', 'message': message }
+        response = json.loads( util.url_get( tool_shed_url, params=dict( tsr_id=tsr_id, guid=guid, changeset=changeset.split( ':' )[ -1 ] ), pathspec=[ 'api', 'tools', 'json' ] ) )
+        return response
 
     @expose_api
     def import_workflow( self, trans, payload, **kwd ):

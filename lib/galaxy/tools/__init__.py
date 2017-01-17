@@ -1759,43 +1759,6 @@ class Tool( object, Dictifiable ):
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize=False )
 
-        # populates model from state
-        def populate_model( inputs, state_inputs, group_inputs, other_values=None ):
-            other_values = ExpressionContext( state_inputs, other_values )
-            for input_index, input in enumerate( inputs.itervalues() ):
-                tool_dict = None
-                group_state = state_inputs.get( input.name, {} )
-                if input.type == 'repeat':
-                    tool_dict = input.to_dict( request_context )
-                    group_cache = tool_dict[ 'cache' ] = {}
-                    for i in range( len( group_state ) ):
-                        group_cache[ i ] = {}
-                        populate_model( input.inputs, group_state[ i ], group_cache[ i ], other_values )
-                elif input.type == 'conditional':
-                    tool_dict = input.to_dict( request_context )
-                    if 'test_param' in tool_dict:
-                        test_param = tool_dict[ 'test_param' ]
-                        test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
-                        test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
-                        for i in range( len( tool_dict['cases'] ) ):
-                            current_state = {}
-                            if i == group_state.get( '__current_case__' ):
-                                current_state = group_state
-                            populate_model( input.cases[ i ].inputs, current_state, tool_dict[ 'cases' ][ i ][ 'inputs' ], other_values )
-                elif input.type == 'section':
-                    tool_dict = input.to_dict( request_context )
-                    populate_model( input.inputs, group_state, tool_dict[ 'inputs' ], other_values )
-                else:
-                    try:
-                        tool_dict = input.to_dict( request_context, other_values=other_values )
-                        tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
-                        tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
-                    except Exception as e:
-                        tool_dict = input.to_dict( request_context )
-                        log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
-                        pass
-                group_inputs[ input_index ] = tool_dict
-
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
         expanded_incomings, _ = expand_meta_parameters( trans, self, params.__dict__ )
@@ -1814,7 +1777,7 @@ class Tool( object, Dictifiable ):
         # create tool model
         tool_model = self.to_dict( request_context )
         tool_model[ 'inputs' ] = {}
-        populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
+        self.populate_model( request_context, self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
         # create tool help
         tool_help = ''
@@ -1851,6 +1814,43 @@ class Tool( object, Dictifiable ):
             'enctype'       : self.enctype
         })
         return tool_model
+
+    # populates model from state
+    def populate_model( self, request_context, inputs, state_inputs, group_inputs, other_values=None ):
+        other_values = ExpressionContext( state_inputs, other_values )
+        for input_index, input in enumerate( inputs.itervalues() ):
+            tool_dict = None
+            group_state = state_inputs.get( input.name, {} )
+            if input.type == 'repeat':
+                tool_dict = input.to_dict( request_context )
+                group_cache = tool_dict[ 'cache' ] = {}
+                for i in range( len( group_state ) ):
+                    group_cache[ i ] = {}
+                    self.populate_model( request_context, input.inputs, group_state[ i ], group_cache[ i ], other_values )
+            elif input.type == 'conditional':
+                tool_dict = input.to_dict( request_context )
+                if 'test_param' in tool_dict:
+                    test_param = tool_dict[ 'test_param' ]
+                    test_param[ 'value' ] = input.test_param.value_to_basic( group_state.get( test_param[ 'name' ], input.test_param.get_initial_value( request_context, other_values ) ), self.app )
+                    test_param[ 'text_value' ] = input.test_param.value_to_display_text( test_param[ 'value' ], self.app )
+                    for i in range( len( tool_dict['cases'] ) ):
+                        current_state = {}
+                        if i == group_state.get( '__current_case__' ):
+                            current_state = group_state
+                        self.populate_model( request_context, input.cases[ i ].inputs, current_state, tool_dict[ 'cases' ][ i ][ 'inputs' ], other_values )
+            elif input.type == 'section':
+                tool_dict = input.to_dict( request_context )
+                self.populate_model( request_context, input.inputs, group_state, tool_dict[ 'inputs' ], other_values )
+            else:
+                try:
+                    tool_dict = input.to_dict( request_context, other_values=other_values )
+                    tool_dict[ 'value' ] = input.value_to_basic( state_inputs.get( input.name, input.get_initial_value( request_context, other_values ) ), self.app, use_security=True )
+                    tool_dict[ 'text_value' ] = input.value_to_display_text( tool_dict[ 'value' ], self.app )
+                except Exception as e:
+                    tool_dict = input.to_dict( request_context )
+                    log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
+                    pass
+            group_inputs[ input_index ] = tool_dict
 
     # populates state from incoming parameters
     def populate_state( self, request_context, inputs, incoming, state, errors={}, prefix='', context=None ):

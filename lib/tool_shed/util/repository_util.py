@@ -496,7 +496,7 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
 
 
-def get_repositories_by_category( app, category_id ):
+def get_repositories_by_category( app, category_id, installable=False ):
     sa_session = app.model.context.current
     resultset = sa_session.query( app.model.Category ).get( category_id )
     repositories = []
@@ -508,7 +508,11 @@ def get_repositories_by_category( app, category_id ):
             encoded_id = app.security.encode_id( row.repository.id )
             metadata = metadata_util.get_repository_metadata_by_changeset_revision( app, encoded_id, changehash )
             repository_dict[ 'metadata' ][ '%s:%s' % ( changeset, changehash ) ] = metadata.to_dict( value_mapper=default_value_mapper )
-        repositories.append( repository_dict )
+        if installable:
+            if len( row.repository.installable_revisions( app ) ):
+                repositories.append( repository_dict )
+        else:
+            repositories.append( repository_dict )
     return repositories
 
 
