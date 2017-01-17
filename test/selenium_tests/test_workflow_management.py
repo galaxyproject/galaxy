@@ -46,7 +46,7 @@ class WorkflowManagementTestCase(SeleniumTestCase):
 
     def _workflow_import_from_url(self):
         self.click_selector(self.test_data["selectors"]["workflows"]["import_button"])
-        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test/api/test_workflow_1.ga"
+        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test/base/data/test_workflow_1.ga"
         form_element = self.driver.find_element_by_css_selector("#center form")
         url_element = form_element.find_element_by_css_selector("input[type='text']")
         url_element.send_keys(url)
