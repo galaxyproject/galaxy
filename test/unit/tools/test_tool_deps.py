@@ -14,6 +14,7 @@ from stat import S_IXUSR
 from subprocess import PIPE, Popen
 
 from galaxy.tools.deps import DependencyManager
+from galaxy.tools.deps.requirements import ToolRequirement
 from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
 from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
@@ -141,15 +142,15 @@ advisor/2013/update2    intel/11.1.080          mkl/10.2.5.035
 advisor/2013/update3    intel/12.0              mkl/10.2.7.041
 ''')
         resolver = ModuleDependencyResolver(None, modulecmd=module_script)
-        module = resolver.resolve( name="R", version=None, type="package" )
+        module = resolver.resolve( ToolRequirement( name="R", version=None, type="package" ) )
         assert module.module_name == "R"
         assert module.module_version is None
 
-        module = resolver.resolve( name="R", version="3.0.1", type="package" )
+        module = resolver.resolve( ToolRequirement( name="R", version="3.0.1", type="package" ) )
         assert module.module_name == "R"
         assert module.module_version == "3.0.1"
 
-        module = resolver.resolve( name="R", version="3.0.4", type="package" )
+        module = resolver.resolve( ToolRequirement( name="R", version="3.0.4", type="package" ) )
         assert isinstance(module, NullDependency)
 
 

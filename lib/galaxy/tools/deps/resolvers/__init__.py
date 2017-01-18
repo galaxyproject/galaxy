@@ -26,7 +26,7 @@ class DependencyResolver(Dictifiable, object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def resolve( self, name, version, type, **kwds ):
+    def resolve( self, requirement, **kwds ):
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -91,6 +91,22 @@ class SpecificationPatternDependencyResolver:
             if pattern.match(spec.uri):
                 return spec
         return None
+
+    def resolve_specs(self, requirement):
+        name = requirement.name
+        version = requirement.version
+        specs = requirement.specs
+
+        spec = self.find_specification(specs)
+        if spec is not None:
+            name = spec.short_name
+            version = spec.version or version
+
+            requirement = requirement.copy()
+            requirement.name = name
+            requirement.version = version
+
+        return requirement
 
 
 class InstallableDependencyResolver:

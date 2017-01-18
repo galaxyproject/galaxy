@@ -1,3 +1,5 @@
+import copy
+
 from galaxy.util import asbool, xml_text
 
 DEFAULT_REQUIREMENT_TYPE = "package"
@@ -19,6 +21,9 @@ class ToolRequirement( object ):
     def to_dict( self ):
         specs = [s.to_dict() for s in self.specs]
         return dict(name=self.name, type=self.type, version=self.version, specs=specs)
+
+    def copy( self ):
+        return copy.deepcopy( self )
 
     @staticmethod
     def from_dict( dict ):
