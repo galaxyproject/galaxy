@@ -49,6 +49,8 @@ PATH_DEFAULTS = dict(
     shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
     tool_sheds_config_file=['config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample'],
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
+    modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
+    local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
 )
 
 PATH_LIST_DEFAULTS = dict(
@@ -393,6 +395,15 @@ class Configuration( object ):
         self.use_cached_dependency_manager = use_cached_dependency_manager
         self.tool_dependency_cache_dir = tool_dependency_cache_dir
         self.precache_dependencies = precache_dependencies
+        # Deployers may either specify a complete list of mapping files or get the default for free and just
+        # specify a local mapping file to adapt and extend the default one.
+        if "conda_mapping_files" in kwargs:
+            self.conda_mapping_files = kwargs["conda_mapping_files"]
+        else:
+            self.conda_mapping_files = [
+                self.local_conda_mapping_file,
+                os.path.join(self.root, "lib", "galaxy", "tools", "deps", "resolvers", "default_conda_mapping.yml"),
+            ]
 
         self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
         containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
