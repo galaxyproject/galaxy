@@ -227,7 +227,7 @@ complete descriptions of the runtime of a tool.
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="Requirement">
+  <xs:complexType name="Requirement" mixed="true">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -276,20 +276,29 @@ resolver.
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:simpleContent>
-      <xs:extension base="xs:string">
-        <xs:attribute name="type" type="RequirementType" use="required">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"> This value defines the which type of the 3rd party module required by this tool. </xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="version" type="xs:string">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"> For package type requirements this value defines a specific version of the tool dependency. </xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-      </xs:extension>
-    </xs:simpleContent>
+    <xs:sequence>
+      <xs:element name="specification" minOccurs="0" maxOccurs="unbounded" type="xs:anyType" />
+    </xs:sequence>
+    <xs:attribute name="type" type="RequirementType" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"> This value defines the which type of the 3rd party module required by this tool. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="version" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"> For package type requirements this value defines a specific version of the tool dependency. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of requirement (if body of ``requirement`` element contains specification URIs).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="specification_uris" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">URIs and versions of requirement specification.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="Container">
     <xs:annotation>
