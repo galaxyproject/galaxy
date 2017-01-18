@@ -115,15 +115,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         _addLink: function( action ) {
             var options = this.model.get( action );
-            var $row =   $( '<tr>' +
-                                '<td>' +
-                                    '<div class="ui-panel-icon fa ' + options.icon + '">' +
-                                '</td>' +
-                                '<td>' +
-                                    '<a class="ui-panel-anchor" href="javascript:void(0)">' + options.title + '</a>' +
-                                    '<div class="ui-form-info">' + options.description + '</div>' +
-                                '</td>' +
-                            '</tr>' );
+            var $row =   $( this._templateLink( options ) );
             var $a = $row.find( 'a' );
             if ( options.onclick ) {
                 $a.on( 'click', function() { options.onclick() } );
@@ -131,6 +123,18 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 $a.attr( 'href', Galaxy.root + 'users/' + action );
             }
             this.$table.append( $row );
+        },
+
+        _templateLink: function( options ) {
+            return  '<tr>' +
+                        '<td>' +
+                            '<div class="ui-panel-icon fa ' + options.icon + '">' +
+                        '</td>' +
+                        '<td>' +
+                            '<a class="ui-panel-anchor" href="javascript:void(0)">' + options.title + '</a>' +
+                            '<div class="ui-form-info">' + options.description + '</div>' +
+                        '</td>' +
+                    '</tr>';
         },
 
         _templateFooter: function( options ) {
