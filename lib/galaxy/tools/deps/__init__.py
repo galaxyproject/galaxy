@@ -143,6 +143,7 @@ class DependencyManager( object ):
             # Check requirements all at once
             all_unmet = len(requirement_to_dependency) == 0
             if all_unmet and hasattr(resolver, "resolve_all"):
+                # TODO: Handle specs.
                 dependencies = resolver.resolve_all(resolvable_requirements, **kwds)
                 if dependencies:
                     assert len(dependencies) == len(resolvable_requirements)
@@ -158,7 +159,17 @@ class DependencyManager( object ):
                     continue
 
                 if requirement.type in ['package', 'set_environment']:
-                    dependency = resolver.resolve( requirement.name, requirement.version, requirement.type, **kwds )
+                    name = requirement.name
+                    version = requirement.version
+                    specs = requirement.specs
+
+                    if hasattr(resolver, "find_specification"):
+                        spec = resolver.find_specification(specs)
+                        if spec is not None:
+                            name = spec.short_name
+                            version = spec.version or version
+
+                    dependency = resolver.resolve( name, version, requirement.type, **kwds )
                     if require_exact and not dependency.exact:
                         continue
 
