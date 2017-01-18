@@ -243,7 +243,7 @@ class JobConfiguration( object ):
             job_destination['env'] = self.__get_envs(destination)
             destination_resubmits = self.__get_resubmits(destination)
             if destination_resubmits:
-                resubmits = self.default_resubmits
+                resubmits = destination_resubmits
             else:
                 resubmits = self.default_resubmits
             job_destination["resubmit"] = resubmits
