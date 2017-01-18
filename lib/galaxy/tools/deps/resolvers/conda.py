@@ -29,6 +29,7 @@ from ..resolvers import (
     DependencyResolver,
     InstallableDependencyResolver,
     ListableDependencyResolver,
+    MultipleDependencyResolver,
     NullDependency,
     SpecificationPatternDependencyResolver,
 )
@@ -41,7 +42,7 @@ DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,r,defaults,conda-forge"
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver):
+class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
     resolver_type = "conda"
     config_options = {

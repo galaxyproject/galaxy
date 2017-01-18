@@ -39,6 +39,15 @@ class DependencyResolver(Dictifiable, object):
         """
 
 
+class MultipleDependencyResolver:
+    """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
+
+    @abstractmethod
+    def resolve_all( self, requirements, **kwds ):
+        """Given multiple requirements yield Dependency objects if and only if they may all be resolved together.
+        """
+
+
 class ListableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can iterate over its dependencies and generate
