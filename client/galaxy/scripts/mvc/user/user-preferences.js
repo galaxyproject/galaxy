@@ -115,16 +115,22 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
         _addLink: function( action ) {
             var options = this.model.get( action );
-            var tmpl =  '<tr>' +
-                            '<td>' +
-                                '<div class="ui-panel-icon fa ' + options.icon + '">' +
-                            '</td>' +
-                            '<td>' +
-                                '<a class="ui-panel-anchor" href="' + Galaxy.root + 'users/' + action + '">' + options.title + '</a>' +
-                                '<div class="ui-form-info">' + options.description + '</div>' +
-                            '</td>' +
-                        '</tr>';
-            this.$table.append( tmpl );
+            var $row =   $( '<tr>' +
+                                '<td>' +
+                                    '<div class="ui-panel-icon fa ' + options.icon + '">' +
+                                '</td>' +
+                                '<td>' +
+                                    '<a class="ui-panel-anchor" href="javascript:void(0)">' + options.title + '</a>' +
+                                    '<div class="ui-form-info">' + options.description + '</div>' +
+                                '</td>' +
+                            '</tr>' );
+            var $a = $row.find( 'a' );
+            if ( options.onclick ) {
+                $a.on( 'click', function() { options.onclick() } );
+            } else {
+                $a.attr( 'href', Galaxy.root + 'users/' + action );
+            }
+            this.$table.append( $row );
         },
 
         _templateFooter: function( options ) {
