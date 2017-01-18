@@ -66,11 +66,13 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         self.versionless = str(kwds.get('versionless', "false")).lower() == "true"
         self._init_base_path( dependency_manager, **kwds )
 
-    def resolve( self, name, version, type, **kwds ):
+    def resolve(self, requirement, **kwds):
         """
         Attempt to find a dependency named `name` at version `version`. If version is None, return the "default" version as determined using a
         symbolic link (if found). Returns a triple of: env_script, base_path, real_version
         """
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if version is None or self.versionless:
             exact = not self.versionless or version is None
             return self._find_dep_default( name, type=type, exact=exact, **kwds )

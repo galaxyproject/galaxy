@@ -146,6 +146,8 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
         conda_targets = []
         for requirement in requirements:
+            requirement = self.resolve_specs(requirement)
+
             version = requirement.version
             if self.versionless:
                 version = None
@@ -183,7 +185,10 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             assert len(conda_targets) == 1
             return conda_targets[0].install_environment
 
-    def resolve(self, name, version, type, **kwds):
+    def resolve(self, requirement, **kwds):
+        requirement = self.resolve_specs(requirement)
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         # Check for conda just not being there, this way we can enable
         # conda by default and just do nothing in not configured.
         if not os.path.isdir(self.conda_context.conda_prefix):

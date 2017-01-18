@@ -155,17 +155,7 @@ class DependencyManager( object ):
                 if requirement in requirement_to_dependency:
                     continue
 
-                name = requirement.name
-                version = requirement.version
-                specs = requirement.specs
-
-                if hasattr(resolver, "find_specification"):
-                    spec = resolver.find_specification(specs)
-                    if spec is not None:
-                        name = spec.short_name
-                        version = spec.version or version
-
-                dependency = resolver.resolve( name, version, requirement.type, **kwds )
+                dependency = resolver.resolve( requirement, **kwds )
                 if require_exact and not dependency.exact:
                     continue
 

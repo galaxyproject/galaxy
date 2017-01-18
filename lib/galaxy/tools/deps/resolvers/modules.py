@@ -51,7 +51,9 @@ class ModuleDependencyResolver(DependencyResolver):
             module_path = DEFAULT_MODULE_PATH
         return module_path
 
-    def resolve( self, name, version, type, **kwds ):
+    def resolve(self, requirement, **kwds):
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if type != "package":
             return NullDependency(version=version, name=name)
 
