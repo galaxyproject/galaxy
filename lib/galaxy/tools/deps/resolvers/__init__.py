@@ -5,6 +5,9 @@ from abc import (
     abstractproperty,
 )
 
+import yaml
+
+from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
 
 from ..requirements import ToolRequirement
@@ -63,6 +66,72 @@ class ListableDependencyResolver:
 
     def _to_requirement(self, name, version=None):
         return ToolRequirement(name=name, type="package", version=version)
+
+
+class MappableDependencyResolver:
+    """Mix this into a ``DependencyResolver`` to allow mapping files.
+
+    Mapping files allow adapting generic requirements to specific local implementations.
+    """
+
+    def _setup_mapping(self, dependency_manager, **kwds):
+        mapping_files = dependency_manager.get_resolver_option(self, "mapping_files", explicit_resolver_options=kwds)
+        mappings = []
+        if mapping_files:
+            mapping_files = listify(mapping_files)
+            for mapping_file in mapping_files:
+                mappings.extend(MappableDependencyResolver._mapping_file_to_list(mapping_file))
+        self._mappings = mappings
+
+    @staticmethod
+    def _mapping_file_to_list(mapping_file):
+        with open(mapping_file, "r") as f:
+            raw_mapping = yaml.load(f) or []
+            return map(RequirementMapping.from_dict, raw_mapping)
+
+    def _expand_mappings(self, requirement):
+        for mapping in self._mappings:
+            if requirement.name == mapping.from_name:
+                if mapping.from_version is not None and mapping.from_version != requirement.version:
+                    continue
+
+                requirement = requirement.copy()
+                requirement.name = mapping.to_name
+                if mapping.to_version is not None:
+                    requirement.version = mapping.to_version
+
+                break
+
+        return requirement
+
+
+class RequirementMapping(object):
+
+    def __init__(self, from_name, from_version, to_name, to_version):
+        self.from_name = from_name
+        self.from_version = from_version
+        self.to_name = to_name
+        self.to_version = to_version
+
+    @staticmethod
+    def from_dict(raw_mapping):
+        from_raw = raw_mapping.get("from")
+        if isinstance(from_raw, dict):
+            from_name = from_raw.get("name")
+            from_version = str(from_raw.get("version"))
+        else:
+            from_name = from_raw
+            from_version = None
+
+        to_raw = raw_mapping.get("to")
+        if isinstance(to_raw, dict):
+            to_name = to_raw.get("name", from_name)
+            to_version = str(to_raw.get("version"))
+        else:
+            to_name = to_raw
+            to_version = None
+
+        return RequirementMapping(from_name, from_version, to_name, to_version)
 
 
 class SpecificationAwareDependencyResolver:
