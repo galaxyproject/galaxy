@@ -146,7 +146,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
         conda_targets = []
         for requirement in requirements:
-            requirement = self.resolve_specs(requirement)
+            requirement = self._expand_specs(requirement)
 
             version = requirement.version
             if self.versionless:
@@ -186,7 +186,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             return conda_targets[0].install_environment
 
     def resolve(self, requirement, **kwds):
-        requirement = self.resolve_specs(requirement)
+        requirement = self._expand_specs(requirement)
         name, version, type = requirement.name, requirement.version, requirement.type
 
         # Check for conda just not being there, this way we can enable

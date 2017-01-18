@@ -74,8 +74,8 @@ class SpecificationAwareDependencyResolver:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def find_specification(self, specs):
-        """Find closest matching specification for discovered resolver."""
+    def _expand_specs(self, requirement):
+        """Find closest matching specification for discovered resolver and return new concrete requirement."""
 
 
 class SpecificationPatternDependencyResolver:
@@ -85,19 +85,19 @@ class SpecificationPatternDependencyResolver:
     def _specification_pattern(self):
         """Pattern of URI to match against."""
 
-    def find_specification(self, specs):
+    def _find_specification(self, specs):
         pattern = self._specification_pattern
         for spec in specs:
             if pattern.match(spec.uri):
                 return spec
         return None
 
-    def resolve_specs(self, requirement):
+    def _expand_specs(self, requirement):
         name = requirement.name
         version = requirement.version
         specs = requirement.specs
 
-        spec = self.find_specification(specs)
+        spec = self._find_specification(specs)
         if spec is not None:
             name = spec.short_name
             version = spec.version or version
