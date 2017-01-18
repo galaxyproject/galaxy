@@ -142,13 +142,7 @@ def test_tool_requirements():
 
 def test_module_dependency_resolver():
     with __test_base_path() as temp_directory:
-        module_script = os.path.join(temp_directory, "modulecmd")
-        __write_script(module_script, '''#!/bin/sh
-cat %s/example_output 1>&2;
-''' % temp_directory)
-        with open(os.path.join(temp_directory, "example_output"), "w") as f:
-            # Subset of module avail from MSI cluster.
-            f.write('''
+        module_script = _setup_module_command(temp_directory, '''
 -------------------------- /soft/modules/modulefiles ---------------------------
 JAGS/3.2.0-gcc45
 JAGS/3.3.0-gcc4.7.2
@@ -168,7 +162,7 @@ advisor/2013/update1    intel/11.1.075          mkl/10.2.1.017
 advisor/2013/update2    intel/11.1.080          mkl/10.2.5.035
 advisor/2013/update3    intel/12.0              mkl/10.2.7.041
 ''')
-        resolver = ModuleDependencyResolver(None, modulecmd=module_script)
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script)
         module = resolver.resolve( ToolRequirement( name="R", version=None, type="package" ) )
         assert module.module_name == "R"
         assert module.module_version is None
@@ -179,6 +173,74 @@ advisor/2013/update3    intel/12.0              mkl/10.2.7.041
 
         module = resolver.resolve( ToolRequirement( name="R", version="3.0.4", type="package" ) )
         assert isinstance(module, NullDependency)
+
+
+def test_module_resolver_with_mapping():
+    with __test_base_path() as temp_directory:
+        module_script = _setup_module_command(temp_directory, '''
+-------------------------- /soft/modules/modulefiles ---------------------------
+blast/2.24
+''')
+        mapping_file = os.path.join(temp_directory, "mapping")
+        with open(mapping_file, "w") as f:
+            f.write('''
+- from: blast+
+  to: blast
+''')
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast+", version="2.24", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.24", module.module_version
+
+
+def test_module_resolver_with_mapping_versions():
+    with __test_base_path() as temp_directory:
+        module_script = _setup_module_command(temp_directory, '''
+-------------------------- /soft/modules/modulefiles ---------------------------
+blast/2.22.0-mpi
+blast/2.23
+blast/2.24.0-mpi
+''')
+        mapping_file = os.path.join(temp_directory, "mapping")
+        with open(mapping_file, "w") as f:
+            f.write('''
+- from:
+    name: blast+
+    version: 2.24
+  to:
+    name: blast
+    version: 2.24.0-mpi
+- from:
+    name: blast
+    version: 2.22
+  to:
+    version: 2.22.0-mpi
+''')
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast+", version="2.24", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.24.0-mpi", module.module_version
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast+", version="2.23", type="package" ) )
+        assert isinstance(module, NullDependency)
+
+        module = resolver.resolve( ToolRequirement( name="blast", version="2.22", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.22.0-mpi", module.module_version
+
+
+def _setup_module_command(temp_directory, contents):
+    module_script = os.path.join(temp_directory, "modulecmd")
+    __write_script(module_script, '''#!/bin/sh
+cat %s/example_output 1>&2;
+''' % temp_directory)
+    with open(os.path.join(temp_directory, "example_output"), "w") as f:
+        # Subset of module avail from MSI cluster.
+        f.write(contents)
+    return module_script
 
 
 def test_module_dependency():
@@ -413,3 +475,9 @@ def __dependency_manager(xml_content):
         f.flush()
         dm = DependencyManager( default_base_path=base_path, conf_file=f.name )
         yield dm
+
+
+class _SimpleDependencyManager(object):
+
+    def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
+        return explicit_resolver_options.get(key)
