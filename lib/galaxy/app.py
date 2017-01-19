@@ -117,7 +117,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             directories_setting=self.config.visualization_plugins_directory,
             template_cache_dir=self.config.template_cache )
         # Tours registry
-        self.tour_registry = ToursRegistry(self.config.tour_config_dir, self.config.tool_configs[1])
+        self.tour_registry = ToursRegistry(self.config.tour_config_dir, self)
         # Webhooks registry
         self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dirs)
         # Load security policy.
