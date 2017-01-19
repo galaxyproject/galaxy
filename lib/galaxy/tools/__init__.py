@@ -20,6 +20,8 @@ from six.moves.urllib.parse import unquote_plus
 
 import galaxy.jobs
 import tool_shed.util.repository_util as repository_util
+import tool_shed.util.shed_util_common
+
 from galaxy import (
     exceptions,
     model
@@ -83,7 +85,6 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
-from tool_shed.util import shed_util_common as suc
 
 from .execute import execute as execute_job
 from .loader import (
@@ -1071,7 +1072,7 @@ class Tool( object, Dictifiable ):
             if self.repository_id and help_text.find( '.. image:: ' ) >= 0:
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                 try:
-                    help_text = suc.set_image_paths( self.app, self.repository_id, help_text )
+                    help_text = tool_shed.util.shed_util_common.set_image_paths( self.app, self.repository_id, help_text )
                 except Exception as e:
                     log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
             try:
