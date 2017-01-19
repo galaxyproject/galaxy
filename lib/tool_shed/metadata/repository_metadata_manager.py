@@ -350,7 +350,8 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         if has_repository_dependencies or \
                 has_repository_dependencies_only_if_compiling_contained_td or \
                 includes_datatypes or includes_tools or \
-                includes_tool_dependencies or includes_workflows:
+                includes_tool_dependencies or includes_workflows or \
+                includes_interactive_tours:
             downloadable = True
         else:
             downloadable = False
