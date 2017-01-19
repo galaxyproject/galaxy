@@ -8,8 +8,9 @@ import string
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
+import galaxy.tools.deps.requirements
+
 from galaxy import util
-from galaxy.tools.deps.requirements import ToolRequirement
 from galaxy.util import checkers
 from galaxy.web import url_for
 from tool_shed.util import (
@@ -224,7 +225,7 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
 
 
 def get_requirements_from_tools(tools):
-    return {tool['id']: [ToolRequirement.from_dict(r) for r in tool['requirements']] for tool in tools}
+    return {tool['id']: [galaxy.tools.deps.requirements.ToolRequirement.from_dict(r) for r in tool['requirements']] for tool in tools}
 
 
 def get_requirements_from_repository(repository):
