@@ -25,40 +25,43 @@ def tour_loader(contents_dict):
             step['title'] = title_default
     return contents_dict
 
-def _load_shed_tour_paths(shed_tool_path):
+def _load_shed_tour_paths(shed_tool_conf_file):
     # somehow figure out XML installation path
     # ../shed_tools/toolshed.g2.bx.psu.edu/tours/iuc/tourname/revision/tour_a.yaml
     paths = []
-    for tool_shed in os.listdir(shed_tool_path):
-        path1 = os.path.join(shed_tool_path, tool_shed, 'repos')
-        if os.path.isdir(path1):
-            for maintainer in os.listdir(path1):
-                path2 = os.path.join(path1, maintainer)
-                if os.path.isdir(path2):
-                    for tour_name in os.listdir(path2):
-                        path3 = os.path.join(path2, tour_name)
-                        if os.path.isdir(path3):
-                            for revision in os.listdir(path3):
-                                path4 = os.path.join(path3, revision)
-                                if os.path.isdir(path4):
-                                    for repo in os.listdir(path4):
-                                        path5 = os.path.join(path4, repo)
-                                        if os.path.isdir(path5):
-                                            paths.append(path5)
-    fh = open('/tmp/a.txt','w')
-    fh.write(str(paths))
-    fh.close()
-    return paths
-
+    
+    try:
+        from galaxy.tools.toolbox.parser import XmlToolConfSource
+        stfc = XmlToolConfSource(shed_tool_conf_file)
+        shed_tool_path = stfc.parse_tool_path()
+        
+        for tool_shed in os.listdir(shed_tool_path):
+            path1 = os.path.join(shed_tool_path, tool_shed, 'repos')
+            if os.path.isdir(path1):
+                for maintainer in os.listdir(path1):
+                    path2 = os.path.join(path1, maintainer)
+                    if os.path.isdir(path2):
+                        for tour_name in os.listdir(path2):
+                            path3 = os.path.join(path2, tour_name)
+                            if os.path.isdir(path3):
+                                for revision in os.listdir(path3):
+                                    path4 = os.path.join(path3, revision)
+                                    if os.path.isdir(path4):
+                                        for repo in os.listdir(path4):
+                                            path5 = os.path.join(path4, repo)
+                                            if os.path.isdir(path5):
+                                                paths.append(path5)
+    except:
+        log.warning( 'Could not properly iterate over the tool shed directory' )
 
 
 class ToursRegistry(object):
 
-    def __init__(self, tour_directories):
+    def __init__(self, tour_directories, tb, app):
         # All tours provided by Galaxy mainline code
         all_tour_directories = tour_directories.split(',')
         # Also add tours installed via toolsheds
-        all_tour_directories += _load_shed_tour_paths('../shed_tools')
+        all_tour_directories += _load_shed_tour_paths(app.config.tool_configs[1])
 
         self.tour_directories = util.config_directories_from_setting(all_tour_directories)
         self.load_tours()
