@@ -313,37 +313,6 @@ class ToolShedRepositoriesController( BaseAPIController ):
         return response
 
     @expose_api
-    @web.require_admin
-    def shed_tool_json( self, trans, **kwd ):
-        """
-        GET /api/tool_shed_repositories/shed_tool_json
-
-        Get the tool form JSON for a tool in a toolshed repository.
-
-        :param guid:          the GUID of the tool
-        :param guid:          str
-
-        :param tsr_id:        the ID of the repository
-        :param tsr_id:        str
-
-        :param changeset:        the changeset at which to load the tool json
-        :param changeset:        str
-
-        :param tool_shed_url:   the URL of the toolshed to load from
-        :param tool_shed_url:   str
-        """
-        tool_shed_url = kwd.get( 'tool_shed_url', None )
-        tsr_id = kwd.get( 'tsr_id', None )
-        guid = kwd.get( 'guid', None )
-        changeset = kwd.get( 'changeset', None )
-        if None in [ tool_shed_url, tsr_id, guid, changeset ]:
-            message = 'Tool shed URL, changeset, repository ID, and tool GUID are all required parameters.'
-            trans.response.status = 400
-            return { 'status': 'error', 'message': message }
-        response = json.loads( util.url_get( tool_shed_url, params=dict( tsr_id=tsr_id, guid=guid, changeset=changeset.split( ':' )[ -1 ] ), pathspec=[ 'api', 'tools', 'json' ] ) )
-        return response
-
-    @expose_api
     def import_workflow( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/import_workflow

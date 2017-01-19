@@ -100,7 +100,7 @@ define(['mvc/toolshed/toolshed-model',
                 var tool_shed_url = that.model.tool_shed_url;
                 var tsr_id = $('#repository_details').attr('data-tsrid');
                 var changeset = $('#changeset').find("option:selected").val();
-                var api_url = Galaxy.root + 'api/tool_shed_repositories/shed_tool_json';
+                var api_url = Galaxy.root + 'api/tool_shed/tool_json';
                 var params = {'guid': guid, 'tool_shed_url': tool_shed_url, 'tsr_id': tsr_id, 'changeset': changeset};
                 $.get(api_url, params, function(data) {
                     data.cls = 'ui-portlet-plain';

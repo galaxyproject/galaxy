@@ -52,7 +52,7 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
                 new_value = $(this).find("option:selected").val(), default_tps = $("#tool_panel_section_select").find("option:selected").val(), 
                 new_value == default_tps ? $(this).attr("default", "active") : $(this).removeAttr("default");
             }), $("#repository_dependencies").jstree(), $(".tool_form").on("click", function() {
-                var guid = $(this).attr("data-guid"), name = ($(this).attr("data-clean"), $(this).attr("data-name")), desc = $(this).attr("data-desc"), tool_shed_url = that.model.tool_shed_url, tsr_id = $("#repository_details").attr("data-tsrid"), changeset = $("#changeset").find("option:selected").val(), api_url = Galaxy.root + "api/tool_shed_repositories/shed_tool_json", params = {
+                var guid = $(this).attr("data-guid"), name = ($(this).attr("data-clean"), $(this).attr("data-name")), desc = $(this).attr("data-desc"), tool_shed_url = that.model.tool_shed_url, tsr_id = $("#repository_details").attr("data-tsrid"), changeset = $("#changeset").find("option:selected").val(), api_url = Galaxy.root + "api/tool_shed/tool_json", params = {
                     guid: guid,
                     tool_shed_url: tool_shed_url,
                     tsr_id: tsr_id,
