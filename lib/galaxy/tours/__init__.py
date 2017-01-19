@@ -25,11 +25,39 @@ def tour_loader(contents_dict):
             step['title'] = title_default
     return contents_dict
 
+    def _load_shed_tour_paths(self, shed_tool_path = '../shed_tools'):
+        # somehow figure out XML installation path
+        # ../shed_tools/toolshed.g2.bx.psu.edu/tours/iuc/tourname/revision/tour_a.yaml
+        paths = []
+        for tool_shed in os.listdir(shed_tool_path):
+            path1 = os.path.join(shed_tool_path, tool_shed, 'tours')
+            if os.path.isdir(path1):
+                for maintainer in os.listdir(path1):
+                    path2 = os.path.join(path1, maintainer)
+                    if os.path.isdir(path2):
+                        for tour_name in os.listdir(path2):
+                            path3 = os.path.join(path2, tour_name)
+                            if os.path.isdir(path3):
+                                for revision in os.listdir(path3):
+                                    path4 = os.path.join(path3, revision)
+                                    if os.path.isdir(path4):
+                                        paths.append(path4)
+
+        return paths
+
+
 
 class ToursRegistry(object):
 
     def __init__(self, tour_directories):
-        self.tour_directories = util.config_directories_from_setting( tour_directories )
+        # All tours provided by Galaxy mainline code
+        all_tour_directories = tour_directories.split(',')
+        # + ToursRegistry.
+        
+
+        # Also add tours installed via toolsheds
+
+        self.tour_directories = util.config_directories_from_setting(all_tour_directories)
         self.load_tours()
 
     def tours_by_id_with_description(self):

@@ -209,6 +209,9 @@
                         %if util.TOOL_DEPENDENCY_DEFINITION in repository_types:
                             <li><b>Tool dependency definition</b> - contents will always be restricted to one file named tool_dependencies.xml
                         %endif
+                        %if util.INTERACTIVE_TOUR in repository_types:
+                            <li><b>Interactive Tour</b> - Interactive Galaxy Tours require YAML files
+                        %endif
                     </ul>
                 </div>
             %endif

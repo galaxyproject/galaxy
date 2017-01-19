@@ -96,6 +96,7 @@ class MetadataGenerator( object ):
         self.NOT_TOOL_CONFIGS = [ suc.DATATYPES_CONFIG_FILENAME,
                                   rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
                                   rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                                  rt_util.INTERACTIVE_TOUR,
                                   suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
 
     def generate_data_manager_metadata( self, repo_dir, data_manager_config_filename, metadata_dict,

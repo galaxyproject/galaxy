@@ -9,8 +9,9 @@ REPOSITORY_SUITE_DEFINITION = 'repository_suite_definition'
 TOOL_DEPENDENCY_DEFINITION = 'tool_dependency_definition'
 TOOL_DEPENDENCY_DEFINITION_FILENAME = 'tool_dependencies.xml'
 UNRESTRICTED = 'unrestricted'
+INTERACTIVE_TOUR = 'interactive_tour'
 
-types = [ UNRESTRICTED, TOOL_DEPENDENCY_DEFINITION, REPOSITORY_SUITE_DEFINITION ]
+types = [ UNRESTRICTED, TOOL_DEPENDENCY_DEFINITION, REPOSITORY_SUITE_DEFINITION, INTERACTIVE_TOUR ]
 
 
 def build_repository_type_select_field( trans, repository=None, name='repository_type' ):
