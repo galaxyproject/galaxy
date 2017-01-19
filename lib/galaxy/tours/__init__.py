@@ -25,14 +25,14 @@ def tour_loader(contents_dict):
             step['title'] = title_default
     return contents_dict
 
-def _load_shed_tour_paths(shed_tool_conf_file):
+def _load_shed_tour_paths(shed_tool_conf):
     # somehow figure out XML installation path
     # ../shed_tools/toolshed.g2.bx.psu.edu/tours/iuc/tourname/revision/tour_a.yaml
     paths = []
     
     try:
         from galaxy.tools.toolbox.parser import XmlToolConfSource
-        stfc = XmlToolConfSource(shed_tool_conf_file)
+        stfc = XmlToolConfSource(shed_tool_conf)
         shed_tool_path = stfc.parse_tool_path()
         
         for tool_shed in os.listdir(shed_tool_path):
@@ -53,15 +53,16 @@ def _load_shed_tour_paths(shed_tool_conf_file):
                                                 paths.append(path5)
     except:
         log.warning( 'Could not properly iterate over the tool shed directory' )
+    return paths
 
 
 class ToursRegistry(object):
 
-    def __init__(self, tour_directories, tb, app):
+    def __init__(self, tour_directories, shed_tool_conf):
         # All tours provided by Galaxy mainline code
         all_tour_directories = tour_directories.split(',')
         # Also add tours installed via toolsheds
-        all_tour_directories += _load_shed_tour_paths(app.config.tool_configs[1])
+        all_tour_directories += _load_shed_tour_paths(shed_tool_conf)
 
         self.tour_directories = util.config_directories_from_setting(all_tour_directories)
         self.load_tours()
