@@ -331,6 +331,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         includes_tools = False
         includes_tool_dependencies = False
         includes_workflows = False
+        includes_interactive_tours = False
         if metadata_dict:
             repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
             repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
@@ -344,6 +345,8 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                 includes_tool_dependencies = True
             if 'workflows' in metadata_dict:
                 includes_workflows = True
+            if 'interactive_tours' in metadata_dict:
+                includes_interactive_tours = True
         if has_repository_dependencies or \
                 has_repository_dependencies_only_if_compiling_contained_td or \
                 includes_datatypes or includes_tools or \

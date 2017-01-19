@@ -461,6 +461,27 @@ class MetadataGenerator( object ):
                                 metadata_dict = self.generate_workflow_metadata( relative_path,
                                                                                  exported_workflow_dict,
                                                                                  metadata_dict )
+
+                    # Find all interactive tours
+                    elif name.endswith( '.yaml' ):
+                        relative_path = os.path.join( root, name )
+                        if os.path.getsize( os.path.abspath( relative_path ) ) > 0:
+                            fp = open( relative_path, 'rb' )
+                            tour_text = fp.read()
+                            fp.close()
+                            if tour_text.find('steps:') > -1:
+                                valid_exported_interactive_tour = True
+#                                try:
+#                                    exported_workflow_dict = json.loads( workflow_text )
+#                                except Exception as e:
+#                                    log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s"
+#                                                   % ( str( relative_path ), str( e ) ) )
+#                                    valid_exported_interactive_tour = False
+                            if valid_exported_interactive_tour:
+                                metadata_dict = self.generate_interactive_tour_metadata( relative_path,
+                                                                                 tour_text,
+                                                                                 metadata_dict )
+
         # Handle any data manager entries
         data_manager_config = hg_util.get_config_from_disk( suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir )
         metadata_dict = self.generate_data_manager_metadata( files_dir,
@@ -799,10 +820,19 @@ class MetadataGenerator( object ):
         Update the received metadata_dict with changes that have been applied to the
         received exported_workflow_dict.
         """
+        as_tuple = ( relative_path, exported_workflow_dict )
         if 'workflows' in metadata_dict:
-            metadata_dict[ 'workflows' ].append( ( relative_path, exported_workflow_dict ) )
+            metadata_dict[ 'workflows' ].append( as_tuple )
         else:
-            metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
+            metadata_dict[ 'workflows' ] = [ as_tuple ]
+        return metadata_dict
+
+    def generate_interactive_tour_metadata( self, relative_path, tour_text, metadata_dict ):
+        as_tuple = ( relative_path, tour_text )
+        if 'interactive_tours' in metadata_dict:
+            metadata_dict[ 'interactive_tours' ].append( as_tuple )
+        else:
+            metadata_dict[ 'interactive_tours' ] = [ as_tuple ]
         return metadata_dict
 
     def get_invalid_file_tups( self ):
