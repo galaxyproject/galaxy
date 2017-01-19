@@ -6,6 +6,7 @@ import logging
 import re
 import tempfile
 from datetime import datetime
+
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
@@ -20,6 +21,7 @@ from whoosh.filedb.filestore import (
 )
 from whoosh.qparser import MultifieldParser
 from whoosh.scoring import BM25F
+
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger( __name__ )
