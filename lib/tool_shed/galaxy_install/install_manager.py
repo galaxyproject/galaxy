@@ -914,6 +914,12 @@ class InstallRepositoryManager( object ):
                         if tool and tool.requirements not in cached_requirements:
                             cached_requirements.append(tool.requirements)
                             tool.build_dependency_cache()
+            if 'interactive_tours' in metadata:
+                # Unregister active tours during runtime, after 
+                # restarting the server they'd be automatically unloaded
+                # as the files are removed
+                for interactive_tour in  metadata['interactive_tours']:
+                    self.app.tour_registry._load_tour_from_path(os.path.abspath(interactive_tour[0]))
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itsr" )
                 # Install tool dependencies.
