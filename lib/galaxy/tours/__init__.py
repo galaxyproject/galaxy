@@ -54,6 +54,13 @@ class ToursRegistry(object):
         else:
             return None
 
+    def unload_tour(self, tour_id):
+        # This removes self.app.tour_registry.tours[tour_id]
+        try:
+            del(self.tours[tour_id])
+        except:
+            log.warning("Trying to unload missing Interactive Tour: %s" , tour_id )
+
     def load_tours(self):
         self.tours = {}
         for tour_dir in self.tour_directories:
@@ -91,4 +98,3 @@ class ToursRegistry(object):
                     interactive_tour_path = str(interactive_tour[0])
                     if os.path.isfile(interactive_tour_path):
                         self._load_tour_from_path(interactive_tour_path)
-                        #self.tour_directories.append(os.path.dirname(interactive_tour_path))

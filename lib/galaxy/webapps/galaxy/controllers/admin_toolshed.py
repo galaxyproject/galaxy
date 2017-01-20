@@ -266,6 +266,13 @@ class AdminToolshed( AdminGalaxy ):
                 if tool_shed_repository.includes_data_managers:
                     dmh = data_manager.DataManagerHandler( trans.app )
                     dmh.remove_from_data_manager( tool_shed_repository )
+                if 'interactive_tours' in tool_shed_repository.metadata:
+                    # Unregister active tours during runtime, after 
+                    # restarting the server they'd be automatically unloaded
+                    # as the files are removed
+                    for interactive_tour in  tool_shed_repository.metadata['interactive_tours']:
+                        self.app.tour_registry.unload_tour(os.path.abspath(interactive_tour[0]))
+
                 if tool_shed_repository.includes_datatypes:
                     # Deactivate proprietary datatypes.
                     cdl = custom_datatype_manager.CustomDatatypeLoader( trans.app )
