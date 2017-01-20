@@ -1,6 +1,6 @@
 <tool id="explicit_conversion" name="explicit_conversion">
   <command>
-    cut -f 1 '${input1_table}' > 'col_output'
+    cut -f 1 '${input1_table}' > '$output1'
   </command>
   <inputs>
     <param type="data" format="fasta" name="input1" label="Input 1">
@@ -8,7 +8,7 @@
     </param>
   </inputs>
   <outputs>
-    <data name="output1" format="tabular" from_work_dir="col_output" />
+    <data name="output1" format="tabular" />
   </outputs>
   <tests>
     <test>
