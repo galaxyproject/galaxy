@@ -68,8 +68,7 @@ class ToursRegistry(object):
         return self.tours.get(tour_id, None)
 
     def _load_tour_from_path(self, tour_path):
-        filename = os.path.basename(tour_path)
-        tour_id = os.path.splitext(filename)[0]
+        tour_id = os.path.abspath(tour_path)
         try:
             with open(tour_path) as handle:
                 conf = yaml.load(handle)
