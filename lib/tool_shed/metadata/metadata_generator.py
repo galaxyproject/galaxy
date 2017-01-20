@@ -479,7 +479,6 @@ class MetadataGenerator( object ):
 #                                    valid_exported_interactive_tour = False
                             if valid_exported_interactive_tour:
                                 metadata_dict = self.generate_interactive_tour_metadata( relative_path,
-                                                                                 tour_text,
                                                                                  metadata_dict )
 
         # Handle any data manager entries
