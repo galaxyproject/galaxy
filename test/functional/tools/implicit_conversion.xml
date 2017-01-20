@@ -12,7 +12,6 @@
     <!-- Test implicit conversion. -->
     <test>
       <param name="input1" value="1.fasta" ftype="fasta" />
-      <param name="col" value="1" />
       <output name="output1">
         <assert_contents>
           <has_line line="hg17" />
