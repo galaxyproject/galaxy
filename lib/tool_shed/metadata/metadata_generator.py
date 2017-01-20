@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import tempfile
+import yaml
 
 from sqlalchemy import and_
 
@@ -463,7 +464,7 @@ class MetadataGenerator( object ):
                                                                                  metadata_dict )
 
                     # Find all interactive tours
-                    elif name.endswith( '.yaml' ):
+                    elif name.endswith( '.yaml' ) or name.endswith( '.yml' ):
                         relative_path = os.path.join( root, name )
                         if os.path.getsize( os.path.abspath( relative_path ) ) > 0:
                             fp = open( relative_path, 'rb' )
@@ -471,14 +472,19 @@ class MetadataGenerator( object ):
                             fp.close()
                             if tour_text.find('steps:') > -1:
                                 valid_exported_interactive_tour = True
-#                                try:
-#                                    exported_workflow_dict = json.loads( workflow_text )
-#                                except Exception as e:
-#                                    log.exception( "Skipping file %s since it does not seem to be a valid exported Galaxy workflow: %s"
-#                                                   % ( str( relative_path ), str( e ) ) )
-#                                    valid_exported_interactive_tour = False
+                                try:
+                                    fh = open(relative_path, 'r')
+                                    conf = yaml.load(fh)
+                                    description = conf.get( 'description', '' )
+                                    if conf.get( 'steps', None ) == None:
+                                        valid_exported_interactive_tour = False
+                                    fh.close()
+                                    del(conf, fh)
+                                except Exception as e:
+                                    valid_exported_interactive_tour = False
                             if valid_exported_interactive_tour:
                                 metadata_dict = self.generate_interactive_tour_metadata( relative_path,
+                                                                                 description,
                                                                                  metadata_dict )
 
         # Handle any data manager entries
@@ -826,8 +832,8 @@ class MetadataGenerator( object ):
             metadata_dict[ 'workflows' ] = [ as_tuple ]
         return metadata_dict
 
-    def generate_interactive_tour_metadata( self, relative_path, tour_text, metadata_dict ):
-        as_tuple = ( relative_path, tour_text )
+    def generate_interactive_tour_metadata( self, relative_path, description, metadata_dict ):
+        as_tuple = ( relative_path, description )
         if 'interactive_tours' in metadata_dict:
             metadata_dict[ 'interactive_tours' ].append( as_tuple )
         else:
