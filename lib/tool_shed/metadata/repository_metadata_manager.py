@@ -100,6 +100,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         ancestor_repository_dependencies = ancestor_repository_dependencies_dict.get( 'repository_dependencies', [] )
         ancestor_tool_dependencies = ancestor_metadata_dict.get( 'tool_dependencies', {} )
         ancestor_workflows = ancestor_metadata_dict.get( 'workflows', [] )
+        ancestor_interactive_tours = ancestor_metadata_dict.get( 'interactive_tours', [] )
         ancestor_data_manager = ancestor_metadata_dict.get( 'data_manager', {} )
         current_datatypes = self.metadata_dict.get( 'datatypes', [] )
         current_tools = self.metadata_dict.get( 'tools', [] )
@@ -110,6 +111,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         current_repository_dependencies = current_repository_dependencies_dict.get( 'repository_dependencies', [] )
         current_tool_dependencies = self.metadata_dict.get( 'tool_dependencies', {} )
         current_workflows = self.metadata_dict.get( 'workflows', [] )
+        current_interactive_tours = self.metadata_dict.get( 'interactive_tours', [] )
         current_data_manager = self.metadata_dict.get( 'data_manager', {} )
         # Handle case where no metadata exists for either changeset.
         no_datatypes = not ancestor_datatypes and not current_datatypes
@@ -118,6 +120,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         no_tool_dependencies = not ancestor_tool_dependencies and not current_tool_dependencies
         no_tools = not ancestor_guids and not current_guids
         no_workflows = not ancestor_workflows and not current_workflows
+        no_interactive_tours = not ancestor_interactive_tours and not current_interactive_tours
         no_data_manager = not ancestor_data_manager and not current_data_manager
         if no_datatypes and no_readme_files and no_repository_dependencies and \
                 no_tool_dependencies and no_tools and no_workflows and \

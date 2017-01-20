@@ -343,6 +343,7 @@ def is_downloadable( metadata_dict ):
     # NOTE: although repository README files are considered Galaxy utilities, they have no
     # effect on determining if a revision is installable.  See the comments in the
     # compare_readme_files() method.
+    #@todo use for loop to iterate over types
     if 'datatypes' in metadata_dict:
         # We have proprietary datatypes.
         return True
@@ -357,6 +358,8 @@ def is_downloadable( metadata_dict ):
         return True
     if 'workflows' in metadata_dict:
         # We have exported workflows.
+        return True
+    if 'interactive_tours' in metadata_dict:
         return True
     return False
 
