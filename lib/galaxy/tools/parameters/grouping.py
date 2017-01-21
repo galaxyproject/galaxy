@@ -1,21 +1,26 @@
 """
 Constructs for grouping tool parameters
 """
-
 import logging
-log = logging.getLogger( __name__ )
-
 import os
-import StringIO
 import unicodedata
-from six import text_type
+
+from six import (
+    StringIO,
+    text_type
+)
+
 from galaxy.datatypes import sniff
-from galaxy.util import inflector
-from galaxy.util import relpath
-from galaxy.util import sanitize_for_filename
+from galaxy.util import (
+    inflector,
+    relpath,
+    sanitize_for_filename
+)
 from galaxy.util.bunch import Bunch
-from galaxy.util.expressions import ExpressionContext
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.expressions import ExpressionContext
+
+log = logging.getLogger( __name__ )
 
 
 class Group( object, Dictifiable ):
@@ -82,7 +87,7 @@ class Repeat( Group ):
             # Propogate __index__
             if '__index__' in d:
                 rval_dict['__index__'] = d['__index__']
-            for input in self.inputs.itervalues():
+            for input in self.inputs.values():
                 rval_dict[ input.name ] = input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
@@ -96,7 +101,7 @@ class Repeat( Group ):
                 # compatibility)
                 rval_dict['__index__'] = d.get( '__index__', i )
                 # Restore child inputs
-                for input in self.inputs.itervalues():
+                for input in self.inputs.values():
                     if ignore_errors and input.name not in d:
                         # If we do not have a value, and are ignoring errors, we simply
                         # do nothing. There will be no value for the parameter in the
@@ -114,7 +119,7 @@ class Repeat( Group ):
         rval = []
         for i in range( self.default ):
             rval_dict = { '__index__': i}
-            for input in self.inputs.itervalues():
+            for input in self.inputs.values():
                 rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
@@ -125,7 +130,7 @@ class Repeat( Group ):
         def input_to_dict( input ):
             return input.to_dict( trans )
 
-        repeat_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
+        repeat_dict[ "inputs" ] = list(map( input_to_dict, self.inputs.values() ))
         return repeat_dict
 
 
@@ -150,14 +155,14 @@ class Section( Group ):
 
     def value_to_basic( self, value, app ):
         rval = {}
-        for input in self.inputs.itervalues():
+        for input in self.inputs.values():
             rval[ input.name ] = input.value_to_basic( value[input.name], app )
         return rval
 
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = {}
         try:
-            for input in self.inputs.itervalues():
+            for input in self.inputs.values():
                 if not ignore_errors or input.name in value:
                     rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         except Exception as e:
@@ -168,7 +173,7 @@ class Section( Group ):
     def get_initial_value( self, trans, context ):
         rval = {}
         child_context = ExpressionContext( rval, context )
-        for child_input in self.inputs.itervalues():
+        for child_input in self.inputs.values():
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
@@ -178,7 +183,7 @@ class Section( Group ):
         def input_to_dict( input ):
             return input.to_dict( trans )
 
-        section_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
+        section_dict[ "inputs" ] = list(map( input_to_dict, self.inputs.values() ))
         return section_dict
 
 
@@ -232,7 +237,7 @@ class UploadDataset( Group ):
 
     def title_by_index( self, trans, index, context ):
         d_type = self.get_datatype( trans, context )
-        for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
+        for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.items() ):
             if i == index:
                 rval = composite_name
                 if composite_file.description:
@@ -249,7 +254,7 @@ class UploadDataset( Group ):
             # Propogate __index__
             if '__index__' in d:
                 rval_dict['__index__'] = d['__index__']
-            for input in self.inputs.itervalues():
+            for input in self.inputs.values():
                 rval_dict[ input.name ] = input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
@@ -262,7 +267,7 @@ class UploadDataset( Group ):
             # compatibility)
             rval_dict['__index__'] = d.get( '__index__', i )
             # Restore child inputs
-            for input in self.inputs.itervalues():
+            for input in self.inputs.values():
                 if ignore_errors and input.name not in d:  # this wasn't tested
                     rval_dict[ input.name ] = input.get_initial_value( None, d )
                 else:
@@ -273,10 +278,10 @@ class UploadDataset( Group ):
     def get_initial_value( self, trans, context ):
         d_type = self.get_datatype( trans, context )
         rval = []
-        for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
+        for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.items() ):
             rval_dict = {}
             rval_dict['__index__'] = i  # create __index__
-            for input in self.inputs.itervalues():
+            for input in self.inputs.values():
                 rval_dict[ input.name ] = input.get_initial_value( trans, context )
             rval.append( rval_dict )
         return rval
@@ -467,8 +472,8 @@ class UploadDataset( Group ):
             dataset.uuid = None
             # load metadata
             files_metadata = context.get( self.metadata_ref, {} )
-            metadata_name_substition_default_dict = dict( [ ( composite_file.substitute_name_with_metadata, d_type.metadata_spec[ composite_file.substitute_name_with_metadata ].default ) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata ] )
-            for meta_name, meta_spec in d_type.metadata_spec.iteritems():
+            metadata_name_substition_default_dict = dict( ( composite_file.substitute_name_with_metadata, d_type.metadata_spec[ composite_file.substitute_name_with_metadata ].default ) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata )
+            for meta_name, meta_spec in d_type.metadata_spec.items():
                 if meta_spec.set_in_upload:
                     if meta_name in files_metadata:
                         meta_value = files_metadata[ meta_name ]
@@ -478,7 +483,7 @@ class UploadDataset( Group ):
             dataset.precreated_name = dataset.name = self.get_composite_dataset_name( context )
             if dataset.datatype.composite_type == 'auto_primary_file':
                 # replace sniff here with just creating an empty file
-                temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
+                temp_name, is_multi_byte = sniff.stream_to_file( StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
                 dataset.to_posix_lines = True
                 dataset.space_to_tab = False
@@ -494,7 +499,7 @@ class UploadDataset( Group ):
             keys = [ value.name for value in writable_files.values() ]
             for i, group_incoming in enumerate( groups_incoming[ writable_files_offset : ] ):
                 key = keys[ i + writable_files_offset ]
-                if group_incoming is None and not writable_files[ writable_files.keys()[ keys.index( key ) ] ].optional:
+                if group_incoming is None and not writable_files[ list(writable_files.keys())[ keys.index( key ) ] ].optional:
                     dataset.warnings.append( "A required composite file (%s) was not specified." % ( key ) )
                     dataset.composite_files[ key ] = None
                 else:
@@ -504,7 +509,7 @@ class UploadDataset( Group ):
                         dataset.composite_files[ key ] = file_bunch.__dict__
                     else:
                         dataset.composite_files[ key ] = None
-                        if not writable_files[ writable_files.keys()[ keys.index( key ) ] ].optional:
+                        if not writable_files[ list(writable_files.keys())[ keys.index( key ) ] ].optional:
                             dataset.warnings.append( "A required composite file (%s) was not specified." % ( key ) )
             return [ dataset ]
         else:
@@ -546,7 +551,7 @@ class Conditional( Group ):
         rval = dict()
         rval[ self.test_param.name ] = self.test_param.value_to_basic( value[ self.test_param.name ], app )
         current_case = rval[ '__current_case__' ] = self.get_current_case( value[ self.test_param.name ] )
-        for input in self.cases[ current_case ].inputs.itervalues():
+        for input in self.cases[ current_case ].inputs.values():
             if input.name in value:  # parameter might be absent in unverified workflow
                 rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
         return rval
@@ -557,7 +562,7 @@ class Conditional( Group ):
             rval[ self.test_param.name ] = self.test_param.value_from_basic( value.get( self.test_param.name ), app, ignore_errors )
             current_case = rval[ '__current_case__' ] = self.get_current_case( rval[ self.test_param.name ] )
             # Inputs associated with current case
-            for input in self.cases[ current_case ].inputs.itervalues():
+            for input in self.cases[ current_case ].inputs.values():
                 # If we do not have a value, and are ignoring errors, we simply
                 # do nothing. There will be no value for the parameter in the
                 # conditional's values dictionary.
@@ -581,7 +586,7 @@ class Conditional( Group ):
         rval[ self.test_param.name ] = test_value
         # Fill in state for selected case
         child_context = ExpressionContext( rval, context )
-        for child_input in self.cases[current_case].inputs.itervalues():
+        for child_input in self.cases[current_case].inputs.values():
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context )
         return rval
 
@@ -591,7 +596,7 @@ class Conditional( Group ):
         def nested_to_dict( input ):
             return input.to_dict( trans )
 
-        cond_dict[ "cases" ] = map( nested_to_dict, self.cases )
+        cond_dict[ "cases" ] = list(map( nested_to_dict, self.cases ))
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
         return cond_dict
 
@@ -609,5 +614,5 @@ class ConditionalWhen( object, Dictifiable ):
         def input_to_dict( input ):
             return input.to_dict( trans )
 
-        when_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
+        when_dict[ "inputs" ] = list(map( input_to_dict, self.inputs.values() ))
         return when_dict

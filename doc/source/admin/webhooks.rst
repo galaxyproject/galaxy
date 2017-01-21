@@ -126,7 +126,7 @@ Plugin dependencies
 -------------------
 
 Some plugins might have additional dependencies that needs to be installed into the Galaxy environment.
-For example the PhD-Comic plugin requires the library beautifulsoup4. If thses dependencies are not present
+For example the PhD-Comic plugin requires the library beautifulsoup4. If these dependencies are not present
 plugins should deactivate themself and issue an error into the Galaxy log.
 
 To install these additional plugin do the following:

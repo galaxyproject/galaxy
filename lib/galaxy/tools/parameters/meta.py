@@ -1,10 +1,14 @@
-from galaxy.util import permutations
-from galaxy import model
-from galaxy import util
-from galaxy import exceptions
-import itertools
 import copy
+import itertools
 import logging
+
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
+from galaxy.util import permutations
+
 log = logging.getLogger( __name__ )
 
 
@@ -52,10 +56,10 @@ def expand_workflow_inputs( inputs ):
     product = product or [ [ None ] ]
     linked_keys = linked_keys or [ ( None, None ) ]
     product_keys = product_keys or [ ( None, None ) ]
-    for linked_values, product_values in itertools.product( *[ zip( *linked ), itertools.product( *product ) ] ):
+    for linked_values, product_values in itertools.product( zip( *linked ), itertools.product( *product ) ):
         new_params = copy.deepcopy( inputs )
         new_keys = []
-        for ( step_id, key ), value in zip( linked_keys, linked_values ) + zip( product_keys, product_values ):
+        for ( step_id, key ), value in list(zip( linked_keys, linked_values )) + list(zip( product_keys, product_values )):
             if step_id is not None:
                 new_params[ step_id ][ key ] = value
                 new_keys.append( value[ 'hid' ] )

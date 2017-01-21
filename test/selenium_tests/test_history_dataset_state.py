@@ -11,7 +11,7 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_dataset_state(self):
         self.register()
         self.perform_upload(self.get_filename("1.fasta"))
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
         self.assert_item_name(1, "1.fasta")
         self.assert_item_hid_text(1)
         self._assert_title_buttons(1)
