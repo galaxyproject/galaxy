@@ -197,8 +197,8 @@ class ToolBox( BaseGalaxyToolBox ):
 
     @property
     def all_requirements(self):
-        reqs = [json.dumps(req, sort_keys=True) for _, tool in self.tools() for req in tool.tool_requirements]
-        return [json.loads(req) for req in set(reqs)]
+        reqs = set([req for _, tool in self.tools() for req in tool.tool_requirements])
+        return [r.to_dict() for r in reqs]
 
     @property
     def tools_by_id( self ):
@@ -1426,8 +1426,7 @@ class Tool( object, Dictifiable ):
         """
         Return all requiremens of type package
         """
-        reqs = [req for req in self.requirements if req.type == 'package']
-        return reqs
+        return self.requirements.packages
 
     @property
     def tool_requirements_status(self):

@@ -1,4 +1,8 @@
-from galaxy.util import asbool, xml_text
+from galaxy.util import (
+    asbool,
+    xml_text,
+)
+from galaxy.util.oset import OrderedSet
 
 DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
@@ -28,8 +32,67 @@ class ToolRequirement( object ):
     def __eq__(self, other):
         return self.name == other.name and self.type == other.type and self.version == other.version
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __hash__(self):
         return hash((self.name, self.type, self.version))
+
+
+class ToolRequirements(object):
+    """
+    Represents all requirements (packages, env vars) needed to run a tool.
+    """
+    def __init__(self, tool_requirements=None):
+        if tool_requirements:
+            if not isinstance(tool_requirements, list):
+                raise ToolRequirementsException('ToolRequirements Constructor expects a list')
+            self.tool_requirements = OrderedSet([r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements])
+        else:
+            self.tool_requirements = OrderedSet()
+
+    @staticmethod
+    def from_list(requirements):
+        return ToolRequirements(requirements)
+
+    @property
+    def resolvable(self):
+        return ToolRequirements([r for r in self.tool_requirements if r.type in {'package', 'set_environment'}])
+
+    @property
+    def packages(self):
+        return ToolRequirements([r for r in self.tool_requirements if r.type == 'package'])
+
+    def to_list(self):
+        return [r.to_dict() for r in self.tool_requirements]
+
+    def append(self, requirement):
+        if not isinstance(requirement, ToolRequirement):
+            requirement = ToolRequirement.from_dict(requirement)
+        self.tool_requirements.add(requirement)
+
+    def __eq__(self, other):
+        return len(self.tool_requirements & other.tool_requirements) == len(self.tool_requirements) == len(other.tool_requirements)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __iter__(self):
+        for r in self.tool_requirements:
+            yield r
+
+    def __getitem__(self, ii):
+        return list(self.tool_requirements)[ii]
+
+    def __len__(self):
+        return len(self.tool_requirements)
+
+    def __hash__(self):
+        return sum([r.__hash__() for r in self.tool_requirements])
+
+
+class ToolRequirementsException(Exception):
+    pass
 
 
 DEFAULT_CONTAINER_TYPE = "docker"
@@ -76,7 +139,7 @@ class ContainerDescription( object ):
 def parse_requirements_from_dict( root_dict ):
     requirements = root_dict.get("requirements", [])
     containers = root_dict.get("containers", [])
-    return map(ToolRequirement.from_dict, requirements), map(ContainerDescription.from_dict, containers)
+    return ToolRequirements.from_list(requirements), map(ContainerDescription.from_dict, containers)
 
 
 def parse_requirements_from_xml( xml_root ):
@@ -108,7 +171,7 @@ def parse_requirements_from_xml( xml_root ):
     if requirements_elem is not None:
         requirement_elems = requirements_elem.findall( 'requirement' )
 
-    requirements = []
+    requirements = ToolRequirements()
     for requirement_elem in requirement_elems:
         name = xml_text( requirement_elem )
         type = requirement_elem.get( "type", DEFAULT_REQUIREMENT_TYPE )
