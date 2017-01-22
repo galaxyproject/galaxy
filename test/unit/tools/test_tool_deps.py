@@ -132,10 +132,12 @@ def test_tool_requirement_equality():
 
 def test_tool_requirements():
     tool_requirements_ab = ToolRequirements([REQUIREMENT_A, REQUIREMENT_B])
+    tool_requirements_ab_dup = ToolRequirements([REQUIREMENT_A, REQUIREMENT_B])
     tool_requirements_b = ToolRequirements([REQUIREMENT_A])
     assert tool_requirements_ab == ToolRequirements([REQUIREMENT_B, REQUIREMENT_A])
     assert tool_requirements_ab == ToolRequirements([REQUIREMENT_B, REQUIREMENT_A, REQUIREMENT_A])
     assert tool_requirements_ab != tool_requirements_b
+    assert len(set([tool_requirements_ab, tool_requirements_ab_dup])) == 1
 
 
 def test_module_dependency_resolver():
