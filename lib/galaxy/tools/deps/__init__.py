@@ -159,10 +159,11 @@ class DependencyManager( object ):
                 if require_exact and not dependency.exact:
                     continue
 
-                log.debug(dependency.resolver_msg)
                 if not isinstance(dependency, NullDependency):
+                    log.debug(dependency.resolver_msg)
                     requirement_to_dependency[requirement] = dependency
                 elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
+                    log.debug(dependency.resolver_msg)
                     requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
