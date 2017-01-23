@@ -40,7 +40,7 @@ def test_tool_dependencies():
             if sub == "env.sh":
                 __touch( os.path.join( p, "env.sh" ) )
 
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         dependency = dm.find_dep( "dep1", "1.0" )
         assert dependency.script == os.path.join( base_path, 'dep1', '1.0', 'env.sh' )
         assert dependency.path == os.path.join( base_path, 'dep1', '1.0' )
@@ -70,7 +70,7 @@ TEST_VERSION = "0.5.9"
 def test_toolshed_set_enviornment_requiremetns():
     with __test_base_path() as base_path:
         test_repo = __build_test_repo('set_environment')
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         env_settings_dir = os.path.join(base_path, "environment_settings", TEST_REPO_NAME, TEST_REPO_USER, TEST_REPO_NAME, TEST_REPO_CHANGESET)
         os.makedirs(env_settings_dir)
         dependency = dm.find_dep( TEST_REPO_NAME, version=None, type='set_environment', installed_tool_dependencies=[test_repo] )
@@ -81,7 +81,7 @@ def test_toolshed_set_enviornment_requiremetns():
 def test_toolshed_package_requirements():
     with __test_base_path() as base_path:
         test_repo = __build_test_repo('package', version=TEST_VERSION)
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         package_dir = __build_ts_test_package(base_path)
         dependency = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
         assert dependency.version == TEST_VERSION
@@ -90,7 +90,7 @@ def test_toolshed_package_requirements():
 
 def test_toolshed_tools_fallback_on_manual_dependencies():
     with __test_base_path() as base_path:
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         env_path = __setup_galaxy_package_dep(base_path, "dep1", "1.0")
         dependency = dm.find_dep( "dep1", version="1.0", type='package', installed_tool_dependencies=[test_repo] )
@@ -100,7 +100,7 @@ def test_toolshed_tools_fallback_on_manual_dependencies():
 
 def test_toolshed_greater_precendence():
     with __test_base_path() as base_path:
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         ts_package_dir = __build_ts_test_package(base_path)
         gx_env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION)
@@ -281,7 +281,7 @@ def test_shell_commands_built():
     # Test that dependency manager builds valid shell commands for a list of
     # requirements.
     with __test_base_path() as base_path:
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         __setup_galaxy_package_dep( base_path, TEST_REPO_NAME, TEST_VERSION, contents="export FOO=\"bar\"" )
         mock_requirements = ToolRequirements([{'type': 'package', 'version': TEST_VERSION, 'name': TEST_REPO_NAME}])
         commands = dm.dependency_shell_commands( mock_requirements )
@@ -473,8 +473,12 @@ def __dependency_manager(xml_content):
         f = tempfile.NamedTemporaryFile()
         f.write(xml_content)
         f.flush()
-        dm = DependencyManager( default_base_path=base_path, conf_file=f.name )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path, conf_file=f.name )
         yield dm
+
+
+def __dependency_manager_for_base_path(default_base_path, conf_file=None ):
+    return DependencyManager( default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False} )
 
 
 class _SimpleDependencyManager(object):
