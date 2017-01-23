@@ -19,25 +19,11 @@ from .requirements import (
     ToolRequirements
 )
 from .resolvers import NullDependency
-from .resolvers.conda import CondaDependencyResolver, DEFAULT_ENSURE_CHANNELS
+from .resolvers.conda import CondaDependencyResolver
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 
 log = logging.getLogger( __name__ )
-
-# TODO: Load these from the plugins. Would require a two step initialization of
-# DependencyManager - where the plugins are loaded first and then the config
-# is parsed and sent through.
-EXTRA_CONFIG_KWDS = {
-    'conda_prefix': None,
-    'conda_exec': None,
-    'conda_debug': None,
-    'conda_ensure_channels': DEFAULT_ENSURE_CHANNELS,
-    'conda_auto_install': False,
-    'conda_auto_init': False,
-    'conda_copy_dependencies': False,
-    'precache_dependencies': True,
-}
 
 CONFIG_VAL_NOT_FOUND = object()
 
@@ -47,15 +33,9 @@ def build_dependency_manager( config ):
         dependency_manager_kwds = {
             'default_base_path': config.tool_dependency_dir,
             'conf_file': config.dependency_resolvers_config_file,
+            'app_config': config,
         }
-        for key, default_value in EXTRA_CONFIG_KWDS.items():
-            value = getattr(config, key, CONFIG_VAL_NOT_FOUND)
-            if value is CONFIG_VAL_NOT_FOUND and hasattr(config, "config_dict"):
-                value = config.config_dict.get(key, CONFIG_VAL_NOT_FOUND)
-            if value is CONFIG_VAL_NOT_FOUND:
-                value = default_value
-            dependency_manager_kwds[key] = value
-        if config.use_cached_dependency_manager:
+        if getattr(config, "use_cached_dependency_manager", False):
             dependency_manager_kwds['tool_dependency_cache_dir'] = config.tool_dependency_cache_dir
             dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
         else:
@@ -90,7 +70,7 @@ class DependencyManager( object ):
     and should each contain a file 'env.sh' which can be sourced to make the
     dependency available in the current shell environment.
     """
-    def __init__( self, default_base_path, conf_file=None, **extra_config ):
+    def __init__( self, default_base_path, conf_file=None, app_config={} ):
         """
         Create a new dependency manager looking for packages under the paths listed
         in `base_paths`.  The default base path is app.config.tool_dependency_dir.
@@ -99,10 +79,29 @@ class DependencyManager( object ):
             log.warning( "Path '%s' does not exist, ignoring", default_base_path )
         if not os.path.isdir( default_base_path ):
             log.warning( "Path '%s' is not directory, ignoring", default_base_path )
-        self.extra_config = extra_config
+        self.__app_config = app_config
         self.default_base_path = os.path.abspath( default_base_path )
         self.resolver_classes = self.__resolvers_dict()
         self.dependency_resolvers = self.__build_dependency_resolvers( conf_file )
+
+    def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
+        """Look in resolver-specific settings for option and then fallback to global settings.
+        """
+        default = resolver.config_options.get(key)
+        config_prefix = resolver.resolver_type
+        global_key = "%s_%s" % (config_prefix, key)
+        value = explicit_resolver_options.get(key, CONFIG_VAL_NOT_FOUND)
+        if value is CONFIG_VAL_NOT_FOUND:
+            if isinstance(self.__app_config, dict):
+                value = self.__app_config.get(global_key, CONFIG_VAL_NOT_FOUND)
+            else:
+                value = getattr(self.__app_config, global_key, CONFIG_VAL_NOT_FOUND)
+        if value is CONFIG_VAL_NOT_FOUND and hasattr(self.__app_config, "config_dict"):
+            value = self.__app_config.config_dict.get(global_key, CONFIG_VAL_NOT_FOUND)
+        if value is CONFIG_VAL_NOT_FOUND:
+            value = default
+
+        return value
 
     def dependency_shell_commands( self, requirements, **kwds ):
         requirement_to_dependency = self.requirements_to_dependencies(requirements, **kwds)
@@ -141,6 +140,7 @@ class DependencyManager( object ):
             # Check requirements all at once
             all_unmet = len(requirement_to_dependency) == 0
             if all_unmet and hasattr(resolver, "resolve_all"):
+                # TODO: Handle specs.
                 dependencies = resolver.resolve_all(resolvable_requirements, **kwds)
                 if dependencies:
                     assert len(dependencies) == len(resolvable_requirements)
@@ -155,7 +155,7 @@ class DependencyManager( object ):
                 if requirement in requirement_to_dependency:
                     continue
 
-                dependency = resolver.resolve( requirement.name, requirement.version, requirement.type, **kwds )
+                dependency = resolver.resolve( requirement, **kwds )
                 if require_exact and not dependency.exact:
                     continue
 
@@ -210,8 +210,8 @@ class DependencyManager( object ):
 
 
 class CachedDependencyManager(DependencyManager):
-    def __init__(self, default_base_path, conf_file=None, **extra_config):
-        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, conf_file=conf_file, **extra_config)
+    def __init__(self, default_base_path, conf_file=None, app_config={}):
+        super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, conf_file=conf_file, app_config=app_config)
 
     def build_cache(self, requirements, **kwds):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
@@ -240,7 +240,7 @@ class CachedDependencyManager(DependencyManager):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
-        if not os.path.exists(hashed_dependencies_dir) and self.extra_config['precache_dependencies']:
+        if not os.path.exists(hashed_dependencies_dir) and self.__app_config.getattr("precache_dependencies", False):
             # Cache not present, try to create it
             self.build_cache(requirements, **kwds)
         if os.path.exists(hashed_dependencies_dir):

@@ -39,7 +39,9 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
 
         self._init_homebrew(**kwds)
 
-    def resolve(self, name, version, type, **kwds):
+    def resolve(self, requirement, **kwds):
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if type != "package":
             return NullDependency(version=version, name=name)
 

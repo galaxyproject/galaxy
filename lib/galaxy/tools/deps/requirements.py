@@ -1,8 +1,11 @@
+import copy
+
 from galaxy.util import (
     asbool,
     xml_text,
 )
 from galaxy.util.oset import OrderedSet
+
 
 DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
@@ -14,29 +17,69 @@ class ToolRequirement( object ):
     run (for example, a program, package, or library).  Requirements can
     optionally assert a specific version.
     """
-    def __init__( self, name=None, type=None, version=None ):
+    def __init__( self, name=None, type=None, version=None, specs=[] ):
         self.name = name
         self.type = type
         self.version = version
+        self.specs = specs
 
     def to_dict( self ):
-        return dict(name=self.name, type=self.type, version=self.version)
+        specs = [s.to_dict() for s in self.specs]
+        return dict(name=self.name, type=self.type, version=self.version, specs=specs)
+
+    def copy( self ):
+        return copy.deepcopy( self )
 
     @staticmethod
     def from_dict( dict ):
         version = dict.get( "version", None )
         name = dict.get("name", None)
         type = dict.get("type", None)
-        return ToolRequirement( name=name, type=type, version=version )
+        specs = [RequirementSpecification.from_dict(s) for s in dict.get("specs", [])]
+        return ToolRequirement( name=name, type=type, version=version, specs=specs )
 
     def __eq__(self, other):
-        return self.name == other.name and self.type == other.type and self.version == other.version
+        return self.name == other.name and self.type == other.type and self.version == other.version and self.specs == other.specs
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self.name, self.type, self.version))
+        return hash((self.name, self.type, self.version, frozenset(self.specs)))
+
+
+class RequirementSpecification(object):
+    """Refine a requirement using a URI."""
+
+    def __init__(self, uri, version=None):
+        self.uri = uri
+        self.version = version
+
+    @property
+    def specifies_version(self):
+        return self.version is not None
+
+    @property
+    def short_name(self):
+        return self.uri.split("/")[-1]
+
+    def to_dict(self):
+        return dict(uri=self.uri, version=self.version)
+
+    @staticmethod
+    def from_dict(dict):
+        uri = dict.get["uri"]
+        version = dict.get("version", None)
+        return RequirementSpecification(uri=uri, version=version)
+
+    def __eq__(self, other):
+        return self.uri == other.uri and self.version == other.version
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.uri, self.version))
 
 
 class ToolRequirements(object):
