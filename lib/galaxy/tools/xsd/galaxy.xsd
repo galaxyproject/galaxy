@@ -4802,7 +4802,7 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
       <xs:documentation xml:lang="en"><![CDATA[See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
 optionally contained within the ``<data>`` tag set and is the container tag set
 for the following ``<when>`` tag set.]]></xs:documentation>
@@ -4847,7 +4847,7 @@ in the ``<data>`` tag set with ``format="interval"``.
 See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
 ]]></xs:documentation>
