@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.1.2.dev0
+17.1.2 (2017-01-23)
 ---------------------
 
 * Bring in the last of the Galaxy dev changes before branch of release_17.01.
