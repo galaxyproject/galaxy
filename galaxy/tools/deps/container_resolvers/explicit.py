@@ -20,7 +20,7 @@ class ExplicitContainerResolver(ContainerResolver):
         a correct container.
         """
         for container_description in tool_info.container_descriptions:
-            if self._container_type_enabled(container_description):
-                return True
+            if self._container_type_enabled(container_description, enabled_container_types):
+                return container_description
 
-        return False
+        return None

@@ -67,6 +67,7 @@ PACKAGE_DATA = {
         'util/docutils_template.txt',
         'exceptions/error_codes.json',
         'tools/deps/mulled/invfile.lua',
+        'tools/deps/resolvers/default_conda_mapping.yml',
     ],
 }
 PACKAGE_DIR = {

@@ -64,7 +64,7 @@ def ensure_installed(installable_context, install_func, auto_init):
             installed = True
         return installed
 
-    if not os.path.exists(parent_path):
+    if not os.path.lexists(parent_path):
         os.mkdir(parent_path)
 
     try:
