@@ -9,7 +9,8 @@ History
 17.1.2.dev0
 ---------------------
 
-    
+* Bring in the last of the Galaxy dev changes before branch of release_17.01.
+* Improvements to mulled testing thanks to @mvdbeek.
 
 ---------------------
 17.1.1 (2016-12-14)
