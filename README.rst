@@ -3,19 +3,19 @@
 
 The latest information about Galaxy is available via `https://galaxyproject.org/ <https://galaxyproject.org/>`__
 
-.. image:: https://img.shields.io/badge/style-flat-questions-galaxy%20biostar-blue.svg
+.. image:: https://img.shields.io/badge/questions-galaxy%20biostar-blue.svg
     :target: https://biostar.usegalaxy.org
     :alt: Ask a question
 
-.. image:: https://img.shields.io/badge/style-flat-chat-irc.freenode.net%23galaxyproject-blue.svg
+.. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
     :target: https://webchat.freenode.net/?channels=galaxyproject
     :alt: Chat on irc
     
-.. image:: https://img.shields.io/badge/style-flat-chat-gitter-blue.svg
+.. image:: https://img.shields.io/badge/chat-gitter-blue.svg
     :target: https://gitter.im/galaxyproject/Lobby
     :alt: Chat on gitter
 
-.. image:: https://img.shields.io/badge/style-flat-documentation-green.svg
+.. image:: https://img.shields.io/badge/release-documentation-green.svg
     :target: https://docs.galaxyproject.org/en/master/
     :alt: Release Documentation
 
