@@ -210,7 +210,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #conda_auto_install = False
 # Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
-#conda_auto_init = False
+#conda_auto_init = True
 # You must set this to True if conda_prefix and job_working_directory are not on the same
 # volume, or some conda dependencies will fail to execute at job runtime.
 # Conda will copy packages content instead of creating hardlinks or symlinks.
@@ -908,6 +908,16 @@ use_interactive = True
 # Limits the number of results in toolbox search.  Can be used to tweak how many
 # results will appear.
 # tool_search_limit = 20
+
+# Enable/ disable Ngram-search for tools. It makes tool
+# search results tolerant for spelling mistakes in the query
+# by dividing the query into multiple ngrams and search for
+# each ngram
+#tool_enable_ngram_search = False
+
+# Set minimum and maximum sizes of ngrams
+#tool_ngram_minsize = 3
+#tool_ngram_maxsize = 4
 
 # -- Users and Security
 

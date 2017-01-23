@@ -332,7 +332,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="split_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for split_inputs</xs:documentation>
+        <xs:documentation xml:lang="en">A comma separated list of data inputs to split for job parallelization.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="split_size" type="xs:string">
@@ -343,6 +343,11 @@ Read more about configuring Galaxy to run Docker jobs
     <xs:attribute name="split_mode" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for split_mode</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="shared_inputs" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A comma separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2333,6 +2338,7 @@ allow access to Python code to generate options for a select list. See
           <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="conversion" type="ParamConversion" />
       <xs:element name="option" type="ParamOption" />
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
@@ -2631,6 +2637,32 @@ if the corresponding option is selected by default (the default is ``false``).
         </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ParamConversion">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+A contrived example of a tool that uses this is the test tool
+[explicit_conversion.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/explicit_conversion.xml).
+
+This directive is optionally contained within the ``<param>`` tag when the
+``type`` attribute value is ``data`` and is used to dynamically generated a converted
+dataset for the contained input of the type specified using the ``type`` tag.
+
+]]>
+</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of cheetah variable to create for converted dataset.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The short extension describing the datatype to convert to - Galaxy must have a datatype converter from the parent input's type to this.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
 

@@ -11,20 +11,20 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
 
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
         self.history_panel_click_item_title(hid=1)
         self.assert_item_peek_includes(1, "42")
 
     @selenium_test
     def test_run_tool_verify_dataset_details(self):
         self._run_environment_test_tool()
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
         self._check_dataset_details_for_inttest_value(1)
 
     @selenium_test
     def test_verify_dataset_details_tables(self):
         self._run_environment_test_tool()
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
 
         hda = self.latest_history_item()
         self._check_dataset_details_for_inttest_value(1)
@@ -62,7 +62,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_rerun(self):
         self._run_environment_test_tool()
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
         self.hda_click_primary_action_button(1, "rerun")
 
         inttest_div_element = self.tool_parameter_div("inttest")
@@ -72,7 +72,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         assert recorded_val == "42", recorded_val
         self.tool_execute()
 
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
 
     @selenium_test
@@ -81,13 +81,14 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         test_path_decoy = self.get_filename("1.txt")
         self.perform_upload(test_path)
         self.perform_upload(test_path_decoy)
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1)
+        self.history_panel_wait_for_hid_ok(2)
 
         self.home()
         self.tool_open("head")
         self.tool_set_value("input", "1.fasta", expected_type="data")
         self.tool_execute()
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(3)
 
         latest_hda = self.latest_history_item()
         assert latest_hda["hid"] == 3
