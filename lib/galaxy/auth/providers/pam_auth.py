@@ -3,13 +3,13 @@ Created on 13/07/2015
 
 Author Peter van Heusden (pvh@sanbi.ac.za)
 """
-
 import logging
-from subprocess import Popen, PIPE
 import shlex
+from subprocess import PIPE, Popen
+
+from galaxy.auth import _get_bool
 
 from ..providers import AuthProvider
-from galaxy.auth import _get_bool
 
 log = logging.getLogger(__name__)
 
@@ -148,4 +148,5 @@ class PAM(AuthProvider):
     def authenticate_user(self, user, password, options):
         return self.authenticate(user.email, user.username, password, options)[0]
 
-__all__ = ['PAM']
+
+__all__ = ('PAM', )

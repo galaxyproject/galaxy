@@ -52,7 +52,7 @@ class WorkflowModule( object ):
         return Class( trans )
 
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, **kwds ):
         """
         Create a new instance of the module initialized from values in the
         dictionary `d`.
@@ -195,7 +195,7 @@ class SimpleWorkflowModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, **kwds ):
         module = Class( trans )
         state = loads( d["tool_state"] )
         module.recover_state( state )
@@ -283,7 +283,7 @@ class SubWorkflowModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, **kwds ):
         module = Class( trans )
         if "subworkflow" in d:
             module.subworkflow = d["subworkflow"]
@@ -744,10 +744,17 @@ class ToolModule( WorkflowModule ):
 
     type = "tool"
 
-    def __init__( self, trans, tool_id, tool_version=None ):
+    def __init__( self, trans, tool_id, tool_version=None, exact_tools=False ):
         self.trans = trans
         self.tool_id = tool_id
-        self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
+        tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version, exact=exact_tools )
+        if tool_version and exact_tools and str(tool.version) != str(tool_version):
+            template = "Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]"
+            message = template % (tool_id, tool_version)
+            log.debug(message)
+            tool = None
+        self.tool = tool
+
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
         self.workflow_outputs = []
@@ -770,14 +777,15 @@ class ToolModule( WorkflowModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, d ):
+    def from_dict( Class, trans, d, **kwds ):
         tool_id = d.get( 'content_id', None )
         if tool_id is None:
             tool_id = d.get( 'tool_id', None )  # Older workflows will have exported this as tool_id.
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
         tool_version = str( d.get( 'tool_version', None ) )
-        module = Class( trans, tool_id, tool_version=tool_version )
+        exact_tools = kwds.get( "exact_tools", False )
+        module = Class( trans, tool_id, tool_version=tool_version, exact_tools=exact_tools )
         module.state = DefaultToolState()
         module.label = d.get("label", None) or None
         if module.tool is not None:
@@ -1359,9 +1367,9 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corr
         step_errors = module_injector.inject( step, step_args=step_args )
         if step.type == 'tool' or step.type is None:
             if step_errors:
-                raise exceptions.MessageException( step_errors )
+                raise exceptions.MessageException( step_errors, err_data={ step.order_index: step_errors } )
             if step.upgrade_messages:
                 if allow_tool_state_corrections:
                     log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
                 else:
-                    raise exceptions.MessageException( step.upgrade_messages )
+                    raise exceptions.MessageException( step.upgrade_messages, err_data={ step.order_index: step.upgrade_messages } )

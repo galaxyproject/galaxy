@@ -5,21 +5,29 @@ all providers ensure that data can be accessed on the filesystem for running
 tools
 """
 
+import logging
 import os
 import random
 import shutil
-import logging
 import threading
+
 from xml.etree import ElementTree
 
-from galaxy.util import umask_fix_perms, force_symlink, safe_makedirs, safe_relpath, directory_hash_id
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util.sleeper import Sleeper
-from galaxy.util.odict import odict
 try:
     from sqlalchemy.orm import object_session
 except ImportError:
     object_session = None
+
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import (
+    directory_hash_id,
+    force_symlink,
+    safe_makedirs,
+    safe_relpath,
+    umask_fix_perms,
+)
+from galaxy.util.odict import odict
+from galaxy.util.sleeper import Sleeper
 
 NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."
 
@@ -72,15 +80,16 @@ class ObjectStore(object):
 
     def __init__(self, config, **kwargs):
         """
-        Create a new ObjectStore.
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the following attributes:
 
-        config -- Python object with any number of attributes. Most likely
-        populated from `galaxy/config.ini`. The following attributes are
-        currently used:
-            object_store_check_old_style (only used by the DiskObjectStore)
-            jobs_directory -- Each job is given a unique empty directory
-                as its current working directory. This option defines in what
-                parent directory those directories will be created.
+            * object_store_check_old_style (only used by the
+              :class:`DiskObjectStore` subclass)
+            * jobs_directory -- Each job is given a unique empty directory
+              as its current working directory. This option defines in what
+              parent directory those directories will be created.
+            * new_file_path -- Used to set the 'temp' extra_dir.
         """
         self.running = True
         self.extra_dirs = {}
@@ -214,24 +223,24 @@ class DiskObjectStore(ObjectStore):
     """
 
     def __init__(self, config, config_xml=None, file_path=None, extra_dirs=None):
-        """The constructor.
-
-        config -- Python object with any number of attributes. Most likely
-            populated from `galaxy/config.ini`. The DiskObjectStore specific
-            attributes are:
-                object_store_check_old_style
-                job_directory -- Each job is given a unique empty
-                    directory as its current working directory. This option
-                    defines in what parent directory those directories will be
-                    created.
-                new_file_path -- Used to set the 'temp' extra_dir.
-                file_path -- Default directory to store objects to disk in.
-                umask -- the permission bits for newly `create()`d files.
-        config_xml -- An ElementTree object.
-        file_path -- Override for the config.file_path value.
-        extra_dirs -- Dictionary: keys are string, values are directory paths.
         """
-        super(DiskObjectStore, self).__init__(config, config_xml=None, file_path=file_path, extra_dirs=extra_dirs)
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the same attributes needed by
+            :class:`ObjectStore` plus:
+
+            * file_path -- Default directory to store objects to disk in.
+            * umask -- the permission bits for newly created files.
+
+        :type config_xml: ElementTree
+
+        :type file_path: str
+        :param file_path: Override for the `config.file_path` value.
+
+        :type extra_dirs: dict
+        :param extra_dirs: Keys are string, values are directory paths.
+        """
+        super(DiskObjectStore, self).__init__(config)
         self.file_path = file_path or config.file_path
         # The new config_xml overrides universe settings.
         if config_xml is not None:
@@ -444,7 +453,7 @@ class NestedObjectStore(ObjectStore):
 
     def __init__(self, config, config_xml=None):
         """Extend `ObjectStore`'s constructor."""
-        super(NestedObjectStore, self).__init__(config, config_xml=config_xml)
+        super(NestedObjectStore, self).__init__(config)
         self.backends = {}
 
     def shutdown(self):
@@ -463,7 +472,7 @@ class NestedObjectStore(ObjectStore):
 
     def create(self, obj, **kwargs):
         """Create a backing file in a random backend."""
-        random.choice(self.backends.values()).create(obj, **kwargs)
+        random.choice(list(self.backends.values())).create(obj, **kwargs)
 
     def empty(self, obj, **kwargs):
         """For the first backend that has this `obj`, determine if it is empty."""
@@ -521,14 +530,17 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __init__(self, config, config_xml=None, fsmon=False):
         """
-        Create a new DistributedObjectStore.
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the same attributes needed by
+            :class:`NestedObjectStore` plus:
 
-        config -- Python object with any number of attributes. Most likely
-            populated from `galaxy/config.ini`. The DistributedObjectStore
-            specific attributes are:
-                distributed_object_store_config_file
-        config_xml -- An ElementTree object
-        fsmon -- boolean. If true, monitor the file system for free space,
+            * distributed_object_store_config_file
+
+        :type config_xml: ElementTree
+
+        :type fsmon: bool
+        :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
         super(DistributedObjectStore, self).__init__(config,
@@ -547,7 +559,7 @@ class DistributedObjectStore(NestedObjectStore):
         random.seed()
         self.__parse_distributed_config(config, config_xml)
         self.sleeper = None
-        if fsmon and ( self.global_max_percent_full or filter( lambda x: x != 0.0, self.max_percent_full.values() ) ):
+        if fsmon and ( self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0] ):
             self.sleeper = Sleeper()
             self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor)
             self.filesystem_monitor_thread.setDaemon( True )
@@ -602,7 +614,7 @@ class DistributedObjectStore(NestedObjectStore):
                 maxpct = self.max_percent_full[id] or self.global_max_percent_full
                 pct = backend.get_store_usage_percent()
                 if pct > maxpct:
-                    new_weighted_backend_ids = filter(lambda x: x != id, new_weighted_backend_ids)
+                    new_weighted_backend_ids = [_ for _ in new_weighted_backend_ids if _ != id]
             self.weighted_backend_ids = new_weighted_backend_ids
             self.sleeper.sleep(120)  # Test free space every 2 minutes
 
@@ -733,7 +745,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
 
 
 def local_extra_dirs( func ):
-    """Non-local plugin decorator using local directories for the extra_dirs (job_working_directory and temp)."""
+    """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
     def wraps( self, *args, **kwargs ):
         if kwargs.get( 'base_dir', None ) is None:
             return func( self, *args, **kwargs )

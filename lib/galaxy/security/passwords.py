@@ -53,9 +53,9 @@ def check_password_PBKDF2( guess, hashed ):
     encoded_guess = b64encode( hashed_guess )
     return safe_str_cmp( encoded_original, encoded_guess )
 
+
 # Taken from https://github.com/mitsuhiko/python-pbkdf2/blob/master/pbkdf2.py
 # (c) Copyright 2011 by Armin Ronacher, BSD LICENSE
-
 _pack_int = Struct('>I').pack
 
 

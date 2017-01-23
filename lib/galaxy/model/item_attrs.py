@@ -1,7 +1,9 @@
+import logging
+
 from sqlalchemy.sql.expression import func
+
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
-import logging
 
 log = logging.getLogger( __name__ )
 
@@ -162,8 +164,8 @@ class UsesAnnotations:
         return getattr( galaxy.model, class_name, None )
 
 
-__all__ = [
+__all__ = (
     'UsesAnnotations',
     'UsesItemRatings',
     'RuntimeException',
-]
+)

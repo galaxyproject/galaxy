@@ -311,6 +311,7 @@ class FormDefinitionSelectFieldFactory( FormDefinitionFieldFactory ):
             rval['selectlist'].append( value )
         return rval
 
+
 field_type_factories = dict( [ ( field.type, field() ) for field in ( FormDefinitionTextFieldFactory,
                                                                       FormDefinitionPasswordFieldFactory,
                                                                       FormDefinitionAddressFieldFactory,

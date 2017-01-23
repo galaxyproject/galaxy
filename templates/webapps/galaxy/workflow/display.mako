@@ -90,7 +90,7 @@
     <%
         # HACK: Rendering workflow steps requires that trans have a history; however, if its user's first visit to Galaxy is here, he won't have a history
         # and an error will occur. To prevent this error, make sure user has a history. 
-        trans.get_history( create=True ) 
+        trans.get_history( most_recent=True, create=True )
     %>
     <table class="annotated-item">
         <tr><th>Step</th><th class="annotation">Annotation</th></tr>

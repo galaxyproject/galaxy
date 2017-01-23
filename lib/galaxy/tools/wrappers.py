@@ -1,13 +1,16 @@
+import logging
 import os
 import pipes
 import tempfile
+
+from six import string_types
+
 from galaxy import exceptions
-from galaxy.util.none_like import NoneDataset
 from galaxy.util import odict
+from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
-from logging import getLogger
-log = getLogger( __name__ )
+log = logging.getLogger( __name__ )
 
 # Fields in .log files corresponding to paths, must have one of the following
 # field names and all such fields are assumed to be paths. This is to allow
@@ -27,8 +30,9 @@ class ToolParameterValueWrapper( object ):
     Base class for object that Wraps a Tool Parameter and Value.
     """
 
-    def __nonzero__( self ):
+    def __bool__( self ):
         return bool( self.value )
+    __nonzero__ = __bool__
 
     def get_display_text( self, quote=True ):
         """
@@ -48,8 +52,9 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
     def __init__( self, obj ):
         self.obj = obj
 
-    def __nonzero__( self ):
+    def __bool__( self ):
         return bool( self.obj )  # FIXME: would it be safe/backwards compatible to rename .obj to .value, so that we can just inherit this method?
+    __nonzero__ = __bool__
 
     def __str__( self ):
         try:
@@ -72,7 +77,7 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         self._other_values = other_values
 
     def __eq__( self, other ):
-        if isinstance( other, basestring ):
+        if isinstance( other, string_types ):
             return str( self ) == other
         elif isinstance( other, int ):
             return int( self ) == other
@@ -144,7 +149,7 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values, self._path_rewriter )
 
     def __eq__( self, other ):
-        if isinstance( other, basestring ):
+        if isinstance( other, string_types ):
             return str( self ) == other
         else:
             return super( SelectToolParameterWrapper, self ) == other
@@ -193,8 +198,9 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 rval = wrap_with_safe_string( rval )
             return rval
 
-        def __nonzero__( self ):
+        def __bool__( self ):
             return self.metadata.__nonzero__()
+        __nonzero__ = __bool__
 
         def __iter__( self ):
             return self.metadata.__iter__()
@@ -206,7 +212,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 return default
 
         def items( self ):
-            return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
+            return iter( ( k, self.get( k ) ) for k, v in self.metadata.items() )
 
     def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None, identifier=None ):
         if not dataset:
@@ -276,8 +282,9 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         else:
             return getattr( self.dataset, key )
 
-    def __nonzero__( self ):
+    def __bool__( self ):
         return bool( self.dataset )
+    __nonzero__ = __bool__
 
 
 class HasDatasets:
@@ -306,7 +313,7 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
-            if hasattr(dataset, "element_identifier"):
+            if hasattr(dataset, "dataset_instance"):
                 element = dataset
                 dataset = element.dataset_instance
                 kwargs["identifier"] = element.element_identifier
@@ -407,7 +414,8 @@ class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
             return [].__iter__()
         return self.__element_instance_list.__iter__()
 
-    def __nonzero__( self ):
+    def __bool__( self ):
         # Fail `#if $param` checks in cheetah is optional input
         # not specified or if resulting collection is empty.
         return self.__input_supplied and bool( self.__element_instance_list )
+    __nonzero__ = __bool__

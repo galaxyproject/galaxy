@@ -1,14 +1,12 @@
-<tool id="CONVERTER_BedGraph_0" name="Index BedGraph for Track Viewer" hidden="true">
-  <!-- Used internally to generate track indexes -->
-  <command interpreter="python">bedgraph_to_array_tree_converter.py $input $output</command>
-  <inputs>
-    <page>
-      <param format="bedgraph" name="input" type="data" label="Choose BedGraph"/>
-    </page>
-   </inputs>
-   <outputs>
-      <data format="array_tree" name="output"/>
-   </outputs>
-  <help>
-  </help>
+<tool id="CONVERTER_BedGraph_0" name="Index BedGraph for Track Viewer" version="1.0.0" hidden="true">
+    <!-- Used internally to generate track indexes -->
+    <command>python '$__tool_directory__/bedgraph_to_array_tree_converter.py' '$input' '$output'</command>
+    <inputs>
+        <param format="bedgraph" name="input" type="data" label="Choose BedGraph"/>
+    </inputs>
+    <outputs>
+        <data format="array_tree" name="output"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

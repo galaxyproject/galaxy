@@ -6,8 +6,8 @@ import os
 import os.path
 import sys
 
-from six.moves.configparser import ConfigParser
 from six import iteritems
+from six.moves.configparser import ConfigParser
 
 
 def load_app_properties(
@@ -97,4 +97,4 @@ class NicerConfigParser(ConfigParser):
                 raise
 
 
-__all__ = ['load_app_properties', 'NicerConfigParser']
+__all__ = ('load_app_properties', 'NicerConfigParser')

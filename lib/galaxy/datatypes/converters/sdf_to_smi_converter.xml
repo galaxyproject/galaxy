@@ -7,9 +7,9 @@
     <command >
 <![CDATA[
         obabel
-            -isdf "${input}"
+            -isdf '${input}'
             -ocan
-            -O "${output}"
+            -O '${output}'
             -e
         2>&1
 ]]>

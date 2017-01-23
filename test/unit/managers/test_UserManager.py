@@ -4,12 +4,7 @@ User Manager testing.
 
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
-import imp
-import os
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 import sqlalchemy
 from six import string_types
@@ -245,7 +240,7 @@ class UserDeserializerTestCase( BaseTestCase ):
             self.deserializer.deserialize, user, { 'username': 'ed' }, trans=self.trans )
         self.assertTrue( 'Public name must be at least' in str( exception ) )
         self.assertRaises( base_manager.ModelDeserializingError, self.deserializer.deserialize,
-            user, { 'username': 'f.d.r.' }, trans=self.trans )
+            user, { 'username': 'f,d,r,' }, trans=self.trans )
 
         self.log( "usernames must be unique" )
         self.user_manager.create( **user3_data )

@@ -65,14 +65,6 @@ galaxy.tools.parameters.meta module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.parameters.output module
--------------------------------------
-
-.. automodule:: galaxy.tools.parameters.output
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.tools.parameters.output_collect module
 ---------------------------------------------
 
@@ -105,4 +97,10 @@ galaxy.tools.parameters.wrapped module
     :undoc-members:
     :show-inheritance:
 
+galaxy.tools.parameters.wrapped_json module
+-------------------------------------------
 
+.. automodule:: galaxy.tools.parameters.wrapped_json
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,35 +1,22 @@
 from contextlib import contextmanager
 
-# TODO: We don't need all of TwillTestCase, strip down to a common super class
-# shared by API and Twill test cases.
-from .twilltestcase import TwillTestCase
+from six.moves.urllib.parse import urlencode
 
-from base.interactor import GalaxyInteractorApi as BaseInteractor
-
-from .api_util import get_master_api_key
-from .api_util import get_user_api_key
 from .api_asserts import (
-    assert_status_code_is,
+    assert_error_code_is,
     assert_has_keys,
     assert_not_has_keys,
-    assert_error_code_is,
+    assert_status_code_is,
 )
-
-from urllib import urlencode
-
+from .api_util import get_master_api_key, get_user_api_key
+from .interactor import GalaxyInteractorApi as BaseInteractor
+from .twilltestcase import FunctionalTestCase
 
 TEST_USER = "user@bx.psu.edu"
 DEFAULT_OTHER_USER = "otheruser@bx.psu.edu"  # A second user for API testing.
 
 
-# TODO: Allow these to point at existing Galaxy instances.
-class ApiTestCase( TwillTestCase ):
-
-    def setUp( self ):
-        super( ApiTestCase, self ).setUp( )
-        self.user_api_key = get_user_api_key()
-        self.master_api_key = get_master_api_key()
-        self.galaxy_interactor = ApiTestInteractor( self )
+class UsesApiTestCaseMixin:
 
     def _api_url( self, path, params=None, use_key=None ):
         if not params:
@@ -41,6 +28,11 @@ class ApiTestCase( TwillTestCase ):
         if query:
             url = "%s?%s" % ( url, query )
         return url
+
+    def _setup_interactor( self ):
+        self.user_api_key = get_user_api_key()
+        self.master_api_key = get_master_api_key()
+        self.galaxy_interactor = ApiTestInteractor( self )
 
     def _setup_user( self, email, password=None ):
         self.galaxy_interactor.ensure_user_with_email( email, password=password )
@@ -100,6 +92,13 @@ class ApiTestCase( TwillTestCase ):
         return "1234567890123456"
 
     _assert_has_key = _assert_has_keys
+
+
+class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin):
+
+    def setUp( self ):
+        super( ApiTestCase, self ).setUp()
+        self._setup_interactor()
 
 
 class ApiTestInteractor( BaseInteractor ):

@@ -3,10 +3,10 @@ import threading
 import time
 from unittest import TestCase
 
-from galaxy.util import bunch
-from galaxy.jobs.runners import local
-from galaxy.jobs import metrics
 from galaxy import model
+from galaxy.jobs import metrics
+from galaxy.jobs.runners import local
+from galaxy.util import bunch
 
 from tools_support import (
     UsesApp,
@@ -105,6 +105,7 @@ class MockJobWrapper( object ):
         os.makedirs( tool_working_directory )
         self.app = app
         self.tool = tool
+        self.requires_containerization = False
         self.state = model.Job.states.QUEUED
         self.command_line = "echo HelloWorld"
         self.environment_variables = []

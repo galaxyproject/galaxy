@@ -1,8 +1,14 @@
+# -*- coding: utf-8 -*-
+
+from requests import (
+    get,
+    post,
+    put
+)
+
 from base import api
-from requests import post
-from requests import put
-from requests import get
-from .helpers import DatasetPopulator, wait_on
+
+from base.populators import DatasetPopulator, wait_on
 
 
 class HistoriesApiTestCase( api.ApiTestCase ):
@@ -13,16 +19,145 @@ class HistoriesApiTestCase( api.ApiTestCase ):
 
     def test_create_history( self ):
         # Create a history.
-        post_data = dict( name="TestHistory1" )
-        create_response = self._post( "histories", data=post_data ).json()
-        self._assert_has_keys( create_response, "name", "id" )
-        self.assertEquals( create_response[ "name" ], "TestHistory1" )
+        create_response = self._create_history("TestHistory1")
         created_id = create_response[ "id" ]
 
         # Make sure new history appears in index of user's histories.
         index_response = self._get( "histories" ).json()
         indexed_history = [ h for h in index_response if h[ "id" ] == created_id ][0]
         self.assertEquals(indexed_history[ "name" ], "TestHistory1")
+
+    def test_show_history( self ):
+        history_id = self._create_history("TestHistoryForShow")["id"]
+        show_response = self._show(history_id)
+        self._assert_has_key(
+            show_response,
+            'id', 'name', 'annotation', 'size', 'contents_url',
+            'state', 'state_details', 'state_ids'
+        )
+
+        state_details = show_response["state_details"]
+        state_ids = show_response["state_ids"]
+        states = [
+            'discarded', 'empty', 'error', 'failed_metadata', 'new',
+            'ok', 'paused', 'queued', 'running', 'setting_metadata', 'upload'
+        ]
+        assert isinstance(state_details, dict)
+        assert isinstance(state_ids, dict)
+        self._assert_has_keys(state_details, *states)
+        self._assert_has_keys(state_ids, *states)
+
+    def test_show_most_recently_used(self):
+        history_id = self._create_history("TestHistoryRecent")["id"]
+        show_response = self._get("histories/most_recently_used").json()
+        assert show_response["id"] == history_id
+
+    def test_index_order(self):
+        slightly_older_history_id = self._create_history("TestHistorySlightlyOlder")["id"]
+        newer_history_id = self._create_history("TestHistoryNewer")["id"]
+        index_response = self._get("histories").json()
+        assert index_response[0]["id"] == newer_history_id
+        assert index_response[1]["id"] == slightly_older_history_id
+
+    def test_delete(self):
+        # Setup a history and ensure it is in the index
+        history_id = self._create_history("TestHistoryForDelete")["id"]
+        index_response = self._get("histories").json()
+        assert index_response[0]["id"] == history_id
+
+        show_response = self._show(history_id)
+        assert not show_response["deleted"]
+
+        # Delete the history
+        self._delete("histories/%s" % history_id)
+
+        # Check can view it - but it is deleted
+        show_response = self._show(history_id)
+        assert show_response["deleted"]
+
+        # Verify it is dropped from history index
+        index_response = self._get("histories").json()
+        assert len(index_response) == 0 or index_response[0]["id"] != history_id
+
+        # Add deleted filter to index to view it
+        index_response = self._get("histories", {"deleted": "true"}).json()
+        assert index_response[0]["id"] == history_id
+
+    def test_undelete(self):
+        history_id = self._create_history("TestHistoryForDeleteAndUndelete")["id"]
+        self._delete("histories/%s" % history_id)
+        self._post("histories/deleted/%s/undelete" % history_id)
+        show_response = self._show(history_id)
+        assert not show_response["deleted"]
+
+    def test_update(self):
+        history_id = self._create_history("TestHistoryForUpdating")["id"]
+
+        self._update(history_id, {"name": "New Name"})
+        show_response = self._show(history_id)
+        assert show_response["name"] == "New Name"
+
+        unicode_name = u'桜ゲノム'
+        self._update(history_id, {"name": unicode_name})
+        show_response = self._show(history_id)
+        assert show_response["name"] == unicode_name, show_response
+
+        quoted_name = "'MooCow'"
+        self._update(history_id, {"name": quoted_name})
+        show_response = self._show(history_id)
+        assert show_response["name"] == quoted_name
+
+        self._update(history_id, {"deleted": True})
+        show_response = self._show(history_id)
+        assert show_response["deleted"], show_response
+
+        self._update(history_id, {"deleted": False})
+        show_response = self._show(history_id)
+        assert not show_response["deleted"]
+
+        self._update(history_id, {"published": True})
+        show_response = self._show(history_id)
+        assert show_response["published"]
+
+        self._update(history_id, {"genome_build": "hg18"})
+        show_response = self._show(history_id)
+        assert show_response["genome_build"] == "hg18"
+
+        self._update(history_id, {"annotation": "The annotation is cool"})
+        show_response = self._show(history_id)
+        assert show_response["annotation"] == "The annotation is cool"
+
+        self._update(history_id, {"annotation": unicode_name})
+        show_response = self._show(history_id)
+        assert show_response["annotation"] == unicode_name, show_response
+
+        self._update(history_id, {"annotation": quoted_name})
+        show_response = self._show(history_id)
+        assert show_response["annotation"] == quoted_name
+
+    def test_update_invalid_attribute(self):
+        history_id = self._create_history("TestHistoryForInvalidUpdating")["id"]
+        put_response = self._update(history_id, {"invalidkey": "moo"})
+        assert "invalidkey" not in put_response.json()
+
+    def test_update_invalid_types(self):
+        history_id = self._create_history("TestHistoryForUpdatingInvalidTypes")["id"]
+        for str_key in ["name", "annotation"]:
+            assert self._update(history_id, {str_key: False}).status_code == 400
+
+        for bool_key in [ 'deleted', 'importable', 'published' ]:
+            assert self._update(history_id, {bool_key: "a string"}).status_code == 400
+
+        assert self._update(history_id, {"tags": "a simple string"}).status_code == 400
+        assert self._update(history_id, {"tags": [True]}).status_code == 400
+
+    def test_invalid_keys(self):
+        invalid_history_id = "1234123412341234"
+
+        assert self._get("histories/%s" % invalid_history_id).status_code == 400
+        assert self._update(invalid_history_id, {"name": "new name"}).status_code == 400
+        assert self._delete("histories/%s" % invalid_history_id).status_code == 400
+        assert self._post("histories/deleted/%s/undelete" % invalid_history_id).status_code == 400
 
     def test_create_anonymous_fails( self ):
         post_data = dict( name="CannotCreate" )
@@ -94,5 +229,20 @@ class HistoriesApiTestCase( api.ApiTestCase ):
         self._assert_has_keys( response, "download_url" )
         download_path = response[ "download_url" ]
         return download_path
+
+    def _show(self, history_id):
+        return self._get("histories/%s" % history_id).json()
+
+    def _update(self, history_id, data):
+        update_url = self._api_url("histories/%s" % history_id, use_key=True)
+        put_response = put(update_url, json=data)
+        return put_response
+
+    def _create_history(self, name):
+        post_data = dict(name=name)
+        create_response = self._post("histories", data=post_data).json()
+        self._assert_has_keys(create_response, "name", "id")
+        self.assertEquals(create_response["name"], name)
+        return create_response
 
     # TODO: (CE) test_create_from_copy

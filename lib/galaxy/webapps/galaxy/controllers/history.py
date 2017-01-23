@@ -4,7 +4,7 @@ import urllib
 from markupsafe import escape
 from six import string_types
 from sqlalchemy import and_, false, func, null, true
-from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm import eagerload, eagerload_all
 
 import galaxy.util
 from galaxy import exceptions
@@ -487,7 +487,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
                 current_history=trans.history )
         else:
-            history = trans.get_history( create=True )
+            history = trans.get_history( most_recent=True, create=True )
 
         trans.response.set_content_type( 'text/xml' )
         return trans.fill_template_mako(
@@ -664,7 +664,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Get history.
         session = trans.sa_session
         user = session.query( model.User ).filter_by( username=username ).first()
-        history = trans.sa_session.query( model.History ).filter_by( user=user, slug=slug, deleted=False ).first()
+        history = trans.sa_session.query( model.History ) \
+            .options( eagerload( 'tags' ) ).options( eagerload( 'annotations' ) ) \
+            .filter_by( user=user, slug=slug, deleted=False ).first()
         if history is None:
             raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access history.
@@ -1351,7 +1353,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """Return the current user's current history in a serialized, dictionary form."""
         # Prevent IE11 from caching this
         trans.response.headers[ 'Cache-Control' ] = ["max-age=0", "no-cache", "no-store"]
-        history = trans.get_history( create=True )
+        history = trans.get_history( most_recent=True, create=True )
         return self.history_data( trans, history )
 
     @web.json

@@ -1,24 +1,29 @@
 """
 Job runner plugin for executing jobs on the local system via the command line.
 """
-import os
+import datetime
 import errno
 import logging
-import datetime
-import tempfile
+import os
 import subprocess
-
+import tempfile
 from time import sleep
 
 from galaxy import model
-from ..runners import BaseJobRunner
-from ..runners import JobState
-from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    DATABASE_MAX_STRING_SIZE,
+    shrink_stream_by_size
+)
+
+from ..runners import (
+    BaseJobRunner,
+    JobState
+)
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'LocalJobRunner' ]
+__all__ = ( 'LocalJobRunner', )
 
 DEFAULT_POOL_SLEEP_TIME = 1
 # TODO: Set to false and just get rid of this option. It would simplify this
@@ -72,9 +77,7 @@ class LocalJobRunner( BaseJobRunner ):
         return job_file, exit_code_path
 
     def queue_job( self, job_wrapper ):
-        # prepare the job
-        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
-        if not self.prepare_job( job_wrapper, include_metadata=include_metadata ):
+        if not self._prepare_job_local( job_wrapper ):
             return
 
         stderr = stdout = ''
@@ -118,17 +121,16 @@ class LocalJobRunner( BaseJobRunner ):
             log.debug('execution finished: %s' % command_line)
         except Exception:
             log.exception("failure running job %d" % job_wrapper.job_id)
-            job_wrapper.fail( "failure running job", exception=True )
+            self._fail_job_local(job_wrapper, "failure running job")
             return
-        external_metadata = not asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB ) )
-        if external_metadata:
-            self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
+
+        self._handle_metadata_if_needed(job_wrapper)
         # Finish the job!
         try:
             job_wrapper.finish( stdout, stderr, exit_code )
         except:
             log.exception("Job wrapper finish method failed")
-            job_wrapper.fail("Unable to finish job", exception=True)
+            self._fail_job_local(job_wrapper, "Unable to finish job")
 
     def stop_job( self, job ):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
@@ -162,6 +164,25 @@ class LocalJobRunner( BaseJobRunner ):
     def recover( self, job, job_wrapper ):
         # local jobs can't be recovered
         job_wrapper.change_state( model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job." )
+
+    def _fail_job_local( self, job_wrapper, message ):
+        job_destination = job_wrapper.job_destination
+        job_state = JobState(job_wrapper, job_destination)
+        job_state.fail_message = message
+        job_state.stop_job = False
+        self.fail_job(job_state, exception=True)
+
+    def _handle_metadata_if_needed(self, job_wrapper):
+        if not self._embed_metadata(job_wrapper):
+            self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
+
+    def _embed_metadata(self, job_wrapper):
+        job_destination = job_wrapper.job_destination
+        embed_metadata = asbool(job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
+        return embed_metadata
+
+    def _prepare_job_local(self, job_wrapper):
+        return self.prepare_job(job_wrapper, include_metadata=self._embed_metadata(job_wrapper))
 
     def _check_pid( self, pid ):
         try:

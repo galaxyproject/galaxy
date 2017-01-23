@@ -74,7 +74,7 @@ class WorkflowProgressTestCase( unittest.TestCase ):
         )
 
     def _set_previous_progress(self, outputs_dict):
-        for step_id, step_value in outputs_dict.iteritems():
+        for step_id, step_value in outputs_dict.items():
             if step_value is not UNSCHEDULED_STEP:
                 self.progress[step_id] = step_value
 

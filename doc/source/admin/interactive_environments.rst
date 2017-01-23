@@ -1,11 +1,6 @@
 Galaxy Interactive Environments (GIEs)
 ======================================
 
-GIEs were a new feature back in Galaxy 15.05, leading with the release of the
-IPython IE. They were presented at GCC2015, and the RStudio IE was released as
-part of 15.07. The IPython IE was superceded by a Project Jupyter IE in
-Galaxy XXXXX.
-
 A GIE is a Docker container, launched by Galaxy, proxied by Galaxy, with some
 extra sugar inside the container to allow users to interact easily with their
 Galaxy histories.
@@ -61,7 +56,7 @@ Once Node and npm are ready to go, you'll need to install the dependencies
 
 Running ``node lib/main.js --help`` should produce some useful help text
 
-.. code-block::
+.. code-block:: console
 
     Usage: main [options]
 
@@ -81,7 +76,7 @@ as of 2014. Alternately, the proxy can be stated manually or via a system such a
 Supervisord. Assuming that the ``$GALAXY_ROOT`` environment variable refers to the location of
 the Galaxy installation, the command for launching the proxy is:
 
-.. code-block::  console
+.. code-block:: console
 
     $ node $GALAXY_ROOT/lib/galaxy/web/proxy/js/lib/main.js --ip 0.0.0.0 \
         --port 8800 --sessions $GALAXY_ROOT/database/session_map.sqlite \
@@ -122,6 +117,7 @@ As you can see most of these variables map directly to the command line
 arguments to the NodeJS script. There are a few extra parameters which will
 be needed if you run Galaxy behind an upstream proxy like nginx or
 Apache:
+
 .. code-block:: ini
 
     dynamic_proxy_external_proxy=True
@@ -180,9 +176,9 @@ Please note you will need to be using apache2.4 with ``mod_proxy_wstunnel``.
         proxy_redirect off;
     }
 
-    # Project Jupyter / IPython specific. Other IEs may require their own routes.
+    # Project Jupyter specific. Other IEs may require their own routes.
     location ~ ^/galaxy/gie_proxy/jupyter/(?<nbtype>[^/]+)/api/kernels(?<rest>.*?)$ {
-        proxy_pass http://localhost:8800/galaxy/gie_proxy/$nbtype/api/kernels$rest;
+        proxy_pass http://localhost:8800/galaxy/gie_proxy/jupyter/$nbtype/api/kernels$rest;
         proxy_redirect off;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -228,8 +224,8 @@ Docker host with
     $ docker -H tcp://gx-docker:4243 run -it busybox sh
 
 So far so good! Now we need to configure Galaxy to use our new Docker host
-to start the Interactive Environments. For that we need to edit the IPython GIE
-configuration, ``ipython.ini`` to use our custom docker host
+to start the Interactive Environments. For that we need to edit the Jupyter GIE
+configuration, ``jupyter.ini`` to use our custom docker host
 
 .. code-block:: ini
 

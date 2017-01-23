@@ -1,15 +1,12 @@
-<tool id="CONVERTER_interval_to_bed_0" name="Convert Genomic Intervals To BED">
-  <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <!-- Used on the metadata edit page. -->
-  <command interpreter="python">interval_to_bed_converter.py $output1 $input1 ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol} ${input1.metadata.nameCol}</command>
-  <inputs>
-    <page>
-      <param format="interval" name="input1" type="data" label="Choose intervals"/>
-    </page>
-   </inputs>
-  <outputs>
-    <data format="bed" name="output1"/>
-  </outputs>
-  <help>
-  </help>
+<tool id="CONVERTER_interval_to_bed_0" name="Convert Genomic Intervals To BED" version="1.0.0">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <command>python '$__tool_directory__/interval_to_bed_converter.py' '$output1' '$input1' ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} ${input1.metadata.strandCol} ${input1.metadata.nameCol}</command>
+    <inputs>
+        <param format="interval" name="input1" type="data" label="Choose intervals"/>
+    </inputs>
+    <outputs>
+        <data format="bed" name="output1"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

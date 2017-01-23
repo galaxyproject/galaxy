@@ -1,8 +1,10 @@
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+"""The module describes the ``core`` job metrics plugin."""
+import logging
 import time
 
-import logging
+from ..instrumenters import InstrumentPlugin
+from ...metrics import formatting
+
 log = logging.getLogger( __name__ )
 
 GALAXY_SLOTS_KEY = "galaxy_slots"
@@ -82,4 +84,5 @@ class CorePlugin( InstrumentPlugin ):
             pass
         return value
 
-__all__ = [ 'CorePlugin' ]
+
+__all__ = ( 'CorePlugin', )

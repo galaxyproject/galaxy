@@ -86,11 +86,6 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
             }
         },
 
-        /** Modify onchange event handler */
-        setOnChange: function( callback ) {
-            this.options.onchange = callback;
-        },
-
         /** Render tool form */
         render: function() {
             var self = this;
@@ -128,7 +123,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
         /** Renders/appends dom elements of the form */
         _renderForm: function() {
             $( '.tooltip' ).remove();
-            this.message = new Ui.Message();
+            this.message = new Ui.UnescapedMessage();
             this.section = new FormSection.View( this, { inputs: this.options.inputs } );
             this.portlet = new Portlet.View({
                 icon        : this.options.icon,

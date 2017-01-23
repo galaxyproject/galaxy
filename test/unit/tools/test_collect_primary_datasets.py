@@ -1,11 +1,12 @@
-import os
 import json
+import os
 import unittest
 
 import tools_support
-
-from galaxy import model
-from galaxy import util
+from galaxy import (
+    model,
+    util
+)
 from galaxy.tools.parser import output_collection_def
 
 
@@ -171,7 +172,7 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         self._setup_extra_file( subdir="subdir", filename="foo.txt" )
         primary_outputs = self._collect( )[ DEFAULT_TOOL_OUTPUT ]
         assert len( primary_outputs ) == 1
-        created_hda = primary_outputs.values()[ 0 ]
+        created_hda = next(iter(primary_outputs.values()))
         assert "foo.txt" in created_hda.name
         assert created_hda.ext == "txt"
         assert created_hda.dbkey == "btau"
@@ -206,7 +207,7 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
         primary_outputs = self._collect( )[ DEFAULT_TOOL_OUTPUT ]
         assert len( primary_outputs ) == 5
         genomes = dict( samp1="hg19", samp2="lactLact", samp3="hg19", samp4="lactPlan", samp5="fusoNucl" )
-        for key, hda in primary_outputs.iteritems():
+        for key, hda in primary_outputs.items():
             assert hda.dbkey == genomes[ key ]
 
     def test_name_versus_designation( self ):

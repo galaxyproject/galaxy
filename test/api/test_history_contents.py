@@ -1,11 +1,11 @@
-from base import api
+# -*- coding: utf-8 -*-
+
 import json
 
-from .helpers import TestsDatasets
-from .helpers import LibraryPopulator
-from .helpers import DatasetCollectionPopulator
-from requests import delete
-from requests import put
+from requests import delete, put
+
+from base import api
+from base.populators import DatasetCollectionPopulator, LibraryPopulator, TestsDatasets
 
 
 # TODO: Test anonymous access.
@@ -63,17 +63,44 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_status_code_is( create_response, 200 )
         assert self.__count_contents( self.history_id ) == 1
 
-    def test_update( self ):
-        hda1 = self._new_dataset( self.history_id )
-        self._wait_for_history( self.history_id )
-        assert str( hda1[ "deleted" ] ).lower() == "false"
-        update_url = self._api_url( "histories/%s/contents/%s" % ( self.history_id, hda1[ "id" ] ), use_key=True )
-        # Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
-        body = json.dumps( dict( deleted=True ) )
-        update_response = put( update_url, data=body )
-        self._assert_status_code_is( update_response, 200 )
-        show_response = self.__show( hda1 )
-        assert str( show_response.json()[ "deleted" ] ).lower() == "true"
+    def test_update(self):
+        hda1 = self._wait_for_new_hda()
+        assert str(hda1["deleted"]).lower() == "false"
+        update_response = self._raw_update(hda1["id"], dict(deleted=True))
+        self._assert_status_code_is(update_response, 200)
+        show_response = self.__show(hda1)
+        assert str(show_response.json()["deleted"]).lower() == "true"
+
+        update_response = self._raw_update(hda1["id"], dict(name="Updated Name"))
+        assert self.__show(hda1).json()["name"] == "Updated Name"
+
+        update_response = self._raw_update(hda1["id"], dict(name="Updated Name"))
+        assert self.__show(hda1).json()["name"] == "Updated Name"
+
+        unicode_name = u'ржевский сапоги'
+        update_response = self._raw_update(hda1["id"], dict(name=unicode_name))
+        updated_hda = self.__show(hda1).json()
+        assert updated_hda["name"] == unicode_name, updated_hda
+
+        quoted_name = '"Mooo"'
+        update_response = self._raw_update(hda1["id"], dict(name=quoted_name))
+        updated_hda = self.__show(hda1).json()
+        assert updated_hda["name"] == quoted_name, quoted_name
+
+    def test_update_type_failures(self):
+        hda1 = self._wait_for_new_hda()
+        update_response = self._raw_update(hda1["id"], dict(deleted='not valid'))
+        self._assert_status_code_is(update_response, 400)
+
+    def _wait_for_new_hda(self):
+        hda1 = self._new_dataset(self.history_id)
+        self._wait_for_history(self.history_id)
+        return hda1
+
+    def _raw_update(self, item_id, data):
+        update_url = self._api_url( "histories/%s/contents/%s" % (self.history_id, item_id), use_key=True)
+        update_response = put(update_url, json=data)
+        return update_response
 
     def test_delete( self ):
         hda1 = self._new_dataset( self.history_id )

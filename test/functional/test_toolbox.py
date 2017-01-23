@@ -1,18 +1,21 @@
+from __future__ import print_function
+
 import logging
 import new
 import sys
-from base.twilltestcase import TwillTestCase
-from base.interactor import build_interactor, stage_data_in_history, RunToolException
-from base.instrument import register_job_data
-from galaxy.tools import DataManagerTool
-from galaxy.tools.verify.asserts import verify_assertions
-from galaxy.util import bunch
 
 try:
     from nose.tools import nottest
 except ImportError:
     def nottest(x):
         return x
+
+from base.instrument import register_job_data
+from base.interactor import build_interactor, RunToolException, stage_data_in_history
+from base.twilltestcase import TwillTestCase
+from galaxy.tools import DataManagerTool
+from galaxy.tools.verify.asserts import verify_assertions
+from galaxy.util import bunch
 
 log = logging.getLogger( __name__ )
 
@@ -25,7 +28,7 @@ TOOL_TYPES_NO_TEST = ( DataManagerTool, )
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
 
-    def do_it( self, testdef ):
+    def do_it( self, testdef, resource_parameters={} ):
         """
         Run through a tool test case.
         """
@@ -50,7 +53,7 @@ class ToolTestCase( TwillTestCase ):
         expected_failure_occurred = False
         try:
             try:
-                tool_response = galaxy_interactor.run_tool( testdef, test_history )
+                tool_response = galaxy_interactor.run_tool( testdef, test_history, resource_parameters=resource_parameters )
                 data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
                 data_collection_list = tool_response.output_collections
             except RunToolException as e:
@@ -83,7 +86,7 @@ class ToolTestCase( TwillTestCase ):
             if job_stdio is not None:
                 job_data["job"] = job_stdio
             if job_output_exceptions:
-                job_data["output_problems"] = map(str, job_output_exceptions)
+                job_data["output_problems"] = [str(_) for _ in job_output_exceptions]
             if tool_execution_exception:
                 job_data["execution_problem"] = str(tool_execution_exception)
             register_job_data(job_data)
@@ -120,7 +123,7 @@ class ToolTestCase( TwillTestCase ):
                 # Only print this stuff out once.
                 for stream in ['stdout', 'stderr']:
                     if stream in job_stdio:
-                        print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
+                        print(self._format_stream( job_stdio[ stream ], stream=stream, format=True ), file=sys.stderr)
             found_exceptions.append(e)
 
         if testdef.expect_failure:
@@ -161,7 +164,7 @@ class ToolTestCase( TwillTestCase ):
                 # just a list (case with twill variant or if output changes its
                 # name).
                 if hasattr(data_list, "values"):
-                    output_data = data_list.values()[ output_index ]
+                    output_data = list(data_list.values())[ output_index ]
                 else:
                     output_data = data_list[ len(data_list) - len(testdef.outputs) + output_index ]
             self.assertTrue( output_data is not None )

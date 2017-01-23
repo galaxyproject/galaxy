@@ -37,12 +37,6 @@ many methods to help analyze and break the cycles.  This requires
 a good deal more code than topsort itself!
 """
 from galaxy.util.odict import odict as OrderedDict
-from six import PY3
-if PY3:
-    def list_filter(f, lst):
-        return list(filter(f, lst))
-else:
-    list_filter = filter
 
 
 class CycleError(Exception):
@@ -164,8 +158,7 @@ def topsort(pairlist):
     numpreds, successors = _numpreds_and_successors_from_pairlist(pairlist)
 
     # suck up everything without a predecessor
-    answer = list_filter(lambda x, numpreds=numpreds: numpreds[x] == 0,
-                         numpreds.keys())
+    answer = [x for x in numpreds.keys() if numpreds[x] == 0]
 
     # for everything in answer, knock down the pred count on
     # its successors; note that answer grows *in* the loop

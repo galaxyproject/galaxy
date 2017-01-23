@@ -29,5 +29,6 @@ def merge():
 
     parser.write(open(destination, 'w'))
 
+
 if __name__ == '__main__':
     merge()
