@@ -909,6 +909,16 @@ use_interactive = True
 # results will appear.
 # tool_search_limit = 20
 
+# Enable/ disable Ngram-search for tools. It makes tool
+# search results tolerant for spelling mistakes in the query
+# by dividing the query into multiple ngrams and search for
+# each ngram
+#tool_enable_ngram_search = False
+
+# Set minimum and maximum sizes of ngrams
+#tool_ngram_minsize = 3
+#tool_ngram_maxsize = 4
+
 # -- Users and Security
 
 # Galaxy encodes various internal values when these values will be output in
