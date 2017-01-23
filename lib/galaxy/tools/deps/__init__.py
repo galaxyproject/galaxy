@@ -14,7 +14,10 @@ from galaxy.util import (
     plugin_config
 )
 
-from .requirements import ToolRequirement
+from .requirements import (
+    ToolRequirement,
+    ToolRequirements
+)
 from .resolvers import NullDependency
 from .resolvers.conda import CondaDependencyResolver, DEFAULT_ENSURE_CHANNELS
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
@@ -125,12 +128,7 @@ class DependencyManager( object ):
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
 
-        resolvable_requirements = []
-        for requirement in requirements:
-            if requirement.type in ['package', 'set_environment']:
-                resolvable_requirements.append(requirement)
-            else:
-                log.debug("Unresolvable requirement type [%s] found, will be ignored." % requirement.type)
+        resolvable_requirements = requirements.resolvable
 
         for i, resolver in enumerate(self.dependency_resolvers):
             if index is not None and i != index:
@@ -157,16 +155,16 @@ class DependencyManager( object ):
                 if requirement in requirement_to_dependency:
                     continue
 
-                if requirement.type in ['package', 'set_environment']:
-                    dependency = resolver.resolve( requirement.name, requirement.version, requirement.type, **kwds )
-                    if require_exact and not dependency.exact:
-                        continue
+                dependency = resolver.resolve( requirement.name, requirement.version, requirement.type, **kwds )
+                if require_exact and not dependency.exact:
+                    continue
 
+                if not isinstance(dependency, NullDependency):
                     log.debug(dependency.resolver_msg)
-                    if not isinstance(dependency, NullDependency):
-                        requirement_to_dependency[requirement] = dependency
-                    elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
-                        requirement_to_dependency[requirement] = dependency
+                    requirement_to_dependency[requirement] = dependency
+                elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
+                    log.debug(dependency.resolver_msg)
+                    requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
 
@@ -175,8 +173,8 @@ class DependencyManager( object ):
 
     def find_dep( self, name, version=None, type='package', **kwds ):
         log.debug('Find dependency %s version %s' % (name, version))
-        requirement = ToolRequirement(name=name, version=version, type=type)
-        dep_dict = self._requirements_to_dependencies_dict([requirement], **kwds)
+        requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
+        dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
         if len(dep_dict) > 0:
             return dep_dict.values()[0]
         else:

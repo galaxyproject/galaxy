@@ -14,6 +14,10 @@ from stat import S_IXUSR
 from subprocess import PIPE, Popen
 
 from galaxy.tools.deps import DependencyManager
+from galaxy.tools.deps.requirements import (
+    ToolRequirement,
+    ToolRequirements
+)
 from galaxy.tools.deps.resolvers import NullDependency
 from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
 from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
@@ -112,6 +116,30 @@ def __build_ts_test_package(base_path, script_contents=''):
     return package_dir
 
 
+REQUIREMENT_A = {'name': 'gnuplot',
+                 'type': 'package',
+                 'version': '4.6'}
+REQUIREMENT_B = REQUIREMENT_A.copy()
+REQUIREMENT_B['version'] = '4.7'
+
+
+def test_tool_requirement_equality():
+    a = ToolRequirement.from_dict(REQUIREMENT_A)
+    assert a == ToolRequirement(**REQUIREMENT_A)
+    b = ToolRequirement(**REQUIREMENT_B)
+    assert a != b
+
+
+def test_tool_requirements():
+    tool_requirements_ab = ToolRequirements([REQUIREMENT_A, REQUIREMENT_B])
+    tool_requirements_ab_dup = ToolRequirements([REQUIREMENT_A, REQUIREMENT_B])
+    tool_requirements_b = ToolRequirements([REQUIREMENT_A])
+    assert tool_requirements_ab == ToolRequirements([REQUIREMENT_B, REQUIREMENT_A])
+    assert tool_requirements_ab == ToolRequirements([REQUIREMENT_B, REQUIREMENT_A, REQUIREMENT_A])
+    assert tool_requirements_ab != tool_requirements_b
+    assert len(set([tool_requirements_ab, tool_requirements_ab_dup])) == 1
+
+
 def test_module_dependency_resolver():
     with __test_base_path() as temp_directory:
         module_script = os.path.join(temp_directory, "modulecmd")
@@ -193,7 +221,7 @@ def test_shell_commands_built():
     with __test_base_path() as base_path:
         dm = DependencyManager( default_base_path=base_path )
         __setup_galaxy_package_dep( base_path, TEST_REPO_NAME, TEST_VERSION, contents="export FOO=\"bar\"" )
-        mock_requirements = [ Bunch(type="package", version=TEST_VERSION, name=TEST_REPO_NAME ) ]
+        mock_requirements = ToolRequirements([{'type': 'package', 'version': TEST_VERSION, 'name': TEST_REPO_NAME}])
         commands = dm.dependency_shell_commands( mock_requirements )
         __assert_foo_exported( commands )
 
