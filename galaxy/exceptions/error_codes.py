@@ -3,7 +3,6 @@
 See the file error_codes.json for actual error code descriptions.
 """
 from json import loads
-
 from pkg_resources import resource_string
 
 
