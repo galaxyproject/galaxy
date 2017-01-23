@@ -15,7 +15,7 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
     :target: https://gitter.im/galaxyproject/Lobby
     :alt: Chat on gitter
 
-.. image:: https://img.shields.io/badge/release-documentation-green.svg
+.. image:: https://img.shields.io/badge/release-documentation-blue.svg
     :target: https://docs.galaxyproject.org/en/master/
     :alt: Release Documentation
 
