@@ -310,6 +310,10 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( "configuration_version",
                            "/api/version", controller="configuration",
                            action="version", conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( "api_whoami",
+                           "/api/whoami", controller='configuration',
+                           action='whoami',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',

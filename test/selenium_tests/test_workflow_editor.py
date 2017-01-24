@@ -34,8 +34,8 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         self.wait_for_selector_visible("#__workflow__inputs__ .toolTitle")
         input_links = self.driver.find_elements_by_css_selector("#__workflow__inputs__ .toolTitle a")
         input_links[0].click()
-        time.sleep(1)
-        assert False
+        # TODO: verify box is highlighted and side panel is a form describing input.
+        # More work needs to be done to develop testing abstractions for doing these things.
 
     @selenium_test
     def test_save_as(self):

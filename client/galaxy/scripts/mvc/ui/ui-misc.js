@@ -62,7 +62,7 @@ define(['utils/utils',
                 this.$el.addClass( 'alert' ).addClass( 'alert-' + status );
             }
             if ( this.model.get( 'message' ) ) {
-                this.$el.html( this.model.get( 'message' ) );
+                this.$el.html( this.messageForDisplay() );
                 this.$el[ this.model.get( 'fade' ) ? 'fadeIn' : 'show' ]();
                 this.timeout && window.clearTimeout( this.timeout );
                 if ( !this.model.get( 'persistent' ) ) {
@@ -75,6 +75,15 @@ define(['utils/utils',
                 this.$el.fadeOut();
             }
             return this;
+        },
+        messageForDisplay: function() {
+            return _.escape( this.model.get( 'message' ) );
+        }
+    });
+
+    var UnescapedMessage = Message.extend({
+        messageForDisplay: function() {
+            return this.model.get( 'message' );
         }
     });
 
@@ -157,21 +166,22 @@ define(['utils/utils',
     });
 
     return {
-        Button      : Buttons.ButtonDefault,
-        ButtonIcon  : Buttons.ButtonIcon,
-        ButtonCheck : Buttons.ButtonCheck,
-        ButtonMenu  : Buttons.ButtonMenu,
-        ButtonLink  : Buttons.ButtonLink,
-        Input       : Input,
-        Label       : Label,
-        Message     : Message,
-        Modal       : Modal,
-        RadioButton : Options.RadioButton,
-        Checkbox    : Options.Checkbox,
-        Radio       : Options.Radio,
-        Select      : Select,
-        Hidden      : Hidden,
-        Slider      : Slider,
-        Drilldown   : Drilldown
+        Button           : Buttons.ButtonDefault,
+        ButtonIcon       : Buttons.ButtonIcon,
+        ButtonCheck      : Buttons.ButtonCheck,
+        ButtonMenu       : Buttons.ButtonMenu,
+        ButtonLink       : Buttons.ButtonLink,
+        Input            : Input,
+        Label            : Label,
+        Message          : Message,
+        UnescapedMessage : UnescapedMessage,
+        Modal            : Modal,
+        RadioButton      : Options.RadioButton,
+        Checkbox         : Options.Checkbox,
+        Radio            : Options.Radio,
+        Select           : Select,
+        Hidden           : Hidden,
+        Slider           : Slider,
+        Drilldown        : Drilldown
     }
 });

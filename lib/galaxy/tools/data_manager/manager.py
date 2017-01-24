@@ -1,20 +1,24 @@
 import errno
 import json
+import logging
 import os
+
 from six import string_types
 
 from galaxy import util
-from galaxy.util.odict import odict
-from galaxy.util.template import fill_template
+from galaxy.queue_worker import (
+    reload_data_managers,
+    send_control_task
+)
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
-from tool_shed.util import common_util
-from tool_shed.util import repository_util
-from galaxy.queue_worker import reload_data_managers
-from galaxy.queue_worker import send_control_task
+from galaxy.util.odict import odict
+from galaxy.util.template import fill_template
+from tool_shed.util import (
+    common_util,
+    repository_util
+)
 
-# set up logger
-import logging
 log = logging.getLogger( __name__ )
 
 SUPPORTED_DATA_TABLE_TYPES = ( TabularToolDataTable )
@@ -112,7 +116,7 @@ class DataManagers( object ):
                 # determine if any data_tables are no longer tracked
                 for data_table_name in data_manager.data_tables.keys():
                     remove_data_table_tracking = True
-                    for other_data_manager in self.data_managers.itervalues():
+                    for other_data_manager in self.data_managers.values():
                         if data_table_name in other_data_manager.data_tables:
                             remove_data_table_tracking = False
                             break
@@ -279,21 +283,21 @@ class DataManager( object ):
         data_manager_dicts = {}
         data_manager_dict = {}
         # TODO: fix this merging below
-        for output_name, output_dataset in out_data.iteritems():
+        for output_name, output_dataset in out_data.items():
             try:
                 output_dict = json.loads( open( output_dataset.file_name ).read() )
             except Exception as e:
                 log.warning( 'Error reading DataManagerTool json for "%s": %s' % ( output_name, e ) )
                 continue
             data_manager_dicts[ output_name ] = output_dict
-            for key, value in output_dict.iteritems():
+            for key, value in output_dict.items():
                 if key not in data_manager_dict:
                     data_manager_dict[ key ] = {}
                 data_manager_dict[ key ].update( value )
             data_manager_dict.update( output_dict )
 
         data_tables_dict = data_manager_dict.get( 'data_tables', {} )
-        for data_table_name in self.data_tables.iterkeys():
+        for data_table_name in self.data_tables.keys():
             data_table_values = data_tables_dict.pop( data_table_name, None )
             if not data_table_values:
                 log.warning( 'No values for data table "%s" were returned by the data manager "%s".' % ( data_table_name, self.id ) )
@@ -307,7 +311,7 @@ class DataManager( object ):
                 continue  # next table name
             output_ref_values = {}
             if data_table_name in self.output_ref_by_data_table:
-                for data_table_column, output_ref in self.output_ref_by_data_table[ data_table_name ].iteritems():
+                for data_table_column, output_ref in self.output_ref_by_data_table[ data_table_name ].items():
                     output_ref_dataset = out_data.get( output_ref, None )
                     assert output_ref_dataset is not None, "Referenced output was not found."
                     output_ref_values[ data_table_column ] = output_ref_dataset
@@ -316,7 +320,7 @@ class DataManager( object ):
                 data_table_values = [ data_table_values ]
             for data_table_row in data_table_values:
                 data_table_value = dict( **data_table_row )  # keep original values here
-                for name, value in data_table_row.iteritems():  # FIXME: need to loop through here based upon order listed in data_manager config
+                for name, value in data_table_row.items():  # FIXME: need to loop through here based upon order listed in data_manager config
                     if name in output_ref_values:
                         self.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
                         data_table_value[ name ] = self.process_value_translation( data_table_name, name, **data_table_value )
@@ -332,13 +336,13 @@ class DataManager( object ):
             for ref_file in out_data.values():
                 util.move_merge( ref_file.extra_files_path, self.data_managers.app.config.galaxy_data_manager_data_path )
             path_column_names = [ 'path' ]
-            for data_table_name, data_table_values in data_tables_dict.iteritems():
+            for data_table_name, data_table_values in data_tables_dict.items():
                 data_table = self.data_managers.app.tool_data_tables.get( data_table_name, None )
                 if not isinstance( data_table_values, list ):
                     data_table_values = [ data_table_values ]
                 for data_table_row in data_table_values:
                     data_table_value = dict( **data_table_row )  # keep original values here
-                    for name, value in data_table_row.iteritems():
+                    for name, value in data_table_row.items():
                         if name in path_column_names:
                             data_table_value[ name ] = os.path.abspath( os.path.join( self.data_managers.app.config.galaxy_data_manager_data_path, value ) )
                     data_table.add_entry( data_table_value, persist=True, entry_source=self )
@@ -346,7 +350,7 @@ class DataManager( object ):
                                       noop_self=True,
                                       kwargs={'table_name': data_table_name} )
         else:
-            for data_table_name, data_table_values in data_tables_dict.iteritems():
+            for data_table_name, data_table_values in data_tables_dict.items():
                 # tool returned extra data table entries, but data table was not declared in data manager
                 # do not add these values, but do provide messages
                 log.warning( 'The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % ( self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename ) )

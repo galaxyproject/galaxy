@@ -125,7 +125,7 @@ function( Utils, Portlet, Ui, FormSection, FormData ) {
         _renderForm: function() {
             $( '.tooltip' ).remove();
             var options = this.model.attributes;
-            this.message = new Ui.Message();
+            this.message = new Ui.UnescapedMessage();
             this.section = new FormSection.View( this, { inputs: options.inputs } );
             this.portlet = new Portlet.View({
                 icon            : options.icon,

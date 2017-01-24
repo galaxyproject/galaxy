@@ -62,6 +62,7 @@
   <tool file="multi_data_repeat.xml" />
   <tool file="multi_data_optional.xml" />
   <tool file="paths_as_file.xml" />
+  <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
@@ -72,6 +73,8 @@
   <tool file="validation_repeat.xml" />
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
+  <tool file="implicit_conversion.xml" />
+  <tool file="explicit_conversion.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_collection.xml" />
@@ -122,7 +125,10 @@
     <tool file="for_tours/filtering.xml" />
   </section>
 
+  <!-- Tools for dependency and container testing. -->
+  <tool file="legacy_r.xml" />
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
 

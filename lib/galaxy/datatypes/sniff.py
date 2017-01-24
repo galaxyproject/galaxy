@@ -4,6 +4,7 @@ File format detector
 from __future__ import absolute_import
 
 import gzip
+import bz2
 import logging
 import os
 import re
@@ -18,7 +19,12 @@ from six import text_type
 from galaxy import util
 from galaxy.util import multi_byte
 from galaxy.util import unicodify
-from galaxy.util.checkers import check_binary, check_html, is_gzip
+from galaxy.util.checkers import (
+    check_binary,
+    check_html,
+    is_bz2,
+    is_gzip
+)
 from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
@@ -198,15 +204,26 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
     """
     headers = []
-    for idx, line in enumerate(open(fname)):
-        line = line.rstrip('\n\r')
-        if is_multi_byte:
-            # TODO: fix this - sep is never found in line
-            line = unicodify( line, 'utf-8' )
-            sep = sep.encode( 'utf-8' )
-        headers.append( line.split(sep) )
-        if idx == count:
-            break
+    compressed_gzip = is_gzip(fname)
+    compressed_bzip2 = is_bz2(fname)
+    try:
+        if compressed_gzip:
+            in_file = gzip.GzipFile(fname, 'r')
+        elif compressed_bzip2:
+            in_file = bz2.BZ2File(fname, 'r')
+        else:
+            in_file = open(fname, 'rt')
+        for idx, line in enumerate(in_file):
+            line = line.rstrip('\n\r')
+            if is_multi_byte:
+                # TODO: fix this - sep is never found in line
+                line = unicodify( line, 'utf-8' )
+                sep = sep.encode( 'utf-8' )
+            headers.append( line.split(sep) )
+            if idx == count:
+                break
+    finally:
+        in_file.close()
     return headers
 
 
@@ -356,6 +373,9 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('1.gg')
     >>> guess_ext(fname, sniff_order)
     'gg'
+    >>> fname = get_test_fname('diamond_db.dmnd')
+    >>> guess_ext(fname, sniff_order)
+    'dmnd'
     """
     file_ext = None
     for datatype in sniff_order:
@@ -472,7 +492,7 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
 AUTO_DETECT_EXTENSIONS = [ 'auto' ]  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
 COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
-COMPRESSION_DATATYPES = dict( gzip=[ 'bam' ] )
+COMPRESSION_DATATYPES = dict( gzip=[ 'bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz', 'fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2' ] )
 COMPRESSED_EXTENSIONS = []
 for exts in COMPRESSION_DATATYPES.values():
     COMPRESSED_EXTENSIONS.extend( exts )

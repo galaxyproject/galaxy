@@ -332,7 +332,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="split_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for split_inputs</xs:documentation>
+        <xs:documentation xml:lang="en">A comma separated list of data inputs to split for job parallelization.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="split_size" type="xs:string">
@@ -343,6 +343,11 @@ Read more about configuring Galaxy to run Docker jobs
     <xs:attribute name="split_mode" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for split_mode</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="shared_inputs" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A comma separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1937,6 +1942,20 @@ rendered on the tool form as a text area instead of a single line text box.
 <param name="foo" type="text" area="True" size="5x25" />
 ```
 
+As of 17.01, ``text`` parameters can also supply a static list of preset
+defaults options. The user **may** be presented with the option to select one of
+these but will be allowed to supply an arbitrary text value.
+
+```xml
+<param name="foo" type="text" value="foo 1">
+    <option value="foo 1">Foo 1 Display</option>
+    <option value="foo 2">Foo 2 Display</option>
+</param>
+```
+
+See [param_text_option.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/param_text_option.xml)
+for a demonstration of this.
+
 $attribute_list:value,size,area:5
 
 #### ``integer`` and ``float``
@@ -2333,6 +2352,7 @@ allow access to Python code to generate options for a select list. See
           <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="conversion" type="ParamConversion" />
       <xs:element name="option" type="ParamOption" />
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
@@ -2631,6 +2651,32 @@ if the corresponding option is selected by default (the default is ``false``).
         </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="ParamConversion">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+A contrived example of a tool that uses this is the test tool
+[explicit_conversion.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/explicit_conversion.xml).
+
+This directive is optionally contained within the ``<param>`` tag when the
+``type`` attribute value is ``data`` and is used to dynamically generated a converted
+dataset for the contained input of the type specified using the ``type`` tag.
+
+]]>
+</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of cheetah variable to create for converted dataset.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The short extension describing the datatype to convert to - Galaxy must have a datatype converter from the parent input's type to this.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
 
@@ -3228,7 +3274,7 @@ to the tool.
 ```
 
 This more advanced example, taken from Mothur's
-[remove.linage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
 tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
@@ -3278,7 +3324,7 @@ tool demonstrates adding values to an option list using ``filter``s.
 </param>
 ```
 
-While this fragment from maf_to_interval.xml demonstrates removing items.
+While this fragment from [maf_to_interval.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/maf_to_interval.xml) demonstrates removing items.
 
 ```xml
 <param name="species" type="select" label="Select additional species"
@@ -3343,7 +3389,7 @@ used with ``type`` of ``add_value``).</xs:documentation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">When ``type`` is ``data_meta``, ``param_value``,
-or ``remove_value`` - this is the name of the metadata key of ref to filter by.</xs:documentation>
+or ``remove_value`` - this is the name of the metadata key to filter by.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="multiple" type="PermissiveBoolean" default="false">
@@ -3388,6 +3434,13 @@ attributes to use as value for filter.</xs:documentation>
         <xs:documentation xml:lang="en">Used when ``type`` is ``add_value``, it
 is the index into the list to add the option to. If not set, the option will be
 added to the end of the list.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="meta_ref" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used when ``type`` is
+``remove_value``. Dataset to look for the value of metadata ``key`` to remove
+from the list.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4770,7 +4823,7 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
       <xs:documentation xml:lang="en"><![CDATA[See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
 optionally contained within the ``<data>`` tag set and is the container tag set
 for the following ``<when>`` tag set.]]></xs:documentation>
@@ -4815,7 +4868,7 @@ in the ``<data>`` tag set with ``format="interval"``.
 See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
 ]]></xs:documentation>
@@ -5025,6 +5078,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
+      <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>
     </xs:restriction>
   </xs:simpleType>

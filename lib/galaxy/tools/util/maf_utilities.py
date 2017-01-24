@@ -3,18 +3,21 @@
 Provides wrappers and utilities for working with MAF files and alignments.
 """
 # Dan Blankenberg
+from __future__ import print_function
+
 import logging
 import os
+import resource
 import string
 import sys
 import tempfile
+from copy import deepcopy
+from errno import EMFILE
 
 import bx.align.maf
-import bx.intervals
 import bx.interval_index_file
-from errno import EMFILE
-import resource
-from copy import deepcopy
+import bx.intervals
+from six.moves import xrange
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -51,7 +54,7 @@ def get_species_in_block( block ):
 
 
 def tool_fail( msg="Unknown Error" ):
-    print >> sys.stderr, "Fatal Error: %s" % msg
+    print("Fatal Error: %s" % msg, file=sys.stderr)
     sys.exit()
 
 
@@ -136,7 +139,7 @@ class TempFileHandler( object ):
 class RegionAlignment( object ):
 
     DNA_COMPLEMENT = string.maketrans( "ACGTacgt", "TGCAtgca" )
-    MAX_SEQUENCE_SIZE = sys.maxint  # Maximum length of sequence allowed
+    MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
     def __init__( self, size, species=[], temp_file_handler=None ):
         assert size <= self.MAX_SEQUENCE_SIZE, "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % ( size, self.MAX_SEQUENCE_SIZE )
@@ -161,7 +164,7 @@ class RegionAlignment( object ):
     def get_species_names( self, skip=[] ):
         if not isinstance( skip, list ):
             skip = [skip]
-        names = self.sequences.keys()
+        names = list(self.sequences.keys())
         for name in skip:
             try:
                 names.remove( name )
@@ -314,7 +317,7 @@ def build_maf_index_species_chromosomes( filename, index_species=None ):
         maf_reader = bx.align.maf.Reader( open( filename ) )
         while True:
             pos = maf_reader.file.tell()
-            block = maf_reader.next()
+            block = next(maf_reader)
             if block is None:
                 break
             blocks += 1
@@ -478,7 +481,7 @@ def iter_blocks_split_by_species( block, species=None ):
     empty_block = bx.align.Alignment( score=block.score, attributes=deepcopy( block.attributes ) )  # should we copy attributes?
     empty_block.text_size = block.text_size
     # call recursive function to split into each combo of spec/blocks
-    for value in __split_components_by_species( spec_dict.values(), empty_block ):
+    for value in __split_components_by_species( list(spec_dict.values()), empty_block ):
         sort_block_components_by_block( value, block )  # restore original component order
         yield value
 
@@ -612,10 +615,10 @@ def get_starts_ends_fields_from_gene_bed( line ):
 
     # Calculate and store starts and ends of coding exons
     region_start, region_end = cds_start, cds_end
-    exon_starts = map( int, fields[11].rstrip( ',\n' ).split( ',' ) )
-    exon_starts = map( ( lambda x: x + tx_start ), exon_starts )
-    exon_ends = map( int, fields[10].rstrip( ',' ).split( ',' ) )
-    exon_ends = map( ( lambda x, y: x + y ), exon_starts, exon_ends )
+    exon_starts = list(map( int, fields[11].rstrip( ',\n' ).split( ',' ) ))
+    exon_starts = [x + tx_start for x in exon_starts]
+    exon_ends = list(map( int, fields[10].rstrip( ',' ).split( ',' ) ))
+    exon_ends = [x + y for x, y in zip( exon_starts, exon_ends )]
     for start, end in zip( exon_starts, exon_ends ):
         start = max( start, region_start )
         end = min( end, region_end )
@@ -680,7 +683,7 @@ def remove_temp_index_file( index_filename ):
 
 def get_fasta_header( component, attributes={}, suffix=None ):
     header = ">%s(%s):%i-%i|" % ( component.src, component.strand, component.get_forward_strand_start(), component.get_forward_strand_end() )
-    for key, value in attributes.iteritems():
+    for key, value in attributes.items():
         header = "%s%s=%s|" % ( header, key, value )
     if suffix:
         header = "%s%s" % ( header, suffix )
@@ -714,7 +717,7 @@ def get_attributes_from_fasta_header( header ):
         # fields 0 is not a region coordinate
         pass
     if len( fields ) > 2:
-        for i in xrange( 1, len( fields ) - 1 ):
+        for i in range( 1, len( fields ) - 1 ):
             prop = fields[i].split( '=', 1 )
             if len( prop ) == 2:
                 attributes[ prop[0] ] = prop[1]

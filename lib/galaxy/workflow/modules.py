@@ -566,7 +566,7 @@ class ToolModule( WorkflowModule ):
         self.tool_version = tool_version
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version, exact=exact_tools )
         if self.tool and tool_version and exact_tools and str( self.tool.version ) != str( tool_version ):
-            log.debug( "Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version) )
+            log.info( "Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version) )
             self.tool = None
         self.post_job_actions = {}
         self.runtime_post_job_actions = {}
