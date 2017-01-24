@@ -207,7 +207,7 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'hidden' ] = self.hidden
         tool_dict[ 'is_dynamic' ] = self.is_dynamic
         if hasattr( self, 'value' ):
-            tool_dict[ 'value' ] = self.value
+            tool_dict[ 'value' ] = self.get_initial_value( trans, other_values )
         return tool_dict
 
     @classmethod
