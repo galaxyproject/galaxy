@@ -920,13 +920,15 @@ class SelectToolParameter( ToolParameter ):
         # Get options, value.
         options = self.get_options( trans, other_values )
         d[ 'options' ] = options
+        value = None
         if options:
-            value = options[ 0 ][ 1 ]
+            if not self.optional:
+                value = options[ 0 ][ 1 ]
             for option in options:
                 if option[ 2 ]:
                     # Found selected option.
                     value = option[ 1 ]
-            d[ 'value' ] = value
+        d[ 'value' ] = value
 
         d[ 'display' ] = self.display
         d[ 'multiple' ] = self.multiple
