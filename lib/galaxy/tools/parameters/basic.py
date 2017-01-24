@@ -885,7 +885,7 @@ class SelectToolParameter( ToolParameter ):
             else:
                 value = None
         elif len( value ) == 1:
-            value = value[0]
+            value = value[ 0 ]
         return value
 
     def value_to_display_text( self, value, app ):
@@ -920,15 +920,7 @@ class SelectToolParameter( ToolParameter ):
         # Get options, value.
         options = self.get_options( trans, other_values )
         d[ 'options' ] = options
-        value = None
-        if options:
-            if not self.optional:
-                value = options[ 0 ][ 1 ]
-            for option in options:
-                if option[ 2 ]:
-                    # Found selected option.
-                    value = option[ 1 ]
-        d[ 'value' ] = value
+        d[ 'value' ] = self.get_initial_value( trans, other_values )
         d[ 'display' ] = self.display
         d[ 'multiple' ] = self.multiple
         return d
