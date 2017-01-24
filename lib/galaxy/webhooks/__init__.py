@@ -41,7 +41,7 @@ class WebhooksRegistry(object):
         for webhook_dir in config_directories_from_setting(webhooks_dirs):
             for plugin_dir in os.listdir(webhook_dir):
                 path = os.path.join(webhook_dir, plugin_dir)
-                if os.path.isdir(path) and plugin_dir != 'demo':
+                if os.path.isdir(path):
                     self.webhooks_directories.append(path)
 
         self.load_webhooks()
