@@ -929,7 +929,6 @@ class SelectToolParameter( ToolParameter ):
                     # Found selected option.
                     value = option[ 1 ]
         d[ 'value' ] = value
-
         d[ 'display' ] = self.display
         d[ 'multiple' ] = self.multiple
         return d
