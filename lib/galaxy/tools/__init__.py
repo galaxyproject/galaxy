@@ -78,6 +78,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
+from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.version import VERSION_MAJOR
@@ -301,29 +302,34 @@ class DefaultToolState( object ):
     def __init__( self ):
         self.page = 0
         self.rerun_remap_job_id = None
-        self.inputs = None
+        self.inputs = {}
+
+    def initialize( self, trans, tool ):
+        """
+        Create a new `DefaultToolState` for this tool. It will be initialized
+        with default values for inputs. Grouping elements are filled in recursively.
+        """
+        self.inputs = {}
+        context = ExpressionContext( self.inputs )
+        for input in tool.inputs.itervalues():
+            self.inputs[ input.name ] = input.get_initial_value( trans, context )
 
     def encode( self, tool, app ):
         """
         Convert the data to a string
         """
-        # Convert parameters to a dictionary of strings, and save curent
-        # page in that dict
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         return json.dumps( value )
 
-    def decode( self, value, tool, app ):
+    def decode( self, values, tool, app ):
         """
         Restore the state from a string
         """
-        values = json_fix( json.loads( value ) )
-        self.page = values.pop( "__page__" )
-        if '__rerun_remap_job_id__' in values:
-            self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
-        else:
-            self.rerun_remap_job_id = None
+        values = json_fix( safe_loads( values ) ) or {}
+        self.page = values.pop( "__page__" ) if "__page__" in values else None
+        self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" ) if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
     def copy( self ):
@@ -1148,21 +1154,11 @@ class Tool( object, Dictifiable ):
     def new_state( self, trans ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
-        with default values for inputs.
+        with default values for inputs. Grouping elements are filled in recursively.
         """
         state = DefaultToolState()
-        state.inputs = {}
-        self.fill_in_new_state( trans, self.inputs, state.inputs )
+        state.initialize( trans, self )
         return state
-
-    def fill_in_new_state( self, trans, inputs, state, context=None ):
-        """
-        Fill in a tool state dictionary with default values for all parameters
-        in the dictionary `inputs`. Grouping elements are filled in recursively.
-        """
-        context = ExpressionContext( state, context )
-        for input in inputs.values():
-            state[ input.name ] = input.get_initial_value( trans, context )
 
     def get_param( self, key ):
         """
