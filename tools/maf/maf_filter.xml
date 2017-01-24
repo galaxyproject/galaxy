@@ -1,121 +1,11 @@
 <tool id="MAF_filter" name="Filter MAF" version="1.0.1">
-  <description>by specified attributes</description>
-  <macros>
-      <import>macros.xml</import>
-  </macros>
-  <command interpreter="python">maf_filter.py $maf_filter_file $input1 $out_file1 $out_file1.files_path $species $min_size $max_size $min_species_per_block $exclude_incomplete_blocks ${input1.metadata.species}</command>
-  <inputs>
-    <page>
-      <param name="input1" type="data" format="maf" label="MAF File"/>
-      <param name="min_size" label="Minimum Size" value="0" type="integer"/>
-      <param name="max_size" label="Maximum Size" value="0" type="integer" help="A maximum size less than 1 indicates no limit"/>
-      <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
-        <options>
-          <filter type="data_meta" ref="input1" key="species" />
-        </options>
-      </param>
-      <param name="min_species_per_block" type="select" label="Exclude blocks which have only one species" >
-        <option value="2">Yes</option>
-        <option value="1" selected="True">No</option>
-      </param>
-      <param name="exclude_incomplete_blocks" type="select" label="Exclude blocks which have missing species" >
-        <option value="1">Yes</option>
-        <option value="0" selected="True">No</option>
-      </param>
-      <repeat name="maf_filters" title="Filter">
-        <param name="species1" type="select" label="When Species" multiple="false">
-          <options>
-            <filter type="data_meta" ref="input1" key="species" />
-          </options>
-        </param>
-        <conditional name="species1_attributes">
-          <param name="species1_attribute_type" type="select" label="Species Attribute">
-            <option value="attribute_strand">Strand</option>
-            <option value="attribute_chr" selected="true">Chromosome</option>
-          </param>
-          <when value="attribute_strand">
-            <param name="species1_is_isnot" type="select" label="Conditional">
-              <option value="==">Is</option>
-              <option value="!=">Is Not</option>
-            </param>
-            <param name="species1_attribute" type="select" label="Strand">
-              <option value="+" selected="true">+</option>
-              <option value="-">-</option>
-            </param>
-            <repeat name="filter_condition" title="Filter Condition">
-              <param name="species2" type="select" label="Species" multiple="false">
-                <options>
-                  <filter type="data_meta" ref="input1" key="species" />
-                </options>
-              </param>
-              <conditional name="species2_attributes">
-                <param name="species2_attribute_type" type="select" label="Species Attribute">
-                  <option value="attribute_strand" selected="true">Strand</option>
-                  <option value="attribute_chr">Chromosome</option>
-                </param>
-                <when value="attribute_strand">
-                  <param name="species2_is_isnot" type="select" label="Conditional">
-                    <option value="==">Is</option>
-                    <option value="!=">Is Not</option>
-                  </param>
-                  <param name="species2_attribute" type="select" label="Strand">
-                    <option value="+" selected="true">+</option>
-                    <option value="-">-</option>
-                  </param>
-                </when>
-                <when value="attribute_chr">
-                  <param name="species2_is_isnot" type="select" label="Conditional">
-                    <option value="in">Is</option>
-                    <option value="not in">Is Not</option>
-                  </param>
-                  <param name="species2_attribute" type="text" label="Chromosome" value="chr1"/>
-                </when>
-              </conditional>
-            </repeat>
-          </when>
-          <when value="attribute_chr">
-            <param name="species1_is_isnot" type="select" label="Conditional">
-              <option value="in">Is</option>
-              <option value="not in">Is Not</option>
-            </param>
-            <param name="species1_attribute" type="text" label="Chromosome" value="chr1"/>
-            <repeat name="filter_condition" title="Filter Condition">
-              <param name="species2" type="select" label="Species" multiple="false">
-                <options>
-                  <filter type="data_meta" ref="input1" key="species" />
-                </options>
-              </param>
-              <conditional name="species2_attributes">
-                <param name="species2_attribute_type" type="select" label="Species Attribute">
-                  <option value="attribute_strand">Strand</option>
-                  <option value="attribute_chr" selected="true">Chromosome</option>
-                </param>
-                <when value="attribute_strand">
-                  <param name="species2_is_isnot" type="select" label="Conditional">
-                    <option value="==">Is</option>
-                    <option value="!=">Is Not</option>
-                  </param>
-                  <param name="species2_attribute" type="select" label="Strand">
-                    <option value="+" selected="true">+</option>
-                    <option value="-">-</option>
-                  </param>
-                </when>
-                <when value="attribute_chr">
-                  <param name="species2_is_isnot" type="select" label="Conditional">
-                    <option value="in">Is</option>
-                    <option value="not in">Is Not</option>
-                  </param>
-                  <param name="species2_attribute" type="text" label="Chromosome" value="chr1"/>
-                </when>
-              </conditional>
-            </repeat>
-          </when>
-        </conditional>
-      </repeat>
-    </page>
-  </inputs>
-  <configfiles>
-    <configfile name="maf_filter_file">
+    <description>by specified attributes</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command>python '$__tool_directory__/maf_filter.py' '$maf_filter_file' '$input1' '$out_file1' '$out_file1.files_path' $species $min_size $max_size $min_species_per_block $exclude_incomplete_blocks ${input1.metadata.species}</command>
+    <configfiles>
+        <configfile name="maf_filter_file">
 #set $is_isnot_valid = {"==":"==", "!=":"!=", "in":"in", "not in":"not in"}
 def maf_block_pass_filter( maf_block ):
 #for $maf_filter in $maf_filters:
@@ -143,12 +33,121 @@ def maf_block_pass_filter( maf_block ):
 #end for
 #end for
     return True
-ret_val = maf_block_pass_filter( maf_block )
-</configfile>
-  </configfiles>
-  <outputs>
-    <data format="maf" name="out_file1" />
-  </outputs>
+
+
+ret_val = maf_block_pass_filter( maf_block )</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data" format="maf" label="MAF File"/>
+        <param name="min_size" label="Minimum Size" value="0" type="integer"/>
+        <param name="max_size" label="Maximum Size" value="0" type="integer" help="A maximum size less than 1 indicates no limit"/>
+        <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+            <options>
+                <filter type="data_meta" ref="input1" key="species" />
+            </options>
+        </param>
+        <param name="min_species_per_block" type="select" label="Exclude blocks which have only one species" >
+            <option value="2">Yes</option>
+            <option value="1" selected="True">No</option>
+        </param>
+        <param name="exclude_incomplete_blocks" type="select" label="Exclude blocks which have missing species" >
+            <option value="1">Yes</option>
+            <option value="0" selected="True">No</option>
+        </param>
+        <repeat name="maf_filters" title="Filter">
+            <param name="species1" type="select" label="When Species" multiple="false">
+                <options>
+                    <filter type="data_meta" ref="input1" key="species" />
+                </options>
+            </param>
+            <conditional name="species1_attributes">
+                <param name="species1_attribute_type" type="select" label="Species Attribute">
+                    <option value="attribute_strand">Strand</option>
+                    <option value="attribute_chr" selected="true">Chromosome</option>
+                </param>
+                <when value="attribute_strand">
+                    <param name="species1_is_isnot" type="select" label="Conditional">
+                        <option value="==">Is</option>
+                        <option value="!=">Is Not</option>
+                    </param>
+                    <param name="species1_attribute" type="select" label="Strand">
+                        <option value="+" selected="true">+</option>
+                        <option value="-">-</option>
+                    </param>
+                    <repeat name="filter_condition" title="Filter Condition">
+                        <param name="species2" type="select" label="Species" multiple="false">
+                            <options>
+                                <filter type="data_meta" ref="input1" key="species" />
+                            </options>
+                        </param>
+                        <conditional name="species2_attributes">
+                            <param name="species2_attribute_type" type="select" label="Species Attribute">
+                                <option value="attribute_strand" selected="true">Strand</option>
+                                <option value="attribute_chr">Chromosome</option>
+                            </param>
+                            <when value="attribute_strand">
+                                <param name="species2_is_isnot" type="select" label="Conditional">
+                                    <option value="==">Is</option>
+                                    <option value="!=">Is Not</option>
+                                </param>
+                                <param name="species2_attribute" type="select" label="Strand">
+                                    <option value="+" selected="true">+</option>
+                                    <option value="-">-</option>
+                                </param>
+                            </when>
+                            <when value="attribute_chr">
+                                <param name="species2_is_isnot" type="select" label="Conditional">
+                                    <option value="in">Is</option>
+                                    <option value="not in">Is Not</option>
+                                </param>
+                                <param name="species2_attribute" type="text" label="Chromosome" value="chr1"/>
+                            </when>
+                        </conditional>
+                    </repeat>
+                </when>
+                <when value="attribute_chr">
+                    <param name="species1_is_isnot" type="select" label="Conditional">
+                        <option value="in">Is</option>
+                        <option value="not in">Is Not</option>
+                    </param>
+                    <param name="species1_attribute" type="text" label="Chromosome" value="chr1"/>
+                    <repeat name="filter_condition" title="Filter Condition">
+                        <param name="species2" type="select" label="Species" multiple="false">
+                            <options>
+                                <filter type="data_meta" ref="input1" key="species" />
+                            </options>
+                        </param>
+                        <conditional name="species2_attributes">
+                            <param name="species2_attribute_type" type="select" label="Species Attribute">
+                                <option value="attribute_strand">Strand</option>
+                                <option value="attribute_chr" selected="true">Chromosome</option>
+                            </param>
+                            <when value="attribute_strand">
+                                <param name="species2_is_isnot" type="select" label="Conditional">
+                                    <option value="==">Is</option>
+                                    <option value="!=">Is Not</option>
+                                </param>
+                                <param name="species2_attribute" type="select" label="Strand">
+                                    <option value="+" selected="true">+</option>
+                                    <option value="-">-</option>
+                                </param>
+                            </when>
+                            <when value="attribute_chr">
+                                <param name="species2_is_isnot" type="select" label="Conditional">
+                                    <option value="in">Is</option>
+                                    <option value="not in">Is Not</option>
+                                </param>
+                                <param name="species2_attribute" type="text" label="Chromosome" value="chr1"/>
+                            </when>
+                        </conditional>
+                    </repeat>
+                </when>
+            </conditional>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data format="maf" name="out_file1" />
+    </outputs>
 <!--
   <tests>
     <test>
@@ -168,7 +167,7 @@ ret_val = maf_block_pass_filter( maf_block )
     </test>
   </tests>
 -->
-<help>
+    <help>
 This tool allows you to build complex filters to be applied to each alignment block of a MAF file. You can define restraints on species based upon chromosome and strand. You can specify comma separated lists of chromosomes where appropriate.
 
 .. class:: infomark
@@ -192,8 +191,6 @@ This tool allows the user to remove any undesired species from a MAF file. If no
 -----
 
 You can also provide a size range and limit your output to the MAF blocks which fall within the specified range.
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

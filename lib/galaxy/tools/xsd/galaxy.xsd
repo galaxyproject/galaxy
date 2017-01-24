@@ -3260,7 +3260,7 @@ to the tool.
 ```
 
 This more advanced example, taken from Mothur's
-[remove.linage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
 tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
@@ -3310,7 +3310,7 @@ tool demonstrates adding values to an option list using ``filter``s.
 </param>
 ```
 
-While this fragment from maf_to_interval.xml demonstrates removing items.
+While this fragment from [maf_to_interval.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/maf_to_interval.xml) demonstrates removing items.
 
 ```xml
 <param name="species" type="select" label="Select additional species"
@@ -3375,7 +3375,7 @@ used with ``type`` of ``add_value``).</xs:documentation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">When ``type`` is ``data_meta``, ``param_value``,
-or ``remove_value`` - this is the name of the metadata key of ref to filter by.</xs:documentation>
+or ``remove_value`` - this is the name of the metadata key to filter by.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="multiple" type="PermissiveBoolean" default="false">
@@ -3420,6 +3420,13 @@ attributes to use as value for filter.</xs:documentation>
         <xs:documentation xml:lang="en">Used when ``type`` is ``add_value``, it
 is the index into the list to add the option to. If not set, the option will be
 added to the end of the list.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="meta_ref" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used when ``type`` is
+``remove_value``. Dataset to look for the value of metadata ``key`` to remove
+from the list.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4802,7 +4809,7 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
       <xs:documentation xml:lang="en"><![CDATA[See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
 optionally contained within the ``<data>`` tag set and is the container tag set
 for the following ``<when>`` tag set.]]></xs:documentation>
@@ -4847,7 +4854,7 @@ in the ``<data>`` tag set with ``format="interval"``.
 See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
 ]]></xs:documentation>
@@ -5057,6 +5064,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
+      <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>
     </xs:restriction>
   </xs:simpleType>
