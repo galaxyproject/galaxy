@@ -20,7 +20,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.conda_tmp_prefix = mkdtemp()
-        config["use_cached_dep_manager"] = True
+        config["use_cached_dependency_manager"] = True
         config["conda_auto_init"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
 
