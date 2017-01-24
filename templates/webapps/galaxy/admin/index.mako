@@ -78,6 +78,7 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='review_tool_migration_stages' )}" target="galaxy_main">Review tool migration stages</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='tool_errors' )}" target="galaxy_main">View Tool Error Logs</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='sanitize_whitelist' )}" target="galaxy_main">Manage Display Whitelist</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='manage_tool_dependencies' )}" target="galaxy_main">Manage Tool Dependencies</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>

@@ -1125,6 +1125,18 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
+    def manage_tool_dependencies( self, trans, install_dependencies=False, install_for_tools=[]):
+        if install_dependencies:
+            # install the dependencies for the tools in the install_for_tools list
+            if not isinstance(install_for_tools, list):
+                install_for_tools = [install_for_tools]
+            requirements = set([trans.app.toolbox.tools_by_id[tid].tool_requirements for tid in install_for_tools])
+            [trans.app.toolbox.tools_by_id[install_for_tools[0]]._view.install_dependencies(r) for r in requirements]
+        return trans.fill_template( '/webapps/galaxy/admin/manage_dependencies.mako',
+                                    tools=trans.app.toolbox.tools_by_id )
+
+    @web.expose
+    @web.require_admin
     def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=[]):
         if submit_whitelist:
             # write the configured sanitize_whitelist_file with new whitelist
