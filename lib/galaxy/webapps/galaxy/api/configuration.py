@@ -11,6 +11,9 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.managers import configuration, users
 from galaxy.queue_worker import send_control_task
 
+import json
+import os
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -56,7 +59,14 @@ class ConfigurationController( BaseAPIController ):
         :rtype:     dict
         :returns:   dictionary with major version keyed on 'version_major'
         """
-        return {"version_major": self.app.config.version_major }
+        extra = {}
+        try:
+            version_file = os.environ.get("GALAXY_VERSION_JSON_FILE", self.app.container_finder.app_info.galaxy_root_dir + "/version.json")
+            with open(version_file, "r") as f:
+                extra = json.load(f)
+        except Exception:
+            pass
+        return {"version_major": self.app.config.version_major, "extra": extra}
 
     def get_config_dict( self, trans, return_admin=False, view=None, keys=None, default_view='all' ):
         """

@@ -3,7 +3,7 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc</command>
+  <command>python '$__tool_directory__/interval2maf.py' --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType='$mafType' --interval_file='$input1' --output_file='$out_file1' --indexLocation='${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc'</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="Interval File">
       <validator type="unspecified_build" />
@@ -24,7 +24,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="8.bed" dbkey="hg17" format="bed"/>
+      <param name="input1" value="8.bed" dbkey="hg17" ftype="bed"/>
       <param name="mafType" value="PAIRWISE_hg17_fr1"/>
       <output name="out_file1" file="Interval2Maf_pairwise_out.maf"/>
     </test>
@@ -41,8 +41,6 @@ This tool takes genomic coordinates, superimposes them on pairwise alignments (i
 Here a single interval is superimposed on three MAF blocks. Blocks 1 and 3 are trimmed because they extend beyond boundaries of the interval:
 
 .. image:: ${static_path}/images/maf_icons/interval2maf.png
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

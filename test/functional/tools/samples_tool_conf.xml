@@ -74,6 +74,7 @@
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
+  <tool file="explicit_conversion.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_collection.xml" />
@@ -124,6 +125,8 @@
     <tool file="for_tours/filtering.xml" />
   </section>
 
+  <!-- Tools for dependency and container testing. -->
+  <tool file="legacy_r.xml" />
   <tool file="mulled_example_multi_1.xml" />
   <tool file="mulled_example_conflict.xml" />
 

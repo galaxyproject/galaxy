@@ -109,6 +109,12 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_wait_for_hid_ok(self, hid, timeout=30):
         current_history_id = self.current_history_id()
+
+        def history_has_hid(driver):
+            contents = self.api_get("histories/%s/contents" % current_history_id)
+            return any([d for d in contents if d["hid"] == hid])
+
+        self.wait(timeout).until(history_has_hid)
         contents = self.api_get("histories/%s/contents" % current_history_id)
         history_item = [d for d in contents if d["hid"] == hid][0]
         history_item_selector_okay = "#%s-%s.state-ok" % (history_item["history_content_type"], history_item["id"])

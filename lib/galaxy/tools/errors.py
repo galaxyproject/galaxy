@@ -59,41 +59,25 @@ ${job_traceback}
 """
 
 error_report_template_html = """
-<html><head></head>
+<html>
     <body>
-<style type="text/css">
-tr:nth-child(even) {background-color: #f2f2f2}
-table{margin: 1em;}
-.mono{font-family: monospace;}
-pre {
-white-space: pre-wrap;
-white-space: -moz-pre-wrap;
-white-space: -pre-wrap;
-white-space: -o-pre-wrap;
-word-wrap: break-word;
-background: #eee;
-border:1px solid black;
-padding:10px;
-}
-</style>
-
 <h1>Galaxy Tool Error Report</h1>
-<span class="sub"><i>from</i> <span class="mono"><a href="${host}">${host}</a></span>
+<span class="sub"><i>from</i> <span style="font-family: monospace;"><a href="${host}">${host}</a></span>
 
 <h3>Error Localization</h3>
-<table>
+<table style="margin:1em">
     <tbody>
         <tr><td>Dataset</td><td>${dataset_id} (${dataset_id_encoded})</td></tr>
-        <tr><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
+        <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
         <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
     </tbody>
 </table>
 
 <h3>User Provided Information</h3>
 
-The user <a href="mailto:${email_str}"><span class="mono">${email_str}</span></a> provided the following information:
+The user <a href="mailto:${email_str}"><span style="font-family: monospace;">${email_str}</span></a> provided the following information:
 
-<pre>
+<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
 ${message}
 </pre>
 
@@ -102,12 +86,12 @@ ${message}
 
 Job environment and execution information is available at the job <a href="${hda_show_params_link}">Info Page</a>.
 
-<table>
+<table style="margin:1em">
     <tbody>
         <tr><td>Job ID</td><td>${job_id} (${job_id_encoded})</td></tr>
-        <tr><td>Tool ID</td><td>${job_tool_id}</td></tr>
+        <tr style="background-color: #f2f2f2"><td>Tool ID</td><td>${job_tool_id}</td></tr>
         <tr><td>Tool Version</td><td>${tool_version}</td></tr>
-        <tr><td>Job PID or DRM id</td><td>${job_runner_external_id}</td></tr>
+        <tr style="background-color: #f2f2f2"><td>Job PID or DRM id</td><td>${job_runner_external_id}</td></tr>
         <tr><td>Job Tool Version</td><td>${job_tool_version}</td></tr>
     </tbody>
 </table>
@@ -115,27 +99,27 @@ Job environment and execution information is available at the job <a href="${hda
 <h3>Job Execution and Failure Information</h3>
 
 <h4>Command Line</h4>
-<pre>
+<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
 ${job_command_line}
 </pre>
 
 <h4>stderr</h4>
-<pre>
+<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
 ${job_stderr}
 </pre>
 
 <h4>stdout</h4>
-<pre>
+<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
 ${job_stdout}
 </pre>
 
 <h4>Job Information</h4>
-<pre>
+<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
 ${job_info}
 </pre>
 
 <h4>Job Traceback</h4>
-<pre>
+<pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
 ${job_traceback}
 </pre>
 

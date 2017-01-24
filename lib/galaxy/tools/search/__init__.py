@@ -8,6 +8,7 @@ import tempfile
 from datetime import datetime
 
 from whoosh import analysis
+from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
     KEYWORD,
     Schema,
@@ -92,7 +93,7 @@ class ToolBoxSearch( object ):
         stop_time = datetime.now()
         log.debug( 'Toolbox index finished. It took: ' + str(stop_time - start_time) )
 
-    def search( self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit ):
+    def search( self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize ):
         """
         Perform search on the in-memory index. Weight in the given boosts.
         """
@@ -112,9 +113,34 @@ class ToolBoxSearch( object ):
         # Hyphens are wildcards in Whoosh causing bad things
         if q.find( '-' ) != -1:
             q = (' ').join( [ token.text for token in self.rex( to_unicode( q ) ) ] )
-        # Perform the search
-        hits = searcher.search( parser.parse( '*' + q + '*' ), limit=float( tool_search_limit ) )
-        return [ hit[ 'id' ] for hit in hits ]
+        # Perform tool search with ngrams if set to true in the config file
+        if ( tool_enable_ngram_search is True or tool_enable_ngram_search == "True" ):
+            hits_with_score = {}
+            token_analyzer = StandardAnalyzer() | analysis.NgramFilter( minsize=int( tool_ngram_minsize ), maxsize=int( tool_ngram_maxsize ) )
+            ngrams = [ token.text for token in token_analyzer( q ) ]
+            for query in ngrams:
+                # Get the tool list with respective scores for each qgram
+                curr_hits = searcher.search( parser.parse( '*' + query + '*' ), limit=float( tool_search_limit ) )
+                for i, curr_hit in enumerate( curr_hits ):
+                    is_present = False
+                    for prev_hit in hits_with_score:
+                        # Check if the tool appears again for the next qgram search
+                        if curr_hit[ 'id' ] == prev_hit:
+                            is_present = True
+                            # Add the current score with the previous one if the
+                            # tool appears again for the next qgram
+                            hits_with_score[ prev_hit ] = curr_hits.score(i) + hits_with_score[ prev_hit ]
+                    # Add the tool if not present to the collection with its score
+                    if not is_present:
+                        hits_with_score[ curr_hit[ 'id' ] ] = curr_hits.score(i)
+            # Sort the results based on aggregated BM25 score in decreasing order of scores
+            hits_with_score = sorted( hits_with_score.items(), key=lambda x: x[1], reverse=True )
+            # Return the tool ids
+            return [ item[0] for item in hits_with_score[ 0:int( tool_search_limit ) ] ]
+        else:
+            # Perform the search
+            hits = searcher.search( parser.parse( '*' + q + '*' ), limit=float( tool_search_limit ) )
+            return [ hit[ 'id' ] for hit in hits ]
 
 
 def _temp_storage(self, name=None):
