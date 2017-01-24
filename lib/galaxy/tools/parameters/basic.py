@@ -476,7 +476,6 @@ class BooleanToolParameter( ToolParameter ):
 
     def to_dict( self, trans, other_values={} ):
         d = super( BooleanToolParameter, self ).to_dict( trans )
-        d['value'] = self.checked
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
         return d
@@ -714,7 +713,6 @@ class BaseURLToolParameter( HiddenToolParameter ):
 
     def to_dict( self, trans, other_values={} ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
-        d[ 'value' ] = self._get_value()
         return d
 
 
@@ -920,7 +918,6 @@ class SelectToolParameter( ToolParameter ):
         # Get options, value.
         options = self.get_options( trans, other_values )
         d[ 'options' ] = options
-        d[ 'value' ] = self.get_initial_value( trans, other_values )
         d[ 'display' ] = self.display
         d[ 'multiple' ] = self.multiple
         return d
