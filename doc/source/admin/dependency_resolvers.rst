@@ -55,7 +55,7 @@ resolution object provides shell commands to prepend to the shell script that ru
 
 This order can be thought of as a descending order of deliberation. Tool Shed dependencies must be declared next to the
 tool by the tool author and must be selected for installation at tool installation time - this requires specific actions
-by both the tool author and the deployer who isntalled the tools. The dependency is therefore expected to highly craft
+by both the tool author and the deployer who installed the tools. The dependency is therefore expected to highly craft
 to the individual tool. If Galaxy packages have been setup, the deployer of a Galaxy tool has purposely crafted tool
 dependency statements for a specific installation - this is slightly less deliberate than tool shed packages but
 such requirements are less likely to be incidentally resolved than Conda packages. Conda recipes are neither tied to
