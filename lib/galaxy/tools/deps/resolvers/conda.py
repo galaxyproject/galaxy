@@ -5,6 +5,7 @@ incompatible changes coming.
 
 import logging
 import os
+import re
 
 import galaxy.tools.deps.installable
 
@@ -28,7 +29,10 @@ from ..resolvers import (
     DependencyResolver,
     InstallableDependencyResolver,
     ListableDependencyResolver,
+    MappableDependencyResolver,
+    MultipleDependencyResolver,
     NullDependency,
+    SpecificationPatternDependencyResolver,
 )
 
 
@@ -39,16 +43,27 @@ DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,r,defaults,conda-forge"
 log = logging.getLogger(__name__)
 
 
-class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, InstallableDependencyResolver):
+class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver, MappableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install']
     resolver_type = "conda"
+    config_options = {
+        'prefix': None,
+        'exec': None,
+        'debug': None,
+        'ensure_channels': DEFAULT_ENSURE_CHANNELS,
+        'auto_install': False,
+        'auto_init': True,
+        'copy_dependencies': False,
+    }
+    _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
     def __init__(self, dependency_manager, **kwds):
+        self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         self.dependency_manager = dependency_manager
 
         def get_option(name):
-            return self._get_config_option(name, dependency_manager, config_prefix="conda", **kwds)
+            return dependency_manager.get_resolver_option(self, name, explicit_resolver_options=kwds)
 
         # Conda context options (these define the environment)
         conda_prefix = get_option("prefix")
@@ -59,11 +74,6 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
         conda_prefix = os.path.abspath(conda_prefix)
 
         self.conda_prefix_parent = os.path.dirname(conda_prefix)
-
-        # warning is related to conda problem discussed in https://github.com/galaxyproject/galaxy/issues/2537, remove when that is resolved
-        conda_prefix_warning_length = 50
-        if len(conda_prefix) >= conda_prefix_warning_length:
-            log.warning("Conda install prefix '%s' is %d characters long, this can cause problems with package installation, consider setting a shorter prefix (conda_prefix in galaxy.ini)" % (conda_prefix, len(conda_prefix)))
 
         condarc_override = get_option("condarc_override")
         if condarc_override is None:
@@ -133,6 +143,8 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
 
         conda_targets = []
         for requirement in requirements:
+            requirement = self._expand_requirement(requirement)
+
             version = requirement.version
             if self.versionless:
                 version = None
@@ -170,7 +182,10 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             assert len(conda_targets) == 1
             return conda_targets[0].install_environment
 
-    def resolve(self, name, version, type, **kwds):
+    def resolve(self, requirement, **kwds):
+        requirement = self._expand_requirement(requirement)
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         # Check for conda just not being there, this way we can enable
         # conda by default and just do nothing in not configured.
         if not os.path.isdir(self.conda_context.conda_prefix):
@@ -217,6 +232,9 @@ class CondaDependencyResolver(DependencyResolver, ListableDependencyResolver, In
             version,
             preserve_python_environment=preserve_python_environment,
         )
+
+    def _expand_requirement(self, requirement):
+        return self._expand_specs(self._expand_mappings(requirement))
 
     def list_dependencies(self):
         for install_target in installed_conda_targets(self.conda_context):

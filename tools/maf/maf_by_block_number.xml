@@ -3,7 +3,7 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_by_block_number.py $input1 $input2 $out_file1 $block_col $species</command>
+  <command>python '$__tool_directory__/maf_by_block_number.py' '$input1' '$input2' '$out_file1' $block_col $species</command>
   <inputs>
     <param format="txt" name="input1" type="data" label="Block Numbers"/>
     <param format="maf" name="input2" label="MAF File" type="data"/>
@@ -27,12 +27,9 @@
     </test>
   </tests>
   <help>
-
 **What it does**
 
 This tool takes a list of block numbers, one per line, and extracts the corresponding MAF blocks from the provided file. Block numbers start at 0.
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

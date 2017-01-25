@@ -151,6 +151,7 @@ define(['utils/utils',
                 area        : input_def.area,
                 readonly    : input_def.readonly,
                 placeholder : input_def.placeholder,
+                datalist    : input_def.datalist,
                 onchange    : input_def.onchange
             });
         },
