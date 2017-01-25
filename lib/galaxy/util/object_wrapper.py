@@ -6,8 +6,8 @@ import inspect
 import logging
 import string
 import sys
-
 from numbers import Number
+
 try:
     from types import NoneType
 except ImportError:
@@ -56,6 +56,7 @@ from types import (
     ModuleType,
     TracebackType,
 )
+
 from six.moves import (
     copyreg as copy_reg,
     UserDict
@@ -307,7 +308,7 @@ class SafeStringWrapper( object ):
 
     # Skip __slots__
 
-    # Don't need __metaclass__, we'll use the helper function to handle with subclassing for e.g. isinstance()
+    # Don't need to define a metaclass, we'll use the helper function to handle with subclassing for e.g. isinstance()
 
     # Revisit:
     # __instancecheck__

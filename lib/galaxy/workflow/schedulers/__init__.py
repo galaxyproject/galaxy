@@ -2,10 +2,15 @@
 for workflow scheduling is highly experimental and the interface required for
 scheduling plugins will almost certainly change.
 """
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
 
 
+@six.add_metaclass(ABCMeta)
 class WorkflowSchedulingPlugin( object ):
     """ A plugin defining how Galaxy should schedule plugins. By default
     plugins are passive and should monitor Galaxy's work queue for
@@ -13,7 +18,6 @@ class WorkflowSchedulingPlugin( object ):
     the scheduling plugin should be forced (i.e. if scheduling happen all at
     once or the request will be stored and monitored outside of Galaxy.)
     """
-    __metaclass__ = ABCMeta
 
     @property
     @abstractmethod
@@ -30,8 +34,8 @@ class WorkflowSchedulingPlugin( object ):
         """
 
 
+@six.add_metaclass(ABCMeta)
 class ActiveWorkflowSchedulingPlugin( WorkflowSchedulingPlugin ):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def schedule( self, workflow_invocation ):

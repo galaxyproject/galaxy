@@ -5,6 +5,7 @@ from abc import (
     abstractproperty,
 )
 
+import six
 import yaml
 
 from galaxy.util import listify
@@ -13,6 +14,7 @@ from galaxy.util.dictifiable import Dictifiable
 from ..requirements import ToolRequirement
 
 
+@six.add_metaclass(ABCMeta)
 class DependencyResolver(Dictifiable, object):
     """Abstract description of a technique for resolving container images for tool execution."""
 
@@ -26,7 +28,6 @@ class DependencyResolver(Dictifiable, object):
     disabled = False
     resolves_simple_dependencies = True
     config_options = {}
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def resolve( self, requirement, **kwds ):
@@ -51,12 +52,12 @@ class MultipleDependencyResolver:
         """
 
 
+@six.add_metaclass(ABCMeta)
 class ListableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can iterate over its dependencies and generate
     requirements.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def list_dependencies(self):
@@ -87,7 +88,7 @@ class MappableDependencyResolver:
     def _mapping_file_to_list(mapping_file):
         with open(mapping_file, "r") as f:
             raw_mapping = yaml.load(f) or []
-            return map(RequirementMapping.from_dict, raw_mapping)
+        return map(RequirementMapping.from_dict, raw_mapping)
 
     def _expand_mappings(self, requirement):
         for mapping in self._mappings:
@@ -134,13 +135,13 @@ class RequirementMapping(object):
         return RequirementMapping(from_name, from_version, to_name, to_version)
 
 
+@six.add_metaclass(ABCMeta)
 class SpecificationAwareDependencyResolver:
     """Mix this into a :class:`DependencyResolver` to implement URI specification matching.
 
     Allows adapting generic requirements to more specific URIs - to tailor name
     or version to specified resolution system.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def _expand_specs(self, requirement):
@@ -178,11 +179,11 @@ class SpecificationPatternDependencyResolver:
         return requirement
 
 
+@six.add_metaclass(ABCMeta)
 class InstallableDependencyResolver:
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can attempt to install new dependencies.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def install_dependency(self, name, version, type, **kwds):
@@ -191,9 +192,9 @@ class InstallableDependencyResolver:
         """
 
 
+@six.add_metaclass(ABCMeta)
 class Dependency(Dictifiable, object):
     dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
-    __metaclass__ = ABCMeta
     cacheable = False
 
     @abstractmethod

@@ -2,13 +2,17 @@
 Utility classes allowing Job interface to reason about datasets.
 """
 import os.path
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
 
 
 def dataset_path_rewrites( dataset_paths ):
-    dataset_paths_with_rewrites = filter( lambda path: getattr( path, "false_path", None ), dataset_paths )
-    return dict( [ ( dp.real_path, dp ) for dp in dataset_paths_with_rewrites ] )
+    dataset_paths_with_rewrites = [path for path in dataset_paths if getattr(path, "false_path", None)]
+    return dict( ( dp.real_path, dp ) for dp in dataset_paths_with_rewrites )
 
 
 class DatasetPath( object ):
@@ -49,9 +53,9 @@ class DatasetPath( object ):
         return dataset_path
 
 
+@six.add_metaclass(ABCMeta)
 class DatasetPathRewriter( object ):
     """ Used by runner to rewrite paths. """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def rewrite_dataset_path( self, dataset, dataset_type ):

@@ -279,8 +279,8 @@ class JobInfo(object):
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
+@six.add_metaclass(ABCMeta)
 class Container( object ):
-    __metaclass__ = ABCMeta
 
     def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
         self.container_id = container_id
@@ -445,8 +445,9 @@ class NullContainer(object):
     def __init__(self):
         pass
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
+    __nonzero__ = __bool__
 
 
 NULL_CONTAINER = NullContainer()
