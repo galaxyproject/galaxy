@@ -45,8 +45,7 @@ The default configuration of dependency resolvers is equivalent to the following
   </dependency_resolvers>
 
 This default dependency resolver configuration contains five items. First, the *tool shed dependency resolver* is used,
-then the *Galaxy packages dependency resolver* is used, first looking for packages by name and version string and then
-finally looking for the package just by name, and finally likewise checks Conda for a versioned or unversioned match.
+then the *Galaxy packages dependency resolver* is used (initially looking for packages by name and version string and then looking for the package just by name), and finally it checks Conda for a versioned or unversioned match.
 The default configuration thus prefers packages installed from the Galaxy Tool Shed using legacy ``tool_dependencies.xml``
 files, before trying to find a "Galaxy package" satisfying the specific version the dependency requires before
 falling back to looking for a Galaxy package with merely the correct name, and then looking for Conda recipes with
@@ -59,7 +58,7 @@ tool by the tool author and must be selected for installation at tool installati
 by both the tool author and the deployer who isntalled the tools. The dependency is therefore expected to highly craft
 to the individual tool. If Galaxy packages have been setup, the deployer of a Galaxy tool has purposely crafted tool
 dependency statements for a specific installation - this is slightly less deliberate than tool shed packages but
-such requirements are less likely to be incidentally resolved than Conda packages. Conda recipes are niether tied to
+such requirements are less likely to be incidentally resolved than Conda packages. Conda recipes are neither tied to
 tools or a specific installation and are maintained in Conda channels such as Bioconda.
 
 So while tool shed packages are first - they are also somewhat deprecated. Maintaining Conda recipes makes it easier
@@ -69,7 +68,7 @@ Tool Shed Dependency Resolver
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``tool_shed_packages`` dependency resolver works with explicit software packages installed from the Galaxy Tool
-Shed as described by legacy ``tool_dependency.xml`` files. When such a package is installed from the Tool Shed it
+Shed as described by legacy ``tool_dependencies.xml`` files. When such a package is installed from the Tool Shed it
 creates a directory structure under the directory that is specified as the ``tool_dependency_dir`` in Galaxy's
 configuration. This directory structure contains references to the tool's ID, owner (in the Tool Shed) and version
 string (amongst other things) and ultimately contains a file named ``env.sh`` that contains commands to make the
@@ -213,7 +212,7 @@ versionless
     whether to resolve tools using a version string or not (defaults to *False*).
 
 debug
-    Pass debug flag to conda commands (default: *false*).
+    Pass debug flag to conda commands (default: *False*).
 
 ensure_channels
     conda channels to enable by default. See
