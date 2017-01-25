@@ -21,7 +21,7 @@ community contributions (such as implementing a Guix package manager or
 enhancing the existing brew support to bring it on par with Conda).
 
 As a community, we have decided that Conda is the one that best fulfills
-tje community's current needs. The following are some of the crucial Conda
+the community's current needs. The following are some of the crucial Conda
 features that led to this decision:
 
 -  Installation of packages does not require *root* privileges
@@ -205,7 +205,7 @@ The first system that satisfies a requirement will be used. See
 
 This however is not recommended, ideally tools will target and test
 against Conda for all dependencies. Also resolving all requirements
-with Conda gives Conda a chance to select compatibile versions of
+with Conda gives Conda a chance to select compatible versions of
 dependencies. Read more about selecting compatible versions on
 `Issue #3299`_ and `Pull Request #3391`_.
 
