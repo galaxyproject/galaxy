@@ -596,7 +596,7 @@
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
-    <datatype extension="smat" type="galaxy.datatypes.estscan:Smat" display_in_upload="true" />
+    <datatype extension="smat" type="galaxy.datatypes.text:Smat" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
@@ -606,7 +606,7 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
-    <sniffer type="galaxy.datatypes.estscan:Smat"/>
+    <sniffer type="galaxy.datatypes.text:Smat"/>
     <sniffer type="galaxy.datatypes.mothur:Sabund"/>
     <sniffer type="galaxy.datatypes.mothur:Otu"/>
     <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
