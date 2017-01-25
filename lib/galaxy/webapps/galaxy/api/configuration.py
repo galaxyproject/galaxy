@@ -85,7 +85,7 @@ class ConfigurationController( BaseAPIController ):
 
     @expose_api
     @require_admin
-    def reload_toolbox(self, trans):
+    def reload_toolbox(self, trans, **kwds):
         """
         PUT /api/configuration/toolbox
         Reload the Galaxy toolbox (but not individual tools).
