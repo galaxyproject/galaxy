@@ -335,7 +335,7 @@ First, you may wish to enable cached dependencies. This can be done by setting
 per job Conda environment with just the dependencies needed for that job installed.
 This will be placed on the filesystem containg the job working directory. This
 is an expensive operation and Conda doesn't always link environments correctly
-accross filesystems. Enabling this job caching will create a cache for each required
+across filesystems. Enabling this job caching will create a cache for each required
 combination of requirements in the directory specified by ``tool_dependency_cache_dir``
 in ``galaxy.ini`` (defaulting to ``<tool_dependency_dir>/_cache``).
 
@@ -350,7 +350,7 @@ the number of jobs that would require such caching (see `Pull Request #3391`_).
 
 If Galaxy jobs run on filesystems that cannot hardlink Conda packages managed
 by Galaxy, linking errors may occur when building environment to execute jobs.
-There are a few ways to potentially work around this discussed below.
+There are a few ways to potentially work around this.
 
 The most straight forward and efficient work around is probably just to enable the cached
 dependency manager as described in the previous question. Notice the default location
