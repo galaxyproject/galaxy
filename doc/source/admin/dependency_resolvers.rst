@@ -11,7 +11,7 @@ job uses includes commands, such as changes to the ``PATH`` environment variable
 resolvers*. There is a default dependency resolver configuration but administrators can provide their own configuration
 using the ``dependency_resolvers_conf.xml`` configuration file in the Galaxy ``config/`` directory.
 
-The binding between tool XML and the tools they need to run is specified in the tool XML using ``requirement``
+The binding between tool XML and the tools they need to run is specified in the tool XML using ``<requirement>``
 tags, for example
 
 .. code-block:: xml
@@ -45,7 +45,7 @@ The default configuration of dependency resolvers is equivalent to the following
   </dependency_resolvers>
 
 This default dependency resolver configuration contains five items. First, the *tool shed dependency resolver* is used,
-then the *Galaxy packages dependency resolver* is used (initially looking for packages by name and version string and then looking for the package just by name), and finally it checks Conda for a versioned or unversioned match.
+then the *Galaxy packages dependency resolver* is used (initially looking for packages by name and version string and then looking for the package just by name), and finally it checks *Conda* for a versioned or unversioned match.
 The default configuration thus prefers packages installed from the Galaxy Tool Shed using legacy ``tool_dependencies.xml``
 files, before trying to find a "Galaxy package" satisfying the specific version the dependency requires before
 falling back to looking for a Galaxy package with merely the correct name, and then looking for Conda recipes with
@@ -144,17 +144,17 @@ modulepath
     value used for MODULEPATH environment variable, used to locate modules
 
 versionless
-    whether to resolve tools using a version string or not (default: *false*)
+    whether to resolve tools using a version string or not (default: ``false``)
 
 find_by
-    whether to use the ``DirectoryModuleChecker`` or ``AvailModuleChecker`` (permissable values are "directory" or "avail",
-    default is "avail")
+    whether to use the ``DirectoryModuleChecker`` or ``AvailModuleChecker`` (permissable values are ``directory`` or ``avail``,
+    default is ``avail``)
 
 prefetch
-    in the AvailModuleChecker prefetch module info with ``module avail`` (default: true)
+    in the AvailModuleChecker prefetch module info with ``module avail`` (default: ``true``)
 
 default_indicator
-    what indicate to the AvailModuleChecker that a module is the default version (default: "(default)"). Note
+    what indicate to the AvailModuleChecker that a module is the default version (default: ``(default)``). Note
     that the first module found is considered the default when no version is used by the resolver, so
     the sort order of modules matters.
 
@@ -163,7 +163,7 @@ of the ``module avail`` command for the name of the dependency. If it is configu
 or is looking for a package with no version specified, it accepts any module whose name matches and is a bare word
 or the first module whose name matched. For this reason, the default version of the module should be the first one
 listed, something that can be achieved by tagging it with a word that appears first in sort order, for example the
-string "(default)" (yielding a module name like ``bedtools/(default)``). So when looking for ``bedtools`` in
+string ``(default)`` (yielding a module name like ``bedtools/(default)``). So when looking for ``bedtools`` in
 versionless mode the search would match the first module called ``bedtools``, and in versioned mode the search would
 only match if a module named ``bedtools/2.20.1`` was present (assuming you're looking for ``bedtools/2.20.1``).
 
@@ -202,36 +202,36 @@ For a very detailed discussion of Conda dependency resolution, check out the
 :ref:`Conda FAQ <conda_faq>`.
 
 prefix
-    The conda_prefix used to locate dependencies in (defaults to ``<tool_dependency_dir>/_conda``).
+    The conda_prefix used to locate dependencies in (default: ``<tool_dependency_dir>/_conda``).
 
 exec
     The conda executable to use, it will default to the one on the
     PATH (if available) and then to ``<conda_prefix>/bin/conda``.
 
 versionless
-    whether to resolve tools using a version string or not (defaults to *False*).
+    whether to resolve tools using a version string or not (default: ``False``).
 
 debug
-    Pass debug flag to conda commands (default: *False*).
+    Pass debug flag to conda commands (default: ``False``).
 
 ensure_channels
     conda channels to enable by default. See
     http://conda.pydata.org/docs/custom-channels.html for more
     information about channels. This defaults to ``iuc,bioconda,r,defaults,conda-forge``.
-    This order should be consistent with `Bioconda perscribed order <https://github.com/bioconda/bioconda-recipes/blob/master/config.yml#L8>`__
+    This order should be consistent with `Bioconda prescribed order <https://github.com/bioconda/bioconda-recipes/blob/master/config.yml#L8>`__
     if it includes ``bioconda``.
 
 auto_install
-    Set to True to instruct Galaxy to look for and install missing tool
-    dependencies before each job runs (defaults to *False*).
+    If ``True``, Galaxy will look for and install missing tool
+    dependencies before running a job (default: ``False``).
 
 auto_init
-    Set to True to instruct Galaxy to install conda from the web
-    automatically if it cannot find a local copy and conda_exec is not
-    configured. This defaults to *True* as of Galaxy 17.01.
+    If ``True``, Galaxy will try to install Conda from the web
+    automatically if it cannot find a local copy and ``conda_exec`` is not
+    configured. This defaults to ``True`` as of Galaxy 17.01.
 
 copy_dependencies
-    Set to ``True`` to instruct Galaxy to copy dependencies over instead of symbolically
+    If ``True``, Galaxy will copy dependencies over instead of symbolically
     linking them when creating per job environments. This should be considered somewhat
     deprecated because Conda will do this as needed for newer versions of Conda - such
     as the version targeted with Galaxy 17.01+.
