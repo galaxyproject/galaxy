@@ -51,7 +51,7 @@
                         </td>
                         <td>${ tool.name | h }</td>
                         <td>${ tool.id | h }</td>
-                        ${render_tool_dependencies( tool._view.get_requirements_status({tool.id: tool.tool_requirements}, tool.installed_tool_dependencies), ctr=ctr) }
+                        ${render_tool_dependencies( requirements_status[tool.tool_requirements], ctr=ctr) }
                         </tr>
                     <% ctr += 1 %>
                     %endif
