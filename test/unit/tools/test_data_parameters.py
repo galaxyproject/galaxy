@@ -59,7 +59,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         hda2.visible = False
         field = self._simple_field( other_values={ "data2" : hda2 } )
         self.assertEquals( len( field[ 'options' ][ 'hda' ] ), 1 )  # hda1 not an option, not visible or selected
-        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "(unavailable) hda2"
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "(hidden) hda2"
 
     def test_field_implicit_conversion_new( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )

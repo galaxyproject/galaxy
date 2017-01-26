@@ -1806,7 +1806,7 @@ class DataToolParameter( BaseDataToolParameter ):
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
                 append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name, 'hda' )
-        if not has_matched and hasattr( visible_hda, 'id' ) and hasattr( visible_hda, 'hid' ) and hasattr( visible_hda, 'name' ):
+        if not has_matched and hasattr( visible_hda, 'hid' ):
             if visible_hda.deleted:
                 hda_state = 'deleted'
             elif not visible_hda.visible:
