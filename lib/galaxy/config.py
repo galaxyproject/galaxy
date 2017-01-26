@@ -36,6 +36,7 @@ PATH_DEFAULTS = dict(
     auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
     data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
     datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
+    build_sites_config_file=['config/build_sites.yml', 'config/build_sites.yml.sample'],
     external_service_type_config_file=['config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample'],
     job_config_file=['config/job_conf.xml', 'job_conf.xml'],
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
@@ -961,7 +962,7 @@ class ConfiguresGalaxyMixin:
     def _configure_datatypes_registry( self, installed_repository_manager=None ):
         from galaxy.datatypes import registry
         # Create an empty datatypes registry.
-        self.datatypes_registry = registry.Registry()
+        self.datatypes_registry = registry.Registry( self.config )
         if installed_repository_manager:
             # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
             # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
