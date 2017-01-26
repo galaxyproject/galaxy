@@ -65,7 +65,7 @@ lib/galaxy/webapps/tool_shed/util/ratings_util.py
 lib/galaxy/work/
 lib/galaxy/workflow/extract.py
 lib/galaxy/workflow/run.py
-lib/galaxy/workflow/schedulers/core.py
+lib/galaxy/workflow/schedulers/
 lib/galaxy/workflow/steps.py
 lib/galaxy_ext/
 lib/galaxy_utils/

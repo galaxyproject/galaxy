@@ -1,17 +1,19 @@
-from abc import ABCMeta
-from abc import abstractmethod
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
 
 import six
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
+@six.add_metaclass(ABCMeta)
 @six.python_2_unicode_compatible
 class ToolSource(object):
     """ This interface represents an abstract source to parse tool
     information from.
     """
-    __metaclass__ = ABCMeta
     default_is_multi_byte = False
 
     @abstractmethod
@@ -202,8 +204,8 @@ class PagesSource(object):
         return True
 
 
+@six.add_metaclass(ABCMeta)
 class PageSource(object):
-    __metaclass__ = ABCMeta
 
     def parse_display(self):
         return None
@@ -213,8 +215,8 @@ class PageSource(object):
         """ Return a list of InputSource objects. """
 
 
+@six.add_metaclass(ABCMeta)
 class InputSource(object):
-    __metaclass__ = ABCMeta
     default_optional = False
 
     def elem(self):
