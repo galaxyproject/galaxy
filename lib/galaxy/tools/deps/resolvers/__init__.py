@@ -92,15 +92,16 @@ class MappableDependencyResolver:
     def _expand_mappings(self, requirement):
         for mapping in self._mappings:
             if requirement.name == mapping.from_name:
-                if mapping.from_version is not None and mapping.from_version != requirement.version:
-                    continue
+                if mapping.from_version == requirement.version or mapping.from_version == mapping.to_version:
+                    # mapping.from_version == mapping.to_version covers None to None (i.e any requirement irrespective of the version),
+                    # but avoids mapping a specifically requested version (i.e samtools 0.1.19) to another samtools version ).
+                    # if that is desired, a specific rule for samtools 0.1.19 should be created.
 
-                requirement = requirement.copy()
-                requirement.name = mapping.to_name
-                if mapping.to_version is not None:
-                    requirement.version = mapping.to_version
-
-                break
+                    requirement = requirement.copy()
+                    requirement.name = mapping.to_name
+                    if mapping.to_version is not None:
+                        requirement.version = mapping.to_version
+                    break
 
         return requirement
 
@@ -119,6 +120,8 @@ class RequirementMapping(object):
         if isinstance(from_raw, dict):
             from_name = from_raw.get("name")
             from_version = str(from_raw.get("version"))
+            if from_version == 'None':
+                from_version = None
         else:
             from_name = from_raw
             from_version = None
