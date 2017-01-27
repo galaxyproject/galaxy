@@ -133,6 +133,7 @@ GALAXY_LIB_TOOLS = [
     "sam_pileup",
     "find_diag_hits",
     "cufflinks",
+    "sam_to_bam",  # This was fixed with version 1.1.3 of the tool - TODO add Galaxy to PYTHONPATH only for older versions
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
 ]
