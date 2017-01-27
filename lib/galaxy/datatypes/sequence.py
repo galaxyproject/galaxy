@@ -762,6 +762,7 @@ class FastqBz2 ( BaseFastq, Binary ):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.bz2"
+    compressed = True
 
     def sniff( self, filename ):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
