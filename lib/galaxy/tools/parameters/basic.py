@@ -206,8 +206,7 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
         tool_dict[ 'is_dynamic' ] = self.is_dynamic
-        if hasattr( self, 'value' ):
-            tool_dict[ 'value' ] = self.value
+        tool_dict[ 'value' ] = self.get_initial_value( trans, other_values )
         return tool_dict
 
     @classmethod
@@ -288,7 +287,7 @@ class IntegerToolParameter( TextToolParameter ):
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', '10')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', 10)]
     >>> type( p.from_json( "10", trans ) )
     <type 'int'>
     >>> type( p.from_json( "_string", trans ) )
@@ -364,7 +363,7 @@ class FloatToolParameter( TextToolParameter ):
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', '3.141592')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', 3.141592)]
     >>> type( p.from_json( "36.1", trans ) )
     <type 'float'>
     >>> type( p.from_json( "_string", trans ) )
@@ -480,7 +479,6 @@ class BooleanToolParameter( ToolParameter ):
 
     def to_dict( self, trans, other_values={} ):
         d = super( BooleanToolParameter, self ).to_dict( trans )
-        d['value'] = self.checked
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
         return d
@@ -500,7 +498,7 @@ class FileToolParameter( ToolParameter ):
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file')]
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FileToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'file'), ('value', None)]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -545,21 +543,18 @@ class FileToolParameter( ToolParameter ):
         else:
             raise Exception( "FileToolParameter cannot be persisted" )
 
-    def get_initial_value( self, trans, other_values ):
-        return None
-
 
 class FTPFileToolParameter( ToolParameter ):
     """
     Parameter that takes a file uploaded via FTP as a value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( history=Bunch(), user=None )
     >>> p = FTPFileToolParameter( None, XML( '<param name="_name" type="ftpfile"/>' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile')]
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'FTPFileToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'ftpfile'), ('value', None)]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source(input_source)
@@ -718,7 +713,6 @@ class BaseURLToolParameter( HiddenToolParameter ):
 
     def to_dict( self, trans, other_values={} ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
-        d[ 'value' ] = self._get_value()
         return d
 
 
@@ -751,7 +745,7 @@ class SelectToolParameter( ToolParameter ):
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('type', 'select'), ('value', 'z')]
+    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print p.to_param_dict_string( ["y", "z"] )
     y,z
     """
@@ -889,7 +883,7 @@ class SelectToolParameter( ToolParameter ):
             else:
                 value = None
         elif len( value ) == 1:
-            value = value[0]
+            value = value[ 0 ]
         return value
 
     def value_to_display_text( self, value, app ):
@@ -924,14 +918,6 @@ class SelectToolParameter( ToolParameter ):
         # Get options, value.
         options = self.get_options( trans, other_values )
         d[ 'options' ] = options
-        if options:
-            value = options[ 0 ][ 1 ]
-            for option in options:
-                if option[ 2 ]:
-                    # Found selected option.
-                    value = option[ 1 ]
-            d[ 'value' ] = value
-
         d[ 'display' ] = self.display
         d[ 'multiple' ] = self.multiple
         return d
@@ -1979,9 +1965,6 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
         self.type = "hidden_data"
         self.hidden = True
 
-    def get_initial_value( self, trans, other_values ):
-        return None
-
 
 class LibraryDatasetToolParameter( ToolParameter ):
     """
@@ -1992,9 +1975,6 @@ class LibraryDatasetToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', True )
-
-    def get_initial_value( self, trans, other_values ):
-        return None
 
     def from_json( self, value, trans, other_values={} ):
         return self.to_python( value, trans.app, other_values=other_values, validate=True )
