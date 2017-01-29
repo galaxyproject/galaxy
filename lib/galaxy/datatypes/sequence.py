@@ -19,7 +19,10 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
-from galaxy.util import nice_size
+from galaxy.util import (
+    compression_utils,
+    nice_size
+)
 from galaxy.util.checkers import (
     is_bz2,
     is_gzip
@@ -637,6 +640,20 @@ class BaseFastq ( Sequence ):
             return False
         except:
             return False
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        if preview:
+            fh = compression_utils.get_fileobj(dataset.file_name)
+            max_peek_size = 1000000  # 1 MB
+            if os.stat( dataset.file_name ).st_size < max_peek_size:
+                mime = "text/plain"
+                self._clean_and_set_mime_type( trans, mime )
+                return fh.read()
+            return trans.stream_template_mako( "/dataset/large_file.mako",
+                                           truncated_data=fh.read(max_peek_size),
+                                           data=dataset)
+        else:
+            return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
     def split( cls, input_datasets, subdir_generator_function, split_params):
         """
