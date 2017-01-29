@@ -146,15 +146,11 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             if requirement.type != "package":
                 return False
 
-        conda_targets = []
-        for requirement in requirements:
-            requirement = self._expand_requirement(requirement)
-
-            version = requirement.version
-            if self.versionless:
-                version = None
-
-            conda_targets.append(CondaTarget(requirement.name, version=version))
+        expanded_requirements = set([self._expand_requirement(r) for r in requirements])
+        if self.versionless:
+            conda_targets = [CondaTarget(r.name, version=None) for r in expanded_requirements]
+        else:
+            conda_targets = [CondaTarget(r.name, version=r.version) for r in expanded_requirements]
 
         preserve_python_environment = kwds.get("preserve_python_environment", False)
 
