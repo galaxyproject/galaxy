@@ -2,8 +2,6 @@
 Sequence classes
 """
 
-import bz2
-import gzip
 import json
 import logging
 import os
