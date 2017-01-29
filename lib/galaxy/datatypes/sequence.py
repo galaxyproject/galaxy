@@ -143,22 +143,13 @@ class Sequence( data.Text ):
         if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
             total_sequences = input_datasets[0].metadata.sequences
         else:
-            input_file = input_datasets[0].file_name
-            compress = is_gzip(input_file)
-            if compress:
-                # gzip is really slow before python 2.7!
-                in_file = gzip.GzipFile(input_file, 'r')
-            else:
-                # TODO
-                # if a file is not compressed, seek locations can be calculated and stored
-                # ideally, this would be done in metadata
-                # TODO
-                # Add BufferedReader if python 2.7?
-                in_file = open(input_file, 'rt')
-            total_sequences = long(0)
-            for i, line in enumerate(in_file):
-                total_sequences += 1
-            in_file.close()
+            in_file = compression_utils.get_fileobj(input_datasets[0].file_name)
+            try:
+                total_sequences = long(0)
+                for i, line in enumerate(in_file):
+                    total_sequences += 1
+            finally:
+                in_file.close()
             total_sequences /= 4
 
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
@@ -579,15 +570,8 @@ class BaseFastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        compressed_gzip = is_gzip(dataset.file_name)
-        compressed_bzip2 = is_bz2(dataset.file_name)
+        in_file = compression_utils.get_fileobj(dataset.file_name)
         try:
-            if compressed_gzip:
-                in_file = gzip.GzipFile(dataset.file_name)
-            elif compressed_bzip2:
-                in_file = bz2.BZ2File(dataset.file_name)
-            else:
-                in_file = open(dataset.file_name)
             for line in in_file:
                 line = line.strip()
                 if line and line.startswith( '#' ) and not data_lines:

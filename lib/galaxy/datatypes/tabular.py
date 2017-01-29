@@ -5,7 +5,6 @@ from __future__ import absolute_import
 
 import abc
 import csv
-import gzip
 import logging
 import os
 import re
@@ -19,7 +18,7 @@ from galaxy import util
 from galaxy.datatypes import data, metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
-from galaxy.util.checkers import is_gzip
+from galaxy.util import compression_utils
 
 from . import dataproviders
 
@@ -789,11 +788,7 @@ class Eland( Tabular ):
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
         try:
-            compress = is_gzip(filename)
-            if compress:
-                fh = gzip.GzipFile(filename, 'r')
-            else:
-                fh = open( filename )
+            fh = compression_utils.get_fileobj(filename, gzip_only=True)
             count = 0
             while True:
                 line = fh.readline()
@@ -830,33 +825,31 @@ class Eland( Tabular ):
 
     def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd ):
         if dataset.has_data():
-            compress = is_gzip(dataset.file_name)
-            if compress:
-                dataset_fh = gzip.GzipFile(dataset.file_name, 'r')
-            else:
-                dataset_fh = open( dataset.file_name )
-            lanes = {}
-            tiles = {}
-            barcodes = {}
-            reads = {}
-            # Should always read the entire file (until we devise a more clever way to pass metadata on)
-            # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            # If the dataset is larger than optional_metadata, just count comment lines.
-            #     dataset.metadata.data_lines = None
-            # else:
-            # Otherwise, read the whole thing and set num data lines.
-            for i, line in enumerate(dataset_fh):
-                if line:
-                    line_pieces = line.split('\t')
-                    if len(line_pieces) != 22:
-                        raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
-                    lanes[line_pieces[2]] = 1
-                    tiles[line_pieces[3]] = 1
-                    barcodes[line_pieces[6]] = 1
-                    reads[line_pieces[7]] = 1
-                pass
-            dataset.metadata.data_lines = i + 1
-            dataset_fh.close()
+            dataset_fh = compression_utils.get_fileobj(dataset.file_name, gzip_only=True)
+            try:
+                lanes = {}
+                tiles = {}
+                barcodes = {}
+                reads = {}
+                # Should always read the entire file (until we devise a more clever way to pass metadata on)
+                # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                # If the dataset is larger than optional_metadata, just count comment lines.
+                #     dataset.metadata.data_lines = None
+                # else:
+                # Otherwise, read the whole thing and set num data lines.
+                for i, line in enumerate(dataset_fh):
+                    if line:
+                        line_pieces = line.split('\t')
+                        if len(line_pieces) != 22:
+                            raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
+                        lanes[line_pieces[2]] = 1
+                        tiles[line_pieces[3]] = 1
+                        barcodes[line_pieces[6]] = 1
+                        reads[line_pieces[7]] = 1
+                    pass
+                dataset.metadata.data_lines = i + 1
+            finally:
+                dataset_fh.close()
             dataset.metadata.comment_lines = 0
             dataset.metadata.columns = 21
             dataset.metadata.column_types = ['str', 'int', 'int', 'int', 'int', 'int', 'str', 'int', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str', 'str']
