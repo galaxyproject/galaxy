@@ -8,7 +8,7 @@ from requests import (
 
 from base import api
 
-from .helpers import DatasetPopulator, wait_on
+from base.populators import DatasetPopulator, wait_on
 
 
 class HistoriesApiTestCase( api.ApiTestCase ):

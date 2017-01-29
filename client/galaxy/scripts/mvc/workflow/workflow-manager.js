@@ -189,13 +189,15 @@ function( Connector, Toastr ) {
                     // really a sneaky if statement
                     var cons = []
                     $.each( t.connectors, function ( i, c ) {
-                        var con_dict = { id: c.handle1.node.id, output_name: c.handle1.name };
-                        var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
-                        if( input_subworkflow_step_id !== undefined ) {
-                            con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
+                        if ( c.handle1 ) {
+                            var con_dict = { id: c.handle1.node.id, output_name: c.handle1.name };
+                            var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
+                            if( input_subworkflow_step_id !== undefined ) {
+                                con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
+                            }
+                            cons[i] = con_dict;
+                            input_connections[ t.name ] = cons;
                         }
-                        cons[i] = con_dict;
-                        input_connections[ t.name ] = cons;
                     });
                 });
                 var post_job_actions = {};
@@ -219,7 +221,7 @@ function( Connector, Toastr ) {
                     type : node.type,
                     content_id : node.content_id,
                     tool_state : node.tool_state,
-                    tool_errors : node.tool_errors,
+                    errors : node.errors,
                     input_connections : input_connections,
                     position : $(node.element).position(),
                     annotation: node.annotation,
@@ -328,13 +330,13 @@ function( Connector, Toastr ) {
                 this.active_node.make_inactive();
                 this.active_node = null;
             }
-            this.app.showToolForm( "<div>No node selected</div>", {id: 'no-node'} );
+            this.app.showAttributes();
         },
         activate_node : function( node ) {
             if ( this.active_node != node ) {
                 this.check_changes_in_active_form();
                 this.clear_active_node();
-                this.app.showToolForm( node.form_html, node );
+                this.app.showForm( node.config_form, node );
                 node.make_active();
                 this.active_node = node;
             }
@@ -344,8 +346,9 @@ function( Connector, Toastr ) {
             if ( this.active_node == node && force ) {
                 // Force changes to be saved even on new connection (previously dumped)
                 this.check_changes_in_active_form();
-                this.app.showToolForm( node.form_html, node );
+                this.app.showForm( node.config_form, node );
             }
+            this.app.showWorkflowParameters();
         },
         layout : function () {
             this.check_changes_in_active_form();

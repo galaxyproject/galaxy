@@ -461,6 +461,10 @@ class VtkBinary(Vtk, Binary):
 Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
 
 
+class STL(data.Data):
+    file_ext = "stl"
+
+
 # Utility functions
 def get_next_line(fh):
     line = fh.readline(MAX_LINE_LEN)

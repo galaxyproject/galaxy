@@ -210,7 +210,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #conda_auto_install = False
 # Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
-#conda_auto_init = False
+#conda_auto_init = True
 # You must set this to True if conda_prefix and job_working_directory are not on the same
 # volume, or some conda dependencies will fail to execute at job runtime.
 # Conda will copy packages content instead of creating hardlinks or symlinks.
@@ -229,6 +229,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # By default the tool_dependency_cache_dir is the _cache directory
 # of the tool dependency directory
 #tool_dependency_cache_dir = <tool_dependency_dir>/_cache
+
+# By default, when using a cached dependency manager, the dependencies are cached
+# when installing new tools and when using tools for the first time.
+# Set this to False if you prefer dependencies to be cached only when installing new tools.
+#precache_dependencies = True
 
 # File containing the Galaxy Tool Sheds that should be made available to
 # install from in the admin interface (.sample used if default does not exist).
@@ -328,7 +333,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Interactive environment plugins root directory: where to look for interactive
 # environment plugins.  By default none will be loaded.  Set to
 # config/plugins/interactive_environments to load Galaxy's stock plugins
-# (currently just IPython).  These will require Docker to be configured and
+# (currently just Jupyter).  These will require Docker to be configured and
 # have security considerations, so proceed with caution. The path is relative to the
 # Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a comma
 # separated list.
@@ -554,7 +559,7 @@ nglims_config_file = tool-data/nglims.yaml
 
 # URL (with schema http/https) of the Galaxy instance as accessible within your
 # local network - if specified used as a default by pulsar file staging and
-# IPython Docker container for communicating back with Galaxy via the API.
+# Jupyter Docker container for communicating back with Galaxy via the API.
 #galaxy_infrastructure_url = http://localhost:8080
 
 # If the above URL cannot be determined ahead of time in dynamic environments
@@ -672,8 +677,8 @@ nglims_config_file = tool-data/nglims.yaml
 # services based on Galaxy's session cookie.  It will attempt to do this by
 # default though you do need to install node+npm and do an npm install from
 # `lib/galaxy/web/proxy/js`.  It is generally more robust to configure this
-# externally managing it however Galaxy is managed.  If True Galaxy will only
-# launch the proxy if it is actually going to be used (e.g. for IPython).
+# externally, managing it however Galaxy is managed.  If True, Galaxy will only
+# launch the proxy if it is actually going to be used (e.g. for Jupyter).
 #dynamic_proxy_manage=True
 
 # As of 16.04 Galaxy supports multiple proxy types. The original NodeJS
@@ -782,12 +787,12 @@ nglims_config_file = tool-data/nglims.yaml
 # See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
 #allowed_origin_hostnames = None
 
-# Set the following to True to use IPython nbconvert to build HTML from IPython
+# Set the following to True to use Jupyter nbconvert to build HTML from Jupyter
 # notebooks in Galaxy histories.  This process may allow users to execute
-# arbitrary code or serve arbitrary HTML.  If enabled, IPython must be
+# arbitrary code or serve arbitrary HTML.  If enabled, Jupyter must be
 # available and on Galaxy's PATH, to do this run
-# `pip install jinja2 pygments ipython` in Galaxy's virtualenv.
-#trust_ipython_notebook_conversion = False
+# `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
+#trust_jupyter_notebook_conversion = False
 
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
@@ -904,6 +909,16 @@ use_interactive = True
 # Limits the number of results in toolbox search.  Can be used to tweak how many
 # results will appear.
 # tool_search_limit = 20
+
+# Enable/ disable Ngram-search for tools. It makes tool
+# search results tolerant for spelling mistakes in the query
+# by dividing the query into multiple ngrams and search for
+# each ngram
+#tool_enable_ngram_search = False
+
+# Set minimum and maximum sizes of ngrams
+#tool_ngram_minsize = 3
+#tool_ngram_maxsize = 4
 
 # -- Users and Security
 
@@ -1111,8 +1126,13 @@ use_interactive = True
 #enable_quotas = False
 
 # This option allows users to see the full path of datasets via the "View
-# Details" option in the history.  Administrators can always see this.
+# Details" option in the history. This option also exposes the command line to
+# non-administrative users. Administrators can always see dataset paths.
 #expose_dataset_path = False
+
+# This option allows users to see the job metrics (except for environment
+# variables).
+#expose_potentially_sensitive_job_metrics = False
 
 # Data manager configuration options
 # Allow non-admin users to view available Data Manager options.
@@ -1138,6 +1158,20 @@ use_interactive = True
 # the system on which Galaxy is started.  Advanced job running capabilities can
 # be configured through the job configuration file.
 #job_config_file = config/job_conf.xml
+
+# When jobs fail due to job runner problems, Galaxy can be configured to retry
+# these or reroute the jobs to new destinations. Very fine control of this is
+# available with resubmit declarations in job_conf.xml. For simple deployments
+# of Galaxy though, the following attribute can define resubmission conditions
+# for all job destinations. If any job destination defines even one
+# resubmission condition explicitly in job_conf.xml - the condition described
+# by this option will not apply to that destination. For instance, the condition:
+# 'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
+# would retry up to two times jobs that didn't fail due to detected memory or
+# walltime limits but did fail quickly (either while queueing or running). The
+# commented out default below results in no default job resubmission condition,
+# failing jobs are just failed outright.
+#default_job_resubmission_condition = 
 
 # In multiprocess configurations, notification between processes about new jobs
 # must be done via the database.  In single process configurations, this can be
@@ -1182,6 +1216,18 @@ use_interactive = True
 # waiting 1 second between tries.  For NFS, you may want to try the -noac mount
 # option (Linux) or -actimeo=0 (Solaris).
 #retry_job_output_collection = 0
+
+# In the past Galaxy would preserve its Python environment when running jobs (
+# and still does for internal tools packaged with Galaxy). This behavior exposes
+# Galaxy internals to tools and could result in problems when activating
+# Python environments for tools (such as with Conda packaging). The default
+# legacy_only will restrict this behavior to tools identified by the Galaxy
+# team as requiring this environment. Set this to "always" to restore the
+# previous behavior (and potentially break Conda dependency resolution for many
+# tools). Set this to legacy_and_local to preserve the environment for legacy
+# tools and locally managed tools (this might be useful for instance if you are
+# installing software into Galaxy's virtualenv for tool development).
+#python_environment_problem = legacy_only
 
 # Clean up various bits of jobs left on the filesystem after completion.  These
 # bits include the job working directory, external metadata temporary files,

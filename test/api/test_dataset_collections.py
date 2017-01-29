@@ -1,8 +1,7 @@
 import json
 
 from base import api
-
-from .helpers import DatasetCollectionPopulator, DatasetPopulator
+from base.populators import DatasetCollectionPopulator, DatasetPopulator
 
 
 class DatasetCollectionApiTestCase( api.ApiTestCase ):

@@ -63,7 +63,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
             elif inputs_by_el == "step_uuid":
                 possible_input_keys.append(str( step.uuid ))
             elif inputs_by_el == "name":
-                possible_input_keys.append(step.tool_inputs.get( 'name', None ))
+                possible_input_keys.append( step.name )
             else:
                 message = "Workflow cannot be run because unexpected inputs_by value specified."
                 raise exceptions.MessageException( message )
@@ -204,8 +204,6 @@ def build_workflow_run_configs( trans, workflow, payload ):
         raise exceptions.MessageException( "Workflow cannot be run because it does not have any steps" )
     if workflow.has_cycles:
         raise exceptions.MessageException( "Workflow cannot be run because it contains cycles" )
-    if workflow.has_errors:
-        raise exceptions.MessageException( "Workflow cannot be run because of validation errors in some steps" )
 
     if 'step_parameters' in payload and 'parameters' in payload:
         raise exceptions.RequestParameterInvalidException( "Cannot specify both legacy parameters and step_parameters attributes." )
@@ -328,7 +326,8 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
     steps_by_id = {}
     for step in workflow.steps:
         steps_by_id[step.id] = step
-        serializable_runtime_state = step.module.get_state( step.state )
+        serializable_runtime_state = step.module.encode_runtime_state( step.state )
+
         step_state = model.WorkflowRequestStepState()
         step_state.workflow_step = step
         log.info("Creating a step_state for step.id %s" % step.id)

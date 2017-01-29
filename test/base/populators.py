@@ -1,6 +1,9 @@
 import json
 import time
+
 from operator import itemgetter
+
+import requests
 
 from pkg_resources import resource_string
 from six import StringIO
@@ -8,10 +11,10 @@ from six import StringIO
 from base import api_asserts
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = resource_string( __name__, "test_workflow_1.ga" )
+workflow_str = resource_string( __name__, "data/test_workflow_1.ga" )
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
+workflow_random_x2_str = resource_string( __name__, "data/test_workflow_2.ga" )
 
 
 DEFAULT_TIMEOUT = 15  # Secs to wait for state to turn ok
@@ -229,7 +232,7 @@ class BaseWorkflowPopulator( object ):
 
     def load_workflow_from_resource( self, name, filename=None ):
         if filename is None:
-            filename = "%s.ga" % name
+            filename = "data/%s.ga" % name
         content = resource_string( __name__, filename )
         return self.load_workflow( name, content=content )
 
@@ -349,7 +352,7 @@ class LibraryPopulator( object ):
 
 class BaseDatasetCollectionPopulator( object ):
 
-    def create_list_from_pairs( self, history_id, pairs ):
+    def create_list_from_pairs( self, history_id, pairs, name="Dataset Collection from pairs" ):
         element_identifiers = []
         for i, pair in enumerate( pairs ):
             element_identifiers.append( dict(
@@ -363,6 +366,7 @@ class BaseDatasetCollectionPopulator( object ):
             history_id=history_id,
             element_identifiers=json.dumps(element_identifiers),
             collection_type="list:paired",
+            name=name,
         )
         return self.__create( payload )
 
@@ -400,6 +404,9 @@ class BaseDatasetCollectionPopulator( object ):
 
         if "element_identifiers" not in kwds:
             kwds[ "element_identifiers" ] = json.dumps( identifiers_func( history_id, contents=contents ) )
+
+        if "name" not in kwds:
+            kwds["name"] = "Test Dataset Collection"
 
         payload = dict(
             history_id=history_id,
@@ -470,6 +477,54 @@ def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         else:
             return None
     return wait_on( get_state, desc="state", timeout=timeout)
+
+
+class GiPostGetMixin:
+    """Mixin for adapting Galaxy testing populators helpers to bioblend."""
+
+    def _get(self, route):
+        return self._gi.make_get_request(self.__url(route))
+
+    def _post(self, route, data={}):
+        data = data.copy()
+        data['key'] = self._gi.key
+        return requests.post(self.__url(route), data=data)
+
+    def __url(self, route):
+        return self._gi.url + "/" + route
+
+
+class GiDatasetPopulator(BaseDatasetPopulator, GiPostGetMixin):
+
+    """Implementation of BaseDatasetPopulator backed by bioblend."""
+
+    def __init__(self, gi):
+        """Construct a dataset populator from a bioblend GalaxyInstance."""
+        self._gi = gi
+
+
+class GiDatasetCollectionPopulator(BaseDatasetCollectionPopulator, GiPostGetMixin):
+
+    """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
+
+    def __init__(self, gi):
+        """Construct a dataset collection populator from a bioblend GalaxyInstance."""
+        self._gi = gi
+        self.dataset_populator = GiDatasetPopulator(gi)
+
+    def _create_collection(self, payload):
+        create_response = self._post( "dataset_collections", data=payload )
+        return create_response
+
+
+class GiWorkflowPopulator(BaseWorkflowPopulator, GiPostGetMixin):
+
+    """Implementation of BaseWorkflowPopulator backed by bioblend."""
+
+    def __init__(self, gi):
+        """Construct a workflow populator from a bioblend GalaxyInstance."""
+        self._gi = gi
+        self.dataset_populator = GiDatasetPopulator(gi)
 
 
 def wait_on( function, desc, timeout=DEFAULT_TIMEOUT ):

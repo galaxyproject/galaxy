@@ -1,0 +1,11 @@
+<tool id="CONVERTER_fastqsolexagz_to_fastqsolexa" name="Convert fastqsolexa.gz files to fastqsolexa" version="1.0.0" hidden="true">
+  <command>gzip -dcf '$input1' > '$output1'</command>
+  <inputs>
+    <param format="fastqsolexa.gz" name="input1" type="data" label="Choose FASTQ file"/>
+  </inputs>
+  <outputs>
+    <data format="fastqsolexa" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

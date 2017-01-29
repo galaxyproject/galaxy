@@ -138,6 +138,17 @@ class JobConfiguration( object ):
         self.resource_parameters = {}
         self.limits = Bunch()
 
+        default_resubmits = []
+        default_resubmit_condition = self.app.config.default_job_resubmission_condition
+        if default_resubmit_condition:
+            default_resubmits.append(dict(
+                destination=None,
+                condition=default_resubmit_condition,
+                handler=None,
+                delay=None,
+            ))
+        self.default_resubmits = default_resubmits
+
         self.__parse_resource_parameters()
         # Initialize the config
         job_config_file = self.app.config.job_config_file
@@ -230,7 +241,13 @@ class JobConfiguration( object ):
             job_destination = JobDestination(**dict(destination.items()))
             job_destination['params'] = self.__get_params(destination)
             job_destination['env'] = self.__get_envs(destination)
-            job_destination['resubmit'] = self.__get_resubmits(destination)
+            destination_resubmits = self.__get_resubmits(destination)
+            if destination_resubmits:
+                resubmits = destination_resubmits
+            else:
+                resubmits = self.default_resubmits
+            job_destination["resubmit"] = resubmits
+
             self.destinations[id] = (job_destination,)
             if job_destination.tags is not None:
                 for tag in job_destination.tags:

@@ -107,6 +107,19 @@ class NavigatesGalaxy(HasDriver):
             assert final_state == "ok", final_state
         return final_state
 
+    def history_panel_wait_for_hid_ok(self, hid, timeout=30):
+        current_history_id = self.current_history_id()
+
+        def history_has_hid(driver):
+            contents = self.api_get("histories/%s/contents" % current_history_id)
+            return any([d for d in contents if d["hid"] == hid])
+
+        self.wait(timeout).until(history_has_hid)
+        contents = self.api_get("histories/%s/contents" % current_history_id)
+        history_item = [d for d in contents if d["hid"] == hid][0]
+        history_item_selector_okay = "#%s-%s.state-ok" % (history_item["history_content_type"], history_item["id"])
+        self.wait_for_selector_visible(history_item_selector_okay)
+
     def get_logged_in_user(self):
         return self.api_get("users/current")
 
@@ -200,6 +213,60 @@ class NavigatesGalaxy(HasDriver):
         close_button = self.wait_for_selector("button#btn-close")
         close_button.click()
 
+    def workflow_index_open(self):
+        self.home()
+        self.click_masthead_workflow()
+
+    def workflow_index_table_elements(self):
+        self.wait_for_selector_visible(".manage-table tbody")
+        table_elements = self.driver.find_elements_by_css_selector(".manage-table tbody > tr")
+        # drop header
+        return table_elements[1:]
+
+    def workflow_index_click_option(self, option_title, workflow_index=0):
+        table_elements = self.workflow_index_table_elements()
+        workflow_row = table_elements[workflow_index]
+        workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
+        workflow_button.click()
+        menu_element = self.wait_for_selector_visible(".popmenu-wrapper .dropdown-menu")
+        menu_options = menu_element.find_elements_by_css_selector("li a")
+        found_option = False
+        for menu_option in menu_options:
+            if option_title in menu_option.text:
+                menu_option.click()
+                found_option = True
+                break
+
+        if not found_option:
+            raise AssertionError("Failed to find workflow action option with title [%s]" % option_title)
+
+    def workflow_run_submit(self):
+        button = self.wait_for_selector(".ui-form-header button")
+        button.click()
+
+    def tool_open(self, tool_id):
+        link_element = self.wait_for_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
+        link_element.click()
+
+    def tool_parameter_div(self, expanded_parameter_id):
+        return self.wait_for_selector("div.ui-form-element[tour_id$='%s']" % expanded_parameter_id)
+
+    def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
+        div_element = self.tool_parameter_div(expanded_parameter_id)
+        assert div_element
+        if expected_type == "data":
+            div_selector = "div.ui-form-element[tour_id$='%s']" % expanded_parameter_id
+            self.select2_set_value(div_selector, value)
+        else:
+            input_element = div_element.find_element_by_css_selector("input")
+            # Clear default value
+            input_element.clear()
+            input_element.send_keys(value)
+
+    def tool_execute(self):
+        execute_button = self.wait_for_selector("button#execute")
+        execute_button.click()
+
     def click_masthead_user(self):
         self.click_xpath(self.navigation_data["selectors"]["masthead"]["user"])
 
@@ -234,19 +301,60 @@ class NavigatesGalaxy(HasDriver):
         menu_selector = self.test_data["historyOptions"]["selectors"]["menu"]
         return menu_selector
 
+    def history_panel_item_selector(self, hid, wait=False):
+        current_history_id = self.current_history_id()
+        contents = self.api_get("histories/%s/contents" % current_history_id)
+        try:
+            history_item = [d for d in contents if d["hid"] == hid][0]
+        except IndexError:
+            raise Exception("Could not find history item with hid [%s] in contents [%s]" % (hid, contents))
+        history_item_selector = "#%s-%s" % (history_item["history_content_type"], history_item["id"])
+        if wait:
+            self.wait_for_selector_visible(history_item_selector)
+        return history_item_selector
+
+    def modal_body_selector(self):
+        return ".modal-body"
+
+    def history_panel_item_body_selector(self, hid, wait=False):
+        selector = "%s %s" % (self.history_panel_item_selector(hid), self.test_data["historyPanel"]["selectors"]["hda"]["body"])
+        if wait:
+            self.wait_for_selector_visible(selector)
+        return selector
+
     def hda_div_selector(self, hda_id):
         return "#dataset-%s" % hda_id
 
     def hda_body_selector(self, hda_id):
         return "%s %s" % (self.hda_div_selector(hda_id), self.test_data["historyPanel"]["selectors"]["hda"]["body"])
 
-    def click_hda_title(self, hda_id, wait=False):
-        expand_target = "%s .title" % self.hda_div_selector(hda_id)
-        hda_element = self.wait_for_selector(expand_target)
-        hda_element.click()
-        if wait:
+    def hda_click_primary_action_button(self, hid, button_key):
+        self.history_panel_click_item_title(hid=hid, wait=True)
+        body_selector = self.history_panel_item_body_selector(hid=hid, wait=True)
+
+        buttons_selector = body_selector + " " + self.test_data["historyPanel"]["selectors"]["hda"]["primaryActionButtons"]
+        self.wait_for_selector_visible(buttons_selector)
+
+        button_def = self.test_data["historyPanel"]["hdaPrimaryActionButtons"][button_key]
+        button_selector = button_def["selector"]
+        button_item = self.wait_for_selector_visible("%s %s" % (buttons_selector, button_selector))
+        return button_item.click()
+
+    def history_panel_click_item_title(self, **kwds):
+        if "hda_id" in kwds:
+            item_selector = self.hda_div_selector(kwds["hda_id"])
+        else:
+            item_selector = self.history_panel_item_selector(kwds["hid"])
+        title_selector = "%s .title" % item_selector
+        title_element = self.wait_for_selector(title_selector)
+        title_element.click()
+        if kwds.get("wait", False):
             # Find a better way to wait for transition
             time.sleep(.5)
+
+    def click_hda_title(self, hda_id, wait=False):
+        # TODO: Replace with calls to history_panel_click_item_title.
+        return self.history_panel_click_item_title(hda_id=hda_id, wait=wait)
 
     def logout_if_needed(self):
         if self.is_logged_in():
@@ -313,7 +421,13 @@ class NavigatesGalaxy(HasDriver):
         assert text == expected, "Tooltip text [%s] was not expected text [%s]." % (text, expected)
 
     def assert_error_message(self, contains=None):
-        element = self.wait_for_selector(self.test_data["selectors"]["messages"]["error"])
+        return self._assert_message("error", contains=contains)
+
+    def assert_warning_message(self, contains=None):
+        return self._assert_message("warning", contains=contains)
+
+    def _assert_message(self, type, contains=None):
+        element = self.wait_for_selector(self.test_data["selectors"]["messages"][type])
         assert element, "No error message found, one expected."
         if contains is not None:
             assert contains in element.text
@@ -345,3 +459,27 @@ class NavigatesGalaxy(HasDriver):
             print("(Post)Clicking %s" % postclick_selector)
             element = self.tour_wait_for_clickable_element(postclick_selector)
             element.click()
+
+    def select2_set_value(self, container_selector, value, with_click=True):
+        # There are two hacky was to select things from the select2 widget -
+        #   with_click=True: This simulates the mouse click after the suggestion contains
+        #                    only the selected value.
+        #   with_click=False: This presses enter on the selection. Not sure
+        #                     why.
+        # with_click seems to work in all situtations - the enter methods
+        # doesn't seem to work with the tool form for some reason.
+        container_elem = self.wait_for_selector(container_selector)
+        text_element = container_elem.find_element_by_css_selector("input[type='text']")
+        text_element.send_keys(value)
+        # Wait for select2 options to load and then click to add this one.
+        drop_elem = self.wait_for_selector_visible("#select2-drop")
+        # Sleep seems to be needed - at least for send_enter.
+        time.sleep(.5)
+        if not with_click:
+            # Wait for select2 options to load and then click to add this one.
+            self.send_enter(text_element)
+        else:
+            select_elem = drop_elem.find_elements_by_css_selector(".select2-result-label")[0]
+            action_chains = self.action_chains()
+            action_chains.move_to_element(select_elem).click().perform()
+        self.wait_for_selector_absent_or_hidden("#select2-drop")

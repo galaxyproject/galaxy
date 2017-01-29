@@ -673,57 +673,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return trans.fill_template( "workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
 
     @web.json
-    def editor_form_post( self, trans, type=None, content_id=None, annotation=None, label=None, **incoming ):
-        """
-        Accepts a tool state and incoming values, and generates a new tool
-        form and some additional information, packed into a json dictionary.
-        This is used for the form shown in the right pane when a node
-        is selected.
-        """
-        tool_state = incoming.pop( 'tool_state' )
-        module = module_factory.from_dict( trans, {
-            'type': type,
-            'content_id': content_id,
-            'tool_state': tool_state,
-            'label': label or None
-        } )
-        module.update_state( incoming )
-        return {
-            'label': module.label,
-            'tool_state': module.get_state(),
-            'data_inputs': module.get_data_inputs(),
-            'data_outputs': module.get_data_outputs(),
-            'tool_errors': module.get_errors(),
-            'form_html': module.get_config_form(),
-            'annotation': annotation
-        }
-
-    @web.json
-    def get_new_module_info( self, trans, type, **kwargs ):
-        """
-        Get the info for a new instance of a module initialized with default
-        parameters (any keyword arguments will be passed along to the module).
-        Result includes data inputs and outputs, html representation
-        of the initial form, and the initial tool state (with default values).
-        This is called asynchronously whenever a new node is added.
-        """
-        trans.workflow_building_mode = True
-        module = module_factory.new( trans, type, **kwargs )
-        tool_model = None
-        return {
-            'type': module.type,
-            'name': module.get_name(),
-            'content_id': module.get_content_id(),
-            'tool_state': module.get_state(),
-            'tool_model': tool_model,
-            'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
-            'data_inputs': module.get_data_inputs(),
-            'data_outputs': module.get_data_outputs(),
-            'form_html': module.get_config_form(),
-            'annotation': ""
-        }
-
-    @web.json
     def load_workflow( self, trans, id ):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
@@ -1052,6 +1001,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 history=history
             )
         else:
+            # If there is just one dataset name selected or one dataset collection, these
+            # come through as string types instead of lists. xref #3247.
+            dataset_names = util.listify(dataset_names)
+            dataset_collection_names = util.listify(dataset_collection_names)
             stored_workflow = extract_workflow(
                 trans,
                 user=user,

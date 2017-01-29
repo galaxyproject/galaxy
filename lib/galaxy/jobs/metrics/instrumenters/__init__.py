@@ -3,19 +3,21 @@
 These are responsible for collecting and formatting a coherent set of metrics.
 """
 import os.path
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
 
-from abc import ABCMeta
-from abc import abstractmethod
+import six
 
 from ...metrics import formatting
-
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
 
 
+@six.add_metaclass(ABCMeta)
 class InstrumentPlugin( object ):
     """Describes how to instrument job scripts and retrieve collected metrics."""
-    __metaclass__ = ABCMeta
     formatter = formatting.JobMetricFormatter()
 
     @property

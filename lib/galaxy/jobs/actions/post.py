@@ -5,7 +5,6 @@ immediate_actions listed below.  Currently only used in workflows.
 import datetime
 import logging
 import socket
-from json import dumps
 
 from markupsafe import escape
 
@@ -111,11 +110,12 @@ class RenameDatasetAction(DefaultJobAction):
             #      "replace" option so you can replace a portion of the name,
             #      support multiple #{name} in one rename action...
 
-            while new_name.find("#{") > -1:
+            start_pos = 0
+            while new_name.find("#{", start_pos) > -1:
                 to_be_replaced = ""
                 #  This assumes a single instance of #{variable} will exist
-                start_pos = new_name.find("#{") + 2
-                end_pos = new_name.find("}")
+                start_pos = new_name.find("#{", start_pos) + 2
+                end_pos = new_name.find("}", start_pos)
                 to_be_replaced = new_name[start_pos:end_pos]
                 input_file_var = to_be_replaced
                 #  Pull out the piped controls and store them for later
@@ -125,13 +125,16 @@ class RenameDatasetAction(DefaultJobAction):
                 if len(tokens) > 1:
                     input_file_var = tokens[0].strip()
 
-                    # Treat . as special symbol (breaks parameter names anyway)
-                    # to allow access to repeat elements, for instance first
-                    # repeat in cat1 would be something like queries_0.input2.
-                    input_file_var = input_file_var.replace(".", "|")
-
                     for i in range(1, len(tokens)):
                         operations.append(tokens[i].strip())
+
+                # Treat . as special symbol (breaks parameter names anyway)
+                # to allow access to repeat elements, for instance first
+                # repeat in cat1 would be something like queries_0.input2.
+                # TODO: update the help text (input_terminals) on the action to
+                # show correct valid inputs.
+                input_file_var = input_file_var.replace(".", "|")
+
                 replacement = ""
                 #  Lookp through inputs find one with "to_be_replaced" input
                 #  variable name, and get the replacement name
@@ -139,6 +142,15 @@ class RenameDatasetAction(DefaultJobAction):
                     if input_assoc.name == input_file_var:
                         replacement = input_assoc.dataset.name
 
+                # Ditto for collections...
+                for input_assoc in job.input_dataset_collections:
+                    if input_assoc.name == input_file_var:
+                        if input_assoc.dataset_collection:
+                            hdca = input_assoc.dataset_collection
+                            replacement = hdca.name
+
+                # In case name was None.
+                replacement = replacement or ''
                 #  Do operations on replacement
                 #  Any control that is not defined will be ignored.
                 #  This should be moved out to a class or module function
@@ -377,7 +389,7 @@ class ActionBox(object):
             else:
                 # Not pja stuff.
                 pass
-        return dumps(npd)
+        return npd
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

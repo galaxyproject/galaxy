@@ -255,7 +255,7 @@ class WorkflowProgress( object ):
                     message = template % (self.workflow_invocation.id, step_id, list(step_states.keys()))
                     raise Exception(message)
                 runtime_state = step_states[ step_id ].value
-                step.state = step.module.recover_runtime_state( runtime_state )
+                step.state = step.module.decode_runtime_state( runtime_state )
 
             invocation_steps = step_invocations_by_id.get( step_id, None )
             if invocation_steps:

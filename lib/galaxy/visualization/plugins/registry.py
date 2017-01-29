@@ -99,7 +99,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         # default class
         plugin_class = vis_plugins.VisualizationPlugin
-        # ipython, etc
+        # jupyter, etc
         if config[ 'plugin_type' ] == 'interactive_environment':
             plugin_class = vis_plugins.InteractiveEnvironmentPlugin
         # js only
