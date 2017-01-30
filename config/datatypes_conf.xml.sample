@@ -91,9 +91,6 @@
     <datatype extension="fastq.gz" type="galaxy.datatypes.sequence:FastqGz" display_in_upload="true">
         <converter file="fastqgz_to_fastq.xml" target_datatype="fastq"/>
     </datatype>
-    <datatype extension="fastq.dsrc" type="galaxy.datatypes.sequence:FastqDsrc" display_in_upload="true">
-        <converter file="fastqdsrc_to_fastq.xml" target_datatype="fastq"/>
-    </datatype>
     <datatype extension="fastqsanger.gz" type="galaxy.datatypes.sequence:FastqSangerGz" display_in_upload="true">
         <converter file="fastqsangergz_to_fastqsanger.xml" target_datatype="fastqsanger"/>
     </datatype>
@@ -679,7 +676,6 @@
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.sequence:FastqGz"/>
     <sniffer type="galaxy.datatypes.sequence:FastqBz2"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqDsrc"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>

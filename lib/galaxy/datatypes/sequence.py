@@ -10,7 +10,6 @@ import os
 import re
 import string
 import sys
-import subprocess
 from cgi import escape
 
 import bx.align.maf
@@ -23,8 +22,7 @@ from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size
 from galaxy.util.checkers import (
     is_bz2,
-    is_gzip,
-    is_dsrc
+    is_gzip
 )
 from galaxy.util.image_util import check_image_type
 
@@ -578,16 +576,13 @@ class BaseFastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        compressed_gzip  = is_gzip(dataset.file_name)
+        compressed_gzip = is_gzip(dataset.file_name)
         compressed_bzip2 = is_bz2(dataset.file_name)
-        compressed_dsrc  = is_dsrc(dataset.file_name)
         try:
             if compressed_gzip:
                 in_file = gzip.GzipFile(dataset.file_name)
             elif compressed_bzip2:
                 in_file = bz2.BZ2File(dataset.file_name)
-            elif compressed_dsrc:
-                in_file = subprocess.Popen(['dsrc', 'd', '-s', '-w', dataset.file_name], stdout=subprocess.PIPE).stdout
             else:
                 in_file = open(dataset.file_name)
             for line in in_file:
@@ -627,8 +622,7 @@ class BaseFastq ( Sequence ):
         >>> Fastq().sniff( fname )
         True
         """
-
-        compressed = is_gzip(filename) or is_bz2(filename) or is_dsrc(filename)
+        compressed = is_gzip(filename) or is_bz2(filename)
         if compressed and not isinstance(self, Binary):
             return False
         headers = get_headers( filename, None )
@@ -735,19 +729,6 @@ class FastqGz ( BaseFastq, Binary ):
 
 Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
-class FastqDsrc ( BaseFastq, Binary ):
-    """Class representing a DSRC compressed FASTQ sequence"""
-    edam_format = "format_1930"
-    file_ext = "fastq.dsrc"
-
-    def sniff( self, filename ):
-        """Determine whether the file is in DSRC-compressed FASTQ format"""
-        if not is_dsrc(filename):
-            return False
-        return BaseFastq.sniff( self, filename )
-
-
-Binary.register_sniffable_binary_format("fastq.dsrc", "fastq.dsrc", FastqDsrc)
 
 class FastqSangerGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
@@ -794,6 +775,7 @@ class FastqBz2 ( BaseFastq, Binary ):
         if not is_bz2(filename):
             return False
         return BaseFastq.sniff( self, filename )
+
 
 Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 

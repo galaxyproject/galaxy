@@ -61,7 +61,6 @@ DATABASE_MAX_STRING_SIZE = 32768
 DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 gzip_magic = '\037\213'
-dsrc_magic = '\252\002\000\002'
 bz2_magic = 'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
