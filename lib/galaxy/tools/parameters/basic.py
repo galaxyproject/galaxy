@@ -206,7 +206,7 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
         tool_dict[ 'is_dynamic' ] = self.is_dynamic
-        tool_dict[ 'value' ] = self.value_to_basic( self.get_initial_value( trans, other_values ), trans.app )
+        tool_dict[ 'value' ] = self.value_to_basic( self.get_initial_value( trans, other_values ), trans.app, use_security=True )
         return tool_dict
 
     @classmethod
