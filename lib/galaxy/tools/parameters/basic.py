@@ -206,7 +206,7 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
         tool_dict[ 'is_dynamic' ] = self.is_dynamic
-        tool_dict[ 'value' ] = self.get_initial_value( trans, other_values )
+        tool_dict[ 'value' ] = self.value_to_basic( self.get_initial_value( trans, other_values ), trans.app, use_security=True )
         return tool_dict
 
     @classmethod
@@ -238,7 +238,7 @@ class TextToolParameter( ToolParameter ):
     Parameter that can take on any text value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch()
+    >>> trans = Bunch( app=None )
     >>> p = TextToolParameter( None, XML( '<param name="_name" type="text" value="default" />' ) )
     >>> print p.name
     _name
@@ -282,12 +282,12 @@ class IntegerToolParameter( TextToolParameter ):
     Parameter that takes an integer value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
+    >>> trans = Bunch( app=None, history=Bunch(), workflow_building_mode=True )
     >>> p = IntegerToolParameter( None, XML( '<param name="_name" type="integer" value="10" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', 10)]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', '10')]
     >>> type( p.from_json( "10", trans ) )
     <type 'int'>
     >>> type( p.from_json( "_string", trans ) )
@@ -358,12 +358,12 @@ class FloatToolParameter( TextToolParameter ):
     Parameter that takes a real number value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch(), workflow_building_mode=True )
+    >>> trans = Bunch( app=None, history=Bunch(), workflow_building_mode=True )
     >>> p = FloatToolParameter( None, XML( '<param name="_name" type="float" value="3.141592" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', 3.141592)]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', '3.141592')]
     >>> type( p.from_json( "36.1", trans ) )
     <type 'float'>
     >>> type( p.from_json( "_string", trans ) )
@@ -434,12 +434,12 @@ class BooleanToolParameter( ToolParameter ):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = BooleanToolParameter( None, XML( '<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', True)]
+    [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
     >>> print p.from_json( 'true' )
     True
     >>> print p.to_param_dict_string( True )
@@ -493,7 +493,7 @@ class FileToolParameter( ToolParameter ):
     Parameter that takes an uploaded file as a value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = FileToolParameter( None, XML( '<param name="_name" type="file"/>' ) )
     >>> print p.name
     _name
@@ -549,7 +549,7 @@ class FTPFileToolParameter( ToolParameter ):
     Parameter that takes a file uploaded via FTP as a value.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch(), user=None )
+    >>> trans = Bunch( app=None, history=Bunch(), user=None )
     >>> p = FTPFileToolParameter( None, XML( '<param name="_name" type="ftpfile"/>' ) )
     >>> print p.name
     _name
@@ -621,12 +621,12 @@ class HiddenToolParameter( ToolParameter ):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = HiddenToolParameter( None, XML( '<param name="_name" type="hidden" value="_value"/>' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', '_value')]
+    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -646,14 +646,14 @@ class ColorToolParameter( ToolParameter ):
     Parameter that stores a color.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff"/>' ) )
     >>> print p.name
     _name
     >>> print p.to_param_dict_string( "#fdeada" )
     #fdeada
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', '#ffffff')]
+    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
     >>> p = ColorToolParameter( None, XML( '<param name="_name" type="color" value="#ffffff" rgb="True"/>' ) )
     >>> print p.to_param_dict_string( "#fdeada" )
     (253, 234, 218)
@@ -686,12 +686,12 @@ class BaseURLToolParameter( HiddenToolParameter ):
     current server base url. Used in all redirects.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = BaseURLToolParameter( None, XML( '<param name="_name" type="base_url" value="_value"/>' ) )
     >>> print p.name
     _name
     >>> sorted( p.to_dict( trans ).items() )
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', '_value')]
+    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
     """
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
@@ -721,7 +721,7 @@ class SelectToolParameter( ToolParameter ):
     Parameter that takes on one (or many) or a specific set of values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch() )
+    >>> trans = Bunch( app=None, history=Bunch() )
     >>> p = SelectToolParameter( None, XML(
     ... '''
     ... <param name="_name" type="select">
@@ -929,7 +929,7 @@ class GenomeBuildParameter( SelectToolParameter ):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
+    >>> trans = Bunch( app=None, history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
     >>> p = GenomeBuildParameter( None, XML( '<param name="_name" type="genomebuild" value="hg17" />' ) )
     >>> print p.name
     _name
@@ -1152,7 +1152,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
+    >>> trans = Bunch( app=None, history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
     >>> p = DrillDownSelectToolParameter( None, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
