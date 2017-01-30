@@ -8,6 +8,7 @@ import os
 import re
 
 import galaxy.tools.deps.installable
+import galaxy.tools.deps.requirements
 
 from ..conda_util import (
     build_isolated_environment,
@@ -146,7 +147,8 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             if requirement.type != "package":
                 return False
 
-        expanded_requirements = set([self._expand_requirement(r) for r in requirements])
+        ToolRequirements = galaxy.tools.deps.requirements.ToolRequirements
+        expanded_requirements = ToolRequirements([self._expand_requirement(r) for r in requirements])
         if self.versionless:
             conda_targets = [CondaTarget(r.name, version=None) for r in expanded_requirements]
         else:
