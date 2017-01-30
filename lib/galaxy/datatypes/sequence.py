@@ -727,6 +727,7 @@ class FastqGz ( BaseFastq, Binary ):
             return False
         return BaseFastq.sniff( self, filename )
 
+
 Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
