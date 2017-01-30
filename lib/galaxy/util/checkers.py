@@ -54,6 +54,18 @@ def check_binary( name, file_path=True ):
         temp.close( )
     return is_binary
 
+def check_dsrc( file_path ):
+    # This method returns a tuple of booleans representing ( is_dsrc, is_valid )
+    # Make sure we have a gzipped file
+    try:
+        temp = open( file_path, "U" )
+        magic_check = temp.read( 4 )
+        temp.close()
+        if magic_check != util.dsrc_magic:
+            return ( False, False )
+    except:
+        return ( False, False )
+    return ( True, True )
 
 def check_gzip( file_path ):
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
@@ -119,6 +131,9 @@ def is_gzip( file_path ):
     is_gzipped, is_valid = check_gzip( file_path )
     return is_gzipped
 
+def is_dsrc( file_path ):
+    is_dsrc, is_valid = check_dsrc( file_path )
+    return is_dsrc
 
 def check_image( file_path ):
     """ Simple wrapper around image_type to yield a True/False verdict """
@@ -131,9 +146,11 @@ __all__ = (
     'check_binary',
     'check_bz2',
     'check_gzip',
+    'check_dsrc',
     'check_html',
     'check_image',
     'check_zip',
     'is_gzip',
     'is_bz2',
+    'is_dsrc'
 )

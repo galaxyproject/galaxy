@@ -1,0 +1,15 @@
+<tool id="CONVERTER_fastqdsrc_to_fastq" name="Convert fastq.dsrc files to fastq" version="1.0.0" hidden="true">
+  <stdio>
+    <exit_code range="1:"  level="fatal" description="DSRC error" />
+    <exit_code range=":-1" level="fatal" description="DSRC error" />
+  </stdio>
+  <command>dsrc d -s -w '$input1' > '$output1'</command>
+  <inputs>
+    <param format="fastq.dsrc" name="input1" type="data" label="Choose DSRC file"/>
+  </inputs>
+  <outputs>
+    <data format="fastq" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

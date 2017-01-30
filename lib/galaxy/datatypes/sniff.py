@@ -12,6 +12,7 @@ import shutil
 import sys
 import tempfile
 import zipfile
+import subprocess
 
 from encodings import search_function as encodings_search_function
 from six import text_type
@@ -23,7 +24,8 @@ from galaxy.util.checkers import (
     check_binary,
     check_html,
     is_bz2,
-    is_gzip
+    is_gzip,
+    is_dsrc
 )
 from galaxy.datatypes.binary import Binary
 
@@ -60,6 +62,8 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
             else:
                 try:
                     if text_type( chunk[:2] ) == text_type( util.gzip_magic ):
+                        is_compressed = True
+                    elif text_type( chunk[:4] ) == text_type( util.dsrc_magic ):
                         is_compressed = True
                 except:
                     pass
@@ -204,13 +208,17 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
     """
     headers = []
-    compressed_gzip = is_gzip(fname)
+    compressed_gzip  = is_gzip(fname)
     compressed_bzip2 = is_bz2(fname)
+    compressed_dsrc  = is_dsrc(fname)
+
     try:
         if compressed_gzip:
             in_file = gzip.GzipFile(fname, 'r')
         elif compressed_bzip2:
             in_file = bz2.BZ2File(fname, 'r')
+        elif compressed_dsrc:
+            in_file = subprocess.Popen(['dsrc', 'd', '-s', '-w', fname], stdout=subprocess.PIPE).stdout
         else:
             in_file = open(fname, 'rt')
         for idx, line in enumerate(in_file):
@@ -491,8 +499,8 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
 
 AUTO_DETECT_EXTENSIONS = [ 'auto' ]  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
-COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
-COMPRESSION_DATATYPES = dict( gzip=[ 'bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz', 'fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2' ] )
+COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ), ('dsrc', is_dsrc) ]
+COMPRESSION_DATATYPES = dict( gzip=[ 'bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz', 'fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'], dsrc=[ 'fastq.dsrc' ] )
 COMPRESSED_EXTENSIONS = []
 for exts in COMPRESSION_DATATYPES.values():
     COMPRESSED_EXTENSIONS.extend( exts )
