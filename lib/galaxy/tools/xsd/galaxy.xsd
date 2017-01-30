@@ -1916,7 +1916,7 @@ parameter being described. All the attributes for the ``param`` element are
 documented below for completeness, but here are the common ones for each
 type are as follows:
 
-$attribute_list:name,type,optional,label,help,argument:4
+$attribute_list:name,type,optional,label,help,argument,refresh_on_change:4
 
 ### Parameter Types
 
@@ -2248,6 +2248,11 @@ but not always the tool's input dataset).
         <xs:attribute name="accept_default" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en"></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="refresh_on_change" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Force a reload of the tool panel when the value of this parameter changes to allow ``code`` file processing. See deprecation-like notice for ``code`` blocks.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="force_select" type="PermissiveBoolean" gxdocs:deprecated="true">
