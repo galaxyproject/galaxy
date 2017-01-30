@@ -208,7 +208,7 @@ blast/2.24
             f.write('''
 - from:
     name: blast
-    version: Null
+    unversioned: true
   to:
     name: blast
     version: 2.24
