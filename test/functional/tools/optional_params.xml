@@ -1,0 +1,24 @@
+<tool id="optional_params" name="optional_params" version="1.0.0">
+    <command>
+        cp $input $out_file1;
+        echo "$inttest"   >> $out_file1; 
+        echo "$floattest" >> $out_file1;
+    </command>
+    <inputs>
+        <param name="input" type="data" label="Input" />
+        <param name="inttest" type="integer" optional="True" />
+        <param name="floattest" min="0" max="1" type="float" optional="True" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_text text="None\nNone" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
