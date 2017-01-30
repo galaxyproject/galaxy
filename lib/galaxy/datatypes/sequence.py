@@ -33,6 +33,8 @@ if sys.version_info > (3,):
 
 log = logging.getLogger(__name__)
 
+SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
+
 
 class SequenceSplitLocations( data.Text ):
     """
@@ -720,6 +722,7 @@ class FastqGz ( BaseFastq, Binary ):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
+    compressed = True
 
     def sniff( self, filename ):
         """Determines whether the file is in gzip-compressed FASTQ format"""
@@ -728,7 +731,8 @@ class FastqGz ( BaseFastq, Binary ):
         return BaseFastq.sniff( self, filename )
 
 
-Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
 class FastqSangerGz( FastqGz ):
@@ -737,16 +741,10 @@ class FastqSangerGz( FastqGz ):
     file_ext = "fastqsanger.gz"
 
 
-Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
-
-
 class FastqSolexaGz( FastqGz ):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
-
-
-Binary.register_sniffable_binary_format("fastqsolexa.gz", "fastqsolexa.gz", FastqSolexaGz)
 
 
 class FastqIlluminaGz( FastqGz ):
@@ -755,21 +753,16 @@ class FastqIlluminaGz( FastqGz ):
     file_ext = "fastqillumina.gz"
 
 
-Binary.register_sniffable_binary_format("fastqillumina.gz", "fastqillumina.gz", FastqIlluminaGz)
-
-
 class FastqCSSangerGz( FastqGz ):
     """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger.gz"
-
-
-Binary.register_sniffable_binary_format("fastqcssanger.gz", "fastqcssanger.gz", FastqCSSangerGz)
 
 
 class FastqBz2 ( BaseFastq, Binary ):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.bz2"
+    compressed = True
 
     def sniff( self, filename ):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
@@ -778,7 +771,8 @@ class FastqBz2 ( BaseFastq, Binary ):
         return BaseFastq.sniff( self, filename )
 
 
-Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 
 
 class FastqSangerBz2( FastqBz2 ):
@@ -787,16 +781,10 @@ class FastqSangerBz2( FastqBz2 ):
     file_ext = "fastqsanger.bz2"
 
 
-Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
-
-
 class FastqSolexaBz2( FastqBz2 ):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.bz2"
-
-
-Binary.register_sniffable_binary_format("fastqsolexa.bz2", "fastqsolexa.bz2", FastqSolexaBz2)
 
 
 class FastqIlluminaBz2( FastqBz2 ):
@@ -805,15 +793,9 @@ class FastqIlluminaBz2( FastqBz2 ):
     file_ext = "fastqillumina.bz2"
 
 
-Binary.register_sniffable_binary_format("fastqillumina.bz2", "fastqillumina.bz2", FastqIlluminaBz2)
-
-
 class FastqCSSangerBz2( FastqBz2 ):
     """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger.bz2"
-
-
-Binary.register_sniffable_binary_format("fastqcssanger.bz2", "fastqcssanger.bz2", FastqCSSangerBz2)
 
 
 class Maf( Alignment ):
