@@ -1805,9 +1805,15 @@ class DataToolParameter( BaseDataToolParameter ):
                 m = match.hda
                 has_matched = has_matched or visible_hda == m or visible_hda == hda
                 m_name = '%s (as %s)' % ( match.original_hda.name, match.target_ext ) if match.implicit_conversion else m.name
-                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name if m.visible else '(hidden) %s' % m_name, 'hda' )
-        if not has_matched and hasattr( visible_hda, 'id' ) and hasattr( visible_hda, 'hid' ) and hasattr( visible_hda, 'name' ):
-            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(unavailable) %s' % visible_hda.name, 'hda', True )
+                append( d[ 'options' ][ 'hda' ], m.id, m.hid, m_name, 'hda' )
+        if not has_matched and hasattr( visible_hda, 'hid' ):
+            if visible_hda.deleted:
+                hda_state = 'deleted'
+            elif not visible_hda.visible:
+                hda_state = 'hidden'
+            else:
+                hda_state = 'unavailable'
+            append( d[ 'options' ][ 'hda' ], visible_hda.id, visible_hda.hid, '(%s) %s' % ( hda_state, visible_hda.name ), 'hda', True )
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )

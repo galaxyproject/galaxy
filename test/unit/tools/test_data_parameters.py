@@ -54,12 +54,22 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
     def test_field_display_hidden_hdas_only_if_selected( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
         hda2 = MockHistoryDatasetAssociation( name="hda2", id=2 )
-        self.stub_active_datasets( hda1, hda2 )
         hda1.visible = False
         hda2.visible = False
+        self.stub_active_datasets( hda1, hda2 )
         field = self._simple_field( other_values={ "data2" : hda2 } )
-        self.assertEquals( len( field[ 'options' ][ 'hda' ] ), 1 )  # hda1 not an option, not visible or selected
-        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "(unavailable) hda2"
+        assert len( field[ 'options' ][ 'hda' ] ) == 1  # hda1 not an option, not visible or selected
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "(hidden) hda2"
+
+    def test_field_display_deleted_hdas_only_if_selected( self ):
+        hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
+        hda2 = MockHistoryDatasetAssociation( name="hda2", id=2 )
+        hda1.visible = False
+        hda2.deleted = True
+        self.stub_active_datasets( hda1, hda2 )
+        field = self._simple_field( other_values={ "data2" : hda2 } )
+        assert len( field[ 'options' ][ 'hda' ] ) == 1  # hda1 not an option, not visible or selected
+        assert field[ 'options' ][ 'hda' ][ 0 ][ 'name' ] == "(deleted) hda2"
 
     def test_field_implicit_conversion_new( self ):
         hda1 = MockHistoryDatasetAssociation( name="hda1", id=1 )
@@ -153,7 +163,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self._param = None
 
     def stub_active_datasets( self, *hdas ):
-        self.test_history._active_datasets_children_and_roles = hdas
+        self.test_history._active_datasets_children_and_roles = [ h for h in hdas if not h.deleted ]
 
     def _simple_field( self, **kwds ):
         return self.param.to_dict( trans=self.trans, **kwds )
