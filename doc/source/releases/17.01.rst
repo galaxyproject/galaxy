@@ -15,22 +15,25 @@ Enhancements
 .. feature
 
 * New User Preferences User Interface
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3118`_
 * Per user total walltime limit.
-  (thanks to `@interactomix <https://github.com/interactomix>`__).
+  (thanks to `@maxf130 <https://github.com/maxf130>`__).
   `Pull Request 3217`_
-* Add API to install resolver tool dependencies
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3222`_
-* Replace CasperJS browser tests with Selenium tests.
-  `Pull Request 3239`_
 * Genbank datatype
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3339`_
 * Expose metrics to non-admins
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3344`_
+* Support for gzipped fastq formats
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3145`_
+* Fuzzy search for tools search
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 3356`_
+* Target Miniconda3 when installing Conda.
+  `Pull Request 3419`_
 
 .. enhancement
 
@@ -40,17 +43,9 @@ Enhancements
 * Add cached dependency manager
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3106`_
-* Support for gzipped fastq formats
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3145`_
-* Version 17.01.dev
-  `Pull Request 3192`_
 * update rename dataset action to accept . in repeat input parameters
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 3197`_
-* Fix user table in admin view
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 3200`_
 * Fix for mapping tools with paired collection input and a structured_like tag
   over list:paired collections
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -60,6 +55,8 @@ Enhancements
 * Fix I201 errors from flake8-import-order
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3215`_
+* Replace CasperJS browser tests with Selenium tests.
+  `Pull Request 3239`_
 * 3 enhancements for the SLURM job runner
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3218`_
@@ -71,7 +68,7 @@ Enhancements
 * Further tighten up GG format.
   `Pull Request 3233`_
 * change conda channel order
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3237`_
 * Sort environment variables in job info page
   (thanks to `@erasche <https://github.com/erasche>`__).
@@ -93,7 +90,7 @@ Enhancements
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3301`_
 * Bring in galaxyproject/galaxy-lib`#36
-  <https://github.com/galaxyproject/galaxy/issues/36>`__ from @bgruening.
+  <https://github.com/galaxyproject/galaxy-lib/pull/36>`__ from @bgruening.
   `Pull Request 3304`_
 * Update datatype converter tools
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -120,9 +117,6 @@ Enhancements
 * Cache depencencies on the fly when first used
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 3348`_
-* Fuzzy search for tools search
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 3356`_
 * Limit adjusting Galaxy's Python environment to legacy tools.
   `Pull Request 3364`_
 * Remove defunct script run_selenium_tests.sh.
@@ -135,25 +129,18 @@ Enhancements
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 3378`_
 * Add diamond database as datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  (thanks to `@bgruening <https://github.com/bgruening>`__ and `@bebatut <https://github.com/bebatut>`__).
   `Pull Request 3379`_
 * Added image datatypes
   (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__).
   `Pull Request 3380`_
 * Test cases & small enhancement to workflow renaming PJAs.
   `Pull Request 3381`_
-* Fix typo
-  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
-  `Pull Request 3384`_
 * Resolve Conda Dependencies All at Once
   `Pull Request 3391`_
-* Markdown datatype support.
-  `Pull Request 3399`_
 * extend API version information
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3411`_
-* Target Miniconda3 when installing Conda.
-  `Pull Request 3419`_
 * Add whoami API
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3423`_
@@ -211,6 +198,9 @@ Fixes
 
 .. bug
 
+* Fix user table in admin view
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 3200`_
 * Cherrypick masthead fix
   `Pull Request 3055`_
 * History Introduction tour fixes for structural changes
@@ -236,6 +226,9 @@ Fixes
   `Pull Request 3313`_
 * Fix linting of gff_filter_by_attribute.
   `Pull Request 3324`_
+* Fix typo
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
+  `Pull Request 3384`_
 * More IPython to Jupyter changes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3333`_
@@ -244,7 +237,7 @@ Fixes
 * Fix explicit Docker container resolution.
   `Pull Request 3346`_
 * Masthead Webhook bug fix
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 3349`_
 * Remove seemingly unused file sort_gtf.py.
   `Pull Request 3362`_
@@ -261,9 +254,6 @@ Fixes
   `Pull Request 3403`_
 * Remoteuser Logout Fix.
   `Pull Request 3405`_
-* Revert "Markdown datatype support."
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
-  `Pull Request 3408`_
 * fix typo
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3409`_
@@ -296,6 +286,9 @@ Fixes
 * Fix path to Smat datatype
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3475`_
+* Add API to install resolver tool dependencies
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3222`_
 
 .. github_links
 .. _Pull Request 2679: https://github.com/galaxyproject/galaxy/pull/2679
@@ -380,14 +373,12 @@ Fixes
 .. _Pull Request 3391: https://github.com/galaxyproject/galaxy/pull/3391
 .. _Pull Request 3395: https://github.com/galaxyproject/galaxy/pull/3395
 .. _Pull Request 3397: https://github.com/galaxyproject/galaxy/pull/3397
-.. _Pull Request 3399: https://github.com/galaxyproject/galaxy/pull/3399
 .. _Pull Request 3400: https://github.com/galaxyproject/galaxy/pull/3400
 .. _Pull Request 3401: https://github.com/galaxyproject/galaxy/pull/3401
 .. _Pull Request 3403: https://github.com/galaxyproject/galaxy/pull/3403
 .. _Pull Request 3404: https://github.com/galaxyproject/galaxy/pull/3404
 .. _Pull Request 3405: https://github.com/galaxyproject/galaxy/pull/3405
 .. _Pull Request 3406: https://github.com/galaxyproject/galaxy/pull/3406
-.. _Pull Request 3408: https://github.com/galaxyproject/galaxy/pull/3408
 .. _Pull Request 3409: https://github.com/galaxyproject/galaxy/pull/3409
 .. _Pull Request 3411: https://github.com/galaxyproject/galaxy/pull/3411
 .. _Pull Request 3412: https://github.com/galaxyproject/galaxy/pull/3412
