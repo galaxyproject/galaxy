@@ -11,50 +11,46 @@ Enhancements
 
 .. major_feature
 
-
-.. feature
-
-* New User Preferences User Interface
-  (thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 3118`_
-* Per user total walltime limit.
-  (thanks to `@maxf130 <https://github.com/maxf130>`__).
-  `Pull Request 3217`_
-* Genbank datatype
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 3339`_
-* Expose metrics to non-admins
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 3344`_
-* Support for gzipped fastq formats
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3145`_
 * Fuzzy search for tools search
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 3356`_
+
+.. feature
+
 * Target Miniconda3 when installing Conda.
   `Pull Request 3419`_
+* Per user total walltime limit.
+  (thanks to `@maxf130 <https://github.com/maxf130>`__).
+  `Pull Request 3217`_
+* Expose metrics to non-admins
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 3344`_
+* Add whoami API
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 3423`_
 
 .. enhancement
 
+* Genbank datatype
+  (thanks to `@erasche <https://github.com/erasche>`__).
+  `Pull Request 3339`_
 * added STL datatype
   (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__).
   `Pull Request 2679`_
+* Add diamond database as datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__ and `@bebatut <https://github.com/bebatut>`__).
+  `Pull Request 3379`_
+* Added image datatypes
+  (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__).
+  `Pull Request 3380`_
 * Add cached dependency manager
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3106`_
 * update rename dataset action to accept . in repeat input parameters
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 3197`_
-* Fix for mapping tools with paired collection input and a structured_like tag
-  over list:paired collections
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3209`_
 * Tour routing tweaks, allows us to drop the model out of menu
   `Pull Request 3214`_
-* Fix I201 errors from flake8-import-order
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3215`_
 * Replace CasperJS browser tests with Selenium tests.
   `Pull Request 3239`_
 * 3 enhancements for the SLURM job runner
@@ -63,8 +59,6 @@ Enhancements
 * Add EDAM topic(s) and operation(s) elements to XSD file.
   (thanks to `@hmenager <https://github.com/hmenager>`__).
   `Pull Request 3221`_
-* Fix configuration API admin checking and tests.
-  `Pull Request 3228`_
 * Further tighten up GG format.
   `Pull Request 3233`_
 * change conda channel order
@@ -82,8 +76,6 @@ Enhancements
   `Pull Request 3285`_
 * Slim down testing ``Dockerfile``.
   `Pull Request 3286`_
-* Fix SLURM job re-submission.
-  `Pull Request 3290`_
 * Ready Integration Testing for Prime Time
   `Pull Request 3291`_
 * lexists vs. exists
@@ -128,12 +120,6 @@ Enhancements
 * Use a newer conda version by default
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 3378`_
-* Add diamond database as datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__ and `@bebatut <https://github.com/bebatut>`__).
-  `Pull Request 3379`_
-* Added image datatypes
-  (thanks to `@ThomasWollmann <https://github.com/ThomasWollmann>`__).
-  `Pull Request 3380`_
 * Test cases & small enhancement to workflow renaming PJAs.
   `Pull Request 3381`_
 * Resolve Conda Dependencies All at Once
@@ -141,12 +127,6 @@ Enhancements
 * extend API version information
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3411`_
-* Add whoami API
-  (thanks to `@erasche <https://github.com/erasche>`__).
-  `Pull Request 3423`_
-* Fix import order and Python3 compatibility for lib/galaxy/tools/
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3431`_
 * Implement Dependency Resolver Mapping
   `Pull Request 3444`_
 * Make requirement tags in bar_chart.xml functional with default dependency
@@ -154,9 +134,9 @@ Enhancements
   `Pull Request 3454`_
 * Dependency resolver documentation revisions.
   `Pull Request 3483`_
-* Dependency resolver documentation fixes
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3490`_
+* Implement ToolRequirements class
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3461`_
 
 .. small_enhancement
 
@@ -168,26 +148,12 @@ Enhancements
   `Pull Request 3264`_
 * Migrate more CasperJS API tests to the API test framework.
   `Pull Request 3288`_
-* Attempt to fix broken integration tests on Jenkins.
-  `Pull Request 3365`_
-* Fix auto creation of XUnit reports for Jenkins.
-  `Pull Request 3368`_
-* Fix automatic handling of Jenkins BUILD_NUMBER in Dockerized tests.
-  `Pull Request 3370`_
 * Docker Testing Fixes (for Jenkins for instance)
   `Pull Request 3387`_
 * Document how to create Docker testing images.
   `Pull Request 3400`_
 * Update the testing image used with ``--dockerize``ed tests.
   `Pull Request 3401`_
-* Fix dependency display and api
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3427`_
-* Implement ToolRequirements class
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3461`_
-* Fix logs and unit tests for Conda placeholder bug resolution.
-  `Pull Request 3482`_
 
 
 Fixes
@@ -198,6 +164,34 @@ Fixes
 
 .. bug
 
+* Fix configuration API admin checking and tests.
+  `Pull Request 3228`_
+* Fix import order and Python3 compatibility for lib/galaxy/tools/
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3431`_
+* Fix SLURM job re-submission.
+  `Pull Request 3290`_
+* Dependency resolver documentation fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3490`_
+* Attempt to fix broken integration tests on Jenkins.
+  `Pull Request 3365`_
+* Fix auto creation of XUnit reports for Jenkins.
+  `Pull Request 3368`_
+* Fix automatic handling of Jenkins BUILD_NUMBER in Dockerized tests.
+  `Pull Request 3370`_
+* Fix dependency display and api
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3427`_
+* Fix logs and unit tests for Conda placeholder bug resolution.
+  `Pull Request 3482`_
+* Fix for mapping tools with paired collection input and a structured_like tag
+  over list:paired collections
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 3209`_
+* Fix I201 errors from flake8-import-order
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3215`_
 * Fix user table in admin view
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3200`_

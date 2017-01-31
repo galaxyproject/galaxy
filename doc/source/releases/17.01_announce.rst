@@ -8,14 +8,21 @@ January 2017 Galaxy Release (v 17.01)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**Conda auto initialization is enabled by default**
+  After updating to 17.01 and upon starting Galaxy the Conda package manager will be installed automatically
+  within the Galaxy's workspace. This will enable your Galaxy to install tool dependencies using Conda
+  e.g. scientific `BioConda <https://bioconda.github.io/>`__ channel.
 
-**Feature2**
-  Feature description.
+**New interface for user preferences**
+  User preferences menu has been reworked for clarity and consistency.
+  Thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__.
+  Implemented in `Pull Request 3118`_.
 
-**Feature3**
-  Feature description.
+**Support for gzipped fastq formats**
+  You can now upload compressed files without being unpacked. Existing tools will work as before and future
+  tools will be able to consume archives and save space in your quota.
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
+  Implemented in `Pull Request 3145`_.
 
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
