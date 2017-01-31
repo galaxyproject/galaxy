@@ -1226,7 +1226,7 @@ use_interactive = True
 # tools). Set this to legacy_and_local to preserve the environment for legacy
 # tools and locally managed tools (this might be useful for instance if you are
 # installing software into Galaxy's virtualenv for tool development).
-#python_environment_problem = legacy_only
+#preserve_python_environment = legacy_only
 
 # Clean up various bits of jobs left on the filesystem after completion.  These
 # bits include the job working directory, external metadata temporary files,
