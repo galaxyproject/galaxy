@@ -1057,6 +1057,10 @@ use_interactive = True
 # collections.
 #force_beta_workflow_scheduled_for_collections=False
 
+
+# Force serial scheduling of workflows within the context of a particular history
+#history_local_serial_workflow_scheduling=True
+
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.
 #enable_openid = False

@@ -178,9 +178,10 @@ class WorkflowRequestMonitor( object ):
             # This ensures we're only ever working on the 'first' active
             # workflow invocation in a given history, to force sequential
             # activation.
-            for i in workflow_invocation.history.workflow_invocations:
-                if i.active and i.id < workflow_invocation.id:
-                    return False
+            if self.app.config.history_local_serial_workflow_scheduling:
+                for i in workflow_invocation.history.workflow_invocations:
+                    if i.active and i.id < workflow_invocation.id:
+                        return False
             workflow_scheduler.schedule( workflow_invocation )
         except Exception:
             # TODO: eventually fail this - or fail it right away?
