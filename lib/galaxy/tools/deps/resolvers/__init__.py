@@ -91,18 +91,14 @@ class MappableDependencyResolver:
 
     def _expand_mappings(self, requirement):
         for mapping in self._mappings:
-            if requirement.name == mapping.from_name:
-                if mapping.from_version is not None and mapping.from_version != requirement.version:
-                    continue
-
-                requirement = requirement.copy()
-                requirement.name = mapping.to_name
-                if mapping.to_version is not None:
-                    requirement.version = mapping.to_version
-
+            if mapping.matches_requirement(requirement):
+                requirement = mapping.apply(requirement)
                 break
 
         return requirement
+
+
+FROM_UNVERSIONED = object()
 
 
 class RequirementMapping(object):
@@ -113,12 +109,47 @@ class RequirementMapping(object):
         self.to_name = to_name
         self.to_version = to_version
 
+    def matches_requirement(self, requirement):
+        """Check if supplied ToolRequirement matches this mapping description.
+
+        For it to match - the names must match. Additionally if the
+        requirement is created with a version or with unversioned being set to
+        True additional checks are needed. If a version is specified, it must
+        match the supplied version exactly. If ``unversioned`` is True, then
+        the supplied requirement must be unversioned (i.e. its version must be
+        set to ``None``).
+        """
+
+        if requirement.name != self.from_name:
+            return False
+        elif self.from_version is None:
+            return True
+        elif self.from_version is FROM_UNVERSIONED:
+            return requirement.version is None
+        else:
+            return requirement.version == self.from_version
+
+    def apply(self, requirement):
+        requirement = requirement.copy()
+        requirement.name = self.to_name
+        if self.to_version is not None:
+            requirement.version = self.to_version
+        return requirement
+
     @staticmethod
     def from_dict(raw_mapping):
         from_raw = raw_mapping.get("from")
         if isinstance(from_raw, dict):
             from_name = from_raw.get("name")
-            from_version = str(from_raw.get("version"))
+            raw_version = from_raw.get("version", None)
+            unversioned = from_raw.get("unversioned", False)
+            if unversioned and raw_version:
+                raise Exception("Cannot define both version and set unversioned to True.")
+
+            if unversioned:
+                from_version = FROM_UNVERSIONED
+            else:
+                from_version = str(raw_version) if raw_version is not None else raw_version
         else:
             from_name = from_raw
             from_version = None
