@@ -172,6 +172,7 @@ def setup_galaxy_config(
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
+        conda_auto_init=False,
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
