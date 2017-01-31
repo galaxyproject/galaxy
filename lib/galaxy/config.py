@@ -323,7 +323,7 @@ class Configuration( object ):
         self.force_beta_workflow_scheduled_min_steps = int( kwargs.get( 'force_beta_workflow_scheduled_min_steps', '250' ) )
         self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
 
-        self.history_local_serial_workflow_scheduling = string_as_bool( kwargs.get( 'history_local_serial_workflow_scheduling', 'True' ) )
+        self.history_local_serial_workflow_scheduling = string_as_bool( kwargs.get( 'history_local_serial_workflow_scheduling', 'False' ) )
 
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )

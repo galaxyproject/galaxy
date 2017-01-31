@@ -1059,7 +1059,7 @@ use_interactive = True
 
 
 # Force serial scheduling of workflows within the context of a particular history
-#history_local_serial_workflow_scheduling=True
+#history_local_serial_workflow_scheduling=False
 
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.
