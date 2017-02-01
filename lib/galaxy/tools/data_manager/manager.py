@@ -11,7 +11,10 @@ from galaxy.queue_worker import (
     send_control_task
 )
 from galaxy.tools.data import TabularToolDataTable
-from galaxy.tools.toolbox.watcher import get_tool_conf_watcher
+from galaxy.tools.toolbox.watcher import (
+    get_loc_dir_watcher,
+    get_tool_conf_watcher
+)
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from tool_shed.util import (
@@ -46,11 +49,21 @@ class DataManagers( object ):
             self.conf_watchers = self.get_conf_watchers()
 
     def get_conf_watchers(self):
+        """
+        Sets up monitoring of data manager related config files.
+        These are the data_manager_conf.xml and shed_data_manager_conf.xml files
+        as well as any loc file in the tool-data directory.
+        """
         conf_watchers = []
         conf_watchers.extend([(get_tool_conf_watcher(lambda: reload_data_managers(self.app)), filename) for filename in util.listify(self.filename) if filename])
         if self.app.config.shed_data_manager_config_file:
             conf_watchers.append((get_tool_conf_watcher(lambda: reload_data_managers(self.app)), self.app.config.shed_data_manager_config_file))
         [watcher.watch_file(filename) for watcher, filename in conf_watchers]
+        tool_data_watcher = get_loc_dir_watcher(self.app.tool_data_tables, self.app.config)
+        tool_data_watcher.watch_directory(self.app.config.tool_data_path)
+        if self.app.config.shed_tool_data_path:
+            tool_data_watcher.watch_directory(self.app.config.shed_tool_data_path)
+        conf_watchers.append((tool_data_watcher, self.app.tool_data_tables.tool_data_path))
         return [watcher for watcher, filename in conf_watchers]
 
     def shutdown(self):
