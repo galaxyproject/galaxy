@@ -15,18 +15,21 @@ Enhancements
 * Add cached dependency manager (was back-ported to 16.10 as well)
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3106`_
-* Fix Conda channel order
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 3237`_
-* Target Miniconda3 when initialized new Conda installs.
-  `Pull Request 3419`_
 * Cache dependencies on the fly when first used
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 3348`_
+* Fix Conda channel order
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 3237`_
+* Target Miniconda3 for new Conda installs - existing Conda
+  installs will be unaffected but new Conda installs will not be
+  subject to Conda bugs in Miniconda2 such as
+  `conda/conda#4492 <https://github.com/conda/conda/issues/4492>`__.
+  `Pull Request 3419`_
 * Use a newer conda version by default
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3378`_
-* Resolve Conda dependencies all at once to enable Conda to select compatible
+* Resolve Conda dependencies all at once to allow Conda to select compatible
   builds.
   `Pull Request 3391`_
 * Implement dependency resolver mapping files.
@@ -36,7 +39,7 @@ Enhancements
   `Pull Request 3222`_
 * Various other dependency resolver fixes and improvements.
   `Pull Request 3454`_, `Pull Request 3461`_, `Pull Request 3483`_,
-  `Pull Request 3482`_
+  `Pull Request 3482`_, `Pull Request 3427`_
 * Enhanced support for failed job re-submission - allow specifying
   conditions for re-submission as well as improved support, documentation,
   and testing.
@@ -45,10 +48,13 @@ Enhancements
   (thanks to `@maxf130 <https://github.com/maxf130>`__).
   `Pull Request 3217`_
 * Many improvements to the job information page - including
-  expose certain job metrics to non-admin users
+  exposing certain job metrics to non-admin users
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3344`_, `Pull Request 3256`_,
   `Pull Request 3340`_
+* Formalize decision to increase time between releases to four months. The next release
+  will be 17.05.
+  `Pull Request 3271`_
 * Add API endpoint to determine who the current user is
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3423`_
@@ -65,8 +71,9 @@ Enhancements
   (thanks to `@bgruening <https://github.com/bgruening>`__ and `@bebatut <https://github.com/bebatut>`__).
   `Pull Request 3379`_
 * Add ESTScan scores matrices (smat) datatype
-  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
-  `Pull Request 3258`_
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__
+  with bug fix from `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 3258`_, `Pull Request 3475`_
 * Improve GG datatype sniffer to sniff fewer texts files as GG
   `Pull Request 3233`_
 * Allow rename dataset post job actions to work on input parameters inside of ``repeat`` blocks
@@ -80,9 +87,6 @@ Enhancements
 * Various Galaxy tool schema definition fixes (including adding
   EDAM topic(s) and operation(s) thanks to `@hmenager <https://github.com/hmenager>`__).
   `Pull Request 3221`_, `Pull Request 3216`_
-* Formalize decision to increase time between releases to four months. The next release
-  will be 17.05.
-  `Pull Request 3271`_
 * Numerous improvements to the test framework including replacing broken CasperJS UI tests
   with newer Selenium based ones and expanded test coverage with a particular
   focus on web and integration testing.
@@ -93,9 +97,6 @@ Enhancements
   `Pull Request 3400`_, `Pull Request 3401`_, `Pull Request 3228`_,
   `Pull Request 3365`_, `Pull Request 3368`_, `Pull Request 3370`_,
   `Pull Request 3482`_, `Pull Request 3185`_
-* Fix to use lexists instead exists in dependency resolver code
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 3301`_
 * Bring in fix from galaxy-lib related to Biocontainers and mulled
   <https://github.com/galaxyproject/galaxy-lib/pull/36>`__ from @bgruening.
   `Pull Request 3304`_
@@ -111,14 +112,15 @@ Enhancements
 * Add an option to specify the port when connecting clients to IEs.
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3328`_
-* Allow admins to see API keys under REMOTE_USER
+* Allow admins to see API keys under when using remote user authentication from proxies.
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3338`_
-* Limit adjusting Galaxy's Python environment to legacy tools.
+* Limit adjusting Galaxy's Python environment to legacy tools
+  (discussed in Deprecation Notices section of release notes).
   `Pull Request 3364`_
-* Workflow run display improvements - in particular for data inputs.
+* Workflow run display improvements in particular for data inputs.
   `Pull Request 3369`_
-* Adjust menu tooltips to be oneliners
+* Adjust menu tooltips to be one line each.
   `Pull Request 3230`_
 
 Fixes
@@ -126,7 +128,7 @@ Fixes
 
 * Various fixes to escape variables in the client to prevent certain XSS attacks
   (thanks in large part to `@yhoogstrate <https://github.com/yhoogstrate>`__).
-  `Pull Request 3403`_, `Pull Request 3416`_
+  `Pull Request 3403`_, `Pull Request 3416`_, `Pull Request 3448`_
 * Fix import order and Python3 compatibility for lib/galaxy/tools/
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3431`_
@@ -135,30 +137,30 @@ Fixes
 * Dependency resolver documentation fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3490`_
-* Fix dependency display and api
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 3427`_
+* Fix directory extistence checks in dependency resolver code
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 3301`_
 * Fix for mapping tools with paired collection input and a ``structured_like`` tag
   over ``list:paired`` collections
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3209`_
-* Fix I201 errors from flake8-import-order
+* Fix ``I201`` errors from flake8-import-order
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3215`_
-* Fix user table in admin view
+* Fix user table header in admin view
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3200`_
-* Masthead fix.
+* Fix to adjust masthead and tool search.
   `Pull Request 3055`_
-* Don't load tools from paths that start with `.` or `_`
+* Don't load tools from paths that start with ``.`` or ``_``
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3201`_
-* Fixes for core.galaxy_ui.yaml tour.
+* Fixes for ``core.galaxy_ui.yaml`` tour.
   `Pull Request 3206`_
-* Small fixes to bootstrap_history.py
+* Small fixes to release management script ``bootstrap_history.py``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3223`_
-* Fix tour URLs in welcome
+* Fix tour URLs in welcome sample.
   `Pull Request 3274`_
 * Fix logo image when serving Galaxy from a subdirectory.
   `Pull Request 3283`_
@@ -166,54 +168,48 @@ Fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__
   and `@annefou <https://github.com/annefou>`__).
   `Pull Request 3333`_, `Pull Request 3294`_
-* Fix linting of gff_filter_by_attribute.
+* Fix linting of ``gff_filter_by_attribute`` wrapper Python code.
   `Pull Request 3324`_
 * Fix typo in assertion based testing
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
   `Pull Request 3384`_
-* Update UCSC_SERVERS list to include new(ish?) soe subdomain
+* Update ``UCSC_SERVERS`` list to include new(ish?) soe subdomain.
   `Pull Request 3345`_
-* Fix explicit Docker container resolution.
+* Fix explicit Docker container resolution (this was backported to 16.10).
   `Pull Request 3346`_
-* Masthead Webhook bug fix
+* Fix for connecting webhooks to masthead.
   (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 3349`_
-* Remove seemingly unused file sort_gtf.py.
+* Remove seemingly unused file ``sort_gtf.py``.
   `Pull Request 3362`_
-* Fix UX problem when sharing objects with users.
-  `Pull Request 3373`_
 * Fix upload to respect explicit name override on pasted uploads.
   `Pull Request 3377`_
 * Do not allow recursive replacements in PJA renames.
   `Pull Request 3395`_
-* Remoteuser Logout Fix.
+* Fix logout link when using remote user authentication from proxies.
   `Pull Request 3405`_
 * Fix typo in webhooks documentation
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 3409`_
-* Fix RStudio login
+* Fix login functionality for RStudio IEs
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3414`_
-* Fix accidental email exposure
+* Fix accidental email exposure during history sharing
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 3417`_
-* Do not wrap ``__class__`` attribute of SafeStringWrapper
+* Fix UX problem when sharing objects with users.
+  `Pull Request 3373`_
+* Do not wrap ``__class__`` attribute of ``SafeStringWrapper``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3429`_
-* Custom dbkey builds: additional variable escaping
-  (thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__).
-  `Pull Request 3448`_
-* Fix for Condor containers
+* Fix for determining Condor container id
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3462`_
 * Fix linting of ``<conditional>`` tags
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3464`_
-* Upgrade six to 1.10.0.
+* Upgrade Python dependency six to 1.10.0.
   `Pull Request 3471`_
-* Fix path to Smat datatype
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 3475`_
 
 .. github_links
 .. _Pull Request 2679: https://github.com/galaxyproject/galaxy/pull/2679

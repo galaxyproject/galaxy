@@ -44,6 +44,25 @@ Update of existing Galaxy repository
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
+Deprecation Notices
+===================
+
+* Galaxy tools will no longer have access to Galaxy's core framework Python code during tool execution - see
+  `Pull Request 3364`_ for implementation details.
+
+  Previously Galaxy's ``lib`` directory would be placed on a tool's PYTHONPATH - but this can cause different sorts of
+  conflicts with resolved dependencies and should never really have been part of the interface exposed to tools since
+  it makes both reproducibility and distribution of jobs difficult.
+
+  There are however a large number of Galaxy tools - both in the core distribution and on the tool shed - that depend on Galaxy
+  internals unfortunately. The ones we know about have been added to a list as part of of `Pull Request 3364`_
+  and we will continue to add to the list if we find more. If you discover a tool that have problems importing ``galaxy`` or
+  ``galaxy_utils`` for instance as a result of this release please let us know by `creating an issue
+  <https://github.com/galaxyproject/galaxy/issues/new>`__ with a link to the tool shed tool.
+
+  If you have local tools that depend on these modules and you do not wish to use a formal dependency resolution mechanism
+  such as Conda, you can the option ``preserve_python_environment`` in galaxy.ini from ``legacy`` to ``legacy_and_local``.
+
 Release Notes
 ===========================================================
 
