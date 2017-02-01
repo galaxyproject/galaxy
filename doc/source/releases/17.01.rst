@@ -399,4 +399,6 @@ Fixes
 .. _Pull Request 3482: https://github.com/galaxyproject/galaxy/pull/3482
 .. _Pull Request 3483: https://github.com/galaxyproject/galaxy/pull/3483
 .. _Pull Request 3490: https://github.com/galaxyproject/galaxy/pull/3490
+.. _Pull Request 3510: https://github.com/galaxyproject/galaxy/pull/3510
+.. _Pull Request 3514: https://github.com/galaxyproject/galaxy/pull/3514
 

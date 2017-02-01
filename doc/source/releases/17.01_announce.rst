@@ -23,10 +23,11 @@ Highlights
 
 **Support for compressed FASTQ formats**
   You can now upload compressed (with gzip or bzip2) FASTQ files without them being unpacked automatically (as it was until now).
-  For this to work you have to select the proper type when uploading (e.g. instead of ``fastqsanger`` you select ``fastqsanger.gz`` for compressed files).
+  For this to work you have to select the proper type when uploading (e.g. instead of ``fastqsanger`` you select ``fastqsanger.gz``
+  or ``fastqsanger.bz2`` for compressed files).
   Existing tools will work as before and future tools will be able to consume archives and save space in your quota.
-  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
-  Implemented in `Pull Request 3145`_.
+  Thanks to `@abretaud <https://github.com/abretaud>`__, `@jmchilton <https://github.com/jmchilton>`__, `@jvolkening <https://github.com/jvolkening>`__, and `@mvdbeek <https://github.com/mvdbeek>`__.
+  Implemented in `Pull Request 3145`_, `PullRequest 3510`_ and `PullRequest 3514`_.
 
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
