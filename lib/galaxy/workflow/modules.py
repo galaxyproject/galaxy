@@ -787,9 +787,8 @@ class ToolModule( WorkflowModule ):
         """
         if self.tool:
             state = super( ToolModule, self ).decode_runtime_state( runtime_state )
-            state_dict = loads( runtime_state )
-            if RUNTIME_STEP_META_STATE_KEY in state_dict:
-                self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
+            if RUNTIME_STEP_META_STATE_KEY in runtime_state:
+                self.__restore_step_meta_runtime_state( loads( runtime_state[ RUNTIME_STEP_META_STATE_KEY ] ) )
             return state
         else:
             raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )

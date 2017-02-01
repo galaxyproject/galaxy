@@ -322,7 +322,7 @@ class DefaultToolState( object ):
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
-        return json.dumps( value )
+        return value
 
     def decode( self, values, tool, app ):
         """
