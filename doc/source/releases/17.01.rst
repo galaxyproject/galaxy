@@ -38,6 +38,7 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 3222`_
 * Various other dependency resolver fixes and improvements.
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__)
   `Pull Request 3454`_, `Pull Request 3461`_, `Pull Request 3483`_,
   `Pull Request 3482`_, `Pull Request 3427`_
 * Enhanced support for failed job re-submission - allow specifying
@@ -137,7 +138,7 @@ Fixes
 * Dependency resolver documentation fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3490`_
-* Fix directory extistence checks in dependency resolver code
+* Fix directory existence checks in dependency resolver code
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 3301`_
 * Fix for mapping tools with paired collection input and a ``structured_like`` tag
