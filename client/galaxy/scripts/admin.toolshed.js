@@ -1,11 +1,13 @@
 define(["mvc/toolshed/shed-list-view",
         "mvc/toolshed/categories-view",
         "mvc/toolshed/repositories-view",
-        "mvc/toolshed/repository-view"],
+        "mvc/toolshed/repository-view",
+        "mvc/toolshed/repository-queue-view"],
         function(mod_shed_list_view,
                  mod_categories_view,
                  mod_repositories_view,
-                 mod_repository_view) {
+                 mod_repository_view,
+                 mod_repoqueue_view) {
 
     var AdminToolshedRouter = Backbone.Router.extend({
 
@@ -20,6 +22,7 @@ define(["mvc/toolshed/shed-list-view",
         routes: {
             ""                                           : "toolsheds",
             "sheds"                                      : "toolsheds",
+            "queue"                                      : "queue",
             "categories/s/:tool_shed"                    : "categories",
             "category/s/:tool_shed/c/:cateory_id"        : "repositories",
             "repository/s/:tool_shed/r/:repository_id"   : "repository",
@@ -51,6 +54,14 @@ define(["mvc/toolshed/shed-list-view",
             Galaxy.admintoolshedapp = this;
             this.admin_toolshed_router = new AdminToolshedRouter();
 
+            this.admin_toolshed_router.on('route:queue', function() {
+                if (Galaxy.admintoolshedapp.adminRepoQueueView) {
+                    Galaxy.admintoolshedapp.adminRepoQueueView.reDraw();
+                }
+                else {
+                    Galaxy.admintoolshedapp.adminRepoQueueView = new mod_repoqueue_view.RepoQueueView();
+                }
+            });
             this.admin_toolshed_router.on('route:toolsheds', function() {
                 if (Galaxy.admintoolshedapp.adminShedListView) {
                     Galaxy.admintoolshedapp.adminShedListView.reDraw();
@@ -83,6 +94,8 @@ define(["mvc/toolshed/shed-list-view",
                     Galaxy.admintoolshedapp.adminRepositoryView = new mod_repository_view.RepoDetails({tool_shed: tool_shed.replace(/\//g, '%2f'), repository_id: repository_id});
                 }
             });
+
+            $("#panel_header").append('<span style="position: absolute; top: 0px; right: 0px;"><a href="#/queue">Repository Queue</a></span>');
 
             Backbone.history.start({pushState: false});
         },

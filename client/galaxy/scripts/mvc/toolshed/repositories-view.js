@@ -54,7 +54,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         templateCategoryContents: _.template([
-            '<div class="unified-panel-header" unselectable="on">',
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
                 '<div class="unified-panel-header-inner">Repositories in <%= category.get("name") %></div>',
             '</div>',
             '<div class="unified-panel-body" id="list_repositories">',

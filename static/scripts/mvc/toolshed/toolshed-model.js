@@ -26,6 +26,20 @@ define([], function() {
     }), ToolShedRepositoryCollection = Backbone.Collection.extend({
         url: Galaxy.root + "api/tool_shed/repository",
         model: ToolShedRepositoryModel
+    }), RepoQueueModel = Backbone.Model.extend({
+        url: "#"
+    }), RepoQueueCollection = Backbone.Collection.extend({
+        url: "#",
+        model: RepoQueueModel,
+        fetch: function() {
+            var collection = this, repositories = Array(), repositories_enc = JSON.parse(localStorage.repositories), queue_keys = Object.keys(repositories_enc);
+            return _.each(queue_keys, function(key) {
+                var repo = repositories_enc[key];
+                repo.queue_key = key, repositories.push(repo);
+            }), console.log({
+                collection: repositories
+            }), collection.reset(repositories), Backbone.Collection.prototype.fetch.call(this);
+        }
     });
     return {
         ShedModel: ToolShedModel,
@@ -35,6 +49,7 @@ define([], function() {
         CategoryModel: ToolShedCategoryModel,
         CategoryCollection: ToolShedCategoryCollection,
         RepositoryModel: ToolShedRepositoryModel,
-        RepositoryCollection: ToolShedRepositoryCollection
+        RepositoryCollection: ToolShedRepositoryCollection,
+        RepoQueue: RepoQueueCollection
     };
 });

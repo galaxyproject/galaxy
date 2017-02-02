@@ -28,8 +28,9 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
         },
 
         templateToolshedList: _.template([
-            '<div class="unified-panel-header" unselectable="on">',
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
                 '<div class="unified-panel-header-inner">Accessible Galaxy tool sheds</div>',
+                '<a href="#queue">Repository Queue</a>',
             '</div>',
             '<div class="unified-panel-body" id="list_toolsheds">',
                 '<div class="form-row">',

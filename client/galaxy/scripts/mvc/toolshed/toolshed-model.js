@@ -40,6 +40,29 @@ define([], function() {
         model: ToolShedRepositoryModel
     });
 
+    var RepoQueueModel = Backbone.Model.extend({
+        url: '#',
+    });
+
+    var RepoQueueCollection = Backbone.Collection.extend({
+        url: '#',
+        model: RepoQueueModel,
+        fetch: function() {
+            var collection = this;
+            var repositories = Array();
+            var repositories_enc = JSON.parse(localStorage.repositories);
+            var queue_keys = Object.keys(repositories_enc);
+            _.each(queue_keys, function(key) {
+                var repo = repositories_enc[key];
+                repo.queue_key = key;
+                repositories.push(repo);
+            });
+            console.log({collection: repositories});
+            collection.reset(repositories);
+            return Backbone.Collection.prototype.fetch.call(this);
+        },
+    });
+
     return {
         ShedModel: ToolShedModel,
         ShedsCollection: ToolShedsCollection,
@@ -48,7 +71,8 @@ define([], function() {
         CategoryModel: ToolShedCategoryModel,
         CategoryCollection: ToolShedCategoryCollection,
         RepositoryModel: ToolShedRepositoryModel,
-        RepositoryCollection: ToolShedRepositoryCollection
+        RepositoryCollection: ToolShedRepositoryCollection,
+        RepoQueue: RepoQueueCollection
     };
 
 });

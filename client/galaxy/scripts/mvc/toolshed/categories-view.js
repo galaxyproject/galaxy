@@ -63,7 +63,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         templateCategoryList: _.template([
-            '<div class="unified-panel-header" unselectable="on">',
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
                 '<div class="unified-panel-header-inner" style="layout: inline;">Categories in <%= tool_shed.replace(/%2f/g, "/") %></div>',
             '</div>',
             '<div class="unified-panel-body" id="list_categories">',

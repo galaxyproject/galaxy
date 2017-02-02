@@ -81,6 +81,36 @@ define(['mvc/toolshed/toolshed-model',
                 url = $('#repository_installation').attr('action');
                 that.prepareInstall(params, url);
             });
+            $('#queue_install').on('click', function(ev) {
+                that.options.current_changeset = $('#changeset').find("option:selected").text();
+                that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
+                var changeset = that.options.current_changeset;
+                var repository_metadata = {};
+                _.each(Object.keys(that.options.current_metadata), function(key) {
+                    if (!repository_metadata[key]) {
+                        repository_metadata[key] = that.options.current_metadata[key];
+                    }
+                });
+                repository_metadata.install_tool_dependencies = $("#install_tool_dependencies").val();
+                repository_metadata.install_repository_dependencies = $("#install_repository_dependencies").val();
+                repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val();
+                repository_metadata.tool_panel_section = JSON.stringify(that.panelSelect({}));
+                repository_metadata.shed_tool_conf = $("select[name='shed_tool_conf']").find('option:selected').val()
+                repository_metadata.tool_shed_url = that.model.tool_shed_url;
+                if (repository_metadata.tool_shed_url.substr(-1) == '/') {
+                    repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(0, repository_metadata.tool_shed_url.length - 1);
+                }
+                var queue_key = repository_metadata.tool_shed_url + '|' + repository_metadata.repository_id + '|' + repository_metadata.changeset_revision;
+                var queued_repos = new Object();
+                if (localStorage.repositories) {
+                    queued_repos = JSON.parse(localStorage.repositories);
+                }
+                if (!queued_repos.hasOwnProperty(queue_key)) {
+                    queued_repos[queue_key] = repository_metadata;
+                }
+                localStorage.repositories = JSON.stringify(queued_repos);
+                that.checkInstalled(repository_metadata);
+            });
             $('.tool_panel_section_picker').on('change', function() {
                 new_value = $(this).find('option:selected').val();
                 default_tps = $('#tool_panel_section_select').find('option:selected').val();
@@ -233,7 +263,7 @@ define(['mvc/toolshed/toolshed-model',
         },
 
         templateRepoDetails: _.template([
-            '<div class="unified-panel-header" unselectable="on">',
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
                 '<div class="unified-panel-header-inner">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong></div>',
             '</div>',
             '<div class="unified-panel-body" id="repository_details" data-tsrid="<%= repository.id %>">',
