@@ -77,10 +77,15 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
     def test_legacy_r_mapping( self ):
         """
         """
+        tool_id = "legacy_R"
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
         history_id = dataset_populator.new_history()
+        endpoint = "tools/%s/install_dependencies" % tool_id
+        data = {'id': tool_id}
+        create_response = self._post(endpoint, data=data, admin=True)
+        self._assert_status_code_is( create_response, 200 )
         payload = dataset_populator.run_tool_payload(
-            tool_id="legacy_R",
+            tool_id=tool_id,
             inputs={},
             history_id=history_id,
         )
