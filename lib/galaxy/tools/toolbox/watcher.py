@@ -52,11 +52,11 @@ def get_tool_conf_watcher(reload_callback):
     return ToolConfWatcher(reload_callback)
 
 
-def get_loc_dir_watcher(tool_data_tables, config):
+def get_tool_data_dir_watcher(tool_data_tables, config):
     config_value = getattr(config, "watch_tool_data_dir", None)
     observer_class = get_observer_class(config_value, default="False", monitor_what_str="tool-data directory")
     if observer_class is not None:
-        return LocWatcher(observer_class, tool_data_tables=tool_data_tables)
+        return ToolDataWatcher(observer_class, tool_data_tables=tool_data_tables)
     else:
         return NullWatcher()
 
@@ -196,7 +196,7 @@ class ToolWatcher(object):
             self.monitor( tool_dir )
 
 
-class LocWatcher(object):
+class ToolDataWatcher(object):
 
     def __init__(self, observer_class, tool_data_tables):
         self.tool_data_tables = tool_data_tables
@@ -216,11 +216,11 @@ class LocWatcher(object):
     def monitor(self, dir):
         self.observer.schedule(self.event_handler, dir, recursive=False)
 
-    def watch_directory(self, loc_dir):
-        loc_dir = os.path.abspath( loc_dir )
-        if loc_dir not in self.monitored_dirs:
-            self.monitored_dirs[ loc_dir ] = loc_dir
-            self.monitor( loc_dir )
+    def watch_directory(self, tool_data_dir):
+        tool_data_dir = os.path.abspath( tool_data_dir )
+        if tool_data_dir not in self.monitored_dirs:
+            self.monitored_dirs[ tool_data_dir ] = tool_data_dir
+            self.monitor( tool_data_dir )
 
 
 class LocFileEventHandler(FileSystemEventHandler):

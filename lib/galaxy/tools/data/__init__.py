@@ -161,7 +161,7 @@ class ToolDataTableManager( object ):
 
     def reload_tables( self, table_names=None, path=None ):
         """
-        Reload tool data tables. If neither table_names not path is given, reloads all tool data tables.
+        Reload tool data tables. If neither table_names nor path is given, reloads all tool data tables.
         """
         tables = self.get_tables()
         if not table_names:

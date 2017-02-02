@@ -311,7 +311,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Set to True to enable monitoring of the tool_data and shed_tool_data_path
 # directories. If changes in tool data table files are found, the tool data
-# tables for that data manager are automatically reloaded
+# tables for that data manager are automatically reloaded.
 # Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
 # available to Galaxy to use this option. Other options include 'auto'
 # which will attempt to use the watchdog library if it is available but won't

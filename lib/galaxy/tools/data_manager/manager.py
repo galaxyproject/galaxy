@@ -12,8 +12,8 @@ from galaxy.queue_worker import (
 )
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.tools.toolbox.watcher import (
-    get_loc_dir_watcher,
-    get_tool_conf_watcher
+    get_tool_conf_watcher,
+    get_tool_data_dir_watcher
 )
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
@@ -59,7 +59,7 @@ class DataManagers( object ):
         if self.app.config.shed_data_manager_config_file:
             conf_watchers.append((get_tool_conf_watcher(lambda: reload_data_managers(self.app)), self.app.config.shed_data_manager_config_file))
         [watcher.watch_file(filename) for watcher, filename in conf_watchers]
-        tool_data_watcher = get_loc_dir_watcher(self.app.tool_data_tables, self.app.config)
+        tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, self.app.config)
         tool_data_watcher.watch_directory(self.app.config.tool_data_path)
         if self.app.config.shed_tool_data_path:
             tool_data_watcher.watch_directory(self.app.config.shed_tool_data_path)
