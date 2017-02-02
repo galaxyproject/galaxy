@@ -1184,8 +1184,7 @@ class Genbank(data.Text):
     def sniff(self, filename):
         try:
             with open(filename, 'r') as handle:
-                line = handle.readline().strip()
-                return line.startswith('LOCUS ')
+                return 'LOCUS ' == handle.read(6)
         except:
             pass
 
