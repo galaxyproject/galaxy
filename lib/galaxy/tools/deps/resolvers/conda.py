@@ -162,8 +162,10 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         is_installed = self.conda_context.has_env(env)
         install = kwds.get('install', None)
         if install is None:
+            # Default behavior, install dependencies if conda_auto_install is active.
             install = not is_installed and self.auto_install
         elif install:
+            # Install has been set to True, install if not yet installed.
             install = not is_installed
         if install:
             is_installed = self.install_all(conda_targets)
