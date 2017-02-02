@@ -206,6 +206,9 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-create RELEASE_CURR=${version}
 
+      - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
+      - [ ] Trigger the documentation build.
+
 - [ ] **Do Docker Release**
 
       - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev) of the Galaxy Docker container to ${next_version}
