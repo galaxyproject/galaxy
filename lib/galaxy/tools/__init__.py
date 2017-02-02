@@ -120,6 +120,7 @@ GALAXY_LIB_TOOLS = [
     "MAF_split_blocks_by_species1",
     "maf_limit_size1",
     "maf_by_block_number1",
+    "wiggle2simple1",
     # Tools improperly migrated to the tool shed (devteam)
     "lastz_wrapper_2",
     "qualityFilter",
