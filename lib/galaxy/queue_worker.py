@@ -81,6 +81,7 @@ def _get_new_toolbox(app):
     start = time.time()
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
+    app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     load_lib_tools(new_toolbox)
     new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
