@@ -214,7 +214,7 @@ class ToolDataWatcher(object):
         self.observer.join()
 
     def monitor(self, dir):
-        self.observer.schedule(self.event_handler, dir, recursive=False)
+        self.observer.schedule(self.event_handler, dir, recursive=True)
 
     def watch_directory(self, tool_data_dir):
         tool_data_dir = os.path.abspath( tool_data_dir )
