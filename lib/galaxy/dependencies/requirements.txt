@@ -30,6 +30,7 @@ nose
 Parsley
 six
 Whoosh
+galaxy_sequence_utils
 
 # Cheetah and dependencies
 Cheetah

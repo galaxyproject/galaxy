@@ -266,14 +266,8 @@ lib/galaxy/security/validate_user_input.py
 lib/galaxy/tags/
 lib/galaxy/tools/
 lib/galaxy/util/
-lib/galaxy_utils/__init__.py
 lib/galaxy/util/sleeper.py
 lib/galaxy/util/specs.py
-lib/galaxy_utils/sequence/fasta.py
-lib/galaxy_utils/sequence/fastq.py
-lib/galaxy_utils/sequence/__init__.py
-lib/galaxy_utils/sequence/transform.py
-lib/galaxy_utils/sequence/vcf.py
 lib/galaxy/util/template.py
 lib/galaxy/util/ucsc.py
 lib/galaxy/version.py

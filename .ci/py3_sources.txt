@@ -68,7 +68,6 @@ lib/galaxy/workflow/run.py
 lib/galaxy/workflow/schedulers/core.py
 lib/galaxy/workflow/steps.py
 lib/galaxy_ext/
-lib/galaxy_utils/
 lib/log_tempfile.py
 lib/psyco_full.py
 lib/tool_shed/
