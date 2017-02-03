@@ -15,6 +15,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import compression_utils
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import inflector
 from galaxy.util import unicodify
@@ -976,39 +977,38 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     count = 0
     file_type = None
     data_checked = False
-    temp = open( file_name, "U" )
-    while count < LINE_COUNT:
-        line = temp.readline( WIDTH )
-        if line and not is_multi_byte and not data_checked:
-            # See if we have a compressed or binary file
-            if line[0:2] == util.gzip_magic:
-                file_type = 'gzipped'
-            else:
+    temp = compression_utils.get_fileobj( file_name, "U" )
+    try:
+        while count < LINE_COUNT:
+            line = temp.readline( WIDTH )
+            if line and not is_multi_byte and not data_checked:
+                # See if we have a compressed or binary file
                 for char in line:
                     if ord( char ) > 128:
                         file_type = 'binary'
                         break
-            data_checked = True
-            if file_type in [ 'gzipped', 'binary' ]:
-                break
-        if not line_wrap:
-            if line.endswith('\n'):
-                line = line[:-1]
-            else:
-                while True:
-                    i = temp.read(1)
-                    if not i or i == '\n':
-                        break
-        skip_line = False
-        for skipchar in skipchars:
-            if line.startswith( skipchar ):
-                skip_line = True
-                break
-        if not skip_line:
-            lines.append( line )
-            count += 1
-    temp.close()
-    if file_type in [ 'gzipped', 'binary' ]:
+                data_checked = True
+                if file_type == 'binary':
+                    break
+            if not line_wrap:
+                if line.endswith('\n'):
+                    line = line[:-1]
+                else:
+                    while True:
+                        i = temp.read(1)
+                        if not i or i == '\n':
+                            break
+            skip_line = False
+            for skipchar in skipchars:
+                if line.startswith( skipchar ):
+                    skip_line = True
+                    break
+            if not skip_line:
+                lines.append( line )
+                count += 1
+    finally:
+        temp.close()
+    if file_type == 'binary':
         text = "%s file" % file_type
     else:
         try:
