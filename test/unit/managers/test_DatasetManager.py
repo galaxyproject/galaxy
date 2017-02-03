@@ -1,26 +1,25 @@
 # -*- coding: utf-8 -*-
 """
 """
-import os
-import imp
 import unittest
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-
 import sqlalchemy
+from six import string_types
 
-from galaxy import model
-from galaxy import exceptions
-
-from base import BaseTestCase
-
-from galaxy.managers.base import SkipAttribute
-from galaxy.managers.roles import RoleManager
+from galaxy import (
+    exceptions,
+    model
+)
 from galaxy.managers import rbac_secured
+from galaxy.managers.base import SkipAttribute
 from galaxy.managers.datasets import (
-    DatasetManager, DatasetSerializer, DatasetDeserializer )
+    DatasetDeserializer,
+    DatasetManager,
+    DatasetSerializer
+)
+from galaxy.managers.roles import RoleManager
 
+from .base import BaseTestCase
 
 # =============================================================================
 default_password = '123456'
@@ -112,6 +111,16 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.log( "a dataset without permissions should be accessible" )
         self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
 
+        self.log( "a dataset without permissions should be manageable by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
+        self.log( "a dataset without permissions should be accessible by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
+
+        self.log( "a dataset without permissions shouldn't be manageable by an anonymous user" )
+        self.assertFalse( self.dataset_manager.permissions.manage.is_permitted( dataset, None ) )
+        self.log( "a dataset without permissions should be accessible by an anonymous user" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, None ) )
+
     def test_create_public_dataset( self ):
         self.log( "should be able to create a new Dataset and give it some permissions that actually, you know, "
             "might work if there's any justice in this universe" )
@@ -134,6 +143,16 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.assertFalse( self.dataset_manager.permissions.manage.is_permitted( dataset, user3 ) )
         self.log( "a public dataset should be accessible" )
         self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
+
+        self.log( "a public dataset should be manageable by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
+        self.log( "a public dataset should be accessible by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
+
+        self.log( "a public dataset shouldn't be manageable by an anonymous user" )
+        self.assertFalse( self.dataset_manager.permissions.manage.is_permitted( dataset, None ) )
+        self.log( "a public dataset should be accessible by an anonymous user" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, None ) )
 
     def test_create_private_dataset( self ):
         self.log( "should be able to create a new Dataset and give it private permissions" )
@@ -162,6 +181,16 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.log( "a private dataset shouldn't be accessible to just anyone" )
         self.assertFalse( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
 
+        self.log( "a private dataset should be manageable by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.manage.is_permitted( dataset, self.admin_user ) )
+        self.log( "a private dataset should be accessible by an admin" )
+        self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, self.admin_user ) )
+
+        self.log( "a private dataset shouldn't be manageable by an anonymous user" )
+        self.assertFalse( self.dataset_manager.permissions.manage.is_permitted( dataset, None ) )
+        self.log( "a private dataset shouldn't be accessible by an anonymous user" )
+        self.assertFalse( self.dataset_manager.permissions.access.is_permitted( dataset, None ) )
+
 
 # =============================================================================
 class DatasetRBACPermissionsTestCase( BaseTestCase ):
@@ -182,6 +211,7 @@ class DatasetRBACPermissionsTestCase( BaseTestCase ):
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
+
 
 DatasetSerializer.url_for = staticmethod( testable_url_for )
 
@@ -248,7 +278,6 @@ class DatasetSerializerTestCase( BaseTestCase ):
         role_id = self.app.security.decode_id( role_id )
         role = self.role_manager.get( self.trans, role_id )
         self.assertTrue( who_manages in [ user_role.user for user_role in role.users ])
-        # wat
 
         self.log( 'permissions should be not returned for non-managing users' )
         not_my_supervisor = self.user_manager.create( **user3_data )
@@ -258,6 +287,11 @@ class DatasetSerializerTestCase( BaseTestCase ):
         self.log( 'permissions should not be returned for anon users' )
         self.assertRaises( SkipAttribute, self.dataset_serializer.serialize_permissions,
             dataset, 'perms', user=None )
+
+        self.log( 'permissions should be returned for admin users' )
+        permissions = self.dataset_serializer.serialize_permissions( dataset, 'perms', user=self.admin_user )
+        self.assertIsInstance( permissions, dict )
+        self.assertKeys( permissions, [ 'manage', 'access' ] )
 
     def test_serializers( self ):
         # self.user_manager.create( **user2_data )
@@ -271,7 +305,7 @@ class DatasetSerializerTestCase( BaseTestCase ):
         self.assertDate( serialized[ 'update_time' ] )
 
         self.assertUUID( serialized[ 'uuid' ] )
-        self.assertIsInstance( serialized[ 'state' ], basestring )
+        self.assertIsInstance( serialized[ 'state' ], string_types )
         self.assertIsInstance( serialized[ 'deleted' ], bool )
         self.assertIsInstance( serialized[ 'purged' ], bool )
         self.assertIsInstance( serialized[ 'purgable' ], bool )
@@ -350,6 +384,10 @@ class DatasetDeserializerTestCase( BaseTestCase ):
         self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
             dataset, user=user3, data={ 'permissions': existing_permissions })
 
+        self.log( 'deserializing permissions using an anon user should error' )
+        self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
+            dataset, user=None, data={ 'permissions': existing_permissions })
+
         self.log( 'deserializing permissions with a single access should make the dataset private' )
         private_role = self.user_manager.private_role( who_manages )
         private_role = private_role.to_dict( value_mapper={ 'id': self.app.security.encode_id } )
@@ -373,6 +411,28 @@ class DatasetDeserializerTestCase( BaseTestCase ):
         # deserializing for user3 shouldn't throw a skip bc they can manage
         permissions = self.dataset_serializer.serialize_permissions( dataset, 'perms', user=who_manages )
         self.assertEqual( new_manage_permissions, permissions[ 'manage' ] )
+
+    def test_deserialize_permissions_with_admin( self ):
+        dataset = self.dataset_manager.create()
+        who_manages = self.user_manager.create( **user2_data )
+        self.dataset_manager.permissions.manage.grant( dataset, who_manages )
+        existing_permissions = self.dataset_serializer.serialize_permissions( dataset, 'permissions', user=who_manages )
+        existing_manage_permissions = existing_permissions[ 'manage' ]
+
+        user3 = self.user_manager.create( **user3_data )
+        self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
+            dataset, user=user3, data={ 'permissions': existing_permissions })
+
+        self.log( 'deserializing permissions using an admin user should not error' )
+        private_role = self.user_manager.private_role( who_manages )
+        private_role = private_role.to_dict( value_mapper={ 'id' : self.app.security.encode_id } )
+        permissions = dict( manage=existing_manage_permissions, access=[ private_role[ 'id' ] ] )
+        self.dataset_deserializer.deserialize( dataset, user=who_manages, data={
+            'permissions': permissions
+        })
+
+        self.assertRaises( rbac_secured.DatasetManagePermissionFailedException, self.dataset_deserializer.deserialize,
+            dataset, user=user3, data={ 'permissions': existing_permissions })
 
 
 # =============================================================================

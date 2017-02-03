@@ -2,7 +2,7 @@
 bx-python==0.7.3
 MarkupSafe==0.23
 PyYAML==3.11
-SQLAlchemy==1.0.8
+SQLAlchemy==1.0.15
 mercurial==3.7.3
 numpy==1.9.2
 pycrypto==2.6.1
@@ -27,8 +27,9 @@ Beaker==1.7.0
 dictobj==0.3.1
 nose==1.3.7
 Parsley==1.3
-six==1.9.0
+six==1.10.0
 Whoosh==2.7.4
+testfixtures==4.10.0
 
 # Cheetah and dependencies
 Cheetah==2.4.4
@@ -66,5 +67,4 @@ paramiko==1.15.2
 ecdsa==0.13
 
 # Flexible BAM index naming
-pysam==0.8.4+gx1
-
+pysam==0.8.4+gx5

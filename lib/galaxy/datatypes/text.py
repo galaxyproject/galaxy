@@ -108,7 +108,7 @@ class Ipynb( Json ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
-            dataset.blurb = "IPython Notebook"
+            dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -127,32 +127,30 @@ class Ipynb( Json ):
             except:
                 return False
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         config = trans.app.config
-        trust = getattr( config, 'trust_ipython_notebook_conversion', False )
+        trust = getattr( config, 'trust_jupyter_notebook_conversion', False )
         if trust:
-            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd)
+            return self._display_data_trusted(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
         else:
-            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, chunk=chunk, **kwd )
+            return super(Ipynb, self).display_data( trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd )
 
-    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         preview = string_as_bool( preview )
-        if chunk:
-            return self.get_chunk(trans, dataset, chunk)
-        elif to_ext or not preview:
+        if to_ext or not preview:
             return self._serve_raw(trans, dataset, to_ext)
         else:
             ofile_handle = tempfile.NamedTemporaryFile(delete=False)
             ofilename = ofile_handle.name
             ofile_handle.close()
             try:
-                cmd = 'ipython nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
+                cmd = 'jupyter nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
                 log.info("Calling command %s" % cmd)
                 subprocess.call(cmd, shell=True)
                 ofilename = '%s.html' % ofilename
             except:
                 ofilename = dataset.file_name
-                log.exception( 'Command "%s" failed. Could not convert the IPython Notebook to HTML, defaulting to plain text.' % cmd )
+                log.exception( 'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.' % cmd )
             return open( ofilename )
 
     def set_meta( self, dataset, **kwd ):
@@ -426,7 +424,7 @@ class SnpEffDb( Text ):
         # search data_dir/genome_version for files
         regulation_pattern = 'regulation_(.+).bin'
         #  annotation files that are included in snpEff by a flag
-        annotations_dict = {'nextProt.bin' : '-nextprot', 'motif.bin': '-motif'}
+        annotations_dict = {'nextProt.bin': '-nextprot', 'motif.bin': '-motif'}
         regulations = []
         annotations = []
         genome_version = None
@@ -544,3 +542,66 @@ class SnpSiftDbNSFP( Text ):
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'
+
+
+class Smat(Text):
+    file_ext = "smat"
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "ESTScan scores matrices (%s)" % (nice_size(dataset.get_size()))
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.blurb = "ESTScan scores matrices"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff(self, filename):
+        """
+        The use of ESTScan implies the creation of scores matrices which
+        reflect the codons preferences in the studied organisms.  The
+        ESTScan package includes scripts for generating these files.  The
+        output of these scripts consists of the matrices, one for each
+        isochor, and which look like this:
+
+        FORMAT: hse_4is.conf CODING REGION 6 3 1 s C+G: 0 44
+        -1 0 2 -2
+        2 1 -8 0
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test_space.txt')
+        >>> Smat().sniff(fname)
+        False
+        >>> fname = get_test_fname('test_tab.bed')
+        >>> Smat().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.smat')
+        >>> Smat().sniff(fname)
+        True
+        """
+        line_no = 0
+        with open(filename, "r") as fh:
+            line_no += 1
+            if line_no > 10000:
+                return True
+            line = fh.readline(500)
+            if line_no == 1 and not line.startswith('FORMAT'):
+                # The first line is always the start of a format section.
+                return False
+            if not line.startswith('FORMAT'):
+                if line.find('\t') >= 0:
+                    # Smat files are not tabular.
+                    return False
+                items = line.split()
+                if len(items) != 4:
+                    return False
+                for item in items:
+                    # Make sure each item is an integer.
+                    if re.match(r"[-+]?\d+$", item) is None:
+                        return False
+        return True

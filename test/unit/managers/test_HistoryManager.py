@@ -2,27 +2,33 @@
 """
 """
 import os
-import imp
+import sys
 import unittest
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-import galaxy_mock
-
 import sqlalchemy
+from six import string_types
 from sqlalchemy import true
 
-from galaxy import model
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model
+)
+from galaxy.managers import (
+    base,
+    hdas
+)
+from galaxy.managers.histories import (
+    HistoryDeserializer,
+    HistoryFilters,
+    HistoryManager,
+    HistorySerializer
+)
 
-from base import BaseTestCase
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock
 
-from galaxy.managers import base
-from galaxy.managers.histories import HistoryManager
-from galaxy.managers.histories import HistorySerializer
-from galaxy.managers.histories import HistoryDeserializer
-from galaxy.managers.histories import HistoryFilters
-from galaxy.managers import hdas
+from .base import BaseTestCase
 
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
@@ -260,7 +266,7 @@ class HistoryManagerTestCase( BaseTestCase ):
             len( self.history_manager.get_share_assocs( item1 ) ), 1 )
         self.assertEqual(
             len( self.history_manager.get_share_assocs( item1, user=non_owner ) ), 1 )
-        self.assertIsInstance( item1.slug, basestring )
+        self.assertIsInstance( item1.slug, string_types )
 
         self.log( "should be able to unshare with specific users" )
         share_assoc = self.history_manager.unshare_with( item1, non_owner )
@@ -389,6 +395,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
 
+
 HistorySerializer.url_for = staticmethod( testable_url_for )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
@@ -491,7 +498,7 @@ class HistorySerializerTestCase( BaseTestCase ):
 
         self.log( 'everything serialized should be of the proper type' )
         self.assertIsInstance( serialized[ 'size' ], int )
-        self.assertIsInstance( serialized[ 'nice_size' ], basestring )
+        self.assertIsInstance( serialized[ 'nice_size' ], string_types )
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
@@ -560,10 +567,10 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.assertEqual( serialized[ 'state_details' ][ 'ok' ], 1 )
         self.assertIsInstance( serialized[ 'state_ids' ][ 'ok' ], list )
         self.assertIsInstance( serialized[ 'hdas' ], list )
-        self.assertIsInstance( serialized[ 'hdas' ][0], basestring )
+        self.assertIsInstance( serialized[ 'hdas' ][0], string_types )
 
         serialized = self.history_serializer.serialize( history1, [ 'contents' ] )
-        self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'peek', 'create_time' ])
+        self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'state', 'create_time' ])
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )

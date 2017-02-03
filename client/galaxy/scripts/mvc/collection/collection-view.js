@@ -47,17 +47,29 @@ var CollectionView = _super.extend(
         this.foldoutStyle = attributes.foldoutStyle || 'foldout';
     },
 
+    _queueNewRender : function( $newRender, speed ) {
+        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
+        var panel = this;
+        panel.log( '_queueNewRender:', $newRender, speed );
+
+        // TODO: jquery@1.12 doesn't change display when the elem has display: flex
+        // this causes display: block for those elems after the use of show/hide animations
+        // animations are removed from this view for now until fixed
+        panel._swapNewRender( $newRender );
+        panel.trigger( 'rendered', panel );
+    },
+
     // ------------------------------------------------------------------------ sub-views
     /** In this override, use model.getVisibleContents */
     _filterCollection : function(){
-//TODO: should *not* be model.getVisibleContents - visibility is not model related
+        //TODO: should *not* be model.getVisibleContents - visibility is not model related
         return this.model.getVisibleContents();
     },
 
     /** override to return proper view class based on element_type */
     _getItemViewClass : function( model ){
         //this.debug( this + '._getItemViewClass:', model );
-//TODO: subclasses use DCEViewClass - but are currently unused - decide
+        //TODO: subclasses use DCEViewClass - but are currently unused - decide
         switch( model.get( 'element_type' ) ){
             case 'hda':
                 return this.DatasetDCEViewClass;
@@ -73,7 +85,7 @@ var CollectionView = _super.extend(
         return _.extend( options, {
             linkTarget      : this.linkTarget,
             hasUser         : this.hasUser,
-//TODO: could move to only nested: list:paired
+            //TODO: could move to only nested: list:paired
             foldoutStyle    : this.foldoutStyle
         });
     },
@@ -114,12 +126,12 @@ var CollectionView = _super.extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : {
-        'click .navigation .back'       : 'close'
+        'click .navigation .back' : 'close'
     },
 
     /** close/remove this collection panel */
     close : function( event ){
-        this.$el.remove();
+        this.remove();
         this.trigger( 'close' );
     },
 
@@ -146,13 +158,14 @@ CollectionView.prototype.templates = (function(){
             '<div class="title">',
                 '<div class="name"><%- collection.name || collection.element_identifier %></div>',
                 '<div class="subtitle">',
-//TODO: remove logic from template
                     '<% if( collection.collection_type === "list" ){ %>',
                         _l( 'a list of datasets' ),
                     '<% } else if( collection.collection_type === "paired" ){ %>',
                         _l( 'a pair of datasets' ),
                     '<% } else if( collection.collection_type === "list:paired" ){ %>',
                         _l( 'a list of paired datasets' ),
+                    '<% } else if( collection.collection_type === "list:list" ){ %>',
+                        _l( 'a list of dataset lists' ),
                     '<% } %>',
                 '</div>',
             '</div>',
@@ -215,11 +228,28 @@ var ListOfPairsCollectionView = CollectionView.extend(
 });
 
 
+// =============================================================================
+/** @class non-editable, read-only View/Controller for a list of lists dataset collection. */
+var ListOfListsCollectionView = CollectionView.extend({
+
+    /** sub view class used for nested collections */
+    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView.extend({
+        foldoutPanelClass : PairCollectionView
+    }),
+
+    /** string rep */
+    toString    : function(){
+        return 'ListOfListsCollectionView(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+    }
+});
+
+
 //==============================================================================
     return {
         CollectionView              : CollectionView,
         ListCollectionView          : ListCollectionView,
         PairCollectionView          : PairCollectionView,
-        ListOfPairsCollectionView   : ListOfPairsCollectionView
+        ListOfPairsCollectionView   : ListOfPairsCollectionView,
+        ListOfListsCollectionView   : ListOfListsCollectionView
     };
 });

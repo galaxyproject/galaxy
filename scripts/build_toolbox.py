@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 from xml.etree import ElementTree as ET
 
@@ -21,7 +23,7 @@ def getfilenamelist(startdir):
                 try:
                     doc = ET.parse(fullfn)
                 except:
-                    print "An OOPS on", fullfn
+                    print("An OOPS on", fullfn)
                     raise
                 rootelement = doc.getroot()
                 # Only interpret those 'tool' XML files that have
@@ -30,7 +32,7 @@ def getfilenamelist(startdir):
                     if rootelement.findall('toolboxposition'):
                         filenamelist.append(fullfn)
                     else:
-                        print "DBG> tool config does not have a <section>:", fullfn
+                        print("DBG> tool config does not have a <section>:", fullfn)
     return filenamelist
 
 
@@ -58,7 +60,7 @@ class ToolBox(object):
         self.tools[("%05d-%s" % (sectionorder, section), label, order, section)].append(toolelement)
 
     def addElementsTo(self, rootelement):
-        toolkeys = self.tools.keys()
+        toolkeys = list(self.tools.keys())
         toolkeys.sort()
 
         # Initialize the loop: IDs to zero, current section and label to ''
@@ -139,13 +141,13 @@ def scanfiles(filenamelist):
                     tagarray.append(tag.text)
                 attrib['tags'] = ",".join(tagarray)
             else:
-                print "DBG> No tags in", fn
+                print("DBG> No tags in", fn)
 
             # Build the tool element
             newtoolelement = ET.Element('tool', attrib)
             toolboxpositionelements = toolelement.findall('toolboxposition')
             if not toolboxpositionelements:
-                print "DBG> %s has no toolboxposition" % fn
+                print("DBG> %s has no toolboxposition" % fn)
             else:
                 for toolboxpositionelement in toolboxpositionelements:
                     toolbox.add(newtoolelement, toolboxpositionelement)
@@ -164,7 +166,8 @@ def assemble():
 
     toolbox.addElementsTo(toolboxelement)
 
-    print prettify(toolboxelement)
+    print(prettify(toolboxelement))
+
 
 if __name__ == "__main__":
     assemble()

@@ -6,14 +6,20 @@ This is a community contributed feature and the core Galaxy team does utilize
 it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
+import logging
 from os import environ, pathsep
 from os.path import exists, isdir, join
+from subprocess import PIPE, Popen
+
 from six import StringIO
-from subprocess import Popen, PIPE
 
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
+from ..resolvers import (
+    Dependency,
+    DependencyResolver,
+    MappableDependencyResolver,
+    NullDependency,
+)
 
-import logging
 log = logging.getLogger( __name__ )
 
 DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
@@ -23,11 +29,12 @@ DEFAULT_MODULE_PREFETCH = "true"
 UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
 
 
-class ModuleDependencyResolver(DependencyResolver):
+class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
+        self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
         prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
@@ -50,16 +57,19 @@ class ModuleDependencyResolver(DependencyResolver):
             module_path = DEFAULT_MODULE_PATH
         return module_path
 
-    def resolve( self, name, version, type, **kwds ):
+    def resolve(self, requirement, **kwds):
+        requirement = self._expand_mappings(requirement)
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version, exact=True)
         elif self.versionless and self.__has_module(name, None):
             return ModuleDependency(self, name, None, exact=False)
 
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
     def __has_module(self, name, version):
         return self.module_checker.has_module(name, version)
@@ -178,4 +188,5 @@ class ModuleDependency(Dependency):
 def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
-__all__ = ['ModuleDependencyResolver']
+
+__all__ = ('ModuleDependencyResolver', )

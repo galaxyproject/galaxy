@@ -1,23 +1,35 @@
 """
 API operations for Workflows
 """
-
 from __future__ import absolute_import
 
 import logging
-import urllib
+
+from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
-from galaxy import exceptions, util
+
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
+from galaxy.managers import (
+    histories,
+    workflows
+)
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.managers import histories
-from galaxy.managers import workflows
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
-from galaxy.web.base.controller import SharableMixin
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    SharableMixin,
+    url_for,
+    UsesStoredWorkflowMixin
+)
 from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.run import invoke, queue_invoke
-from galaxy.workflow.run_request import build_workflow_run_config
 from galaxy.workflow.modules import module_factory
+from galaxy.workflow.run import invoke, queue_invoke
+from galaxy.workflow.run_request import build_workflow_run_configs
 
 log = logging.getLogger(__name__)
 
@@ -159,7 +171,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             from_history_id = self.decode_id( from_history_id )
             history = self.history_manager.get_accessible( from_history_id, trans.user, current_history=trans.history )
 
-            job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
+            job_ids = [ self.decode_id(_) for _ in payload.get( 'job_ids', [] ) ]
             dataset_ids = payload.get( 'dataset_ids', [] )
             dataset_collection_ids = payload.get( 'dataset_collection_ids', [] )
             workflow_name = payload[ 'workflow_name' ]
@@ -192,7 +204,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
         workflow = stored_workflow.latest_workflow
 
-        run_config = build_workflow_run_config( trans, workflow, payload )
+        run_configs = build_workflow_run_configs( trans, workflow, payload )
+        assert len(run_configs) == 1
+        run_config = run_configs[0]
         history = run_config.target_history
 
         # invoke may throw MessageExceptions on tool erors, failure
@@ -212,7 +226,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         rval['outputs'] = []
         for step in workflow.steps:
             if step.type == 'tool' or step.type is None:
-                for v in outputs[ step.id ].itervalues():
+                for v in outputs[ step.id ].values():
                     rval[ 'outputs' ].append( trans.security.encode_id( v.id ) )
 
         # Newer version of this API just returns the invocation as a dict, to
@@ -297,11 +311,36 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
                          The workflow contents will be updated to target
                          this.
+
+            * name       optional string name for the workflow, if not present in payload,
+                         name defaults to existing name
+            * annotation optional string annotation for the workflow, if not present in payload,
+                         annotation defaults to existing annotation
+            * menu_entry optional boolean marking if the workflow should appear in the user's menu,
+                         if not present, workflow menu entries are not modified
+
         :rtype:     dict
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow( trans, id )
         if 'workflow' in payload:
+            stored_workflow.name = sanitize_html(payload['name']) if ('name' in payload) else stored_workflow.name
+
+            if 'annotation' in payload:
+                newAnnotation = sanitize_html(payload['annotation'])
+                self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
+
+            if 'menu_entry' in payload:
+                if payload['menu_entry']:
+                    menuEntry = model.StoredWorkflowMenuEntry()
+                    menuEntry.stored_workflow = stored_workflow
+                    trans.get_user().stored_workflow_menu_entries.append(menuEntry)
+                else:
+                    # remove if in list
+                    entries = {x.stored_workflow_id: x for x in trans.get_user().stored_workflow_menu_entries}
+                    if (trans.security.decode_id(id) in entries):
+                        trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
+
             workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
                 trans,
                 stored_workflow,
@@ -318,40 +357,52 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         POST /api/workflows/build_module
         Builds module details including a tool model for the workflow editor.
         """
+        type = payload.get( 'type' )
+        inputs = payload.get( 'inputs', {} )
+        annotation = inputs.get( 'annotation', '' )
+        label = inputs.get( 'label', '' )
         tool_id = payload.get( 'tool_id' )
-        tool_version = payload.get( 'tool_version' )
-        tool_inputs = payload.get( 'inputs', {} )
-        annotation = payload.get( 'annotation', tool_inputs.get( 'annotation', '' ) )
-
-        # load tool
-        tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
-
-        # initialize module
-        module = module_factory.from_dict( trans, {
-            'type'          : 'tool',
-            'tool_id'       : tool.id,
-            'tool_state'    : None
-        } )
-
-        # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json( trans, tool_inputs, workflow_building_mode=True )
-        module.update_state( tool_model[ 'state_inputs' ] )
-        return {
-            'tool_model'        : tool_model,
-            'tool_state'        : module.get_state(),
-            'data_inputs'       : module.get_data_inputs(),
-            'data_outputs'      : module.get_data_outputs(),
-            'tool_errors'       : module.get_errors(),
-            'form_html'         : module.get_config_form(),
-            'annotation'        : annotation,
-            'post_job_actions'  : module.get_post_job_actions(tool_inputs)
-        }
+        content_id = payload.get( 'content_id' )
+        if tool_id:
+            tool_version = payload.get( 'tool_version' )
+            tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
+            module = module_factory.from_dict( trans, {
+                'type'              : 'tool',
+                'tool_id'           : tool.id,
+                'tool_state'        : None
+            } )
+            tool_model = module.tool.to_json( trans, inputs, workflow_building_mode=True )
+            module.recover_state( tool_model[ 'state_inputs' ] )
+            return {
+                'tool_model'        : tool_model,
+                'tool_state'        : module.get_state(),
+                'data_inputs'       : module.get_data_inputs(),
+                'data_outputs'      : module.get_data_outputs(),
+                'config_form'       : module.get_config_form(),
+                'annotation'        : annotation,
+                'post_job_actions'  : module.get_post_job_actions(inputs)
+            }
+        else:
+            module = module_factory.from_dict( trans, {
+                'type'              : type,
+                'label'             : label,
+                'content_id'        : content_id
+            } )
+            module.recover_state( inputs )
+            return {
+                'label'             : module.label,
+                'tool_state'        : module.get_state(),
+                'data_inputs'       : module.get_data_inputs(),
+                'data_outputs'      : module.get_data_outputs(),
+                'config_form'       : module.get_config_form(),
+                'annotation'        : annotation
+            }
 
     #
     # -- Helper methods --
     #
     def _get_tool( self, id, tool_version=None, user=None ):
-        id = urllib.unquote_plus( id )
+        id = unquote_plus( id )
         tool = self.app.toolbox.get_tool( id, tool_version )
         if not tool or not tool.allow_user_access( user ):
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
@@ -363,6 +414,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         publish = util.string_as_bool( payload.get( "publish", False ) )
         # If 'publish' set, default to importable.
         importable = util.string_as_bool( payload.get( "importable", publish ) )
+        # Galaxy will try to upgrade tool versions that don't match exactly during import,
+        # this prevents that.
+        exact_tools = util.string_as_bool( payload.get( "exact_tools", False ) )
 
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException( "Published workflow must be importable." )
@@ -370,6 +424,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         from_dict_kwds = dict(
             source="API",
             publish=publish,
+            exact_tools=exact_tools,
         )
         workflow, missing_tool_tups = self._workflow_from_dict( trans, data, **from_dict_kwds )
 
@@ -434,21 +489,31 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # /usage is awkward in this context but is consistent with the rest of
         # this module. Would prefer to redo it all to use /invocation(s).
         # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
+        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow
+        run_configs = build_workflow_run_configs(trans, workflow, payload)
+        is_batch = payload.get('batch')
+        if not is_batch and len(run_configs) != 1:
+            raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 
-        run_config = build_workflow_run_config( trans, workflow, payload )
-        workflow_scheduler_id = payload.get( "scheduler", None )
-        # TODO: workflow scheduler hints
-        work_request_params = dict( scheduler=workflow_scheduler_id )
+        invocations = []
+        for run_config in run_configs:
+            workflow_scheduler_id = payload.get('scheduler', None)
+            # TODO: workflow scheduler hints
+            work_request_params = dict(scheduler=workflow_scheduler_id)
+            workflow_invocation = queue_invoke(
+                trans=trans,
+                workflow=workflow,
+                workflow_run_config=run_config,
+                request_params=work_request_params
+            )
+            invocation = self.encode_all_ids(trans, workflow_invocation.to_dict(), recursive=True)
+            invocations.append(invocation)
 
-        workflow_invocation = queue_invoke(
-            trans=trans,
-            workflow=workflow,
-            workflow_run_config=run_config,
-            request_params=work_request_params
-        )
-        return self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
+        if is_batch:
+            return invocations
+        else:
+            return invocations[0]
 
     @expose_api
     def index_invocations(self, trans, workflow_id, **kwd):
@@ -462,7 +527,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        stored_workflow = self.__get_stored_workflow(trans, workflow_id)
+        stored_workflow = self.__get_stored_workflow( trans, workflow_id )
         results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:

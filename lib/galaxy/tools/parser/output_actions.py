@@ -4,8 +4,9 @@ Support for dynamically modifying output attributes.
 
 import logging
 import os.path
-import string
 import re
+import string
+
 from galaxy import util
 
 log = logging.getLogger( __name__ )
@@ -646,6 +647,7 @@ def compare_endswith( value1, value2 ):
 def compare_re_search( value1, value2 ):
     # checks pattern=value2 in value1
     return bool( re.search( value2, value1 ) )
+
 
 compare_types = {
     'eq': compare_eq,

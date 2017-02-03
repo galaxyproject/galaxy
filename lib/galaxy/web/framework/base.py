@@ -1,27 +1,24 @@
 """
 A simple WSGI application/framework.
 """
-
 import cgi  # For FieldStorage
 import logging
 import os.path
 import socket
 import tarfile
 import tempfile
-import types
 import time
+import types
+from Cookie import SimpleCookie
 
 import routes
 import webob
-
-from six import string_types
-from Cookie import SimpleCookie
-
 # We will use some very basic HTTP/wsgi utilities from the paste library
-from paste.request import get_cookies
 from paste import httpexceptions
+from paste.request import get_cookies
 from paste.response import HeaderDict
 
+from galaxy.util import smart_str
 
 log = logging.getLogger( __name__ )
 
@@ -42,6 +39,8 @@ def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
     self.connect( 'undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
                   conditions=dict( method=['POST'] ) )
     self.resource( member_name, collection_name, **kwargs )
+
+
 routes.Mapper.resource_with_deleted = __resource_with_deleted
 
 
@@ -138,7 +137,7 @@ class WebApplication( object ):
             if self.trace_logger:
                 self.trace_logger.context_remove( "request_id" )
 
-    def handle_request( self, environ, start_response ):
+    def handle_request( self, environ, start_response, body_renderer=None ):
         # Grab the request_id (should have been set by middleware)
         request_id = environ.get( 'request_id', 'unknown' )
         # Map url using routes
@@ -196,6 +195,10 @@ class WebApplication( object ):
             body = self.handle_controller_exception( e, trans, **kwargs )
             if not body:
                 raise
+        body_renderer = body_renderer or self._render_body
+        return body_renderer( trans, body, environ, start_response )
+
+    def _render_body( self, trans, body, environ, start_response ):
         # Now figure out what we got back and try to get it to the browser in
         # a smart way
         if callable( body ):
@@ -219,15 +222,12 @@ class WebApplication( object ):
         if isinstance( body, ( types.GeneratorType, list, tuple ) ):
             # Recursively stream the iterable
             return flatten( body )
-        elif isinstance( body, string_types ):
-            # Wrap the string so it can be iterated
-            return [ body ]
         elif body is None:
             # Returns an empty body
             return []
         else:
             # Worst case scenario
-            return [ str( body ) ]
+            return [ smart_str( body ) ]
 
     def handle_controller_exception( self, e, trans, **kwargs ):
         """
@@ -266,6 +266,8 @@ class LazyProperty( object ):
         value = self.func( obj )
         setattr( obj, self.func.func_name, value )
         return value
+
+
 lazy_property = LazyProperty
 
 
@@ -311,6 +313,8 @@ class FieldStorage( cgi.FieldStorage ):
             self.read_lines_to_outerboundary()
         else:
             self.read_lines_to_eof()
+
+
 cgi.FieldStorage = FieldStorage
 
 
@@ -426,6 +430,7 @@ class Response( object ):
         else:
             return self.status
 
+
 # ---- Utilities ------------------------------------------------------------
 
 CHUNK_SIZE = 2 ** 16
@@ -468,6 +473,6 @@ def flatten( seq ):
     for x in seq:
         if isinstance( x, ( types.GeneratorType, list, tuple ) ):
             for y in flatten( x ):
-                yield y
+                yield smart_str( y )
         else:
-            yield x
+            yield smart_str( x )

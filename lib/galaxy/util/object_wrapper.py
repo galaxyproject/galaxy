@@ -1,11 +1,13 @@
 """
 Classes for wrapping Objects and Sanitizing string output.
 """
-
+import collections
 import inspect
 import logging
 import string
+import sys
 from numbers import Number
+
 try:
     from types import NoneType
 except ImportError:
@@ -23,28 +25,42 @@ except ImportError:
 try:
     from types import XRangeType
 except ImportError:
-    XRangeType = type(range(0))
+    XRangeType = range
 
 try:
     from types import SliceType
 except ImportError:
-    SliceType = type([][:])
+    SliceType = slice
 
 try:
-    from types import BufferType
-    from types import DictProxyType
+    from types import (
+        BufferType,
+        DictProxyType
+    )
 except ImportError:
     # Py3 doesn't have these concepts, just treat them like SliceType that
     # so they are __WRAP_NO_SUBCLASS__.
     BufferType = SliceType
     DictProxyType = SliceType
 
-from types import ( FunctionType, MethodType, GeneratorType, CodeType,
-                    BuiltinFunctionType, BuiltinMethodType, ModuleType, TracebackType, FrameType,
-                    GetSetDescriptorType, MemberDescriptorType )
-from six.moves import UserDict
-from six.moves import copyreg as copy_reg
-import sys
+from types import (
+    BuiltinFunctionType,
+    BuiltinMethodType,
+    CodeType,
+    FrameType,
+    FunctionType,
+    GeneratorType,
+    GetSetDescriptorType,
+    MemberDescriptorType,
+    MethodType,
+    ModuleType,
+    TracebackType,
+)
+
+from six.moves import (
+    copyreg as copy_reg,
+    UserDict
+)
 
 from galaxy.util import sanitize_lists_to_string as _sanitize_lists_to_string
 
@@ -115,7 +131,7 @@ def wrap_with_safe_string( value, no_wrap_classes=None ):
         if isinstance( value, SafeStringWrapper ):
             # Only ever wrap one-layer
             return value
-        if callable( value ):
+        if isinstance( value, collections.Callable ):
             safe_class = CallableSafeStringWrapper
         else:
             safe_class = SafeStringWrapper
@@ -131,7 +147,7 @@ def wrap_with_safe_string( value, no_wrap_classes=None ):
         for this_type in __WRAP_MAPPINGS__:
             if isinstance( value, this_type ):
                 # Wrap both key and value
-                return this_type( map( lambda x: ( __do_wrap( x[0] ), __do_wrap( x[1] ) ), value.items() ) )
+                return this_type( ( __do_wrap( x[0] ), __do_wrap( x[1] ) ) for x in value.items() )
         # Create a dynamic class that joins SafeStringWrapper with the object being wrapped.
         # This allows e.g. isinstance to continue to work.
         try:
@@ -169,6 +185,7 @@ def wrap_with_safe_string( value, no_wrap_classes=None ):
                 # Set pickle and copy properties
                 copy_reg.pickle( wrapped_class, pickle_safe_object, do_wrap_func )
         return wrapped_class( value, safe_string_wrapper_function=do_wrap_func )
+
     # Determine classes not to wrap
     if no_wrap_classes:
         if not isinstance( no_wrap_classes, ( tuple, list ) ):
@@ -199,7 +216,7 @@ class SafeStringWrapper( object ):
     will still be sanitized, but not wrapped), and e.g. integers will have neither.
     """
     __UNSANITIZED_ATTRIBUTE_NAME__ = 'unsanitized'
-    __NO_WRAP_NAMES__ = [ '__safe_string_wrapper_function__', __UNSANITIZED_ATTRIBUTE_NAME__]
+    __NO_WRAP_NAMES__ = [ '__safe_string_wrapper_function__', '__class__', __UNSANITIZED_ATTRIBUTE_NAME__]
 
     def __new__( cls, *arg, **kwd ):
         # We need to define a __new__ since, we are subclassing from e.g. immutable str, which internally sets data
@@ -260,15 +277,16 @@ class SafeStringWrapper( object ):
     def __hash__( self ):
         return hash( self.unsanitized )
 
-    def __nonzero__( self ):
+    def __bool__( self ):
         return bool( self.unsanitized )
+    __nonzero__ = __bool__
 
     # Do not implement __unicode__, we will rely on __str__
 
     def __getattr__( self, name ):
         if name in SafeStringWrapper.__NO_WRAP_NAMES__:
             # FIXME: is this ever reached?
-            return object.__getattr__( self, name )
+            return object.__getattribute__( self, name )
         return self.__safe_string_wrapper_function__( getattr( self.unsanitized, name ) )
 
     def __setattr__( self, name, value ):
@@ -290,7 +308,7 @@ class SafeStringWrapper( object ):
 
     # Skip __slots__
 
-    # Don't need __metaclass__, we'll use the helper function to handle with subclassing for e.g. isinstance()
+    # Don't need to define a metaclass, we'll use the helper function to handle with subclassing for e.g. isinstance()
 
     # Revisit:
     # __instancecheck__
@@ -471,5 +489,7 @@ def pickle_SafeStringWrapper( safe_object ):
     if isinstance( safe_object, CallableSafeStringWrapper ):
         cls = CallableSafeStringWrapper
     return ( cls, args )
+
+
 copy_reg.pickle( SafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string )
 copy_reg.pickle( CallableSafeStringWrapper, pickle_SafeStringWrapper, wrap_with_safe_string )

@@ -12,16 +12,18 @@ from galaxy.tools.parser.interface import TestCollectionDef
 from galaxy.web import url_for
 from tool_shed.repository_types import util as rt_util
 from tool_shed.tools import tool_validator
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
-from tool_shed.util import readme_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
-from tool_shed.util import tool_util
-from tool_shed.util import xml_util
+from tool_shed.util import (
+    basic_util,
+    common_util,
+    hg_util,
+    metadata_util,
+    readme_util,
+    repository_util,
+    shed_util_common as suc,
+    tool_dependency_util,
+    tool_util,
+    xml_util
+)
 
 log = logging.getLogger( __name__ )
 
@@ -638,7 +640,7 @@ class MetadataGenerator( object ):
                     value, extra = required_file
                     required_files.append( ( value ) )
                 inputs = []
-                for param_name, values in ttb.inputs.iteritems():
+                for param_name, values in ttb.inputs.items():
                     # Handle improperly defined or strange test parameters and values.
                     if param_name is not None:
                         if values in [ None, False ]:

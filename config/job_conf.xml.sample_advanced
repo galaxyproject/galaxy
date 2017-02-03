@@ -174,9 +174,14 @@
             -->
 
             <param id="k8s_config_path">/path/to/kubeconfig</param>
-            <!--- This is the path to the kube config file, which is normally on ~/.kube/config, but that will depend on
+            <!-- This is the path to the kube config file, which is normally on ~/.kube/config, but that will depend on
                  your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
-                 etc. -->
+                 etc. This parameter is not necessary and ignored if k8s_use_service_account is set to True -->
+
+            <param id="k8s_use_service_account">false</param>
+            <!-- For use when Kubernetes should be accessed from inside a Pod running Galaxy (that is,
+                 galaxy is running inside Kubernetes). If this variable is True, then the previous k8s_config_path is
+                 not required and actually ignored. It is not necessary to set this value if not setting it to true -->
 
             <param id="k8s_persistent_volume_claim_name">galaxy_pvc</param>
             <!-- The name of the Persisten Volume Claim (PVC) to be used, details above, needs to match the PVC's
@@ -199,6 +204,19 @@
                  This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
+        </plugin>
+        <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
+            <!-- Go-Docker is a batch computing/cluster management tool using Docker
+                 See https://bitbucket.org/osallou/go-docker for more details.  -->
+            <!--  REST based runner , submits jobs to godocker -->
+            <param id="godocker_master">GODOCKER_URL</param>
+            <!-- Specify the instance of GoDocker -->
+            <param id="user">USERNAME</param>
+            <!-- GoDocker username -->
+            <param id="key">APIKEY</param>
+            <!-- GoDocker API key -->
+            <param id="godocker_project">galaxy</param>
+            <!-- Specify the project present in the GoDocker setup -->
         </plugin>
 
     </plugins>
@@ -258,7 +276,7 @@
           <!-- For a stock Galaxy instance and traditional job runner $defaults will
                expand out as:
 
-               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw
+               $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw
 
                This assumes most of what is needed is available under Galaxy's root directory,
                the tool directory, and the Galaxy's file_path (if using object store creatively
@@ -269,7 +287,7 @@
                galaxy.ini. This will cause $defaults to allow writing to much
                less. It will then expand as follows:
 
-               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro
+               $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro
 
                If using the Pulsar, defaults will be even further restricted because the
                Pulsar will (by default) stage all needed inputs into the job's job_directory
@@ -344,6 +362,12 @@
                a fallback. -->
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
+          <!-- If the destination should be secured to only allow containerized jobs
+               the following parameter may be set for the job destination. Not all,
+               or even most, tools available in Galaxy core or in the Tool Shed
+               support Docker yet so this option may require a lot of extra work for
+               the deployer. -->
+          <!-- <param id="require_container">true</param> -->
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
@@ -379,8 +403,19 @@
             <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->
         </destination>
         <destination id="dynamic" runner="dynamic">
-            <!-- A destination that represents a method in the dynamic runner. -->
+            <!-- A destination that represents a method in the dynamic runner.
+
+                 foo should be a Python function defined in any file in
+                 lib/galaxy/jobs/rules.
+            -->
             <param id="function">foo</param>
+        </destination>
+        <destination id="dtd_destination" runner="dynamic">
+            <!-- DTD is a special dynamic job destination type that builds up
+                 rules given a YAML-based DSL (see config/tool_destinations.yml.sample
+                 for the syntax).
+            -->
+            <param id="type">dtd</param>
         </destination>
         <destination id="load_balance" runner="dynamic">
             <param id="type">choose_one</param>
@@ -539,22 +574,36 @@
             <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
         </destination>
 
-        <!-- Jobs that hit the walltime on one destination can be automatically
-             resubmitted to another destination. Walltime detection is
-             currently only implemented in the slurm runner.
+        <!-- Jobs can be re-submitted for various reasons (to the same destination or others,
+             with or without a short delay). For instance, jobs that hit the walltime on one
+             destination can be automatically resubmitted to another destination. Re-submission
+             is defined on a per-destination basis using ``resubmit`` tags. Re-submission only
+             happens currently in response to problems in the job runner - so for instance if a
+             job fails to allocate memory but the job runner doesn't detect this and completes
+             the job normally but the exit code indicates the error - the job failure
+             re-submission won't run yet (this will be added in the future).
 
-             Multiple resubmit tags can be defined, the first resubmit matching
-             the terminal condition of a job will be used.
+             Multiple `resubmit` tags can be defined, the first resubmit condition that is true
+             (i.e. evaluates to a Python truthy value) will be used for a particular job failure.
 
-             The 'condition' attribute is optional, if not present, the
-             resubmit destination will be used for all conditions. The
-             conditions currently implemented are:
+             The ``condition`` attribute is optional, if not present, the
+             resubmit destination will be used for all relevant failure types.
+             Conditions are expressed as Python-like expressions (a fairly safe subset of Python
+             is available). These expressions include math and logical operators, numbers,
+             strings, etc.... The following variables are available in these expressions:
 
-               - "walltime_reached"
-               - "memory_limit_reached"
+               - "walltime_reached" (True if and only if the job runner indicates a walltime maximum was reached)
+               - "memory_limit_reached" (True if and only if the job runner indicates a memory limit was hit)
+               - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
+               - "attempt" (the re-submission attempt number this is)
+               - "seconds_since_queued" (the number of seconds since the last time the job was in a queued state within Galaxy)
+               - "seconds_running" (the number of seconds the job was in a running state within Galaxy)
 
-             The 'handler' tag is optional, if not present, the job's original
-             handler will be reused for the resubmitted job.
+             The ``handler`` attribute is optional, if not present, the job's original
+             handler will be reused for the resubmitted job. The ``destination`` attriubte
+             is optional, if not present the job's original destination will be reused for the
+             re-submission. The ``delay`` attribute is optional, if present it will cause the job to
+             delay for that number of seconds before being re-submitted. 
         -->
         <destination id="short_fast" runner="slurm">
             <param id="nativeSpecification">--time=00:05:00 --nodes=1</param>
@@ -567,6 +616,11 @@
         <destination id="smallmem" runner="slurm">
             <param id="nativeSpecification">--mem-per-cpu=512</param>
             <resubmit condition="memory_limit_reached" destination="bigmem" />
+        </destination>
+        <destination id="retry_on_unknown_problems" runner="slurm">
+            <!-- Just retry the job 5 times if un-categories errors occur backing
+                 off by 30 more seconds between attempts. -->
+            <resubmit condition="unknown_error and attempt &lt;= 5" delay="attempt * 30" />
         </destination>
         <!-- Any tag param in this file can be set using an environment variable or using
              values from galaxy.ini using the from_environ and from_config attributes
@@ -631,7 +685,24 @@
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
         </destination>
-
+        <destination id="god" runner="godocker">
+            <!-- The following are configurations for the container -->
+            <param id="docker_enabled">true</param>
+            <param id="docker_cpu">1</param>
+            <param id="docker_memory">2</param>
+            <param id="docker_default_container_id">centos:latest</param>
+            <!-- Specify the image on which the jobs have to be executed -->
+            <param id="godocker_volumes"></param>
+            <!-- Mount the godocker volumes 
+                 volumes must be separated by commas.
+                 eg: <param id="godocker_volumes">home,galaxy</param>
+            -->
+            <param id="virtualenv">false</param>
+            <!-- If a tool execution in container requires galaxy virtualenv, 
+                 then enable it by setting the value to true.
+                 Disable venv by setting the value to false.
+            -->
+        </destination>
 
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
@@ -710,6 +781,13 @@
                 will be terminated by Galaxy.
          -->
         <limit type="walltime">24:00:00</limit>
+	<!-- total_walltime:
+		Total walltime that jobs may not exceed during a set period.
+		If total walltime of finished jobs exceeds this value, any
+		new jobs are paused.  `window` is a number in days,
+		representing the period.
+         -->
+        <limit type="total_walltime" window="30">24:00:00</limit>
         <!-- output_size:
                 Size that any defined tool output can grow to before the job
                 will be terminated. This does not include temporary files

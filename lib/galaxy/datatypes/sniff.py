@@ -4,6 +4,7 @@ File format detector
 from __future__ import absolute_import
 
 import gzip
+import bz2
 import logging
 import os
 import re
@@ -17,8 +18,16 @@ from six import text_type
 
 from galaxy import util
 from galaxy.util import multi_byte
-from galaxy.util import unicodify
-from galaxy.util.checkers import check_binary, check_html, is_gzip
+from galaxy.util import (
+    compression_utils,
+    unicodify
+)
+from galaxy.util.checkers import (
+    check_binary,
+    check_html,
+    is_bz2,
+    is_gzip
+)
 from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
@@ -198,15 +207,19 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
     [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
     """
     headers = []
-    for idx, line in enumerate(file(fname)):
-        line = line.rstrip('\n\r')
-        if is_multi_byte:
-            # TODO: fix this - sep is never found in line
-            line = unicodify( line, 'utf-8' )
-            sep = sep.encode( 'utf-8' )
-        headers.append( line.split(sep) )
-        if idx == count:
-            break
+    in_file = compression_utils.get_fileobj(fname)
+    try:
+        for idx, line in enumerate(in_file):
+            line = line.rstrip('\n\r')
+            if is_multi_byte:
+                # TODO: fix this - sep is never found in line
+                line = unicodify( line, 'utf-8' )
+                sep = sep.encode( 'utf-8' )
+            headers.append( line.split(sep) )
+            if idx == count:
+                break
+    finally:
+        in_file.close()
     return headers
 
 
@@ -261,14 +274,14 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
-    >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> from galaxy.datatypes import registry
     >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
     >>> datatypes_registry = registry.Registry()
     >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
     >>> sniff_order = datatypes_registry.sniff_order
+    >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
-    'xml'
+    'blastxml'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname, sniff_order)
     'interval'
@@ -353,6 +366,12 @@ def guess_ext( fname, sniff_order, is_multi_byte=False ):
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
+    >>> fname = get_test_fname('1.gg')
+    >>> guess_ext(fname, sniff_order)
+    'gg'
+    >>> fname = get_test_fname('diamond_db.dmnd')
+    >>> guess_ext(fname, sniff_order)
+    'dmnd'
     """
     file_ext = None
     for datatype in sniff_order:
@@ -465,17 +484,19 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
         raise InappropriateDatasetContentError( 'The uploaded file contains inappropriate HTML content.' )
     return ext
 
+
 AUTO_DETECT_EXTENSIONS = [ 'auto' ]  # should 'data' also cause auto detect?
-DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
-COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
-COMPRESSION_DATATYPES = dict( gzip=[ 'bam' ] )
+DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile, bz2=bz2.BZ2File )
+COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ), ('bz2', is_bz2) ]
+COMPRESSION_DATATYPES = dict( gzip=[ 'bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'], bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2' ] )
 COMPRESSED_EXTENSIONS = []
-for exts in COMPRESSION_DATATYPES.itervalues():
+for exts in COMPRESSION_DATATYPES.values():
     COMPRESSED_EXTENSIONS.extend( exts )
 
 
 class InappropriateDatasetContentError( Exception ):
     pass
+
 
 if __name__ == '__main__':
     import doctest

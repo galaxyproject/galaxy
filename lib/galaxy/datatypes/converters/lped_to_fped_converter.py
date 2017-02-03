@@ -2,11 +2,11 @@
 # recode to numeric fbat version
 # much slower so best to always
 # use numeric alleles internally
+from __future__ import print_function
 
-import sys
 import os
+import sys
 import time
-
 
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'
@@ -63,7 +63,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
         if i == 0:
             lrow = row.split()
             try:
-                x = [int(x) for x in lrow[10:50]]  # look for non numeric codes
+                [int(x) for x in lrow[10:50]]  # look for non numeric codes
             except:
                 dorecode = 1
         if dorecode:
@@ -81,7 +81,7 @@ def main():
     """call fbater
     need to work with rgenetics composite datatypes
     so in and out are html files with data in extrafiles path
-    <command interpreter="python">rg_convert_lped_fped.py '$input1/$input1.metadata.base_name'
+    <command>python '$__tool_directory__/rg_convert_lped_fped.py' '$input1/$input1.metadata.base_name'
     '$output1' '$output1.extra_files_path'
     </command>
     """
@@ -100,7 +100,7 @@ def main():
     flist = os.listdir(outfilepath)
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
-        print '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
+        print('## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow()))  # becomes info
         f.write('<div>## Rgenetics: http://rgenetics.org Galaxy Tools %s %s\n<ol>' % (prog, timenow()))
         for i, data in enumerate( flist ):
             f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))

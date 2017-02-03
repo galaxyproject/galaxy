@@ -1,8 +1,7 @@
-from galaxy import exceptions
-from galaxy import web
-from galaxy import model
-
 import logging
+
+from galaxy import exceptions, model, web
+
 log = logging.getLogger( __name__ )
 
 ERROR_MESSAGE_UNKNOWN_SRC = "Unknown dataset source (src) %s."
@@ -77,7 +76,7 @@ def dictify_dataset_collection_instance( dataset_collection_instance, parent, se
         dict_value[ 'url' ] = web.url_for( 'library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id )
     if view == "element":
         collection = dataset_collection_instance.collection
-        dict_value[ 'elements' ] = map( dictify_element, collection.elements )
+        dict_value[ 'elements' ] = [ dictify_element(_) for _ in collection.elements ]
         dict_value[ 'populated' ] = collection.populated
     security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
@@ -89,10 +88,11 @@ def dictify_element( element ):
     if element.child_collection:
         # Recursively yield elements for each nested collection...
         child_collection = element.child_collection
-        object_detials[ "elements" ] = map( dictify_element, child_collection.elements )
+        object_detials[ "elements" ] = [ dictify_element(_) for _ in child_collection.elements ]
         object_detials[ "populated" ] = child_collection.populated
 
     dictified[ "object" ] = object_detials
     return dictified
 
-__all__ = [ api_payload_to_create_params, dictify_dataset_collection_instance ]
+
+__all__ = ( 'api_payload_to_create_params', 'dictify_dataset_collection_instance' )

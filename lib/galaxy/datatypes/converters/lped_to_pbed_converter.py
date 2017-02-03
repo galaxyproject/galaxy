@@ -4,10 +4,12 @@
 # eg lped/eigen/fbat/snpmatrix all to pbed
 # and pbed to lped/eigen/fbat/snpmatrix ?
 # that's a lot of converters
-import sys
+from __future__ import print_function
+
 import os
-import time
 import subprocess
+import sys
+import time
 
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'
@@ -68,7 +70,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     outroot = os.path.join(outfilepath, basename)
     missval = getMissval(inped=pedf)
     if not missval:
-        print '### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf
+        print('### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf)
         missval = '0'
     cl = '%s --noweb --file %s --make-bed --out %s --missing-genotype %s' % (plink, inpedfilepath, outroot, missval)
     p = subprocess.Popen(cl, shell=True, cwd=outfilepath)
@@ -79,7 +81,7 @@ def main():
     """
     need to work with rgenetics composite datatypes
     so in and out are html files with data in extrafiles path
-    <command interpreter="python">lped_to_pbed_converter.py '$input1/$input1.metadata.base_name'
+    <command>python '$__tool_directory__/lped_to_pbed_converter.py' '$input1/$input1.metadata.base_name'
     '$output1' '$output1.extra_files_path' '${GALAXY_DATA_INDEX_DIR}/rg/bin/plink'
     </command>
     """
@@ -100,7 +102,7 @@ def main():
     with open(outhtmlname, 'w') as f:
         f.write(galhtmlprefix % prog)
         s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
-        print s
+        print(s)
         f.write('<div>%s\n<ol>' % (s))
         for i, data in enumerate( flist ):
             f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))

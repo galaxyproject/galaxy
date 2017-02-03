@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -19,14 +21,15 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print ""
-    print "========================================"
-    print """This script creates a job_to_output_library_dataset table for allowing library
+    print("")
+    print("========================================")
+    print("""This script creates a job_to_output_library_dataset table for allowing library
 uploads to run as regular jobs.  To support this, a library_folder_id column is
 added to the job table, and library_folder/output_library_datasets relations
 are added to the Job object.  An index is also added to the dataset.state
-column."""
-    print "========================================"
+column.""")
+    print("========================================")
+
 
 JobToOutputLibraryDatasetAssociation_table = Table( "job_to_output_library_dataset", metadata,
                                                     Column( "id", Integer, primary_key=True ),
@@ -44,7 +47,7 @@ def upgrade(migrate_engine):
     try:
         JobToOutputLibraryDatasetAssociation_table.create()
     except Exception as e:
-        print "Creating job_to_output_library_dataset table failed: %s" % str( e )
+        print("Creating job_to_output_library_dataset table failed: %s" % str( e ))
         log.debug( "Creating job_to_output_library_dataset table failed: %s" % str( e ) )
     # Create the library_folder_id column
     try:
@@ -86,7 +89,7 @@ def upgrade(migrate_engine):
     try:
         i.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Adding index 'ix_dataset_state' to dataset table failed: %s" % str( e ) )
 
 
@@ -109,7 +112,7 @@ def downgrade(migrate_engine):
     try:
         JobToOutputLibraryDatasetAssociation_table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Dropping job_to_output_library_dataset table failed: %s" % str( e ) )
     # Drop the ix_dataset_state index
     try:
@@ -121,5 +124,5 @@ def downgrade(migrate_engine):
     try:
         i.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.debug( "Dropping index 'ix_dataset_state' from dataset table failed: %s" % str( e ) )

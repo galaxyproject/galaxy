@@ -1,11 +1,10 @@
 from unittest import TestCase
-
-from galaxy import model
-from galaxy.tools.parameters import basic
-from galaxy.util import bunch
 from xml.etree.ElementTree import XML
 
 import tools_support
+from galaxy import model
+from galaxy.tools.parameters import basic
+from galaxy.util import bunch
 
 
 class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
@@ -37,13 +36,13 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_parse_help_and_label(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" label="x" help="y" />
+            <param type="text" name="texti" value="mydefault" label="x" help="y" />
         """)
         assert param.label == "x"
         assert param.help == "y"
 
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault">
+            <param type="text" name="texti" value="mydefault">
                 <label>x2</label>
                 <help>y2</help>
             </param>
@@ -53,7 +52,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_parse_sanitizers(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault">
+            <param type="text" name="texti" value="mydefault">
               <sanitizer invalid_char="">
                 <valid initial="string.digits"><add value=","/> </valid>
               </sanitizer>
@@ -66,18 +65,18 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_parse_optional(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" />
+            <param type="text" name="texti" value="mydefault" />
         """)
         assert param.optional is False
 
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" optional="true" />
+            <param type="text" name="texti" value="mydefault" optional="true" />
         """)
         assert param.optional is True
 
     def test_parse_validators(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault">
+            <param type="text" name="texti" value="mydefault">
                 <validator type="unspecified_build" message="no genome?" />
             </param>
         """)
@@ -85,9 +84,8 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_text_params(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" />
+            <param type="text" name="texti" value="mydefault" />
         """)
-        assert param.size == "8"
         assert param.value == "mydefault"
         assert param.type == "text"
         assert not param.area
@@ -96,7 +94,6 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         param = self._parameter_for(xml="""
             <param type="text" name="textarea" area="true" />
         """)
-        assert param.size is None
         assert param.value is None
         assert param.type == "text"
         assert param.area
@@ -138,11 +135,10 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_file_params(self):
         param = self._parameter_for(xml="""
-            <param type="file" name="filep" ajax-upload="true" />
+            <param type="file" name="filep" />
         """)
         assert param.name == "filep"
         assert param.type == "file"
-        assert param.ajax
 
     def test_ftpfile_params(self):
         param = self._parameter_for(xml="""

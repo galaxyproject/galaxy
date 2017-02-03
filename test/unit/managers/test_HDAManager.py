@@ -1,22 +1,15 @@
 # -*- coding: utf-8 -*-
-import os
-import imp
 import unittest
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-
 import sqlalchemy
+from six import string_types
 
-from galaxy import model
-from galaxy import exceptions
-
-from base import BaseTestCase
-
-from galaxy.managers.histories import HistoryManager
-from galaxy.managers.datasets import DatasetManager
+from galaxy import exceptions, model
 from galaxy.managers import hdas
+from galaxy.managers.datasets import DatasetManager
+from galaxy.managers.histories import HistoryManager
 
+from .base import BaseTestCase
 
 # =============================================================================
 default_password = '123456'
@@ -353,6 +346,7 @@ class HDAManagerTestCase( HDATestCase ):
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
 
+
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
 
@@ -429,11 +423,11 @@ class HDASerializerTestCase( HDATestCase ):
         self.assertIsInstance( serialized[ 'dataset' ], dict )
         self.assertEncodedId( serialized[ 'dataset_id' ] )
         self.assertUUID( serialized[ 'uuid' ] )
-        self.assertIsInstance( serialized[ 'file_name' ], basestring )
-        self.assertIsInstance( serialized[ 'extra_files_path' ], basestring )
+        self.assertIsInstance( serialized[ 'file_name' ], string_types )
+        self.assertIsInstance( serialized[ 'extra_files_path' ], string_types )
         self.assertIsInstance( serialized[ 'size' ], int )
         self.assertIsInstance( serialized[ 'file_size' ], int )
-        self.assertIsInstance( serialized[ 'nice_size' ], basestring )
+        self.assertIsInstance( serialized[ 'nice_size' ], string_types )
         # TODO: these should be tested w/copy
         self.assertNullableEncodedId( serialized[ 'copied_from_history_dataset_association_id'] )
         self.assertNullableEncodedId( serialized[ 'copied_from_library_dataset_dataset_association_id'] )
@@ -443,8 +437,8 @@ class HDASerializerTestCase( HDATestCase ):
         self.assertIsInstance( serialized[ 'meta_files' ], list )
         self.assertNullableEncodedId( serialized[ 'parent_id'] )
         self.assertEqual( serialized[ 'designation' ], None )
-        self.assertIsInstance( serialized[ 'genome_build' ], basestring )
-        self.assertIsInstance( serialized[ 'data_type' ], basestring )
+        self.assertIsInstance( serialized[ 'genome_build' ], string_types )
+        self.assertIsInstance( serialized[ 'data_type' ], string_types )
 
         # hda
         self.assertEncodedId( serialized[ 'history_id' ] )
@@ -469,9 +463,9 @@ class HDASerializerTestCase( HDATestCase ):
         self.assertEqual( serialized[ 'api_type' ], 'file' )
         self.assertEqual( serialized[ 'type' ], 'file' )
 
-        self.assertIsInstance( serialized[ 'url' ], basestring )
+        self.assertIsInstance( serialized[ 'url' ], string_types )
         self.assertIsInstance( serialized[ 'urls' ], dict )
-        self.assertIsInstance( serialized[ 'download_url' ], basestring )
+        self.assertIsInstance( serialized[ 'download_url' ], string_types )
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
@@ -579,7 +573,7 @@ class HDADeserializerTestCase( HDATestCase ):
     def test_deserialize_genome_build( self ):
         hda = self._create_vanilla_hda()
 
-        self.assertIsInstance( hda.dbkey, basestring )
+        self.assertIsInstance( hda.dbkey, string_types )
         self.log( 'should deserialize to "?" from None' )
         self.hda_deserializer.deserialize( hda, { 'genome_build': None } )
         self.assertEqual( hda.dbkey, '?' )

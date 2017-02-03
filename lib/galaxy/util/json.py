@@ -1,16 +1,16 @@
 from __future__ import absolute_import
 
-__all__ = [ "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
-
-import copy
 import collections
+import copy
 import json
 import logging
 import math
 import random
 import string
 
-from six import text_type, string_types, iteritems
+from six import iteritems, string_types, text_type
+
+__all__ = ( "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" )
 
 log = logging.getLogger( __name__ )
 
@@ -51,6 +51,18 @@ def swap_inf_nan( val ):
             return val
     else:
         return val
+
+
+def safe_loads( arg ):
+    """
+    This is a wrapper around loads that returns the parsed value instead of
+    raising a value error.
+    """
+    try:
+        loaded = json.loads( arg )
+    except ( TypeError, ValueError ):
+        loaded = arg
+    return loaded
 
 
 def safe_dumps( *args, **kwargs ):

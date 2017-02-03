@@ -3,7 +3,7 @@
 
 Launch this script by running ``run_tests.sh -t`` from GALAXY_ROOT.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import os
 import string
@@ -15,12 +15,12 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[0:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
 from base import driver_util
-log = driver_util.build_logger()
 
 # This is for the tool shed application.
-from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 from galaxy.web import buildapp as galaxybuildapp
+from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 
+log = driver_util.build_logger()
 
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>
@@ -76,7 +76,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
         galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
         hgweb_config_dir = hgweb_config_file_path
         os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
-        print "Directory location for hgweb.config:", hgweb_config_dir
+        print("Directory location for hgweb.config:", hgweb_config_dir)
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
         kwargs = dict( admin_users='test@bx.psu.edu',
                        allow_user_creation=True,
@@ -152,7 +152,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
                     update_integrated_tool_panel=True,
                 )
             )
-            print "Galaxy database connection:", kwargs["database_connection"]
+            print("Galaxy database connection:", kwargs["database_connection"])
 
             # ---- Run galaxy webserver ------------------------------------------------------
             galaxyapp = driver_util.build_galaxy_app(kwargs)

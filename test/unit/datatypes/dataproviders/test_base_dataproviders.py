@@ -2,20 +2,20 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
-
-import os.path
-import imp
-import unittest
-import StringIO
-
 import logging
-log = logging.getLogger( __name__ )
+import os.path
+import sys
+import unittest
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
-import tempfilecache
+from six import StringIO
 
 from galaxy.datatypes.dataproviders import base, exceptions
+
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import tempfilecache, utility
+
+log = logging.getLogger( __name__ )
 
 # TODO: fix imports there after dist and retry
 # TODO: fix off by ones in FilteredDataProvider counters
@@ -52,7 +52,7 @@ class BaseTestCase( unittest.TestCase ):
 
     def format_tmpfile_contents( self, contents=None ):
         contents = contents or self.default_file_contents
-        contents = test_utils.clean_multiline_string( contents )
+        contents = utility.clean_multiline_string( contents )
         log.debug( 'file contents:\n%s', contents )
         return contents
 
@@ -80,23 +80,23 @@ class Test_BaseDataProvider( BaseTestCase ):
         return ( contents, provider, data )
 
     def test_iterators( self ):
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
     def test_validate_source( self ):
         """validate_source should throw an error if the source doesn't have attr '__iter__'
@@ -111,7 +111,7 @@ class Test_BaseDataProvider( BaseTestCase ):
     def test_writemethods( self ):
         """should throw an error if any write methods are called
         """
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
 
         # should throw error
@@ -126,21 +126,21 @@ class Test_BaseDataProvider( BaseTestCase ):
     def test_readlines( self ):
         """readlines should return all the data in list form
         """
-        source = ( str( x ) for x in xrange( 1, 10 ) )
+        source = ( str( x ) for x in range( 1, 10 ) )
         provider = self.provider_class( source )
         data = provider.readlines()
         log.debug( 'data: %s', str( data ) )
-        self.assertEqual( data, [ str( x ) for x in xrange( 1, 10 ) ] )
+        self.assertEqual( data, [ str( x ) for x in range( 1, 10 ) ] )
 
     def test_stringio( self ):
         """should work with StringIO
         """
-        contents = test_utils.clean_multiline_string( """
+        contents = utility.clean_multiline_string( """
             One
             Two
             Three
         """ )
-        source = StringIO.StringIO( contents )
+        source = StringIO( contents )
         provider = self.provider_class( source )
         data = list( provider )
         log.debug( 'data: %s', str( data ) )
@@ -154,7 +154,7 @@ class Test_BaseDataProvider( BaseTestCase ):
         ( contents, provider, data ) = self.contents_provider_and_data()
         self.assertEqual( data, self.parses_default_content_as() )
         # provider should call close on file
-        self.assertTrue( isinstance( provider.source, file ) )
+        self.assertTrue( hasattr(provider.source, 'read'))
         self.assertTrue( provider.source.closed )
 
 
@@ -297,7 +297,7 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
     def contents_and_tmpfile( self, contents=None ):
         # TODO: hmmmm...
         contents = contents or self.default_file_contents
-        contents = test_utils.clean_multiline_string( contents )
+        contents = utility.clean_multiline_string( contents )
         return ( contents, self.tmpfiles.create_tmpfile( contents ) )
 
     def test_multiple_sources( self ):
@@ -323,7 +323,7 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [ test_utils.clean_multiline_string( c ) for c in contents ]
+        contents = [ utility.clean_multiline_string( c ) for c in contents ]
         source_list = [ open( self.tmpfiles.create_tmpfile( c ) ) for c in contents ]
 
         provider = self.provider_class( source_list )
@@ -355,7 +355,7 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [ test_utils.clean_multiline_string( c ) for c in contents ]
+        contents = [ utility.clean_multiline_string( c ) for c in contents ]
         source_list = [ open( self.tmpfiles.create_tmpfile( c ) ) for c in contents ]
 
         def no_Fs( string ):

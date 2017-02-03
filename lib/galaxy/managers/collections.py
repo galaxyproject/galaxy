@@ -126,7 +126,13 @@ class DatasetCollectionManager( object ):
             if collection_type_description.has_subcollections( ):
                 # Nested collection - recursively create collections and update identifiers.
                 self.__recursively_create_collections( trans, element_identifiers )
-            elements = self.__load_elements( trans, element_identifiers )
+            new_collection = False
+            for element_identifier in element_identifiers:
+                if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
+                    new_collection = True
+                    elements = self.__load_elements(trans, element_identifier['element_identifiers'])
+            if not new_collection:
+                elements = self.__load_elements( trans, element_identifiers )
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:

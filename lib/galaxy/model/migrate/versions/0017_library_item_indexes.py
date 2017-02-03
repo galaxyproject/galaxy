@@ -2,6 +2,8 @@
 This script adds 3 indexes to table columns: library_folder.name,
 library_dataset.name, library_dataset_dataset_association.name.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -18,10 +20,10 @@ metadata = MetaData()
 
 
 def display_migration_details():
-    print "========================================"
-    print "This script adds 3 indexes to table columns: library_folder.name,"
-    print "library_dataset.name, library_dataset_dataset_association.name."
-    print "========================================"
+    print("========================================")
+    print("This script adds 3 indexes to table columns: library_folder.name,")
+    print("library_dataset.name, library_dataset_dataset_association.name.")
+    print("========================================")
 
 
 def upgrade(migrate_engine):

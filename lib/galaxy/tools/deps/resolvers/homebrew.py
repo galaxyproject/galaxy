@@ -14,7 +14,7 @@ incompatible changes coming.
 
 
 from .resolver_mixins import UsesHomebrewMixin
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY
+from ..resolvers import DependencyResolver, NullDependency
 
 # TODO: Implement prefer version linked...
 PREFER_VERSION_LINKED = 'linked'
@@ -39,9 +39,11 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
 
         self._init_homebrew(**kwds)
 
-    def resolve(self, name, version, type, **kwds):
+    def resolve(self, requirement, **kwds):
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         if version is None or self.versionless:
             return self._find_dep_default(name, version)
@@ -53,4 +55,4 @@ def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
 
-__all__ = ['HomebrewDependencyResolver']
+__all__ = ('HomebrewDependencyResolver', )

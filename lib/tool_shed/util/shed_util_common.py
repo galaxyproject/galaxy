@@ -8,13 +8,17 @@ import string
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
-import tool_shed.util.repository_util
+import galaxy.tools.deps.requirements
+
 from galaxy import util
-from galaxy.web import url_for
 from galaxy.util import checkers
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
+from galaxy.web import url_for
+from tool_shed.util import (
+    basic_util,
+    common_util,
+    hg_util,
+    repository_util
+)
 
 log = logging.getLogger( __name__ )
 
@@ -180,6 +184,57 @@ def get_category_by_name( app, name ):
         return None
 
 
+def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_info_dicts=None):
+    """
+    Contact tool_shed_url for a list of requirements for a repository or a list of repositories.
+    Returns a list of requirements, where each requirement is a dictionary with name and version as keys.
+    """
+    if not repositories and not repo_info_dicts:
+        raise Exception("Need to pass either repository or repo_info_dicts")
+    if repositories:
+        if not isinstance(repositories, list):
+            repositories = [repositories]
+        repository_params = [{'name': repository.name,
+                             'owner': repository.owner,
+                             'changeset_revision': repository.changeset_revision} for repository in repositories]
+    else:
+        if not isinstance(repo_info_dicts, list):
+            repo_info_dicts = [repo_info_dicts]
+        repository_params = []
+        for repo_info_dict in repo_info_dicts:
+            for name, repo_info_tuple in repo_info_dict.items():
+                # repo_info_tuple is a list, but keep terminology
+                owner = repo_info_tuple[4]
+                changeset_revision = repo_info_tuple[2]
+                repository_params.append({'name': name,
+                                          'owner': owner,
+                                          'changeset_revision': changeset_revision})
+    pathspec = ["api", "repositories", "get_repository_revision_install_info"]
+    tools = []
+    for params in repository_params:
+        response = util.url_get(tool_shed_url,
+                                password_mgr=app.tool_shed_registry.url_auth( tool_shed_url ),
+                                pathspec=pathspec,
+                                params=params
+                                )
+        json_response = json.loads(response)
+        valid_tools = json_response[1].get('valid_tools', [])
+        if valid_tools:
+            tools.extend(valid_tools)
+    return get_requirements_from_tools(tools)
+
+
+def get_requirements_from_tools(tools):
+    return {tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
+
+
+def get_requirements_from_repository(repository):
+    if not repository.includes_tools:
+        return {}
+    else:
+        return get_requirements_from_tools(repository.metadata.get('tools', []))
+
+
 def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     """
     Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the
@@ -300,7 +355,7 @@ def get_repository_from_refresh_on_change( app, **kwd ):
         changeset_revision_str = 'changeset_revision_'
         if k.startswith( changeset_revision_str ):
             repository_id = app.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
-            repository = tool_shed.util.repository_util.get_repository_in_tool_shed( app, repository_id )
+            repository = repository_util.get_repository_in_tool_shed( app, repository_id )
             if repository.tip( app ) != v:
                 return v, repository
     # This should never be reached - raise an exception?
@@ -403,7 +458,7 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
     """
     sa_session = app.model.context.current
     repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-    sharable_link = tool_shed.util.repository_util.generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None )
+    sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None )
     smtp_server = app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
         # Send email alert to users that want them.
@@ -505,7 +560,7 @@ def is_path_within_repo( app, path, repository_id ):
     Detect whether the given path is within the repository folder on the disk.
     Use to filter malicious symlinks targeting outside paths.
     """
-    repo_path = os.path.abspath( tool_shed.util.repository_util.get_repository_by_id( app, repository_id ).repo_path( app ) )
+    repo_path = os.path.abspath( repository_util.get_repository_by_id( app, repository_id ).repo_path( app ) )
     resolved_path = os.path.realpath( path )
     return os.path.commonprefix( [ repo_path, resolved_path ] ) == repo_path
 
@@ -555,7 +610,7 @@ def set_image_paths( app, encoded_repository_id, text ):
     return the path to it that will enable the caller to open the file.
     """
     if text:
-        if tool_shed.util.repository_util.is_tool_shed_client( app ):
+        if repository_util.is_tool_shed_client( app ):
             route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
         else:
             # We're in the tool shed.

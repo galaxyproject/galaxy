@@ -1,9 +1,13 @@
 """ Handle details of tool tagging - perhaps a deprecated feature.
 """
-from abc import ABCMeta
-from abc import abstractmethod
-
 import logging
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
+
 log = logging.getLogger( __name__ )
 
 
@@ -17,8 +21,8 @@ def tool_tag_manager( app ):
         return NullToolTagManager()
 
 
+@six.add_metaclass(ABCMeta)
 class AbstractToolTagManager( object ):
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def reset_tags( self ):

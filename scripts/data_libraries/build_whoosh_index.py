@@ -8,9 +8,13 @@ data library search section for more details.
 Run from the ~/scripts/data_libraries directory:
 %sh build_whoosh_index.sh
 """
-import ConfigParser
+from __future__ import print_function
+
 import os
 import sys
+
+from six import text_type
+from six.moves import configparser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
@@ -33,8 +37,8 @@ def build_index( sa_session, whoosh_index_dir ):
     writer = index.writer()
 
     def to_unicode( a_basestr ):
-        if type( a_basestr ) is str:
-            return unicode( a_basestr, 'utf-8' )
+        if not isinstance(a_basestr, text_type):
+            return text_type( a_basestr, 'utf-8' )
         else:
             return a_basestr
     lddas_indexed = 0
@@ -46,7 +50,7 @@ def build_index( sa_session, whoosh_index_dir ):
                              message=to_unicode( message ) )
         lddas_indexed += 1
     writer.commit()
-    print "Number of active library datasets indexed: ", lddas_indexed
+    print("Number of active library datasets indexed: ", lddas_indexed)
 
 
 def get_lddas( sa_session ):
@@ -67,7 +71,7 @@ def get_lddas( sa_session ):
 
 
 def get_sa_session_and_needed_config_settings( ini_file ):
-    conf_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
+    conf_parser = configparser.ConfigParser( { 'here': os.getcwd() } )
     conf_parser.read( ini_file )
     kwds = dict()
     for key, value in conf_parser.items( "app:main" ):
@@ -78,6 +82,7 @@ def get_sa_session_and_needed_config_settings( ini_file ):
         db_con = "sqlite:///%s?isolation_level=IMMEDIATE" % config_settings.database
     model = galaxy.model.mapping.init( config_settings.file_path, db_con, engine_options={}, create_tables=False )
     return model.context.current, config_settings
+
 
 if __name__ == "__main__":
     if whoosh_search_enabled:

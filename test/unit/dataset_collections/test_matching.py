@@ -1,7 +1,7 @@
 from galaxy.dataset_collections import (
-    type_description,
-    registry,
     matching,
+    registry,
+    type_description,
 )
 
 TYPE_REGISTRY = registry.DatasetCollectionTypesRegistry( None )
@@ -98,7 +98,7 @@ def list_instance( collection_type="list", elements=None, ids=None ):
     if not elements:
         if ids is None:
             ids = [ "data1", "data2" ]
-        elements = map(hda_element, ids)
+        elements = [hda_element(_) for _ in ids]
     list_collection_instance = collection_instance(
         collection_type=collection_type,
         elements=elements

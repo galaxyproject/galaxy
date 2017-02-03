@@ -1,6 +1,8 @@
 """
 Migration script for workflow request tables.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -62,7 +64,7 @@ TABLES = [
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     for table in TABLES:
@@ -112,7 +114,7 @@ def __add_column(column, table_name, metadata, **kwds):
         table = Table( table_name, metadata, autoload=True )
         column.create( table, **kwds )
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.exception( "Adding column %s column failed." % column)
 
 
@@ -121,7 +123,7 @@ def __drop_column( column_name, table_name, metadata ):
         table = Table( table_name, metadata, autoload=True )
         getattr( table.c, column_name ).drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.exception( "Dropping column %s failed." % column_name )
 
 
@@ -129,7 +131,7 @@ def __create(table):
     try:
         table.create()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.exception("Creating %s table failed: %s" % (table.name, str( e ) ) )
 
 
@@ -137,5 +139,5 @@ def __drop(table):
     try:
         table.drop()
     except Exception as e:
-        print str(e)
+        print(str(e))
         log.exception("Dropping %s table failed: %s" % (table.name, str( e ) ) )

@@ -2,6 +2,7 @@
 If the current installed python version is not 2.7, prints an error
 message to stderr and returns 1
 """
+from __future__ import print_function
 
 import sys
 
@@ -16,13 +17,14 @@ def check_python():
     try:
         assert sys.version_info[:2] == ( 2, 7 )
     except AssertionError:
-        print >>sys.stderr, msg
+        print(msg, file=sys.stderr)
         raise
+
 
 if __name__ == '__main__':
     rval = 0
     try:
         check_python()
-    except StandardError:
+    except Exception:
         rval = 1
     sys.exit( rval )

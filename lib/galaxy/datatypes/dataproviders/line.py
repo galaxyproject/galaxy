@@ -4,7 +4,7 @@ Dataproviders that iterate over lines from their sources.
 
 import collections
 import re
-import base
+from . import base
 
 import logging
 log = logging.getLogger( __name__ )
@@ -88,7 +88,7 @@ class RegexLineDataProvider( FilteredLineDataProvider ):
     of regexs.
 
     .. note:: the regex matches are effectively OR'd (if **any** regex matches
-    the line it is considered valid and will be provided).
+        the line it is considered valid and will be provided).
     """
     settings = {
         'regex_list'    : 'list:escaped',
@@ -241,7 +241,7 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         Called per block (just before providing).
         """
         # empty block_lines and assemble block
-        return list( ( self.block_lines.popleft() for i in xrange( len( self.block_lines ) ) ) )
+        return list( ( self.block_lines.popleft() for i in range( len( self.block_lines ) ) ) )
 
     def filter_block( self, block ):
         """

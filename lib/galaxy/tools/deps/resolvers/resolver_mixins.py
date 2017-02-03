@@ -1,6 +1,11 @@
 import os
-from ..brew_exts import DEFAULT_HOMEBREW_ROOT, recipe_cellar_path, build_env_statements
-from ..resolvers import INDETERMINATE_DEPENDENCY, Dependency
+
+from ..brew_exts import (
+    build_env_statements,
+    DEFAULT_HOMEBREW_ROOT,
+    recipe_cellar_path,
+)
+from ..resolvers import Dependency, NullDependency
 
 
 class UsesHomebrewMixin:
@@ -15,7 +20,7 @@ class UsesHomebrewMixin:
     def _find_dep_versioned(self, name, version):
         recipe_path = recipe_cellar_path(self.cellar_root, name, version)
         if not os.path.exists(recipe_path) or not os.path.isdir(recipe_path):
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         commands = build_env_statements(self.cellar_root, recipe_path, relaxed=True)
         return HomebrewDependency(commands)
@@ -23,7 +28,7 @@ class UsesHomebrewMixin:
     def _find_dep_default(self, name, version):
         installed_versions = self._installed_versions(name)
         if not installed_versions:
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         # Just grab newest installed version - may make sense some day to find
         # the linked version instead.
@@ -36,7 +41,7 @@ class UsesHomebrewMixin:
             return []
 
         names = os.listdir(recipe_base_path)
-        return filter(lambda n: os.path.isdir(os.path.join(recipe_base_path, n)), names)
+        return [n for n in names if os.path.isdir(os.path.join(recipe_base_path, n))]
 
 
 class UsesToolDependencyDirMixin:
@@ -48,14 +53,10 @@ class UsesToolDependencyDirMixin:
 class UsesInstalledRepositoriesMixin:
 
     def _get_installed_dependency( self, name, type, version=None, **kwds ):
-        installed_tool_dependencies = kwds.get("installed_tool_dependencies", [])
-        for installed_tool_dependency in (installed_tool_dependencies or []):
-            name_and_type_equal = installed_tool_dependency.name == name and installed_tool_dependency.type == type
-            if version:
-                if name_and_type_equal and installed_tool_dependency.version == version:
-                    return installed_tool_dependency
-            else:
-                if name_and_type_equal:
+        installed_tool_dependencies = kwds.get("installed_tool_dependencies") or []
+        for installed_tool_dependency in installed_tool_dependencies:
+            if installed_tool_dependency.name == name and installed_tool_dependency.type == type:
+                if not version or installed_tool_dependency.version == version:
                     return installed_tool_dependency
         return None
 

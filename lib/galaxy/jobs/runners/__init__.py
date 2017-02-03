@@ -198,6 +198,8 @@ class BaseJobRunner( object ):
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
                             modify_command_for_container=True ):
         container = self._find_container( job_wrapper )
+        if not container and job_wrapper.requires_containerization:
+            raise Exception("Failed to find a container when required, contact Galaxy admin.")
         return build_command(
             self,
             job_wrapper,
@@ -207,13 +209,18 @@ class BaseJobRunner( object ):
             container=container
         )
 
-    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
+    def get_work_dir_outputs( self, job_wrapper, job_working_directory=None, tool_working_directory=None ):
         """
         Returns list of pairs (source_file, destination) describing path
         to work_dir output file and ultimate destination.
         """
-        if not job_working_directory:
-            job_working_directory = os.path.abspath( job_wrapper.working_directory )
+        if tool_working_directory is not None and job_working_directory is not None:
+            raise Exception("get_work_dir_outputs called with both a job and tool working directory, only one may be specified")
+
+        if tool_working_directory is None:
+            if not job_working_directory:
+                job_working_directory = os.path.abspath( job_wrapper.working_directory )
+            tool_working_directory = os.path.join(job_working_directory, "working")
 
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
@@ -234,9 +241,9 @@ class BaseJobRunner( object ):
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?
-                    source_file = os.path.join( job_working_directory, 'working', hda_tool_output.from_work_dir )
+                    source_file = os.path.join( tool_working_directory, hda_tool_output.from_work_dir )
                     destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
-                    if in_directory( source_file, job_working_directory ):
+                    if in_directory( source_file, tool_working_directory ):
                         output_pairs.append( ( source_file, destination ) )
                     else:
                         # Security violation.
@@ -307,6 +314,7 @@ class BaseJobRunner( object ):
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
             shell=job_wrapper.shell,
+            preserve_python_environment=job_wrapper.tool.requires_galaxy_python_environment,
         )
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
@@ -323,10 +331,14 @@ class BaseJobRunner( object ):
         job_wrapper,
         compute_working_directory=None,
         compute_tool_directory=None,
-        compute_job_directory=None
+        compute_job_directory=None,
     ):
+        job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
             compute_working_directory = job_wrapper.tool_working_directory
+
+        if not compute_job_directory:
+            compute_job_directory = job_wrapper.working_directory
 
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir
@@ -334,7 +346,12 @@ class BaseJobRunner( object ):
         tool = job_wrapper.tool
         from galaxy.tools.deps import containers
         tool_info = containers.ToolInfo(tool.containers, tool.requirements)
-        job_info = containers.JobInfo(compute_working_directory, compute_tool_directory, compute_job_directory)
+        job_info = containers.JobInfo(
+            compute_working_directory,
+            compute_tool_directory,
+            compute_job_directory,
+            job_directory_type,
+        )
 
         destination_info = job_wrapper.job_destination.params
         return self.app.container_finder.find_container(
@@ -352,6 +369,17 @@ class BaseJobRunner( object ):
         except:
             log.exception('Caught exception in runner state handler:')
 
+    def fail_job( self, job_state, exception=False ):
+        if getattr( job_state, 'stop_job', True ):
+            self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
+        self._handle_runner_state( 'failure', job_state )
+        # Not convinced this is the best way to indicate this state, but
+        # something necessary
+        if not job_state.runner_state_handled:
+            job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ), exception=exception )
+            if job_state.job_wrapper.cleanup_job == "always":
+                job_state.cleanup()
+
     def mark_as_resubmitted( self, job_state, info=None ):
         job_state.job_wrapper.mark_as_resubmitted( info=info )
         if not self.app.config.track_jobs_in_database:
@@ -366,12 +394,15 @@ class JobState( object ):
     runner_states = Bunch(
         WALLTIME_REACHED='walltime_reached',
         MEMORY_LIMIT_REACHED='memory_limit_reached',
+        UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
         OUTPUT_SIZE_LIMIT='output_size_limit'
     )
 
-    def __init__( self ):
+    def __init__( self, job_wrapper, job_destination ):
         self.runner_state_handled = False
+        self.job_wrapper = job_wrapper
+        self.job_destination = job_destination
 
     def set_defaults( self, files_dir ):
         if self.job_wrapper is not None:
@@ -405,16 +436,14 @@ class AsynchronousJobState( JobState ):
     """
 
     def __init__( self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None  ):
-        super( AsynchronousJobState, self ).__init__()
+        super( AsynchronousJobState, self ).__init__( job_wrapper, job_destination )
         self.old_state = None
         self._running = False
         self.check_count = 0
         self.start_time = None
 
-        self.job_wrapper = job_wrapper
         # job_id is the DRM's job id, not the Galaxy job id
         self.job_id = job_id
-        self.job_destination = job_destination
 
         self.job_file = job_file
         self.output_file = output_file
@@ -596,17 +625,6 @@ class AsynchronousJobRunner( BaseJobRunner ):
         except:
             log.exception( "(%s/%s) Job wrapper finish method failed" % ( galaxy_id_tag, external_job_id ) )
             job_state.job_wrapper.fail( "Unable to finish job", exception=True )
-
-    def fail_job( self, job_state ):
-        if getattr( job_state, 'stop_job', True ):
-            self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        self._handle_runner_state( 'failure', job_state )
-        # Not convinced this is the best way to indicate this state, but
-        # something necessary
-        if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
-            if job_state.job_wrapper.cleanup_job == "always":
-                job_state.cleanup()
 
     def mark_as_finished(self, job_state):
         self.work_queue.put( ( self.finish_job, job_state ) )

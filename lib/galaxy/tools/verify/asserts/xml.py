@@ -1,11 +1,12 @@
 from __future__ import absolute_import
-import xml.etree
+
 import re
+import xml.etree
 
 
 # Helper functions used to work with XML output.
 def to_xml(output):
-    return xml.etree.fromstring(output)
+    return xml.etree.ElementTree.fromstring(output)
 
 
 def xml_find_text(output, path):

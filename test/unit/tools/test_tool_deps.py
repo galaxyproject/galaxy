@@ -1,14 +1,27 @@
-import tempfile
 import os.path
-from stat import S_IXUSR
-from os import makedirs, stat, symlink, chmod, environ
-from shutil import rmtree
-from galaxy.tools.deps import DependencyManager, INDETERMINATE_DEPENDENCY
-from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
-from galaxy.tools.deps.resolvers.modules import ModuleDependencyResolver, ModuleDependency
-from galaxy.util.bunch import Bunch
+import tempfile
+
 from contextlib import contextmanager
-from subprocess import Popen, PIPE
+from os import (
+    chmod,
+    environ,
+    makedirs,
+    stat,
+    symlink,
+)
+from shutil import rmtree
+from stat import S_IXUSR
+from subprocess import PIPE, Popen
+
+from galaxy.tools.deps import DependencyManager
+from galaxy.tools.deps.requirements import (
+    ToolRequirement,
+    ToolRequirements
+)
+from galaxy.tools.deps.resolvers import NullDependency
+from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
+from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
+from galaxy.util.bunch import Bunch
 
 
 def test_tool_dependencies():
@@ -27,7 +40,7 @@ def test_tool_dependencies():
             if sub == "env.sh":
                 __touch( os.path.join( p, "env.sh" ) )
 
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         dependency = dm.find_dep( "dep1", "1.0" )
         assert dependency.script == os.path.join( base_path, 'dep1', '1.0', 'env.sh' )
         assert dependency.path == os.path.join( base_path, 'dep1', '1.0' )
@@ -57,7 +70,7 @@ TEST_VERSION = "0.5.9"
 def test_toolshed_set_enviornment_requiremetns():
     with __test_base_path() as base_path:
         test_repo = __build_test_repo('set_environment')
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         env_settings_dir = os.path.join(base_path, "environment_settings", TEST_REPO_NAME, TEST_REPO_USER, TEST_REPO_NAME, TEST_REPO_CHANGESET)
         os.makedirs(env_settings_dir)
         dependency = dm.find_dep( TEST_REPO_NAME, version=None, type='set_environment', installed_tool_dependencies=[test_repo] )
@@ -68,7 +81,7 @@ def test_toolshed_set_enviornment_requiremetns():
 def test_toolshed_package_requirements():
     with __test_base_path() as base_path:
         test_repo = __build_test_repo('package', version=TEST_VERSION)
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         package_dir = __build_ts_test_package(base_path)
         dependency = dm.find_dep( TEST_REPO_NAME, version=TEST_VERSION, type='package', installed_tool_dependencies=[test_repo] )
         assert dependency.version == TEST_VERSION
@@ -77,7 +90,7 @@ def test_toolshed_package_requirements():
 
 def test_toolshed_tools_fallback_on_manual_dependencies():
     with __test_base_path() as base_path:
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         env_path = __setup_galaxy_package_dep(base_path, "dep1", "1.0")
         dependency = dm.find_dep( "dep1", version="1.0", type='package', installed_tool_dependencies=[test_repo] )
@@ -87,7 +100,7 @@ def test_toolshed_tools_fallback_on_manual_dependencies():
 
 def test_toolshed_greater_precendence():
     with __test_base_path() as base_path:
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         test_repo = __build_test_repo('package', version=TEST_VERSION)
         ts_package_dir = __build_ts_test_package(base_path)
         gx_env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION)
@@ -103,15 +116,33 @@ def __build_ts_test_package(base_path, script_contents=''):
     return package_dir
 
 
+REQUIREMENT_A = {'name': 'gnuplot',
+                 'type': 'package',
+                 'version': '4.6'}
+REQUIREMENT_B = REQUIREMENT_A.copy()
+REQUIREMENT_B['version'] = '4.7'
+
+
+def test_tool_requirement_equality():
+    a = ToolRequirement.from_dict(REQUIREMENT_A)
+    assert a == ToolRequirement(**REQUIREMENT_A)
+    b = ToolRequirement(**REQUIREMENT_B)
+    assert a != b
+
+
+def test_tool_requirements():
+    tool_requirements_ab = ToolRequirements([REQUIREMENT_A, REQUIREMENT_B])
+    tool_requirements_ab_dup = ToolRequirements([REQUIREMENT_A, REQUIREMENT_B])
+    tool_requirements_b = ToolRequirements([REQUIREMENT_A])
+    assert tool_requirements_ab == ToolRequirements([REQUIREMENT_B, REQUIREMENT_A])
+    assert tool_requirements_ab == ToolRequirements([REQUIREMENT_B, REQUIREMENT_A, REQUIREMENT_A])
+    assert tool_requirements_ab != tool_requirements_b
+    assert len(set([tool_requirements_ab, tool_requirements_ab_dup])) == 1
+
+
 def test_module_dependency_resolver():
     with __test_base_path() as temp_directory:
-        module_script = os.path.join(temp_directory, "modulecmd")
-        __write_script(module_script, '''#!/bin/sh
-cat %s/example_output 1>&2;
-''' % temp_directory)
-        with open(os.path.join(temp_directory, "example_output"), "w") as f:
-            # Subset of module avail from MSI cluster.
-            f.write('''
+        module_script = _setup_module_command(temp_directory, '''
 -------------------------- /soft/modules/modulefiles ---------------------------
 JAGS/3.2.0-gcc45
 JAGS/3.3.0-gcc4.7.2
@@ -131,17 +162,113 @@ advisor/2013/update1    intel/11.1.075          mkl/10.2.1.017
 advisor/2013/update2    intel/11.1.080          mkl/10.2.5.035
 advisor/2013/update3    intel/12.0              mkl/10.2.7.041
 ''')
-        resolver = ModuleDependencyResolver(None, modulecmd=module_script)
-        module = resolver.resolve( name="R", version=None, type="package" )
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script)
+        module = resolver.resolve( ToolRequirement( name="R", version=None, type="package" ) )
         assert module.module_name == "R"
         assert module.module_version is None
 
-        module = resolver.resolve( name="R", version="3.0.1", type="package" )
+        module = resolver.resolve( ToolRequirement( name="R", version="3.0.1", type="package" ) )
         assert module.module_name == "R"
         assert module.module_version == "3.0.1"
 
-        module = resolver.resolve( name="R", version="3.0.4", type="package" )
-        assert module == INDETERMINATE_DEPENDENCY
+        module = resolver.resolve( ToolRequirement( name="R", version="3.0.4", type="package" ) )
+        assert isinstance(module, NullDependency)
+
+
+def test_module_resolver_with_mapping():
+    with __test_base_path() as temp_directory:
+        module_script = _setup_module_command(temp_directory, '''
+-------------------------- /soft/modules/modulefiles ---------------------------
+blast/2.24
+''')
+        mapping_file = os.path.join(temp_directory, "mapping")
+        with open(mapping_file, "w") as f:
+            f.write('''
+- from: blast+
+  to: blast
+''')
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast+", version="2.24", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.24", module.module_version
+
+
+def test_module_resolver_with_mapping_specificity_rules():
+    # If a requirement demands a specific version,
+    # do not map to a different version when the version
+    # has not been specified explicitly
+    with __test_base_path() as temp_directory:
+        module_script = _setup_module_command(temp_directory, '''
+-------------------------- /soft/modules/modulefiles ---------------------------
+blast/2.24
+''')
+        mapping_file = os.path.join(temp_directory, "mapping")
+        with open(mapping_file, "w") as f:
+            f.write('''
+- from:
+    name: blast
+    unversioned: true
+  to:
+    name: blast
+    version: 2.24
+''')
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.24", module.module_version  # successful resolution, because Requirement does not ask for a specific version
+        module = resolver.resolve( ToolRequirement( name="blast", version="2.22", type="package" ) )
+        assert isinstance(module, NullDependency)  # NullDependency, because we don't map `version: Null` over a Requirement that asks for a specific version
+
+
+def test_module_resolver_with_mapping_versions():
+    with __test_base_path() as temp_directory:
+        module_script = _setup_module_command(temp_directory, '''
+-------------------------- /soft/modules/modulefiles ---------------------------
+blast/2.22.0-mpi
+blast/2.23
+blast/2.24.0-mpi
+''')
+        mapping_file = os.path.join(temp_directory, "mapping")
+        with open(mapping_file, "w") as f:
+            f.write('''
+- from:
+    name: blast+
+    version: 2.24
+  to:
+    name: blast
+    version: 2.24.0-mpi
+- from:
+    name: blast
+    version: 2.22
+  to:
+    version: 2.22.0-mpi
+''')
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast+", version="2.24", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.24.0-mpi", module.module_version
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast+", version="2.23", type="package" ) )
+        assert isinstance(module, NullDependency)
+
+        module = resolver.resolve( ToolRequirement( name="blast", version="2.22", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.22.0-mpi", module.module_version
+
+
+def _setup_module_command(temp_directory, contents):
+    module_script = os.path.join(temp_directory, "modulecmd")
+    __write_script(module_script, '''#!/bin/sh
+cat %s/example_output 1>&2;
+''' % temp_directory)
+    with open(os.path.join(temp_directory, "example_output"), "w") as f:
+        # Subset of module avail from MSI cluster.
+        f.write(contents)
+    return module_script
 
 
 def test_module_dependency():
@@ -174,7 +301,7 @@ def test_galaxy_dependency_object_script():
         # Create env.sh file that just exports variable FOO and verify it
         # shell_commands export it correctly.
         env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
-        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_VERSION)
+        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_REPO_NAME, TEST_VERSION)
         __assert_foo_exported( dependency.shell_commands( Bunch( type="package" ) ) )
 
 
@@ -182,9 +309,9 @@ def test_shell_commands_built():
     # Test that dependency manager builds valid shell commands for a list of
     # requirements.
     with __test_base_path() as base_path:
-        dm = DependencyManager( default_base_path=base_path )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path )
         __setup_galaxy_package_dep( base_path, TEST_REPO_NAME, TEST_VERSION, contents="export FOO=\"bar\"" )
-        mock_requirements = [ Bunch(type="package", version=TEST_VERSION, name=TEST_REPO_NAME ) ]
+        mock_requirements = ToolRequirements([{'type': 'package', 'version': TEST_VERSION, 'name': TEST_REPO_NAME}])
         commands = dm.dependency_shell_commands( mock_requirements )
         __assert_foo_exported( commands )
 
@@ -374,5 +501,15 @@ def __dependency_manager(xml_content):
         f = tempfile.NamedTemporaryFile()
         f.write(xml_content)
         f.flush()
-        dm = DependencyManager( default_base_path=base_path, conf_file=f.name )
+        dm = __dependency_manager_for_base_path( default_base_path=base_path, conf_file=f.name )
         yield dm
+
+
+def __dependency_manager_for_base_path(default_base_path, conf_file=None ):
+    return DependencyManager( default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False} )
+
+
+class _SimpleDependencyManager(object):
+
+    def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
+        return explicit_resolver_options.get(key)

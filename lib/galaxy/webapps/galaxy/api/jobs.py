@@ -205,6 +205,8 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
         tool = self.app.toolbox.get_tool( job.tool_id, job.tool_version )
+        if tool is None:
+            raise exceptions.ObjectNotFound( "Requested tool not found" )
         if not tool.is_workflow_compatible:
             raise exceptions.ConfigDoesNotAllowException( "Tool '%s' cannot be rerun." % ( job.tool_id ) )
         return tool.to_json(trans, {}, job=job)
@@ -244,7 +246,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     @expose_api
     def create( self, trans, payload, **kwd ):
         """ See the create method in tools.py in order to submit a job. """
-        raise NotImplementedError( 'Please POST to /api/tools instead.' )
+        raise exceptions.NotImplemented( 'Please POST to /api/tools instead.' )
 
     @expose_api
     def search( self, trans, payload, **kwd ):

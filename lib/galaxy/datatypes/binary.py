@@ -1,4 +1,5 @@
 """Binary classes"""
+from __future__ import print_function
 
 import binascii
 import gzip
@@ -11,12 +12,11 @@ import tempfile
 import zipfile
 
 import pysam
-
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
-from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
-from galaxy.util import nice_size, sqlite, which
+from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
+from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from . import data, dataproviders
 
 
@@ -72,13 +72,12 @@ class Binary( data.Data ):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         trans.response.set_content_type(dataset.get_mime())
         trans.log_event( "Display dataset id: %s" % str( dataset.id ) )
         trans.response.headers['Content-Length'] = int( os.stat( dataset.file_name ).st_size )
         to_ext = dataset.extension
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in dataset.name)[0:150]
+        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type( "application/octet-stream" )  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
         return open( dataset.file_name )
@@ -104,6 +103,7 @@ class Ab1( Binary ):
         except:
             return "Binary ab1 sequence file (%s)" % ( nice_size( dataset.get_size() ) )
 
+
 Binary.register_unsniffable_binary_ext("ab1")
 
 
@@ -115,14 +115,47 @@ class Idat( Binary ):
 
     def sniff( self, filename ):
         try:
-            header = open( filename ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'IDAT' ):
+            header = open( filename, 'rb' ).read(4)
+            if header == b'IDAT':
                 return True
             return False
         except:
             return False
 
+
 Binary.register_sniffable_binary_format("idat", "idat", Idat)
+
+
+class Cel( Binary ):
+
+    """Binary data in CEL format."""
+    file_ext = "cel"
+    edam_format = "format_1638"
+    edam_data = "data_3110"
+
+    def sniff( self, filename ):
+        """
+        Try to guess if the file is a CEL file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.CEL')
+        >>> Cel().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('drugbank_drugs.mz5')
+        >>> Cel().sniff(fname)
+        False
+        """
+        try:
+            header = open( filename, 'rb' ).read(4)
+            if header == b';\x01\x00\x00':
+                return True
+            return False
+        except:
+            return False
+
+
+Binary.register_sniffable_binary_format("cel", "cel", Cel)
 
 
 class CompressedArchive( Binary ):
@@ -146,6 +179,7 @@ class CompressedArchive( Binary ):
             return dataset.peek
         except:
             return "Compressed binary file (%s)" % ( nice_size( dataset.get_size() ) )
+
 
 Binary.register_unsniffable_binary_ext("compressed_archive")
 
@@ -181,6 +215,7 @@ class GenericAsn1Binary( Binary ):
     edam_format = "format_1966"
     edam_data = "data_0849"
 
+
 Binary.register_unsniffable_binary_ext("asn1-binary")
 
 
@@ -202,13 +237,23 @@ class Bam( Binary ):
     MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def _get_samtools_version( self ):
-        # Determine the version of samtools being used.  Wouldn't it be nice if
-        # samtools provided a version flag to make this much simpler?
         version = '0.0.0'
         samtools_exec = which('samtools')
         if not samtools_exec:
             message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
             raise Exception(message)
+
+        # Get the version of samtools via --version-only, if available
+        p = subprocess.Popen( ['samtools', '--version-only'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        output, error = p.communicate()
+
+        # --version-only is available
+        # Format is <version x.y.z>+htslib-<a.b.c>
+        if p.returncode == 0:
+            version = output.split('+')[0]
+            return version
 
         output = subprocess.Popen( [ 'samtools' ], stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[1]
         lines = output.split( '\n' )
@@ -234,7 +279,7 @@ class Bam( Binary ):
                 shutil.rmtree(tmp_dir)  # clean up
                 raise Exception( "Error merging BAM files: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         os.unlink(stderr_name)
         os.rmdir(tmp_dir)
 
@@ -322,7 +367,7 @@ class Bam( Binary ):
                 shutil.rmtree( tmp_dir)  # clean up
                 raise Exception( "Error Grooming BAM file contents: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         # Move samtools_created_sorted_file_name to our output dataset location
         shutil.move( samtools_created_sorted_file_name, file_name )
         # Remove temp file and empty temporary directory
@@ -365,7 +410,7 @@ class Bam( Binary ):
                 os.unlink( stderr_name )  # clean up
                 raise Exception( "Error Setting BAM Metadata: %s" % stderr )
             else:
-                print stderr
+                print(stderr)
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
@@ -388,7 +433,7 @@ class Bam( Binary ):
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
             header = gzip.open( filename ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'BAM\1' ):
+            if header == b'BAM\1':
                 return True
             return False
         except:
@@ -490,6 +535,7 @@ class Bam( Binary ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.dataset.SamtoolsDataProvider( dataset_source, **settings )
 
+
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
 
@@ -513,9 +559,9 @@ class CRAM( Binary ):
 
     def get_cram_version( self, filename):
         try:
-            with open( filename, "r") as fh:
+            with open( filename, "rb") as fh:
                 header = fh.read(6)
-                return ord( header[4] ), ord( header[5] )
+            return ord( header[4] ), ord( header[5] )
         except Exception as exc:
             log.warning( '%s, get_cram_version Exception: %s', self, exc )
             return -1, -1
@@ -554,12 +600,13 @@ class CRAM( Binary ):
 
     def sniff( self, filename ):
         try:
-            header = open( filename ).read(4)
-            if header[0:4] == "CRAM":
+            header = open( filename, 'rb' ).read(4)
+            if header == b"CRAM":
                 return True
             return False
         except:
             return False
+
 
 Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
 
@@ -577,7 +624,7 @@ class Bcf( Binary):
         # The first 3 bytes of any bcf file is 'BCF', and the file is binary.
         try:
             header = gzip.open( filename ).read(3)
-            if binascii.b2a_hex( header ) == binascii.hexlify( 'BCF' ):
+            if header == b'BCF':
                 return True
             return False
         except:
@@ -611,6 +658,7 @@ class Bcf( Binary):
             os.remove( dataset_symlink )
         dataset.metadata.bcf_index = index_file
 
+
 Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
 
@@ -636,7 +684,7 @@ class H5( Binary ):
     def sniff( self, filename ):
         # The first 8 bytes of any hdf5 file are 0x894844460d0a1a0a
         try:
-            header = open( filename ).read(8)
+            header = open( filename, 'rb' ).read(8)
             if header == self._magic:
                 return True
             return False
@@ -656,6 +704,7 @@ class H5( Binary ):
             return dataset.peek
         except:
             return "Binary HDF5 file (%s)" % ( nice_size( dataset.get_size() ) )
+
 
 Binary.register_sniffable_binary_format("h5", "h5", H5)
 
@@ -680,6 +729,7 @@ class Scf( Binary ):
         except:
             return "Binary scf sequence file (%s)" % ( nice_size( dataset.get_size() ) )
 
+
 Binary.register_unsniffable_binary_ext("scf")
 
 
@@ -693,8 +743,8 @@ class Sff( Binary ):
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
         try:
-            header = open( filename ).read(4)
-            if binascii.b2a_hex( header ) == binascii.hexlify( '.sff' ):
+            header = open( filename, 'rb' ).read(4)
+            if header == b'.sff':
                 return True
             return False
         except:
@@ -713,6 +763,7 @@ class Sff( Binary ):
             return dataset.peek
         except:
             return "Binary sff file (%s)" % ( nice_size( dataset.get_size() ) )
+
 
 Binary.register_sniffable_binary_format("sff", "sff", Sff)
 
@@ -738,7 +789,7 @@ class BigWig(Binary):
 
     def sniff( self, filename ):
         try:
-            magic = self._unpack( "I", open( filename ) )
+            magic = self._unpack( "I", open( filename, 'rb' ) )
             return magic[0] == self._magic
         except:
             return False
@@ -757,6 +808,7 @@ class BigWig(Binary):
         except:
             return "Binary UCSC %s file (%s)" % ( self._name, nice_size( dataset.get_size() ) )
 
+
 Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
 
@@ -770,6 +822,7 @@ class BigBed(BigWig):
         Binary.__init__( self, **kwd )
         self._magic = 0x8789F2EB
         self._name = "BigBed"
+
 
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
@@ -785,8 +838,8 @@ class TwoBit (Binary):
             # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
             if os.path.getsize(filename) < 16:
                 return False
-            input = open(filename)
-            magic = struct.unpack(">L", input.read(TWOBIT_MAGIC_SIZE))[0]
+            header = open(filename, 'rb').read(TWOBIT_MAGIC_SIZE)
+            magic = struct.unpack(">L", header)[0]
             if magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP:
                 return True
         except IOError:
@@ -804,6 +857,7 @@ class TwoBit (Binary):
             return dataset.peek
         except:
             return "Binary TwoBit format nucleotide file (%s)" % (nice_size(dataset.get_size()))
+
 
 Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
@@ -854,8 +908,8 @@ class SQlite ( Binary ):
         # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
         # about the format, see http://www.sqlite.org/fileformat.html
         try:
-            header = open(filename).read(16)
-            if binascii.b2a_hex(header) == binascii.hexlify('SQLite format 3\0'):
+            header = open(filename, 'rb').read(16)
+            if header == b'SQLite format 3\0':
                 return True
             return False
         except:
@@ -932,7 +986,7 @@ class GeminiSQLite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in gemini_table_names:
                     if table_name not in result:
                         return False
@@ -971,7 +1025,7 @@ class MzSQlite( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
@@ -1006,7 +1060,7 @@ class IdpDB( SQlite ):
                 c = conn.cursor()
                 tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
                 result = c.execute( tables_query ).fetchall()
-                result = map( lambda x: x[0], result )
+                result = [_[0] for _ in result]
                 for table_name in mz_table_names:
                     if table_name not in result:
                         return False
@@ -1028,6 +1082,7 @@ class IdpDB( SQlite ):
             return dataset.peek
         except:
             return "IDPickerDB SQLite file (%s)" % ( nice_size( dataset.get_size() ) )
+
 
 Binary.register_sniffable_binary_format( "gemini.sqlite", "gemini.sqlite", GeminiSQLite )
 Binary.register_sniffable_binary_format( "idpdb", "idpdb", IdpDB )
@@ -1052,6 +1107,7 @@ class Xlsx(Binary):
         except:
             return False
 
+
 Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 
 
@@ -1064,8 +1120,8 @@ class Sra( Binary ):
         For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
         """
         try:
-            header = open(filename).read(8)
-            if binascii.b2a_hex(header) == binascii.hexlify('NCBI.sra'):
+            header = open(filename, 'rb').read(8)
+            if header == b'NCBI.sra':
                 return True
             else:
                 return False
@@ -1086,6 +1142,7 @@ class Sra( Binary ):
         except:
             return 'Binary sra file (%s)' % (nice_size(dataset.get_size()))
 
+
 Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
 
@@ -1094,17 +1151,18 @@ class RData( Binary ):
     file_ext = 'RData'
 
     def sniff( self, filename ):
-        rdata_header = binascii.hexlify('RDX2\nX\n')
+        rdata_header = b'RDX2\nX\n'
         try:
-            header = open(filename).read(7)
-            if binascii.b2a_hex(header) == rdata_header:
+            header = open(filename, 'rb').read(7)
+            if header == rdata_header:
                 return True
 
             header = gzip.open( filename ).read(7)
-            if binascii.b2a_hex(header) == rdata_header:
+            if header == rdata_header:
                 return True
         except:
             return False
+
 
 Binary.register_sniffable_binary_format('RData', 'RData', RData)
 
@@ -1114,12 +1172,12 @@ class OxliBinary(Binary):
     @staticmethod
     def _sniff(filename, oxlitype):
         try:
-            with open(filename) as fileobj:
+            with open(filename, 'rb') as fileobj:
                 header = fileobj.read(4)
-                if binascii.b2a_hex(header) == binascii.hexlify('OXLI'):
+                if header == b'OXLI':
                     fileobj.read(1)  # skip the version number
                     ftype = fileobj.read(1)
-                    if binascii.b2a_hex(ftype) == oxlitype:
+                    if binascii.hexlify(ftype) == oxlitype:
                         return True
             return False
         except IOError:
@@ -1130,10 +1188,13 @@ class OxliCountGraph(OxliBinary):
     """
     OxliCountGraph starts with "OXLI" + one byte version number +
     8-bit binary '1'
-    Test file generated via `load-into-counting.py --n_tables 1 \
-            --max-tablesize 1 oxli_countgraph.oxlicg \
-            khmer/tests/test-data/100-reads.fq.bz2`
+    Test file generated via::
+
+        load-into-counting.py --n_tables 1 --max-tablesize 1 \\
+            oxli_countgraph.oxlicg khmer/tests/test-data/100-reads.fq.bz2
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliCountGraph().sniff( fname )
@@ -1144,7 +1205,8 @@ class OxliCountGraph(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "01")
+        return OxliBinary._sniff(filename, b"01")
+
 
 Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
                                         OxliCountGraph)
@@ -1154,10 +1216,13 @@ class OxliNodeGraph(OxliBinary):
     """
     OxliNodeGraph starts with "OXLI" + one byte version number +
     8-bit binary '2'
-    Test file generated via `load-graph.py --n_tables 1 \
-            --max-tablesize 1 oxli_nodegraph.oxling \
-            khmer/tests/test-data/100-reads.fq.bz2`
+    Test file generated via::
+
+        load-graph.py --n_tables 1 --max-tablesize 1 oxli_nodegraph.oxling \\
+            khmer/tests/test-data/100-reads.fq.bz2
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliNodeGraph().sniff( fname )
@@ -1168,7 +1233,8 @@ class OxliNodeGraph(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "02")
+        return OxliBinary._sniff(filename, b"02")
+
 
 Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling",
                                         OxliNodeGraph)
@@ -1178,11 +1244,14 @@ class OxliTagSet(OxliBinary):
     """
     OxliTagSet starts with "OXLI" + one byte version number +
     8-bit binary '3'
-    Test file generated via `load-graph.py --n_tables 1 \
-            --max-tablesize 1 oxli_nodegraph.oxling \
-            khmer/tests/test-data/100-reads.fq.bz2; \
-            mv oxli_nodegraph.oxling.tagset oxli_tagset.oxlits`
+    Test file generated via::
+
+        load-graph.py --n_tables 1 --max-tablesize 1 oxli_nodegraph.oxling \\
+            khmer/tests/test-data/100-reads.fq.bz2;
+        mv oxli_nodegraph.oxling.tagset oxli_tagset.oxlits
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliTagSet().sniff( fname )
@@ -1193,7 +1262,8 @@ class OxliTagSet(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "03")
+        return OxliBinary._sniff(filename, b"03")
+
 
 Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
 
@@ -1204,6 +1274,7 @@ class OxliStopTags(OxliBinary):
     8-bit binary '4'
     Test file adapted from khmer 2.0's
     "khmer/tests/test-data/goodversion-k32.stoptags"
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliStopTags().sniff( fname )
@@ -1214,7 +1285,8 @@ class OxliStopTags(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "04")
+        return OxliBinary._sniff(filename, b"04")
+
 
 Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist",
                                         OxliStopTags)
@@ -1224,11 +1296,14 @@ class OxliSubset(OxliBinary):
     """
     OxliSubset starts with "OXLI" + one byte version number +
     8-bit binary '5'
-    Test file generated via `load-graph.py -k 20 example \
-            tests/test-data/random-20-a.fa; \
-            partition-graph.py example; \
-            mv example.subset.0.pmap oxli_subset.oxliss`
+    Test file generated via::
+
+        load-graph.py -k 20 example tests/test-data/random-20-a.fa;
+        partition-graph.py example;
+        mv example.subset.0.pmap oxli_subset.oxliss
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliSubset().sniff( fname )
@@ -1239,7 +1314,8 @@ class OxliSubset(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "05")
+        return OxliBinary._sniff(filename, b"05")
+
 
 Binary.register_sniffable_binary_format("oxli.subset", "oxliss", OxliSubset)
 
@@ -1248,11 +1324,15 @@ class OxliGraphLabels(OxliBinary):
     """
     OxliGraphLabels starts with "OXLI" + one byte version number +
     8-bit binary '6'
-    Test file generated via `python -c "from khmer import GraphLabels; \
-        gl = GraphLabels(20, 1e7, 4); gl.consume_fasta_and_tag_with_labels(
-            'tests/test-data/test-labels.fa'); \
-        gl.save_labels_and_tags('oxli_graphlabels.oxligl')"`
+    Test file generated via::
+
+        python -c "from khmer import GraphLabels; \\
+            gl = GraphLabels(20, 1e7, 4); \\
+            gl.consume_fasta_and_tag_with_labels('tests/test-data/test-labels.fa'); \\
+            gl.save_labels_and_tags('oxli_graphlabels.oxligl')"
+
     using khmer 2.0
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname( 'sequence.csfasta' )
     >>> OxliGraphLabels().sniff( fname )
@@ -1263,7 +1343,8 @@ class OxliGraphLabels(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "06")
+        return OxliBinary._sniff(filename, b"06")
+
 
 Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
@@ -1319,4 +1400,72 @@ class SearchGuiArchive ( CompressedArchive ):
         except:
             return "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
 
+
 Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
+
+
+class NetCDF( Binary ):
+    """Binary data in netCDF format"""
+    file_ext = "netcdf"
+    edam_format = "format_3650"
+    edam_data = "data_0943"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary netCDF file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Binary netCDF file (%s)" % ( nice_size( dataset.get_size() ) )
+
+    def sniff( self, filename ):
+        try:
+            with open( filename, 'rb' ) as f:
+                header = f.read(3)
+            if header == b'CDF':
+                return True
+            return False
+        except:
+            return False
+
+
+Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
+
+
+class DMND( Binary ):
+    """
+    Class describing an DMND file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'diamond_db.dmnd' )
+    >>> DMND().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> DMND().sniff( fname )
+    False
+    """
+    file_ext = "dmnd"
+    edam_format = ""
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+        self._magic = binascii.unhexlify("6d18ee15a4f84a02")
+
+    def sniff( self, filename ):
+        # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
+
+        try:
+            header = open( filename, 'rb' ).read(8)
+            if header == self._magic:
+                return True
+            return False
+        except:
+            return False
+
+
+Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)

@@ -123,6 +123,9 @@
 // ---------------------------------------------------------------------------- generic panel list (of list-items)
 .list-panel {
 
+    overflow: hidden;
+    // overflow-x: hidden;
+
     //TODO: duplicated
     @vertical-gap: 8px;
     .vertical-spacing {
@@ -131,7 +134,6 @@
 
     .controls {
         & > *:not(:empty) {
-            //background: rgba( 0, 255, 0, 0.2 );
             margin-bottom: 8px;
         }
         .name {
@@ -191,6 +193,9 @@
     }
     // display only a top border on all but the last
     .list-items {
+        margin: 0;
+        padding: 0;
+
         .list-item {
             border-width: 1px 0px 1px 0px;
             &:not(:last-child) {

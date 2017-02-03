@@ -150,8 +150,10 @@ class RemoteUser( object ):
                 '/user/api_keys',
                 '/user/edit_username',
                 '/user/dbkeys',
+                '/user/logout',
                 '/user/toolbox_filters',
                 '/user/set_default_permissions',
+                '/user/change_communication',
             )
 
             admin_accessible_paths = (
@@ -160,6 +162,7 @@ class RemoteUser( object ):
                 '/user/manage_user_info',
                 '/user/edit_info',
                 '/userskeys/all_users',
+                '/userskeys/admin_api_keys',
             )
 
             if not path_info.startswith('/user'):

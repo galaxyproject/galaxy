@@ -1,7 +1,6 @@
 from base import api
+from base.populators import WorkflowPopulator
 from requests import delete
-
-from .helpers import WorkflowPopulator
 
 
 class SearchApiTestCase( api.ApiTestCase ):

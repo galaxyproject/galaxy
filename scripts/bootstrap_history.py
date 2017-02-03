@@ -1,26 +1,28 @@
 #!/usr/bin/env python
 # Little script to make HISTORY.rst more easy to format properly, lots TODO
 # pull message down and embed, use arg parse, handle multiple, etc...
+from __future__ import print_function
 
 import ast
 import calendar
 import datetime
+import json
 import os
 import re
 import string
 import sys
+import textwrap
+
 try:
     import requests
 except ImportError:
     requests = None
-import urlparse
-import textwrap
-import json
 try:
     from pygithub3 import Github
 except ImportError:
     Github = None
-
+from six import string_types
+from six.moves.urllib.parse import urljoin
 
 PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), os.pardir)
 SOURCE_DIR = os.path.join(PROJECT_DIRECTORY, "lib")
@@ -31,6 +33,7 @@ PROJECT_NAME = "galaxy"
 PROJECT_URL = "https://github.com/%s/%s" % (PROJECT_OWNER, PROJECT_NAME)
 PROJECT_API = "https://api.github.com/repos/%s/%s/" % (PROJECT_OWNER, PROJECT_NAME)
 RELEASES_PATH = os.path.join(PROJECT_DIRECTORY, "doc", "source", "releases")
+RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
 
 # Uncredit pull requestors... kind of arbitrary at this point.
 DEVTEAM = [
@@ -44,9 +47,8 @@ DEVTEAM = [
 TEMPLATE = """
 .. to_doc
 
--------------------------------
 %s
--------------------------------
+===============================
 
 .. announce_start
 
@@ -101,31 +103,15 @@ Highlights
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
 
-New
+New Galaxy repository
   .. code-block:: shell
 
-      % git clone -b master https://github.com/galaxyproject/galaxy.git
+      $$ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
-Update to latest stable release
+Update of existing Galaxy repository
   .. code-block:: shell
 
-      % git checkout master && pull --ff-only origin master
-
-Update to exact version
-  .. code-block:: shell
-
-      % git checkout v${release}
-
-
-`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
-===========================================================
-
-Upgrade
-  .. code-block:: shell
-
-      % hg pull
-      % hg update latest_${release}
-
+      $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
@@ -173,12 +159,16 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
             make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
 
       - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
+      - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version. See [example](https://github.com/galaxyproject/galaxy/pull/3476).
+      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
 
 - [ ] **Deploy and Test Release**
 
-      - [ ] Update test to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+      - [ ] Update test.galaxyproject.org to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
+      - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
       - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
-      - [ ] [Update bioblend testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target - add ``env`` target ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to ``tox.ini``.
+      - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
+      - [ ] [Update BioBlend CI testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target: add ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to the ``env`` list in ``.travis.yml`` .
 
 - [ ] **Create Release Notes**
 
@@ -193,6 +183,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-bootstrap-history RELEASE_CURR=${version}
       - [ ] Open newly created files and manually curate major topics and release notes.
+
+            - [ ] inject 3 witty comments
+            - [ ] inject one whimsical story
+            - [ ] inject one topical reference (preferably satirical in nature) to contemporary world event
       - [ ] Commit release notes.
 
             git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
@@ -208,21 +202,21 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-check-blocking-prs RELEASE_CURR=${version}
       - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
-      - [ ] Create release tag:
+      - [ ] Create and push release tag:
 
             make release-create RELEASE_CURR=${version}
-      - [ ] Push branches and tags as commented out in Makefile target for ``release-create``.
+
+      - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
+      - [ ] Trigger the documentation build.
 
 - [ ] **Do Docker Release**
 
-      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev
-) of the Galaxy Docker container to ${next_version}
+      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev) of the Galaxy Docker container to ${next_version}
       - [ ] Merge dev into master
 
 - [ ] **Ensure Tool Tests use Latest Release**
 
       - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
-
       - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
 
 - [ ] **Announce Release**
@@ -251,7 +245,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 
 def commit_time(commit_hash):
-    api_url = urlparse.urljoin(PROJECT_API, "commits/%s" % commit_hash)
+    api_url = urljoin(PROJECT_API, "commits/%s" % commit_hash)
     req = requests.get(api_url).json()
     return datetime.datetime.strptime(req["commit"]["committer"]["date"], "%Y-%m-%dT%H:%M:%SZ")
 
@@ -331,7 +325,7 @@ def check_blocking_prs(argv):
     release_name = argv[2]
     block = 0
     for pr in _get_prs(release_name, state="open"):
-        print "WARN: Blocking PR| %s" % _pr_to_str(pr)
+        print("WARN: Blocking PR| %s" % _pr_to_str(pr))
         block = 1
 
     sys.exit(block)
@@ -349,20 +343,20 @@ def check_blocking_issues(argv):
     for page in issues:
         for issue in page:
             if issue.milestone and issue.milestone.title == release_name and "Publication of Galaxy Release" not in issue.title:
-                print "WARN: Blocking issue| %s" % _issue_to_str(issue)
+                print("WARN: Blocking issue| %s" % _issue_to_str(issue))
                 block = 1
 
     sys.exit(block)
 
 
 def _pr_to_str(pr):
-    if isinstance(pr, basestring):
+    if isinstance(pr, string_types):
         return pr
     return "PR #%s (%s) %s" % (pr.number, pr.title, pr.html_url)
 
 
 def _issue_to_str(pr):
-    if isinstance(pr, basestring):
+    if isinstance(pr, string_types):
         return pr
     return "Issue #%s (%s) %s" % (pr.number, pr.title, pr.html_url)
 
@@ -370,9 +364,9 @@ def _issue_to_str(pr):
 def _next_version_params(release_name):
     month = int(release_name.split(".")[1])
     year = release_name.split(".")[0]
-    next_month = (((month - 1) + 3) % 12) + 1
+    next_month = (((month - 1) + RELEASE_DELTA_MONTHS) % 12) + 1
     next_month_name = calendar.month_name[next_month]
-    if next_month < 3:
+    if next_month < RELEASE_DELTA_MONTHS:
         next_year = int(year) + 1
     else:
         next_year = year
@@ -463,7 +457,7 @@ def main(argv):
     if len(argv) > 2:
         message = argv[2]
     elif not (ident.startswith("pr") or ident.startswith("issue")):
-        api_url = urlparse.urljoin(PROJECT_API, "commits/%s" % ident)
+        api_url = urljoin(PROJECT_API, "commits/%s" % ident)
         if req is None:
             req = requests.get(api_url).json()
         commit = req["commit"]
@@ -471,13 +465,13 @@ def main(argv):
         message = get_first_sentence(message)
     elif requests is not None and ident.startswith("pr"):
         pull_request = ident[len("pr"):]
-        api_url = urlparse.urljoin(PROJECT_API, "pulls/%s" % pull_request)
+        api_url = urljoin(PROJECT_API, "pulls/%s" % pull_request)
         if req is None:
             req = requests.get(api_url).json()
         message = req["title"]
     elif requests is not None and ident.startswith("issue"):
         issue = ident[len("issue"):]
-        api_url = urlparse.urljoin(PROJECT_API, "issues/%s" % issue)
+        api_url = urljoin(PROJECT_API, "issues/%s" % issue)
         if req is None:
             req = requests.get(api_url).json()
         message = req["title"]
@@ -497,7 +491,7 @@ def main(argv):
         text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
         history = extend(".. github_links", text)
         if owner:
-            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__.)" % (
+            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__)." % (
                 owner, owner,
             )
         to_doc += "\n`Pull Request {0}`_".format(pull_request)
@@ -522,7 +516,7 @@ def main(argv):
 def _text_target(github, pull_request):
     labels = []
     pr_number = None
-    if isinstance(pull_request, basestring):
+    if isinstance(pull_request, string_types):
         pr_number = pull_request
     else:
         pr_number = pull_request.number
@@ -530,10 +524,10 @@ def _text_target(github, pull_request):
     try:
         labels = github.issues.labels.list_by_issue(int(pr_number), user=PROJECT_OWNER, repo=PROJECT_NAME)
     except Exception as e:
-        print e
+        print(e)
     is_bug = is_enhancement = is_feature = is_minor = is_major = is_merge = is_small_enhancement = False
     if len(labels) == 0:
-        print 'No labels found for %s' % pr_number
+        print('No labels found for %s' % pr_number)
         return None
     for label in labels:
         label_name = label.name.lower()
@@ -555,7 +549,7 @@ def _text_target(github, pull_request):
     is_some_kind_of_enhancement = is_enhancement or is_feature or is_small_enhancement
 
     if not( is_bug or is_some_kind_of_enhancement or is_minor or is_merge ):
-        print "No kind/ or minor or merge label found for %s" % _pr_to_str(pull_request)
+        print("No kind/ or minor or merge label found for %s" % _pr_to_str(pull_request))
         text_target = None
 
     if is_minor or is_merge:
@@ -574,7 +568,7 @@ def _text_target(github, pull_request):
     elif is_bug:
         text_target = "bug"
     else:
-        print "Logic problem, cannot determine section for %s" % _pr_to_str(pull_request)
+        print("Logic problem, cannot determine section for %s" % _pr_to_str(pull_request))
         text_target = None
     return text_target
 
@@ -597,8 +591,8 @@ def _latest_release():
 def _releases():
     all_files = sorted(os.listdir(RELEASES_PATH))
     release_note_file_pattern = re.compile(r"\d+\.\d+.rst")
-    release_note_files = filter(lambda f: release_note_file_pattern.match(f), all_files)
-    return sorted(map(lambda f: f.rstrip('.rst'), release_note_files))
+    release_note_files = [f for f in all_files if release_note_file_pattern.match(f)]
+    return sorted(f.rstrip('.rst') for f in release_note_files)
 
 
 def _get_major_version():

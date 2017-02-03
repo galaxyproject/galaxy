@@ -14,6 +14,8 @@ import string
 import sys
 import tempfile
 import threading
+import time
+
 from datetime import timedelta
 
 from six import string_types
@@ -23,21 +25,52 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.postfork import register_postfork_function
 from galaxy.web.formatting import expand_pretty_datetime_format
 from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
 
-# The uwsgi module is automatically injected by the parent uwsgi
-# process and only exists that way.  If anything works, this is a
-# uwsgi-managed process.
-try:
-    import uwsgi
-    if uwsgi.numproc:
-        process_is_uwsgi = True
-except ImportError:
-    # This is not a uwsgi process, or something went horribly wrong.
-    process_is_uwsgi = False
+
+PATH_DEFAULTS = dict(
+    auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
+    data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
+    datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
+    build_sites_config_file=['config/build_sites.yml', 'config/build_sites.yml.sample'],
+    external_service_type_config_file=['config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample'],
+    job_config_file=['config/job_conf.xml', 'job_conf.xml'],
+    tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
+    job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
+    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
+    job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
+    migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
+    object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
+    openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
+    shed_data_manager_config_file=['shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml'],
+    shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
+    tool_sheds_config_file=['config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample'],
+    workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
+    modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
+    local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
+)
+
+PATH_LIST_DEFAULTS = dict(
+    tool_data_table_config_path=['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample'],
+    # rationale:
+    # [0]: user has explicitly created config/tool_conf.xml but did not
+    #      move their existing shed_tool_conf.xml, don't use
+    #      config/shed_tool_conf.xml, which is probably the empty
+    #      version copied from the sample, or else their shed tools
+    #      will disappear
+    # [1]: user has created config/tool_conf.xml and, having passed
+    #      [0], probably moved their shed_tool_conf.xml as well
+    # [2]: user has done nothing, use the old files
+    # [3]: fresh install
+    tool_config_file=['config/tool_conf.xml,shed_tool_conf.xml',
+                      'config/tool_conf.xml,config/shed_tool_conf.xml',
+                      'tool_conf.xml,shed_tool_conf.xml',
+                      'config/tool_conf.xml.sample,config/shed_tool_conf.xml']
+)
 
 
 def resolve_path( path, root ):
@@ -47,12 +80,34 @@ def resolve_path( path, root ):
     return path
 
 
+def find_path(kwargs, var, root):
+    """Find a configuration path that may exist at different defaults."""
+    defaults = PATH_DEFAULTS[var]
+
+    if kwargs.get(var, None) is not None:
+        path = kwargs.get(var)
+    else:
+        for default in defaults:
+            if os.path.exists(resolve_path(default, root)):
+                path = default
+                break
+        else:
+            path = defaults[-1]
+
+    return resolve_path(path, root)
+
+
+def find_root(kwargs):
+    root = kwargs.get('root_dir', '.')
+    return root
+
+
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
 
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
-        self.root = kwargs.get( 'root_dir', '.' )
+        self.root = find_root(kwargs)
 
         # Resolve paths of other config files
         self.__parse_config_file_options( kwargs )
@@ -81,7 +136,9 @@ class Configuration( object ):
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
-        tempfile.tempdir = self.new_file_path
+        override_tempdir = string_as_bool( kwargs.get( "override_tempdir", "True" ) )
+        if override_tempdir:
+            tempfile.tempdir = self.new_file_path
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # Galaxy OpenID settings
@@ -106,13 +163,16 @@ class Configuration( object ):
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
 
         self.user_tool_filters = listify( kwargs.get( "user_tool_filters", [] ), do_strip=True )
-        self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
-        self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+        self.user_tool_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
+        self.user_tool_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
+        self.has_user_tool_filters = bool( self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters )
 
         self.tour_config_dir = resolve_path( kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
+        self.webhooks_dirs = resolve_path( kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
 
         self.expose_user_name = kwargs.get( "expose_user_name", False )
         self.expose_user_email = kwargs.get( "expose_user_email", False )
+        self.password_expiration_period = timedelta( days=int( kwargs.get( "password_expiration_period", 0 ) ) )
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
@@ -162,7 +222,7 @@ class Configuration( object ):
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
-        self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "False" ) )
+        self.allow_user_dataset_purge = string_as_bool( kwargs.get( "allow_user_dataset_purge", "True" ) )
         self.allow_user_impersonation = string_as_bool( kwargs.get( "allow_user_impersonation", "False" ) )
         self.new_user_dataset_access_role_default_private = string_as_bool( kwargs.get( "new_user_dataset_access_role_default_private", "False" ) )
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
@@ -173,11 +233,16 @@ class Configuration( object ):
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
 
-        # Fall back to to legacy job_working_directory config variable if set.
+        # Fall back to legacy job_working_directory config variable if set.
         default_jobs_directory = kwargs.get( "job_working_directory", "database/jobs_directory" )
         self.jobs_directory = resolve_path( kwargs.get( "jobs_directory", default_jobs_directory ), self.root )
         self.default_job_shell = kwargs.get( "default_job_shell", "/bin/bash" )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
+        preserve_python_environment = kwargs.get( "preserve_python_environment", "legacy_only" )
+        if preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
+            log.warn("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
+            preserve_python_environment = "legacy_only"
+        self.preserve_python_environment = preserve_python_environment
         self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
@@ -196,8 +261,10 @@ class Configuration( object ):
         activation_email = kwargs.get( 'activation_email', None )
         self.email_from = kwargs.get( 'email_from', activation_email )
         self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
-        self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
-        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
+        self.activation_grace_period = int( kwargs.get( 'activation_grace_period', 3 ) )
+        default_inactivity_box_content = ( "Your account has not been activated yet. Feel free to browse around and see what's available, but"
+                                           " you won't be able to upload data or run jobs until you have verified your email address." )
+        self.inactivity_box_content = kwargs.get( 'inactivity_box_content', default_inactivity_box_content )
         self.terms_url = kwargs.get( 'terms_url', None )
         self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
@@ -220,14 +287,21 @@ class Configuration( object ):
         self.track_jobs_in_database = string_as_bool( kwargs.get( 'track_jobs_in_database', 'True') )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
+        self.expose_potentially_sensitive_job_metrics = string_as_bool( kwargs.get( 'expose_potentially_sensitive_job_metrics', 'False' ) )
+        self.enable_communication_server = string_as_bool( kwargs.get( 'enable_communication_server', 'False' ) )
+        self.communication_server_host = kwargs.get( 'communication_server_host', 'http://localhost' )
+        self.communication_server_port = int( kwargs.get( 'communication_server_port', '7070' ) )
+        self.persistent_communication_rooms = listify( kwargs.get( "persistent_communication_rooms", [] ), do_strip=True )
+        self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', 'False' ) )
+        self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', 'False' ) )
         # External Service types used in sample tracking
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
-        self.commands_in_new_shell = string_as_bool( kwargs.get( 'enable_beta_tool_command_isolation', "True" ) )
         self.tool_submission_burst_threads = int( kwargs.get( 'tool_submission_burst_threads', '1' ) )
         self.tool_submission_burst_at = int( kwargs.get( 'tool_submission_burst_at', '10' ) )
+
         # Enable new interface for API installations from TS.
         # Admin menu will list both if enabled.
         self.enable_beta_ts_api_install = string_as_bool( kwargs.get( 'enable_beta_ts_api_install', 'False' ) )
@@ -249,6 +323,8 @@ class Configuration( object ):
         # number of steps or that consume collections.
         self.force_beta_workflow_scheduled_min_steps = int( kwargs.get( 'force_beta_workflow_scheduled_min_steps', '250' ) )
         self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
+
+        self.history_local_serial_workflow_scheduling = string_as_bool( kwargs.get( 'history_local_serial_workflow_scheduling', 'False' ) )
 
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
@@ -273,13 +349,17 @@ class Configuration( object ):
         self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames( kwargs )
-        self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
+        if "trust_jupyter_notebook_conversion" in kwargs:
+            trust_jupyter_notebook_conversion = string_as_bool( kwargs.get( 'trust_jupyter_notebook_conversion', False ) )
+        else:
+            trust_jupyter_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
+        self.trust_jupyter_notebook_conversion = trust_jupyter_notebook_conversion
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
         self.show_welcome_with_login = string_as_bool( kwargs.get( "show_welcome_with_login", "False" ) )
         # Configuration for the message box directly below the masthead.
-        self.message_box_visible = kwargs.get( 'message_box_visible', False )
+        self.message_box_visible = string_as_bool( kwargs.get( 'message_box_visible', False ) )
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
@@ -310,21 +390,44 @@ class Configuration( object ):
         self.tool_stub_boost = kwargs.get( "tool_stub_boost", 5 )
         self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
         self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
+        self.tool_enable_ngram_search = kwargs.get( "tool_enable_ngram_search", False )
+        self.tool_ngram_minsize = kwargs.get( "tool_ngram_minsize", 3 )
+        self.tool_ngram_maxsize = kwargs.get( "tool_ngram_maxsize", 4 )
         # Location for tool dependencies.
-        # Location for tool dependencies.
-        tool_dependency_dir = kwargs.get( "tool_dependency_dir", "database/dependencies" )
-        if tool_dependency_dir.lower() == "none":
-            tool_dependency_dir = None
-
-        if tool_dependency_dir is not None:
-            self.tool_dependency_dir = resolve_path( tool_dependency_dir, self.root )
-            # Setting the following flag to true will ultimately cause tool dependencies
-            # to be located in the shell environment and used by the job that is executing
-            # the tool.
-            self.use_tool_dependencies = True
+        use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
+            parse_dependency_options(kwargs, self.root, self.dependency_resolvers_config_file)
+        self.use_tool_dependencies = use_tool_dependencies
+        self.tool_dependency_dir = tool_dependency_dir
+        self.use_cached_dependency_manager = use_cached_dependency_manager
+        self.tool_dependency_cache_dir = tool_dependency_cache_dir
+        self.precache_dependencies = precache_dependencies
+        # Deployers may either specify a complete list of mapping files or get the default for free and just
+        # specify a local mapping file to adapt and extend the default one.
+        if "conda_mapping_files" in kwargs:
+            self.conda_mapping_files = kwargs["conda_mapping_files"]
         else:
-            self.tool_dependency_dir = None
-            self.use_tool_dependencies = os.path.exists(self.dependency_resolvers_config_file)
+            self.conda_mapping_files = [
+                self.local_conda_mapping_file,
+                os.path.join(self.root, "lib", "galaxy", "tools", "deps", "resolvers", "default_conda_mapping.yml"),
+            ]
+
+        self.enable_beta_mulled_containers = string_as_bool( kwargs.get( 'enable_beta_mulled_containers', 'False' ) )
+        containers_resolvers_config_file = kwargs.get( 'containers_resolvers_config_file', None )
+        if containers_resolvers_config_file:
+            containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
+        self.containers_resolvers_config_file = containers_resolvers_config_file
+
+        involucro_path = kwargs.get('involucro_path', None)
+        if involucro_path is None:
+            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+        self.involucro_path = resolve_path(involucro_path, self.root)
+        self.involucro_auto_init = string_as_bool(kwargs.get( 'involucro_auto_init', True))
+
+        default_job_resubmission_condition = kwargs.get( 'default_job_resubmission_condition', '')
+        if not default_job_resubmission_condition.strip():
+            default_job_resubmission_condition = None
+        self.default_job_resubmission_condition = default_job_resubmission_condition
+
         # Configuration options for taking advantage of nginx features
         self.upstream_gzip = string_as_bool( kwargs.get( 'upstream_gzip', False ) )
         self.apache_xsendfile = string_as_bool( kwargs.get( 'apache_xsendfile', False ) )
@@ -519,55 +622,11 @@ class Configuration( object ):
         """
         Backwards compatibility for config files moved to the config/ dir.
         """
-        defaults = dict(
-            auth_config_file=[ 'config/auth_conf.xml', 'config/auth_conf.xml.sample' ],
-            data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
-            datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
-            external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
-            job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
-            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
-            dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
-            job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
-            migrated_tools_config=[ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
-            object_store_config_file=[ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
-            openid_config_file=[ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
-            shed_data_manager_config_file=[ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
-            shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
-            tool_sheds_config_file=[ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
-            workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
-        )
 
-        listify_defaults = dict(
-            tool_data_table_config_path=[ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
-            # rationale:
-            # [0]: user has explicitly created config/tool_conf.xml but did not
-            #      move their existing shed_tool_conf.xml, don't use
-            #      config/shed_tool_conf.xml, which is probably the empty
-            #      version copied from the sample, or else their shed tools
-            #      will disappear
-            # [1]: user has created config/tool_conf.xml and, having passed
-            #      [0], probably moved their shed_tool_conf.xml as well
-            # [2]: user has done nothing, use the old files
-            # [3]: fresh install
-            tool_config_file=[ 'config/tool_conf.xml,shed_tool_conf.xml',
-                               'config/tool_conf.xml,config/shed_tool_conf.xml',
-                               'tool_conf.xml,shed_tool_conf.xml',
-                               'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
-        )
+        for var in PATH_DEFAULTS:
+            setattr( self, var, find_path( kwargs, var, self.root ) )
 
-        for var, defaults in defaults.items():
-            if kwargs.get( var, None ) is not None:
-                path = kwargs.get( var )
-            else:
-                for default in defaults:
-                    if os.path.exists( resolve_path( default, self.root ) ):
-                        path = default
-                        break
-                else:
-                    path = defaults[-1]
-            setattr( self, var, resolve_path( path, self.root ) )
-
-        for var, defaults in listify_defaults.items():
+        for var, defaults in PATH_LIST_DEFAULTS.items():
             paths = []
             if kwargs.get( var, None ) is not None:
                 paths = listify( kwargs.get( var ) )
@@ -651,9 +710,6 @@ class Configuration( object ):
                 except Exception as e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
-        if self.object_store_config_file is None:
-            for path in (self.file_path, self.job_working_directory):
-                self._ensure_directory( path )
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
                      self.nginx_upload_store, self.whoosh_index_dir,
@@ -690,7 +746,7 @@ class Configuration( object ):
         return resolve_path( path, self.root )
 
     def guess_galaxy_port(self):
-        # Code derived from IPython work ie.mako
+        # Code derived from Jupyter work ie.mako
         config = configparser.SafeConfigParser({'port': '8080'})
         if self.config_file:
             config.read( self.config_file )
@@ -719,6 +775,31 @@ class Configuration( object ):
             return string
 
         return [ parse( v ) for v in allowed_origin_hostnames if v ]
+
+
+def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
+    # Location for tool dependencies.
+    tool_dependency_dir = kwargs.get("tool_dependency_dir", "database/dependencies")
+    if tool_dependency_dir.lower() == "none":
+        tool_dependency_dir = None
+
+    if tool_dependency_dir is not None:
+        tool_dependency_dir = resolve_path(tool_dependency_dir, root)
+        # Setting the following flag to true will ultimately cause tool dependencies
+        # to be located in the shell environment and used by the job that is executing
+        # the tool.
+        use_tool_dependencies = True
+        tool_dependency_cache_dir = kwargs.get('tool_dependency_cache_dir', os.path.join(tool_dependency_dir, '_cache'))
+        use_cached_dependency_manager = string_as_bool(kwargs.get("use_cached_dependency_manager", 'False'))
+        precache_dependencies = string_as_bool(kwargs.get("precache_dependencies", 'True'))
+    else:
+        tool_dependency_dir = None
+        use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
+        tool_dependency_cache_dir = None
+        precache_dependencies = False
+        use_cached_dependency_manager = False
+
+    return use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies
 
 
 def get_database_engine_options( kwargs, model_prefix='' ):
@@ -750,15 +831,21 @@ def get_database_engine_options( kwargs, model_prefix='' ):
 
 
 def configure_logging( config ):
-    """
-    Allow some basic logging configuration to be read from ini file.
+    """Allow some basic logging configuration to be read from ini file.
+
+    This should be able to consume either a galaxy.config.Configuration object
+    or a simple dictionary of configuration variables.
     """
     # Get root logger
     root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
-    paste_configures_logging = config.global_conf_parser.has_section( "loggers" )
+    parser = getattr(config, "global_conf_parser", None)
+    if parser:
+        paste_configures_logging = config.global_conf_parser.has_section( "loggers" )
+    else:
+        paste_configures_logging = False
     auto_configure_logging = not paste_configures_logging and string_as_bool( config.get( "auto_configure_logging", "True" ) )
     if auto_configure_logging:
         format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
@@ -767,9 +854,14 @@ def configure_logging( config ):
         log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
         # Set level
         root.setLevel( level )
-        # Turn down paste httpserver logging
-        if level <= logging.DEBUG:
-            logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
+
+        disable_chatty_loggers = string_as_bool( config.get( "auto_configure_logging_disable_chatty", "True" ) )
+        if disable_chatty_loggers:
+            # Turn down paste httpserver logging
+            if level <= logging.DEBUG:
+                for chatty_logger in ["paste.httpserver.ThreadPool", "routes.middleware"]:
+                    logging.getLogger( chatty_logger ).setLevel( logging.WARN )
+
         # Remove old handlers
         for h in root.handlers[:]:
             root.removeHandler(h)
@@ -784,11 +876,11 @@ def configure_logging( config ):
         handler.setFormatter( formatter )
         root.addHandler( handler )
     # If sentry is configured, also log to it
-    if config.sentry_dsn:
+    if getattr(config, "sentry_dsn", None):
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
-        root.addHandler( sentry_handler )
+        register_postfork_function(root.addHandler, sentry_handler)
 
 
 class ConfiguresGalaxyMixin:
@@ -798,6 +890,15 @@ class ConfiguresGalaxyMixin:
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
+    def wait_for_toolbox_reload(self, old_toolbox):
+        while True:
+            # Wait till toolbox reload has been triggered
+            # and make sure toolbox has finished reloading)
+            if self.toolbox.has_reloaded(old_toolbox):
+                break
+
+            time.sleep(1)
+
     def reload_toolbox(self):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
 
@@ -806,21 +907,22 @@ class ConfiguresGalaxyMixin:
             tool_configs.append( self.config.migrated_tools_config )
 
         from galaxy import tools
-        with self._toolbox_lock:
-            old_toolbox = self.toolbox
-            self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-            self.reindex_tool_search()
-            if old_toolbox:
-                old_toolbox.shutdown()
+        old_toolbox = self.toolbox
+        self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
+        self.reindex_tool_search()
+        if old_toolbox:
+            old_toolbox.shutdown()
 
     def _configure_toolbox( self ):
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager( self )
 
         from galaxy.tools.toolbox.cache import ToolCache
+        from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
         self.tool_cache = ToolCache()
+        self.tool_version_cache = ToolVersionCache(self)
 
-        self._toolbox_lock = threading.Lock()
+        self._toolbox_lock = threading.RLock()
         self.toolbox = None
         self.reload_toolbox()
 
@@ -832,15 +934,21 @@ class ConfiguresGalaxyMixin:
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
-            library_import_dir=self.config.library_import_dir
+            library_import_dir=self.config.library_import_dir,
+            enable_beta_mulled_containers=self.config.enable_beta_mulled_containers,
+            containers_resolvers_config_file=self.config.containers_resolvers_config_file,
+            involucro_path=self.config.involucro_path,
+            involucro_auto_init=self.config.involucro_auto_init,
         )
         self.container_finder = containers.ContainerFinder(app_info)
 
-    def reindex_tool_search( self ):
+    def reindex_tool_search( self, toolbox=None ):
         # Call this when tools are added or removed.
         import galaxy.tools.search
         index_help = getattr( self.config, "index_tool_help", True )
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
+        if not toolbox:
+            toolbox = self.toolbox
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( toolbox, index_help )
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager
@@ -856,7 +964,7 @@ class ConfiguresGalaxyMixin:
     def _configure_datatypes_registry( self, installed_repository_manager=None ):
         from galaxy.datatypes import registry
         # Create an empty datatypes registry.
-        self.datatypes_registry = registry.Registry()
+        self.datatypes_registry = registry.Registry( self.config )
         if installed_repository_manager:
             # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
             # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some

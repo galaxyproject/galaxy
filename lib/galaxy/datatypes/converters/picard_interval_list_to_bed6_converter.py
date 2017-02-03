@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+from __future__ import print_function
 
 import sys
 
@@ -25,7 +26,7 @@ def __main__():
                     elems = line.split( '\t' )
                     out.write( '%s\t%s\t%s\t%s\t0\t%s\n' % ( elems[0], int(elems[1]) - 1, elems[2], elems[4], elems[3] ) )
                 except Exception as e:
-                    print e
+                    print(e)
                     skipped_lines += 1
                     if not first_skipped_line:
                         first_skipped_line = i + 1
@@ -37,7 +38,8 @@ def __main__():
     info_msg = "%i lines converted to BED.  " % ( i + 1 - skipped_lines )
     if skipped_lines > 0:
         info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
-    print info_msg
+    print(info_msg)
+
 
 if __name__ == "__main__":
     __main__()

@@ -16,13 +16,9 @@ var _super = DATASET_LI.DatasetListItemView;
 var DatasetListItemEdit = _super.extend(
 /** @lends DatasetListItemEdit.prototype */{
 
-    /** logger used to record this.log messages, commonly set to console */
-    //logger              : console,
-
     /** set up: options */
     initialize  : function( attributes ){
         _super.prototype.initialize.call( this, attributes );
-//TODO: shouldn't this err if false?
         this.hasUser = attributes.hasUser;
 
         /** allow user purge of dataset files? */
@@ -49,7 +45,7 @@ var DatasetListItemEdit = _super.extend(
         ]);
     },
 
-//TODO: move titleButtons into state renderers, remove state checks in the buttons
+    //TODO: move titleButtons into state renderers, remove state checks in the buttons
 
     /** Render icon-button to edit the attributes (format, permissions, etc.) this dataset. */
     _renderEditButton : function(){
@@ -122,10 +118,64 @@ var DatasetListItemEdit = _super.extend(
             this._makeDbkeyEditLink( $details );
         }
 
-//TODO: TRIPLE tap, ugh.
         this._setUpBehaviors( $details );
         return $details;
     },
+
+    /**************************************************************************
+     * Render help button to show tool help text without rerunning the tool.
+     * Issue #2100
+     */
+    _renderToolHelpButton : function() {
+        var datasetID = this.model.attributes.dataset_id;
+        var jobID = this.model.attributes.creating_job;
+        var self = this;
+
+        var parseToolBuild = function(data) {
+            var helpString = '<div id="thdiv-' + datasetID + '" class="toolhelp">'
+            if (data.name && data.help){
+                helpString += '<strong>Tool help for ' + data.name + '</strong><hr/>';
+                helpString += data.help;
+            } else {
+                helpString += '<strong>Tool help is unavailable for this dataset.</strong><hr/>';
+            }
+            helpString += '</div>';
+            self.$el.find( '.details' ).append($.parseHTML(helpString));
+        };
+        var parseToolID = function(data) {
+            $.ajax({
+                url: Galaxy.root + 'api/tools/' + data.tool_id + '/build'
+            }).done(function(data){
+                parseToolBuild(data);
+            }).fail(function(){
+                parseToolBuild({})
+            });
+        };
+        if (Galaxy.user.id === null){
+            return null
+        }
+        return faIconButton({
+            title: 'Tool Help',
+            classes: 'icon-btn',
+            href: '#',
+            faIcon: 'fa-question',
+            onclick: function() {
+                var divString = 'thdiv-' + datasetID;
+                if (self.$el.find(".toolhelp").length > 0){
+                    self.$el.find(".toolhelp").toggle();
+                } else {
+                    $.ajax({
+                        url: Galaxy.root + 'api/jobs/' + jobID
+                    }).done(function(data){
+                        parseToolID(data);
+                    }).fail(function(){
+                       console.log('Failed at recovering job information from the  Galaxy API for job id "' + jobID + '".');
+                    });
+                }
+            }
+        });
+    },
+    //*************************************************************************
 
     /** Add less commonly used actions in the details section based on state */
     _renderSecondaryActions : function(){
@@ -137,12 +187,12 @@ var DatasetListItemEdit = _super.extend(
             case STATES.ERROR:
                 // error button comes first
                 actions.unshift( this._renderErrButton() );
-                return actions.concat([ this._renderRerunButton() ]);
+                return actions.concat([ this._renderRerunButton(), this._renderToolHelpButton() ]);
             case STATES.OK:
             case STATES.FAILED_METADATA:
-                return actions.concat([ this._renderRerunButton(), this._renderVisualizationsButton() ]);
+                return actions.concat([ this._renderRerunButton(), this._renderVisualizationsButton(), this._renderToolHelpButton() ]);
         }
-        return actions.concat([ this._renderRerunButton() ]);
+        return actions.concat([ this._renderRerunButton(), this._renderToolHelpButton() ]);
     },
 
     /** Render icon-button to report an error on this dataset to the galaxy admin. */
@@ -219,7 +269,7 @@ var DatasetListItemEdit = _super.extend(
         });
     },
 
-//TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
+    //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
     /** Render the tags list/control */
     _renderTags : function( $where ){
         if( !this.hasUser ){ return; }
@@ -286,7 +336,6 @@ var DatasetListItemEdit = _super.extend(
         'click .dbkey a'        : function( ev ){ this.trigger( 'edit', this, ev ); }
     }),
 
-
     /** listener for item undelete (in the messages section) */
     _clickUndeleteLink : function( ev ){
         this.model.undelete();
@@ -295,8 +344,9 @@ var DatasetListItemEdit = _super.extend(
 
     /** listener for item purge (in the messages section) */
     _clickPurgeLink : function( ev ){
-//TODO: confirm dialog
-        this.model.purge();
+        if( confirm( _l( 'This will permanently remove the data in your dataset. Are you sure?' ) ) ){
+            this.model.purge();
+        }
         return false;
     },
 
@@ -312,7 +362,6 @@ var DatasetListItemEdit = _super.extend(
 // ............................................................................ TEMPLATES
 /** underscore templates */
 DatasetListItemEdit.prototype.templates = (function(){
-//TODO: move to require text! plugin
 
     var warnings = _.extend( {}, _super.prototype.templates.warnings, {
         failed_metadata : BASE_MVC.wrapTemplate([
@@ -346,15 +395,15 @@ DatasetListItemEdit.prototype.templates = (function(){
 
     var visualizationsTemplate = BASE_MVC.wrapTemplate([
         '<% if( visualizations.length === 1 ){ %>',
-            '<a class="visualization-btn visualization-link icon-btn" href="<%- visualizations[0].href %>"',
+            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
                     ' target="<%- visualizations[0].target %>" title="', _l( 'Visualize in' ),
                     ' <%- visualizations[0].html %>">',
                 '<span class="fa fa-bar-chart-o"></span>',
             '</a>',
 
         '<% } else { %>',
-            '<div class="visualizations-dropdown dropdown">',
-                '<a class="visualization-btn icon-btn" data-toggle="dropdown" title="', _l( 'Visualize' ), '">',
+            '<div class="visualizations-dropdown dropdown icon-btn">',
+                '<a data-toggle="dropdown" title="', _l( 'Visualize' ), '">',
                     '<span class="fa fa-bar-chart-o"></span>',
                 '</a>',
                 '<ul class="dropdown-menu" role="menu">',

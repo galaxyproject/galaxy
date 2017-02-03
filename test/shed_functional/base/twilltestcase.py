@@ -6,11 +6,11 @@ import string
 import tarfile
 import tempfile
 import time
-import urllib
 from json import loads
 
 import twill.commands as tc
 from mercurial import commands, hg, ui
+from six.moves.urllib.parse import quote_plus, urlencode
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
@@ -44,13 +44,11 @@ class ShedTwillTestCase( TwillTestCase ):
         self.galaxy_url = "http://%s:%s" % ( self.galaxy_host, self.galaxy_port )
         self.shed_tool_data_table_conf = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' )
         self.file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', None )
-        self.tool_shed_test_file = None
         self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
         self.shed_tool_conf = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF' )
         self.test_db_util = test_db_util
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
-        self.shed_tools_dict = {}
 
     def add_repository_review_component( self, **kwd ):
         url = '/repository_review/create_component?operation=create'
@@ -412,7 +410,7 @@ class ShedTwillTestCase( TwillTestCase ):
             for data_manager_name in data_manager_names:
                 assert data_manager_name in data_managers, "The requested Data Manager '%s' was not found in repository metadata." % data_manager_name
         else:
-            data_manager_name = data_managers.keys()
+            data_manager_name = list(data_managers.keys())
         for data_manager_name in data_manager_names:
             url = '/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
             self.visit_galaxy_url( url )
@@ -427,7 +425,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         strings_displayed.append( str( installed_repository.installed_changeset_revision ) )
         # Every place Galaxy's XXXX tool appears in attribute - need to quote.
-        strings_displayed = map( lambda x: x.replace("'", "&#39;"), strings_displayed )
+        strings_displayed = [x.replace("'", "&#39;") for x in strings_displayed]
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None ):
@@ -818,7 +816,7 @@ class ShedTwillTestCase( TwillTestCase ):
 
     def get_tool_panel_section_from_api( self, metadata ):
         tool_metadata = metadata[ 'tools' ]
-        tool_guid = urllib.quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
+        tool_guid = quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
         api_url = '/%s' % '/'.join( [ 'api', 'tools', tool_guid ] )
         self.visit_galaxy_url( api_url )
         tool_dict = loads( self.last_page() )
@@ -947,7 +945,7 @@ class ShedTwillTestCase( TwillTestCase ):
         repository_ids = self.initiate_installation_process()
         self.wait_for_repository_installation( repository_ids )
 
-    def install_repository( self, name, owner, category_name, install_tool_dependencies=False,
+    def install_repository( self, name, owner, category_name, install_resolver_dependencies=False, install_tool_dependencies=False,
                             install_repository_dependencies=True, changeset_revision=None,
                             strings_displayed=None, strings_not_displayed=None, preview_strings_displayed=None,
                             post_submit_strings_displayed=None, new_tool_panel_section_label=None, includes_tools_for_display_in_tool_panel=True,
@@ -971,6 +969,7 @@ class ShedTwillTestCase( TwillTestCase ):
         assert form is not None, 'Could not find form select_shed_tool_panel_config or select_tool_panel_section.'
         kwd = self.set_form_value( form, kwd, 'install_tool_dependencies', install_tool_dependencies )
         kwd = self.set_form_value( form, kwd, 'install_repository_dependencies', install_repository_dependencies )
+        kwd = self.set_form_value( form, kwd, 'install_resolver_dependencies', install_resolver_dependencies )
         kwd = self.set_form_value( form, kwd, 'shed_tool_conf', self.shed_tool_conf )
         if new_tool_panel_section_label is not None:
             kwd = self.set_form_value( form, kwd, 'new_tool_panel_section_label', new_tool_panel_section_label )
@@ -1020,12 +1019,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def load_checkable_revisions( self, strings_displayed=None, strings_not_displayed=None ):
-        params = urllib.urlencode( dict( do_not_test='false',
-                                         downloadable='true',
-                                         includes_tools='true',
-                                         malicious='false',
-                                         missing_test_components='false',
-                                         skip_tool_test='false' ) )
+        params = urlencode( dict( do_not_test='false',
+                                  downloadable='true',
+                                  includes_tools='true',
+                                  malicious='false',
+                                  missing_test_components='false',
+                                  skip_tool_test='false' ) )
         api_url = '%s?%s' % ( '/'.join( [ self.url, 'api', 'repository_revisions' ] ), params )
         self.visit_url( api_url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
@@ -1215,7 +1214,7 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ field_name ] = str( field_value )
         else:
             if field_name in kwd:
-                log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
+                log.debug( 'No field %s in form %s, discarding from return value.', field_name, form_id )
                 del( kwd[ field_name ] )
         return kwd
 

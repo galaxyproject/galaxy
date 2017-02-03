@@ -1,21 +1,21 @@
 """
 Unit tests for ``galaxy.web.base.pluginframework.PluginManager``
 """
-import os
-import imp
-import unittest
-
 import logging
-log = logging.getLogger( __name__ )
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
-import galaxy_mock
+import os
+import sys
+import unittest
 
 from galaxy.web.base.pluginframework import PluginManager
 
+unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 1, unit_root )
+from unittest_utils import galaxy_mock
 
-class PluginManager_TestCase( test_utils.unittest.TestCase ):
+log = logging.getLogger( __name__ )
+
+
+class PluginManager_TestCase( unittest.TestCase ):
 
     def test_rel_path_search( self ):
         """should be able to search given rel. path"""
@@ -32,8 +32,8 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
         app_path = mock_app_dir.root_path
         expected_plugins_path = os.path.join( app_path, 'plugins' )
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2' ] )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].name, 'plugin1' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )
@@ -53,8 +53,8 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
         plugin_mgr = PluginManager( mock_app, directories_setting=mock_plugin_dir.root_path )
         expected_plugins_path = mock_plugin_dir.root_path
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2' ] )
+        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2' ] )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].name, 'plugin1' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )
@@ -82,8 +82,8 @@ class PluginManager_TestCase( test_utils.unittest.TestCase ):
         expected_plugins_rel_path = os.path.join( app_path, 'plugins' )
         expected_plugins_abs_path = mock_abs_plugin_dir.root_path
 
-        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_rel_path, expected_plugins_abs_path ] )
-        self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1', 'plugin2', 'plugin3', 'plugin4' ] )
+        self.assertEqual( sorted(plugin_mgr.directories), sorted([ expected_plugins_rel_path, expected_plugins_abs_path ]) )
+        self.assertEqual( sorted(plugin_mgr.plugins.keys()), [ 'plugin1', 'plugin2', 'plugin3', 'plugin4' ] )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].name, 'plugin1' )
         self.assertEqual( plugin_mgr.plugins[ 'plugin1' ].path, os.path.join( expected_plugins_rel_path, 'plugin1' ) )
         self.assertEqual( plugin_mgr.plugins[ 'plugin2' ].name, 'plugin2' )

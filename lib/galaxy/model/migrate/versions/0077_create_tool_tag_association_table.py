@@ -1,6 +1,8 @@
 """
 Migration script to create table for storing tool tag associations.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 
@@ -26,7 +28,7 @@ ToolTagAssociation_table = Table( "tool_tag_association", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     # Create tool_tag_association table

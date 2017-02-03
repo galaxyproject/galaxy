@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-import os
-import imp
 import unittest
 
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-
-from base import BaseTestCase
-from base import CreatesCollectionsMixin
-
-from galaxy.managers.histories import HistoryManager
+from galaxy.managers import (
+    collections,
+    hdas,
+    hdcas
+)
 from galaxy.managers.datasets import DatasetManager
-from galaxy.managers import collections
-from galaxy.managers import hdas
-from galaxy.managers import hdcas
+from galaxy.managers.histories import HistoryManager
 
+from .base import (
+    BaseTestCase,
+    CreatesCollectionsMixin
+)
 
 # =============================================================================
 default_password = '123456'
@@ -60,6 +58,7 @@ class HDCATestCase( BaseTestCase, CreatesCollectionsMixin ):
 def testable_url_for(*a, **k):
     return '(fake url): %s, %s' % ( a, k )
 
+
 hdcas.HDCASerializer.url_for = staticmethod( testable_url_for )
 
 
@@ -72,7 +71,7 @@ class HDCASerializerTestCase( HDCATestCase ):
     def test_views( self ):
         serializer = self.hdca_serializer
         item = self._create_list_hdca([
-            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in xrange( 5 )
+            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in range( 5 )
         ])
 
         self.log( 'should have a summary view' )
@@ -99,7 +98,7 @@ class HDCASerializerTestCase( HDCATestCase ):
     def test_views_and_keys( self ):
         serializer = self.hdca_serializer
         item = self._create_list_hdca([
-            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in xrange( 5 )
+            dict( name=( "hda-{0}".format( i ) ), hid=i ) for i in range( 5 )
         ])
         summary_plus_key = [ 'elements' ]
         only_keys = [ 'id', 'populated_state_message' ]

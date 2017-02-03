@@ -22,7 +22,7 @@ log = logging.getLogger( __name__ )
 comptypes = []
 
 try:
-    import zlib  # noqa
+    import zlib  # noqa: F401
     comptypes.append( 'zip' )
 except ImportError:
     pass
@@ -181,8 +181,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         if not data or not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
-        valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        fname = ''.join(c in valid_chars and c or '_' for c in data.name)[0:150]
+        fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in data.name)[0:150]
 
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
@@ -232,11 +231,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.app.object_store.file_ready(data.dataset)
 
     @web.expose
-    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+    def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         data = self._check_dataset(trans, dataset_id)
         if not isinstance( data, trans.app.model.DatasetInstance ):
             return data
-        return data.datatype.display_data(trans, data, preview, filename, to_ext, chunk, **kwd)
+        # Ensure offset is an integer before passing through to datatypes.
+        if offset:
+            offset = int(offset)
+        # Ensure ck_size is an integer before passing through to datatypes.
+        if ck_size:
+            ck_size = int(ck_size)
+        return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
 
     @web.expose
     def edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
@@ -317,8 +322,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             continue
                         optional = params.get("is_" + name, None)
                         other = params.get("or_" + name, None)
-                        if optional and optional == 'true':
-                            # optional element... == 'true' actually means it is NOT checked (and therefore omitted)
+                        if optional and optional == '__NOTHING__':
+                            # optional element... == '__NOTHING__' actually means it is NOT checked (and therefore omitted)
                             setattr(data.metadata, name, None)
                         else:
                             if other:
@@ -1048,14 +1053,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         else:
             decoded_dataset_collection_ids = []
             decoded_dataset_ids = []
-        if target_history_id:
-            target_history_ids = [ self.decode_id(target_history_id) ]
-        elif target_history_ids:
-            if not isinstance( target_history_ids, list ):
-                target_history_ids = target_history_ids.split(",")
-            target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
-        else:
+        if new_history_name:
             target_history_ids = []
+        else:
+            if target_history_id:
+                target_history_ids = [ self.decode_id(target_history_id) ]
+            elif target_history_ids:
+                if not isinstance( target_history_ids, list ):
+                    target_history_ids = target_history_ids.split(",")
+                target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
+            else:
+                target_history_ids = []
         done_msg = error_msg = ""
         new_history = None
         if do_copy:

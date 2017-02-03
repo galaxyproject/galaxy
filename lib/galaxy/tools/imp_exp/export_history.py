@@ -5,6 +5,7 @@ Export a history to an archive file using attribute files.
 usage: %prog history_attrs dataset_attrs job_attrs out_file
     -G, --gzip: gzip archive file
 """
+from __future__ import print_function
 
 import optparse
 import os
@@ -12,13 +13,14 @@ import sys
 import tarfile
 from json import dumps, loads
 
+from galaxy.util import FILENAME_VALID_CHARS
+
 
 def get_dataset_filename( name, ext, hid ):
     """
     Builds a filename for a dataset using its name an extension.
     """
-    valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    base = ''.join( c in valid_chars and c or '_' for c in name )
+    base = ''.join( c in FILENAME_VALID_CHARS and c or '_' for c in name )
     return base + "_%s.%s" % (hid, ext)
 
 
@@ -67,7 +69,7 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
                         dataset_extra_files_path = 'datasets/extra_files_path_%s' % dataset_hid
                         for fname in file_list:
                             history_archive.add( os.path.join( extra_files_path, fname ),
-                                                arcname=( os.path.join( dataset_extra_files_path, fname ) ) )
+                                                 arcname=( os.path.join( dataset_extra_files_path, fname ) ) )
                         dataset_attrs[ 'extra_files_path' ] = dataset_extra_files_path
                     else:
                         dataset_attrs[ 'extra_files_path' ] = ''
@@ -104,7 +106,8 @@ def main():
 
     # Create archive.
     status = create_archive( history_attrs, dataset_attrs, job_attrs, out_file, gzip )
-    print status
+    print(status)
+
 
 if __name__ == "__main__":
     main()

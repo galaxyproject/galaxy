@@ -2,6 +2,8 @@
 Migration script to add columns for tracking whether pages are deleted and
 publicly accessible.
 """
+from __future__ import print_function
+
 import logging
 
 from sqlalchemy import Boolean, Column, MetaData, Table
@@ -13,7 +15,7 @@ metadata = MetaData()
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
 
-    print __doc__
+    print(__doc__)
     metadata.reflect()
 
     Page_table = Table( "page", metadata, autoload=True )

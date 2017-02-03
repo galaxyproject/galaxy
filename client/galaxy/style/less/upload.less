@@ -109,10 +109,10 @@
             }
             .upload-text-column {
                 position: relative;
-                .text {
+                .upload-text {
                     position: absolute;
                     display: none;
-                    .text-content {
+                    .upload-text-content {
                         font-size : @font-size-small;
                         width: 100%;
                         height: 50px;
@@ -120,7 +120,8 @@
                         background: inherit;
                         color: @black;
                     }
-                    .text-info {
+                    .upload-text-info {
+                        &:extend(.text-primary);
                         font-size : @font-size-small;
                     }
                 }
@@ -140,7 +141,7 @@
                         border-radius: inherit;
                         -moz-border-radius: inherit;
                     }
-                    .percentage {
+                    .upload-percentage {
                         position: absolute;
                         text-align: center;
                         width: 100%;
@@ -173,7 +174,12 @@
         background: lighten(@btn-default-border, 30%);
         .upload-row {
             .upload-title {
-                width: 190px;
+                width: 175px;
+            }
+            .upload-source {
+                .ui-button-menu {
+                    width: 70px !important;
+                }
             }
         }
     }
@@ -247,12 +253,12 @@
     max-height:20px;
     line-height:18px;
     margin-top: 10px;
-    .footer-title {
+    .upload-footer-title {
         font-weight: bold;
         padding-left: 60px;
         padding-right: 20px;
     }
-    .footer-selection{
+    .upload-footer-selection{
         width:200px;
         min-width:200px;
         font-size:11px;
@@ -273,7 +279,7 @@
 .upload-top {
     height:20px;
     text-align:center;
-    .upload-info {
+    .upload-top-info {
         margin-top: 0px;
         font-weight: normal;
         text-align: center;

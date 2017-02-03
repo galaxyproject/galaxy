@@ -4,9 +4,10 @@ defines a base ModelManager, ModelSerializer, and ModelDeserializer.
 
 ModelManagers are used for operations on models that occur outside the scope of
 a single model object, such as:
-    - object creation
-    - object lookup
-    - interactions between 2+ objects of different model classes
+
+- object creation
+- object lookup
+- interactions between 2+ objects of different model classes
 
 (Since these were to replace model Mixins from
 web/framework/base/controller.py the rule of thumb used there also generally
@@ -25,16 +26,17 @@ attribute change to a model object.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
 import datetime
+import logging
 import re
 
-import sqlalchemy
 import routes
+import sqlalchemy
+from six import string_types
 
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -375,7 +377,7 @@ class ModelManager( object ):
         """
         # cpu-expensive
         for item in items:
-            filter_results = map( lambda f: f( item ), filters )
+            filter_results = [f( item ) for f in filters]
             if all( filter_results ):
                 yield item
 
@@ -698,6 +700,7 @@ class ModelSerializer( HasAModelManager ):
             no `view` or `keys`: use the `default_view` if any
             `view` and `keys`: combine both into one list of keys
         """
+
         # TODO: default view + view makes no sense outside the API.index context - move default view there
         all_keys = []
         keys = keys or []
@@ -735,7 +738,7 @@ class ModelDeserializer( HasAModelManager ):
     """
     # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
-    def __init__( self, app, **kwargs ):
+    def __init__( self, app, validator=None, **kwargs ):
         """
         Set up deserializers and validator.
         """
@@ -746,7 +749,7 @@ class ModelDeserializer( HasAModelManager ):
         self.deserializable_keyset = set([])
         self.add_deserializers()
         # a sub object that can validate incoming values
-        self.validate = ModelValidator( self.app )
+        self.validate = validator or ModelValidator( self.app )
 
     def add_deserializers( self ):
         """
@@ -837,7 +840,7 @@ class ModelValidator( HasAModelManager ):
 
     # validators for primitives and compounds of primitives
     def basestring( self, key, val ):
-        return self.type( key, val, basestring )
+        return self.type( key, val, string_types )
 
     def bool( self, key, val ):
         return self.type( key, val, bool )
@@ -849,7 +852,7 @@ class ModelValidator( HasAModelManager ):
         """
         Must be a basestring or None.
         """
-        return self.type( key, val, ( basestring, type( None ) ) )
+        return self.type( key, val, ( string_types, type( None ) ) )
 
     def int_range( self, key, val, min=None, max=None ):
         """
@@ -901,10 +904,12 @@ class ModelFilterParser( HasAModelManager ):
     """
     Converts string tuples (partially converted query string params) of
     attr, op, val into either:
-        - ORM based filters (filters that can be applied by the ORM at the SQL
-        level) or
-        - functional filters (filters that use derived values or values not
-        within the SQL tables)
+
+    - ORM based filters (filters that can be applied by the ORM at the SQL
+      level) or
+    - functional filters (filters that use derived values or values not
+      within the SQL tables)
+
     These filters can then be applied to queries.
 
     This abstraction allows 'smarter' application of limit and offset at either the

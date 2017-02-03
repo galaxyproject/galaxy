@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+echo "Deleting galaxy user - it may not exist and this is fine."
+deluser galaxy | true
+
+echo "Creating galaxy group with gid $GALAXY_TEST_UID - it may already exist and this is fine."
+groupadd -r galaxy -g "$GALAXY_TEST_UID" | true
+echo "Creating galaxy user with uid $GALAXY_TEST_UID - it may already exist and this is fine."
+useradd -u $GALAXY_TEST_UID -r -g galaxy -d /home/galaxy -c "Galaxy User" galaxy -s /bin/bash | true
+echo "Setting galaxy user password - the operation may fail."
+echo "galaxy:galaxy" | chpasswd | true
+chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" /galaxy_venv
+
 GALAXY_TEST_DATABASE_TYPE=${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
 then
@@ -20,6 +31,7 @@ then
     GALAXY_TEST_INSTALL_DB_MERGED="true"
     GALAXY_TEST_DBURI="sqlite:////opt/galaxy/galaxy.sqlite"
     TOOL_SHED_TEST_DBURI="sqlite:////opt/galaxy/toolshed.sqlite"
+    chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" /opt/galaxy
 else
 	echo "Unknown database type"
 	exit 1
@@ -31,31 +43,30 @@ export GALAXY_TEST_INSTALL_DB_MERGED
 cd /galaxy
 GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI";
 export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
+TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI";
+export TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
-./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
+sudo -E -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
 
 dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt
 [ -f $dev_requirements ] && $GALAXY_VIRTUAL_ENV/bin/pip install -r $dev_requirements
 
-sh manage_db.sh upgrade
-sh manage_db.sh upgrade tool_shed
+echo "Upgrading test database..."
+sudo -E -u "#${GALAXY_TEST_UID}" sh manage_db.sh upgrade
+echo "Upgrading tool shed database... $TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION"
+sudo -E -u "#${GALAXY_TEST_UID}" sh manage_db.sh upgrade tool_shed
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
-    sh run_tests.sh --skip-common-startup $@
+    sudo -E -u "#${GALAXY_TEST_UID}" sh run_tests.sh --skip-common-startup $@
 else
     GALAXY_CONFIG_MASTER_API_KEY=${GALAXY_CONFIG_MASTER_API_KEY:-"testmasterapikey"}
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}
     TOOL_SHED_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/tool_shed.ini.sample}
     GALAXY_CONFIG_CHECK_MIGRATE_TOOLS=false
-    if [ -z "$GALAXY_MULTI_PROCESS" ];
-    then
-        GALAXY_CONFIG_JOB_CONFIG_FILE=${GALAXY_CONFIG_JOB_CONFIG_FILE:-config/job_conf.xml.sample}
-    else
-        GALAXY_CONFIG_JOB_CONFIG_FILE=/etc/galaxy/job_conf.xml
-    fi
+    GALAXY_CONFIG_JOB_CONFIG_FILE=${GALAXY_CONFIG_JOB_CONFIG_FILE:-config/job_conf.xml.sample}
     GALAXY_CONFIG_FILE_PATH=${GALAXY_CONFIG_FILE_PATH:-/tmp/gx1}
     GALAXY_CONFIG_NEW_FILE_PATH=${GALAXY_CONFIG_NEW_FILE_PATH:-/tmp/gxtmp}
 
@@ -67,10 +78,5 @@ else
     export GALAXY_CONFIG_FILE_PATH
     export GALAXY_CONFIG_NEW_FILE_PATH
 
-    if [ -z "$GALAXY_MULTI_PROCESS" ];
-    then
-        sh run.sh $@
-    else
-        /usr/bin/supervisord
-    fi
+    sh run.sh $@
 fi

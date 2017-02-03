@@ -5,6 +5,7 @@ import sys
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
+from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from .rule_helper import RuleHelper
 
 log = logging.getLogger( __name__ )
@@ -33,6 +34,7 @@ STOCK_RULES = dict(
     choose_one=stock_rules.choose_one,
     burst=stock_rules.burst,
     docker_dispatch=stock_rules.docker_dispatch,
+    dtd=map_tool_to_destination,
 )
 
 
@@ -128,18 +130,7 @@ class JobRunnerMapper( object ):
                 actual_args[ "user_email" ] = user_email
 
             if "resource_params" in function_arg_names:
-                # Find the dymically inserted resource parameters and give them
-                # to rule.
-                param_values = self.__job_params( job )
-                resource_params = {}
-                try:
-                    resource_params_raw = param_values[ "__job_resource" ]
-                    if resource_params_raw[ "__job_resource__select" ].lower() in [ "1", "yes", "true" ]:
-                        for key, value in resource_params_raw.iteritems():
-                            resource_params[ key ] = value
-                except KeyError:
-                    pass
-                actual_args[ "resource_params" ] = resource_params
+                actual_args[ "resource_params" ] = self.job_wrapper.get_resource_parameters( job )
 
             if "workflow_invocation_uuid" in function_arg_names:
                 param_values = job.raw_param_dict( )

@@ -1,7 +1,8 @@
 # Dan Blankenberg
-import transform
 import string
 from copy import deepcopy
+
+from . import transform
 
 
 class SequencingRead( object ):

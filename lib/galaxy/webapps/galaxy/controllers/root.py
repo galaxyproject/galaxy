@@ -9,7 +9,7 @@ from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
 from galaxy import web
 from galaxy import util
-from galaxy.util import listify, Params, string_as_bool
+from galaxy.util import listify, Params, string_as_bool, FILENAME_VALID_CHARS
 
 from galaxy.web.base import controller
 from galaxy.model.item_attrs import UsesAnnotations
@@ -48,18 +48,16 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
 
     def _get_extended_config( self, trans ):
         app = trans.app
-        configured_for_inactivity_warning = app.config.user_activation_on and app.config.inactivity_box_content is not None
         user_requests = bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) )
         config = {
             'active_view'                   : 'analysis',
             'params'                        : dict( trans.request.params ),
             'enable_cloud_launch'           : app.config.get_bool( 'enable_cloud_launch', False ),
-            'search_url'                    : web.url_for( controller='root', action='tool_search' ),
             # TODO: next two should be redundant - why can't we build one from the other?
             'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),
             'toolbox_in_panel'              : app.toolbox.to_dict( trans ),
             'message_box_visible'           : app.config.message_box_visible,
-            'show_inactivity_warning'       : configured_for_inactivity_warning and trans.user and not trans.user.active,
+            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active,
             # TODO: move to user
             'user_requests'                 : user_requests
         }
@@ -218,9 +216,8 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
                     trans.response.headers['Content-Length'] = int(fStat.st_size)
                     if toext[0:1] != ".":
                         toext = "." + toext
-                    valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
                     fname = data.name
-                    fname = ''.join(c in valid_chars and c or '_' for c in fname)[0:150]
+                    fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                     trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-%s-[%s]%s"' % (data.hid, fname, toext)
                 trans.log_event( "Display dataset id: %s" % str(id) )
                 try:

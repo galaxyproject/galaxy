@@ -2,19 +2,14 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
-
-import imp
-import os
+import logging
 import unittest
 
-import logging
-log = logging.getLogger( __name__ )
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
-
-import test_base_dataproviders
 from galaxy.datatypes.dataproviders import line
+
+from . import test_base_dataproviders
+
+log = logging.getLogger( __name__ )
 
 
 # TODO: TestCase hierarchy is a bit of mess here.
@@ -178,7 +173,7 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
         ( contents, provider, data ) = self.contents_provider_and_data()
         self.assertEqual( data, self.parses_default_content_as() )
         self.assertTrue( isinstance( provider.source, line.FilteredLineDataProvider ) )
-        self.assertTrue( isinstance( provider.source.source, file ) )
+        self.assertTrue( hasattr(provider.source.source, 'read' ) )
         # provider should call close on file
         self.assertTrue( provider.source.source.closed )
 
@@ -299,6 +294,7 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
             new_block_delim_fn=fasta_header, block_filter_fn=id_seq )
         self.assertEqual( data, [{ 'id': 'One', 'seq': 'ABCD' }, { 'id': 'Two', 'seq': 'ABCDEFGH' }] )
         self.assertCounters( provider, 2, 2, 2 )
+
 
 if __name__ == '__main__':
     unittest.main()

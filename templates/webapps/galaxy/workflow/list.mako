@@ -31,13 +31,13 @@
 
             <ul class="manage-table-actions">
                 <li>
-                    <a class="action-button" href="${h.url_for( controller='workflow', action='create' )}">
+                    <a class="action-button" id="new-workflow" href="${h.url_for( controller='workflow', action='create' )}">
                         <img src="${h.url_for('/static/images/silk/add.png')}" />
                         <span>Create new workflow</span>
                     </a>
                 </li>
                 <li>
-                    <a class="action-button" href="${h.url_for( controller='workflow', action='import_workflow' )}">
+                    <a class="action-button" id="import-workflow" href="${h.url_for( controller='workflow', action='import_workflow' )}">
                         <img src="${h.url_for('/static/images/fugue/arrow-090.png')}" />
                         <span>Upload or import workflow</span>
                     </a>

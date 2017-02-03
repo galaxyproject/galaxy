@@ -1,6 +1,6 @@
 <tool id="Paste1" name="Paste" version="1.0.0">
   <description>two files side by side</description>
-  <command interpreter="perl">pasteWrapper.pl $input1 $input2 $delimiter $out_file1</command>
+  <command>perl '$__tool_directory__/pasteWrapper.pl' '$input1' '$input2' $delimiter '$out_file1'</command>
   <inputs>
 <!--    <display>paste $input1 and $input2 using $delimiter as delimiter</display> -->
     <param format="txt" name="input1" type="data" label="Paste"/>
@@ -16,9 +16,9 @@
     </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input1">
+    <data format_source="input1" name="out_file1" metadata_source="input1">
       <change_format>
-        <when input_dataset="input1" attribute="ext" value="bed" format="interval"/>
+        <when input="input1" value="bed" format="interval"/>
       </change_format>
     </data>
   </outputs>
@@ -31,7 +31,6 @@
     </test>
   </tests>
   <help>
-
 .. class:: infomark
 
 Paste preserves column assignments of the first dataset.
@@ -63,6 +62,5 @@ Pasting them together will produce::
     a 1 20
     a 2 30
     a 3 40
-
-</help>
+  </help>
 </tool>

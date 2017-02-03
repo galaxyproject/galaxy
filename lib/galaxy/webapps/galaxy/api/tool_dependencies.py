@@ -1,5 +1,5 @@
 """
-API operations allowing clients to determine datatype supported by Galaxy.
+API operations allowing clients to manage tool dependencies.
 """
 
 from galaxy.web import _future_expose_api as expose_api
@@ -67,9 +67,36 @@ class ToolDependenciesAPIController( BaseAPIController ):
 
         :rtype:     dict
         :returns:   a dictified description of the dependency, with attribute
-                    ``dependency_type: null`` if no match was found.
+                    ``dependency_type: None`` if no match was found.
         """
         return self._view.resolver_dependency(id, **kwds)
+
+    @expose_api
+    @require_admin
+    def install_dependency(self, trans, id=None, **kwds):
+        """
+        POST /api/dependencies_resolver/{index}/dependency
+
+        Install described requirement against specified dependency resolver.
+
+        :type   index:    int
+        :param  index:    index of the dependency resolver
+        :type   kwds:     dict
+        :param  kwds:     dictionary structure containing extra parameters
+        :type   name:     str
+        :param  name:     name of the requirement to find a dependency for (required)
+        :type   version:  str
+        :param  version:  version of the requirement to find a dependency for (required)
+        :type   exact:    bool
+        :param  exact:    require an exact match to specify requirement (do not discard
+                          version information to resolve dependency).
+
+        :rtype:     dict
+        :returns:   a dictified description of the dependency, with attribute
+                    ``dependency_type: None`` if no match was found.
+        """
+        self._view.install_dependency(id, **kwds)
+        return self._view.manager_dependency(**kwds)
 
     @expose_api
     @require_admin
@@ -93,7 +120,7 @@ class ToolDependenciesAPIController( BaseAPIController ):
                           version information to resolve dependency).
 
         :rtype:     dict
-        :returns:   a dictified description of the dependency, with type: null
+        :returns:   a dictified description of the dependency, with type: None
                     if no match was found.
         """
         return self._view.manager_dependency(**kwds)
@@ -135,3 +162,22 @@ class ToolDependenciesAPIController( BaseAPIController ):
                     the corresponding resolver (keyed on 'index').
         """
         return self._view.manager_requirements()
+
+    @expose_api
+    @require_admin
+    def clean(self, trans, id=None, **kwds):
+        """
+        POST /api/dependencies_resolver/{index}/clean
+
+        Cleans up intermediate files created by resolvers during the dependency
+        installation.
+
+        :type   index:    int
+        :param  index:    index of the dependency resolver
+
+        :rtype:     dict
+        :returns:   a dictified description of the requirement that could
+                    be resolved (keyed on 'requirement') and the index of
+                    the corresponding resolver (keyed on 'index').
+        """
+        return self._view.clean(id, **kwds)

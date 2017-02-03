@@ -12,24 +12,36 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-dat
     } );
 
     test( 'tool-form', function() {
-        var form = new ToolForm.View( { id: 'test' } );
-        $( 'body' ).prepend( form.$el );
+        var toolform = new ToolForm.View( { id: 'test' } );
+        var form = toolform.form;
+        $( 'body' ).prepend( toolform.$el );
         window.fakeserver.respond();
         ok( form.$( '.portlet-title-text' ).html() == '<b>_name</b> _description (Galaxy Version _version)', 'Title correct' );
         var tour_ids = [];
         $( '[tour_id]' ).each( function() { tour_ids.push( $( this ).attr( 'tour_id' ) ) } );
-        ok( JSON.stringify( tour_ids ) == '["a","b|c"]', 'Tour ids correct' );
-        ok( JSON.stringify( form.data.create() ) == '{"a":"","b|c":null}', 'Created data correct' );
+        ok( JSON.stringify( tour_ids ) == '["a","b|c","b|i","b|j","k_0|l","k_0|m|n","k_0|m|s","k_0|m|t"]', 'Tour ids correct' );
+        ok( JSON.stringify( form.data.create() ) == '{"a":"","b|c":"h","b|i":"i","b|j":"j","k_0|l":"l","k_0|m|n":"r","k_0|m|s":"s","k_0|m|t":"t"}', 'Created data correct' );
         var mapped_ids = [];
-        form.data.matchModel( form.options, function( input, id ) { mapped_ids.push( $( '#' + id ).find( '[tour_id]' ).first().attr( 'tour_id' ) ) } );
-        ok( JSON.stringify( mapped_ids ) == '["a","b|c"]', 'Remapped tour ids correct' );
+        form.data.matchModel( form.options, function( input, id ) { mapped_ids.push( $( '#' + id ).attr( 'tour_id' ) ) } );
+        ok( JSON.stringify( mapped_ids ) == '["a","b|c","b|i","b|j","k_0|l","k_0|m|n","k_0|m|s","k_0|m|t"]', 'Remapped tour ids correct' );
         this.clock.tick ( window.WAIT_FADE );
         var dropdown = form.$( '#menu > .dropdown-menu' );
         ok( dropdown.children().length == 2, 'Found two menu items' );
         dropdown.find( '.fa-info-circle' ).parent().click();
         this.clock.tick ( window.WAIT_FADE );
         ok( form.$( '.ui-message' ).html() === '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://wiki.galaxyproject.org/Tools/Requirements">here</a> for more information.</span>', 'Check requirements message' );
+        ok( form.$( '.form-repeat-delete' ).css( 'display' ) == 'none', 'Delete button disabled' );
+        var $add = form.$( '.form-repeat-add' );
+        ok( !$add.attr( 'disabled' ), 'Adding new repeat possible' );
+        $add.click();
         this.clock.tick ( window.WAIT_FADE );
+        ok( $add.attr( 'disabled' ), 'Adding new repeat has been disabled' );
+        form.$( '.form-repeat-delete' ).each( function( i, d ) { ok( $( d ).css( 'display' ) == 'block', 'Delete buttons ' + i + ' enabled' ) } );
+        ok( JSON.stringify( form.data.create() ) == '{"a":"","b|c":"h","b|i":"i","b|j":"j","k_0|l":"l","k_0|m|n":"r","k_0|m|s":"s","k_0|m|t":"t","k_1|l":"l","k_1|m|n":"o","k_1|m|p":"p","k_1|m|q":"q"}', 'Created data correct, after adding repeat' );
+        form.$( '.form-repeat-delete:first' ).click();
+        ok( form.$( '.form-repeat-delete' ).css( 'display' ) == 'none', 'Delete button disabled' );
+        this.clock.tick ( window.WAIT_FADE );
+        ok( JSON.stringify( form.data.create() ) == '{"a":"","b|c":"h","b|i":"i","b|j":"j","k_0|l":"l","k_0|m|n":"o","k_0|m|p":"p","k_0|m|q":"q"}', 'Created data correct, after removing first repeat' );
     });
 
     test( 'data', function() {
@@ -40,7 +52,7 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-dat
             } );
         } } );
         window.fakeserver.respond();
-        ok( JSON.stringify( visits ) == '[{"name":"a","node":{"name":"a","type":"text"}},{"name":"b|c","node":{"name":"c","type":"select","value":"h"}},{"name":"b|i","node":{"name":"i","type":"text"}},{"name":"b|j","node":{"name":"j","type":"text"}},{"name":"k_0|l","node":{"name":"l","type":"text"}},{"name":"k_0|m|n","node":{"name":"n","type":"select","value":"o"}},{"name":"k_0|m|p","node":{"name":"p","type":"text"}},{"name":"k_0|m|q","node":{"name":"q","type":"text"}}]', 'Testing value visitor' );
+        ok( JSON.stringify( visits ) == '[{"name":"a","node":{"name":"a","type":"text"}},{"name":"b|c","node":{"name":"c","type":"select","value":"h","options":[["d","d",false],["h","h",false]]}},{"name":"b|i","node":{"name":"i","type":"text","value":"i"}},{"name":"b|j","node":{"name":"j","type":"text","value":"j"}},{"name":"k_0|l","node":{"name":"l","type":"text","value":"l"}},{"name":"k_0|m|n","node":{"name":"n","type":"select","value":"r","options":[["o","o",false],["r","r",false]]}},{"name":"k_0|m|s","node":{"name":"s","type":"text","value":"s"}},{"name":"k_0|m|t","node":{"name":"t","type":"text","value":"t"}}]', 'Testing value visitor' );
     });
 
     test( 'input', function() {
@@ -88,6 +100,5 @@ define([ 'test-app', 'mvc/form/form-input', 'mvc/ui/ui-misc', 'mvc/form/form-dat
         ok( input.$info.html() == '_help (_argument)', 'Correct help text with argument' );
         input.model.set( 'help', '_help (_argument)' );
         ok( input.$info.html() == '_help (_argument)', 'Correct help text with argument from help' );
-
     } );
 });

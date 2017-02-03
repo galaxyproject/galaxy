@@ -9,8 +9,9 @@ define([
     "mvc/dataset/data",
     "mvc/tool/tools",
     "utils/config",
+    "viz/bbi-data-manager",
     "ui/editable-text",
-], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+], function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod, bbi) {
 
 
 var extend = _.extend;
@@ -185,6 +186,25 @@ function round(num, places) {
 
     var val = Math.pow(10, places);
     return Math.round(num * val) / val;
+}
+
+/**
+ * Check if a server can do byte range requests.
+ */
+function supportsByteRanges(url) {
+    var promise = $.Deferred();
+    $.ajax({
+        type: 'HEAD',
+        url: url,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Range", "bytes=0-10");
+        },
+        success: function(result, status, xhr) {
+            promise.resolve(xhr.status === 206);
+        }
+    });
+
+    return promise;
 }
 
 /**
@@ -1202,18 +1222,23 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                     view.reference_track = ref_track;
                 }
                 view.chrom_data = result.chrom_info;
-                var chrom_options = '<option value="">Select Chrom/Contig</option>';
+                
+                view.chrom_select.html('');
+                view.chrom_select.append($('<option value="">Select Chrom/Contig</option>'));
+
                 for (var i = 0, len = view.chrom_data.length; i < len; i++) {
                     var chrom = view.chrom_data[i].chrom;
-                    chrom_options += '<option value="' + chrom + '">' + chrom + '</option>';
+                    var chrom_option  = $("<option>");
+                    chrom_option.text(chrom);
+                    chrom_option.val(chrom);
+                    view.chrom_select.append(chrom_option);
                 }
                 if (result.prev_chroms) {
-                    chrom_options += '<option value="previous">Previous ' + MAX_CHROMS_SELECTABLE + '</option>';
+                    view.chrom_select.append($('<option value="previous">Previous ' + MAX_CHROMS_SELECTABLE + '</option>'));
                 }
                 if (result.next_chroms) {
-                    chrom_options += '<option value="next">Next ' + MAX_CHROMS_SELECTABLE + '</option>';
+                    view.chrom_select.append($('<option value="next">Next ' + MAX_CHROMS_SELECTABLE + '</option>'));
                 }
-                view.chrom_select.html(chrom_options);
                 view.chrom_start_index = result.start_index;
 
                 chrom_data.resolve(result.chrom_info);
@@ -2828,7 +2853,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             css_class = (type === 'max' ? 'top' : 'bottom'),
             text = (type === 'max' ? 'max' : 'min'),
             pref_name = (type === 'max' ? 'max_value' : 'min_value'),
-            label = this.container_div.find(".yaxislabel." + css_class);
+            label = this.container_div.find(".yaxislabel." + css_class),
+            value = round( track.config.get_value(pref_name), 1 );
 
         // Default action for on_change is to redraw track.
         on_change = on_change || function() {
@@ -2837,15 +2863,15 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         if (label.length !== 0) {
             // Label already exists, so update value.
-            label.text(track.config.get_value(pref_name));
+            label.text(value);
         }
         else {
             // Add label.
-            label = $("<div/>").text(track.config.get_value(pref_name)).make_text_editable({
+            label = $("<div/>").text(value).make_text_editable({
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".tooltip").remove();
-                    track.config.set_value(pref_name, new_val);
+                    track.config.set_value(pref_name, round( new_val, 1 ) );
                     on_change();
                 },
                 help_text: "Set " + text + " value"
@@ -3068,6 +3094,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Draw line (bigwig) data onto tile.
      */
     _draw_line_track_tile: function(result, ctx, mode, region, w_scale) {
+        // Set min/max if they are not already set.
+        // FIXME: checking for different null/undefined/0 is messy; it would be nice to
+        // standardize this.
+        if ( [undefined, null].indexOf(this.config.get_value("min_value")) !== -1 ) {
+            this.config.set_value("min_value", 0);
+        }
+        if ( [undefined, null, 0].indexOf(this.config.get_value("max_value")) !== -1 ) {
+            this.config.set_value("max_value", _.max( _.map(result.data, function(d) { return d[1]; }) ) || 0);
+        }
+
         var canvas = ctx.canvas,
             painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.config.to_key_value_dict(), mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
@@ -3590,7 +3626,23 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 var LineTrack = function (view, container, obj_dict) {
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
+    // Need left offset for drawing overlap near tile boundaries.
+    this.left_offset = 30;
+
+    // If server has byte-range support, use BBI data manager to read directly from the BBI file.
+    // FIXME: there should be a flag to wait for this check to complete before loading the track.
+    var self = this;
+    $.when(supportsByteRanges(Galaxy.root + 'datasets/' + this.dataset.id + '/display'))
+     .then(function(supportsByteRanges) {
+         if (supportsByteRanges) {
+             self.data_manager = new bbi.BBIDataManager({
+                 dataset: self.dataset
+             });
+         }
+
+    });
 };
+
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: CONTINUOUS_DATA_MODES,
 
@@ -3710,8 +3762,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true,
           help: 'Show the number of items in each bin when drawing summary histogram' },
-        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
-        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
+        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
             options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -4204,8 +4256,8 @@ extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTra
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
-        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+        { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
+        { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: undefined, help: 'clear value to set automatically' },
         { key: 'height', type: 'int', default_value: 0, hidden: true}
     ] ),
 

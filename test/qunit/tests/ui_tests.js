@@ -1,6 +1,6 @@
 /* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
-define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown'
-], function( testApp, Ui, SelectContent, Drilldown ){
+define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-thumbnails', 'mvc/ui/ui-tabs'
+], function( testApp, Ui, SelectContent, Drilldown, Thumbnails, Tabs ){
     'use strict';
     module( 'Ui test', {
         setup: function() {
@@ -10,6 +10,174 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
             testApp.destroy();
         }
     } );
+
+    test( 'tabs', function() {
+        var self = this;
+        var tabs = new Tabs.View({});
+        var collection = tabs.collection;
+        collection.add( { id: 'id_a', title: 'title_a', icon: 'icon_a', $el: 'el_a' } );
+        var _test = function() {
+            self.clock.tick ( window.WAIT_FADE );
+            collection.each( function( model, index ) {
+                var $tab_element = tabs.$( '#tab-' + model.id );
+                var $tab_content = tabs.$( '#' + model.id );
+                var is_current = model.id == tabs.model.get( 'current' );
+                ok( $tab_content.hasClass( 'active' ) == is_current, 'Active state of content.' );
+                ok( $tab_element.hasClass( 'active' ) == is_current, 'Active state of element.' );
+                ok( $tab_element.css( 'display' ) == ( model.get( 'hidden' ) ? 'none' : 'list-item' ), 'Element visibility.' );
+            });
+        };
+        $( 'body' ).prepend( tabs.$el );
+        _test();
+        collection.add( { id: 'id_b', title: 'title_b', icon: 'icon_b', $el: 'el_b' } );
+        _test();
+        tabs.collection.get( 'id_b' ).set( 'hidden', true );
+        _test();
+        collection.add( { id: 'id_c', title: 'title_c', icon: 'icon_c', $el: 'el_c' } );
+        tabs.model.set( 'current', 'id_c' );
+        _test();
+        tabs.collection.get( 'id_b' ).set( 'hidden', false );
+        _test();
+        tabs.model.set( 'current', 'id_b' );
+        _test();
+        tabs.model.set( 'visible', false );
+        tabs.collection.reset();
+        self.clock.tick ( window.WAIT_FADE );
+        ok( tabs.$el.css( 'display', 'none' ), 'Everything hidden.' );
+        tabs.model.set( 'visible', true );
+        self.clock.tick ( window.WAIT_FADE );
+        ok( tabs.$el.css( 'display', 'block' ), 'Everything shown.' );
+        collection.add( { id: 'id_c', title: 'title_c', icon: 'icon_c', $el: 'el_c' } );
+        tabs.model.set( 'current', 'id_c' );
+        _test();
+    });
+
+    test( 'thumbnails', function() {
+        var _test = function( options ) {
+            ok( thumb.$( '.tab-pane' ).length == options.ntabs, 'Two tabs found.' );
+            ok( thumb.$( '.ui-thumbnails-item' ).length == options.nitems, 'Thumbnail item.' );
+            ok( $(thumb.$( '.ui-thumbnails-image' )[ options.index || 0 ]).attr( 'src' ) == options.image_src, 'Correct image source' );
+            ok( $(thumb.$( '.ui-thumbnails-title' )[ options.index || 0 ]).html() == options.title, 'Correct title with icon' );
+            ok( $(thumb.$( '.ui-thumbnails-description-text' )[ options.index || 0 ]).html() == options.description, 'Correct description' );
+        };
+        var thumb = new Thumbnails.View({
+            title_default   : 'title_default',
+            title_list      : 'title_list',
+            collection      : [{
+                id          : 'id',
+                keywords    : 'default',
+                title       : 'title',
+                title_icon  : 'title_icon',
+                image_src   : 'image_src',
+                description : 'description'
+            }]
+        });
+        var model = thumb.model;
+        $( 'body' ).prepend( thumb.$el );
+        _test({
+            ntabs       : 2,
+            nitems      : 2,
+            image_src   : 'image_src',
+            title       : '<span class="fa title_icon"></span>title',
+            description : 'description'
+        });
+        thumb.collection.add({
+            id          : 'id_a',
+            keywords    : 'default_a',
+            title       : 'title_a',
+            title_icon  : 'title_icon_a',
+            image_src   : 'image_src_a',
+            description : 'description_a'
+        });
+        this.clock.tick ( window.WAIT_FADE );
+        _test({
+            index       : 1,
+            ntabs       : 2,
+            nitems      : 4,
+            image_src   : 'image_src_a',
+            title       : '<span class="fa title_icon_a"></span>title_a',
+            description : 'description_a'
+        });
+    });
+
+    test( 'button-default', function() {
+        var button = new Ui.Button( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        model.set( 'disabled', true );
+        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        model.set( 'disabled', false );
+        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        model.set( 'wait', true );
+        ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
+        model.set( 'wait_text', 'wait_text' );
+        ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
+        model.set( 'wait', false );
+        ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
+    });
+    test( 'button-default', function() {
+        var button = new Ui.Button( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        model.set( 'disabled', true );
+        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        model.set( 'disabled', false );
+        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+        model.set( 'wait', true );
+        ok( button.$title.html() == model.get( 'wait_text' ), 'Shows correct wait text' );
+        model.set( 'wait_text', 'wait_text' );
+        ok( button.$title.html() == 'wait_text', 'Shows correct new wait text' );
+        model.set( 'wait', false );
+        ok( button.$title.html() == model.get( 'title' ), 'Shows correct regular title' );
+    });
+
+    test( 'button-icon', function() {
+        var button = new Ui.ButtonIcon( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( !button.$el.attr( 'disabled' ), 'Button active' );
+        model.set( 'disabled', true );
+        ok( button.$el.attr( 'disabled' ), 'Button disabled' );
+        model.set( 'disabled', false );
+        ok( !button.$el.attr( 'disabled' ), 'Button active, again' );
+    });
+
+    test( 'button-check', function() {
+        var button = new Ui.ButtonCheck( { title: 'title' } );
+        var model = button.model;
+        $( 'body' ).prepend( button.$el );
+        ok( button.$title.html() == 'title', 'Has correct title' );
+        model.set( 'title', '_title' );
+        ok( button.$title.html() == '_title', 'Has correct new title' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        button.value( 1 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        button.value( 2 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value' );
+        button.value( 0, 100 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        button.value( 10, 100 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 1 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        button.value( 100, 100 );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after fraction' );
+        button.$el.trigger( 'click' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+        button.$el.trigger( 'click' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 2 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+        button.$el.trigger( 'click' );
+        ok( button.$icon.hasClass( button.model.get( 'icons' )[ 0 ] ), 'Has correct ' + model.get( 'value' ) + ' value after click' );
+    });
 
     test( 'options', function() {
         function _test( obj, options ) {
@@ -291,8 +459,8 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
             ok( JSON.stringify( select.value() ) == JSON.stringify( options.value ), 'Selected value is ' + options.value );
             ok( select.text() == options.label, 'Selected label is ' + options.label );
             ok( select.$el.display === options.visible ? 'block' : 'none', options.visible ? 'Visible' : 'Hidden' );
-            ok( select.$select.find( 'option' ).length === options.count && select.length(), 'Found ' + options.count + ' option' );
-            options.exists && ok( select.$select.find( 'option[value="' + options.exists + '"]' ).length === 1, 'Found value: ' + options.exists );
+            ok( select.data.length === options.count && select.length(), 'Found ' + options.count + ' option' );
+            options.exists && ok( select.exists( options.exists ), 'Found value: ' + options.exists );
             ok( select.$select.prop( 'multiple' ) === Boolean( options.multiple ), 'Multiple state set to: ' + options.multiple );
             ok( Boolean( select.all_button ) === Boolean( options.multiple ), 'Visiblity of select all button correct.' );
             options.multiple && ok( select.all_button.$( '.icon' ).hasClass( options.all_icon ), 'All button in correct state: ' + options.all_icon );
@@ -355,7 +523,7 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
             multiple: true,
             all_icon: 'fa-minus-square-o'
         });
-        select.model.set( 'value', [ 'valuea', 'valueb' ] );
+        select.model.set( 'value', [ 'valueb', 'valuea' ] );
         _test({
             value   : [ 'valuea', 'valueb' ],
             label   : 'labela',
@@ -480,12 +648,12 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         var select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );
         var _testSelect = function( tag, options ) {
+            var field = select.fields[ tag == 'first' ? 0 : select.fields.length - 1 ];
             var $select = select.$( '.ui-select:' + tag );
-            var $option = $select.find( 'option:first' );
             var $button = select.$( '.ui-radiobutton' ).find( 'label:' + tag );
-            ok ( $select.find( 'option' ).length == options[ tag + 'length' ], tag + ' one has ' + options[ tag + 'length' ] + ' options' );
-            ok ( $option.prop( 'value' ) == options[ tag + 'value' ], tag + ' option has correct value' );
-            ok ( $option.text() == options[ tag + 'label' ], tag + ' option has correct label' );
+            ok ( field.length() == options[ tag + 'length' ], tag + ' one has ' + options[ tag + 'length' ] + ' options' );
+            ok ( field.data[ 0 ].value == options[ tag + 'value' ], tag + ' option has correct value' );
+            ok ( field.data[ 0 ].label == options[ tag + 'label' ], tag + ' option has correct label' );
             ok ( $select.hasClass( 'ui-select-multiple' ) == options[ tag + 'multiple' ], 'Check multiple option' );
             $button.trigger( 'mouseover' );
             var tooltip = $( '.tooltip-inner:last' ).text();
@@ -581,9 +749,9 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         select.model.set( 'wait', false );
         ok ( select.$( '.icon-dropdown' ).hasClass( 'fa-caret-down' ), 'Shows caret' );
         select.model.set( 'optional', true );
-        ok ( select.$( 'option:first' ).prop( 'value' ) == '__null__', 'First option is optional value' );
+        ok ( select.fields[ 0 ].data[ 0 ].value == '__null__', 'First option is optional value' );
         select.model.set( 'optional', false );
-        ok ( select.$( 'option:first' ).prop( 'value' ) != '__null__', 'First option is not optional value' );
+        ok ( select.fields[ 0 ].data[ 0 ].value != '__null__', 'First option is not optional value' );
 
         select.model.set( 'value', { values: [ { id: 'id1', src: 'hda' } ] } );
         ok( JSON.stringify( select.value() ) == '{"values":[{"id":"id1","name":"name1","hid":"hid1"}],"batch":false}', 'Checking single value' );
@@ -600,10 +768,10 @@ define([ 'test-app', 'mvc/ui/ui-misc', 'mvc/ui/ui-select-content', 'mvc/ui/ui-dr
         select = new SelectContent.View({});
         $( 'body' ).prepend( select.$el );
         var _testEmptySelect = function( tag, txt_extension, txt_label ) {
+            var field = select.fields[ tag == 'first' ? 0 : select.fields.length - 1 ];
             var $select = select.$( '.ui-select:' + tag );
-            var $option = $select.find( 'option:first' );
-            ok ( $option.prop( 'value' ) == '__null__', tag + ' option has correct empty value.' );
-            ok ( $option.text() == 'No ' + txt_extension + txt_label + ' available.', tag + ' option has correct empty label.' );
+            ok ( field.data[ 0 ].value == '__null__', tag + ' option has correct empty value.' );
+            ok ( field.data[ 0 ].label == 'No ' + txt_extension + txt_label + ' available.', tag + ' option has correct empty label.' );
         };
 
         var labels = select.model.get( 'src_labels' );

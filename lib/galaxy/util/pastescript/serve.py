@@ -18,9 +18,10 @@
 # All top level imports from each package moved here and organized
 from __future__ import print_function
 
-import ConfigParser
 import atexit
+import ConfigParser
 import errno
+import logging
 import optparse
 import os
 import re
@@ -29,10 +30,10 @@ import sys
 import textwrap
 import threading
 import time
-import logging
+
 from logging.config import fileConfig
 
-from loadwsgi import loadapp, loadserver
+from .loadwsgi import loadapp, loadserver
 
 
 difflib = None
@@ -1014,8 +1015,8 @@ def _turn_sigterm_into_systemexit():
         raise SystemExit
     signal.signal(signal.SIGTERM, handle_term)
 
-# ---- from paste.script.command --------------------------------------
 
+# ---- from paste.script.command --------------------------------------
 python_version = sys.version.splitlines()[0].strip()
 
 parser = optparse.OptionParser(add_help_option=False,

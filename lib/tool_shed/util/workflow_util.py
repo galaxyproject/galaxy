@@ -8,17 +8,19 @@ import os
 import galaxy.tools
 import galaxy.tools.parameters
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.modules import module_types
-from galaxy.workflow.modules import ToolModule
-from galaxy.workflow.modules import WorkflowModuleFactory
+from galaxy.workflow.modules import (
+    module_types,
+    ToolModule,
+    WorkflowModuleFactory
+)
 from galaxy.workflow.render import WorkflowCanvas
 from galaxy.workflow.steps import attach_ordered_steps
-
 from tool_shed.tools import tool_validator
-
-from tool_shed.util import encoding_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
+from tool_shed.util import (
+    encoding_util,
+    metadata_util,
+    repository_util
+)
 
 log = logging.getLogger( __name__ )
 
@@ -33,6 +35,7 @@ class RepoToolModule( ToolModule ):
         self.tool_id = tool_id
         self.tool = None
         self.errors = None
+        self.tool_version = None
         self.tv = tool_validator.ToolValidator( trans.app )
         if trans.webapp.name == 'tool_shed':
             # We're in the tool shed.
@@ -67,11 +70,8 @@ class RepoToolModule( ToolModule ):
     def from_workflow_step( Class, trans, step, repository_id, changeset_revision, tools_metadata ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, step.tool_id )
         module.state = galaxy.tools.DefaultToolState()
-        if module.tool:
-            module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
-        else:
-            module.state.inputs = {}
-        module.errors = step.tool_errors
+        module.recover_state( step.tool_inputs )
+        module.errors = module.get_errors()
         return module
 
     def get_data_inputs( self ):
@@ -95,7 +95,7 @@ class RepoToolModule( ToolModule ):
         data_outputs = []
         if self.tool:
             data_inputs = None
-            for name, tool_output in self.tool.outputs.iteritems():
+            for name, tool_output in self.tool.outputs.items():
                 if tool_output.format_source is not None:
                     # Default to special name "input" which remove restrictions on connections
                     formats = [ 'input' ]
@@ -143,6 +143,7 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
             module_method_kwds[ 'changeset_revision' ] = changeset_revision
             module_method_kwds[ 'tools_metadata' ] = tools_metadata
         return self.module_types[ type ].from_workflow_step( trans, step, **module_method_kwds )
+
 
 tool_shed_module_types = module_types.copy()
 tool_shed_module_types[ 'tool' ] = RepoToolModule
@@ -264,11 +265,10 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     # will be ( tool_id, tool_name, tool_version ).
     missing_tool_tups = []
     # First pass to build step objects and populate basic values
-    for step_dict in workflow_dict[ 'steps' ].itervalues():
+    for step_dict in workflow_dict[ 'steps' ].values():
         # Create the model class for the step
         step = trans.model.WorkflowStep()
         step.label = step_dict.get('label', None)
-        step.name = step_dict[ 'name' ]
         step.position = step_dict[ 'position' ]
         module = module_factory.from_dict( trans, repository_id, changeset_revision, step_dict, tools_metadata=tools_metadata )
         if module.type == 'tool' and module.tool is None:
@@ -302,7 +302,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     # Second pass to deal with connections between steps.
     for step in steps:
         # Input connections.
-        for input_name, conn_dict in step.temp_input_connections.iteritems():
+        for input_name, conn_dict in step.temp_input_connections.items():
             if conn_dict:
                 output_step = steps_by_external_id[ conn_dict[ 'id' ] ]
                 conn = trans.model.WorkflowStepConnection()

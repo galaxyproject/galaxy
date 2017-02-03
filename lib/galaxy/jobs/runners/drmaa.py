@@ -13,14 +13,17 @@ import time
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState
+)
 from galaxy.util import asbool
 
 drmaa = None
 
 log = logging.getLogger( __name__ )
 
-__all__ = [ 'DRMAAJobRunner' ]
+__all__ = ( 'DRMAAJobRunner', )
 
 RETRY_EXCEPTIONS_LOWER = frozenset(['invalidjobexception', 'internalexception'])
 
@@ -391,7 +394,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             job_name += '_%s' % job_wrapper.tool.old_id
         if external_runjob_script is None:
             job_name += '_%s' % job_wrapper.user
-        job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+        job_name = ''.join( x if x in ( string.letters + string.digits + '_' ) else '_' for x in job_name )
         if self.restrict_job_name_length:
             job_name = job_name[:self.restrict_job_name_length]
         return job_name

@@ -17,6 +17,20 @@
                 $("#multiple-destination").show();
             });
         });
+        $(function() {
+            $("#source-content-all").click(function() {
+                $("input[name='source_content_ids']").each(function() {
+                    this.checked = true;
+                });
+            });
+        });
+        $(function() {
+            $("#source-content-none").click(function() {
+                $("input[name='source_content_ids']").each(function() {
+                    this.checked = false;
+                });
+            });
+        });
     </script>
     
 </%def>
@@ -59,21 +73,30 @@
                 </select>
             </div>
             <div class="toolFormBody">
-                %if source_contents:
-                    %for data in source_contents:
-                        <%
-                            checked = ""
-                            encoded_id = trans.security.encode_id(data.id)
-                            input_id = "%s|%s" % ( data.history_content_type, encoded_id )
-                            if input_id in source_content_ids:
-                                checked = " checked='checked'"
-                        %>
+                <% has_source_contents = False %>
+                %for data in source_contents:
+                    %if not has_source_contents:
                         <div class="form-row">
-                            <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
-                            <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
+                            <div class="btn-group">
+                                <span class="select-all btn btn-default" name="source-content-all" id="source-content-all">All</span>
+                                <span class="deselect-all btn btn-default" name="source-content-none" id="source-content-none">None</span>
+                            </div>
                         </div>
-                    %endfor
-                %else:
+                    %endif
+                    <%
+                        has_source_contents = True
+                        checked = ""
+                        encoded_id = trans.security.encode_id(data.id)
+                        input_id = "%s|%s" % ( data.history_content_type, encoded_id )
+                        if input_id in source_content_ids:
+                            checked = " checked='checked'"
+                    %>
+                    <div class="form-row">
+                        <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
+                        <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
+                    </div>
+                %endfor
+                %if not has_source_contents:
                     <div class="form-row">This history has no datasets.</div>
                 %endif
             </div>
