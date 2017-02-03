@@ -214,7 +214,7 @@ ensure_grunt() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.3'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:17.01.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -246,6 +246,8 @@ then
        DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
        shift
     fi
+    UID=$(id -u)
+    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${UID} ${DOCKER_RUN_EXTRA_ARGS}"
     echo "Launching docker container for testing..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?

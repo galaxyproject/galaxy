@@ -141,11 +141,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             force_rebuild:           If true and chache dir exists, attempts to delete cache dir
         """
         tool = self._get_tool(id)
-        [tool._view.install_dependency(id=None, **req.to_dict()) for req in tool.requirements]
+        tool._view.install_dependencies(tool.requirements)
         if kwds.get('build_dependency_cache'):
             tool.build_dependency_cache(**kwds)
         # TODO: rework resolver install system to log and report what has been done.
-        # _view.install_dependency should return a dict with stdout, stderr and success status
+        # _view.install_dependencies should return a dict with stdout, stderr and success status
         return tool.tool_requirements_status
 
     @expose_api
@@ -236,6 +236,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool_stub_boost = self.app.config.get( 'tool_stub_boost', 5 )
         tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
         tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
+        tool_enable_ngram_search = self.app.config.get( 'tool_enable_ngram_search', False )
+        tool_ngram_minsize = self.app.config.get( 'tool_ngram_minsize', 3 )
+        tool_ngram_maxsize = self.app.config.get( 'tool_ngram_maxsize', 4 )
 
         results = self.app.toolbox_search.search( q=q,
                                                   tool_name_boost=tool_name_boost,
@@ -244,7 +247,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                                                   tool_label_boost=tool_label_boost,
                                                   tool_stub_boost=tool_stub_boost,
                                                   tool_help_boost=tool_help_boost,
-                                                  tool_search_limit=tool_search_limit )
+                                                  tool_search_limit=tool_search_limit,
+                                                  tool_enable_ngram_search=tool_enable_ngram_search,
+                                                  tool_ngram_minsize=tool_ngram_minsize,
+                                                  tool_ngram_maxsize=tool_ngram_maxsize )
         return results
 
     @expose_api_anonymous_and_sessionless

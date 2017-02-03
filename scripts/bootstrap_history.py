@@ -159,9 +159,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
             make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
 
       - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
-
-      - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version.
-
+      - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version. See [example](https://github.com/galaxyproject/galaxy/pull/3476).
       - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
 
 - [ ] **Deploy and Test Release**
@@ -208,16 +206,17 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-create RELEASE_CURR=${version}
 
+      - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
+      - [ ] Trigger the documentation build.
+
 - [ ] **Do Docker Release**
 
-      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev
-) of the Galaxy Docker container to ${next_version}
+      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev) of the Galaxy Docker container to ${next_version}
       - [ ] Merge dev into master
 
 - [ ] **Ensure Tool Tests use Latest Release**
 
       - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
-
       - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
 
 - [ ] **Announce Release**

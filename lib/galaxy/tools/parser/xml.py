@@ -446,6 +446,7 @@ def __parse_test_attributes( output_elem, attrib, parse_elements=False, parse_di
     # Allow a file size to vary if sim_size compare
     attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
     attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
+    attributes['decompress'] = string_as_bool( attrib.pop( 'decompress', False ) )
     extra_files = []
     if 'ftype' in attrib:
         attributes['ftype'] = attrib['ftype']

@@ -1,10 +1,10 @@
 import os
 from platform import system
-from time import sleep
 from subprocess import Popen
+from time import sleep
 
 try:
-    from psutil import Process, NoSuchProcess
+    from psutil import NoSuchProcess, Process
 except ImportError:
     """ Don't make psutil a strict requirement, but use if available. """
     Process = None

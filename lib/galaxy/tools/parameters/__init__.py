@@ -2,10 +2,11 @@
 Classes encapsulating Galaxy tool parameters.
 """
 import re
-from json import dumps, loads
+from json import dumps
 
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
+from galaxy.util.json import safe_loads
 
 from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
@@ -159,8 +160,9 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     preferred form).
     """
     rval = dict()
+    param_values = param_values or {}
     for key, value in param_values.items():
-        value = json_fix( loads( value ) )
+        value = json_fix( safe_loads( value ) )
         if key in params:
             value = params[ key ].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value

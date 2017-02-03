@@ -63,4 +63,24 @@ class AssertionJobRunner(LocalJobRunner):
         super(AssertionJobRunner, self).queue_job(job_wrapper)
 
 
+class FailOnlyFirstJobRunner(LocalJobRunner):
+    """Job runner that knows about test cases and checks final state assumptions."""
+
+    tests_seen = []
+
+    def queue_job(self, job_wrapper):
+        resource_parameters = job_wrapper.get_resource_parameters()
+        try:
+            test_name = resource_parameters["test_name"]
+        except KeyError:
+            job_wrapper.fail("Job resource parameter test_name not set as required for this job runner.")
+            return
+
+        if test_name in self.tests_seen:
+            super(FailOnlyFirstJobRunner, self).queue_job(job_wrapper)
+        else:
+            self.tests_seen.append(test_name)
+            self._fail_job_local(job_wrapper, "Failing first attempt")
+
+
 __all__ = ('FailsJobRunner', 'AssertionJobRunner')

@@ -34,9 +34,9 @@ CONDA_VERSION = "4.2.13"
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-MacOSX-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-MacOSX-x86_64.sh"
     else:
-        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-Linux-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh"
     return url
 
 
@@ -358,10 +358,22 @@ def install_conda(conda_context=None):
     fix_version_cmd = "%s install -y -q conda=%s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), CONDA_VERSION)
     full_command = "%s && %s && %s" % (download_cmd, install_cmd, fix_version_cmd)
     try:
+        log.info("Installing Conda, this may take several minutes.")
         return conda_context.shell_exec(full_command)
     finally:
         if os.path.exists(script_path):
             os.remove(script_path)
+
+
+def install_conda_targets(conda_targets, env_name, conda_context=None):
+    conda_context = _ensure_conda_context(conda_context)
+    conda_context.ensure_channels_configured()
+    create_args = [
+        "--name", env_name,  # enviornment for package
+    ]
+    for conda_target in conda_targets:
+        create_args.append(conda_target.package_specifier)
+    return conda_context.exec_create(create_args)
 
 
 def install_conda_target(conda_target, conda_context=None):
@@ -376,10 +388,14 @@ def install_conda_target(conda_target, conda_context=None):
     return conda_context.exec_create(create_args)
 
 
-def cleanup_failed_install(conda_target, conda_context=None):
+def cleanup_failed_install_of_environment(env, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    if conda_context.has_env(conda_target.install_environment):
-        conda_context.exec_remove([conda_target.install_environment])
+    if conda_context.has_env(env):
+        conda_context.exec_remove([env])
+
+
+def cleanup_failed_install(conda_target, conda_context=None):
+    cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
 def best_search_result(conda_target, conda_context=None, channels_override=None):

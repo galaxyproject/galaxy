@@ -4,6 +4,9 @@ import shutil
 from tempfile import mkdtemp
 
 from base import integration_util
+from base.populators import (
+    DatasetPopulator,
+)
 
 GNUPLOT = {u'version': u'4.6', u'type': u'package', u'name': u'gnuplot'}
 
@@ -17,7 +20,7 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.conda_tmp_prefix = mkdtemp()
-        config["use_cached_dep_manager"] = True
+        config["use_cached_dependency_manager"] = True
         config["conda_auto_init"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
 
@@ -70,6 +73,25 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         self._assert_status_code_is( create_response, 200 )
         response = create_response.json()
         self._assert_dependency_type(response)
+
+    def test_legacy_r_mapping( self ):
+        """
+        """
+        tool_id = "legacy_R"
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        history_id = dataset_populator.new_history()
+        endpoint = "tools/%s/install_dependencies" % tool_id
+        data = {'id': tool_id}
+        create_response = self._post(endpoint, data=data, admin=True)
+        self._assert_status_code_is( create_response, 200 )
+        payload = dataset_populator.run_tool_payload(
+            tool_id=tool_id,
+            inputs={},
+            history_id=history_id,
+        )
+        create_response = self._post( "tools", data=payload )
+        self._assert_status_code_is( create_response, 200 )
+        dataset_populator.wait_for_history( history_id, assert_ok=True )
 
     def test_dependency_status_installed_not_exact( self ):
         """

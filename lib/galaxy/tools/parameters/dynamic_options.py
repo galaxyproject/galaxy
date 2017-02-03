@@ -2,13 +2,20 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
-
 import logging
 import os
-import validation
-from galaxy.util import string_as_bool
-from galaxy.model import User, HistoryDatasetAssociation, HistoryDatasetCollectionAssociation
+
+from six import StringIO
+
 import galaxy.tools
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    User
+)
+from galaxy.util import string_as_bool
+
+from . import validation
 
 log = logging.getLogger(__name__)
 
@@ -590,10 +597,9 @@ class DynamicOptions( object ):
                 options = self.parse_file_fields( open( path ) )
             else:
                 # Pass just the first megabyte to parse_file_fields.
-                import StringIO
                 log.warning( "Attempting to load options from large file, reading just first megabyte" )
                 contents = open( path, 'r' ).read( 1048576 )
-                options = self.parse_file_fields( StringIO.StringIO( contents ) )
+                options = self.parse_file_fields( StringIO( contents ) )
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
         else:

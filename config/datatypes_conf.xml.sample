@@ -38,6 +38,7 @@
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
+    <datatype extension="dmnd" type="galaxy.datatypes.binary:Binary:DMND" subclass="True" display_in_upload="false"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml" />
       <display file="igb/bb.xml" />
@@ -86,6 +87,36 @@
     </datatype>
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
+    </datatype>
+    <datatype extension="fastq.gz" type="galaxy.datatypes.sequence:FastqGz" display_in_upload="true">
+        <converter file="fastqgz_to_fastq.xml" target_datatype="fastq"/>
+    </datatype>
+    <datatype extension="fastqsanger.gz" type="galaxy.datatypes.sequence:FastqSangerGz" display_in_upload="true">
+        <converter file="fastqsangergz_to_fastqsanger.xml" target_datatype="fastqsanger"/>
+    </datatype>
+    <datatype extension="fastqsolexa.gz" type="galaxy.datatypes.sequence:FastqSolexaGz" display_in_upload="true">
+        <converter file="fastqsolexagz_to_fastqsolexa.xml" target_datatype="fastqsolexa"/>
+    </datatype>
+    <datatype extension="fastqcssanger.gz" type="galaxy.datatypes.sequence:FastqCSSangerGz" display_in_upload="true">
+        <converter file="fastqcssangergz_to_fastqcssanger.xml" target_datatype="fastqcssanger"/>
+    </datatype>
+    <datatype extension="fastqillumina.gz" type="galaxy.datatypes.sequence:FastqIlluminaGz" display_in_upload="true">
+        <converter file="fastqilluminagz_to_fastqillumina.xml" target_datatype="fastqillumina"/>
+    </datatype>
+    <datatype extension="fastq.bz2" type="galaxy.datatypes.sequence:FastqBz2" display_in_upload="true">
+        <converter file="fastqbz2_to_fastq.xml" target_datatype="fastq"/>
+    </datatype>
+    <datatype extension="fastqsanger.bz2" type="galaxy.datatypes.sequence:FastqSangerBz2" display_in_upload="true">
+        <converter file="fastqsangerbz2_to_fastqsanger.xml" target_datatype="fastqsanger"/>
+    </datatype>
+    <datatype extension="fastqsolexa.bz2" type="galaxy.datatypes.sequence:FastqSolexaBz2" display_in_upload="true">
+        <converter file="fastqsolexabz2_to_fastqsolexa.xml" target_datatype="fastqsolexa"/>
+    </datatype>
+    <datatype extension="fastqcssanger.bz2" type="galaxy.datatypes.sequence:FastqCSSangerBz2" display_in_upload="true">
+        <converter file="fastqcssangerbz2_to_fastqcssanger.xml" target_datatype="fastqcssanger"/>
+    </datatype>
+    <datatype extension="fastqillumina.bz2" type="galaxy.datatypes.sequence:FastqIlluminaBz2" display_in_upload="true">
+        <converter file="fastqilluminabz2_to_fastqillumina.xml" target_datatype="fastqillumina"/>
     </datatype>
     <datatype extension="fqtoc" type="galaxy.datatypes.sequence:SequenceSplitLocations" display_in_upload="true"/>
     <datatype extension="eland" type="galaxy.datatypes.tabular:Eland" display_in_upload="true"/>
@@ -565,7 +596,7 @@
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
-    <datatype extension="smat" type="galaxy.datatypes.estscan:Smat" display_in_upload="true" />
+    <datatype extension="smat" type="galaxy.datatypes.text:Smat" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
@@ -575,7 +606,7 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
-    <sniffer type="galaxy.datatypes.estscan:Smat"/>
+    <sniffer type="galaxy.datatypes.text:Smat"/>
     <sniffer type="galaxy.datatypes.mothur:Sabund"/>
     <sniffer type="galaxy.datatypes.mothur:Otu"/>
     <sniffer type="galaxy.datatypes.mothur:GroupAbund"/>
@@ -606,6 +637,7 @@
     <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
+    <sniffer type="galaxy.datatypes.binary:DMND" />
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
@@ -642,6 +674,8 @@
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqGz"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqBz2"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>
@@ -702,22 +736,4 @@
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
   </sniffers>
-  <build_sites>
-      <!--
-      Build sites define the builds (dbkeys) available at sites used by display
-      applications and the URL to those sites.
-
-      The `display` attributes on the `ucsc` and `gbrowse` sites replace the
-      `ucsc_display_sites` and `gbrowse_display_sites` options in galaxy.ini.
-      Because these are used by "old-style" display applications, their types
-      cannot change if you want the old-style display links for these sites to
-      work.
-      -->
-      <site type="ucsc" file="tool-data/shared/ucsc/ucsc_build_sites.txt" display="main,test,archaea,ucla"/>
-      <site type="gbrowse" file="tool-data/shared/gbrowse/gbrowse_build_sites.txt" display="modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225"/>
-      <site type="ensembl" file="tool-data/shared/ensembl/ensembl_sites.txt"/>
-      <site type="ensembl_data_url" file="tool-data/shared/ensembl/ensembl_sites_data_URL.txt"/>
-      <site type="igv" file="tool-data/shared/igv/igv_build_sites.txt"/>
-      <site type="rviewer" file="tool-data/shared/rviewer/rviewer_build_sites.txt"/>
-  </build_sites>
 </datatypes>

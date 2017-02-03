@@ -34,6 +34,7 @@ from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.json import safe_loads
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
@@ -593,8 +594,8 @@ class Job( object, JobLike, Dictifiable ):
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
 
-    def add_input_dataset_collection( self, name, dataset ):
-        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
+    def add_input_dataset_collection( self, name, dataset_collection ):
+        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset_collection ) )
 
     def add_output_dataset_collection( self, name, dataset_collection_instance ):
         self.output_dataset_collection_instances.append( JobToOutputDatasetCollectionAssociation( name, dataset_collection_instance ) )
@@ -924,9 +925,9 @@ class JobToOutputDatasetAssociation( object ):
 
 
 class JobToInputDatasetCollectionAssociation( object ):
-    def __init__( self, name, dataset ):
+    def __init__( self, name, dataset_collection ):
         self.name = name
-        self.dataset = dataset
+        self.dataset_collection = dataset_collection
 
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given
@@ -2045,7 +2046,7 @@ class DatasetInstance( object ):
             depends_list = []
         return dict([ (dep, self.get_converted_dataset(trans, dep)) for dep in depends_list ])
 
-    def get_converted_dataset(self, trans, target_ext, target_context=None):
+    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -2084,7 +2085,7 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass  # No deps
-        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context ).values()))
+        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context, history=history ).values()))
         new_dataset.name = self.name
         self.copy_attributes( new_dataset )
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
@@ -3758,6 +3759,14 @@ class WorkflowStep( object ):
         else:
             content_id = None
         return content_id
+
+    @property
+    def name( self ):
+        state = self.tool_inputs
+        if state:
+            state = safe_loads( state )
+            identifier = state.get( 'name' )
+            return safe_loads( identifier )
 
     @property
     def input_connections_by_name(self):

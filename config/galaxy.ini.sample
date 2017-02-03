@@ -210,7 +210,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #conda_auto_install = False
 # Set to True to instruct Galaxy to install Conda from the web automatically
 # if it cannot find a local copy and conda_exec is not configured.
-#conda_auto_init = False
+#conda_auto_init = True
 # You must set this to True if conda_prefix and job_working_directory are not on the same
 # volume, or some conda dependencies will fail to execute at job runtime.
 # Conda will copy packages content instead of creating hardlinks or symlinks.
@@ -349,8 +349,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
 # By default none will be loaded.  Set to config/plugins/webhooks/demo to load Galaxy's
 # demo webhooks.  To use an absolute path begin the path with '/'.  This is a comma
-# separated list.
-# webhooks_dir = config/plugins/webhooks
+# separated list. Add test/functional/webhooks to this list to include the demo webhooks
+# used to test the webhook framework.
+#webhooks_dir = config/plugins/webhooks
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -909,6 +910,16 @@ use_interactive = True
 # results will appear.
 # tool_search_limit = 20
 
+# Enable/ disable Ngram-search for tools. It makes tool
+# search results tolerant for spelling mistakes in the query
+# by dividing the query into multiple ngrams and search for
+# each ngram
+#tool_enable_ngram_search = False
+
+# Set minimum and maximum sizes of ngrams
+#tool_ngram_minsize = 3
+#tool_ngram_maxsize = 4
+
 # -- Users and Security
 
 # Galaxy encodes various internal values when these values will be output in
@@ -1044,8 +1055,12 @@ use_interactive = True
 # the Galaxy's beta workflow scheduling.
 #force_beta_workflow_scheduled_min_steps=250
 # Switch to using Galaxy's beta workflow scheduling for all workflows involving
-# ccollections.
+# collections.
 #force_beta_workflow_scheduled_for_collections=False
+
+
+# Force serial scheduling of workflows within the context of a particular history
+#history_local_serial_workflow_scheduling=False
 
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.
@@ -1148,6 +1163,20 @@ use_interactive = True
 # be configured through the job configuration file.
 #job_config_file = config/job_conf.xml
 
+# When jobs fail due to job runner problems, Galaxy can be configured to retry
+# these or reroute the jobs to new destinations. Very fine control of this is
+# available with resubmit declarations in job_conf.xml. For simple deployments
+# of Galaxy though, the following attribute can define resubmission conditions
+# for all job destinations. If any job destination defines even one
+# resubmission condition explicitly in job_conf.xml - the condition described
+# by this option will not apply to that destination. For instance, the condition:
+# 'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
+# would retry up to two times jobs that didn't fail due to detected memory or
+# walltime limits but did fail quickly (either while queueing or running). The
+# commented out default below results in no default job resubmission condition,
+# failing jobs are just failed outright.
+#default_job_resubmission_condition = 
+
 # In multiprocess configurations, notification between processes about new jobs
 # must be done via the database.  In single process configurations, this can be
 # done in memory, which is a bit quicker.
@@ -1202,7 +1231,7 @@ use_interactive = True
 # tools). Set this to legacy_and_local to preserve the environment for legacy
 # tools and locally managed tools (this might be useful for instance if you are
 # installing software into Galaxy's virtualenv for tool development).
-#python_environment_problem = legacy_only
+#preserve_python_environment = legacy_only
 
 # Clean up various bits of jobs left on the filesystem after completion.  These
 # bits include the job working directory, external metadata temporary files,

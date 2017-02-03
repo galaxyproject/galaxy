@@ -5,6 +5,7 @@ selectors:
     messages:
         all: '[class*="message"]'
         error: '.errormessage'
+        warning: '.alert-warning'
         done: '.donemessage'
         info: '.infomessage'
         donelarge: '.donemessagelarge'

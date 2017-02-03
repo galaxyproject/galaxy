@@ -5,7 +5,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.element = attr.element;
             this.input_terminals = {};
             this.output_terminals = {};
-            this.tool_errors = {};
+            this.errors = {};
             this.workflow_outputs = [];
         },
         getWorkflowOutput: function(outputName) {
@@ -157,9 +157,9 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
                 this.type = data.type;
             }
             this.name = data.name;
-            this.form_html = data.form_html;
+            this.config_form = data.config_form;
             this.tool_state = data.tool_state;
-            this.tool_errors = data.tool_errors;
+            this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.annotation = data.annotation;
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
@@ -190,14 +190,13 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             var node = this;
                 nodeView = node.nodeView;
             this.tool_state = data.tool_state;
-            this.form_html = data.form_html;
-            this.tool_errors = data.tool_errors;
+            this.config_form = data.config_form;
+            this.errors = data.errors;
             this.annotation = data['annotation'];
             this.setLabel(data.label);
-
             if( "post_job_actions" in data ) {
                 // Won't be present in response for data inputs
-                var pja_in = $.parseJSON(data.post_job_actions);
+                var pja_in = data.post_job_actions;
                 this.post_job_actions = pja_in ? pja_in : {};
             }
             node.nodeView.renderToolErrors();
@@ -223,13 +222,11 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
                 nodeView.updateDataOutput( data.data_outputs[ 0 ] );
             }
             old_body.replaceWith( new_body );
-
             if( "workflow_outputs" in data ) {
                 // Won't be present in response for data inputs
                 this.workflow_outputs = workflow_outputs ? workflow_outputs : [];
             }
-
-            // If active, reactivate with new form_html
+            // If active, reactivate with new config_form
             this.markChanged();
             this.redraw();
         },
@@ -237,7 +234,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             var b = $(this.element).find( ".toolFormBody" );
             b.find( "div" ).remove();
             var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
-            this.form_html = tmp;
+            this.config_form = tmp;
             b.html( tmp );
             this.app.workflow.node_changed( this );
         },
