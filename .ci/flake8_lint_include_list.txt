@@ -427,7 +427,6 @@ scripts/tools/re_escape_output.py
 test/api/__init__.py
 test/api/test_dataset_collections.py
 test/api/test_datasets.py
-test/api/test_datatypes.py
 test/api/test_framework.py
 test/api/test_history_contents_provenance.py
 test/api/test_jobs.py

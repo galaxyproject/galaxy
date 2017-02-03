@@ -121,6 +121,7 @@ GALAXY_LIB_TOOLS = [
     "MAF_split_blocks_by_species1",
     "maf_limit_size1",
     "maf_by_block_number1",
+    "wiggle2simple1",
     # Tools improperly migrated to the tool shed (devteam)
     "lastz_wrapper_2",
     "qualityFilter",
@@ -137,6 +138,13 @@ GALAXY_LIB_TOOLS = [
     "sam_to_bam",  # This was fixed with version 1.1.3 of the tool - TODO add Galaxy to PYTHONPATH only for older versions
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
+    # From peterjc and others seq utils
+    "venn_list",
+    "seq_rename",
+    "seq_primer_clip",
+    "fastq_groomer_parallel",
+    "fasta_filter_by_id",
+    "fastq_filter_by_id",
 ]
 
 

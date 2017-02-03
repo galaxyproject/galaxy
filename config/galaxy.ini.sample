@@ -1055,8 +1055,12 @@ use_interactive = True
 # the Galaxy's beta workflow scheduling.
 #force_beta_workflow_scheduled_min_steps=250
 # Switch to using Galaxy's beta workflow scheduling for all workflows involving
-# ccollections.
+# collections.
 #force_beta_workflow_scheduled_for_collections=False
+
+
+# Force serial scheduling of workflows within the context of a particular history
+#history_local_serial_workflow_scheduling=False
 
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.

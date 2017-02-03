@@ -2309,7 +2309,7 @@ mapper( model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, prop
 ) )
 
 mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
-    history=relation( model.History ),
+    history=relation( model.History, backref=backref('workflow_invocations', uselist=True )),
     input_parameters=relation( model.WorkflowRequestInputParameter ),
     step_states=relation( model.WorkflowRequestStepState ),
     input_step_parameters=relation( model.WorkflowRequestInputStepParmeter ),
