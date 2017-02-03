@@ -1091,6 +1091,15 @@ it may be inconvenient to upload the entiry file and this can be used instead.
         <xs:documentation xml:lang="en">If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="decompress" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in ``Pull Request #3550 <https://github.com/galaxyproject/galaxy/pull/3550>`__.
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="delta" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the number of bytes different allowed.</xs:documentation>
