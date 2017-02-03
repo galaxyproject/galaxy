@@ -2,7 +2,7 @@
 Modules used in building workflows
 """
 import logging
-from json import dumps, loads
+from json import loads
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import XML
 
@@ -92,15 +92,15 @@ class WorkflowModule( object ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self ):
+    def get_state( self, nested=True ):
         """ Return a serializable representation of the persistable state of
         the step.
         """
         inputs = self.get_inputs()
         if inputs:
-            return self.state.encode( Bunch( inputs=inputs ), self.trans.app )
+            return self.state.encode( Bunch( inputs=inputs ), self.trans.app, nested=nested )
         else:
-            return dumps( self.state.inputs )
+            return self.state.inputs
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration

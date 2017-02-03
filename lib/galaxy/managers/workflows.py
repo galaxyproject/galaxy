@@ -564,7 +564,7 @@ class WorkflowContentsManager(UsesAnnotations):
             content_id = module.get_content_id()
             # Export differences for backward compatibility
             if module.type == 'tool':
-                tool_state = module.get_state()
+                tool_state = module.get_state( nested=False )
             else:
                 tool_state = module.state.inputs
             # Step info

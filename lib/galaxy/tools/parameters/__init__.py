@@ -136,7 +136,7 @@ def check_param( trans, param, incoming_value, param_values ):
     return value, error
 
 
-def params_to_strings( params, param_values, app ):
+def params_to_strings( params, param_values, app, nested=False ):
     """
     Convert a dictionary of parameter values to a dictionary of strings
     suitable for persisting. The `value_to_basic` method of each parameter
@@ -148,7 +148,7 @@ def params_to_strings( params, param_values, app ):
     for key, value in param_values.items():
         if key in params:
             value = params[ key ].value_to_basic( value, app )
-        rval[ key ] = str( dumps( value ) )
+        rval[ key ] = value if nested else str( dumps( value ) )
     return rval
 
 
@@ -163,6 +163,11 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     param_values = param_values or {}
     for key, value in param_values.items():
         value = json_fix( safe_loads( value ) )
+        try:
+            float( value )
+            value = str( value )
+        except:
+            pass
         if key in params:
             value = params[ key ].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value

@@ -315,11 +315,11 @@ class DefaultToolState( object ):
         for input in tool.inputs.itervalues():
             self.inputs[ input.name ] = input.get_initial_value( trans, context )
 
-    def encode( self, tool, app ):
+    def encode( self, tool, app, nested=False ):
         """
         Convert the data to a string
         """
-        value = params_to_strings( tool.inputs, self.inputs, app )
+        value = params_to_strings( tool.inputs, self.inputs, app, nested=nested )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         return value
