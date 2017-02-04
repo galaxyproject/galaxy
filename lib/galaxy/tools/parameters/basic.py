@@ -870,6 +870,14 @@ class SelectToolParameter( ToolParameter ):
     def to_json( self, value, app, use_security ):
         return value
 
+    def to_python( self, value, app ):
+        try:
+            float( value )
+            return str( value )
+        except:
+            pass
+        return value
+
     def get_initial_value( self, trans, other_values ):
         options = list( self.get_options( trans, other_values ) )
         if len(options) == 0 and trans.workflow_building_mode:

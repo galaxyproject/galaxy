@@ -163,11 +163,6 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     param_values = param_values or {}
     for key, value in param_values.items():
         value = json_fix( safe_loads( value ) )
-        try:
-            float( value )
-            value = str( value )
-        except:
-            pass
         if key in params:
             value = params[ key ].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value
