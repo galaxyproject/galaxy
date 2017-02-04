@@ -461,7 +461,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
             # Slight misuse of ItemOwnershipException?
             raise ItemOwnershipException( "User cannot add to library item." )
 
-    def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='' ):
+    def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='', element_identifier=None ):
         # PRECONDITION: permissions for this action on hda and library_folder have been checked
         roles = roles or []
 
@@ -470,7 +470,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 
         # create the new ldda and apply the folder perms to it
         ldda = hda.to_library_dataset_dataset_association( trans, target_folder=library_folder,
-                                                           roles=roles, ldda_message=ldda_message )
+                                                           roles=roles, ldda_message=ldda_message, element_identifier=element_identifier )
         self._apply_library_folder_permissions_to_ldda( trans, library_folder, ldda )
         self._apply_hda_permissions_to_ldda( trans, hda, ldda )
         # TODO:?? not really clear on how permissions are being traded here

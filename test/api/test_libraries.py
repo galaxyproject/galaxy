@@ -1,5 +1,7 @@
 from base import api
 from base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
     LibraryPopulator,
     TestsDatasets,
     wait_on_state
@@ -10,6 +12,8 @@ class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):
 
     def setUp( self ):
         super( LibrariesApiTestCase, self ).setUp()
+        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
+        self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
         self.library_populator = LibraryPopulator( self )
 
     def test_create( self ):
@@ -84,6 +88,25 @@ class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_has_keys( library_dataset, "peek", "data_type" )
         assert library_dataset[ "peek" ].find("create_test") >= 0
         assert library_dataset[ "file_ext" ] == "txt", library_dataset[ "file_ext" ]
+
+    def test_create_datasets_from_collection( self ):
+        library = self.library_populator.new_private_library( "ForCreateDatasetsFromCollection" )
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["xxx", "yyy"] ).json()["id"]
+        folder_response = self._create_folder( library )
+        self._assert_status_code_is( folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        payload = {'from_hdca_id': hdca_id}
+        create_response = self._post( "folders/%s/contents" % folder_id, payload )
+        self._assert_status_code_is( create_response, 200 )
+        assert len(create_response.json()) == 2
+        # Also test that anything different from a flat dataset collection list
+        # is refused
+        hdca_pair_id = self.dataset_collection_populator.create_list_of_pairs_in_history( history_id).json()['id']
+        payload = {'from_hdca_id': hdca_pair_id}
+        create_response = self._post( "folders/%s/contents" % folder_id, payload )
+        self._assert_status_code_is( create_response, 501 )
+        assert create_response.json()['err_msg'] == 'Cannot add nested collections to library. Please flatten your collection first.'
 
     def _create_folder( self, library ):
         create_data = dict(

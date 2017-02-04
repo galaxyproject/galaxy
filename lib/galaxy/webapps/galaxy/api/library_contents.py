@@ -150,6 +150,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         To copy an HDA into a library send ``create_type`` of 'file' and
         the HDA's encoded id in ``from_hda_id`` (and optionally ``ldda_message``).
 
+        To copy an HDCA into a library send ``create_type`` of 'file' and
+        the HDCA's encoded id in ``from_hdca_id`` (and optionally ``ldda_message``).
+
         :type   library_id: str
         :param  library_id: the encoded id of the library where to create the new item
         :type   payload:    dict
@@ -160,7 +163,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             * from_hda_id:  (optional, only if create_type is 'file') the
                 encoded id of an accessible HDA to copy into the library
             * ldda_message: (optional) the new message attribute of the LDDA created
-            * extended_metadata: (optional) dub-dictionary containing any extended
+            * extended_metadata: (optional) sub-dictionary containing any extended
                 metadata to associate with the item
             * upload_option: (optional) one of 'upload_file' (default), 'upload_directory' or 'upload_paths'
             * server_dir: (optional, only if upload_option is
@@ -285,7 +288,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # for cross type comparisions, ie "True" == True
             yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
 
-    def _copy_hda_to_library_folder( self, trans, from_hda_id, library_id, folder_id, ldda_message='' ):
+    def _copy_hda_to_library_folder( self, trans, from_hda_id, library_id, folder_id, ldda_message='', element_identifier=None ):
         """
         Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
         adding ``ldda_message`` to the new ldda's ``message``.
@@ -315,7 +318,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 trans.response.status = 403
                 return { 'error': 'user has no permission to add to library folder (%s)' % ( folder_id ) }
 
-            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
+            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_indentifier=element_identifier )
             ldda_dict = ldda.to_dict()
             rval = trans.security.encode_dict_ids( ldda_dict )
 

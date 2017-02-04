@@ -250,46 +250,66 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param  payload:    dictionary structure containing:
             :param from_hda_id:         (optional) the id of an accessible HDA to copy into the library
             :type  from_hda_id:         encoded id
+            :param from_hdca_id:         (optional) the id of an accessible HDCA to copy into the library
+            :type  from_hdca_id:         encoded id
             :param ldda_message:        (optional) the new message attribute of the LDDA created
             :type   ldda_message:       str
             :param extended_metadata:   (optional) dub-dictionary containing any extended metadata to associate with the item
             :type  extended_metadata:   dict
         :type   payload:    dict
 
-        :returns:   a dictionary containing the id, name, and 'show' url of the new item
-        :rtype:     dict
+        :returns:   a list of dictionaries containing the id, name, and 'show' url of the new item
+        :rtype:     list
 
         :raises:    ObjectAttributeInvalidException,
             InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
         encoded_folder_id_16 = self.__decode_library_content_id( trans, encoded_folder_id )
-        from_hda_id, ldda_message = ( payload.pop( 'from_hda_id', None ), payload.pop( 'ldda_message', '' ) )
+        from_hda_id = payload.pop( 'from_hda_id', None )
+        from_hdca_id = payload.pop( 'from_hdca_id', None )
+        ldda_message = payload.pop( 'ldda_message', '' )
         if ldda_message:
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
-        rval = {}
+        rvals = []
         try:
-            decoded_hda_id = self.decode_id( from_hda_id )
-            hda = self.hda_manager.get_owned( decoded_hda_id, trans.user, current_history=trans.history )
-            hda = self.hda_manager.error_if_uploading( hda )
-            folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
+            if from_hda_id:
+                decoded_hda_id = self.decode_id( from_hda_id )
+                hdas = [self.hda_manager.get_owned(decoded_hda_id, trans.user, current_history=trans.history)]
+            elif from_hdca_id:
+                decoded_hdca_id = self.decode_id( from_hdca_id )
+                hdca = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_hdca_id )
+                if hdca.collection.collection_type != 'list':
+                    raise exceptions.NotImplemented('Cannot add nested collections to library. Please flatten your collection first.')
+                hdas = []
+                for element in hdca.collection.elements:
+                    hdas.append((element.element_identifier, element.dataset_instance))
+            for hda in hdas:
+                element_identifier = None
+                if isinstance(hda, tuple):
+                    element_identifier, hda = hda
+                hda = self.hda_manager.error_if_uploading( hda )
+                folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
 
-            library = folder.parent_library
-            if library.deleted:
-                raise exceptions.ObjectAttributeInvalidException()
-            if not self.can_current_user_add_to_library_item( trans, folder ):
-                raise exceptions.InsufficientPermissionsException()
+                library = folder.parent_library
+                if library.deleted:
+                    raise exceptions.ObjectAttributeInvalidException()
+                if not self.can_current_user_add_to_library_item( trans, folder ):
+                    raise exceptions.InsufficientPermissionsException()
 
-            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message )
-            update_time = ldda.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-            ldda_dict = ldda.to_dict()
-            rval = trans.security.encode_dict_ids( ldda_dict )
-            rval['update_time'] = update_time
+                ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_identifier=element_identifier )
+                update_time = ldda.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+                ldda_dict = ldda.to_dict()
+                rval = trans.security.encode_dict_ids( ldda_dict )
+                rval['update_time'] = update_time
+                rvals.append(rval)
 
         except exceptions.ObjectAttributeInvalidException:
             raise exceptions.ObjectAttributeInvalidException( 'You cannot add datasets into deleted library. Undelete it first.' )
         except exceptions.InsufficientPermissionsException:
             raise exceptions.exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
+        except exceptions.NotImplemented:
+            raise
         except Exception as exc:
             # TODO handle exceptions better within the mixins
             if ( ( 'not accessible to the current user' in str( exc ) ) or ( 'You are not allowed to access this dataset' in str( exc ) ) ):
@@ -297,7 +317,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             else:
                 log.exception( exc )
                 raise exceptions.InternalServerError( 'An unknown error ocurred. Please try again.' )
-        return rval
+        return rvals
 
     def __decode_library_content_id( self, trans, encoded_folder_id ):
         """

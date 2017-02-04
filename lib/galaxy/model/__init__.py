@@ -2356,8 +2356,8 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
     def copy_attributes( self, new_dataset ):
         new_dataset.hid = self.hid
 
-    def to_library_dataset_dataset_association( self, trans, target_folder,
-                                                replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
+    def to_library_dataset_dataset_association( self, trans, target_folder, replace_dataset=None,
+                                                parent_id=None, user=None, roles=None, ldda_message='', element_identifier=None ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -2375,7 +2375,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         if not user:
             # This should never happen since users must be authenticated to upload to a data library
             user = self.history.user
-        ldda = LibraryDatasetDatasetAssociation( name=self.name,
+        ldda = LibraryDatasetDatasetAssociation( name=element_identifier or self.name,
                                                  info=self.info,
                                                  blurb=self.blurb,
                                                  peek=self.peek,
