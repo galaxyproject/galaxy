@@ -273,36 +273,20 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
         rvals = []
         try:
+            folder = self.get_library_folder(trans, encoded_folder_id_16, check_accessible=True)
+            library = folder.parent_library
+            if library.deleted:
+                raise exceptions.ObjectAttributeInvalidException()
+            if not self.can_current_user_add_to_library_item(trans, folder):
+                raise exceptions.InsufficientPermissionsException()
             if from_hda_id:
                 decoded_hda_id = self.decode_id( from_hda_id )
-                hdas = [self.hda_manager.get_owned(decoded_hda_id, trans.user, current_history=trans.history)]
+                rvals.append(self._copy_hda_to_library_folder( trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message ))
             elif from_hdca_id:
                 decoded_hdca_id = self.decode_id( from_hdca_id )
-                hdca = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_hdca_id )
-                if hdca.collection.collection_type != 'list':
-                    raise exceptions.NotImplemented('Cannot add nested collections to library. Please flatten your collection first.')
-                hdas = []
-                for element in hdca.collection.elements:
-                    hdas.append((element.element_identifier, element.dataset_instance))
-            for hda in hdas:
-                element_identifier = None
-                if isinstance(hda, tuple):
-                    element_identifier, hda = hda
-                hda = self.hda_manager.error_if_uploading( hda )
-                folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
-
-                library = folder.parent_library
-                if library.deleted:
-                    raise exceptions.ObjectAttributeInvalidException()
-                if not self.can_current_user_add_to_library_item( trans, folder ):
-                    raise exceptions.InsufficientPermissionsException()
-
-                ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_identifier=element_identifier )
-                update_time = ldda.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-                ldda_dict = ldda.to_dict()
-                rval = trans.security.encode_dict_ids( ldda_dict )
-                rval['update_time'] = update_time
-                rvals.append(rval)
+                rvals.extend(self._copy_hdca_to_library_folder( trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message ))
+            else:
+                raise Exception('Need to supply from_hda or or from_hdca.')
 
         except exceptions.ObjectAttributeInvalidException:
             raise exceptions.ObjectAttributeInvalidException( 'You cannot add datasets into deleted library. Undelete it first.' )

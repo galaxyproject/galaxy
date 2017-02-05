@@ -183,8 +183,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             * description: (optional, only if create_type is 'folder')
                 description of the folder to create
 
-        :rtype:     dict
-        :returns:   a dictionary containing the id, name,
+        :rtype:     list
+        :returns:   a list of dictionaries containing the id, name,
             and 'show' url of the new item
         """
         if 'create_type' not in payload:
@@ -212,9 +212,16 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
-        from_hda_id, ldda_message = ( payload.pop( 'from_hda_id', None ), payload.pop( 'ldda_message', '' ) )
-        if create_type == 'file' and from_hda_id:
-            return self._copy_hda_to_library_folder( trans, from_hda_id, library_id, real_folder_id, ldda_message )
+        from_hda_id, from_hdca_id, ldda_message = ( payload.pop( 'from_hda_id', None ), payload.pop( 'from_hdca_id', None ), payload.pop( 'ldda_message', '' ) )
+        log.debug(payload)
+        if create_type == 'file':
+            rval = []
+            if from_hda_id:
+                rval.append(self._copy_hda_to_library_folder( trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message ))
+            if from_hdca_id:
+                rval.extend(self._copy_hdca_to_library_folder(trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message))
+            if from_hda_id or from_hdca_id:
+                return rval
 
         # check for extended metadata, store it and pop it out of the param
         # otherwise sanitize_param will have a fit
@@ -287,52 +294,6 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
             yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
-
-    def _copy_hda_to_library_folder( self, trans, from_hda_id, library_id, folder_id, ldda_message='', element_identifier=None ):
-        """
-        Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
-        adding ``ldda_message`` to the new ldda's ``message``.
-
-        ``library_contents.create`` will branch to this if called with 'from_hda_id'
-        in its payload.
-        """
-        log.debug( '_copy_hda_to_library_folder: %s' % ( str(( from_hda_id, library_id, folder_id, ldda_message )) ) )
-        # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
-        # TODO: allow name and other, editable ldda attrs?
-        if ldda_message:
-            ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
-
-        rval = {}
-        try:
-            # check permissions on (all three?) resources: hda, library, folder
-            # TODO: do we really need the library??
-            from_hda_id = self.decode_id( from_hda_id )
-            hda = self.hda_manager.get_owned( from_hda_id, trans.user, current_history=trans.history )
-            hda = self.hda_manager.error_if_uploading( hda )
-            # library = self.get_library( trans, library_id, check_accessible=True )
-            folder = self.get_library_folder( trans, folder_id, check_accessible=True )
-
-            # TOOD: refactor to use check_user_can_add_to_library_item, eliminate boolean
-            # can_current_user_add_to_library_item.
-            if not self.can_current_user_add_to_library_item( trans, folder ):
-                trans.response.status = 403
-                return { 'error': 'user has no permission to add to library folder (%s)' % ( folder_id ) }
-
-            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_indentifier=element_identifier )
-            ldda_dict = ldda.to_dict()
-            rval = trans.security.encode_dict_ids( ldda_dict )
-
-        except Exception as exc:
-            # TODO: grrr...
-            if 'not accessible to the current user' in str( exc ):
-                trans.response.status = 403
-                return { 'error': str( exc ) }
-            else:
-                log.exception( exc )
-                trans.response.status = 500
-                return { 'error': str( exc ) }
-
-        return rval
 
     @web.expose_api
     def update( self, trans, id, library_id, payload, **kwd ):

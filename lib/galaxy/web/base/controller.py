@@ -10,9 +10,7 @@ from sqlalchemy import true
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
-from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
-from galaxy.exceptions import MessageException, ToolMissingException
-
+from galaxy import exceptions
 from galaxy import web
 from galaxy import model
 from galaxy import security
@@ -163,7 +161,7 @@ class BaseUIController( BaseController ):
             return BaseController.get_object( self, trans, id, class_name,
                                               check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
-        except MessageException:
+        except exceptions.MessageException:
             raise       # handled in the caller
         except:
             log.exception( "Exception in get_object check for %s %s:" % ( class_name, str( id ) ) )
@@ -177,9 +175,9 @@ class BaseAPIController( BaseController ):
             return BaseController.get_object( self, trans, id, class_name,
                                               check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
-        except ItemDeletionException as e:
+        except exceptions.ItemDeletionException as e:
             raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified: %s" % ( class_name, str( id ), str( e ) ) )
-        except MessageException as e:
+        except exceptions.MessageException as e:
             raise HTTPBadRequest( detail=e.err_msg )
         except Exception as e:
             log.exception( "Exception in get_object check for %s %s." % ( class_name, str( id ) ) )
@@ -192,7 +190,7 @@ class BaseAPIController( BaseController ):
         def get_id( item, model_class, column ):
             try:
                 return trans.security.decode_id( item )
-            except:
+            except Exception:
                 pass  # maybe an email/group name
             # this will raise if the item is invalid
             return trans.sa_session.query( model_class ).filter( column == item ).first().id
@@ -202,12 +200,12 @@ class BaseAPIController( BaseController ):
         for item in util.listify( payload.get( 'in_users', [] ) ):
             try:
                 new_in_users.append( get_id( item, trans.app.model.User, trans.app.model.User.table.c.email ) )
-            except:
+            except Exception:
                 invalid.append( item )
         for item in util.listify( payload.get( 'in_groups', [] ) ):
             try:
                 new_in_groups.append( get_id( item, trans.app.model.Group, trans.app.model.Group.table.c.name ) )
-            except:
+            except Exception:
                 invalid.append( item )
         if invalid:
             msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join( invalid )
@@ -455,11 +453,73 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 
         if check_accessible:
             if not trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ):
-                raise ItemAccessibilityException( )
+                raise exceptions.ItemAccessibilityException( )
 
         if not trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ):
             # Slight misuse of ItemOwnershipException?
-            raise ItemOwnershipException( "User cannot add to library item." )
+            raise exceptions.ItemOwnershipException( "User cannot add to library item." )
+
+    def _copy_hdca_to_library_folder(self, trans, hda_manager, from_hdca_id, folder_id, ldda_message=''):
+        """
+        Fetches the collection identified by `from_hcda_id` and dispatches individual collection elements to
+        _copy_hda_to_library_folder
+        """
+        hdca = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(from_hdca_id)
+        if hdca.collection.collection_type != 'list':
+            raise exceptions.NotImplemented('Cannot add nested collections to library. Please flatten your collection first.')
+        hdas = []
+        for element in hdca.collection.elements:
+            hdas.append((element.element_identifier, element.dataset_instance.id))
+        return [self._copy_hda_to_library_folder(trans,
+                                                 hda_manager=hda_manager,
+                                                 from_hda_id=hda_id,
+                                                 folder_id=folder_id,
+                                                 ldda_message=ldda_message,
+                                                 element_identifier=element_identifier) for (element_identifier, hda_id) in hdas]
+
+    def _copy_hda_to_library_folder( self, trans, hda_manager, from_hda_id, folder_id, ldda_message='', element_identifier=None ):
+        """
+        Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
+        adding ``ldda_message`` to the new ldda's ``message``.
+
+        ``library_contents.create`` will branch to this if called with 'from_hda_id'
+        in its payload.
+        """
+        log.debug( '_copy_hda_to_library_folder: %s' % ( str(( from_hda_id, folder_id, ldda_message )) ) )
+        # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
+        # TODO: allow name and other, editable ldda attrs?
+        if ldda_message:
+            ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
+
+        rval = {}
+        try:
+            # check permissions on (all three?) resources: hda, library, folder
+            # TODO: do we really need the library??
+            hda = hda_manager.get_owned( from_hda_id, trans.user, current_history=trans.history )
+            hda = hda_manager.error_if_uploading( hda )
+            folder = self.get_library_folder( trans, folder_id, check_accessible=True )
+
+            # TOOD: refactor to use check_user_can_add_to_library_item, eliminate boolean
+            # can_current_user_add_to_library_item.
+            if not self.can_current_user_add_to_library_item( trans, folder ):
+                trans.response.status = 403
+                return { 'error': 'user has no permission to add to library folder (%s)' % ( folder_id ) }
+
+            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_identifier=element_identifier )
+            ldda_dict = ldda.to_dict()
+            rval = trans.security.encode_dict_ids( ldda_dict )
+
+        except Exception as exc:
+            # TODO: grrr...
+            if 'not accessible to the current user' in str( exc ):
+                trans.response.status = 403
+                return { 'error': str( exc ) }
+            else:
+                log.exception( exc )
+                trans.response.status = 500
+                return { 'error': str( exc ) }
+
+        return rval
 
     def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='', element_identifier=None ):
         # PRECONDITION: permissions for this action on hda and library_folder have been checked
@@ -693,15 +753,15 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         # default to trans.user, error if anon
         if not user:
             if not trans.user:
-                raise ItemAccessibilityException( "You must be logged in to import Galaxy visualizations" )
+                raise exceptions.ItemAccessibilityException( "You must be logged in to import Galaxy visualizations" )
             user = trans.user
 
         # check accessibility
         visualization = self.get_visualization( trans, id, check_ownership=False )
         if not visualization.importable:
-            raise ItemAccessibilityException( "The owner of this visualization has disabled imports via this link." )
+            raise exceptions.ItemAccessibilityException( "The owner of this visualization has disabled imports via this link." )
         if visualization.deleted:
-            raise ItemDeletionException( "You can't import this visualization because it has been deleted." )
+            raise exceptions.ItemDeletionException( "You can't import this visualization because it has been deleted." )
 
         # copy vis and alter title
         # TODO: need to handle custom db keys.
@@ -1139,7 +1199,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         for step in stored_workflow.latest_workflow.steps:
             try:
                 module_injector.inject( step )
-            except ToolMissingException:
+            except exceptions.ToolMissingException:
                 pass
 
     def _import_shared_workflow( self, trans, stored):
@@ -1353,7 +1413,7 @@ class UsesFormDefinitionsMixin:
         form_id_select_field = self.build_form_id_select_field( trans, forms, selected_value=kwd.get( 'form_id', 'none' ) )
         try:
             decoded_form_id = trans.security.decode_id( form_id )
-        except:
+        except Exception:
             decoded_form_id = None
         if decoded_form_id:
             for form in forms:
@@ -1899,7 +1959,7 @@ class UsesFormDefinitionsMixin:
             id = library_id
             try:
                 item = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
-            except:
+            except Exception:
                 item = None
             item_desc = 'data library'
             action = 'library_info'
@@ -1908,7 +1968,7 @@ class UsesFormDefinitionsMixin:
             id = folder_id
             try:
                 item = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
-            except:
+            except Exception:
                 item = None
             item_desc = 'folder'
             action = 'folder_info'
@@ -1917,7 +1977,7 @@ class UsesFormDefinitionsMixin:
             id = ldda_id
             try:
                 item = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( ldda_id ) )
-            except:
+            except Exception:
                 item = None
             item_desc = 'dataset'
             action = 'ldda_edit_info'
@@ -1926,7 +1986,7 @@ class UsesFormDefinitionsMixin:
             id = request_type_id
             try:
                 item = trans.sa_session.query( trans.app.model.RequestType ).get( trans.security.decode_id( request_type_id ) )
-            except:
+            except Exception:
                 item = None
             item_desc = 'request type'
             action = 'view_editable_request_type'
@@ -1935,7 +1995,7 @@ class UsesFormDefinitionsMixin:
             id = sample_id
             try:
                 item = trans.sa_session.query( trans.app.model.Sample ).get( trans.security.decode_id( sample_id ) )
-            except:
+            except Exception:
                 item = None
             item_desc = 'sample'
             action = 'view_sample'
