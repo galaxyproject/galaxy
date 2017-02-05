@@ -161,6 +161,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
       - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
 
       - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `{version}` so it properly tags new PRs.
+      - [ ] Set the ``release_${version}`` branch in GitHub [setings](https://github.com/galaxyproject/galaxy/settings/branches) as protected.
 
 - [ ] **Deploy and Test Release**
 
