@@ -71,6 +71,18 @@ class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):
         create_response = self._create_folder( library )
         self._assert_status_code_is( create_response, 200 )
 
+    def test_create_dataset_denied( self ):
+        library = self.library_populator.new_private_library( "ForCreateDatasets" )
+        folder_response = self._create_folder( library )
+        self._assert_status_code_is( folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        history_id = self.dataset_populator.new_history()
+        hda_id = self.dataset_populator.new_dataset( history_id, content="1 2 3" )['id']
+        with self._different_user():
+            payload = {'from_hda_id': hda_id}
+            create_response = self._post( "folders/%s/contents" % folder_id, payload )
+            self._assert_status_code_is( create_response, 403 )
+
     def test_create_dataset( self ):
         library = self.library_populator.new_private_library( "ForCreateDatasets" )
         payload, files = self.library_populator.create_dataset_request( library, file_type="txt", contents="create_test" )
