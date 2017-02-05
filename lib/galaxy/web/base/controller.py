@@ -453,7 +453,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 
         if check_accessible:
             if not trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ):
-                raise exceptions.ItemAccessibilityException( )
+                raise exceptions.ItemAccessibilityException('You do not have access to the requested item')
 
         if not trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ):
             # Slight misuse of ItemOwnershipException?
@@ -501,13 +501,16 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
 
             # TOOD: refactor to use check_user_can_add_to_library_item, eliminate boolean
             # can_current_user_add_to_library_item.
+            if folder.parent_library.deleted:
+                raise exceptions.ObjectAttributeInvalidException('You cannot add datasets into deleted library. Undelete it first.')
             if not self.can_current_user_add_to_library_item( trans, folder ):
-                trans.response.status = 403
-                return { 'error': 'user has no permission to add to library folder (%s)' % ( folder_id ) }
+                raise exceptions.InsufficientPermissionsException('You do not have proper permissions to add a dataset to this folder,')
 
             ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_identifier=element_identifier )
             ldda_dict = ldda.to_dict()
             rval = trans.security.encode_dict_ids( ldda_dict )
+            update_time = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
+            rval['update_time'] = update_time
 
         except Exception as exc:
             # TODO: grrr...

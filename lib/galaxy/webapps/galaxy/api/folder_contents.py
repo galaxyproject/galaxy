@@ -273,12 +273,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
         rvals = []
         try:
-            folder = self.get_library_folder(trans, encoded_folder_id_16, check_accessible=True)
-            library = folder.parent_library
-            if library.deleted:
-                raise exceptions.ObjectAttributeInvalidException()
-            if not self.can_current_user_add_to_library_item(trans, folder):
-                raise exceptions.InsufficientPermissionsException()
             if from_hda_id:
                 decoded_hda_id = self.decode_id( from_hda_id )
                 rvals.append(self._copy_hda_to_library_folder( trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message ))
@@ -288,19 +282,13 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             else:
                 raise Exception('Need to supply from_hda or or from_hdca.')
 
-        except exceptions.ObjectAttributeInvalidException:
-            raise exceptions.ObjectAttributeInvalidException( 'You cannot add datasets into deleted library. Undelete it first.' )
-        except exceptions.InsufficientPermissionsException:
-            raise exceptions.exceptions.InsufficientPermissionsException( 'You do not have proper permissions to add a dataset to a folder with id (%s)' % ( encoded_folder_id ) )
-        except exceptions.NotImplemented:
-            raise
         except Exception as exc:
             # TODO handle exceptions better within the mixins
-            if ( ( 'not accessible to the current user' in str( exc ) ) or ( 'You are not allowed to access this dataset' in str( exc ) ) ):
+            if 'not accessible to the current user' in str( exc ) or 'You are not allowed to access this dataset' in str( exc ):
                 raise exceptions.ItemAccessibilityException( 'You do not have access to the requested item' )
             else:
                 log.exception( exc )
-                raise exceptions.InternalServerError( 'An unknown error ocurred. Please try again.' )
+                raise exc
         return rvals
 
     def __decode_library_content_id( self, trans, encoded_folder_id ):
