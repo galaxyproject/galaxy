@@ -8,6 +8,7 @@ import os
 import pwd
 import random
 import shutil
+import string
 import subprocess
 import sys
 import time
@@ -137,6 +138,17 @@ class JobConfiguration( object ):
         self.resource_parameters = {}
         self.limits = Bunch()
 
+        default_resubmits = []
+        default_resubmit_condition = self.app.config.default_job_resubmission_condition
+        if default_resubmit_condition:
+            default_resubmits.append(dict(
+                destination=None,
+                condition=default_resubmit_condition,
+                handler=None,
+                delay=None,
+            ))
+        self.default_resubmits = default_resubmits
+
         self.__parse_resource_parameters()
         # Initialize the config
         job_config_file = self.app.config.job_config_file
@@ -229,7 +241,13 @@ class JobConfiguration( object ):
             job_destination = JobDestination(**dict(destination.items()))
             job_destination['params'] = self.__get_params(destination)
             job_destination['env'] = self.__get_envs(destination)
-            job_destination['resubmit'] = self.__get_resubmits(destination)
+            destination_resubmits = self.__get_resubmits(destination)
+            if destination_resubmits:
+                resubmits = destination_resubmits
+            else:
+                resubmits = self.default_resubmits
+            job_destination["resubmit"] = resubmits
+
             self.destinations[id] = (job_destination,)
             if job_destination.tags is not None:
                 for tag in job_destination.tags:
@@ -264,12 +282,14 @@ class JobConfiguration( object ):
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
                      walltime=str,
+                     total_walltime=str,
                      output_size=util.size_to_bytes)
 
         self.limits = Bunch(registered_user_concurrent_jobs=None,
                             anonymous_user_concurrent_jobs=None,
                             walltime=None,
                             walltime_delta=None,
+                            total_walltime={},
                             output_size=None,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
@@ -286,12 +306,26 @@ class JobConfiguration( object ):
                         self.limits.destination_total_concurrent_jobs[id] = int(limit.text)
                     else:
                         self.limits.destination_user_concurrent_jobs[id] = int(limit.text)
+                elif type == 'total_walltime':
+                    self.limits.total_walltime["window"] = (
+                        int( limit.get('window') ) or 30
+                    )
+                    self.limits.total_walltime["raw"] = (
+                        types.get(type, str)(limit.text)
+                    )
                 elif limit.text:
                     self.limits.__dict__[type] = types.get(type, str)(limit.text)
 
         if self.limits.walltime is not None:
             h, m, s = [ int( v ) for v in self.limits.walltime.split( ':' ) ]
             self.limits.walltime_delta = datetime.timedelta( 0, s, 0, 0, m, h )
+
+        if "raw" in self.limits.total_walltime:
+            h, m, s = [ int( v ) for v in
+                        self.limits.total_walltime["raw"].split( ':' ) ]
+            self.limits.total_walltime["delta"] = datetime.timedelta(
+                0, s, 0, 0, m, h
+            )
 
         log.debug('Done loading job configuration')
 
@@ -355,6 +389,7 @@ class JobConfiguration( object ):
                             anonymous_user_concurrent_jobs=self.app.config.anonymous_user_job_limit,
                             walltime=self.app.config.job_walltime,
                             walltime_delta=self.app.config.job_walltime_delta,
+                            total_walltime={},
                             output_size=self.app.config.output_size_limit,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
@@ -469,13 +504,20 @@ class JobConfiguration( object ):
         rval = {}
         for param in parent.findall('param'):
             key = param.get('id')
-            param_value = param.text
+            if key in ["container", "container_override"]:
+                from galaxy.tools.deps import requirements
+                containers = map(requirements.container_from_element, list(param))
+                param_value = map(lambda c: c.to_dict(), containers)
+            else:
+                param_value = param.text
+
             if 'from_environ' in param.attrib:
                 environ_var = param.attrib['from_environ']
                 param_value = os.environ.get(environ_var, param_value)
             elif 'from_config' in param.attrib:
                 config_val = param.attrib['from_config']
                 param_value = self.app.config.config_dict.get(config_val, param_value)
+
             rval[key] = param_value
         return rval
 
@@ -511,7 +553,8 @@ class JobConfiguration( object ):
             rval.append( dict(
                 condition=resubmit.get('condition'),
                 destination=resubmit.get('destination'),
-                handler=resubmit.get('handler')
+                handler=resubmit.get('handler'),
+                delay=resubmit.get('delay'),
             ) )
         return rval
 
@@ -533,9 +576,8 @@ class JobConfiguration( object ):
         a list of IDs, the JobToolConfigurations for the first id in ``ids``
         matching a tool definition.
 
-        .. note::
-
-            You should not mix tool shed tool IDs, versionless tool shed IDs, and tool config tool IDs that refer to the same tool.
+        .. note:: You should not mix tool shed tool IDs, versionless tool shed
+             IDs, and tool config tool IDs that refer to the same tool.
 
         :param ids: Tool ID or IDs to fetch the JobToolConfiguration of.
         :type ids: list or str.
@@ -740,7 +782,30 @@ class JobConfiguration( object ):
                     log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
 
-class JobWrapper( object ):
+class HasResourceParameters:
+
+    def get_resource_parameters( self, job=None ):
+        # Find the dymically inserted resource parameters and give them
+        # to rule.
+
+        if job is None:
+            job = self.get_job()
+
+        app = self.app
+        param_values = job.get_param_values( app, ignore_errors=True )
+        resource_params = {}
+        try:
+            resource_params_raw = param_values[ "__job_resource" ]
+            if resource_params_raw[ "__job_resource__select" ].lower() in [ "1", "yes", "true" ]:
+                for key, value in resource_params_raw.items():
+                    resource_params[ key ] = value
+        except KeyError:
+            pass
+
+        return resource_params
+
+
+class JobWrapper( object, HasResourceParameters ):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
@@ -795,6 +860,10 @@ class JobWrapper( object ):
         """ Remove the job after it is complete, should return "always", "onsuccess", or "never".
         """
         return self.get_destination_configuration("cleanup_job", DEFAULT_CLEANUP_JOB)
+
+    @property
+    def requires_containerization(self):
+        return util.asbool(self.get_destination_configuration("require_container", "False"))
 
     def can_split( self ):
         # Should the job handler split this job up?
@@ -908,8 +977,10 @@ class JobWrapper( object ):
         self.sa_session.flush()
         # Return list of all extra files
         self.param_dict = tool_evaluator.param_dict
-        version_string_cmd = self.tool.version_string_cmd
-        if version_string_cmd:
+        version_string_cmd_raw = self.tool.version_string_cmd
+        if version_string_cmd_raw:
+            version_command_template = string.Template(version_string_cmd_raw)
+            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": compute_environment.tool_directory() })
             self.write_version_cmd = "%s > %s 2>&1" % ( version_string_cmd, compute_environment.version_path() )
         else:
             self.write_version_cmd = None
@@ -1062,6 +1133,18 @@ class JobWrapper( object ):
                 self.sa_session.add( dataset_assoc.dataset )
             job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
+
+    def is_ready_for_resubmission( self, job=None ):
+        if job is None:
+            job = self.get_job()
+
+        destination_params = job.destination_params
+        if "__resubmit_delay_seconds" in destination_params:
+            delay = float(destination_params["__resubmit_delay_seconds"])
+            if job.seconds_since_update < delay:
+                return False
+
+        return True
 
     def mark_as_resubmitted( self, info=None ):
         job = self.get_job()

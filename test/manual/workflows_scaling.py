@@ -10,18 +10,21 @@ import json
 import os
 import random
 import sys
+from argparse import ArgumentParser
 from threading import Thread
 from uuid import uuid4
+
+from bioblend import galaxy
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
-from argparse import ArgumentParser
-
-import requests
-from bioblend import galaxy
-
-from api import helpers, yaml_to_workflow
+from base.populators import (
+    GiDatasetCollectionPopulator,
+    GiDatasetPopulator,
+    GiWorkflowPopulator,
+)
+from api.workflows_format_2.converter import python_to_workflow
 
 LONG_TIMEOUT = 1000000000
 DESCRIPTION = "Script to exercise the workflow engine."
@@ -54,7 +57,7 @@ def main(argv=None):
 
     gi = _gi(args)
 
-    workflow = yaml_to_workflow.python_to_workflow(workflow_struct)
+    workflow = python_to_workflow(workflow_struct)
     workflow_info = gi.workflows.import_workflow_json(workflow)
     workflow_id = workflow_info["id"]
 
@@ -107,51 +110,6 @@ def _run(args, gi, workflow_id, uuid):
             history_id,
             timeout=LONG_TIMEOUT,
         )
-
-
-class GiPostGetMixin:
-    """Mixin for adapting Galaxy API testing helpers to bioblend."""
-
-    def _get(self, route):
-        return self._gi.make_get_request(self.__url(route))
-
-    def _post(self, route, data={}):
-        data = data.copy()
-        data['key'] = self._gi.key
-        return requests.post(self.__url(route), data=data)
-
-    def __url(self, route):
-        return self._gi.url + "/" + route
-
-
-class GiDatasetPopulator(helpers.BaseDatasetPopulator, GiPostGetMixin):
-    """Utility class for dealing with datasets and histories."""
-
-    def __init__(self, gi):
-        """Construct a dataset populator from a bioblend GalaxyInstance."""
-        self._gi = gi
-
-
-class GiDatasetCollectionPopulator(helpers.BaseDatasetCollectionPopulator, GiPostGetMixin):
-    """Utility class for dealing with dataset collections."""
-
-    def __init__(self, gi):
-        """Construct a dataset collection populator from a bioblend GalaxyInstance."""
-        self._gi = gi
-        self.dataset_populator = GiDatasetPopulator(gi)
-
-    def _create_collection(self, payload):
-        create_response = self._post( "dataset_collections", data=payload )
-        return create_response
-
-
-class GiWorkflowPopulator(helpers.BaseWorkflowPopulator, GiPostGetMixin):
-    """Utility class for dealing with workflows."""
-
-    def __init__(self, gi):
-        """Construct a workflow populator from a bioblend GalaxyInstance."""
-        self._gi = gi
-        self.dataset_populator = GiDatasetPopulator(gi)
 
 
 def _workflow_struct(args, input_uuid):

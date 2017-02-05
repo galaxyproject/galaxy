@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import tempfile
 
+from galaxy.util.compression_utils import get_fileobj
+
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
 
@@ -173,10 +175,15 @@ def files_diff(file1, file2, attributes=None):
         return count
     if not filecmp.cmp( file1, file2 ):
         files_differ = False
-        local_file = open( file1, 'U' ).readlines()
-        history_data = open( file2, 'U' ).readlines()
         if attributes is None:
             attributes = {}
+        decompress = attributes.get("decompress", None)
+        if not decompress:
+            local_file = open( file1, 'U' ).readlines()
+            history_data = open( file2, 'U' ).readlines()
+        else:
+            local_file = get_fileobj( file1, 'U' ).readlines()
+            history_data = get_fileobj( file2, 'U' ).readlines()
         if attributes.get( 'sort', False ):
             history_data.sort()
         # Why even bother with the check loop below, why not just use the diff output? This seems wasteful.

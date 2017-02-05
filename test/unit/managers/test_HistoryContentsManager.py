@@ -2,13 +2,8 @@
 """
 """
 import datetime
-import imp
-import os
 import random
 import unittest
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 from sqlalchemy import column, desc, false, true
 from sqlalchemy.sql import text
@@ -346,7 +341,7 @@ class HistoryContentsFilterParserTestCase( HistoryAsContainerBaseTestCase ):
         self.assertRaises( ValueError, self.filter_parser.parse_date, '2009-02-13 18:13:00.' )
         self.assertRaises( ValueError, self.filter_parser.parse_date, '2009-02-13 18:13:00.1234567' )
 
-# =============================================================================
+
 if __name__ == '__main__':
     # or more generally, nosetests test_resourcemanagers.py -s -v
     unittest.main()

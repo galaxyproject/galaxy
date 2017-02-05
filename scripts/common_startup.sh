@@ -8,7 +8,6 @@ done
 
 # Conda Python is in use, do not use virtualenv
 if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' ; then
-    SET_VENV=0
     CONDA_ALREADY_INSTALLED=1
 else
     CONDA_ALREADY_INSTALLED=0
@@ -39,9 +38,6 @@ SAMPLES="
     lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/shared/ucsc/manual_builds.txt.sample
-    tool-data/shared/ucsc/ucsc_build_sites.txt.sample
-    tool-data/shared/igv/igv_build_sites.txt.sample
-    tool-data/shared/rviewer/rviewer_build_sites.txt.sample
     static/welcome.html.sample
 "
 
@@ -76,35 +72,40 @@ fi
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 
 if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
-    # If .venv does not exist, attempt to create it.
     if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
     then
-        # Ensure Python is a supported version before creating .venv
-        python ./scripts/check_python.py || exit 1
-        if command -v virtualenv >/dev/null; then
-            virtualenv -p python2.7 "$GALAXY_VIRTUAL_ENV"
+        if [ $CONDA_ALREADY_INSTALLED -eq 1 ]; then
+            echo "There is no existing Galaxy virtualenv and Conda is available, so we are skipping virtualenv creation.  Please be aware that this may cause missing dependencies."
+            SET_VENV=0
         else
-            vvers=13.1.2
-            vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-            vsha="aabc8ef18cddbd8a2a9c7f92bc43e2fea54b1147330d65db920ef3ce9812e3dc"
-            vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
-            vsrc="$vtmp/$(basename $vurl)"
-            # SSL certificates are not checked to prevent problems with messed
-            # up client cert environments. We verify the download using a known
-            # good sha256 sum instead.
-            echo "Fetching $vurl"
-            if command -v curl >/dev/null; then
-                curl --insecure -L -o "$vsrc" "$vurl"
-            elif command -v wget >/dev/null; then
-                wget --no-check-certificate -O "$vsrc" "$vurl"
+            # If .venv does not exist, and there is no conda available, attempt to create it.
+            # Ensure Python is a supported version before creating .venv
+            python ./scripts/check_python.py || exit 1
+            if command -v virtualenv >/dev/null; then
+                virtualenv -p python2.7 "$GALAXY_VIRTUAL_ENV"
             else
-                python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
+                vvers=13.1.2
+                vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
+                vsha="aabc8ef18cddbd8a2a9c7f92bc43e2fea54b1147330d65db920ef3ce9812e3dc"
+                vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
+                vsrc="$vtmp/$(basename $vurl)"
+                # SSL certificates are not checked to prevent problems with messed
+                # up client cert environments. We verify the download using a known
+                # good sha256 sum instead.
+                echo "Fetching $vurl"
+                if command -v curl >/dev/null; then
+                    curl --insecure -L -o "$vsrc" "$vurl"
+                elif command -v wget >/dev/null; then
+                    wget --no-check-certificate -O "$vsrc" "$vurl"
+                else
+                    python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
+                fi
+                echo "Verifying $vsrc checksum is $vsha"
+                python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
+                tar zxf "$vsrc" -C "$vtmp"
+                python "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
+                rm -rf "$vtmp"
             fi
-            echo "Verifying $vsrc checksum is $vsha"
-            python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
-            tar zxf "$vsrc" -C "$vtmp"
-            python "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
-            rm -rf "$vtmp"
         fi
     fi
 fi
@@ -130,8 +131,6 @@ if [ $SET_VENV -eq 1 ]; then
         echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in $GALAXY_VIRTUAL_ENV, or activate one."
         exit 1
     fi
-elif [ $SET_VENV -eq 0 -a $CONDA_ALREADY_INSTALLED -eq 1 ]; then
-    echo "Warning: You have Conda installed. Skipping virtualenv activation. This could cause missing dependencies."
 fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}

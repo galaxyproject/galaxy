@@ -7,6 +7,7 @@
             <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
             <test type="isinstance" test_attr="datatype" result_type="datatype">data.Text</test>
             <test type="isinstance" test_attr="datatype" result_type="datatype">binary.RData</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">images.Image</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>

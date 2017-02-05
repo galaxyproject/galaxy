@@ -1,8 +1,8 @@
 """
 Tool Input Translation.
 """
-
 import logging
+
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
@@ -93,13 +93,13 @@ class ToolInputTranslator( object ):
         """
         update params in-place
         """
-        for remote_name, translator in self.param_trans_dict.iteritems():
+        for remote_name, translator in self.param_trans_dict.items():
             galaxy_name = translator.galaxy_name  # NB: if a param by name galaxy_name is provided, it is always thrown away unless galaxy_name == remote_name
             value = params.get( remote_name, translator.missing )  # get value from input params, or use default value specified in tool config
             if translator.value_trans and value in translator.value_trans:
                 value = translator.value_trans[ value ]
             if translator.append_param:
-                for param_name, missing_value in translator.append_param.append_dict.iteritems():
+                for param_name, missing_value in translator.append_param.append_dict.items():
                     param_value = params.get( param_name, missing_value )
                     if translator.append_param.first_separator and translator.append_param.first_separator not in value:
                         sep = translator.append_param.first_separator

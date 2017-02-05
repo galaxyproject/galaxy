@@ -2,18 +2,19 @@
 Mock infrastructure for testing ModelManagers.
 """
 import os
-import tempfile
 import shutil
+import tempfile
 
-from galaxy.web import security
-from galaxy import objectstore
-from galaxy import model
+from galaxy import (
+    model,
+    objectstore,
+    quota
+)
 from galaxy.datatypes import registry
+from galaxy.managers import tags
 from galaxy.model import mapping
 from galaxy.util.bunch import Bunch
-
-from galaxy.managers import tags
-from galaxy import quota
+from galaxy.web import security
 
 
 # =============================================================================

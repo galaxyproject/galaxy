@@ -175,6 +175,7 @@ class ExternalServiceTemplateAction( ExternalServiceAction ):
     def perform_action( self, param_dict ):
         return ExternalServiceValueResult( self.name, param_dict, self.template.build_template( param_dict ) )
 
+
 action_type_to_class = {
     ExternalServiceWebAction.type: ExternalServiceWebAction,
     ExternalServiceWebAPIAction.type: ExternalServiceWebAPIAction,

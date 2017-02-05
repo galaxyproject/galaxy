@@ -2,6 +2,7 @@
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
+  <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
@@ -28,16 +29,21 @@
   <tool file="metadata_bam.xml" />
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_biom1.xml" />
+  <tool file="metadata_column_names.xml" />
   <tool file="strict_shell.xml" />
   <tool file="strict_shell_default_off.xml" />
   <tool file="detect_errors_aggressive.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
+  <tool file="is_valid_xml.xml" />
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />
   -->
   <tool file="job_properties.xml" />
+  <tool file="version_command_plain.xml" />
+  <tool file="version_command_interpreter.xml" />
+  <tool file="version_command_tool_dir.xml" />
   <tool file="exit_code_from_file.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
@@ -55,7 +61,9 @@
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
   <tool file="multi_data_repeat.xml" />
+  <tool file="multi_data_optional.xml" />
   <tool file="paths_as_file.xml" />
+  <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
@@ -66,12 +74,15 @@
   <tool file="validation_repeat.xml" />
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
+  <tool file="implicit_conversion.xml" />
+  <tool file="explicit_conversion.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_collection.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="collection_paired_test.xml" />
+  <tool file="paired_collection_map_over_structured_like.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
@@ -90,6 +101,7 @@
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
+  <tool file="python_environment_problem.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
@@ -106,8 +118,18 @@
   <tool file="for_workflows/cat_interleave.xml" />
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
+  <tool file="for_workflows/mapper2.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
+
+  <section id="filter" name="For Tours">
+    <tool file="for_tours/filtering.xml" />
+  </section>
+
+  <!-- Tools for dependency and container testing. -->
+  <tool file="legacy_r.xml" />
+  <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
 
@@ -118,5 +140,6 @@
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
+  <tool file="${model_tools_path}/merge_collection.xml" />
 
 </toolbox>

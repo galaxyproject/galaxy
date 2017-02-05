@@ -1371,6 +1371,7 @@ def map_tool_to_destination(
 
     return destination
 
+
 if __name__ == '__main__':
     """
     This function is responsible for running the app if directly run through the

@@ -1,16 +1,14 @@
 <%
-    root        = h.url_for( "/" )
-    app_root    = root + "plugins/visualizations/charts/static/"
+    root            = h.url_for( "/" )
+    app_root        = root + "plugins/visualizations/charts/static/client"
+    repository_root = root + "plugins/visualizations/charts/static/repository"
 %>
-
 
 <!DOCTYPE HTML>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>${hda.name} | ${visualization_name}</title>
-
-        ## install shared libraries
+        <title>${hda.name | h} | ${visualization_name}</title>
         ${h.js( 'libs/jquery/jquery',
                 'libs/jquery/jquery-ui',
                 'libs/jquery/select2',
@@ -19,35 +17,13 @@
                 'libs/backbone',
                 'libs/d3',
                 'libs/require')}
-
-        ## shared css
         ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui' )}
-
-        ## crossfilter
-        ${h.javascript_link( app_root + "plugins/crossfilter/crossfilter.js" )}
-
-        ## canvg
-        ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
-        ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
-
-        ## nvd3
-        ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
-
-        ## jqplot
-        ${h.stylesheet_link( app_root + "plugins/jqplot/jquery.jqplot.css" )}
-        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.js" )}
-        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.plugins.js" )}
-
-        ## load merged/minified code
-        ${h.javascript_link( app_root + "build-app.js" )}
-
-        ## install default css
-        ${h.stylesheet_link( app_root + "app.css" )}
+        ${h.stylesheet_link( app_root + "/app.css" )}
     </head>
-
     <body>
         <script type="text/javascript">
             var app_root = '${app_root}';
+            var repository_root = '${repository_root}';
             var Galaxy = Galaxy || parent.Galaxy || {
                 root    : '${root}',
                 emit    : {
@@ -66,30 +42,26 @@
                 baseUrl: Galaxy.root + "static/scripts/",
                 paths: {
                     "plugin"        : "${app_root}",
-                    "d3"            : "libs/d3"
+                    "d3"            : "libs/d3",
+                    "repository"    : "${repository_root}"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/backbone": { exports: "Backbone" },
-                    "d3": { exports: "d3"}
-
+                    "d3": { exports: "d3" }
                 }
             });
-            window.onbeforeunload = function() {
-                return 'You are leaving Charts.';
-            };
-            var app = null;
             $(function() {
                 require( [ 'plugin/app' ], function( App ) {
-                    var options = {
-                        id      : ${h.dumps( visualization_id )} || undefined,
-                        config  : ${h.dumps( config )}
-                    }
-                    app = new App( options );
+                    var config = ${ h.dumps( config ) };
+                    var app = new App({
+                        visualization_id : ${ h.dumps( visualization_id ) } || undefined,
+                        dataset_id       : config.dataset_id,
+                        chart_dict       : config.chart_dict
+                    });
                     $( 'body' ).append( app.$el );
                 });
             });
-
         </script>
     </body>
 </html>

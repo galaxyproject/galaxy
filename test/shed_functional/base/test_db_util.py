@@ -6,9 +6,8 @@ import galaxy.model
 import galaxy.model.tool_shed_install
 import galaxy.webapps.tool_shed.model as model
 
-from functional.database_contexts import tool_shed_context as sa_session
-from functional.database_contexts import galaxy_context as ga_session
-from functional.database_contexts import install_context as install_session
+from functional.database_contexts import (galaxy_context as ga_session,
+    install_context as install_session, tool_shed_context as sa_session)
 
 log = logging.getLogger( 'test.tool_shed.test_db_util' )
 

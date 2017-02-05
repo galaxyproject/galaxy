@@ -3,22 +3,15 @@ Image classes
 """
 import logging
 import zipfile
+
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.text import Html as HtmlFromText
-from galaxy.datatypes.util.image_util import check_image_type
 from galaxy.util import nice_size
+from galaxy.util.image_util import check_image_type
 from . import data
-
-try:
-    import Image as PIL
-except ImportError:
-    try:
-        from PIL import Image as PIL
-    except:
-        PIL = None
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +66,22 @@ class Png( Image ):
 class Tiff( Image ):
     edam_format = "format_3591"
     file_ext = "tiff"
+
+
+class Hamamatsu( Image ):
+    file_ext = "vms"
+
+
+class Mirax( Image ):
+    file_ext = "mrxs"
+
+
+class Sakura( Image ):
+    file_ext = "svslide"
+
+
+class Nrrd( Image ):
+    file_ext = "nrrd"
 
 
 class Bmp( Image ):
@@ -159,6 +168,7 @@ class Pdf( Image ):
                 return False
         except IndexError:
             return False
+
 
 Binary.register_sniffable_binary_format("pdf", "pdf", Pdf)
 

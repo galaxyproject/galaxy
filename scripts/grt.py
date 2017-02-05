@@ -222,5 +222,6 @@ def main(argv):
         with open(args.config, 'w') as f:
             yaml.dump(config_dict, f, default_flow_style=False)
 
+
 if __name__ == '__main__':
     main(sys.argv)

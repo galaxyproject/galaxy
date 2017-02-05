@@ -1,19 +1,23 @@
-import os.path
+"""This module describes the abstract interface for :class:`InstrumentPlugin`.
 
-from abc import ABCMeta
-from abc import abstractmethod
+These are responsible for collecting and formatting a coherent set of metrics.
+"""
+import os.path
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
+import six
 
 from ...metrics import formatting
-
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
 
 
+@six.add_metaclass(ABCMeta)
 class InstrumentPlugin( object ):
-    """ A plugin describing how to instrument Galaxy jobs and retrieve metrics
-    from this instrumentation.
-    """
-    __metaclass__ = ABCMeta
+    """Describes how to instrument job scripts and retrieve collected metrics."""
     formatter = formatting.JobMetricFormatter()
 
     @property

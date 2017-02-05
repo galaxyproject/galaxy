@@ -1,10 +1,11 @@
 {
   "name": "galaxy-qunit-tests",
   "version": "1.0.0",
-  "devDependencies": {
-    "grunt": "^0.4.4",
-    "grunt-contrib-qunit": "^0.4.0",
-    "grunt-contrib-watch": "~0.5.3",
-    "grunt-cli": "^0.1.13"
+  "dependencies": {
+    "grunt": "^1.0.1",
+    "grunt-cli": "^1.2.0",
+    "grunt-contrib-qunit": "^1.2.0",
+    "grunt-contrib-watch": "^1.0.0",
+    "phantomjs-prebuilt": "^2.1.13"
   }
 }

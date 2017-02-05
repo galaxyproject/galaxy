@@ -34,6 +34,7 @@ from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.json import safe_loads
 from galaxy.util.multi_byte import is_multi_byte
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
@@ -593,8 +594,8 @@ class Job( object, JobLike, Dictifiable ):
     def add_output_dataset( self, name, dataset ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
 
-    def add_input_dataset_collection( self, name, dataset ):
-        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
+    def add_input_dataset_collection( self, name, dataset_collection ):
+        self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset_collection ) )
 
     def add_output_dataset_collection( self, name, dataset_collection_instance ):
         self.output_dataset_collection_instances.append( JobToOutputDatasetCollectionAssociation( name, dataset_collection_instance ) )
@@ -731,6 +732,10 @@ class Job( object, JobLike, Dictifiable ):
         if config_value is param_unspecified:
             config_value = default
         return config_value
+
+    @property
+    def seconds_since_update( self ):
+        return (galaxy.model.orm.now.now() - self.update_time).total_seconds()
 
 
 class Task( object, JobLike ):
@@ -920,9 +925,9 @@ class JobToOutputDatasetAssociation( object ):
 
 
 class JobToInputDatasetCollectionAssociation( object ):
-    def __init__( self, name, dataset ):
+    def __init__( self, name, dataset_collection ):
         self.name = name
-        self.dataset = dataset
+        self.dataset_collection = dataset_collection
 
 
 # Many jobs may map to one HistoryDatasetCollection using these for a given
@@ -2041,7 +2046,7 @@ class DatasetInstance( object ):
             depends_list = []
         return dict([ (dep, self.get_converted_dataset(trans, dep)) for dep in depends_list ])
 
-    def get_converted_dataset(self, trans, target_ext, target_context=None):
+    def get_converted_dataset(self, trans, target_ext, target_context=None, history=None):
         """
         Return converted dataset(s) if they exist, along with a dict of dependencies.
         If not converted yet, do so and return None (the first time). If unconvertible, raise exception.
@@ -2080,15 +2085,21 @@ class DatasetInstance( object ):
             raise NoConverterException("A dependency (%s) is missing a converter." % dependency)
         except KeyError:
             pass  # No deps
-        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, set_output_history=True, target_context=target_context ).values()))
-        new_dataset.hid = self.hid
+        new_dataset = next(iter(self.datatype.convert_dataset( trans, self, target_ext, return_output=True, visible=False, deps=deps, target_context=target_context, history=history ).values()))
         new_dataset.name = self.name
+        self.copy_attributes( new_dataset )
         assoc = ImplicitlyConvertedDatasetAssociation( parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False )
         session = trans.sa_session
         session.add( new_dataset )
         session.add( assoc )
         session.flush()
         return new_dataset
+
+    def copy_attributes( self, new_dataset ):
+        """
+        Copies attributes to a new datasets, used for implicit conversions
+        """
+        pass
 
     def get_metadata_dataset( self, dataset_ext ):
         """
@@ -2341,6 +2352,9 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             hda.set_peek()
         object_session( self ).flush()
         return hda
+
+    def copy_attributes( self, new_dataset ):
+        new_dataset.hid = self.hid
 
     def to_library_dataset_dataset_association( self, trans, target_folder,
                                                 replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
@@ -3130,14 +3144,14 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     def populated( self ):
         top_level_populated = self.populated_state == DatasetCollection.populated_states.OK
         if top_level_populated and self.has_subcollections:
-            return all(map(lambda e: e.child_collection.populated, self.elements))
+            return all(e.child_collection.populated for e in self.elements)
         return top_level_populated
 
     @property
     def waiting_for_elements( self ):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:
-            return any(map(lambda e: e.child_collection.waiting_for_elements, self.elements))
+            return any(e.child_collection.waiting_for_elements for e in self.elements)
         return top_level_waiting
 
     def mark_as_populated( self ):
@@ -3747,6 +3761,14 @@ class WorkflowStep( object ):
         return content_id
 
     @property
+    def name( self ):
+        state = self.tool_inputs
+        if state:
+            state = safe_loads( state )
+            identifier = state.get( 'name' )
+            return safe_loads( identifier )
+
+    @property
     def input_connections_by_name(self):
         if self._input_connections_by_name is None:
             self.setup_input_connections_by_name()
@@ -4199,6 +4221,21 @@ class FormDefinition( object, Dictifiable ):
         self.type = form_type
         self.layout = layout
 
+    def to_dict( self, user=None, values=None, security=None ):
+        values = values or {}
+        form_def = { 'id': security.encode_id( self.id ) if security else self.id, 'name': self.name, 'inputs': [] }
+        for field in self.fields:
+            FieldClass = ( { 'AddressField'         : AddressField,
+                             'CheckboxField'        : CheckboxField,
+                             'HistoryField'         : HistoryField,
+                             'PasswordField'        : PasswordField,
+                             'SelectField'          : SelectField,
+                             'TextArea'             : TextArea,
+                             'TextField'            : TextField,
+                             'WorkflowField'        : WorkflowField } ).get( field[ 'type' ], TextField )
+            form_def[ 'inputs' ].append( FieldClass( user=user, value=values.get( field[ 'name' ], field[ 'default' ] ), security=security, **field ).to_dict() )
+        return form_def
+
     def grid_fields( self, grid_index ):
         # Returns a dictionary whose keys are integers corresponding to field positions
         # on the grid and whose values are the field.
@@ -4269,13 +4306,11 @@ class FormDefinition( object, Dictifiable ):
                 field_widget.params = params
             elif field_type == 'SelectField':
                 for option in field[ 'selectlist' ]:
-
                     if option == value:
                         field_widget.add_option( option, option, selected=True )
                     else:
                         field_widget.add_option( option, option )
             elif field_type == 'CheckboxField':
-
                 field_widget.set_checked( value )
             if field[ 'required' ] == 'required':
                 req = 'Required'
@@ -4285,10 +4320,7 @@ class FormDefinition( object, Dictifiable ):
                 helptext = '%s (%s)' % ( field[ 'helptext' ], req )
             else:
                 helptext = '(%s)' % req
-            widgets.append( dict( label=field[ 'label' ],
-
-                                  widget=field_widget,
-                                  helptext=helptext ) )
+            widgets.append( dict( label=field[ 'label' ], widget=field_widget, helptext=helptext ) )
         return widgets
 
     def field_as_html( self, field ):
@@ -4822,6 +4854,18 @@ class UserAddress( object ):
         self.postal_code = postal_code
         self.country = country
         self.phone = phone
+
+    def to_dict( self, trans ):
+        return { 'id'           : trans.security.encode_id( self.id ),
+                 'name'         : sanitize_html( self.name ),
+                 'desc'         : sanitize_html( self.desc ),
+                 'institution'  : sanitize_html( self.institution ),
+                 'address'      : sanitize_html( self.address ),
+                 'city'         : sanitize_html( self.city ),
+                 'state'        : sanitize_html( self.state ),
+                 'postal_code'  : sanitize_html( self.postal_code ),
+                 'country'      : sanitize_html( self.country ),
+                 'phone'        : sanitize_html( self.phone ) }
 
     def get_html(self):
         # This should probably be deprecated eventually.  It should currently

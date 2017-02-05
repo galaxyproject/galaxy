@@ -1,7 +1,6 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-
 import glob
 import json
 import logging
@@ -10,65 +9,143 @@ import re
 import tarfile
 import tempfile
 import threading
-import urllib
-from datetime import datetime
-
 from cgi import FieldStorage
+from datetime import datetime
 from xml.etree import ElementTree
+
 from mako.template import Template
 from paste import httpexceptions
 from six import string_types
+from six.moves.urllib.parse import unquote_plus
 
-from galaxy.version import VERSION_MAJOR
-from galaxy import model
-from galaxy.managers import histories
+import galaxy.jobs
+import tool_shed.util.repository_util as repository_util
+import tool_shed.util.shed_util_common
+
+from galaxy import (
+    exceptions,
+    model
+)
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
-from galaxy import exceptions
-from galaxy.queue_worker import reload_toolbox
+from galaxy.managers import histories
+from galaxy.queue_worker import (
+    reload_toolbox,
+    send_control_task
+)
 from galaxy.tools.actions import DefaultToolAction
-from galaxy.tools.actions.upload import UploadToolAction
-from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
+from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.deps import views
-from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
+from galaxy.tools.actions.upload import UploadToolAction
+from galaxy.tools.deps import (
+    CachedDependencyManager,
+    views
+)
+from galaxy.tools.parameters import (
+    check_param,
+    params_from_strings,
+    params_to_incoming,
+    params_to_strings,
+    visit_input_values
+)
 from galaxy.tools.parameters import output_collect
-from galaxy.tools.parameters.basic import (BaseURLToolParameter,
-                                           DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
-                                           SelectToolParameter, ToolParameter)
+from galaxy.tools.parameters.basic import (
+    BaseURLToolParameter,
+    DataCollectionToolParameter,
+    DataToolParameter,
+    HiddenToolParameter,
+    SelectToolParameter,
+    ToolParameter
+)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
-from galaxy.tools.test import parse_tests
-from galaxy.tools.parser import get_tool_source
-from galaxy.tools.parser.xml import XmlPageSource
-from galaxy.tools.parser import ToolOutputCollectionPart
-from galaxy.tools.toolbox import BaseGalaxyToolBox
-from galaxy.util import rst_to_html, string_as_bool
-from galaxy.util import ExecutionTimer
-from galaxy.util import listify
-from galaxy.util import unicodify
 from galaxy.tools.parameters.meta import expand_meta_parameters
+from galaxy.tools.parser import (
+    get_tool_source,
+    ToolOutputCollectionPart
+)
+from galaxy.tools.parser.xml import XmlPageSource
+from galaxy.tools.test import parse_tests
+from galaxy.tools.toolbox import BaseGalaxyToolBox
+from galaxy.util import (
+    ExecutionTimer,
+    listify,
+    rst_to_html,
+    string_as_bool,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
+from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
+from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
+from galaxy.version import VERSION_MAJOR
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
-from galaxy.util.dictifiable import Dictifiable
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
-import tool_shed.util.repository_util as repository_util
-from tool_shed.util import shed_util_common as suc
 
-from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
-import galaxy.jobs
+from .loader import (
+    imported_macro_paths,
+    raw_tool_xml_tree,
+    template_macro_params
+)
 
 log = logging.getLogger( __name__ )
 
 HELP_UNINITIALIZED = threading.Lock()
-MODEL_TOOLS_PATH = os.path.dirname(__file__)
+MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
+# Tools that require Galaxy's Python environment to be preserved.
+GALAXY_LIB_TOOLS = [
+    "upload1",
+    # Legacy tools bundled with Galaxy.
+    "vcf_to_maf_customtrack1",
+    "laj_1",
+    "meme_fimo",
+    "secure_hash_message_digest",
+    "join1",
+    "gff2bed1",
+    "gff_filter_by_feature_count",
+    "Extract genomic DNA 1",
+    "aggregate_scores_in_intervals2",
+    "Interval_Maf_Merged_Fasta2",
+    "maf_stats1",
+    "Interval2Maf1",
+    "MAF_To_Interval1",
+    "MAF_filter",
+    "MAF_To_Fasta1",
+    "MAF_Reverse_Complement_1",
+    "MAF_split_blocks_by_species1",
+    "maf_limit_size1",
+    "maf_by_block_number1",
+    "wiggle2simple1",
+    # Tools improperly migrated to the tool shed (devteam)
+    "lastz_wrapper_2",
+    "qualityFilter",
+    "winSplitter",
+    "pileup_interval",
+    "count_gff_features",
+    "Convert characters1",
+    "lastz_paired_reads_wrapper",
+    "subRate1",
+    "substitutions1",
+    "sam_pileup",
+    "find_diag_hits",
+    "cufflinks",
+    "sam_to_bam",  # This was fixed with version 1.1.3 of the tool - TODO add Galaxy to PYTHONPATH only for older versions
+    # Tools improperly migrated to the tool shed (iuc)
+    "tabular_to_dbnsfp",
+    # From peterjc and others seq utils
+    "venn_list",
+    "seq_rename",
+    "seq_primer_clip",
+    "fastq_groomer_parallel",
+    "fasta_filter_by_id",
+    "fastq_filter_by_id",
+]
 
 
 class ToolErrorLog:
@@ -115,13 +192,23 @@ class ToolBox( BaseGalaxyToolBox ):
     def handle_reload_toolbox(self):
         reload_toolbox(self.app)
 
+    def handle_panel_update(self, section_dict):
+        """
+        Sends a panel update to all threads/processes.
+        """
+        send_control_task(self.app, 'create_panel_section', kwargs=section_dict)
+        # The following local call to self.create_section should be unnecessary
+        # but occasionally the local ToolPanelElements instance appears to not
+        # get updated.
+        self.create_section(section_dict)
+
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
 
     @property
     def all_requirements(self):
-        reqs = [json.dumps(req, sort_keys=True) for _, tool in self.tools() for req in tool.tool_requirements]
-        return [json.loads(req) for req in set(reqs)]
+        reqs = set([req for _, tool in self.tools() for req in tool.tool_requirements])
+        return [r.to_dict() for r in reqs]
 
     @property
     def tools_by_id( self ):
@@ -224,29 +311,34 @@ class DefaultToolState( object ):
     def __init__( self ):
         self.page = 0
         self.rerun_remap_job_id = None
-        self.inputs = None
+        self.inputs = {}
+
+    def initialize( self, trans, tool ):
+        """
+        Create a new `DefaultToolState` for this tool. It will be initialized
+        with default values for inputs. Grouping elements are filled in recursively.
+        """
+        self.inputs = {}
+        context = ExpressionContext( self.inputs )
+        for input in tool.inputs.itervalues():
+            self.inputs[ input.name ] = input.get_initial_value( trans, context )
 
     def encode( self, tool, app ):
         """
         Convert the data to a string
         """
-        # Convert parameters to a dictionary of strings, and save curent
-        # page in that dict
         value = params_to_strings( tool.inputs, self.inputs, app )
         value["__page__"] = self.page
         value["__rerun_remap_job_id__"] = self.rerun_remap_job_id
         return json.dumps( value )
 
-    def decode( self, value, tool, app ):
+    def decode( self, values, tool, app ):
         """
         Restore the state from a string
         """
-        values = json_fix( json.loads( value ) )
-        self.page = values.pop( "__page__" )
-        if '__rerun_remap_job_id__' in values:
-            self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" )
-        else:
-            self.rerun_remap_job_id = None
+        values = json_fix( safe_loads( values ) ) or {}
+        self.page = values.pop( "__page__" ) if "__page__" in values else None
+        self.rerun_remap_job_id = values.pop( "__rerun_remap_job_id__" ) if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings( tool.inputs, values, app, ignore_errors=True )
 
     def copy( self ):
@@ -385,6 +477,23 @@ class Tool( object, Dictifiable ):
     def valid_input_states( self ):
         return model.Dataset.valid_input_states
 
+    @property
+    def requires_galaxy_python_environment(self):
+        """Indicates this tool's runtime requires Galaxy's Python environment."""
+        # All special tool types (data source, history import/export, etc...)
+        # seem to require Galaxy's Python.
+        if self.tool_type != "default":
+            return True
+
+        config = self.app.config
+        preserve_python_environment = config.preserve_python_environment
+        if preserve_python_environment == "always":
+            return True
+        elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
+            return True
+        else:
+            return self.old_id in GALAXY_LIB_TOOLS
+
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
 
@@ -405,7 +514,7 @@ class Tool( object, Dictifiable ):
                 if job_tool_config.params:
                     # There are job params and this config has params defined
                     for param, value in job_params.items():
-                        if param not in job_tool_config.params or job_tool_config.params[param] != job_params[param]:
+                        if param not in job_tool_config.params or job_tool_config.params[param] != value:
                             break
                     else:
                         # All params match, use this config
@@ -613,12 +722,13 @@ class Tool( object, Dictifiable ):
                         self.hook_map[key] = value
                 file_name = code_elem.get("file")
                 code_path = os.path.join( self.tool_dir, file_name )
-                execfile( code_path, self.code_namespace )
+                with open(code_path) as f:
+                    exec(compile(f.read(), code_path, 'exec'), self.code_namespace)
 
         # User interface hints
         uihints_elem = root.find( "uihints" )
         if uihints_elem is not None:
-            for key, value in uihints_elem.attrib.iteritems():
+            for key, value in uihints_elem.attrib.items():
                 self.uihints[ key ] = value
 
     def __parse_tests(self, tool_source):
@@ -708,12 +818,12 @@ class Tool( object, Dictifiable ):
                 # nginx_upload_path. This logic is handled in the tool_form.mako
                 # template.
                 if self.nginx_upload and self.app.config.nginx_upload_path:
-                    if '?' in urllib.unquote_plus( self.action ):
+                    if '?' in unquote_plus( self.action ):
                         raise Exception( 'URL parameters in a non-default tool action can not be used '
                                          'in conjunction with nginx upload.  Please convert them to '
                                          'hidden POST parameters' )
                     self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
-                                   urllib.unquote_plus(self.action))
+                                   unquote_plus(self.action))
                 self.target = input_elem.get( "target", self.target )
                 self.method = input_elem.get( "method", self.method )
                 # Parse the actual parameters
@@ -839,7 +949,7 @@ class Tool( object, Dictifiable ):
                     group.test_param.refresh_on_change = True
                     for attr in value_from[1].split( '.' ):
                         group.value_from = getattr( group.value_from, attr )
-                    for case_value, case_inputs in group.value_from( context, group, self ).iteritems():
+                    for case_value, case_inputs in group.value_from( context, group, self ).items():
                         case = ConditionalWhen()
                         case.value = case_value
                         if case_inputs:
@@ -977,7 +1087,7 @@ class Tool( object, Dictifiable ):
             if self.repository_id and help_text.find( '.. image:: ' ) >= 0:
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                 try:
-                    help_text = suc.set_image_paths( self.app, self.repository_id, help_text )
+                    help_text = tool_shed.util.shed_util_common.set_image_paths( self.app, self.repository_id, help_text )
                 except Exception as e:
                     log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
             try:
@@ -1053,21 +1163,11 @@ class Tool( object, Dictifiable ):
     def new_state( self, trans ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
-        with default values for inputs.
+        with default values for inputs. Grouping elements are filled in recursively.
         """
         state = DefaultToolState()
-        state.inputs = {}
-        self.fill_in_new_state( trans, self.inputs, state.inputs )
+        state.initialize( trans, self )
         return state
-
-    def fill_in_new_state( self, trans, inputs, state, context=None ):
-        """
-        Fill in a tool state dictionary with default values for all parameters
-        in the dictionary `inputs`. Grouping elements are filled in recursively.
-        """
-        context = ExpressionContext( state, context )
-        for input in inputs.itervalues():
-            state[ input.name ] = input.get_initial_value( trans, context )
 
     def get_param( self, key ):
         """
@@ -1156,7 +1256,8 @@ class Tool( object, Dictifiable ):
         log.debug( 'Validated and populated state for tool request %s' % validation_timer )
         # If there were errors, we stay on the same page and display them
         if any( all_errors ):
-            raise exceptions.MessageException( ', '.join( [ msg for msg in all_errors[ 0 ].itervalues() ] ), err_data=all_errors[ 0 ] )
+            err_data = { key: value for d in all_errors for ( key, value ) in d.items() }
+            raise exceptions.MessageException( ', '.join( msg for msg in err_data.values() ), err_data=err_data )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
@@ -1186,7 +1287,7 @@ class Tool( object, Dictifiable ):
             message = 'Error executing tool: %s' % str(e)
             return False, message
         if isinstance( out_data, odict ):
-            return job, out_data.items()
+            return job, list(out_data.items())
         else:
             if isinstance( out_data, string_types ):
                 message = out_data
@@ -1237,7 +1338,7 @@ class Tool( object, Dictifiable ):
         does require input.
         """
         args = dict()
-        for key, param in self.inputs.iteritems():
+        for key, param in self.inputs.items():
             # BaseURLToolParameter is now a subclass of HiddenToolParameter, so
             # we must check if param is a BaseURLToolParameter first
             if isinstance( param, BaseURLToolParameter ):
@@ -1291,17 +1392,31 @@ class Tool( object, Dictifiable ):
         visit_input_values( self.inputs, values, validate_inputs )
         return messages
 
+    def build_dependency_cache(self, **kwds):
+        if isinstance(self.app.toolbox.dependency_manager, CachedDependencyManager):
+            self.app.toolbox.dependency_manager.build_cache(
+                requirements=self.requirements,
+                installed_tool_dependencies=self.installed_tool_dependencies,
+                tool_dir=self.tool_dir,
+                job_directory=None,
+                metadata=False,
+                tool_instance=self,
+                **kwds
+            )
+
     def build_dependency_shell_commands( self, job_directory=None, metadata=False ):
-        """Return a list of commands to be run to populate the current environment to include this tools requirements."""
-        requirements_to_dependencies = self.app.toolbox.dependency_manager.requirements_to_dependencies(
-            self.requirements,
+        """
+        Return a list of commands to be run to populate the current environment to include this tools requirements.
+        """
+        return self.app.toolbox.dependency_manager.dependency_shell_commands(
+            requirements=self.requirements,
             installed_tool_dependencies=self.installed_tool_dependencies,
             tool_dir=self.tool_dir,
             job_directory=job_directory,
+            preserve_python_environment=self.requires_galaxy_python_environment,
             metadata=metadata,
+            tool_instance=self
         )
-        self.dependencies = [dep.to_dict() for dep in requirements_to_dependencies.values()]
-        return [dep.shell_commands(req) for req, dep in requirements_to_dependencies.items()]
 
     @property
     def installed_tool_dependencies(self):
@@ -1316,15 +1431,14 @@ class Tool( object, Dictifiable ):
         """
         Return all requiremens of type package
         """
-        reqs = [req.to_dict() for req in self.requirements if req.type == 'package']
-        return reqs
+        return self.requirements.packages
 
     @property
     def tool_requirements_status(self):
         """
         Return a list of dictionaries for all tool dependencies with their associated status
         """
-        return self._view.get_requirements_status(self.tool_requirements, self.installed_tool_dependencies)
+        return self._view.get_requirements_status({self.id: self.tool_requirements}, self.installed_tool_dependencies)
 
     def build_redirect_url_params( self, param_dict ):
         """
@@ -1537,9 +1651,10 @@ class Tool( object, Dictifiable ):
                 # Add input file tuples to the list.
                 for input in test.inputs:
                     for input_value in test.inputs[ input ]:
-                        input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
+                        input_filename = str( input_value )
+                        input_path = os.path.abspath( os.path.join( 'test-data', input_filename ) )
                         if os.path.exists( input_path ):
-                            td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
+                            td_tup = ( input_path, os.path.join( 'test-data', input_filename ) )
                             tarball_files.append( td_tup )
                 # And add output file tuples to the list.
                 for label, filename, _ in test.outputs:
@@ -1676,7 +1791,7 @@ class Tool( object, Dictifiable ):
         # populates model from state
         def populate_model( inputs, state_inputs, group_inputs, other_values=None ):
             other_values = ExpressionContext( state_inputs, other_values )
-            for input_index, input in enumerate( inputs.itervalues() ):
+            for input_index, input in enumerate( inputs.values() ):
                 tool_dict = None
                 group_state = state_inputs.get( input.name, {} )
                 if input.type == 'repeat':
@@ -1769,7 +1884,7 @@ class Tool( object, Dictifiable ):
     # populates state from incoming parameters
     def populate_state( self, request_context, inputs, incoming, state, errors={}, prefix='', context=None ):
         context = ExpressionContext( state, context )
-        for input in inputs.itervalues():
+        for input in inputs.values():
             state[ input.name ] = input.get_initial_value( request_context, context )
             key = prefix + input.name
             group_state = state[ input.name ]
@@ -1779,7 +1894,7 @@ class Tool( object, Dictifiable ):
                 del group_state[:]
                 while True:
                     rep_prefix = '%s_%d' % ( key, rep_index )
-                    if not any( [ incoming_key.startswith( rep_prefix ) for incoming_key in incoming.keys() ] ) and rep_index >= input.min:
+                    if not any( incoming_key.startswith( rep_prefix ) for incoming_key in incoming.keys() ) and rep_index >= input.min:
                         break
                     if rep_index < input.max:
                         new_state = { '__index__' : rep_index }
@@ -1814,7 +1929,7 @@ class Tool( object, Dictifiable ):
                     del group_state[ -1 ]
                 while len( writable_files ) > len( group_state ):
                     new_state = { '__index__' : len( group_state ) }
-                    for upload_item in input.inputs.itervalues():
+                    for upload_item in input.inputs.values():
                         new_state[ upload_item.name ] = upload_item.get_initial_value( request_context, context )
                     group_state.append( new_state )
                 for i, rep_state in enumerate( group_state ):
@@ -1984,7 +2099,7 @@ class OutputParameterJSONTool( Tool ):
 
     def _prepare_json_param_dict( self, param_dict ):
         rval = {}
-        for key, value in param_dict.iteritems():
+        for key, value in param_dict.items():
             if isinstance( value, dict ):
                 rval[ key ] = self._prepare_json_param_dict( value )
             elif isinstance( value, list ):
@@ -2001,7 +2116,7 @@ class OutputParameterJSONTool( Tool ):
         json_params[ 'output_data' ] = []
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
-        for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
+        for i, ( out_name, data ) in enumerate( out_data.items() ):
             # use wrapped dataset to access certain values
             wrapped_data = param_dict.get( out_name )
             # allow multiple files to be created
@@ -2053,7 +2168,7 @@ class DataSourceTool( OutputParameterJSONTool ):
         json_params[ 'output_data' ] = []
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
-        for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
+        for i, ( out_name, data ) in enumerate( out_data.items() ):
             # use wrapped dataset to access certain values
             wrapped_data = param_dict.get( out_name )
             # allow multiple files to be created
@@ -2106,7 +2221,7 @@ class SetMetadataTool( Tool ):
     requires_setting_metadata = False
 
     def exec_after_process( self, app, inp_data, out_data, param_dict, job=None ):
-        for name, dataset in inp_data.iteritems():
+        for name, dataset in inp_data.items():
             external_metadata = JobExternalOutputMetadataWrapper( job )
             if external_metadata.external_metadata_set_successfully( dataset, app.model.context ):
                 dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset, app.model.context ).filename_out )
@@ -2164,7 +2279,7 @@ class DataManagerTool( OutputParameterJSONTool ):
         if job and job.state == job.states.ERROR:
             return
         # Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
-        for dataset in out_data.itervalues():
+        for dataset in out_data.values():
             if dataset.state != dataset.states.OK:
                 return
         data_manager_id = job.data_manager_association.data_manager_id
@@ -2299,7 +2414,86 @@ class ZipCollectionTool( DatabaseOperationTool ):
         new_elements["reverse"] = reverse
 
         output_collections.create_collection(
-            self.outputs.values()[0], "output", elements=new_elements
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class MergeCollectionTool( DatabaseOperationTool ):
+    tool_type = 'merge_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        input_lists = []
+
+        for incoming_repeat in incoming[ "inputs" ]:
+            input_lists.append(incoming_repeat["input"])
+
+        advanced = incoming.get("advanced", None)
+        dupl_actions = "keep_first"
+        suffix_pattern = None
+        if advanced is not None:
+            dupl_actions = advanced["conflict"]['duplicate_options']
+
+            if dupl_actions in ['suffix_conflict', 'suffix_every', 'suffix_conflict_rest']:
+                suffix_pattern = advanced['conflict']['suffix_pattern']
+
+        new_element_structure = odict()
+
+        # Which inputs does the identifier appear in.
+        identifiers_map = {}
+        for input_num, input_list in enumerate(input_lists):
+            for dce in input_list.collection.elements:
+                    element_identifier = dce.element_identifier
+                    if element_identifier not in identifiers_map:
+                        identifiers_map[element_identifier] = []
+                    elif dupl_actions == "fail":
+                        raise Exception("Duplicate collection element identifiers found for [%s]" % element_identifier)
+                    identifiers_map[element_identifier].append(input_num)
+
+        for copy, input_list in enumerate(input_lists):
+            for dce in input_list.collection.elements:
+                element = dce.element_object
+                valid = False
+
+                # dealing with a single element
+                if hasattr(element, "is_ok"):
+                    if element.is_ok:
+                        valid = True
+                elif hasattr(element, "dataset_instances"):
+                    # we are probably a list:paired dataset, both need to be in non error state
+                    forward_o, reverse_o = element.dataset_instances
+                    if forward_o.is_ok and reverse_o.is_ok:
+                        valid = True
+
+                if valid:
+                    element_identifier = dce.element_identifier
+                    identifier_seen = element_identifier in new_element_structure
+                    appearances = identifiers_map[element_identifier]
+                    add_suffix = False
+                    if dupl_actions == "suffix_every":
+                        add_suffix = True
+                    elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
+                        add_suffix = True
+                    elif dupl_actions == "suffix_conflict_rest" and len(appearances) > 1 and appearances[0] != copy:
+                        add_suffix = True
+
+                    if dupl_actions == "keep_first" and identifier_seen:
+                        continue
+
+                    if add_suffix:
+                        suffix = suffix_pattern.replace("#", str(copy + 1))
+                        effective_identifer = "%s%s" % (element_identifier, suffix)
+                    else:
+                        effective_identifer = element_identifier
+
+                    new_element_structure[effective_identifer] = element
+
+        # Don't copy until we know everything is fine and we have the structure of the list ready to go.
+        new_elements = odict()
+        for key, value in new_element_structure.items():
+            new_elements[key] = value.copy()
+
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
         )
 
 
@@ -2309,16 +2503,32 @@ class FilterFailedDatasetsTool( DatabaseOperationTool ):
 
     def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
         hdca = incoming[ "input" ]
-        assert hdca.collection.collection_type == "list"
+
+        assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
+
         new_elements = odict()
+
         for dce in hdca.collection.elements:
             element = dce.element_object
-            if element.is_ok:
+
+            valid = False
+
+            # dealing with a single element
+            if hasattr(element, "is_ok"):
+                if element.is_ok:
+                    valid = True
+            elif hasattr(element, "dataset_instances"):
+                # we are probably a list:paired dataset, both need to be in non error state
+                forward_o, reverse_o = element.dataset_instances
+                if forward_o.is_ok and reverse_o.is_ok:
+                    valid = True
+
+            if valid:
                 element_identifier = dce.element_identifier
                 new_elements[element_identifier] = element.copy()
 
         output_collections.create_collection(
-            self.outputs.values()[0], "output", elements=new_elements
+            next(iter(self.outputs.values())), "output", elements=new_elements
         )
 
 
@@ -2342,7 +2552,7 @@ class FlattenTool( DatabaseOperationTool ):
 
         add_elements(hdca.collection)
         output_collections.create_collection(
-            self.outputs.values()[0], "output", elements=new_elements
+            next(iter(self.outputs.values())), "output", elements=new_elements
         )
 
 
@@ -2350,7 +2560,7 @@ class FlattenTool( DatabaseOperationTool ):
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                    UnzipCollectionTool, ZipCollectionTool,
+                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool,
                     DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 

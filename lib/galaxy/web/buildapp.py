@@ -2,4 +2,4 @@
 
 from galaxy.webapps.galaxy.buildapp import app_factory
 
-__all__ = ['app_factory']
+__all__ = ('app_factory', )

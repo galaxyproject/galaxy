@@ -1,5 +1,7 @@
 import json
-from requests import put
+
+from requests import put, get
+
 from base import api
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
@@ -61,12 +63,43 @@ class UsersApiTestCase( api.ApiTestCase ):
     def test_admin_update( self ):
         new_name = 'flexo'
         user = self._setup_user( TEST_USER_EMAIL )
-
         update_url = self._api_url( "users/%s" % ( user[ "id" ] ), params=dict( key=self.master_api_key ) )
         update_response = put( update_url, data=json.dumps( dict( username=new_name ) ) )
         self._assert_status_code_is( update_response, 200 )
         update_json = update_response.json()
         self.assertEqual( update_json[ 'username' ], new_name )
+
+    def test_information( self ):
+        user = self._setup_user( TEST_USER_EMAIL )
+        url = self.__url( "information/inputs", user )
+        response = get( url ).json()
+        self.assertEqual( response[ "username" ], user[ "username" ] )
+        self.assertEqual( response[ "email" ], TEST_USER_EMAIL )
+        put( url, data=json.dumps( dict( username="newname", email="new@email.email" ) ) )
+        response = get( url ).json()
+        self.assertEqual( response[ "username" ], "newname" )
+        self.assertEqual( response[ "email" ], "new@email.email" )
+        put( url, data=json.dumps( dict( username=user[ "username" ], email=TEST_USER_EMAIL ) ) )
+        response = get( url ).json()
+        self.assertEqual( response[ "username" ], user[ "username" ] )
+        self.assertEqual( response[ "email" ], TEST_USER_EMAIL )
+        put( url, data=json.dumps( { "address_0|desc" : "_desc" } ) )
+        response = get( url ).json()
+        self.assertEqual( len( response[ "addresses" ] ), 1 )
+        self.assertEqual( response[ "addresses" ][ 0 ][ "desc" ], "_desc" )
+
+    def test_communication( self ):
+        user = self._setup_user( TEST_USER_EMAIL )
+        url = self.__url( "communication/inputs", user )
+        self.assertEqual( self.__filter( get( url ).json(), "enable", "value" ), "false" )
+        put( url, data=json.dumps( dict( enable="true" ) ) )
+        self.assertEqual( self.__filter( get( url ).json(), "enable", "value" ), "true" )
+
+    def __filter( self, response, name, attr ):
+        return [ r[ attr ] for r in response[ "inputs" ] if r[ "name" ] == name ][ 0 ]
+
+    def __url( self, action, user ):
+        return self._api_url( "users/%s/%s" % ( user[ "id" ], action ), params=dict( key=self.master_api_key ) )
 
     def __show( self, user ):
         return self._get( "users/%s" % ( user[ 'id' ] ) )

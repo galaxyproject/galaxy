@@ -7,14 +7,18 @@ it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
 import logging
-
 from os import environ, pathsep
 from os.path import exists, isdir, join
 from subprocess import PIPE, Popen
 
 from six import StringIO
 
-from ..resolvers import Dependency, DependencyResolver, NullDependency
+from ..resolvers import (
+    Dependency,
+    DependencyResolver,
+    MappableDependencyResolver,
+    NullDependency,
+)
 
 log = logging.getLogger( __name__ )
 
@@ -25,11 +29,12 @@ DEFAULT_MODULE_PREFETCH = "true"
 UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
 
 
-class ModuleDependencyResolver(DependencyResolver):
+class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
+        self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
         prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
@@ -52,7 +57,10 @@ class ModuleDependencyResolver(DependencyResolver):
             module_path = DEFAULT_MODULE_PATH
         return module_path
 
-    def resolve( self, name, version, type, **kwds ):
+    def resolve(self, requirement, **kwds):
+        requirement = self._expand_mappings(requirement)
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if type != "package":
             return NullDependency(version=version, name=name)
 
@@ -180,4 +188,5 @@ class ModuleDependency(Dependency):
 def _string_as_bool( value ):
     return str( value ).lower() == "true"
 
-__all__ = ['ModuleDependencyResolver']
+
+__all__ = ('ModuleDependencyResolver', )

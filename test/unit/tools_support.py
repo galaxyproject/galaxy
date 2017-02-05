@@ -3,22 +3,22 @@ tool evaluation. Such extensive "fixtures" are something of an anti-pattern
 so use of this should be limitted to tests of very 'extensive' classes.
 """
 
-from collections import defaultdict
 import os.path
-import tempfile
 import shutil
 import string
+import tempfile
+from collections import defaultdict
 
-from galaxy.util.bunch import Bunch
-from galaxy.web.security import SecurityHelper
+import galaxy.datatypes.registry
 import galaxy.model
+from galaxy.jobs import NoopQueue
 from galaxy.model import mapping
 from galaxy.tools import Tool
-from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.jobs import NoopQueue
-from galaxy.tools.parser import get_tool_source
 from galaxy.tools.deps.containers import NullContainerFinder
-import galaxy.datatypes.registry
+from galaxy.tools.parser import get_tool_source
+from galaxy.util.bunch import Bunch
+from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.web.security import SecurityHelper
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -120,6 +120,7 @@ class MockApp( object ):
             builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
             migrated_tools_config=os.path.join(test_directory, "migrated_tools_conf.xml"),
             server_name="test_server",
+            preserve_python_environment="always",
         )
 
         # Setup some attributes for downstream extension by specific tests.
@@ -207,4 +208,4 @@ class MockQuery(object):
         return self.class_objects.get(id, None)
 
 
-__all__ = [ UsesApp ]
+__all__ = ( 'UsesApp', )

@@ -40,6 +40,15 @@ def send_control_task(app, task, noop_self=False, kwargs={}):
 # just an example method.  Ideally this gets pushed into atomic tasks, whether
 # where they're currently invoked, or elsewhere.  (potentially using a dispatch
 # decorator).
+
+def create_panel_section(app, **kwargs):
+    """
+    Updates in memory toolbox dictionary.
+    """
+    log.debug("Updating in-memory tool panel")
+    app.toolbox.create_section(kwargs)
+
+
 def reload_tool(app, **kwargs):
     params = util.Params(kwargs)
     tool_id = params.get('tool_id', None)
@@ -63,6 +72,7 @@ def _get_new_toolbox(app):
     and then adding pre-existing data managers from the old toolbox to the new toolbox.
     """
     from galaxy import tools
+    from galaxy.tools.special_tools import load_lib_tools
     from galaxy.tools.toolbox.lineages.tool_shed import ToolVersionCache
     app.tool_version_cache = ToolVersionCache(app)  # Load new tools into version cache
     tool_configs = app.config.tool_configs
@@ -71,6 +81,9 @@ def _get_new_toolbox(app):
     start = time.time()
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, app.toolbox._tool_conf_watcher)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
+    app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
+    load_lib_tools(new_toolbox)
+    new_toolbox.load_hidden_lib_tool( "galaxy/datatypes/set_metadata_tool.xml" )
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     end = time.time() - start
     log.debug("Toolbox reload took %d seconds", end)
@@ -114,7 +127,9 @@ def admin_job_lock(app, **kwargs):
     log.info("Administrative Job Lock is now set to %s. Jobs will %s dispatch."
              % (job_lock, "not" if job_lock else "now"))
 
-control_message_to_task = { 'reload_tool': reload_tool,
+
+control_message_to_task = { 'create_panel_section': create_panel_section,
+                            'reload_tool': reload_tool,
                             'reload_toolbox': reload_toolbox,
                             'reload_data_managers': reload_data_managers,
                             'reload_display_application': reload_display_application,

@@ -157,7 +157,7 @@ define([], function() {
                     y = position.top / in_h * o_h,
                     w = node_element.width() / in_w * o_w,
                     h = node_element.height() / in_h * o_h;
-                if (node.tool_errors){
+                if (node.errors){
                     c.fillStyle = "#FFCCCC";
                     c.strokeStyle = "#AA6666";
                 } else if (node.workflow_outputs !== undefined && node.workflow_outputs.length > 0){

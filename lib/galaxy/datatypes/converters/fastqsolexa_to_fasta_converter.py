@@ -13,8 +13,8 @@ the order should be:
 Usage:
 %python fastqsolexa_to_fasta_converter.py <your_fastqsolexa_filename> <output_seq_filename> <output_score_filename>
 """
-
 import sys
+
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
@@ -49,6 +49,7 @@ def __main__():
             pass
 
     outfile.close()
+
 
 if __name__ == "__main__":
     __main__()

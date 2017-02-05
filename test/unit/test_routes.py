@@ -1,9 +1,7 @@
-# Unused but adds some stuff to routes.Mapper.
+from galaxy.util.bunch import Bunch
+from galaxy.web import url_for
 from galaxy.web.framework.webapp import WebApplication
 from galaxy.webapps.galaxy import buildapp as galaxy_buildapp
-
-from galaxy.web import url_for
-from galaxy.util.bunch import Bunch
 
 
 class TestWebapp( WebApplication ):
@@ -14,7 +12,7 @@ class TestWebapp( WebApplication ):
 
     def assert_maps( self, url, method="GET", **parts ):
         map_result = self.mapper.match( url, environ={"REQUEST_METHOD": method } )
-        for key, expected_value in parts.iteritems():
+        for key, expected_value in parts.items():
             actual_value = map_result[ key ]
             if actual_value != expected_value:
                 message = "Problem mapping route [%s], part %s expected value [%s] but obtained [%s]"

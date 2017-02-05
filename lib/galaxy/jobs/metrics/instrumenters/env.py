@@ -1,3 +1,4 @@
+"""The module describes the ``env`` job metrics plugin."""
 import logging
 import re
 
@@ -8,9 +9,7 @@ log = logging.getLogger( __name__ )
 
 
 class EnvFormatter( formatting.JobMetricFormatter ):
-
-    def format( self, key, value ):
-        return ( "%s (runtime environment variable)" % key, value )
+    pass
 
 
 class EnvPlugin( InstrumentPlugin ):
@@ -68,4 +67,5 @@ class EnvPlugin( InstrumentPlugin ):
     def __env_file( self, job_directory ):
         return self._instrument_file_path( job_directory, "vars" )
 
-__all__ = [ 'EnvPlugin' ]
+
+__all__ = ( 'EnvPlugin', )

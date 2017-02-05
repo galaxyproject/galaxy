@@ -1,29 +1,32 @@
 import os
-from xml.etree.ElementTree import XML
 from unittest import TestCase
+from xml.etree.ElementTree import XML
 
-from galaxy.model import Job
-from galaxy.model import History
-from galaxy.model import Dataset
-from galaxy.model import JobParameter
-from galaxy.model import HistoryDatasetAssociation
-from galaxy.model import JobToInputDatasetAssociation
-from galaxy.tools.evaluation import ToolEvaluator
 from galaxy.jobs import SimpleComputeEnvironment
 from galaxy.jobs.datasets import DatasetPath
-from galaxy.util.bunch import Bunch
-
+from galaxy.model import (
+    Dataset,
+    History,
+    HistoryDatasetAssociation,
+    Job,
+    JobParameter,
+    JobToInputDatasetAssociation
+)
+from galaxy.tools.evaluation import ToolEvaluator
 # For MockTool
 from galaxy.tools.parameters import params_from_strings
+from galaxy.tools.parameters.basic import (
+    DataToolParameter,
+    IntegerToolParameter,
+    SelectToolParameter
+)
+from galaxy.tools.parameters.grouping import (
+    Conditional,
+    ConditionalWhen,
+    Repeat
+)
 from galaxy.tools.parser.output_objects import ToolOutput
-from galaxy.tools.parameters.grouping import Repeat
-from galaxy.tools.parameters.grouping import Conditional
-from galaxy.tools.parameters.grouping import ConditionalWhen
-from galaxy.tools.parameters.basic import IntegerToolParameter
-from galaxy.tools.parameters.basic import SelectToolParameter
-from galaxy.tools.parameters.basic import DataToolParameter
-
-
+from galaxy.util.bunch import Bunch
 # Test fixtures for Galaxy infrastructure.
 from tools_support import UsesApp
 

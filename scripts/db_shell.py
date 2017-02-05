@@ -17,7 +17,7 @@ import decimal
 import os.path
 import sys
 
-from six import PY3, string_types
+from six import string_types
 
 # Setup DB scripting environment
 from sqlalchemy import *  # noqa
@@ -30,7 +30,7 @@ from galaxy.model import *  # noqa
 from galaxy.model.mapping import init
 from galaxy.model.orm.scripts import get_config
 
-if PY3:
+if sys.version_info > (3,):
     long = int
 
 db_url = get_config( sys.argv )['db_url']

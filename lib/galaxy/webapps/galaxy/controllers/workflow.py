@@ -526,7 +526,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
-    def copy( self, trans, id ):
+    def copy( self, trans, id, save_as_name=None ):
         # Get workflow to copy.
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
@@ -540,7 +540,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         # Copy.
         new_stored = model.StoredWorkflow()
-        new_stored.name = "Copy of '%s'" % stored.name
+        if (save_as_name):
+            new_stored.name = '%s' % save_as_name
+        else:
+            new_stored.name = "Copy of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
         # Copy annotation.
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
@@ -592,6 +595,50 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                            value="",
                            help="A description of the workflow; annotation is shown alongside shared or published workflows." )
 
+    @web.json
+    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
+        """
+            Creates a new workflow based on Save As command. It is a new workflow, but
+            is created with workflow_data already present.
+        """
+        user = trans.get_user()
+        if workflow_name is not None:
+            workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
+            stored_workflow = model.StoredWorkflow()
+            stored_workflow.name = workflow_name
+            stored_workflow.user = user
+            self.create_item_slug(trans.sa_session, stored_workflow)
+            workflow = model.Workflow()
+            workflow.name = workflow_name
+            workflow.stored_workflow = stored_workflow
+            stored_workflow.latest_workflow = workflow
+            # Add annotation.
+            workflow_annotation = sanitize_html( workflow_annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation )
+
+            # Persist
+            session = trans.sa_session
+            session.add( stored_workflow )
+            session.flush()
+
+            try:
+                workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+                    trans,
+                    stored_workflow,
+                    workflow_data,
+                )
+            except workflows.MissingToolsException as e:
+                return dict(
+                    name=e.workflow.name,
+                    message=("This workflow includes missing or invalid tools. "
+                             "It cannot be saved until the following steps are removed or the missing tools are enabled."),
+                    errors=e.errors,
+                )
+            return (trans.security.encode_id(stored_workflow.id))
+        else:
+            # This is an error state, 'save as' must have a workflow_name
+            log.exception("Error in Save As workflow: no name.")
+
     @web.expose
     def delete( self, trans, id=None ):
         """
@@ -624,57 +671,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
             .all()
         return trans.fill_template( "workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored ) )
-
-    @web.json
-    def editor_form_post( self, trans, type=None, content_id=None, annotation=None, label=None, **incoming ):
-        """
-        Accepts a tool state and incoming values, and generates a new tool
-        form and some additional information, packed into a json dictionary.
-        This is used for the form shown in the right pane when a node
-        is selected.
-        """
-        tool_state = incoming.pop( 'tool_state' )
-        module = module_factory.from_dict( trans, {
-            'type': type,
-            'content_id': content_id,
-            'tool_state': tool_state,
-            'label': label or None
-        } )
-        module.update_state( incoming )
-        return {
-            'label': module.label,
-            'tool_state': module.get_state(),
-            'data_inputs': module.get_data_inputs(),
-            'data_outputs': module.get_data_outputs(),
-            'tool_errors': module.get_errors(),
-            'form_html': module.get_config_form(),
-            'annotation': annotation
-        }
-
-    @web.json
-    def get_new_module_info( self, trans, type, **kwargs ):
-        """
-        Get the info for a new instance of a module initialized with default
-        parameters (any keyword arguments will be passed along to the module).
-        Result includes data inputs and outputs, html representation
-        of the initial form, and the initial tool state (with default values).
-        This is called asynchronously whenever a new node is added.
-        """
-        trans.workflow_building_mode = True
-        module = module_factory.new( trans, type, **kwargs )
-        tool_model = None
-        return {
-            'type': module.type,
-            'name': module.get_name(),
-            'content_id': module.get_content_id(),
-            'tool_state': module.get_state(),
-            'tool_model': tool_model,
-            'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
-            'data_inputs': module.get_data_inputs(),
-            'data_outputs': module.get_data_outputs(),
-            'form_html': module.get_config_form(),
-            'annotation': ""
-        }
 
     @web.json
     def load_workflow( self, trans, id ):
@@ -1005,6 +1001,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 history=history
             )
         else:
+            # If there is just one dataset name selected or one dataset collection, these
+            # come through as string types instead of lists. xref #3247.
+            dataset_names = util.listify(dataset_names)
+            dataset_collection_names = util.listify(dataset_collection_names)
             stored_workflow = extract_workflow(
                 trans,
                 user=user,

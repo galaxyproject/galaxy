@@ -26,6 +26,30 @@ def disable_gatk( context, tool ):
     return not any( [ requirement.name == "gatk" for requirement in tool.requirements ] )
 
 
+def explicit_group_mapping( context, section ):
+    """
+    This tool section filter uses an explicit mapping to describe what groups can view
+    which tool sections. Anonymous users will only be able to view the "Get Data"
+    tool section (with id getext). This can be enabled by renaming this file to
+    examples.py and adding the following to the ``app:main`` section of
+    ``galaxy.ini``:
+
+        tool_section_filters = examples:explicit_group_mapping
+    """
+    group_sections = {
+        None: [ "getext" ],
+        "group1": [ "getext", "textutil" ],
+        "group2": [ "textutil", "textutil", "filter" ],
+    }
+    user = context.trans.user
+    valid_sections = []
+    for group in [ uga.group for uga in user.groups ]:
+        group_section = group_sections.get(group.name, None)
+        if group_section is not None:
+            valid_sections.extend(group_section)
+    return section.id in valid_sections
+
+
 def explicit_user_mapping( context, section ):
     """
     This tool section filter uses an explicit mapping to describe what users can view

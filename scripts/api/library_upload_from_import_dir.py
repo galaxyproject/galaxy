@@ -4,6 +4,7 @@ Example usage:
 ./library_upload_from_import_dir.py <key> http://127.0.0.1:8080/api/libraries/dda47097d9189f15/contents Fdda47097d9189f15 auto /Users/EnisAfgan/projects/pprojects/galaxy/lib_upload_dir ?
 """
 from __future__ import print_function
+
 import os
 import sys
 

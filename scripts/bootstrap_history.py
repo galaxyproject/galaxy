@@ -33,6 +33,7 @@ PROJECT_NAME = "galaxy"
 PROJECT_URL = "https://github.com/%s/%s" % (PROJECT_OWNER, PROJECT_NAME)
 PROJECT_API = "https://api.github.com/repos/%s/%s/" % (PROJECT_OWNER, PROJECT_NAME)
 RELEASES_PATH = os.path.join(PROJECT_DIRECTORY, "doc", "source", "releases")
+RELEASE_DELTA_MONTHS = 4  # Number of months between releases.
 
 # Uncredit pull requestors... kind of arbitrary at this point.
 DEVTEAM = [
@@ -46,9 +47,8 @@ DEVTEAM = [
 TEMPLATE = """
 .. to_doc
 
--------------------------------
 %s
--------------------------------
+===============================
 
 .. announce_start
 
@@ -106,12 +106,12 @@ Highlights
 New Galaxy repository
   .. code-block:: shell
 
-      $ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
+      $$ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
 Update of existing Galaxy repository
   .. code-block:: shell
 
-      $ git checkout release_${release} && git pull --ff-only origin release_${release}
+      $$ git checkout release_${release} && git pull --ff-only origin release_${release}
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
 
@@ -159,9 +159,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
             make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
 
       - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
-
-      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `{version}` so it properly tags new PRs.
+      - [ ] Open PR against ``release_${version}`` branch to pin flake8 deps in tox.ini to the latest available version. See [example](https://github.com/galaxyproject/galaxy/pull/3476).
+      - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
       - [ ] Set the ``release_${version}`` branch in GitHub [setings](https://github.com/galaxyproject/galaxy/settings/branches) as protected.
+
 
 - [ ] **Deploy and Test Release**
 
@@ -169,7 +170,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
       - [ ] Update testtoolshed.g2.bx.psu.edu to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
       - [ ] Deploy to usegalaxy.org (${freeze_date} + 1 week).
       - [ ] Deploy to toolshed.g2.bx.psu.edu (${freeze_date} + 1 week).
-      - [ ] [Update bioblend testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target - add ``env`` target ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to ``tox.ini``.
+      - [ ] [Update BioBlend CI testing](https://github.com/galaxyproject/bioblend/commit/b74b1c302a1b8fed86786b40d7ecc3520cbadcd3) to include a ``release_${version}`` target: add ``- TOX_ENV=py27 GALAXY_VERSION=release_${version}`` to the ``env`` list in ``.travis.yml`` .
 
 - [ ] **Create Release Notes**
 
@@ -184,6 +185,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-bootstrap-history RELEASE_CURR=${version}
       - [ ] Open newly created files and manually curate major topics and release notes.
+
+            - [ ] inject 3 witty comments
+            - [ ] inject one whimsical story
+            - [ ] inject one topical reference (preferably satirical in nature) to contemporary world event
       - [ ] Commit release notes.
 
             git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
@@ -203,16 +208,17 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
             make release-create RELEASE_CURR=${version}
 
+      - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
+      - [ ] Trigger the documentation build.
+
 - [ ] **Do Docker Release**
 
-      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev
-) of the Galaxy Docker container to ${next_version}
+      - [ ] Change the [dev branch](https://github.com/bgruening/docker-galaxy-stable/tree/dev) of the Galaxy Docker container to ${next_version}
       - [ ] Merge dev into master
 
 - [ ] **Ensure Tool Tests use Latest Release**
 
       - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-iuc/blob/master/.travis.yml#L6
-
       - [ ]  Update GALAXY_RELEASE in https://github.com/galaxyproject/tools-devteam/blob/master/.travis.yml#L6
 
 - [ ] **Announce Release**
@@ -360,9 +366,9 @@ def _issue_to_str(pr):
 def _next_version_params(release_name):
     month = int(release_name.split(".")[1])
     year = release_name.split(".")[0]
-    next_month = (((month - 1) + 3) % 12) + 1
+    next_month = (((month - 1) + RELEASE_DELTA_MONTHS) % 12) + 1
     next_month_name = calendar.month_name[next_month]
-    if next_month < 3:
+    if next_month < RELEASE_DELTA_MONTHS:
         next_year = int(year) + 1
     else:
         next_year = year
@@ -487,7 +493,7 @@ def main(argv):
         text = ".. _Pull Request {0}: {1}/pull/{0}".format(pull_request, PROJECT_URL)
         history = extend(".. github_links", text)
         if owner:
-            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__.)" % (
+            to_doc += "\n(thanks to `@%s <https://github.com/%s>`__)." % (
                 owner, owner,
             )
         to_doc += "\n`Pull Request {0}`_".format(pull_request)

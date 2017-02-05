@@ -1,17 +1,20 @@
 """Utility functions for galaxyops"""
+from __future__ import print_function
+
 import sys
 
 
 def warn( msg ):
     # TODO: since everything printed to stderr results in job.state = error, we
     # don't need both a warn and a fail...
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     sys.exit( 1 )
 
 
 def fail( msg ):
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     sys.exit( 1 )
+
 
 # Default chrom, start, end, strand cols for a bed file
 BED_DEFAULT_COLS = 0, 1, 2, 5
@@ -24,15 +27,15 @@ def parse_cols_arg( cols ):
         # looks something like 1,2,3,
         if cols.endswith( ',' ):
             cols += '0'
-        col_list = map( lambda x: int( x ) - 1, cols.split(",") )
+        col_list = [int( x ) - 1 for x in cols.split(",")]
         return col_list
     else:
         return BED_DEFAULT_COLS
 
 
 def default_printer( stream, exc, obj ):
-    print >> stream, "%d: %s" % ( obj.linenum, obj.current_line )
-    print >> stream, "\tError: %s" % ( str(exc) )
+    print("%d: %s" % ( obj.linenum, obj.current_line ), file=stream)
+    print("\tError: %s" % ( str(exc) ), file=stream)
 
 
 def skipped( reader, filedesc="" ):

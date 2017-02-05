@@ -5,19 +5,39 @@ are encapsulated here.
 
 import logging
 
-from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, ForeignKey, Integer,
-    MetaData, not_, Numeric, select, String, Table, Text, TEXT, true, Unicode, UniqueConstraint )
+from sqlalchemy import (
+    and_,
+    asc,
+    Boolean,
+    Column,
+    DateTime,
+    desc,
+    false,
+    ForeignKey,
+    Integer,
+    MetaData,
+    not_,
+    Numeric,
+    select,
+    String,
+    Table,
+    TEXT,
+    Text,
+    true,
+    Unicode,
+    UniqueConstraint
+)
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.types import BigInteger
-from sqlalchemy.orm import backref, object_session, relation, mapper, class_mapper, deferred
+from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.types import BigInteger
 
 from galaxy import model
+from galaxy.model.base import ModelMapping
+from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
-from galaxy.model.base import ModelMapping
 from galaxy.security import GalaxyRBACAgent
 
 log = logging.getLogger( __name__ )
@@ -2006,8 +2026,7 @@ mapper( model.JobToOutputDatasetAssociation, model.JobToOutputDatasetAssociation
 mapper( model.JobToInputDatasetCollectionAssociation, model.JobToInputDatasetCollectionAssociation.table, properties=dict(
     job=relation( model.Job ),
     dataset_collection=relation( model.HistoryDatasetCollectionAssociation,
-        lazy=False,
-        backref="dependent_jobs" )
+        lazy=False )
 ) )
 
 mapper( model.JobToOutputDatasetCollectionAssociation, model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
@@ -2290,7 +2309,7 @@ mapper( model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table, prop
 ) )
 
 mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict(
-    history=relation( model.History ),
+    history=relation( model.History, backref=backref('workflow_invocations', uselist=True )),
     input_parameters=relation( model.WorkflowRequestInputParameter ),
     step_states=relation( model.WorkflowRequestStepState ),
     input_step_parameters=relation( model.WorkflowRequestInputStepParmeter ),
@@ -2302,8 +2321,7 @@ mapper( model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dic
         uselist=True,
     ),
     steps=relation( model.WorkflowInvocationStep,
-        backref='workflow_invocation',
-        lazy=False ),
+        backref='workflow_invocation' ),
     workflow=relation( model.Workflow )
 ) )
 
@@ -2426,6 +2444,7 @@ simple_mapping( model.Tag,
 def tag_mapping( tag_association_class, backref_name ):
     simple_mapping( tag_association_class, tag=relation( model.Tag, backref=backref_name), user=relation( model.User ) )
 
+
 tag_mapping( model.HistoryTagAssociation, "tagged_histories" )
 tag_mapping( model.DatasetTagAssociation, "tagged_datasets" )
 tag_mapping( model.HistoryDatasetAssociationTagAssociation, "tagged_history_dataset_associations" )
@@ -2440,8 +2459,9 @@ tag_mapping( model.ToolTagAssociation, "tagged_tools" )
 
 # Annotation tables.
 def annotation_mapping( annotation_class, **kwds ):
-    kwds = dict( [ (key, relation( value ) ) for key, value in kwds.iteritems() ] )
+    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( annotation_class, **dict(user=relation( model.User ), **kwds ) )
+
 
 annotation_mapping( model.HistoryAnnotationAssociation, history=model.History )
 annotation_mapping( model.HistoryDatasetAssociationAnnotationAssociation, hda=model.HistoryDatasetAssociation )
@@ -2457,8 +2477,9 @@ annotation_mapping( model.LibraryDatasetCollectionAnnotationAssociation,
 
 # Rating tables.
 def rating_mapping( rating_class, **kwds ):
-    kwds = dict( [ (key, relation( value ) ) for key, value in kwds.iteritems() ] )
+    kwds = dict( (key, relation( value ) ) for key, value in kwds.items() )
     simple_mapping( rating_class, **dict(user=relation( model.User ), **kwds ) )
+
 
 rating_mapping( model.HistoryRatingAssociation, history=model.History )
 rating_mapping( model.HistoryDatasetAssociationRatingAssociation, hda=model.HistoryDatasetAssociation )
@@ -2527,7 +2548,19 @@ def db_next_hid( self, n=1 ):
         trans.rollback()
         raise
 
+
 model.History._next_hid = db_next_hid
+
+
+def _workflow_invocation_update( self ):
+    conn = object_session( self ).connection()
+    table = self.table
+    now_val = now()
+    stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
+    conn.execute(stmt)
+
+
+model.WorkflowInvocation.update = _workflow_invocation_update
 
 
 def init( file_path, url, engine_options={}, create_tables=False, map_install_models=False,

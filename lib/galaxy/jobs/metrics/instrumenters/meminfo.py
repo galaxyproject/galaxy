@@ -1,3 +1,4 @@
+"""The module describes the ``meminfo`` job metrics plugin."""
 import re
 import sys
 
@@ -61,4 +62,5 @@ class MemInfoPlugin( InstrumentPlugin ):
     def __instrument_meminfo_path( self, job_directory ):
         return self._instrument_file_path( job_directory, "meminfo" )
 
-__all__ = [ 'MemInfoPlugin' ]
+
+__all__ = ( 'MemInfoPlugin', )

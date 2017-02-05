@@ -109,7 +109,8 @@ class SimpleGraph( object ):
 
     def gen_edge_dicts( self ):
         """
-        Returns a generator that yields node dictionaries in the form:
+        Returns a generator that yields node dictionaries in the form::
+
             {
                 'source': <the index of the source node in the graph's node list>,
                 'target': <the index of the target node in the graph's node list>,
@@ -121,7 +122,8 @@ class SimpleGraph( object ):
 
     def as_dict( self ):
         """
-        Returns a dictionary of the form
+        Returns a dictionary of the form::
+
             { 'nodes': <a list of node dictionaries>, 'edges': <a list of node dictionaries> }
         """
         return { 'nodes': list( self.gen_node_dicts() ), 'edges': list( self.gen_edge_dicts() ) }

@@ -1,10 +1,8 @@
 import json
-import pprint
-import logging
-from requests import post
-from base import api
 
-log = logging.getLogger( "functional_tests.py" )
+from requests import post
+
+from base import api
 
 
 class ApiBatchTestCase( api.ApiTestCase ):
@@ -20,9 +18,6 @@ class ApiBatchTestCase( api.ApiTestCase ):
         data = json.dumps({ "batch" : batch })
         return post( "%s/batch" % ( self.galaxy_interactor.api_url ), data=data )
 
-    def _log_reponse( self, response ):
-        log.debug( 'RESPONSE %s\n%s', ( '-' * 40 ), pprint.pformat( response ) )
-
     # ---- tests
     def test_simple_array( self ):
         batch = [
@@ -33,7 +28,6 @@ class ApiBatchTestCase( api.ApiTestCase ):
         ]
         response = self._post_batch( batch )
         response = response.json()
-        # self._log_reponse( response )
         self.assertIsInstance( response, list )
         self.assertEquals( len( response ), 3 )
 
@@ -63,7 +57,6 @@ class ApiBatchTestCase( api.ApiTestCase ):
         ]
         response = self._post_batch( batch )
         response = response.json()
-        # self._log_reponse( response )
         self.assertIsInstance( response, list )
         self.assertEquals( response[0][ 'status' ], 400 )
         self.assertEquals( response[1][ 'status' ], 501 )
@@ -81,7 +74,6 @@ class ApiBatchTestCase( api.ApiTestCase ):
         ]
         response = self._post_batch( batch )
         response = response.json()
-        self._log_reponse( response )
         self.assertEquals( len( response ), 2 )
         self.assertEquals( len( response[0][ 'body' ].keys() ), 2 )
         self.assertEquals( response[1][ 'body' ], [] )

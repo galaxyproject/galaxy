@@ -4,28 +4,28 @@ import mock
 
 from galaxy import model
 from galaxy.util import bunch
-
 from galaxy.workflow import modules
+
 from .workflow_support import MockTrans, yaml_to_model
 
 
 def test_input_has_no_errors():
     trans = MockTrans()
-    input_step_module = modules.module_factory.new( trans, "data_input" )
+    input_step_module = modules.module_factory.from_dict( trans, { "type": "data_input" } )
     assert not input_step_module.get_errors()
 
 
 def test_valid_new_tool_has_no_errors():
     trans = MockTrans()
-    mock_tool = mock.Mock()
+    mock_tool = __mock_tool()
     trans.app.toolbox.tools[ "cat1" ] = mock_tool
-    tool_module = modules.module_factory.new( trans, "tool", content_id="cat1" )
+    tool_module = modules.module_factory.from_dict( trans, { "type": "tool", "tool_id": "cat1" } )
     assert not tool_module.get_errors()
 
 
 def test_data_input_default_state():
     trans = MockTrans()
-    module = modules.module_factory.new( trans, "data_input" )
+    module = modules.module_factory.from_dict( trans, { "type": "data_input" } )
     __assert_has_runtime_input( module, label="Input Dataset" )
 
 
@@ -93,8 +93,8 @@ def test_data_input_update():
             "name": "Cool Input",
         },
     )
-    module.update_state( dict( name="Awesome New Name" ) )
-    assert module.state[ 'name' ] == "Awesome New Name"
+    module.recover_state( dict( name="Awesome New Name" ) )
+    assert module.state.inputs[ 'name' ] == "Awesome New Name"
 
 
 def test_data_input_get_form():
@@ -104,21 +104,13 @@ def test_data_input_get_form():
             "name": "Cool Input",
         },
     )
-
-    def test_form(template, **kwds ):
-        assert template == "workflow/editor_generic_form.mako"
-        assert "form" in kwds
-        assert len( kwds[ "form" ].inputs ) == 1
-        return "TEMPLATE"
-
-    fill_mock = mock.Mock( side_effect=test_form )
-    module.trans.fill_template = fill_mock
-    assert module.get_config_form() == "TEMPLATE"
+    result = module.get_config_form()
+    assert result[ 'inputs' ][ 0 ][ 'value' ], 'Cool Input'
 
 
 def test_data_collection_input_default_state():
     trans = MockTrans()
-    module = modules.module_factory.new( trans, "data_collection_input" )
+    module = modules.module_factory.from_dict( trans, { "type": "data_collection_input" } )
     __assert_has_runtime_input( module, label="Input Dataset Collection", collection_type="list" )
 
 
@@ -166,8 +158,8 @@ def test_data_collection_input_update():
             'collection_type': 'list:paired',
         }
     )
-    module.update_state( dict( name="New Collection", collection_type="list" ) )
-    assert module.state[ 'name' ] == "New Collection"
+    module.recover_state( dict( name="New Collection", collection_type="list" ) )
+    assert module.state.inputs[ 'name' ] == "New Collection"
 
 
 def test_data_collection_input_config_form():
@@ -178,26 +170,15 @@ def test_data_collection_input_config_form():
             'collection_type': 'list:paired',
         }
     )
-
-    def test_form(template, **kwds ):
-        assert template == "workflow/editor_generic_form.mako"
-        assert "form" in kwds
-        assert len( kwds[ "form" ].inputs ) == 2
-        return "TEMPLATE"
-
-    fill_mock = mock.Mock( side_effect=test_form )
-    module.trans.fill_template = fill_mock
-    assert module.get_config_form() == "TEMPLATE"
+    result = module.get_config_form()
+    assert result[ 'inputs' ][ 0 ][ 'value' ], 'Cool Collection'
+    assert result[ 'inputs' ][ 1 ][ 'value' ], 'list:paired'
 
 
 def test_cannot_create_tool_modules_for_missing_tools():
     trans = MockTrans()
-    exception = False
-    try:
-        modules.module_factory.new( trans, "tool", content_id="cat1" )
-    except Exception:
-        exception = True
-    assert exception
+    module = modules.module_factory.from_dict( trans, { "type": "tool", "tool_id": "cat1" } )
+    assert not module.tool
 
 
 def test_updated_tool_version():
@@ -229,6 +210,7 @@ def test_tool_version_same():
         config=None,
     )
     assert not module.version_changes
+
 
 TEST_WORKFLOW_YAML = """
 steps:
@@ -293,7 +275,7 @@ def __new_subworkflow_module():
     workflow = yaml_to_model(TEST_WORKFLOW_YAML)
     stored_workflow = trans.save_workflow(workflow)
     workflow_id = trans.app.security.encode_id(stored_workflow.id)
-    subworkflow_module = modules.module_factory.new( trans, "subworkflow", workflow_id )
+    subworkflow_module = modules.module_factory.from_dict( trans, { "type": "subworkflow", "content_id": workflow_id  } )
     return subworkflow_module
 
 
@@ -334,7 +316,7 @@ def __from_step( **kwds ):
 
 def __step( **kwds ):
     step = model.WorkflowStep()
-    for key, value in kwds.iteritems():
+    for key, value in kwds.items():
         setattr( step, key, value )
 
     return step

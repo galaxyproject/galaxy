@@ -2,12 +2,12 @@ from __future__ import print_function
 
 import os
 import re
+import time
 from json import dumps
 from logging import getLogger
 
-from requests import get, post, delete, patch
-from six import StringIO
-from six import text_type
+from requests import delete, get, patch, post
+from six import StringIO, text_type
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -46,11 +46,11 @@ def stage_data_in_history( galaxy_interactor, all_test_data, history, shed_tool_
 
 class GalaxyInteractorApi( object ):
 
-    def __init__( self, twill_test_case, test_user=None ):
-        self.twill_test_case = twill_test_case
-        self.api_url = "%s/api" % twill_test_case.url.rstrip("/")
-        self.master_api_key = twill_test_case.master_api_key
-        self.api_key = self.__get_user_key( twill_test_case.user_api_key, twill_test_case.master_api_key, test_user=test_user )
+    def __init__( self, functional_test_case, test_user=None ):
+        self.functional_test_case = functional_test_case
+        self.api_url = "%s/api" % functional_test_case.url.rstrip("/")
+        self.master_api_key = functional_test_case.master_api_key
+        self.api_key = self.__get_user_key( functional_test_case.user_api_key, functional_test_case.master_api_key, test_user=test_user )
         self.uploads = {}
 
     def verify_output( self, history_id, jobs, output_data, output_testdef, shed_tool_id, maxseconds ):
@@ -88,7 +88,7 @@ class GalaxyInteractorApi( object ):
 
     def verify_output_dataset( self, history_id, hda_id, outfile, attributes, shed_tool_id ):
         fetcher = self.__dataset_fetcher( history_id )
-        self.twill_test_case.verify_hid(
+        self.functional_test_case.verify_hid(
             outfile,
             hda_id=hda_id,
             attributes=attributes,
@@ -118,23 +118,36 @@ class GalaxyInteractorApi( object ):
             metadata[ "file_ext" ] = expected_file_type
 
         if metadata:
-            import time
             time.sleep(5)
             dataset = self._get( "histories/%s/contents/%s" % ( history_id, hid ) ).json()
             for key, value in metadata.items():
                 try:
                     dataset_value = dataset.get( key, None )
-                    if text_type(dataset_value) != text_type(value):
-                        msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
-                        msg_params = ( key, value, dataset_value, dataset )
-                        msg = msg % msg_params
-                        raise Exception( msg )
+
+                    def compare(val, expected):
+                        if text_type(val) != text_type(expected):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s]. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+
+                    if isinstance(dataset_value, list):
+                        value = text_type(value).split(",")
+                        if len(value) != len(dataset_value):
+                            msg = "Dataset metadata verification for [%s] failed, expected [%s] but found [%s], lists differ in length. Dataset API value was [%s]."
+                            msg_params = ( key, value, dataset_value, dataset )
+                            msg = msg % msg_params
+                            raise Exception( msg )
+                        for val, expected in zip(dataset_value, value):
+                            compare(val, expected)
+                    else:
+                        compare(dataset_value, value)
                 except KeyError:
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )
 
     def wait_for_job( self, job_id, history_id, maxseconds ):
-        self.twill_test_case.wait_for( lambda: not self.__job_ready( job_id, history_id ), maxseconds=maxseconds)
+        self.functional_test_case.wait_for( lambda: not self.__job_ready( job_id, history_id ), maxseconds=maxseconds)
 
     def get_job_stdio( self, job_id ):
         job_stdio = self.__get_job_stdio( job_id ).json()
@@ -172,7 +185,7 @@ class GalaxyInteractorApi( object ):
         if composite_data:
             files = {}
             for i, composite_file in enumerate( composite_data ):
-                file_name = self.twill_test_case.get_filename( composite_file.get( 'value' ), shed_tool_id=shed_tool_id )
+                file_name = self.functional_test_case.get_filename( composite_file.get( 'value' ), shed_tool_id=shed_tool_id )
                 files["files_%s|file_data" % i] = open( file_name, 'rb' )
                 tool_input.update({
                     # "files_%d|NAME" % i: name,
@@ -182,7 +195,7 @@ class GalaxyInteractorApi( object ):
                 })
             name = test_data[ 'name' ]
         else:
-            file_name = self.twill_test_case.get_filename( fname, shed_tool_id=shed_tool_id )
+            file_name = self.functional_test_case.get_filename( fname, shed_tool_id=shed_tool_id )
             name = test_data.get( 'name', None )
             if not name:
                 name = os.path.basename( file_name )
@@ -205,7 +218,7 @@ class GalaxyInteractorApi( object ):
         self.uploads[ os.path.basename(fname) ] = self.uploads[ fname ] = self.uploads[ name ] = {"src": "hda", "id": hid}
         return self.__wait_for_history( history_id )
 
-    def run_tool( self, testdef, history_id ):
+    def run_tool( self, testdef, history_id, resource_parameters={} ):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
 
@@ -222,6 +235,11 @@ class GalaxyInteractorApi( object ):
                 else:
                     new_values.append( value )
             inputs_tree[ key ] = new_values
+
+        if resource_parameters:
+            inputs_tree["__job_resource|__job_resource__select"] = "yes"
+            for key, value in resource_parameters.items():
+                inputs_tree["__job_resource|%s" % key] = value
 
         # HACK: Flatten single-value lists. Required when using expand_grouping
         for key, value in inputs_tree.items():

@@ -2,20 +2,20 @@
 
 The XML File for a Galaxy tool, generally referred to as the "tool config
 file" or "wrapper", serves a number of purposes. First, it lays out the user
-interface for the tool ( e.g. form fields, text, help, etc...). Second, it
+interface for the tool (e.g. form fields, text, help, etc.). Second, it
 provides the glue that links your tool to Galaxy by telling Galaxy how to
 invoke it, what options to pass, and what files it will produce as output.
 
+If you find a bug please report it [here](https://github.com/galaxyproject/galaxy/issues/new).
+
 This document serves as reference documentation. If you would like to learn
 how to build tools for Galaxy,
-[Planemo](http://planemo.readthedocs.io/en/latest/writing.html) features a
+[Planemo](https://planemo.readthedocs.io/en/latest/writing.html) features a
 number of tutorials on building Galaxy tools that would better serve that purpose.
-
-$toc
 
 $tag:tool://element[@name='tool']
 $tag:tool|description://element[@name='tool']//element[@name='description']
-$tag:tool|version_command://element[@name='tool']//element[@name='version_command']
+$tag:tool|version_command://complexType[@name='VersionCommand']
 $tag:tool|command://element[@name='tool']//element[@name='command'] hide_attributes
 $tag:tool|inputs://complexType[@name='Inputs']
 $tag:tool|inputs|section://complexType[@name='Section']
@@ -25,6 +25,7 @@ $tag:tool|inputs|conditional|when://complexType[@name='ConditionalWhen']
 $tag:tool|inputs|param://complexType[@name='Param']
 $tag:tool|inputs|param|validator://complexType[@name='Validator']
 $tag:tool|inputs|param|option://complexType[@name='ParamOption']
+$tag:tool|inputs|param|conversion://complexType[@name='ParamConversion']
 $tag:tool|inputs|param|options://complexType[@name='ParamOptions']
 $tag:tool|inputs|param|options|column://complexType[@name='Column']
 $tag:tool|inputs|param|options|filter://complexType[@name='Filter']

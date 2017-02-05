@@ -342,7 +342,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
 
         def prepare_metadata( metadata ):
             """ Prepare metatdata for exporting. """
-            for name, value in metadata.items():
+            for name, value in list(metadata.items()):
                 # Metadata files are not needed for export because they can be
                 # regenerated.
                 if isinstance( value, trans.app.model.MetadataFile ):

@@ -1,6 +1,6 @@
 /* This is the regular tool form */
-define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base' ],
-    function( Utils, Ui, Modal, ToolFormBase ) {
+define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form-base', 'mvc/webhooks' ],
+    function( Utils, Ui, Modal, ToolFormBase, Webhooks ) {
     var View = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -80,6 +80,13 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     callback && callback();
                     self.$el.children().hide();
                     self.$el.append( self._templateSuccess( response ) );
+                    // Show Webhook if job is running
+                    if ( response.jobs && response.jobs.length > 0 ) {
+                        self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );
+                        var WebhookApp = new Webhooks.WebhookView({
+                            urlRoot: Galaxy.root + 'api/webhooks/tool'
+                        });
+                    }
                     parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
                 },
                 error   : function( response ) {
@@ -88,7 +95,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     var input_found = false;
                     if ( response && response.err_data ) {
                         var error_messages = self.form.data.matchResponse( response.err_data );
-                        for (var input_id in error_messages) {
+                        for ( var input_id in error_messages ) {
                             self.form.highlight( input_id, error_messages[ input_id ]);
                             input_found = true;
                             break;
@@ -97,7 +104,7 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                     if ( !input_found ) {
                         self.modal.show({
                             title   : 'Job submission failed',
-                            body    : ( response && response.err_msg ) || self._templateError( job_def ),
+                            body    : self._templateError( job_def, response && response.err_msg ),
                             buttons : { 'Close' : function() { self.modal.hide() } }
                         });
                     }
@@ -159,13 +166,13 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                 $message.append( $( '<p/>' ).append( '<b/>' ).text( 'You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from \'running\' to \'finished\' if completed successfully or \'error\' if problems were encountered.' ) );
                 return $message;
             } else {
-                return this._templateError( response );
+                return this._templateError( response, 'Invalid success response. No jobs found.' );
             }
         },
 
-        _templateError: function( response ) {
+        _templateError: function( response, err_msg ) {
             return  $( '<div/>' ).addClass( 'errormessagelarge' )
-                                 .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists.' ) )
+                                 .append( $( '<p/>' ).text( 'The server could not complete the request. Please contact the Galaxy Team if this error persists. ' + ( err_msg || '' ) ) )
                                  .append( $( '<pre/>' ).text( JSON.stringify( response, null, 4 ) ) );
         }
     });

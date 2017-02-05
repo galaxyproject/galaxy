@@ -16,6 +16,7 @@ from ..resolvers import (
     Dependency,
     DependencyResolver,
     ListableDependencyResolver,
+    MappableDependencyResolver,
     NullDependency,
 )
 
@@ -66,11 +67,13 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         self.versionless = str(kwds.get('versionless', "false")).lower() == "true"
         self._init_base_path( dependency_manager, **kwds )
 
-    def resolve( self, name, version, type, **kwds ):
+    def resolve(self, requirement, **kwds):
         """
         Attempt to find a dependency named `name` at version `version`. If version is None, return the "default" version as determined using a
         symbolic link (if found). Returns a triple of: env_script, base_path, real_version
         """
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if version is None or self.versionless:
             exact = not self.versionless or version is None
             return self._find_dep_default( name, type=type, exact=exact, **kwds )
@@ -101,8 +104,16 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         return NullDependency(version=version, name=name)
 
 
-class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver):
+class GalaxyPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, ListableDependencyResolver, MappableDependencyResolver):
     resolver_type = "galaxy_packages"
+
+    def __init__(self, dependency_manager, **kwds):
+        super(GalaxyPackageDependencyResolver, self).__init__(dependency_manager, **kwds)
+        self._setup_mapping(dependency_manager, **kwds)
+
+    def resolve(self, requirement, **kwds):
+        requirement = self._expand_mappings(requirement)
+        return super(GalaxyPackageDependencyResolver, self).resolve(requirement, **kwds)
 
     def list_dependencies(self):
         base_path = self.base_path
@@ -122,4 +133,8 @@ def _is_dependency_directory(directory):
     return exists(join(directory, 'env.sh')) or exists(join(directory, 'bin'))
 
 
-__all__ = ['GalaxyPackageDependencyResolver', 'GalaxyPackageDependency', 'ToolShedDependency']
+__all__ = (
+    'GalaxyPackageDependency',
+    'GalaxyPackageDependencyResolver',
+    'ToolShedDependency'
+)

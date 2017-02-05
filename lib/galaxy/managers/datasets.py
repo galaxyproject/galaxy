@@ -236,7 +236,8 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
     def deserialize_permissions( self, dataset, key, permissions, user=None, **context ):
         """
         Create permissions for each list of encoded role ids in the (validated)
-        `permissions` dictionary, where `permissions` is in the form:
+        `permissions` dictionary, where `permissions` is in the form::
+
             { 'manage': [ <role id 1>, ... ], 'access': [ <role id 2>, ... ] }
         """
         self.manager.permissions.manage.error_unless_permitted( dataset, user )
@@ -355,7 +356,7 @@ class DatasetAssociationManager( base.ModelManager,
         """
         Return True if this hda/ldda is a composite type dataset.
 
-        .. note: see also (whereever we keep information on composite datatypes?)
+        .. note:: see also (whereever we keep information on composite datatypes?)
         """
         return dataset_assoc.extension in self.app.datatypes_registry.get_composite_extensions()
 
