@@ -492,36 +492,24 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
 
         rval = {}
-        try:
-            # check permissions on (all three?) resources: hda, library, folder
-            # TODO: do we really need the library??
-            hda = hda_manager.get_owned( from_hda_id, trans.user, current_history=trans.history )
-            hda = hda_manager.error_if_uploading( hda )
-            folder = self.get_library_folder( trans, folder_id, check_accessible=True )
+        # check permissions on (all three?) resources: hda, library, folder
+        # TODO: do we really need the library??
+        hda = hda_manager.get_owned( from_hda_id, trans.user, current_history=trans.history )
+        hda = hda_manager.error_if_uploading( hda )
+        folder = self.get_library_folder( trans, folder_id, check_accessible=True )
 
-            # TOOD: refactor to use check_user_can_add_to_library_item, eliminate boolean
-            # can_current_user_add_to_library_item.
-            if folder.parent_library.deleted:
-                raise exceptions.ObjectAttributeInvalidException('You cannot add datasets into deleted library. Undelete it first.')
-            if not self.can_current_user_add_to_library_item( trans, folder ):
-                raise exceptions.InsufficientPermissionsException('You do not have proper permissions to add a dataset to this folder,')
+        # TOOD: refactor to use check_user_can_add_to_library_item, eliminate boolean
+        # can_current_user_add_to_library_item.
+        if folder.parent_library.deleted:
+            raise exceptions.ObjectAttributeInvalidException('You cannot add datasets into deleted library. Undelete it first.')
+        if not self.can_current_user_add_to_library_item( trans, folder ):
+            raise exceptions.InsufficientPermissionsException('You do not have proper permissions to add a dataset to this folder,')
 
-            ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_identifier=element_identifier )
-            ldda_dict = ldda.to_dict()
-            rval = trans.security.encode_dict_ids( ldda_dict )
-            update_time = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
-            rval['update_time'] = update_time
-
-        except Exception as exc:
-            # TODO: grrr...
-            if 'not accessible to the current user' in str( exc ):
-                trans.response.status = 403
-                return { 'error': str( exc ) }
-            else:
-                log.exception( exc )
-                trans.response.status = 500
-                return { 'error': str( exc ) }
-
+        ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_identifier=element_identifier )
+        ldda_dict = ldda.to_dict()
+        rval = trans.security.encode_dict_ids( ldda_dict )
+        update_time = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
+        rval['update_time'] = update_time
         return rval
 
     def copy_hda_to_library_folder( self, trans, hda, library_folder, roles=None, ldda_message='', element_identifier=None ):
