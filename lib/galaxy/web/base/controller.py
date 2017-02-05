@@ -491,7 +491,6 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         if ldda_message:
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
 
-        rval = {}
         # check permissions on (all three?) resources: hda, library, folder
         # TODO: do we really need the library??
         hda = hda_manager.get_owned( from_hda_id, trans.user, current_history=trans.history )

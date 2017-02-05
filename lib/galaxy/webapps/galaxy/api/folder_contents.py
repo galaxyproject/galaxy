@@ -276,12 +276,9 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             if from_hda_id:
                 decoded_hda_id = self.decode_id( from_hda_id )
                 rvals.append(self._copy_hda_to_library_folder( trans, self.hda_manager, decoded_hda_id, encoded_folder_id_16, ldda_message ))
-            elif from_hdca_id:
+            if from_hdca_id:
                 decoded_hdca_id = self.decode_id( from_hdca_id )
                 rvals.extend(self._copy_hdca_to_library_folder( trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message ))
-            else:
-                raise Exception('Need to supply from_hda or or from_hdca.')
-
         except Exception as exc:
             # TODO handle exceptions better within the mixins
             if 'not accessible to the current user' in str( exc ) or 'You are not allowed to access this dataset' in str( exc ):
