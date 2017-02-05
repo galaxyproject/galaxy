@@ -89,7 +89,31 @@ class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):
         assert library_dataset[ "peek" ].find("create_test") >= 0
         assert library_dataset[ "file_ext" ] == "txt", library_dataset[ "file_ext" ]
 
-    def test_create_datasets_from_collection( self ):
+    def test_create_dataset_in_folder( self ):
+        library = self.library_populator.new_private_library( "ForCreateDatasets" )
+        folder_response = self._create_folder( library )
+        self._assert_status_code_is( folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        history_id = self.dataset_populator.new_history()
+        hda_id = self.dataset_populator.new_dataset( history_id, content="1 2 3" )['id']
+        payload = {'from_hda_id': hda_id}
+        create_response = self._post( "folders/%s/contents" % folder_id, payload )
+        self._assert_status_code_is( create_response, 200 )
+        library_datasets = create_response.json()
+        assert len( library_datasets ) == 1
+
+    def test_create_datasets_in_library_from_collection( self ):
+        library = self.library_populator.new_private_library( "ForCreateDatasetsFromCollection" )
+        folder_response = self._create_folder( library )
+        self._assert_status_code_is( folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["xxx", "yyy"] ).json()["id"]
+        payload = {'from_hdca_id': hdca_id, 'create_type': 'file', 'folder_id': folder_id}
+        create_response = self._post( "libraries/%s/contents" % library['id'], payload )
+        self._assert_status_code_is(create_response, 200)
+
+    def test_create_datasets_in_folder_from_collection( self ):
         library = self.library_populator.new_private_library( "ForCreateDatasetsFromCollection" )
         history_id = self.dataset_populator.new_history()
         hdca_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["xxx", "yyy"] ).json()["id"]
