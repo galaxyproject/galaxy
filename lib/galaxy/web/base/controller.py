@@ -505,6 +505,10 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to add a dataset to this folder,')
 
         ldda = self.copy_hda_to_library_folder( trans, hda, folder, ldda_message=ldda_message, element_identifier=element_identifier )
+        # I don't see a reason why hdas copied into libraries should not be visible.
+        # If there is, refactor `ldda.visible = True` to do this only when adding HDCAs.
+        ldda.visible = True
+        trans.sa_session.flush()
         ldda_dict = ldda.to_dict()
         rval = trans.security.encode_dict_ids( ldda_dict )
         update_time = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
