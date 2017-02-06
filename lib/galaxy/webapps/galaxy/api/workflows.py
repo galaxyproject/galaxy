@@ -347,7 +347,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     stored_workflow,
                     payload[ 'workflow' ],
                 )
-            except workflows.MissingToolsException as e:
+            except workflows.MissingToolsException:
                 raise exceptions.MessageException( "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed." )
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
