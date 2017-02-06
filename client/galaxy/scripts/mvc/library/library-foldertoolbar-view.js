@@ -1407,7 +1407,7 @@ var FolderToolbarView = Backbone.View.extend({
                      '<%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %> (Dataset Collection of type <%= _.escape(collection_type) %> not supported.)',
                   '</a></li>',
                 '<% } %>',
-          '<% } else { %>',
+          '<% } else if (history_item.get("visible") === true && history_item.get("state") === "ok") { %>',
               '<li data-id="<%= _.escape(history_item.get("id")) %>" data-name="<%= _.escape(history_item.get("type")) %>">',
                 '<input style="margin: 0;" type="checkbox"> <%= _.escape(history_item.get("hid")) %>: <%= _.escape(history_item.get("name")) %>',
               '</li>',
