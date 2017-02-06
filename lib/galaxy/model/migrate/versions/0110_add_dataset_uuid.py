@@ -13,11 +13,6 @@ log = logging.getLogger( __name__ )
 dataset_uuid_column = Column( "uuid", UUIDType, nullable=True )
 
 
-def display_migration_details():
-    print("")
-    print("This migration adds uuid column to dataset table")
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata = MetaData()

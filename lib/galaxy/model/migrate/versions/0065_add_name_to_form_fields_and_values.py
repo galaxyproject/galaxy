@@ -8,7 +8,7 @@ from __future__ import print_function
 import datetime
 import logging
 import sys
-from json import loads, dumps
+from json import dumps, loads
 
 from sqlalchemy import MetaData, Table
 

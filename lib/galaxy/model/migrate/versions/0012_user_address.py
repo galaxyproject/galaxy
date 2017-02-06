@@ -26,16 +26,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("========================================")
-    print("This script adds a new user_address table that is currently only used with sample requests, where")
-    print("a user can select from a list of his addresses to associate with the request.  This script also")
-    print("drops the request.submitted column which was boolean and replaces it with a request.state column")
-    print("which is a string, allowing for more flexibility with request states.")
-    print("========================================")
-
-
 UserAddress_table = Table( "user_address", metadata,
                            Column( "id", Integer, primary_key=True),
                            Column( "create_time", DateTime, default=now ),
@@ -56,7 +46,7 @@ UserAddress_table = Table( "user_address", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     # Add all of the new tables above

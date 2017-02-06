@@ -16,11 +16,6 @@ exit_code_job_col = Column( "exit_code", Integer, nullable=True )
 exit_code_task_col = Column( "exit_code", Integer, nullable=True )
 
 
-def display_migration_details():
-    print("")
-    print("This migration script adds a 'handler' column to the Job table.")
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine

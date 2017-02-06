@@ -32,26 +32,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("========================================")
-    print("This migration script eliminates all of the tables that were used for the 1st version of the")
-    print("library templates where template fields and contents were each stored as a separate table row")
-    print("in various library item tables.  All of these tables are dropped in this script, eliminating all")
-    print("existing template data.  A total of 14 existing tables are dropped.")
-    print("")
-    print("We're now basing library templates on Galaxy forms, so field contents are stored as a jsonified")
-    print("list in the form_values table.  This script introduces the following 3 new association tables:")
-    print("1) library_info_association")
-    print("2) library_folder_info_association")
-    print("3) library_dataset_dataset_info_association")
-    print("")
-    print("If using mysql, this script will throw an (OperationalError) exception due to a long index name")
-    print("on the library_dataset_dataset_info_association table, which is OK because the script creates")
-    print("an index with a shortened name.")
-    print("========================================")
-
-
 LibraryInfoAssociation_table = Table( 'library_info_association', metadata,
                                       Column( "id", Integer, primary_key=True),
                                       Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
@@ -73,7 +53,7 @@ LibraryDatasetDatasetInfoAssociation_table = Table( 'library_dataset_dataset_inf
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     # Drop all of the original library_item_info tables

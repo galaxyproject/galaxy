@@ -24,14 +24,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("========================================")
-    print("This migration script adds the request_event table and")
-    print("removes the state field in the request table")
-    print("========================================")
-
-
 RequestEvent_table = Table('request_event', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -43,7 +35,7 @@ RequestEvent_table = Table('request_event', metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
 
     def localtimestamp():
         if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:

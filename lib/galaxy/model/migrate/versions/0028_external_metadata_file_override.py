@@ -23,17 +23,9 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("This script adds the filename_override_metadata column to the JobExternalOutputMetadata table,")
-    print(" allowing existing metadata files to be written when using external metadata and a cluster")
-    print("set up with read-only access to database/files")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     try:

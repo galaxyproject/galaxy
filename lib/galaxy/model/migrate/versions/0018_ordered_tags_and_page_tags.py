@@ -17,13 +17,6 @@ now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("")
-    print("This migration script provides support for (a) ordering tags by recency and")
-    print("(b) tagging pages. This script deletes all existing tags.")
-
-
 HistoryTagAssociation_table = Table( "history_tag_association", metadata,
                                      Column( "id", Integer, primary_key=True ),
                                      Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
@@ -59,7 +52,7 @@ PageTagAssociation_table = Table( "page_tag_association", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     metadata.reflect()
 
     #

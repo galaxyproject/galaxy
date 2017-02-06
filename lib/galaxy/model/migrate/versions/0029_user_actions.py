@@ -12,13 +12,6 @@ now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("")
-    print("This migration script adds a user actions table to Galaxy.")
-    print("")
-
-
 # New table to store user actions.
 UserAction_table = Table( "user_action", metadata,
                           Column( "id", Integer, primary_key=True ),
@@ -32,7 +25,7 @@ UserAction_table = Table( "user_action", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     metadata.reflect()
     try:
         UserAction_table.create()

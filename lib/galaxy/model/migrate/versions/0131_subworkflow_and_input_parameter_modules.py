@@ -6,9 +6,9 @@ from __future__ import print_function
 import datetime
 import logging
 
-from sqlalchemy import Column, Integer, ForeignKey, MetaData, Table, Index, ForeignKeyConstraint
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Index, Integer, MetaData, Table
 
-from galaxy.model.custom_types import TrimmedString, UUIDType, JSONType
+from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
 
 now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )

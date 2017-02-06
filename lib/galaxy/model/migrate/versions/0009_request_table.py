@@ -23,17 +23,9 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("This migration script adds a new column to 2 tables:")
-    print("1) a new boolean type column named 'submitted' to the 'request' table")
-    print("2) a new string type column named 'bar_code' to the 'sample' table")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     Request_table = Table( "request", metadata, autoload=True )
     Sample_table = Table( "sample", metadata, autoload=True )

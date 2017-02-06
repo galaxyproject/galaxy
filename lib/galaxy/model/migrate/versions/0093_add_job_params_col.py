@@ -1,5 +1,5 @@
 """
-Migration script to create "params" column in job table.
+Migration script to add a 'params' column to the 'job' table.
 """
 from __future__ import print_function
 
@@ -15,11 +15,6 @@ metadata = MetaData()
 
 # Column to add.
 params_col = Column( "params", TrimmedString(255), index=True )
-
-
-def display_migration_details():
-    print("")
-    print("This migration script adds a 'params' column to the Job table.")
 
 
 def upgrade(migrate_engine):

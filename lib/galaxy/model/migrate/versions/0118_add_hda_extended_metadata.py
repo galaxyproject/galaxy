@@ -12,10 +12,6 @@ metadata = MetaData()
 extended_metadata_hda_col = Column( "extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), nullable=True )
 
 
-def display_migration_details():
-    print("This migration script adds a ExtendedMetadata links to HistoryDatasetAssociation tables")
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
