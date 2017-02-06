@@ -258,7 +258,6 @@ lib/galaxy/security/validate_user_input.py
 lib/galaxy/tags/
 lib/galaxy/tools/
 lib/galaxy/util/
-lib/galaxy_utils/
 lib/galaxy/version.py
 lib/galaxy/visualization/data_providers/basic.py
 lib/galaxy/visualization/data_providers/cigar.py
