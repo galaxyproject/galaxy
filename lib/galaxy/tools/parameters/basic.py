@@ -2,6 +2,7 @@
 Basic tool parameters.
 """
 import logging
+import numbers
 import os
 import os.path
 import re
@@ -130,6 +131,8 @@ class ToolParameter( object, Dictifiable ):
 
     def to_python( self, value, app ):
         """Convert a value created with to_json back to an object representation"""
+        if isinstance( value, numbers.Number ):
+            return unicodify( value )
         return value
 
     def value_to_basic( self, value, app, use_security=False ):
@@ -868,14 +871,6 @@ class SelectToolParameter( ToolParameter ):
         return value
 
     def to_json( self, value, app, use_security ):
-        return value
-
-    def to_python( self, value, app ):
-        try:
-            float( value )
-            return str( value )
-        except:
-            pass
         return value
 
     def get_initial_value( self, trans, other_values ):
