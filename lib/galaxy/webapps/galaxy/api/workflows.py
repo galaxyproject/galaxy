@@ -296,33 +296,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.__api_import_new_workflow( trans, payload, **kwd )
 
     @expose_api
-    def save( self, trans, id, payload, **kwd ):
-        """
-        POST /api/workflows/id/save
-        Save the workflow described by `workflow_data` with id `id`.
-        """
-        # Get the stored workflow
-        stored = self.__get_stored_workflow( trans, id )
-        try:
-            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
-                trans,
-                stored,
-                payload,
-            )
-        except workflows.MissingToolsException as e:
-            raise exceptions.MessageException( "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed." )
-        if workflow.has_errors:
-            errors.append( "Some steps in this workflow have validation errors." )
-        if workflow.has_cycles:
-            errors.append( "This workflow contains cycles." )
-        if errors:
-            rval = dict( message="Workflow saved, but will not be runnable due to the following errors.", errors=errors )
-        else:
-            rval = dict( message="Workflow saved." )
-        rval['name'] = workflow.name
-        return rval
-
-    @expose_api
     def update( self, trans, id, payload, **kwds ):
         """
         * PUT /api/workflows/{id}
@@ -368,11 +341,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     if (trans.security.decode_id(id) in entries):
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
 
-            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
-                trans,
-                stored_workflow,
-                payload['workflow'],
-            )
+            try:
+                workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                    trans,
+                    stored_workflow,
+                    payload[ 'workflow' ],
+                )
+            except workflows.MissingToolsException as e:
+                raise exceptions.MessageException( "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed." )
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException( message )

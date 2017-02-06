@@ -95,9 +95,9 @@ define([
                 }
                 self.workflow.rectify_workflow_outputs();
                 Utils.request( {
-                    url: Galaxy.root + 'api/workflows/' + self.options.id + '/save',
-                    type: "POST",
-                    data: self.workflow.to_simple(),
+                    url: Galaxy.root + 'api/workflows/' + self.options.id,
+                    type: "PUT",
+                    data: { workflow: self.workflow.to_simple() },
                     success: function( data ) {
                         var body = $( "<div/>" ).text( data.message );
                         if ( data.errors ) {
