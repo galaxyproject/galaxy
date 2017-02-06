@@ -1,3 +1,10 @@
+"""
+This script creates a job_to_output_library_dataset table for allowing library
+uploads to run as regular jobs.  To support this, a library_folder_id column is
+added to the job table, and library_folder/output_library_datasets relations
+are added to the Job object.  An index is also added to the dataset.state
+column.
+"""
 from __future__ import print_function
 
 import datetime
@@ -19,18 +26,6 @@ log.addHandler( handler )
 
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("")
-    print("========================================")
-    print("""This script creates a job_to_output_library_dataset table for allowing library
-uploads to run as regular jobs.  To support this, a library_folder_id column is
-added to the job table, and library_folder/output_library_datasets relations
-are added to the Job object.  An index is also added to the dataset.state
-column.""")
-    print("========================================")
-
-
 JobToOutputLibraryDatasetAssociation_table = Table( "job_to_output_library_dataset", metadata,
                                                     Column( "id", Integer, primary_key=True ),
                                                     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -40,7 +35,7 @@ JobToOutputLibraryDatasetAssociation_table = Table( "job_to_output_library_datas
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     # Create the job_to_output_library_dataset table

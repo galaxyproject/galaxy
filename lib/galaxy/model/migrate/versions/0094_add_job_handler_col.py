@@ -1,5 +1,5 @@
 """
-Migration script to create "handler" column in job table.
+Migration script to add a 'handler' column to the 'job' table.
 """
 from __future__ import print_function
 
@@ -15,11 +15,6 @@ metadata = MetaData()
 
 # Column to add.
 handler_col = Column( "handler", TrimmedString(255), index=True )
-
-
-def display_migration_details():
-    print("")
-    print("This migration script adds a 'handler' column to the Job table.")
 
 
 def upgrade(migrate_engine):

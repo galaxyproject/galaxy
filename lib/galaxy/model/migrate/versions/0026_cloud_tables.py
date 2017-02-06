@@ -1,3 +1,6 @@
+"""
+This script adds tables needed for Galaxy cloud functionality.
+"""
 from __future__ import print_function
 
 import datetime
@@ -8,14 +11,6 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData,
 now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
-
-
-def display_migration_details():
-    print
-    print("========================================")
-    print("This script adds tables needed for Galaxy cloud functionality.")
-    print("========================================")
-
 
 CloudImage_table = Table( "cloud_image", metadata,
                           Column( "id", Integer, primary_key=True ),
@@ -129,7 +124,7 @@ CloudProvider_table = Table( "cloud_provider", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
 

@@ -1,6 +1,6 @@
 """
 This migration script changes certain values in the history_dataset_association.extension
-column, specifically 'qual' is chaged to be 'qual454'.
+column, specifically 'qual' is changed to be 'qual454'.
 """
 from __future__ import print_function
 
@@ -21,15 +21,8 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("This migration script changes certain values in the history_dataset_association.extension")
-    print("column, specifically 'qual' is chaged to be 'qual454'.")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
-    display_migration_details()
+    print(__doc__)
     metadata.bind = migrate_engine
     db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )

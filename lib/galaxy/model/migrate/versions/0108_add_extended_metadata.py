@@ -28,10 +28,6 @@ ExtendedMetadataIndex_table = Table("extended_metadata_index", metadata,
 extended_metadata_ldda_col = Column( "extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), nullable=True )
 
 
-def display_migration_details():
-    print("This migration script adds a ExtendedMetadata tables")
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine

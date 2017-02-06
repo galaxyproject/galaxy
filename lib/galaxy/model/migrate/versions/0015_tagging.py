@@ -4,7 +4,6 @@ datasets, and history-dataset associations (user views of datasets).
 
 If using mysql, this script will display the following error, which is corrected in the next
 migration script:
-
 history_dataset_association_tag_association table failed:  (OperationalError)
 (1059, "Identifier name 'ix_history_dataset_association_tag_association_history_dataset_association_id'
 is too long)
@@ -23,20 +22,6 @@ from galaxy.model.custom_types import TrimmedString
 now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
-
-
-def display_migration_details():
-    print("")
-    print("This migration script adds the tables necessary to support tagging of histories,")
-    print("datasets, and history-dataset associations (user views of datasets).")
-    print("")
-    print("If using mysql, this script will display the following error, which is ")
-    print("corrected in the next migration script:")
-    print("history_dataset_association_tag_association table failed:  ")
-    print("(OperationalError) (1059, 'Identifier name ")
-    print("'ix_history_dataset_association_tag_association_history_dataset_association_id'")
-    print("is too long)")
-
 
 # New tables to support tagging of histories, datasets, and history-dataset associations.
 Tag_table = Table( "tag", metadata,
@@ -70,7 +55,7 @@ HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_associat
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     metadata.reflect()
     try:
         Tag_table.create()

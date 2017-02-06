@@ -1,5 +1,5 @@
 """
-Migration script to change the value column of user_preference from varchar to text.
+Migration script to change the 'value' column of 'user_preference' table from varchar to text.
 """
 from __future__ import print_function
 

@@ -12,15 +12,7 @@ now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("")
-    print("This migration script adds a user preferences table to Galaxy.")
-    print("")
-
-
 # New table to support user preferences.
-
 UserPreference_table = Table( "user_preference", metadata,
                               Column( "id", Integer, primary_key=True ),
                               Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
@@ -30,7 +22,7 @@ UserPreference_table = Table( "user_preference", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     metadata.reflect()
     try:
         UserPreference_table.create()

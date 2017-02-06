@@ -3,14 +3,13 @@ Migration script to grow MySQL blobs.
 """
 from __future__ import print_function
 
+import datetime
+import logging
+
 from sqlalchemy import MetaData
 
-import datetime
 now = datetime.datetime.utcnow
-
-import logging
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
 
 BLOB_COLUMNS = [

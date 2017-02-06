@@ -13,11 +13,6 @@ log = logging.getLogger( __name__ )
 jobs_dependencies_column = Column( "dependencies", JSONType, nullable=True )
 
 
-def display_migration_details():
-    print("")
-    print("This migration adds dependencies column to job table")
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata = MetaData()

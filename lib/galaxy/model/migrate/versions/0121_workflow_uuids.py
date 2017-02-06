@@ -21,10 +21,6 @@ hashing the data structure
 workflow_uuid_column = Column( "uuid", UUIDType, nullable=True )
 
 
-def display_migration_details():
-    print("This migration script adds a UUID column to workflows")
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine

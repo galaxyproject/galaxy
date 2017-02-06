@@ -19,19 +19,12 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("This script adds 3 indexes to table columns: library_folder.name,")
-    print("library_dataset.name, library_dataset_dataset_association.name.")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
+    print(__doc__)
     LibraryFolder_table = Table( "library_folder", metadata, autoload=True )
     LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
     LibraryDataset_table = Table( "library_dataset", metadata, autoload=True )
-    display_migration_details()
     # Load existing tables
     metadata.reflect()
     # Add 1 index to the library_folder table

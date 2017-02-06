@@ -23,15 +23,9 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("This script adds a foreign key to the form_values table in the galaxy_user table")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     try:
