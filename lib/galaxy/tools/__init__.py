@@ -138,13 +138,6 @@ GALAXY_LIB_TOOLS = [
     "sam_to_bam",  # This was fixed with version 1.1.3 of the tool - TODO add Galaxy to PYTHONPATH only for older versions
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
-    # From peterjc and others seq utils
-    "venn_list",
-    "seq_rename",
-    "seq_primer_clip",
-    "fastq_groomer_parallel",
-    "fasta_filter_by_id",
-    "fastq_filter_by_id",
 ]
 
 
