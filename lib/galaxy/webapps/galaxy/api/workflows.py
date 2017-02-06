@@ -310,11 +310,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 payload,
             )
         except workflows.MissingToolsException as e:
-            return dict(
-                name=e.workflow.name,
-                message="This workflow includes missing or invalid tools. It cannot be saved until the following steps are removed or the missing tools are enabled.",
-                errors=e.errors,
-            )
+            raise exceptions.MessageException( "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed." )
         if workflow.has_errors:
             errors.append( "Some steps in this workflow have validation errors." )
         if workflow.has_cycles:
