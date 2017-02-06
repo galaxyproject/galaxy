@@ -159,19 +159,30 @@ class ToolDataTableManager( object ):
             out.write( '</tables>\n' )
         os.chmod( full_path, 0o644 )
 
-    def reload_tables( self, table_names=None ):
+    def reload_tables( self, table_names=None, path=None ):
         """
-        Reload tool data tables.
+        Reload tool data tables. If neither table_names nor path is given, reloads all tool data tables.
         """
         tables = self.get_tables()
         if not table_names:
-            table_names = list(tables.keys())
+            if path:
+                table_names = self.get_table_names_by_path(path)
+            else:
+                table_names = list(tables.keys())
         elif not isinstance( table_names, list ):
             table_names = [ table_names ]
         for table_name in table_names:
             tables[ table_name ].reload_from_files()
             log.debug( "Reloaded tool data table '%s' from files.", table_name )
         return table_names
+
+    def get_table_names_by_path(self, path):
+        """Returns a list of table names given a path"""
+        table_names = set()
+        for name, data_table in self.data_tables.items():
+            if path in data_table.filenames:
+                table_names.add(name)
+        return list(table_names)
 
 
 class ToolDataTable( object ):

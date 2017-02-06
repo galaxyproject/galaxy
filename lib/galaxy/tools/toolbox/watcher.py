@@ -52,6 +52,15 @@ def get_tool_conf_watcher(reload_callback):
     return ToolConfWatcher(reload_callback)
 
 
+def get_tool_data_dir_watcher(tool_data_tables, config):
+    config_value = getattr(config, "watch_tool_data_dir", None)
+    observer_class = get_observer_class(config_value, default="False", monitor_what_str="tool-data directory")
+    if observer_class is not None:
+        return ToolDataWatcher(observer_class, tool_data_tables=tool_data_tables)
+    else:
+        return NullWatcher()
+
+
 def get_tool_watcher(toolbox, config):
     config_value = getattr(config, "watch_tools", None)
     observer_class = get_observer_class(config_value, default="False", monitor_what_str="tools")
@@ -187,6 +196,56 @@ class ToolWatcher(object):
             self.monitor( tool_dir )
 
 
+class ToolDataWatcher(object):
+
+    def __init__(self, observer_class, tool_data_tables):
+        self.tool_data_tables = tool_data_tables
+        self.monitored_dirs = {}
+        self.path_hash = {}
+        self.observer = observer_class()
+        self.event_handler = LocFileEventHandler(self)
+        self.start()
+
+    def start(self):
+        register_postfork_function(self.observer.start)
+
+    def shutdown(self):
+        self.observer.stop()
+        self.observer.join()
+
+    def monitor(self, dir):
+        self.observer.schedule(self.event_handler, dir, recursive=True)
+
+    def watch_directory(self, tool_data_dir):
+        tool_data_dir = os.path.abspath( tool_data_dir )
+        if tool_data_dir not in self.monitored_dirs:
+            self.monitored_dirs[ tool_data_dir ] = tool_data_dir
+            self.monitor( tool_data_dir )
+
+
+class LocFileEventHandler(FileSystemEventHandler):
+
+    def __init__(self, loc_watcher):
+        self.loc_watcher = loc_watcher
+
+    def on_any_event(self, event):
+        self._handle(event)
+
+    def _handle(self, event):
+        # modified events will only have src path, move events will
+        # have dest_path and src_path but we only care about dest. So
+        # look at dest if it exists else use src.
+        path = getattr( event, 'dest_path', None ) or event.src_path
+        path = os.path.abspath( path )
+        if path.endswith(".loc"):
+            cur_hash = md5_hash_file(path)
+            if self.loc_watcher.path_hash.get(path) == cur_hash:
+                return
+            else:
+                self.loc_watcher.path_hash[path] = cur_hash
+                self.loc_watcher.tool_data_tables.reload_tables(path=path)
+
+
 class ToolFileEventHandler(FileSystemEventHandler):
 
     def __init__(self, tool_watcher):
@@ -228,5 +287,5 @@ class NullWatcher(object):
     def watch_file(self, tool_file, tool_id):
         pass
 
-    def watch_directory(self, tool_dir, callback):
+    def watch_directory(self, tool_dir, callback=None):
         pass

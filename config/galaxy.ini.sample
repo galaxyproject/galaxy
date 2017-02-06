@@ -309,6 +309,17 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # when installed from a ToolShed. Defaults to tool_data_path.
 #shed_tool_data_path = tool-data
 
+# Set to True to enable monitoring of the tool_data and shed_tool_data_path
+# directories. If changes in tool data table files are found, the tool data
+# tables for that data manager are automatically reloaded.
+# Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
+# available to Galaxy to use this option. Other options include 'auto'
+# which will attempt to use the watchdog library if it is available but won't
+# fail to load Galaxy if it is not and 'polling' which will use a less
+# efficient monitoring scheme that may work in wider range of scenarios
+# than the watchdog default.
+#watch_tool_data_dir = False
+
 # File containing old-style genome builds
 #builds_file_path = tool-data/shared/ucsc/builds.txt
 

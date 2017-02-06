@@ -380,6 +380,7 @@ class Configuration( object ):
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
         self.watch_tools = kwargs.get( 'watch_tools', 'false' )
+        self.watch_tool_data_dir = kwargs.get( 'watch_tool_data_dir', 'false' )
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
