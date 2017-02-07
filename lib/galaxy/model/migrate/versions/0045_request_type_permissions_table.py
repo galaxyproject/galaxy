@@ -27,8 +27,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         RequestTypePermissions_table.create()
-    except Exception as e:
-        log.debug( "Creating request_type_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating request_type_permissions table failed.")
 
 
 def downgrade(migrate_engine):

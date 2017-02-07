@@ -32,25 +32,25 @@ def upgrade(migrate_engine):
     i = Index( 'ix_hda_extension', HistoryDatasetAssociation_table.c.extension )
     try:
         i.create()
-    except Exception as e:
-        log.debug( "Adding index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Adding index 'ix_hda_extension' to history_dataset_association table failed.")
 
     # Set the default data in the galaxy_user table, but only for null values
     cmd = "UPDATE history_dataset_association SET extension = 'qual454' WHERE extension = 'qual' and peek like \'>%%\'"
     try:
         db_session.execute( cmd )
-    except Exception as e:
-        log.debug( "Resetting extension qual to qual454 in history_dataset_association failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Resetting extension qual to qual454 in history_dataset_association failed.")
     cmd = "UPDATE history_dataset_association SET extension = 'qualsolexa' WHERE extension = 'qual' and peek not like \'>%%\'"
     try:
         db_session.execute( cmd )
-    except Exception as e:
-        log.debug( "Resetting extension qual to qualsolexa in history_dataset_association failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Resetting extension qual to qualsolexa in history_dataset_association failed.")
     # Add 1 index to the history_dataset_association table
     try:
         i.drop()
-    except Exception as e:
-        log.debug( "Dropping index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Dropping index 'ix_hda_extension' to history_dataset_association table failed.")
 
 
 def downgrade(migrate_engine):

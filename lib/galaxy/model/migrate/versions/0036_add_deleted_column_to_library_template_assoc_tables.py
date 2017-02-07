@@ -12,11 +12,13 @@ log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 
-def get_false_value(migrate_engine):
-    if migrate_engine.name == 'sqlite':
-        return '0'
+def engine_false(migrate_engine):
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        return "FALSE"
+    elif migrate_engine.name in ['mysql', 'sqlite']:
+        return 0
     else:
-        return 'false'
+        raise Exception('Unknown database type: %s' % migrate_engine.name)
 
 
 def upgrade(migrate_engine):
@@ -28,31 +30,31 @@ def upgrade(migrate_engine):
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryInfoAssociation_table, index_name='ix_library_info_association_deleted')
     assert c is LibraryInfoAssociation_table.c.deleted
-    cmd = "UPDATE library_info_association SET deleted = %s" % get_false_value(migrate_engine)
+    cmd = "UPDATE library_info_association SET deleted = %s" % engine_false(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception as e:
-        log.debug( "deleted to false in library_info_association failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("deleted to false in library_info_association failed.")
 
     LibraryFolderInfoAssociation_table = Table( "library_folder_info_association", metadata, autoload=True )
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryFolderInfoAssociation_table, index_name='ix_library_folder_info_association_deleted')
     assert c is LibraryFolderInfoAssociation_table.c.deleted
-    cmd = "UPDATE library_folder_info_association SET deleted = %s" % get_false_value(migrate_engine)
+    cmd = "UPDATE library_folder_info_association SET deleted = %s" % engine_false(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception as e:
-        log.debug( "deleted to false in library_folder_info_association failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("deleted to false in library_folder_info_association failed.")
 
     LibraryDatasetDatasetInfoAssociation_table = Table( "library_dataset_dataset_info_association", metadata, autoload=True )
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryDatasetDatasetInfoAssociation_table, index_name='ix_library_dataset_dataset_info_association_deleted')
     assert c is LibraryDatasetDatasetInfoAssociation_table.c.deleted
-    cmd = "UPDATE library_dataset_dataset_info_association SET deleted = %s" % get_false_value(migrate_engine)
+    cmd = "UPDATE library_dataset_dataset_info_association SET deleted = %s" % engine_false(migrate_engine)
     try:
         migrate_engine.execute( cmd )
-    except Exception as e:
-        log.debug( "deleted to false in library_dataset_dataset_info_association failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("deleted to false in library_dataset_dataset_info_association failed.")
 
 
 def downgrade(migrate_engine):

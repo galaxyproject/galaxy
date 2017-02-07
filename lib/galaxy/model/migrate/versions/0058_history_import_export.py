@@ -31,9 +31,8 @@ def upgrade(migrate_engine):
     # Create job_export_history_archive table.
     try:
         JobExportHistoryArchive_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating job_export_history_archive table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating job_export_history_archive table failed.")
 
 
 def downgrade(migrate_engine):
@@ -43,6 +42,5 @@ def downgrade(migrate_engine):
     # Drop job_export_history_archive table.
     try:
         JobExportHistoryArchive_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping job_export_history_archive table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping job_export_history_archive table failed.")

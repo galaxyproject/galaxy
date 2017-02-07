@@ -43,8 +43,8 @@ def upgrade(migrate_engine):
         i = Index( "ix_hdadaa_history_dataset_association_id", HistoryDatasetAssociationDisplayAtAuthorization_table.c.history_dataset_association_id )
         try:
             i.create()
-        except Exception as e:
-            log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )
+        except Exception:
+            log.exception("Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed.")
 
 
 def downgrade(migrate_engine):
@@ -55,5 +55,5 @@ def downgrade(migrate_engine):
         i = Index( "ix_hdadaa_history_dataset_association_id", HistoryDatasetAssociationDisplayAtAuthorization_table.c.history_dataset_association_id )
         try:
             i.drop()
-        except Exception as e:
-            log.debug( "Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )
+        except Exception:
+            log.exception("Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed.")

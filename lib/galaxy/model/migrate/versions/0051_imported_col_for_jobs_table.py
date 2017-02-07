@@ -11,6 +11,15 @@ log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 
+def engine_false(migrate_engine):
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        return "FALSE"
+    elif migrate_engine.name in ['mysql', 'sqlite']:
+        return 0
+    else:
+        raise Exception('Unknown database type: %s' % migrate_engine.name)
+
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
@@ -24,16 +33,9 @@ def upgrade(migrate_engine):
         c.create( Jobs_table, index_name="ix_job_imported")
         assert c is Jobs_table.c.imported
 
-        # Initialize.
-        if migrate_engine.name in ['mysql', 'sqlite']:
-            default_false = "0"
-        elif migrate_engine.name in ['postgres', 'postgresql']:
-            default_false = "false"
-        migrate_engine.execute( "UPDATE job SET imported=%s" % default_false )
-
-    except Exception as e:
-        print("Adding imported column to job table failed: %s" % str( e ))
-        log.debug( "Adding imported column to job table failed: %s" % str( e ) )
+        migrate_engine.execute( "UPDATE job SET imported=%s" % engine_false(migrate_engine) )
+    except Exception:
+        log.exception("Adding imported column to job table failed.")
 
 
 def downgrade(migrate_engine):
@@ -44,6 +46,5 @@ def downgrade(migrate_engine):
     Jobs_table = Table( "job", metadata, autoload=True )
     try:
         Jobs_table.c.imported.drop()
-    except Exception as e:
-        print("Dropping column imported from job table failed: %s" % str( e ))
-        log.debug( "Dropping column imported from job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping column imported from job table failed.")

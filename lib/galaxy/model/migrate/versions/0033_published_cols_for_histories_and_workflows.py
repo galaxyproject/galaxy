@@ -23,9 +23,8 @@ def upgrade(migrate_engine):
     try:
         c.create( History_table, index_name='ix_history_published')
         assert c is History_table.c.published
-    except Exception as e:
-        print("Adding published column to history table failed: %s" % str( e ))
-        log.debug( "Adding published column to history table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding published column to history table failed.")
 
     if migrate_engine.name != 'sqlite':
         # Create index for published column in history table.
@@ -42,9 +41,8 @@ def upgrade(migrate_engine):
     try:
         c.create( StoredWorkflow_table, index_name='ix_stored_workflow_published')
         assert c is StoredWorkflow_table.c.published
-    except Exception as e:
-        print("Adding published column to stored_workflow table failed: %s" % str( e ))
-        log.debug( "Adding published column to stored_workflow table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding published column to stored_workflow table failed.")
 
     if migrate_engine.name != 'sqlite':
         # Create index for published column in stored workflows table.
@@ -61,9 +59,8 @@ def upgrade(migrate_engine):
     try:
         c.create( Page_table, index_name='ix_page_importable')
         assert c is Page_table.c.importable
-    except Exception as e:
-        print("Adding importable column to page table failed: %s" % str( e ))
-        log.debug( "Adding importable column to page table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding importable column to page table failed.")
 
     if migrate_engine.name != 'sqlite':
         # Create index for importable column in page table.
@@ -83,22 +80,19 @@ def downgrade(migrate_engine):
     History_table = Table( "history", metadata, autoload=True )
     try:
         History_table.c.published.drop()
-    except Exception as e:
-        print("Dropping column published from history table failed: %s" % str( e ))
-        log.debug( "Dropping column published from history table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping column published from history table failed.")
 
     # Drop published column from stored_workflow table.
     StoredWorkflow_table = Table( "stored_workflow", metadata, autoload=True )
     try:
         StoredWorkflow_table.c.published.drop()
-    except Exception as e:
-        print("Dropping column published from stored_workflow table failed: %s" % str( e ))
-        log.debug( "Dropping column published from stored_workflow table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping column published from stored_workflow table failed.")
 
     # Drop importable column from page table.
     Page_table = Table( "page", metadata, autoload=True )
     try:
         Page_table.c.importable.drop()
-    except Exception as e:
-        print("Dropping column importable from page table failed: %s" % str( e ))
-        log.debug( "Dropping column importable from page table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping column importable from page table failed.")

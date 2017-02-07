@@ -5,13 +5,11 @@ set up with read-only access to database/files
 """
 from __future__ import print_function
 
-import datetime
 import logging
 import sys
 
 from sqlalchemy import Column, MetaData, String, Table
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -33,8 +31,8 @@ def upgrade(migrate_engine):
         col = Column( "filename_override_metadata", String( 255 ) )
         col.create( job_external_output_metadata )
         assert col is job_external_output_metadata.c.filename_override_metadata
-    except Exception as e:
-        log.debug( "Adding column 'filename_override_metadata' to job_external_output_metadata table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Adding column 'filename_override_metadata' to job_external_output_metadata table failed.")
 
 
 def downgrade(migrate_engine):

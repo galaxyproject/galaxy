@@ -23,15 +23,15 @@ def upgrade(migrate_engine):
     try:
         c.create( Job_table )
         assert c is Job_table.c.destination_id
-    except Exception as e:
-        log.error( "Adding column 'destination_id' to job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding column 'destination_id' to job table failed.")
 
     c = Column( "destination_params", JSONType, nullable=True )
     try:
         c.create( Job_table )
         assert c is Job_table.c.destination_params
-    except Exception as e:
-        log.error( "Adding column 'destination_params' to job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding column 'destination_params' to job table failed.")
 
 
 def downgrade(migrate_engine):
@@ -42,10 +42,10 @@ def downgrade(migrate_engine):
 
     try:
         Job_table.c.destination_params.drop()
-    except Exception as e:
-        log.error( "Dropping column 'destination_params' from job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping column 'destination_params' from job table failed.")
 
     try:
         Job_table.c.destination_id.drop()
-    except Exception as e:
-        log.error( "Dropping column 'destination_id' from job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping column 'destination_id' from job table failed.")

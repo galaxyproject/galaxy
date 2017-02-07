@@ -36,8 +36,8 @@ def upgrade(migrate_engine):
     # create the sequencer table
     try:
         Sequencer_table.create()
-    except Exception as e:
-        log.debug( "Creating 'sequencer' table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating 'sequencer' table failed.")
 
 
 def downgrade(migrate_engine):
@@ -52,5 +52,5 @@ def downgrade(migrate_engine):
     if Sequencer_table:
         try:
             Sequencer_table.drop()
-        except Exception as e:
-            log.debug( "Deleting 'sequencer' table failed: %s" % str( e ) )
+        except Exception:
+            log.exception("Deleting 'sequencer' table failed.")

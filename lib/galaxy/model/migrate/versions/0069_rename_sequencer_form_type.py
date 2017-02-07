@@ -3,12 +3,10 @@ Migration script to rename the sequencer information form type to external servi
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import MetaData
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 

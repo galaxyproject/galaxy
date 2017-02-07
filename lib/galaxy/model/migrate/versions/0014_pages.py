@@ -50,13 +50,12 @@ def upgrade(migrate_engine):
             # Create slug index manually afterward.
             i = Index( "ix_page_slug", Page_table.c.slug, mysql_length=200)
             i.create()
-    except Exception as ex:
-        log.debug(ex)
-        log.debug( "Could not create page table" )
+    except Exception:
+        log.exception("Could not create page table")
     try:
         PageRevision_table.create()
-    except:
-        log.debug( "Could not create page_revision table" )
+    except Exception:
+        log.exception("Could not create page_revision table")
 
     # Add 1 column to the user table
     User_table = Table( "galaxy_user", metadata, autoload=True )

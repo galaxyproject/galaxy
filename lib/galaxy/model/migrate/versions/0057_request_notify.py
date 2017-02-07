@@ -4,7 +4,6 @@ to a JSONType
 """
 from __future__ import print_function
 
-import datetime
 import logging
 from json import dumps
 
@@ -13,7 +12,6 @@ from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import JSONType
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
@@ -34,8 +32,8 @@ def upgrade(migrate_engine):
             col = Column( "notification", JSONType() )
             col.create( Request_table )
             assert col is Request_table.c.notification
-        except Exception as e:
-            log.debug( "Creating column 'notification' in the 'request' table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Creating column 'notification' in the 'request' table failed.")
 
         cmd = "SELECT id, user_id, notify FROM request"
         result = migrate_engine.execute( cmd )
@@ -49,8 +47,8 @@ def upgrade(migrate_engine):
         if migrate_engine.name != 'sqlite':
             try:
                 Request_table.c.notify.drop()
-            except Exception as e:
-                log.debug( "Deleting column 'notify' from the 'request' table failed: %s" % ( str( e ) ) )
+            except Exception:
+                log.exception("Deleting column 'notify' from the 'request' table failed.")
 
 
 def downgrade(migrate_engine):
