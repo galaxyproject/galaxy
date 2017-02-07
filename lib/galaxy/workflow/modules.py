@@ -2,7 +2,7 @@
 Modules used in building workflows
 """
 import logging
-from json import dumps, loads
+from json import loads
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import XML
 
@@ -92,15 +92,15 @@ class WorkflowModule( object ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self ):
+    def get_state( self, nested=True ):
         """ Return a serializable representation of the persistable state of
         the step.
         """
         inputs = self.get_inputs()
         if inputs:
-            return self.state.encode( Bunch( inputs=inputs ), self.trans.app )
+            return self.state.encode( Bunch( inputs=inputs ), self.trans.app, nested=nested )
         else:
-            return dumps( self.state.inputs )
+            return self.state.inputs
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -787,9 +787,8 @@ class ToolModule( WorkflowModule ):
         """
         if self.tool:
             state = super( ToolModule, self ).decode_runtime_state( runtime_state )
-            state_dict = loads( runtime_state )
-            if RUNTIME_STEP_META_STATE_KEY in state_dict:
-                self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
+            if RUNTIME_STEP_META_STATE_KEY in runtime_state:
+                self.__restore_step_meta_runtime_state( loads( runtime_state[ RUNTIME_STEP_META_STATE_KEY ] ) )
             return state
         else:
             raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )
