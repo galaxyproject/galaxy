@@ -57,8 +57,8 @@ def upgrade(migrate_engine):
     # Add new request_event table
     try:
         RequestEvent_table.create()
-    except Exception as e:
-        log.debug( "Creating request_event table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating request_event table failed.")
     # move the current state of all existing requests to the request_event table
 
     cmd = \
@@ -83,8 +83,8 @@ def upgrade(migrate_engine):
         if Request_table is not None:
             try:
                 Request_table.c.state.drop()
-            except Exception as e:
-                log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )
+            except Exception:
+                log.exception("Deleting column 'state' to request table failed.")
 
 
 def downgrade(migrate_engine):

@@ -54,8 +54,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         SampleDataset_table.create()
-    except Exception as e:
-        log.debug( "Creating sample_dataset table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating sample_dataset table failed.")
 
     cmd = "SELECT id, dataset_files FROM sample"
     result = migrate_engine.execute( cmd )
@@ -86,8 +86,8 @@ def upgrade(migrate_engine):
     if Sample_table is not None:
         try:
             Sample_table.c.dataset_files.drop()
-        except Exception as e:
-            log.debug( "Deleting column 'dataset_files' from the 'sample' table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Deleting column 'dataset_files' from the 'sample' table failed.")
 
 
 def downgrade(migrate_engine):

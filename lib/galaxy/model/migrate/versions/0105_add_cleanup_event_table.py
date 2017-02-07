@@ -98,8 +98,8 @@ def upgrade(migrate_engine):
         CleanupEventLibraryDatasetAssociation_table.create()
         CleanupEventLibraryDatasetDatasetAssociationAssociation_table.create()
         CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table.create()
-    except Exception as e:
-        log.debug( "Creating table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating table failed.")
 
 
 def downgrade(migrate_engine):
@@ -116,5 +116,5 @@ def downgrade(migrate_engine):
         CleanupEventMetadataFileAssociation_table.drop()
         CleanupEventDatasetAssociation_table.drop()
         CleanupEvent_table.drop()
-    except Exception as e:
-        log.debug( "Dropping table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping table failed.")

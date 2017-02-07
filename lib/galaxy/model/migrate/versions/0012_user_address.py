@@ -52,8 +52,8 @@ def upgrade(migrate_engine):
     # Add all of the new tables above
     try:
         UserAddress_table.create()
-    except Exception as e:
-        log.debug( "Creating user_address table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating user_address table failed.")
     # Add 1 column to the request_type table
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )
@@ -65,8 +65,8 @@ def upgrade(migrate_engine):
             col = Column( "deleted", Boolean, index=True, default=False )
             col.create( RequestType_table, index_name='ix_request_type_deleted')
             assert col is RequestType_table.c.deleted
-        except Exception as e:
-            log.debug( "Adding column 'deleted' to request_type table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'deleted' to request_type table failed.")
 
     # Delete the submitted column
     # This fails for sqlite, so skip the drop -- no conflicts in the future

@@ -3,12 +3,10 @@ Migration script to change the 'value' column of 'user_preference' table from va
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import MetaData, Table, Text
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 

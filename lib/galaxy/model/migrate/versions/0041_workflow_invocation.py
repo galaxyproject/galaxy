@@ -46,5 +46,5 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    for table in tables:
+    for table in reversed(tables):
         table.drop()

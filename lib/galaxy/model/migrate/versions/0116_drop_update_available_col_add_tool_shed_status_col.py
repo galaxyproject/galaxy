@@ -3,7 +3,6 @@ Migration script to drop the update_available Boolean column and replace it with
 """
 from __future__ import print_function
 
-import datetime
 import logging
 import sys
 
@@ -12,7 +11,6 @@ from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import JSONType
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -24,11 +22,13 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def default_false( migrate_engine ):
-    if migrate_engine.name in ['mysql', 'sqlite']:
-        return "0"
-    elif migrate_engine.name in [ 'postgres', 'postgresql' ]:
-        return "false"
+def engine_false(migrate_engine):
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        return "FALSE"
+    elif migrate_engine.name in ['mysql', 'sqlite']:
+        return 0
+    else:
+        raise Exception('Unknown database type: %s' % migrate_engine.name)
 
 
 def upgrade( migrate_engine ):
@@ -46,14 +46,14 @@ def upgrade( migrate_engine ):
             try:
                 col = ToolShedRepository_table.c.update_available
                 col.drop()
-            except Exception as e:
-                print("Dropping column update_available from the tool_shed_repository table failed: %s" % str( e ))
+            except Exception:
+                log.exception("Dropping column update_available from the tool_shed_repository table failed.")
         c = Column( "tool_shed_status", JSONType, nullable=True )
         try:
             c.create( ToolShedRepository_table )
             assert c is ToolShedRepository_table.c.tool_shed_status
-        except Exception as e:
-            print("Adding tool_shed_status column to the tool_shed_repository table failed: %s" % str( e ))
+        except Exception:
+            log.exception("Adding tool_shed_status column to the tool_shed_repository table failed.")
 
 
 def downgrade( migrate_engine ):
@@ -70,12 +70,12 @@ def downgrade( migrate_engine ):
             try:
                 col = ToolShedRepository_table.c.tool_shed_status
                 col.drop()
-            except Exception as e:
-                print("Dropping column tool_shed_status from the tool_shed_repository table failed: %s" % str( e ))
+            except Exception:
+                log.exception("Dropping column tool_shed_status from the tool_shed_repository table failed.")
             c = Column( "update_available", Boolean, default=False )
             try:
                 c.create( ToolShedRepository_table )
                 assert c is ToolShedRepository_table.c.update_available
-                migrate_engine.execute( "UPDATE tool_shed_repository SET update_available=%s" % default_false( migrate_engine ) )
-            except Exception as e:
-                print("Adding column update_available to the tool_shed_repository table failed: %s" % str( e ))
+                migrate_engine.execute( "UPDATE tool_shed_repository SET update_available=%s" % engine_false( migrate_engine ) )
+            except Exception:
+                log.exception("Adding column update_available to the tool_shed_repository table failed.")

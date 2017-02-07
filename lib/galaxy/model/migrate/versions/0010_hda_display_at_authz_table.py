@@ -45,8 +45,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.create()
-    except Exception as e:
-        log.debug( "Creating history_dataset_association_display_at_authorization table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating history_dataset_association_display_at_authorization table failed.")
 
 
 def downgrade(migrate_engine):
@@ -55,5 +55,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.drop()
-    except Exception as e:
-        log.debug( "Dropping history_dataset_association_display_at_authorization table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping history_dataset_association_display_at_authorization table failed.")

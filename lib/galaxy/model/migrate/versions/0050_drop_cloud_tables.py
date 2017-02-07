@@ -131,14 +131,24 @@ def upgrade(migrate_engine):
         CloudSnapshot_table.drop()
         CloudStore_table.drop()
         CloudInstance_table.drop()
-        CloudImage_table.drop()
         UCI_table.drop()
+        CloudImage_table.drop()
         CloudUserCredentials_table.drop()
         CloudProvider_table.drop()
-    except Exception as e:
-        log.debug( "Dropping cloud tables failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping cloud tables failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    pass
+    metadata.reflect()
+    try:
+        CloudProvider_table.create()
+        CloudUserCredentials_table.create()
+        CloudImage_table.create()
+        UCI_table.create()
+        CloudInstance_table.create()
+        CloudStore_table.create()
+        CloudSnapshot_table.create()
+    except Exception:
+        log.exception("Creating cloud tables failed.")

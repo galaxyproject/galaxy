@@ -26,20 +26,16 @@ def upgrade(migrate_engine):
         job_table = Table( "job", metadata, autoload=True )
         exit_code_job_col.create( job_table )
         assert exit_code_job_col is job_table.c.exit_code
-    except Exception as e:
-        print(str(e))
-        log.error( "Adding column 'exit_code' to job table failed: %s" % str( e ) )
-        return
+    except Exception:
+        log.exception("Adding column 'exit_code' to job table failed.")
 
     # Add the exit_code column to the Task table.
     try:
         task_table = Table( "task", metadata, autoload=True )
         exit_code_task_col.create( task_table )
         assert exit_code_task_col is task_table.c.exit_code
-    except Exception as e:
-        print(str(e))
-        log.error( "Adding column 'exit_code' to task table failed: %s" % str( e ) )
-        return
+    except Exception:
+        log.exception("Adding column 'exit_code' to task table failed.")
 
 
 def downgrade(migrate_engine):
@@ -51,13 +47,13 @@ def downgrade(migrate_engine):
         job_table = Table( "job", metadata, autoload=True )
         exit_code_col = job_table.c.exit_code
         exit_code_col.drop()
-    except Exception as e:
-        log.debug( "Dropping 'exit_code' column from job table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Dropping 'exit_code' column from job table failed.")
 
     # Drop the Job table's exit_code column.
     try:
         task_table = Table( "task", metadata, autoload=True )
         exit_code_col = task_table.c.exit_code
         exit_code_col.drop()
-    except Exception as e:
-        log.debug( "Dropping 'exit_code' column from task table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Dropping 'exit_code' column from task table failed.")

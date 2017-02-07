@@ -28,9 +28,8 @@ def upgrade(migrate_engine):
         params_col.create( Job_table, index_name="ix_job_params")
         assert params_col is Job_table.c.params
 
-    except Exception as e:
-        print(str(e))
-        log.debug( "Adding column 'params' to job table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding column 'params' to job table failed.")
 
 
 def downgrade(migrate_engine):
@@ -42,5 +41,5 @@ def downgrade(migrate_engine):
         Job_table = Table( "job", metadata, autoload=True )
         params_col = Job_table.c.params
         params_col.drop()
-    except Exception as e:
-        log.debug( "Dropping column 'params' from job table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Dropping column 'params' from job table failed.")

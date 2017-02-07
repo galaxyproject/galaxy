@@ -34,39 +34,37 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         ExtendedMetadata_table.create()
-    except:
-        log.debug("Could not create ExtendedMetadata Table.")
+    except Exception:
+        log.exception("Could not create ExtendedMetadata Table.")
     try:
         ExtendedMetadataIndex_table.create()
-    except:
-        log.debug("Could not create ExtendedMetadataIndex Table.")
+    except Exception:
+        log.exception("Could not create ExtendedMetadataIndex Table.")
     # Add the extended_metadata_id to the ldda table
     try:
         ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
         extended_metadata_ldda_col.create( ldda_table )
         assert extended_metadata_ldda_col is ldda_table.c.extended_metadata_id
-    except Exception as e:
-        print(str(e))
-        log.error( "Adding column 'extended_metadata_id' to library_dataset_dataset_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding column 'extended_metadata_id' to library_dataset_dataset_association table failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        ExtendedMetadataIndex_table.drop()
-    except Exception as e:
-        log.debug( "Dropping 'extended_metadata_index' table failed: %s" % ( str( e ) ) )
-
-    try:
-        ExtendedMetadata_table.drop()
-    except Exception as e:
-        log.debug( "Dropping 'extended_metadata' table failed: %s" % ( str( e ) ) )
-
     # Drop the LDDA table's extended metadata ID column.
     try:
         ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
         extended_metadata_id = ldda_table.c.extended_metadata_id
         extended_metadata_id.drop()
-    except Exception as e:
-        log.debug( "Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed.")
+    try:
+        ExtendedMetadataIndex_table.drop()
+    except Exception:
+        log.exception("Dropping 'extended_metadata_index' table failed.")
+
+    try:
+        ExtendedMetadata_table.drop()
+    except Exception:
+        log.exception("Dropping 'extended_metadata' table failed.")

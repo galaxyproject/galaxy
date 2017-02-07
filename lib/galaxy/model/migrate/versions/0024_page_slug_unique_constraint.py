@@ -4,12 +4,10 @@ the same slug as a deleted page.
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import Index, MetaData, Table
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
