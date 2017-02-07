@@ -53,11 +53,13 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
-    try:
-        ToolShedRepository_table.c.uninstalled.drop()
-    except Exception:
-        log.exception("Dropping column uninstalled from the tool_shed_repository table failed.")
-    try:
-        ToolShedRepository_table.c.dist_to_shed.drop()
-    except Exception:
-        log.exception("Dropping column dist_to_shed from the tool_shed_repository table failed.")
+    # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
+    if migrate_engine.name != 'sqlite':
+        try:
+            ToolShedRepository_table.c.uninstalled.drop()
+        except Exception:
+            log.exception("Dropping column uninstalled from the tool_shed_repository table failed.")
+        try:
+            ToolShedRepository_table.c.dist_to_shed.drop()
+        except Exception:
+            log.exception("Dropping column dist_to_shed from the tool_shed_repository table failed.")

@@ -23,8 +23,9 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
-    __drop_column( "is_valid", "job_external_output_metadata", metadata )
+    # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
+    if migrate_engine.name != 'sqlite':
+        __drop_column( "is_valid", "job_external_output_metadata", metadata )
 
 
 def __add_column(column, table_name, metadata, **kwds):

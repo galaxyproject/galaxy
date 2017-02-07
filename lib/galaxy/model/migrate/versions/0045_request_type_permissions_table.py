@@ -33,4 +33,9 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    pass
+    metadata.reflect()
+    try:
+        RequestTypePermissions_table = Table( "request_type_permissions", metadata, autoload=True )
+        RequestTypePermissions_table.drop()
+    except Exception:
+        log.exception("Dropping 'request_type_permissions' table failed.")

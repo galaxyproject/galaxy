@@ -15,13 +15,20 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     metadata.reflect()
-
-    Request_table = Table( "request", metadata, autoload=True )
-    c = Column( "notify", Boolean, default=False  )
-    c.create( Request_table )
-    assert c is Request_table.c.notify
+    try:
+        Request_table = Table( "request", metadata, autoload=True )
+        c = Column( "notify", Boolean, default=False  )
+        c.create( Request_table )
+        assert c is Request_table.c.notify
+    except Exception:
+        log.exception("Adding column 'notify' to 'request' table failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    pass
+    metadata.reflect()
+    try:
+        Request_table = Table( "request", metadata, autoload=True )
+        Request_table.c.notify.drop()
+    except Exception:
+        log.exception("Dropping column 'notify' from 'request' table failed.")

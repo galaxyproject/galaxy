@@ -18,9 +18,4 @@ def upgrade( migrate_engine ):
 
 
 def downgrade(migrate_engine):
-    meta = MetaData( bind=migrate_engine )
-    user = Table( 'galaxy_user', meta, autoload=True )
-    try:
-        user.c.password.alter(type=String(40))
-    except:
-        log.exception( "Altering password column failed" )
+    pass

@@ -147,15 +147,15 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    for table in TABLES:
-        __drop(table)
-
     try:
         hda_table = Table( "history_dataset_association", metadata, autoload=True )
         hidden_beneath_collection_instance_id_col = hda_table.c.hidden_beneath_collection_instance_id
         hidden_beneath_collection_instance_id_col.drop()
     except Exception:
         log.exception("Dropping HDA column failed.")
+
+    for table in reversed(TABLES):
+        __drop(table)
 
 
 def __create(table):

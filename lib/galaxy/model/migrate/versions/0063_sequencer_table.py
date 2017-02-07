@@ -7,7 +7,6 @@ import datetime
 import logging
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
-from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import TrimmedString
 
@@ -46,11 +45,6 @@ def downgrade(migrate_engine):
     # delete sequencer table
     try:
         Sequencer_table = Table( "sequencer", metadata, autoload=True )
-    except NoSuchTableError:
-        Sequencer_table = None
-        log.debug( "Failed loading table sequencer" )
-    if Sequencer_table:
-        try:
-            Sequencer_table.drop()
-        except Exception:
-            log.exception("Deleting 'sequencer' table failed.")
+        Sequencer_table.drop()
+    except Exception:
+        log.exception("Deleting 'sequencer' table failed.")

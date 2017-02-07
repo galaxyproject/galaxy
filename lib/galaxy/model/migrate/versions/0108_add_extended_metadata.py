@@ -52,6 +52,13 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
+    # Drop the LDDA table's extended metadata ID column.
+    try:
+        ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
+        extended_metadata_id = ldda_table.c.extended_metadata_id
+        extended_metadata_id.drop()
+    except Exception:
+        log.exception("Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed.")
     try:
         ExtendedMetadataIndex_table.drop()
     except Exception:
@@ -61,11 +68,3 @@ def downgrade(migrate_engine):
         ExtendedMetadata_table.drop()
     except Exception:
         log.exception("Dropping 'extended_metadata' table failed.")
-
-    # Drop the LDDA table's extended metadata ID column.
-    try:
-        ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
-        extended_metadata_id = ldda_table.c.extended_metadata_id
-        extended_metadata_id.drop()
-    except Exception:
-        log.exception("Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed.")

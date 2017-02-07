@@ -100,10 +100,10 @@ def downgrade(migrate_engine):
         __drop(table)
 
     __drop_column( "state", "workflow_invocation", metadata )
-    __drop_column( "scheduler_id", "workflow_invocation", metadata )
+    __drop_column( "scheduler", "workflow_invocation", metadata )
     __drop_column( "uuid", "workflow_invocation", metadata )
     __drop_column( "history_id", "workflow_invocation", metadata )
-    __drop_column( "handler_id", "workflow_invocation", metadata )
+    __drop_column( "handler", "workflow_invocation", metadata )
     __drop_column( "action", "workflow_invocation_step", metadata )
 
 

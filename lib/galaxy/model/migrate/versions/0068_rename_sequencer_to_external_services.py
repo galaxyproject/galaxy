@@ -12,7 +12,7 @@ import datetime
 import logging
 
 from migrate import ForeignKeyConstraint
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
 
 # Need our custom types, but don't import anything else from model
@@ -37,32 +37,19 @@ def upgrade(migrate_engine):
     print(__doc__)
     # Load existing tables
     metadata.reflect()
-    # add a foreign key to the external_service table in the sample_dataset table
-    try:
-        SampleDataset_table = Table( "sample_dataset", metadata, autoload=True )
-    except NoSuchTableError:
-        SampleDataset_table = None
-        log.debug( "Failed loading table 'sample_dataset'" )
-    if SampleDataset_table is None:
-        return
-    try:
-        Sequencer_table = Table( "sequencer", metadata, autoload=True )
-    except NoSuchTableError:
-        Sequencer_table = None
-        log.debug( "Failed loading table 'sequencer'" )
-    if Sequencer_table is None:
-        return
     # create the column. Call it external_services_id as the table 'sequencer' is
     # going to be renamed to 'external_service'
     try:
+        SampleDataset_table = Table( "sample_dataset", metadata, autoload=True )
         col = Column( "external_service_id", Integer, index=True )
         col.create( SampleDataset_table, index_name="ix_sample_dataset_external_service_id" )
         assert col is SampleDataset_table.c.external_service_id
     except Exception:
         log.exception("Creating column 'external_service_id' in the 'sample_dataset' table failed.")
     if migrate_engine.name != 'sqlite':
-        # Add the foreign key constraint
+        # Add a foreign key to the external_service table in the sample_dataset table
         try:
+            Sequencer_table = Table( "sequencer", metadata, autoload=True )
             cons = ForeignKeyConstraint( [SampleDataset_table.c.external_service_id],
                                          [Sequencer_table.c.id],
                                          name='sample_dataset_external_services_id_fk' )
@@ -75,30 +62,18 @@ def upgrade(migrate_engine):
           + " FROM sample_dataset, sample, request, request_type " \
           + " WHERE sample.id=sample_dataset.sample_id and request.id=sample.request_id and request.request_type_id=request_type.id " \
           + " ORDER BY sample_dataset.id"
-    result = migrate_engine.execute( cmd )
-    for r in result:
-        sample_dataset_id = int(r[0])
-        sequencer_id = int(r[1])
-        cmd = "UPDATE sample_dataset SET external_service_id='%i' where id=%i" % ( sequencer_id, sample_dataset_id )
+    try:
+        result = migrate_engine.execute( cmd )
+        for r in result:
+            sample_dataset_id = int(r[0])
+            sequencer_id = int(r[1])
+            cmd = "UPDATE sample_dataset SET external_service_id='%i' where id=%i" % ( sequencer_id, sample_dataset_id )
+            migrate_engine.execute( cmd )
+        # rename 'sequencer' table to 'external_service'
+        cmd = "ALTER TABLE sequencer RENAME TO external_service"
         migrate_engine.execute( cmd )
-    # load request_type table
-    try:
-        RequestType_table = Table( "request_type", metadata, autoload=True )
-    except NoSuchTableError:
-        RequestType_table = None
-        log.debug( "Failed loading table request_type" )
-    if RequestType_table is None:
-        return
-    # rename 'sequencer' table to 'external_service'
-    cmd = "ALTER TABLE sequencer RENAME TO external_service"
-    migrate_engine.execute( cmd )
-    try:
-        ExternalServices_table = Table( "external_service", metadata, autoload=True )
-    except NoSuchTableError:
-        ExternalServices_table = None
-        log.debug( "Failed loading table 'external_service'" )
-    if ExternalServices_table is None:
-        return
+    except Exception:
+        log.exception("Exception executing SQL command: %s" % cmd)
     # if running postgres then rename the primary key sequence too
     if migrate_engine.name in ['postgres', 'postgresql']:
         cmd = "ALTER TABLE sequencer_id_seq RENAME TO external_service_id_seq"
@@ -106,6 +81,7 @@ def upgrade(migrate_engine):
     # rename 'sequencer_type_id' column to 'external_service_type_id' in the table 'external_service'
     # create the column as 'external_service_type_id'
     try:
+        ExternalServices_table = Table( "external_service", metadata, autoload=True )
         col = Column( "external_service_type_id", TrimmedString( 255 ) )
         col.create( ExternalServices_table )
         assert col is ExternalServices_table.c.external_service_type_id
@@ -152,41 +128,11 @@ def upgrade(migrate_engine):
                           sequencer_id )
             migrate_engine.execute( cmd )
     # drop the 'sequencer_id' column in the 'request_type' table
-    # sqlite does not support dropping columns
-    if migrate_engine.name == 'sqlite':
-        # In sqlite, create a temp table without the column that needs to be removed.
-        # then copy all the rows from the original table and finally rename the temp table
-        RequestTypeTemp_table = Table( 'request_type_temp', metadata,
-                                       Column( "id", Integer, primary_key=True),
-                                       Column( "create_time", DateTime, default=now ),
-                                       Column( "update_time", DateTime, default=now, onupdate=now ),
-                                       Column( "name", TrimmedString( 255 ), nullable=False ),
-                                       Column( "desc", TEXT ),
-                                       Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-                                       Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-                                       Column( "deleted", Boolean, index=True, default=False ) )
-        try:
-            RequestTypeTemp_table.create()
-        except Exception:
-            log.exception("Creating request_type_temp table failed.")
-        # insert all the rows from the request table to the request_temp table
-        cmd = "INSERT INTO request_type_temp SELECT id, create_time," + \
-            "update_time, name, desc, request_form_id, sample_form_id," + \
-            "deleted FROM request_type;"
-        migrate_engine.execute( cmd )
-        # delete the 'request_type' table
-        try:
-            RequestType_table.drop()
-        except Exception:
-            log.exception("Dropping request_type table failed.")
-        # rename table request_temp to request
-        cmd = "ALTER TABLE request_type_temp RENAME TO request_type"
-        migrate_engine.execute( cmd )
-    else:
-        try:
-            RequestType_table.c.sequencer_id.drop()
-        except Exception:
-            log.exception("Deleting column 'sequencer_id' from the 'request_type' table failed.")
+    try:
+        RequestType_table = Table( "request_type", metadata, autoload=True )
+        RequestType_table.c.sequencer_id.drop()
+    except Exception:
+        log.exception("Deleting column 'sequencer_id' from the 'request_type' table failed.")
 
 
 def downgrade(migrate_engine):
@@ -215,7 +161,7 @@ def downgrade(migrate_engine):
         log.debug( "Failed loading table request_type_external_service_association" )
     # create the 'sequencer_id' column in the 'request_type' table
     try:
-        col = Column( "sequencer_id", Integer, ForeignKey( "external_service.id" ), nullable=True, index=True )
+        col = Column( "sequencer_id", Integer, ForeignKey( "external_service.id" ), nullable=True )
         col.create( RequestType_table )
         assert col is RequestType_table.c.sequencer_id
     except Exception:

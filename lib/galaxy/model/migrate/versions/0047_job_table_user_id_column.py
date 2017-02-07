@@ -71,12 +71,7 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         Job_table = Table( "job", metadata, autoload=True )
-    except NoSuchTableError:
-        Job_table = None
-        log.debug( "Failed loading table job" )
-    if Job_table:
-        try:
-            col = Job_table.c.user_id
-            col.drop()
-        except Exception:
-            log.exception("Dropping column 'user_id' from job table failed.")
+        col = Job_table.c.user_id
+        col.drop()
+    except Exception:
+        log.exception("Dropping column 'user_id' from job table failed.")

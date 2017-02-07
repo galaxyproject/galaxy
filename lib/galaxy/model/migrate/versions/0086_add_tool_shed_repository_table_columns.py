@@ -66,11 +66,13 @@ def downgrade(migrate_engine):
         ToolShedRepository_table.c.metadata.drop()
     except Exception:
         log.exception("Dropping column metadata from the tool_shed_repository table failed.")
-    try:
-        ToolShedRepository_table.c.includes_datatypes.drop()
-    except Exception:
-        log.exception("Dropping column includes_datatypes from the tool_shed_repository table failed.")
-    try:
-        ToolShedRepository_table.c.update_available.drop()
-    except Exception:
-        log.exception("Dropping column update_available from the tool_shed_repository table failed.")
+    # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
+    if migrate_engine.name != 'sqlite':
+        try:
+            ToolShedRepository_table.c.includes_datatypes.drop()
+        except Exception:
+            log.exception("Dropping column includes_datatypes from the tool_shed_repository table failed.")
+        try:
+            ToolShedRepository_table.c.update_available.drop()
+        except Exception:
+            log.exception("Dropping column update_available from the tool_shed_repository table failed.")

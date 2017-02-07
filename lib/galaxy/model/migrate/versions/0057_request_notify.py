@@ -53,4 +53,9 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    pass
+    metadata.reflect()
+    try:
+        Request_table = Table( "request", metadata, autoload=True )
+        Request_table.c.notification.drop()
+    except Exception:
+        log.exception("Dropping column 'notification' from 'request' table failed.")
