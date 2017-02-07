@@ -22,7 +22,6 @@ def attach_ordered_steps( workflow, steps ):
     return workflow.has_cycles
 
 
-
 def order_workflow_steps( steps ):
     """
     Perform topological sort of the steps, return ordered or None
