@@ -337,7 +337,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow = stored.latest_workflow
         if len( workflow.steps ) == 0:
             raise exceptions.MessageException( 'Workflow cannot be run because it does not have any steps.' )
-        if workflow.has_cycles:
+        if attach_ordered_steps( workflow, workflow.steps ):
             raise exceptions.MessageException( 'Workflow cannot be run because it contains cycles.' )
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector( trans )
