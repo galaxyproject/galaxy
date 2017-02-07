@@ -78,6 +78,7 @@ class PurgableManagerMixin( DeletableManagerMixin ):
 
         Override this in subclasses to do the additional resource removal.
         """
+        self.delete(item, flush=False)
         return self._session_setattr( item, 'purged', True, flush=flush )
 
 

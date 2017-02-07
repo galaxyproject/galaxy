@@ -179,6 +179,7 @@ class HDAManagerTestCase( HDATestCase ):
         self.log( "should purge an hda if config does allow" )
         self.assertFalse( item1.purged )
         self.assertEqual( self.hda_manager.purge( item1 ), item1 )
+        self.assertTrue(item1.deleted)
         self.assertTrue( item1.purged )
 
     def test_purge_not_allowed( self ):
@@ -192,6 +193,7 @@ class HDAManagerTestCase( HDATestCase ):
         self.log( "should raise an error when purging an hda if config does not allow" )
         self.assertFalse( item1.purged )
         self.assertRaises( exceptions.ConfigDoesNotAllowException, self.hda_manager.purge, item1 )
+        self.assertFalse(item1.deleted)
         self.assertFalse( item1.purged )
 
     def test_ownable( self ):
