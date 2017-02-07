@@ -43,7 +43,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
         _addConditional: function( input_def ) {
             var self = this;
             input_def.test_param.id = input_def.id;
-            this.app.options.sustain_conditionals && ( input_def.test_param.disabled = true );
+            this.app.model.get( 'sustain_conditionals' ) && ( input_def.test_param.disabled = true );
             var field = this._addRow( input_def.test_param );
 
             // set onchange event for test parameter
@@ -109,7 +109,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
             }
 
             // hide options
-            this.app.options.sustain_repeats && repeat.hideOptions();
+            this.app.model.get( 'sustain_repeats' ) && repeat.hideOptions();
 
             // create input field wrapper
             var input_element = new InputElement( this.app, {

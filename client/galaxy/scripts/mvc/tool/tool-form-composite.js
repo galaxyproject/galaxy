@@ -38,7 +38,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.parms = [];
             _.each( this.model.get( 'steps' ), function( step, i ) {
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Preparing workflow step.' );
-                var icon = WorkflowIcons[step.step_type];
+                var icon = WorkflowIcons[ step.step_type ];
                 step = Utils.merge( {
                     index                   : i,
                     name                    : step.name,
@@ -261,6 +261,31 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             this.deferred.execute( function( promise ) {
                 self.$steps.addClass( 'ui-steps' );
                 if ( step.step_type == 'tool' ) {
+                    step.postchange = function( process, form ) {
+                        var self = this;
+                        var current_state = {
+                            tool_id         : step.id,
+                            tool_version    : step.version,
+                            inputs          : $.extend( true, {}, form.data.create() )
+                        }
+                        form.wait( true );
+                        Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Sending current state.', current_state );
+                        Utils.request({
+                            type    : 'POST',
+                            url     : Galaxy.root + 'api/tools/' + step.id + '/build',
+                            data    : current_state,
+                            success : function( data ) {
+                                form.update( data );
+                                form.wait( false );
+                                Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Received new model.', data );
+                                process.resolve();
+                            },
+                            error   : function( response ) {
+                                Galaxy.emit.debug( 'tool-form-composite::postchange()', 'Refresh request failed.', response );
+                                process.reject();
+                            }
+                        });
+                    };
                     form = new ToolFormBase( step );
                     if ( step.post_job_actions && step.post_job_actions.length ) {
                         form.portlet.append( $( '<div/>' ).addClass( 'ui-form-element-disabled' )
@@ -437,7 +462,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         if ( response && response.err_data ) {
                             for ( var i in self.forms ) {
                                 var form = self.forms[ i ];
-                                var step_related_errors = response.err_data[ form.options.step_index ];
+                                var step_related_errors = response.err_data[ form.model.get( 'step_index' ) ];
                                 if ( step_related_errors ) {
                                     var error_messages = form.data.matchResponse( step_related_errors );
                                     for ( var input_id in error_messages ) {

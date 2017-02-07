@@ -1791,7 +1791,7 @@ class Tool( object, Dictifiable ):
                     tool_dict = input.to_dict( request_context )
                     group_cache = tool_dict[ 'cache' ] = {}
                     for i in range( len( group_state ) ):
-                        group_cache[ i ] = {}
+                        group_cache[ i ] = []
                         populate_model( input.inputs, group_state[ i ], group_cache[ i ], other_values )
                 elif input.type == 'conditional':
                     tool_dict = input.to_dict( request_context )
@@ -1816,7 +1816,10 @@ class Tool( object, Dictifiable ):
                         tool_dict = input.to_dict( request_context )
                         log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % ( input.name, e ) )
                         pass
-                group_inputs[ input_index ] = tool_dict
+                if input_index >= len( group_inputs ):
+                    group_inputs.append( tool_dict )
+                else:
+                    group_inputs[ input_index ] = tool_dict
 
         # expand incoming parameters (parameters might trigger multiple tool executions,
         # here we select the first execution only in order to resolve dynamic parameters)
@@ -1835,7 +1838,7 @@ class Tool( object, Dictifiable ):
 
         # create tool model
         tool_model = self.to_dict( request_context )
-        tool_model[ 'inputs' ] = {}
+        tool_model[ 'inputs' ] = []
         populate_model( self.inputs, state_inputs, tool_model[ 'inputs' ] )
 
         # create tool help

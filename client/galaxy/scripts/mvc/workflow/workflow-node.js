@@ -148,10 +148,6 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             // Remove active class
             $(element).removeClass( "toolForm-active" );
         },
-        setLabel: function(label) {
-            this.app.workflow.updateNodeLabel(this.label, label);
-            this.label = label || null;
-        },
         init_field_data : function ( data ) {
             if ( data.type ) {
                 this.type = data.type;
@@ -163,17 +159,15 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             this.tooltip = data.tooltip ? data.tooltip : "";
             this.annotation = data.annotation;
             this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
-            this.setLabel(data.label);
+            this.label = data.label;
             this.uuid = data.uuid;
             this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
-
             var node = this;
             var nodeView = new NodeView({
                 el: this.element[ 0 ],
                 node: node,
             });
             node.nodeView = nodeView;
-
             $.each( data.data_inputs, function( i, input ) {
                 nodeView.addDataInput( input );
             });
@@ -188,12 +182,12 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
         },
         update_field_data : function( data ) {
             var node = this;
-                nodeView = node.nodeView;
+            var nodeView = node.nodeView;
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
             this.errors = data.errors;
             this.annotation = data['annotation'];
-            this.setLabel(data.label);
+            this.label = data.label;
             if( "post_job_actions" in data ) {
                 // Won't be present in response for data inputs
                 var pja_in = data.post_job_actions;
