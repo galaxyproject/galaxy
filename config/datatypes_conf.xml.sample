@@ -447,7 +447,7 @@
     <datatype extension="embl" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="fitch" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="gcg" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="genbank" type="galaxy.datatypes.sequence:Genbank" edam_format="format_1936"/>
+    <datatype extension="genbank" type="galaxy.datatypes.sequence:Genbank" edam_format="format_1936" display_in_upload="True"/>
     <datatype extension="hennig86" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="ig" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="jackknifer" type="galaxy.datatypes.data:Text" subclass="true"/>
