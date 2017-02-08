@@ -11,18 +11,18 @@ subsequent row values are all numeric ! Will fail if any non numeric (eg '+' or 
 ross lazarus for rgenetics
 august 20 2007
 """
-
 import logging
 import os
 import re
 import sys
-import urllib
 from cgi import escape
 
+from six.moves.urllib.parse import quote_plus
+
 from galaxy.datatypes import metadata
-from galaxy.datatypes.text import Html
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.text import Html
 from galaxy.util import nice_size
 from galaxy.web import url_for
 
@@ -95,9 +95,9 @@ class GenomeGraphs( Tabular ):
                                                    action='display_at',
                                                    filename='ucsc_' + site_name )
                     display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type)
-                    display_url = urllib.quote_plus( display_url )
-                    # was display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
-                    # redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
+                    display_url = quote_plus( display_url )
+                    # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                    # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
                     sl = ["%sdb=%s" % (site_url, dataset.dbkey ), ]
                     # sl.append("&hgt.customText=%s")
                     sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
@@ -106,7 +106,7 @@ class GenomeGraphs( Tabular ):
                     sl.append("&hgGenome_doSubmitUpload=submit")
                     sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=%s" % display_url)
                     s = ''.join(sl)
-                    s = urllib.quote_plus(s)
+                    s = quote_plus(s)
                     redirect_url = s
                     link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
                     ret_val.append( (site_name, link) )
@@ -117,17 +117,17 @@ class GenomeGraphs( Tabular ):
         Create HTML table, used for displaying peek
         """
         out = ['<table cellspacing="0" cellpadding="3">']
-        f = open(dataset.file_name, 'r')
-        d = f.readlines()[:5]
-        if len(d) == 0:
-            out = "Cannot find anything to parse in %s" % dataset.name
-            return out
-        hasheader = 0
         try:
-            ['%f' % x for x in d[0][1:]]  # first is name - see if starts all numerics
-        except:
-            hasheader = 1
-        try:
+            with open(dataset.file_name, 'r') as f:
+                d = f.readlines()[:5]
+            if len(d) == 0:
+                out = "Cannot find anything to parse in %s" % dataset.name
+                return out
+            hasheader = 0
+            try:
+                ['%f' % x for x in d[0][1:]]  # first is name - see if starts all numerics
+            except:
+                hasheader = 1
             # Generate column header
             out.append( '<tr>' )
             if hasheader:
@@ -150,16 +150,16 @@ class GenomeGraphs( Tabular ):
         Validate a gg file - all numeric after header row
         """
         errors = list()
-        infile = open(dataset.file_name, "r")
-        infile.next()  # header
-        for i, row in enumerate(infile):
-            ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
-            badvals = []
-            for j, x in enumerate(ll):
-                try:
-                    x = float(x)
-                except:
-                    badvals.append('col%d:%s' % (j + 1, x))
+        with open(dataset.file_name, "r") as infile:
+            next(infile)  # header
+            for i, row in enumerate(infile):
+                ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
+                badvals = []
+                for j, x in enumerate(ll):
+                    try:
+                        x = float(x)
+                    except:
+                        badvals.append('col%d:%s' % (j + 1, x))
         if len(badvals) > 0:
             errors.append('row %d, %s' % (' '.join(badvals)))
             return errors
@@ -219,7 +219,7 @@ class rgTabList(Tabular):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return Tabular.make_html_table( self, dataset, column_names=self.column_names )
+        return self.make_html_table( dataset, column_names=self.column_names )
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -246,8 +246,8 @@ class rgSampleList(rgTabList):
         # this is what Plink wants as at 2009
 
     def sniff(self, filename):
-        infile = open(filename, "r")
-        header = infile.next()  # header
+        with open(filename, "r") as infile:
+            header = next(infile)  # header
         if header[0] == 'FID' and header[1] == 'IID':
             return True
         else:
@@ -287,7 +287,7 @@ class Rgenetics(Html):
     def generate_primary_file( self, dataset=None ):
         rval = ['<html><head><title>Rgenetics Galaxy Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files( dataset=dataset ).iteritems():
+        for composite_name, composite_file in self.get_composite_files( dataset=dataset ).items():
             fn = composite_name
             opt_text = ''
             if composite_file.optional:
@@ -617,7 +617,7 @@ class RexpBase( Html ):
             del useConc[i]  # get rid of concordance
             del useCols[i]  # and usecols entry
         for i, conc in enumerate(useConc):  # these are all unique columns for the design matrix
-                ccounts = sorted([(conc.get(code, 0), code) for code in conc.keys()])  # decorate
+                ccounts = sorted((conc.get(code, 0), code) for code in conc.keys())  # decorate
                 cc = [(x[1], x[0]) for x in ccounts]  # list of code count tuples
                 codeDetails = (head[useCols[i]], cc)  # ('foo',[('a',3),('b',11),..])
                 listCol.append(codeDetails)

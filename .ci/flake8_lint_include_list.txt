@@ -53,8 +53,10 @@ lib/galaxy/datatypes/dataproviders/__init__.py
 lib/galaxy/datatypes/data.py
 lib/galaxy/datatypes/display_applications/__init__.py
 lib/galaxy/datatypes/display_applications/util.py
+lib/galaxy/datatypes/genetics.py
 lib/galaxy/datatypes/images.py
 lib/galaxy/datatypes/__init__.py
+lib/galaxy/datatypes/interval.py
 lib/galaxy/datatypes/metadata.py
 lib/galaxy/datatypes/msa.py
 lib/galaxy/datatypes/ngsindex.py
