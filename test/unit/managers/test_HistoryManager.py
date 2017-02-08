@@ -325,6 +325,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.log( "should allow purging" )
         history2 = self.history_manager.create( name='history2', user=user2 )
         self.history_manager.purge( history2 )
+        self.assertTrue(history2.deleted)
         self.assertTrue( history2.purged )
 
     def test_current( self ):

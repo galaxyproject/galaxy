@@ -161,6 +161,7 @@ lib/galaxy/web/framework/middleware/xforwardedhost.py
 lib/galaxy/web/__init__.py
 lib/galaxy/web/params.py
 lib/galaxy/webapps/galaxy/api/genomes.py
+lib/galaxy/webapps/galaxy/api/histories.py
 lib/galaxy/webapps/galaxy/api/__init__.py
 lib/galaxy/webapps/galaxy/api/jobs.py
 lib/galaxy/webapps/galaxy/api/lda_datasets.py
