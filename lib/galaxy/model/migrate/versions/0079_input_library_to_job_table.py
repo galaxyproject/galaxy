@@ -26,9 +26,8 @@ def upgrade(migrate_engine):
     # Create the job_to_input_library_dataset table
     try:
         JobToInputLibraryDatasetAssociation_table.create()
-    except Exception as e:
-        print("Creating job_to_input_library_dataset table failed: %s" % str( e ))
-        log.debug( "Creating job_to_input_library_dataset table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating job_to_input_library_dataset table failed.")
 
 
 def downgrade(migrate_engine):
@@ -38,6 +37,5 @@ def downgrade(migrate_engine):
     # Drop the job_to_input_library_dataset table
     try:
         JobToInputLibraryDatasetAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping job_to_input_library_dataset table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping job_to_input_library_dataset table failed.")

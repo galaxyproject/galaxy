@@ -8,7 +8,8 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
             this.form = new ToolFormBase( Utils.merge({
                 listen_to_history : true,
                 always_refresh    : false,
-                customize         : function( options ) {
+                customize         : function( form ) {
+                    var options = form.model.attributes;
                     // build execute button
                     options.buttons = {
                         execute: execute_btn = new Ui.Button({
@@ -19,17 +20,17 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                             floating : 'clear',
                             onclick  : function() {
                                 execute_btn.wait();
-                                self.form.portlet.disable();
+                                form.portlet.disable();
                                 self.submit( options, function() {
                                     execute_btn.unwait();
-                                    self.form.portlet.enable();
+                                    form.portlet.enable();
                                 } );
                             }
                         })
-                    };
+                    }
                     // remap feature
                     if ( options.job_id && options.job_remap ) {
-                        options.inputs[ 'rerun_remap_job_id' ] = {
+                        options.inputs.push({
                             label       : 'Resume dependencies from this job',
                             name        : 'rerun_remap_job_id',
                             type        : 'select',
@@ -38,8 +39,33 @@ define([ 'utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal', 'mvc/tool/tool-form
                             value       : '__ignore__',
                             options     : [ [ 'Yes', options.job_id ], [ 'No', '__ignore__' ] ],
                             help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.'
-                        }
+                        });
                     }
+                },
+                postchange          : function( process, form ) {
+                    var self = this;
+                    var current_state = {
+                        tool_id         : form.model.get( 'id' ),
+                        tool_version    : form.model.get( 'version' ),
+                        inputs          : $.extend(true, {}, form.data.create())
+                    }
+                    form.wait( true );
+                    Galaxy.emit.debug( 'tool-form::postchange()', 'Sending current state.', current_state );
+                    Utils.request({
+                        type    : 'POST',
+                        url     : Galaxy.root + 'api/tools/' + form.model.get( 'id' ) + '/build',
+                        data    : current_state,
+                        success : function( data ) {
+                            form.update( data );
+                            form.wait( false );
+                            Galaxy.emit.debug( 'tool-form::postchange()', 'Received new model.', data );
+                            process.resolve();
+                        },
+                        error   : function( response ) {
+                            Galaxy.emit.debug( 'tool-form::postchange()', 'Refresh request failed.', response );
+                            process.reject();
+                        }
+                    });
                 }
             }, options ) );
             this.deferred = this.form.deferred;

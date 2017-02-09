@@ -3,14 +3,12 @@ Migration script to support subworkflows and workflow request input parameters
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
-from sqlalchemy import Column, Integer, ForeignKey, MetaData, Table, Index, ForeignKeyConstraint
+from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Index, Integer, MetaData, Table
 
-from galaxy.model.custom_types import TrimmedString, UUIDType, JSONType
+from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
@@ -96,40 +94,35 @@ def __alter_column(table_name, column_name, metadata, **kwds):
     try:
         table = Table( table_name, metadata, autoload=True )
         getattr( table.c, column_name ).alter(**kwds)
-    except Exception as e:
-        print(str(e))
-        log.exception( "Adding column %s failed." % column_name)
+    except Exception:
+        log.exception("Adding column %s failed." % column_name)
 
 
 def __add_column(column, table_name, metadata, **kwds):
     try:
         table = Table( table_name, metadata, autoload=True )
         column.create( table, **kwds )
-    except Exception as e:
-        print(str(e))
-        log.exception( "Adding column %s failed." % column)
+    except Exception:
+        log.exception("Adding column %s failed." % column)
 
 
 def __drop_column( column_name, table_name, metadata ):
     try:
         table = Table( table_name, metadata, autoload=True )
         getattr( table.c, column_name ).drop()
-    except Exception as e:
-        print(str(e))
-        log.exception( "Dropping column %s failed." % column_name )
+    except Exception:
+        log.exception("Dropping column %s failed." % column_name)
 
 
 def __create(table):
     try:
         table.create()
-    except Exception as e:
-        print(str(e))
-        log.exception("Creating %s table failed: %s" % (table.name, str( e ) ) )
+    except Exception:
+        log.exception("Creating %s table failed." % table.name)
 
 
 def __drop(table):
     try:
         table.drop()
-    except Exception as e:
-        print(str(e))
-        log.exception("Dropping %s table failed: %s" % (table.name, str( e ) ) )
+    except Exception:
+        log.exception("Dropping %s table failed." % table.name)

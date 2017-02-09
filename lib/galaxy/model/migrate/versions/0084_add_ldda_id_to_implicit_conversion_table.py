@@ -23,9 +23,8 @@ def upgrade(migrate_engine):
             c = Column( "ldda_id", Integer, index=True, nullable=True )
         c.create( Implicitly_converted_table, index_name="ix_implicitly_converted_ds_assoc_ldda_id")
         assert c is Implicitly_converted_table.c.ldda_id
-    except Exception as e:
-        print("Adding ldda_id column to implicitly_converted_dataset_association table failed: %s" % str( e ))
-        log.debug( "Adding ldda_id column to implicitly_converted_dataset_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Adding ldda_id column to implicitly_converted_dataset_association table failed.")
 
 
 def downgrade(migrate_engine):
@@ -34,6 +33,5 @@ def downgrade(migrate_engine):
     try:
         Implicitly_converted_table = Table( "implicitly_converted_dataset_association", metadata, autoload=True )
         Implicitly_converted_table.c.ldda_id.drop()
-    except Exception as e:
-        print("Dropping ldda_id column from implicitly_converted_dataset_association table failed: %s" % str( e ))
-        log.debug( "Dropping ldda_id column from implicitly_converted_dataset_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping ldda_id column from implicitly_converted_dataset_association table failed.")

@@ -7,7 +7,6 @@ import datetime
 import logging
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
-from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import TrimmedString
 
@@ -36,8 +35,8 @@ def upgrade(migrate_engine):
     # create the sequencer table
     try:
         Sequencer_table.create()
-    except Exception as e:
-        log.debug( "Creating 'sequencer' table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating 'sequencer' table failed.")
 
 
 def downgrade(migrate_engine):
@@ -46,11 +45,6 @@ def downgrade(migrate_engine):
     # delete sequencer table
     try:
         Sequencer_table = Table( "sequencer", metadata, autoload=True )
-    except NoSuchTableError:
-        Sequencer_table = None
-        log.debug( "Failed loading table sequencer" )
-    if Sequencer_table:
-        try:
-            Sequencer_table.drop()
-        except Exception as e:
-            log.debug( "Deleting 'sequencer' table failed: %s" % str( e ) )
+        Sequencer_table.drop()
+    except Exception:
+        log.exception("Deleting 'sequencer' table failed.")

@@ -33,15 +33,35 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                     initial_errors  : true,
                     sustain_version : true,
                     cls             : 'ui-portlet-narrow',
-                    update_url      : Galaxy.root + 'api/workflows/build_module',
-                    update          : function( data ) {
-                        // This hasn't modified the workflow, just returned
-                        // module information for the tool to update the workflow
-                        // state stored on the client with. User needs to save
-                        // for this to take effect.
-                        self.node.update_field_data( data );
-                        self.form.errors( data && data.tool_model );
-                    }
+                    postchange      : function( process, form ) {
+                        var options = form.model.attributes;
+                        var current_state = {
+                            tool_id         : options.id,
+                            tool_version    : options.version,
+                            inputs          : $.extend( true, {}, form.data.create() )
+                        }
+                        Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Sending current state.', current_state );
+                        Utils.request({
+                            type    : 'POST',
+                            url     : Galaxy.root + 'api/workflows/build_module',
+                            data    : current_state,
+                            success : function( data ) {
+                                form.update( data.tool_model );
+                                form.errors( data.tool_model );
+                                // This hasn't modified the workflow, just returned
+                                // module information for the tool to update the workflow
+                                // state stored on the client with. User needs to save
+                                // for this to take effect.
+                                self.node.update_field_data( data );
+                                Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Received new model.', data );
+                                process.resolve();
+                            },
+                            error   : function( response ) {
+                                Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Refresh request failed.', response );
+                                process.reject();
+                            }
+                        });
+                    },
                 }));
                 this.$el.append( this.form.$el );
             } else {
@@ -53,17 +73,17 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
         _makeSections: function( options ){
             var inputs = options.inputs;
             var datatypes = options.datatypes;
-            inputs[ Utils.uid() ] = {
+            inputs.push({
                 label   : 'Annotation / Notes',
-                name    : 'annotation',
+                name    : '__annotation',
                 type    : 'text',
                 area    : true,
                 help    : 'Add an annotation or note for this step. It will be shown with the workflow.',
                 value   : this.node.annotation
-            }
+            });
             var output_id = this.node.output_terminals && Object.keys( this.node.output_terminals )[ 0 ];
             if ( output_id ) {
-                inputs[ Utils.uid() ] = {
+                inputs.push({
                     name        : 'pja__' + output_id + '__EmailAction',
                     label       : 'Email notification',
                     type        : 'boolean',
@@ -73,17 +93,17 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                     payload     : {
                         'host'  : window.location.host
                     }
-                };
-                inputs[ Utils.uid() ] = {
+                });
+                inputs.push({
                     name        : 'pja__' + output_id + '__DeleteIntermediatesAction',
                     label       : 'Output cleanup',
                     type        : 'boolean',
                     value       : String( Boolean( this.post_job_actions[ 'DeleteIntermediatesAction' + output_id ] ) ),
                     ignore      : 'false',
                     help        : 'Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs.'
-                };
+                });
                 for ( var i in this.node.output_terminals ) {
-                    inputs[ Utils.uid() ] = this._makeSection( i, datatypes );
+                    inputs.push( this._makeSection( i, datatypes ) );
                 }
             }
         },

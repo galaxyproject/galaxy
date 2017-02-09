@@ -21,15 +21,6 @@ log.addHandler( handler )
 
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("========================================")
-    print("This migration script creates the new history_user_share_association table, and adds")
-    print("a new boolean type column to the history table.  This provides support for sharing")
-    print("histories in the same way that workflows are shared.")
-    print("========================================")
-
-
 HistoryUserShareAssociation_table = Table( "history_user_share_association", metadata,
                                            Column( "id", Integer, primary_key=True ),
                                            Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
@@ -38,14 +29,14 @@ HistoryUserShareAssociation_table = Table( "history_user_share_association", met
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     # Create the history_user_share_association table
     try:
         HistoryUserShareAssociation_table.create()
-    except Exception as e:
-        log.debug( "Creating history_user_share_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating history_user_share_association table failed.")
     # Add 1 column to the history table
     try:
         History_table = Table( "history", metadata, autoload=True )
@@ -57,8 +48,8 @@ def upgrade(migrate_engine):
             col = Column( 'importable', Boolean, index=True, default=False )
             col.create( History_table, index_name='ix_history_importable')
             assert col is History_table.c.importable
-        except Exception as e:
-            log.debug( "Adding column 'importable' to history table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'importable' to history table failed.")
 
 
 def downgrade(migrate_engine):
@@ -75,10 +66,10 @@ def downgrade(migrate_engine):
         try:
             col = History_table.c.importable
             col.drop()
-        except Exception as e:
-            log.debug( "Dropping column 'importable' from history table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Dropping column 'importable' from history table failed.")
     # Drop the history_user_share_association table
     try:
         HistoryUserShareAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping history_user_share_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping history_user_share_association table failed.")

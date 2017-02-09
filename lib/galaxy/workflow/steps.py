@@ -19,6 +19,7 @@ def attach_ordered_steps( workflow, steps ):
     for i, step in enumerate( ordered_steps or steps ):
         step.order_index = i
         workflow.steps.append( step )
+    return workflow.has_cycles
 
 
 def order_workflow_steps( steps ):

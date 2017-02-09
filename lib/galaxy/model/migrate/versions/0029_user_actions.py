@@ -12,13 +12,6 @@ now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("")
-    print("This migration script adds a user actions table to Galaxy.")
-    print("")
-
-
 # New table to store user actions.
 UserAction_table = Table( "user_action", metadata,
                           Column( "id", Integer, primary_key=True ),
@@ -32,13 +25,12 @@ UserAction_table = Table( "user_action", metadata,
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     metadata.reflect()
     try:
         UserAction_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating user_action table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating user_action table failed.")
 
 
 def downgrade(migrate_engine):
@@ -46,6 +38,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         UserAction_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping user_action table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping user_action table failed.")

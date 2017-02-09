@@ -370,11 +370,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     if (trans.security.decode_id(id) in entries):
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
 
-            workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
-                trans,
-                stored_workflow,
-                payload['workflow'],
-            )
+            try:
+                workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                    trans,
+                    stored_workflow,
+                    payload[ 'workflow' ],
+                )
+            except workflows.MissingToolsException:
+                raise exceptions.MessageException( "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed." )
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException( message )
@@ -387,11 +390,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Builds module details including a tool model for the workflow editor.
         """
         type = payload.get( 'type' )
-        inputs = payload.get( 'inputs', {} )
-        annotation = inputs.get( 'annotation', '' )
-        label = inputs.get( 'label', '' )
         tool_id = payload.get( 'tool_id' )
         content_id = payload.get( 'content_id' )
+        inputs = payload.get( 'inputs', {} )
+        annotation = inputs.get( '__annotation', '' )
+        label = inputs.get( '__label', '' )
         if tool_id:
             tool_version = payload.get( 'tool_version' )
             tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )

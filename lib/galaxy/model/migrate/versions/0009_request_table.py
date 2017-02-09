@@ -23,17 +23,9 @@ log.addHandler( handler )
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("This migration script adds a new column to 2 tables:")
-    print("1) a new boolean type column named 'submitted' to the 'request' table")
-    print("2) a new string type column named 'bar_code' to the 'sample' table")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     Request_table = Table( "request", metadata, autoload=True )
     Sample_table = Table( "sample", metadata, autoload=True )
@@ -44,8 +36,8 @@ def upgrade(migrate_engine):
             col = Column( 'submitted', Boolean, default=False )
             col.create( Request_table)
             assert col is Request_table.c.submitted
-        except Exception as e:
-            log.debug( "Adding column 'submitted' to request table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'submitted' to request table failed.")
 
     # Add 1 column to the sample table
     if Sample_table is not None:
@@ -53,8 +45,8 @@ def upgrade(migrate_engine):
             col = Column( "bar_code", TrimmedString( 255 ), index=True )
             col.create( Sample_table, index_name='ix_sample_bar_code')
             assert col is Sample_table.c.bar_code
-        except Exception as e:
-            log.debug( "Adding column 'bar_code' to sample table failed: %s" % ( str( e ) ) )
+        except Exception:
+            log.exception("Adding column 'bar_code' to sample table failed.")
 
 
 def downgrade(migrate_engine):

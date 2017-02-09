@@ -50,6 +50,7 @@ lib/galaxy/web/framework/middleware/error.py
 lib/galaxy/web/framework/middleware/static.py
 lib/galaxy/web/framework/middleware/statsd.py
 lib/galaxy/web/__init__.py
+lib/galaxy/webapps/galaxy/api/histories.py
 lib/galaxy/webapps/galaxy/api/tours.py
 lib/galaxy/webapps/galaxy/api/workflows.py
 lib/galaxy/webapps/galaxy/controllers/external_services.py
@@ -68,7 +69,6 @@ lib/galaxy/workflow/run.py
 lib/galaxy/workflow/schedulers/
 lib/galaxy/workflow/steps.py
 lib/galaxy_ext/
-lib/galaxy_utils/
 lib/log_tempfile.py
 lib/psyco_full.py
 lib/tool_shed/

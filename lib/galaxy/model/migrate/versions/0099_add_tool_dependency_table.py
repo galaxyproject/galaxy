@@ -41,8 +41,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         ToolDependency_table.create()
-    except Exception as e:
-        log.debug( "Creating tool_dependency table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating tool_dependency table failed.")
 
 
 def downgrade(migrate_engine):
@@ -50,5 +50,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         ToolDependency_table.drop()
-    except Exception as e:
-        log.debug( "Dropping tool_dependency table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping tool_dependency table failed.")

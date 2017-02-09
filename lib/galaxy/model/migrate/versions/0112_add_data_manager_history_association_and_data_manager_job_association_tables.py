@@ -35,13 +35,13 @@ def upgrade(migrate_engine):
     try:
         DataManagerHistoryAssociation_table.create()
         log.debug( "Created data_manager_history_association table" )
-    except Exception as e:
-        log.debug( "Creating data_manager_history_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating data_manager_history_association table failed.")
     try:
         DataManagerJobAssociation_table.create()
         log.debug( "Created data_manager_job_association table" )
-    except Exception as e:
-        log.debug( "Creating data_manager_job_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating data_manager_job_association table failed.")
 
 
 def downgrade(migrate_engine):
@@ -50,10 +50,10 @@ def downgrade(migrate_engine):
     try:
         DataManagerHistoryAssociation_table.drop()
         log.debug( "Dropped data_manager_history_association table" )
-    except Exception as e:
-        log.debug( "Dropping data_manager_history_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping data_manager_history_association table failed.")
     try:
         DataManagerJobAssociation_table.drop()
         log.debug( "Dropped data_manager_job_association table" )
-    except Exception as e:
-        log.debug( "Dropping data_manager_job_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping data_manager_job_association table failed.")

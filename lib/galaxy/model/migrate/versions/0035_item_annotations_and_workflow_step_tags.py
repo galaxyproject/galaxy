@@ -56,37 +56,32 @@ def upgrade(migrate_engine):
     # Create history_annotation_association table.
     try:
         HistoryAnnotationAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating history_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating history_annotation_association table failed.")
 
     # Create history_dataset_association_annotation_association table.
     try:
         HistoryDatasetAssociationAnnotationAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating history_dataset_association_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating history_dataset_association_annotation_association table failed.")
 
     # Create stored_workflow_annotation_association table.
     try:
         StoredWorkflowAnnotationAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating stored_workflow_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating stored_workflow_annotation_association table failed.")
 
     # Create workflow_step_annotation_association table.
     try:
         WorkflowStepAnnotationAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating workflow_step_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating workflow_step_annotation_association table failed.")
 
     # Create workflow_step_tag_association table.
     try:
         WorkflowStepTagAssociation_table.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating workflow_step_tag_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating workflow_step_tag_association table failed.")
 
     haaa = Index( "ix_history_anno_assoc_annotation", HistoryAnnotationAssociation_table.c.annotation, mysql_length=200)
     hdaaa = Index( "ix_history_dataset_anno_assoc_annotation", HistoryDatasetAssociationAnnotationAssociation_table.c.annotation, mysql_length=200)
@@ -98,9 +93,8 @@ def upgrade(migrate_engine):
         hdaaa.create()
         swaaa.create()
         wsaaa.create()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Creating annotation indices failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating annotation indices failed.")
 
 
 def downgrade(migrate_engine):
@@ -110,34 +104,29 @@ def downgrade(migrate_engine):
     # Drop history_annotation_association table.
     try:
         HistoryAnnotationAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping history_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping history_annotation_association table failed.")
 
     # Drop history_dataset_association_annotation_association table.
     try:
         HistoryDatasetAssociationAnnotationAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping history_dataset_association_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping history_dataset_association_annotation_association table failed.")
 
     # Drop stored_workflow_annotation_association table.
     try:
         StoredWorkflowAnnotationAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping stored_workflow_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping stored_workflow_annotation_association table failed.")
 
     # Drop workflow_step_annotation_association table.
     try:
         WorkflowStepAnnotationAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping workflow_step_annotation_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping workflow_step_annotation_association table failed.")
 
     # Drop workflow_step_tag_association table.
     try:
         WorkflowStepTagAssociation_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.debug( "Dropping workflow_step_tag_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping workflow_step_tag_association table failed.")

@@ -2,7 +2,7 @@
 Modules used in building workflows
 """
 import logging
-from json import dumps, loads
+from json import loads
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import XML
 
@@ -92,15 +92,15 @@ class WorkflowModule( object ):
 
     # ---- Configuration time -----------------------------------------------
 
-    def get_state( self ):
+    def get_state( self, nested=True ):
         """ Return a serializable representation of the persistable state of
         the step.
         """
         inputs = self.get_inputs()
         if inputs:
-            return self.state.encode( Bunch( inputs=inputs ), self.trans.app )
+            return self.state.encode( Bunch( inputs=inputs ), self.trans.app, nested=nested )
         else:
-            return dumps( self.state.inputs )
+            return self.state.inputs
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -237,7 +237,7 @@ class SubWorkflowModule( WorkflowModule ):
         elif "content_id" in d:
             content_id = d["content_id"]
             module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
-        module.label = d.get("label", None) or None
+        module.label = d.get( "label", None ) or None
         return module
 
     @classmethod
@@ -288,12 +288,11 @@ class SubWorkflowModule( WorkflowModule ):
         outputs = []
         for workflow_output in self.subworkflow.workflow_outputs:
             output_step = workflow_output.workflow_step
-            label = name = workflow_output.label
-            if name is None:
-                name = "%s:%s" % (output_step.order_index, workflow_output.output_name)
-                label = name
+            label = workflow_output.label
+            if label is None:
+                label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
             output = dict(
-                name=name,
+                name=label,
                 label=label,
                 extensions=['input'],  # TODO
             )
@@ -787,9 +786,8 @@ class ToolModule( WorkflowModule ):
         """
         if self.tool:
             state = super( ToolModule, self ).decode_runtime_state( runtime_state )
-            state_dict = loads( runtime_state )
-            if RUNTIME_STEP_META_STATE_KEY in state_dict:
-                self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
+            if RUNTIME_STEP_META_STATE_KEY in runtime_state:
+                self.__restore_step_meta_runtime_state( loads( runtime_state[ RUNTIME_STEP_META_STATE_KEY ] ) )
             return state
         else:
             raise ToolMissingException( "Tool %s missing. Cannot recover runtime state." % self.tool_id )

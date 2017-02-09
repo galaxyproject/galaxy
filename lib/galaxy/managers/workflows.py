@@ -337,7 +337,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow = stored.latest_workflow
         if len( workflow.steps ) == 0:
             raise exceptions.MessageException( 'Workflow cannot be run because it does not have any steps.' )
-        if workflow.has_cycles:
+        if attach_ordered_steps( workflow, workflow.steps ):
             raise exceptions.MessageException( 'Workflow cannot be run because it contains cycles.' )
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector( trans )
@@ -563,10 +563,10 @@ class WorkflowContentsManager(UsesAnnotations):
                 annotation_str = step_annotation.annotation
             content_id = module.get_content_id()
             # Export differences for backward compatibility
-            if module.type != 'tool':
-                tool_state = json.dumps( module.state.inputs )
+            if module.type == 'tool':
+                tool_state = module.get_state( nested=False )
             else:
-                tool_state = module.get_state()
+                tool_state = module.state.inputs
             # Step info
             step_dict = {
                 'id': step.order_index,
@@ -576,7 +576,7 @@ class WorkflowContentsManager(UsesAnnotations):
                                         # eliminate after a few years...
                 'tool_version': step.tool_version,
                 'name': module.get_name(),
-                'tool_state': tool_state,
+                'tool_state': json.dumps( tool_state ),
                 'errors': module.get_errors(),
                 'uuid': str(step.uuid),
                 'label': step.label or None,
