@@ -377,7 +377,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             tool_model = module.tool.to_json( trans, inputs, workflow_building_mode=True )
             module.recover_state( tool_model[ 'state_inputs' ] )
             return {
-                'tool_model'        : tool_model,
                 'tool_state'        : module.get_state(),
                 'data_inputs'       : module.get_data_inputs(),
                 'data_outputs'      : module.get_data_outputs(),
