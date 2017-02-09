@@ -256,10 +256,12 @@ define(['mvc/toolshed/toolshed-model',
 
         doInstall: function(params) {
             controller_url = Galaxy.root + 'admin_toolshed/manage_repositories';
+            var repositories = params.repositories;
+            var new_route = 'status/r/' + repositories.join('|');
             $.post(controller_url, params, function(data) {
                 console.log( "Initializing repository installation succeeded" );
-                window.location.assign(Galaxy.root + 'admin_toolshed/monitor_repository_installation');
             })
+            Backbone.history.navigate(new_route, {trigger: true, replace:true});
         },
 
         templateRepoDetails: _.template([

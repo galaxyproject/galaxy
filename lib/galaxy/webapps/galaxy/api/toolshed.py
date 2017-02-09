@@ -32,6 +32,18 @@ log = logging.getLogger( __name__ )
 class ToolShedController( BaseAPIController ):
     """RESTful controller for interactions with tool sheds."""
 
+    def __get_repo_dict_by_id( self, id ):
+        tool_shed_repository = repository_util.get_tool_shed_repository_by_id( self.app, id )
+        if tool_shed_repository is None:
+            log.debug( "Unable to locate tool_shed_repository record for id %s." % ( str( id ) ) )
+            return {}
+        tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( tool_shed_repository ) )
+        tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                          action='show',
+                                                          id=self.app.security.encode_id( tool_shed_repository.id ) )
+        tool_shed_repository_dict[ 'repository_dependencies' ] = self.__flatten_repository_dependency_list( tool_shed_repository )
+        return tool_shed_repository_dict
+
     def __get_tool_dependencies( self, metadata, tool_dependencies=None ):
         if tool_dependencies is None:
             tool_dependencies = []
@@ -44,6 +56,26 @@ class ToolShedController( BaseAPIController ):
             for dependency in metadata[ 'repository_dependencies' ]:
                 tool_dependencies = self.__get_tool_dependencies( dependency, tool_dependencies )
         return tool_dependencies
+
+    def __flatten_repository_dependency_list( self, tool_shed_repository ):
+        '''
+        Return a recursive exclusive flattened list of all tool_shed_repository's dependencies.
+        '''
+        dependencies = []
+        for dependency in tool_shed_repository.repository_dependencies:
+            if len( dependency.repository_dependencies ) > 0:
+                sub_dependencies = self.__flatten_repository_dependency_list( dependency )
+                for sub_dependency in sub_dependencies:
+                    if sub_dependency not in dependencies:
+                        dependencies.append( sub_dependency )
+            if dependency not in dependencies:
+                dependencies.append( dependency.as_dict( value_mapper=self.__get_value_mapper( tool_shed_repository ) ) )
+        return dependencies
+
+    def __get_value_mapper( self, tool_shed_repository ):
+        value_mapper = { 'id': self.app.security.encode_id( tool_shed_repository.id ),
+                         'error_message': tool_shed_repository.error_message or '' }
+        return value_mapper
 
     def __get_tools( self, metadata, tools=None ):
         if tools is None:
@@ -75,6 +107,27 @@ class ToolShedController( BaseAPIController ):
             #                        qualified=True )
             sheds.append( dict( name=name, url=urlquote( url, '' ) ) )
         return sheds
+
+    @expose_api
+    @web.require_admin
+    def status( self, trans, **kwd ):
+        """
+        GET /api/tool_shed_repositories/{id}/status
+        Display a dictionary containing information about a specified repository's installation
+        status and a list of its dependencies and the status of each.
+
+        :param id: the repository's encoded id
+        """
+        repository_ids = kwd.get( 'repositories', None )
+        repositories = []
+        if repository_ids is not None:
+            for repository_id in repository_ids.split( '|' ):
+                tool_shed_repository_dict = self.__get_repo_dict_by_id( repository_id )
+                repositories.append( tool_shed_repository_dict )
+            return repositories
+        else:
+            return []
+        # return tool_shed_repository_dict
 
     @expose_api
     @web.require_admin

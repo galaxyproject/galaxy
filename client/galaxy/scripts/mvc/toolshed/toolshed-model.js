@@ -63,6 +63,16 @@ define([], function() {
         },
     });
 
+    var RepoStatusModel = Backbone.Model.extend({
+        defaults: [{}],
+        urlRoot: Galaxy.root + 'api/tool_shed/status',
+    });
+
+    var RepoStatusCollection = Backbone.Collection.extend({
+        url: Galaxy.root + 'api/tool_shed/status',
+        model: RepoStatusModel
+    });
+
     return {
         ShedModel: ToolShedModel,
         ShedsCollection: ToolShedsCollection,
@@ -72,7 +82,8 @@ define([], function() {
         CategoryCollection: ToolShedCategoryCollection,
         RepositoryModel: ToolShedRepositoryModel,
         RepositoryCollection: ToolShedRepositoryCollection,
-        RepoQueue: RepoQueueCollection
+        RepoQueue: RepoQueueCollection,
+        RepoStatus: RepoStatusCollection
     };
 
 });

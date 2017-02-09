@@ -39,8 +39,6 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                     minLength: 3,
                     select: function(event, ui) {
                         var tsr_id = ui.item.value;
-                        var api_url = Galaxy.root + 'api/tool_shed/repository';
-                        var params = {"tool_shed_url": that.model.tool_shed, "tsr_id": tsr_id};
                         var new_route = 'repository/s/' + that.model.tool_shed + '/r/' + tsr_id;
                         Backbone.history.navigate(new_route, {trigger: true, replace:true});
                     },
