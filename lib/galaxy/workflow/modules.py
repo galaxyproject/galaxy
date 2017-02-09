@@ -131,6 +131,9 @@ class WorkflowModule( object ):
     def get_data_outputs( self ):
         return []
 
+    def get_post_job_actions( self, incoming ):
+        return []
+
     def check_and_update_state( self ):
         """
         If the state is not in sync with the current implementation of the

@@ -38,6 +38,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                         var current_state = {
                             tool_id         : options.id,
                             tool_version    : options.version,
+                            type            : 'tool',
                             inputs          : $.extend( true, {}, form.data.create() )
                         }
                         Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Sending current state.', current_state );
