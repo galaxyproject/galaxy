@@ -361,32 +361,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         POST /api/workflows/build_module
         Builds module models for the workflow editor.
         """
-        type = payload.get( 'type' )
-        tool_id = payload.get( 'tool_id' )
-        tool_version = payload.get( 'tool_version' )
-        content_id = payload.get( 'content_id' )
         inputs = payload.get( 'inputs', {} )
-        annotation = inputs.get( '__annotation', '' )
-        label = inputs.get( '__label', '' )
-        module = module_factory.from_dict( trans, {
-            'type'              : type,
-            'label'             : label,
-            'tool_id'           : tool_id,
-            'content_id'        : content_id,
-            'tool_version'      : tool_version,
-            'tool_state'        : None
-        } )
+        module = module_factory.from_dict( trans, payload )
         module_state = {}
         populate_state( trans, module.get_inputs(), inputs, module_state, check=False )
         module.recover_state( module_state )
         return {
-            'label'             : module.label,
+            'label'             : inputs.get( '__label', '' ),
+            'annotation'        : inputs.get( '__annotation', '' ),
             'tool_state'        : module.get_state(),
             'data_inputs'       : module.get_data_inputs(),
             'data_outputs'      : module.get_data_outputs(),
             'config_form'       : module.get_config_form(),
-            'annotation'        : annotation,
-            'post_job_actions'  : module.get_post_job_actions(inputs)
+            'post_job_actions'  : module.get_post_job_actions( inputs )
         }
 
     #
