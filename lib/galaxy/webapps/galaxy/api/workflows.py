@@ -30,6 +30,7 @@ from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
+from galaxy.tools.parameters import populate_state
 
 log = logging.getLogger(__name__)
 
@@ -374,8 +375,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 'tool_id'           : tool.id,
                 'tool_state'        : None
             } )
-            tool_model = module.tool.to_json( trans, inputs, workflow_building_mode=True )
-            module.recover_state( tool_model[ 'state_inputs' ] )
+            state = {}
+            populate_state( trans, tool.inputs, inputs, state, check=False )
+            module.recover_state( state )
             return {
                 'tool_state'        : module.get_state(),
                 'data_inputs'       : module.get_data_inputs(),

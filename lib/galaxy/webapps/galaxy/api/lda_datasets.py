@@ -19,6 +19,7 @@ from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import folders, roles
 from galaxy.tools.actions import upload_common
+from galaxy.tools.parameters import populate_state
 from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -451,7 +452,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        tool.populate_state( trans, tool.inputs, kwd, state.inputs )
+        populate_state( trans, tool.inputs, kwd, state.inputs )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input in tool.inputs.itervalues():

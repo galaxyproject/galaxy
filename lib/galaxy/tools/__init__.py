@@ -46,6 +46,7 @@ from galaxy.tools.parameters import (
     params_from_strings,
     params_to_incoming,
     params_to_strings,
+    populate_state,
     visit_input_values
 )
 from galaxy.tools.parameters import output_collect
@@ -1238,7 +1239,7 @@ class Tool( object, Dictifiable ):
             else:
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
-                self.populate_state( request_context, self.inputs, expanded_incoming, params, errors )
+                populate_state( request_context, self.inputs, expanded_incoming, params, errors )
 
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook( 'validate_input' )
@@ -1834,7 +1835,7 @@ class Tool( object, Dictifiable ):
         # create tool state
         state_inputs = {}
         state_errors = {}
-        self.populate_state( request_context, self.inputs, params.__dict__, state_inputs, state_errors )
+        populate_state( request_context, self.inputs, params.__dict__, state_inputs, state_errors )
 
         # create tool model
         tool_model = self.to_dict( request_context )
@@ -1876,82 +1877,6 @@ class Tool( object, Dictifiable ):
             'enctype'       : self.enctype
         })
         return tool_model
-
-    # populates state from incoming parameters
-    def populate_state( self, request_context, inputs, incoming, state, errors={}, prefix='', context=None ):
-        context = ExpressionContext( state, context )
-        for input in inputs.values():
-            state[ input.name ] = input.get_initial_value( request_context, context )
-            key = prefix + input.name
-            group_state = state[ input.name ]
-            group_prefix = '%s|' % ( key )
-            if input.type == 'repeat':
-                rep_index = 0
-                del group_state[:]
-                while True:
-                    rep_prefix = '%s_%d' % ( key, rep_index )
-                    if not any( incoming_key.startswith( rep_prefix ) for incoming_key in incoming.keys() ) and rep_index >= input.min:
-                        break
-                    if rep_index < input.max:
-                        new_state = { '__index__' : rep_index }
-                        group_state.append( new_state )
-                        self.populate_state( request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context )
-                    rep_index += 1
-            elif input.type == 'conditional':
-                if input.value_ref and not input.value_ref_in_group:
-                    test_param_key = prefix + input.test_param.name
-                else:
-                    test_param_key = group_prefix + input.test_param.name
-                test_param_value = incoming.get( test_param_key, group_state.get( input.test_param.name ) )
-                value, error = check_param( request_context, input.test_param, test_param_value, context )
-                if error:
-                    errors[ test_param_key ] = error
-                else:
-                    try:
-                        current_case = input.get_current_case( value )
-                        group_state = state[ input.name ] = {}
-                        self.populate_state( request_context, input.cases[ current_case ].inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
-                        group_state[ '__current_case__' ] = current_case
-                    except Exception:
-                        errors[ test_param_key ] = 'The selected case is unavailable/invalid.'
-                        pass
-                group_state[ input.test_param.name ] = value
-            elif input.type == 'section':
-                self.populate_state( request_context, input.inputs, incoming, group_state, errors, prefix=group_prefix, context=context )
-            elif input.type == 'upload_dataset':
-                d_type = input.get_datatype( request_context, context=context )
-                writable_files = d_type.writable_files
-                while len( group_state ) > len( writable_files ):
-                    del group_state[ -1 ]
-                while len( writable_files ) > len( group_state ):
-                    new_state = { '__index__' : len( group_state ) }
-                    for upload_item in input.inputs.values():
-                        new_state[ upload_item.name ] = upload_item.get_initial_value( request_context, context )
-                    group_state.append( new_state )
-                for i, rep_state in enumerate( group_state ):
-                    rep_index = rep_state[ '__index__' ]
-                    rep_prefix = '%s_%d|' % ( key, rep_index )
-                    self.populate_state( request_context, input.inputs, incoming, rep_state, errors, prefix=rep_prefix, context=context )
-            else:
-                param_value = self._get_incoming_value( incoming, key, state.get( input.name ) )
-                value, error = check_param( request_context, input, param_value, context )
-                if error:
-                    errors[ key ] = error
-                state[ input.name ] = value
-
-    def _get_incoming_value( self, incoming, key, default ):
-        """
-        Fetch value from incoming dict directly or check special nginx upload
-        created variants of this key.
-        """
-        if '__' + key + '__is_composite' in incoming:
-            composite_keys = incoming[ '__' + key + '__keys' ].split()
-            value = dict()
-            for composite_key in composite_keys:
-                value[ composite_key ] = incoming[ key + '_' + composite_key ]
-            return value
-        else:
-            return incoming.get( key, default )
 
     def _get_job_remap( self, job):
         if job:
