@@ -236,17 +236,19 @@ class SubWorkflowModule( WorkflowModule ):
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
-        module = Class( trans )
+        module = super( SubWorkflowModule, Class ).from_dict( trans, d, **kwds )
+        module.subworkflow = None
         if "subworkflow" in d:
-            module.subworkflow = d["subworkflow"]
+            module.subworkflow = d[ "subworkflow" ]
         elif "content_id" in d:
-            content_id = d["content_id"]
-            module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
+            from galaxy.managers.workflows import WorkflowsManager
+            workflow_manager = WorkflowsManager( trans.app )
+            module.subworkflow = workflow_manager.get_owned_workflow( trans, d[ "content_id" ] )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
-        module = Class( trans )
+        module = super( SubWorkflowModule, Class ).from_workflow_step( trans, step, **kwds )
         module.subworkflow = step.subworkflow
         return module
 
@@ -255,7 +257,7 @@ class SubWorkflowModule( WorkflowModule ):
         step.subworkflow = self.subworkflow
 
     def get_name( self ):
-        if hasattr( self, 'subworkflow' ) and hasattr( self.subworkflow, 'name' ):
+        if hasattr( self.subworkflow, 'name' ):
             return self.subworkflow.name
         return self.name
 
@@ -267,43 +269,45 @@ class SubWorkflowModule( WorkflowModule ):
             "data_collection_input": "dataset_collection",
         }
         inputs = []
-        for step in self.subworkflow.input_steps:
-            name = step.label
-            if name is None:
-                step_module = module_factory.from_workflow_step( self.trans, step )
-                name = step_module.state.inputs.get( "name" )
-            if not name:
-                raise Exception( "Failed to find name for workflow module." )
-            step_type = step.type
-            assert step_type in step_to_input_type
-            input = dict(
-                input_subworkflow_step_id=step.order_index,
-                name=name,
-                label=name,
-                multiple=False,
-                extensions="input",
-                input_type=step_to_input_type[step_type],
-            )
-            inputs.append(input)
+        if hasattr( self.subworkflow, 'input_steps' ):
+            for step in self.subworkflow.input_steps:
+                name = step.label
+                if name is None:
+                    step_module = module_factory.from_workflow_step( self.trans, step )
+                    name = step_module.state.inputs.get( "name" )
+                if not name:
+                    raise Exception( "Failed to find name for workflow module." )
+                step_type = step.type
+                assert step_type in step_to_input_type
+                input = dict(
+                    input_subworkflow_step_id=step.order_index,
+                    name=name,
+                    label=name,
+                    multiple=False,
+                    extensions="input",
+                    input_type=step_to_input_type[step_type],
+                )
+                inputs.append(input)
         return inputs
 
     def get_data_outputs( self ):
         outputs = []
-        for workflow_output in self.subworkflow.workflow_outputs:
-            output_step = workflow_output.workflow_step
-            label = workflow_output.label
-            if label is None:
-                label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
-            output = dict(
-                name=label,
-                label=label,
-                extensions=['input'],  # TODO
-            )
-            outputs.append(output)
+        if hasattr( self.subworkflow, 'workflow_outputs' ):
+            for workflow_output in self.subworkflow.workflow_outputs:
+                output_step = workflow_output.workflow_step
+                label = workflow_output.label
+                if label is None:
+                    label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
+                output = dict(
+                    name=label,
+                    label=label,
+                    extensions=['input'],  # TODO
+                )
+                outputs.append(output)
         return outputs
 
     def get_content_id( self ):
-        return self.trans.security.encode_id(self.subworkflow.id)
+        return self.trans.security.encode_id( self.subworkflow.id )
 
     def execute( self, trans, progress, invocation, step ):
         """ Execute the given workflow step in the given workflow invocation.
@@ -319,7 +323,6 @@ class SubWorkflowModule( WorkflowModule ):
             workflow_output_label = workflow_output.label
             replacement = subworkflow_progress.get_replacement_workflow_output( workflow_output )
             outputs[ workflow_output_label ] = replacement
-
         progress.set_step_outputs( step, outputs )
         return None
 
@@ -327,13 +330,6 @@ class SubWorkflowModule( WorkflowModule ):
         state = DefaultToolState()
         state.inputs = dict( )
         return state
-
-    @classmethod
-    def subworkflow_from_content_id(clazz, trans, content_id):
-        from galaxy.managers.workflows import WorkflowsManager
-        workflow_manager = WorkflowsManager(trans.app)
-        subworkflow = workflow_manager.get_owned_workflow( trans, content_id )
-        return subworkflow
 
 
 class InputModule( WorkflowModule ):
