@@ -81,6 +81,9 @@ class WorkflowModule( object ):
     def get_name( self ):
         return self.name
 
+    def get_version( self ):
+        return None
+
     def get_content_id( self ):
         """ If this component has an identifier external to the step (such
         as a tool or another workflow) return the identifier for that content.
@@ -572,8 +575,8 @@ class ToolModule( WorkflowModule ):
             message = ""
             if tool_id != module.tool_id:
                 message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
-            if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_tool_version(), d.get( 'tool_version', 'Unspecified' ) )
+            if d.get('tool_version', 'Unspecified') != module.get_version():
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_version(), d.get( 'tool_version', 'Unspecified' ) )
             if message:
                 log.debug( message )
                 module.version_changes.append( message )
@@ -613,7 +616,7 @@ class ToolModule( WorkflowModule ):
     def save_to_step( self, step ):
         super( ToolModule, self ).save_to_step( step )
         step.tool_id = self.tool_id
-        step.tool_version = self.get_tool_version()
+        step.tool_version = self.get_version()
         for k, v in self.post_job_actions.iteritems():
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )
@@ -621,12 +624,12 @@ class ToolModule( WorkflowModule ):
     # ---- General attributes ------------------------------------------------
 
     def get_name( self ):
-        return "%s (Galaxy Version %s)" % ( self.tool.name if self.tool else self.tool_id, self.tool_version or "Unavailable" )
+        return self.tool.name if self.tool else self.tool_id
 
     def get_content_id( self ):
         return self.tool_id
 
-    def get_tool_version( self ):
+    def get_version( self ):
         return self.tool.version if self.tool else self.tool_version
 
     def get_tooltip( self, static_path='' ):

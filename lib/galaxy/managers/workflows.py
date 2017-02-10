@@ -389,6 +389,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model[ 'step_type' ] = step.type
             step_model[ 'step_label' ] = step.label
             step_model[ 'step_name' ] = step.module.get_name()
+            step_model[ 'step_version' ] = step.module.get_version()
             step_model[ 'step_index' ] = step.order_index
             step_model[ 'output_connections' ] = [ {
                 'input_step_index'  : step_order_indices.get( oc.input_step_id ),

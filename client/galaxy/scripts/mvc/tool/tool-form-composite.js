@@ -39,12 +39,18 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
             _.each( this.model.get( 'steps' ), function( step, i ) {
                 Galaxy.emit.debug( 'tool-form-composite::initialize()', i + ' : Preparing workflow step.' );
                 var icon = WorkflowIcons[ step.step_type ];
+                var title = parseInt( i + 1 ) + ': ' + ( step.step_label || step.step_name );
+                if ( step.annotation ) {
+                    title += ' - ' + step.annotation;
+                }
+                if ( step.step_version ) {
+                    title += ' (Galaxy Version ' + step.step_version + ')';
+                }
                 step = Utils.merge( {
                     index                   : i,
-                    title                   : '<b>' + parseInt( i + 1 ) + ': ' + ( step.step_label || step.step_name ) + '</b>',
+                    title                   : title,
                     icon                    : icon || '',
                     help                    : null,
-                    description             : step.annotation && ' - ' + step.annotation || step.description,
                     citations               : null,
                     collapsible             : true,
                     collapsed               : i > 0 && !self._isDataStep( step ),
