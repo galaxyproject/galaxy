@@ -242,14 +242,12 @@ class SubWorkflowModule( WorkflowModule ):
         elif "content_id" in d:
             content_id = d["content_id"]
             module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
-        module.label = d.get( "label", None ) or None
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
         module = Class( trans )
         module.subworkflow = step.subworkflow
-        module.label = step.label
         return module
 
     def save_to_step( self, step ):
