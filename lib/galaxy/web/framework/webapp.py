@@ -362,7 +362,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         """
         Authenticate for the API via key or session (if available).
         """
-        api_key = self.request.params.get('key', None)
+        api_key = self.request.params.get('key', None) or self.request.headers.get( 'x-api-key', None )
         secure_id = self.get_cookie( name=session_cookie )
         api_key_supplied = self.environ.get('is_api_request', False) and api_key
         if api_key_supplied and self._check_master_api_key( api_key ):
