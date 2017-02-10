@@ -708,9 +708,9 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            step_name = step.name
-            if step_name:
-                label = step_name
+            step_label = step.label
+            if step_label:
+                label = step_label
             elif step_type == "data_input":
                 label = "Input Dataset"
             elif step_type == "data_collection_input":
