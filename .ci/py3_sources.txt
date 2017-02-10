@@ -13,7 +13,9 @@ lib/galaxy/datatypes/constructive_solid_geometry.py
 lib/galaxy/datatypes/converters/
 lib/galaxy/datatypes/dataproviders/
 lib/galaxy/datatypes/data.py
+lib/galaxy/datatypes/genetics.py
 lib/galaxy/datatypes/images.py
+lib/galaxy/datatypes/interval.py
 lib/galaxy/datatypes/msa.py
 lib/galaxy/datatypes/ngsindex.py
 lib/galaxy/datatypes/proteomics.py
