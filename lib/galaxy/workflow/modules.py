@@ -230,7 +230,6 @@ class SubWorkflowModule( WorkflowModule ):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
-    default_name = "Subworkflow"
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
@@ -381,11 +380,6 @@ class InputModule( WorkflowModule ):
 class InputDataModule( InputModule ):
     type = "data_input"
     name = "Input dataset"
-    default_name = "Input Dataset"
-
-    def get_inputs( self ):
-        name = self.state.inputs.get( 'name', self.default_name )
-        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) )
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
@@ -402,21 +396,17 @@ class InputDataModule( InputModule ):
         return ', '.join( filter_set )
 
     def get_runtime_inputs( self, connections=None ):
-        label = self.state.inputs.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=self.label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
 
 
 class InputDataCollectionModule( InputModule ):
-    default_name = "Input Dataset Collection"
-    default_collection_type = "list"
     type = "data_collection_input"
     name = "Input dataset collection"
+    default_collection_type = "list"
     collection_type = default_collection_type
 
     def get_inputs( self ):
-        name = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) )
         input_collection_type = TextToolParameter( None, XML(
             '''
             <param name="collection_type" label="Collection type" type="text" value="%s">
@@ -425,12 +415,11 @@ class InputDataCollectionModule( InputModule ):
                 <option value="list:paired">List of Dataset Pairs</option>
             </param>
             ''' % collection_type ) )
-        return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )
+        return odict( [ ( "collection_type", input_collection_type ) ] )
 
     def get_runtime_inputs( self, **kwds ):
-        label = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
+        input_element = Element( "param", name="input", label=self.label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
     def get_data_outputs( self ):
@@ -445,17 +434,15 @@ class InputDataCollectionModule( InputModule ):
 
 
 class InputParameterModule( WorkflowModule ):
-    default_name = "input_parameter"
+    type = "parameter_input"
+    name = "Input parameter"
     default_parameter_type = "text"
     default_optional = False
-    type = "parameter_input"
-    name = default_name
     parameter_type = default_parameter_type
     optional = default_optional
 
     def get_inputs( self ):
         # TODO: Use an external xml or yaml file to load the parameter definition
-        name = self.state.inputs.get( "name", self.default_name )
         parameter_type = self.state.inputs.get( "parameter_type", self.default_parameter_type )
         optional = self.state.inputs.get( "optional", self.default_optional )
         input_parameter_type = SelectToolParameter( None, XML(
@@ -468,12 +455,10 @@ class InputParameterModule( WorkflowModule ):
                 <option value="color">Color</option>
             </param>
             ''' % parameter_type ) )
-        return odict([( "name", TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) ),
-                      ( "parameter_type", input_parameter_type ),
+        return odict([( "parameter_type", input_parameter_type ),
                       ( "optional", BooleanToolParameter( None, Element( "param", name="optional", label="Optional", type="boolean", value=optional )))])
 
     def get_runtime_inputs( self, **kwds ):
-        label = self.state.inputs.get( "name", self.default_name )
         parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
         optional = self.state.inputs.get("optional", self.default_optional)
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
@@ -484,7 +469,7 @@ class InputParameterModule( WorkflowModule ):
             parameter_kwds["value"] = str(0)
 
         # TODO: Use a dict-based description from YAML tool source
-        element = Element("param", name="input", label=label, type=parameter_type, optional=str(optional), **parameter_kwds )
+        element = Element("param", name="input", label=self.label, type=parameter_type, optional=str(optional), **parameter_kwds )
         input = parameter_class( None, element )
         return dict( input=input )
 
@@ -508,11 +493,6 @@ class PauseModule( WorkflowModule ):
     """
     type = "pause"
     name = "Pause for dataset review"
-    default_name = "Pause for Dataset Review"
-
-    def get_inputs( self ):
-        name = self.state.inputs.get( "name", self.default_name )
-        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=name ) ) )
 
     def get_data_inputs( self ):
         input = dict(
@@ -562,6 +542,7 @@ class PauseModule( WorkflowModule ):
 class ToolModule( WorkflowModule ):
 
     type = "tool"
+    name = "Tool"
 
     def __init__( self, trans, tool_id, tool_version=None, exact_tools=False, **kwds ):
         super( ToolModule, self ).__init__( trans, content_id=tool_id, **kwds )
