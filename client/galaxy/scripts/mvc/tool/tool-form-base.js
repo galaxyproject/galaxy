@@ -40,7 +40,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             var self = this;
             this.model.set( options );
             this.model.set({
-                title       : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
+                title       : options.title || '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
                 operations  : !this.model.get( 'hide_operations' ) && this._operations(),
                 onchange    : function() {
                     self.deferred.reset();

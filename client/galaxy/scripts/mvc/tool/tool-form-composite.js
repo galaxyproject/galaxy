@@ -41,7 +41,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 var icon = WorkflowIcons[ step.step_type ];
                 step = Utils.merge( {
                     index                   : i,
-                    name                    : step.name,
+                    title                   : '<b>' + parseInt( i + 1 ) + ': ' + ( step.step_label || step.step_name ) + '</b>',
                     icon                    : icon || '',
                     help                    : null,
                     description             : step.annotation && ' - ' + step.annotation || step.description,
@@ -300,7 +300,6 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     var is_simple_input = ([ 'data_input', 'data_collection_input' ]).indexOf( step.step_type ) != -1;
                     _.each( step.inputs, function( input ) { input.flavor = 'module'; input.hide_label = is_simple_input; } );
                     form = new Form( Utils.merge({
-                        title    : '<b>' + step.name + '</b>',
                         onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
                         inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );

@@ -621,7 +621,7 @@ class ToolModule( WorkflowModule ):
     # ---- General attributes ------------------------------------------------
 
     def get_name( self ):
-        return self.tool.name if self.tool else self.tool_id
+        return "%s (Galaxy Version %s)" % ( self.tool.name if self.tool else self.tool_id, self.tool_version or "Unavailable" )
 
     def get_content_id( self ):
         return self.tool_id
