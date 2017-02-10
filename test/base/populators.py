@@ -17,7 +17,7 @@ workflow_str = resource_string( __name__, "data/test_workflow_1.ga" )
 workflow_random_x2_str = resource_string( __name__, "data/test_workflow_2.ga" )
 
 
-DEFAULT_TIMEOUT = 15  # Secs to wait for state to turn ok
+DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
 
 
 def skip_without_tool( tool_id ):

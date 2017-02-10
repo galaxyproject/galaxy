@@ -33,7 +33,7 @@ from base.workflows_format_2 import (
 
 from galaxy.util import asbool
 
-DEFAULT_WAIT_TIMEOUT = 15
+DEFAULT_WAIT_TIMEOUT = 60
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
 DEFAULT_SELENIUM_BROWSER = "auto"
 DEFAULT_SELENIUM_REMOTE = False
