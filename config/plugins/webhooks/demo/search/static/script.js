@@ -3,7 +3,7 @@ $(document).ready(function() {
     var ToolForm = window.toolform;
     /** Display search overlay and search */
     var OverlaySearchView = Backbone.View.extend({
-         
+
         parentElement: $('.full-content'),
 
         initialize: function () {
@@ -37,10 +37,10 @@ $(document).ready(function() {
             });
 
             // Register events for search textbox
-            $el_search_text.on( 'keyup', function( e ) { 
+            $el_search_text.on( 'keyup', function( e ) {
                 self.triggerEvents( e, self );
             });
-          
+
             // Register events for fliter clicks
             for( item in filter_classes ) {
                 self.clickEvents( filter_classes[ item ], item, self );
@@ -76,7 +76,7 @@ $(document).ready(function() {
             defaultLinks.buildMostUsedTools( class_search_results );
         },
 
-        /** Trigger events on search overlay */ 
+        /** Trigger events on search overlay */
         triggerEvents: function( e, self ) {
             var $el_search_textbox = $( '.txtbx-search-data' ),
                 query = "";
@@ -122,7 +122,7 @@ $(document).ready(function() {
                 }
             });
         },
-   
+
         /** Search with a filter */
         search: function( type, _this, self ) {
             var class_active = 'filter-active',
@@ -191,7 +191,7 @@ $(document).ready(function() {
             }
         },
 
-        /** Search in tools */ 
+        /** Search in tools */
         searchTools: function( query ) {
 	    var url = Galaxy.root + 'api/tools';
 	    $.get( url, { q: query }, function ( search_result ) {
@@ -261,12 +261,22 @@ $(document).ready(function() {
 	    $( '.search-screen' ).show();
             $el_search_textbox.val( "" );
             $el_search_textbox.focus();
+
+            // Add blur effect
+            $('#left').css('filter', 'blur(5px)');
+            $('#center').css('filter', 'blur(5px)');
+            $('#right').css('filter', 'blur(5px)');
         },
 
-        /** Remove the search overlay */ 
+        /** Remove the search overlay */
         removeOverlay: function() {
             $( '.search-screen-overlay' ).hide();
             $( '.search-screen' ).hide();
+
+            // Remove blur effect
+            $('#left').css('filter', 'none');
+            $('#center').css('filter', 'none');
+            $('#right').css('filter', 'none');
         },
 
         /** Clear search results */
@@ -304,26 +314,26 @@ $(document).ready(function() {
         /** Template for search overlay */
         _template: function() {
             return '<div class="overlay-wrapper">' +
-	           '<div id="search_screen_overlay" class="search-screen-overlay"></div>' +
-	           '<div id="search_screen" class="search-screen">' +
-	               '<input class="txtbx-search-data form-control" type="text" value="" ' +
-                           'placeholder="Give at least 3 letters to search" />' + 
-                       '<div class="overlay-filters">' +
-                           '<ul>' +
-                               '<li><a class="all-filter" title="All"><i class="fa fa-home"></i></a></li>' +
-                               '<li><a class="history-filter" title="History"><i class="fa fa-history"></i></a></li>' +
-                               '<li><a class="tool-filter" title="Tools"><i class="fa fa-wrench"></i></a></li>' +
-                               '<li><a class="workflow-filter" title="Workflow"><i class="fa fa-code-fork rotate"></i></a></li>' +
-                               '<li><a class="datalibrary-filter" title="Data Library"><i class="fa fa-folder-open"></i></a></li>' +
-                               '<li><a class="removeditems-filter" title="Excluded from search"><i class="fa fa-trash"></i></a></li>' +
-                           '</ul>' +
-                       '</div>' +
-                       '<div class="removed-items"></div>' +
-                       '<div class="search-results"></div>' +
-	       '</div>' +
+                '<div id="search_screen_overlay" class="search-screen-overlay"></div>' +
+	            '<div id="search_screen" class="search-screen">' +
+                    '<div class="search-header">' +
+    	                '<input class="txtbx-search-data form-control" type="text" value="" placeholder="Enter at least 3 letters to search" />' +
+                        '<div class="overlay-filters">' +
+                            '<ul>' +
+                                '<li><a class="all-filter" title="All"><i class="fa fa-home"></i></a></li>' +
+                                '<li><a class="history-filter" title="History"><i class="fa fa-history"></i></a></li>' +
+                                '<li><a class="tool-filter" title="Tools"><i class="fa fa-wrench"></i></a></li>' +
+                                '<li><a class="workflow-filter" title="Workflow"><i class="fa fa-code-fork rotate"></i></a></li>' +
+                                '<li><a class="datalibrary-filter" title="Data Library"><i class="fa fa-folder-open"></i></a></li>' +
+                                '<li><a class="removeditems-filter" title="Excluded from search"><i class="fa fa-trash"></i></a></li>' +
+                            '</ul>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="removed-items"></div>' +
+                    '<div class="search-results"></div>' +
+	            '</div>' +
            '</div>';
         },
-
     });
 
     /** Display search items from Tools, History, Workflow and Data libraries */
@@ -336,7 +346,7 @@ $(document).ready(function() {
                 data = {};
             // Set the data based on type of the result
 	    switch( type ) {
-		case "tools": 
+		case "tools":
 		    data.tools = item[ type ];
 		    break;
 		case "history":
@@ -348,7 +358,7 @@ $(document).ready(function() {
                 case "workflow":
                     data.workflow = item[ type ];
 	    }
-            
+
             // Refresh the view as soon as more data arrive
             if( Object.keys( data ).length > 0 ) {
                 this.refreshView( data );
@@ -457,7 +467,7 @@ $(document).ready(function() {
 
         /** Create collection of templates of all sections and links for tools */
         makeToolSection: function( search_result ) {
-	    var template_dict = [], 
+	    var template_dict = [],
 	        tool_template = "",
 	        self = this,
 	        $el_search_result = $( '.search-results' ),
@@ -517,7 +527,7 @@ $(document).ready(function() {
 	    // Remove the tool search result section if already present
 	    $el_search_result.find( '.search-tools' ).remove();
 	    // Make template for sections and tools
-	    self.makeToolSearchResultTemplate( template_dict, tool_template );        
+	    self.makeToolSearchResultTemplate( template_dict, tool_template );
         },
 
         /** Append the template or creates a new section */
@@ -603,7 +613,7 @@ $(document).ready(function() {
             self.removeFromDataStorage( self, $( _self ).parent(), type );
             $( _self ).parent().remove();
         },
- 
+
         /** Register remove and pin action clicks */
         registerLinkActionClickEvent: function( self, $el, $el_parent_section ) {
             // Register click of trash icon in search results
@@ -656,7 +666,7 @@ $(document).ready(function() {
             self.setStorageObject( self, window.Galaxy.user.id, 'pinned_results', $( elem ).attr( 'data-id' ), elem );
         },
 
-        /** Build removed links */ 
+        /** Build removed links */
         showRemovedLinks: function() {
 	    var self = this,
                 $el_removed_result = $( '.removed-items' ),
@@ -769,7 +779,7 @@ $(document).ready(function() {
             }
         },
 
-        /** Build the fetched items template using the template dictionary */ 
+        /** Build the fetched items template using the template dictionary */
         makeToolSearchResultTemplate: function( collection, tool_template ) {
 	    var header_template = "",
 	        self = this,
@@ -816,7 +826,7 @@ $(document).ready(function() {
         searchedToolLink: function( _self, e ) {
 	    var id = "",
 	        form_style = "",
-	        version = "", 
+	        version = "",
 	        $target_element = null;
 	    if( e ) {
 	        _self.removeOverlay();
@@ -1037,7 +1047,7 @@ $(document).ready(function() {
 
         /** Build section header template */
         _buildHeaderTemplate: function( id, name, cls ) {
-	    return "<div class='" + cls + "' data-id='searched_" + id + "' >" + name + "</div>";
+	    return "<div class='" + cls + "' data-id='searched_" + id + "' ><div class='section-title'>" + name + "</div></div>";
         },
 
         /** Template for no results for any query */
@@ -1050,10 +1060,15 @@ $(document).ready(function() {
             return '<div class="no-results"> No items </div>';
         },
 
-        /** Remove the search overlay */ 
+        /** Remove the search overlay */
         removeOverlay: function() {
-	    $( '.search-screen-overlay' ).hide();
-	    $( '.search-screen' ).hide();
+            $( '.search-screen-overlay' ).hide();
+	        $( '.search-screen' ).hide();
+
+            // Remove blur effect
+            $('#left').css('filter', 'none');
+            $('#center').css('filter', 'none');
+            $('#right').css('filter', 'none');
         }
     });
     searchOverlay = new OverlaySearchView();

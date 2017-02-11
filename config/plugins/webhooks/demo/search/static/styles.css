@@ -1,29 +1,31 @@
 .overlay-wrapper {
-    margin-top: -5%; 
+    margin-top: -5%;
 }
 
-.search-screen { 
-    position: fixed; 
+.search-screen {
+    position: fixed;
     z-index: 202;
-    width:100%; 
+    width:100%;
     height:100%;
     display:none;
 }
 
-.search-screen-overlay { 
-    position: fixed; 
-    top:0; 
-    left:0; 
-    background:rgba(0,0,0,0.9); 
-    z-index: 201; 
-    width:100%; 
-    height:100%; 
+.search-screen-overlay {
+    position: fixed;
+    top:0;
+    left:0;
+    /*background: rgba(44, 49, 67, 0.85);  // dark-blue */
+    background: rgba(224, 224, 224, 0.75);  /*light-gray*/
+    z-index: 201;
+    width:100%;
+    height:100%;
     display:none;
     opacity: 2;
 }
 
 .overlay-filters {
-    margin: 1% 0% 1% 41%;
+    display: table;
+    margin: 0 auto 5px;
 }
 
 .overlay-filters ul {
@@ -40,62 +42,108 @@
 .overlay-filters li a {
     display: block;
     text-decoration: none;
-    color: white;
+    /*color: white;*/
     cursor: pointer;
     font-weight: bold;
     padding: 5px 5px;
 }
 
 .overlay-filters li a:hover i {
-    color: gold;
+    /*color: gold;*/
+    color: #212121;
 }
 
 .overlay-filters li a i {
     font-size: 1.5em;
 }
 
+.search-header {
+    /* Dark-blue */
+    /*background-color: #343a4f;*/
+    /*background: -moz-linear-gradient(top, rgba(52, 58, 79, 1) 0%, rgba(60, 67, 91, 1) 37%, rgba(52, 58, 79, 1) 100%);*/
+    /*background: linear-gradient(to bottom, rgba(52, 58, 79, 1) 0%, rgba(60, 67, 91, 1) 37%, rgba(52, 58, 79, 1) 100%);*/
+    /*-moz-box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.75);*/
+    /*box-shadow: 0px 2px 5px 0px rgba(0,0,0,0.75);*/
+
+    /* Light-gray */
+    background-color: #e1e1e1;
+    background: -moz-linear-gradient(top, rgba(225, 225, 225, 1) 0%, rgba(238, 238, 238, 1) 37%, rgba(225, 225, 225, 1) 100%);
+    background: linear-gradient(to bottom, rgba(225, 225, 225, 1) 0%, rgba(238, 238, 238, 1) 37%, rgba(225, 225, 225, 1) 100%);
+    -moz-box-shadow: 0px 2px 5px 0px rgba(158, 158, 158, 0.75);
+    box-shadow: 0px 2px 5px 0px rgba(158, 158, 158, 0.75);
+    
+    position: fixed;
+    top: 34px;
+    width: 100%;
+    z-index: 203;
+}
+
 .txtbx-search-data {
-    margin-left: 35%;
-    margin-top: 10%;
-    height: 30px;
-    width: 25%;
-    padding:2px;
-    font-size: 0.875em;
+    font-size: 12px;
+    text-align: center;
+    border-radius: 14px;
+    border: 1px solid #2c3143;
+    margin: 20px auto 10px;
+    width: 300px;
+    padding: 11px;
 }
 
 .search-section {
     color: white;
-    margin-top: 1%;
+    margin-top: 20px;
     font-weight: bold;
 }
 
-.link-tile {
-    border-radius: 0px;
-    background-color: #3B5998;
-    font-size: 1.05em;
-    border-style: none;
-    width: 17.5%;
-    height: 75px;
-    margin: 0.5% 0.2% 0 0.2%;
+.search-section .section-title {
+    margin-left: 5px;
+    text-shadow: 2px 2px 5px rgba(150, 150, 150, 1);
 }
 
-.search-section .btn:hover,
-.removed-items .btn:hover {
-    background-color: #2b406e;
+.link-tile {
+    /* Dark-blue */
+    /*background-color: #626e96;*/
+    /*border: 1px solid #353c50;*/
+
+    /* Light-blue*/
+    background-color: #b4c2f1;
+    border: 1px solid #899fe9;
+
+    border-radius: 5px;
+    font-size: 12px;
+    width: 19%;
+    height: 75px;
+    margin: 0.5%;
+    padding: 5px;
+}
+
+.link-tile.btn-primary:hover,
+.link-tile.btn-primary:hover {
+    /*background-color: #4e5777;  // dark-blue*/
+    background-color: #899fe9;
+    border-color: #899fe9;
+}
+
+.link-tile.btn-primary:active,
+.link-tile.btn-primary:focus {
+    /*background-color: #4e5777;  // dark-blue*/
+    background-color: #899fe9;
+    border-color: #899fe9;
 }
 
 .search-results,
 .removed-items {
-    margin: -1% 2% 2% 2%;
+    position: fixed;
+    top: 125px;
     overflow-x: hidden;
     overflow-y: auto;
-    height: 75%;
-    width: 96%;
+    padding: 0 15px;
+    width: 100%;
+    height: 83%;
     display: none;
 }
 
 .item-actions {
-    margin: 1%;
+    padding: 5px;
 }
 
 .item-actions:hover {
@@ -112,21 +160,18 @@
     float: right;
 }
 
-.filter-active {
-    color: gold;
-}
-
 .filter-active i {
-    color: gold;
+    /*color: gold;*/
+    color: #616161;
 }
 
-.filter-inactive {
-    color: white;
+.filter-active i:hover {
+    color: #212121;
 }
 
 .filter-inactive i {
     font-size: 0.875em;
-    color: white;
+    color: #9e9e9e;
 }
 
 .rotate {
