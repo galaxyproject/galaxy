@@ -130,25 +130,25 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
-                title   : (!options.narrow && 'Versions') || null,
+                title   : ( !options.narrow && 'Versions' ) || null,
                 tooltip : 'Select another tool version'
             });
-            if (!options.sustain_version && options.versions && options.versions.length > 1) {
-                for (var i in options.versions) {
-                    var version = options.versions[i];
-                    if (version != options.version) {
+            if ( !options.sustain_version && options.versions && options.versions.length > 1 ) {
+                for ( var i in options.versions ) {
+                    var version = options.versions[ i ];
+                    if ( version != options.version ) {
                         versions_button.addMenu({
                             title   : 'Switch to ' + version,
                             version : version,
                             icon    : 'fa-cube',
                             onclick : function() {
                                 // here we update the tool version (some tools encode the version also in the id)
-                                var id = options.id.replace(options.version, this.version);
+                                var id = options.id.replace( options.version, this.version );
                                 var version = this.version;
                                 // queue model request
                                 self.deferred.reset();
-                                self.deferred.execute(function(process) {
-                                    self._buildModel(process, {id: id, version: version})
+                                self.deferred.execute( function( process ) {
+                                    self._buildModel( process, { id : id, version : version } )
                                 });
                             }
                         });
@@ -161,16 +161,16 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             // button for options e.g. search, help
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-caret-down',
-                title   : (!options.narrow && 'Options') || null,
+                title   : ( !options.narrow && 'Options' ) || null,
                 tooltip : 'View available options'
             });
-            if(options.biostar_url) {
+            if ( options.biostar_url ) {
                 menu_button.addMenu({
                     icon    : 'fa-question-circle',
                     title   : 'Question?',
                     tooltip : 'Ask a question about this tool (Biostar)',
                     onclick : function() {
-                        window.open(options.biostar_url + '/p/new/post/');
+                        window.open( options.biostar_url + '/p/new/post/' );
                     }
                 });
                 menu_button.addMenu({
@@ -178,7 +178,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     title   : 'Search',
                     tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
-                        window.open(options.biostar_url + '/local/search/page/?q=' + options.name);
+                        window.open( options.biostar_url + '/local/search/page/?q=' + options.name );
                     }
                 });
             };
@@ -187,12 +187,12 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 title   : 'Share',
                 tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id);
+                    prompt( 'Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id );
                 }
             });
 
             // add admin operations
-            if (Galaxy.user && Galaxy.user.get('is_admin')) {
+            if ( Galaxy.user && Galaxy.user.get( 'is_admin' ) ) {
                 menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
@@ -204,26 +204,26 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
 
             // add admin operations for tool XML reloading
-            if (Galaxy.user && Galaxy.user.get('is_admin')) {
+            if ( Galaxy.user && Galaxy.user.get( 'is_admin' ) ) {
                 menu_button.addMenu({
                     icon    : 'fa-refresh',
                     title   : 'Reload Tool XML',
                     tooltip : 'Reload tool XML file',
                     onclick : function() {
                         $.ajax({
-                            url: Galaxy.root + 'api/tools/' + options.id + '/reload',
-                            type: "GET",
-                        }).done(function(data){
+                            url  : Galaxy.root + 'api/tools/' + options.id + '/reload',
+                            type : "GET",
+                        }).done( function( data ){
                             Galaxy.modal.show({
                                 title   : data.done ? 'Tool XML Reload' : 'Tool XML Reload Error',
                                 body    : data.done ? data.done : data.error,
                                 buttons : { 'Close' : function() { Galaxy.modal.hide() } }
                             });
-                            window.setTimeout(function(){Galaxy.modal.hide();}, 2000);
-                        }).fail(function(error){
+                            window.setTimeout( function() { Galaxy.modal.hide() }, 2000 );
+                        }).fail( function( error ) {
                             Galaxy.modal.show({
-                                title: "Tool XML Reload AJAX Error",
-                                body: options.id + " " + error,
+                                title   : "Tool XML Reload AJAX Error",
+                                body    : options.id + " " + error,
                                 buttons : { 'Close' : function() { Galaxy.modal.hide() } }
                             });
                         });
@@ -232,7 +232,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
 
             // button for version selection
-            if (options.requirements && options.requirements.length > 0) {
+            if ( options.requirements && options.requirements.length > 0 ) {
                 menu_button.addMenu({
                     icon    : 'fa-info-circle',
                     title   : 'Requirements',
@@ -251,13 +251,13 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
 
             // add toolshed url
-            if (options.sharable_url) {
+            if ( options.sharable_url ) {
                 menu_button.addMenu({
                     icon    : 'fa-external-link',
                     title   : 'See in Tool Shed',
                     tooltip : 'Access the repository',
                     onclick : function() {
-                        window.open(options.sharable_url);
+                        window.open( options.sharable_url );
                     }
                 });
             }
