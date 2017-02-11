@@ -117,7 +117,7 @@ class WorkflowModule( object ):
         if inputs:
             self.state.decode( state, Bunch( inputs=inputs ), self.trans.app )
         else:
-            self.state.inputs = safe_loads( state )
+            self.state.inputs = safe_loads( state ) or {}
 
     def get_errors( self ):
         """ This returns a step related error message as string or None """
@@ -234,23 +234,24 @@ class SubWorkflowModule( WorkflowModule ):
     type = "subworkflow"
     name = "Subworkflow"
 
+    def __init__( self, trans, subworkflow=None, **kwds ):
+        super( SubWorkflowModule, self ).__init__( trans, **kwds )
+        self.subworkflow = subworkflow
+
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
-        module = super( SubWorkflowModule, Class ).from_dict( trans, d, **kwds )
-        module.subworkflow = None
         if "subworkflow" in d:
-            module.subworkflow = d[ "subworkflow" ]
+            subworkflow = d[ "subworkflow" ]
         elif "content_id" in d:
             from galaxy.managers.workflows import WorkflowsManager
             workflow_manager = WorkflowsManager( trans.app )
-            module.subworkflow = workflow_manager.get_owned_workflow( trans, d[ "content_id" ] )
+            subworkflow = workflow_manager.get_owned_workflow( trans, d[ "content_id" ] )
+        module = super( SubWorkflowModule, Class ).from_dict( trans, d, subworkflow=subworkflow, **kwds )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
-        module = super( SubWorkflowModule, Class ).from_workflow_step( trans, step, **kwds )
-        module.subworkflow = step.subworkflow
-        return module
+        return super( SubWorkflowModule, Class ).from_workflow_step( trans, step, subworkflow=step.subworkflow, **kwds )
 
     def save_to_step( self, step ):
         step.type = self.type

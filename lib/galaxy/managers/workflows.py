@@ -449,6 +449,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
+                'label': module.label,
                 'content_id': module.get_content_id(),
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
@@ -460,7 +461,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 'annotation': annotation_str,
                 'post_job_actions': {},
                 'uuid': str(step.uuid) if step.uuid else None,
-                'label': step.label or None,
                 'workflow_outputs': []
             }
             # Connections
