@@ -215,6 +215,7 @@ def update_param( prefixed_name, input_values, new_value ):
             elif prefixed_name == key:
                 input_values[ key ] = new_value
 
+
 def populate_state( request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True ):
     """
     Populates nested state dict from incoming parameter values.
@@ -243,7 +244,7 @@ def populate_state( request_context, inputs, incoming, state, errors={}, prefix=
             else:
                 test_param_key = group_prefix + input.test_param.name
             test_param_value = incoming.get( test_param_key, group_state.get( input.test_param.name ) )
-            value, error = check_param( request_context, input.test_param, test_param_value, context )  if check else [ test_param_value, None ]
+            value, error = check_param( request_context, input.test_param, test_param_value, context ) if check else [ test_param_value, None ]
             if error:
                 errors[ test_param_key ] = error
             else:
@@ -278,6 +279,7 @@ def populate_state( request_context, inputs, incoming, state, errors={}, prefix=
             if error:
                 errors[ key ] = error
             state[ input.name ] = value
+
 
 def _get_incoming_value( incoming, key, default ):
     """
