@@ -208,7 +208,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                         Utils.get({
                             url     : Galaxy.root + 'api/tools/' + options.id + '/reload',
                             success : function( response ) {
-                                self.message.update( { persistent : false, message : 'Tool successfully reloaded.', status : 'success' } );
+                                self.message.update( { persistent : false, message : 'Tool XML has been reloaded.', status : 'success' } );
                             },
                             error   : function( response ) {
                                 self.message.update( { persistent : false, message : response.err_msg, status : 'danger' } );
