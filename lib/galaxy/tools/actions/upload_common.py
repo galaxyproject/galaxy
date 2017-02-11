@@ -341,6 +341,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
                          purge_source=purge_source,
                          space_to_tab=uploaded_dataset.space_to_tab,
+                         uni_to_posix=uploaded_dataset.uni_to_posix,
                          in_place=trans.app.config.external_chown_script is None,
                          path=uploaded_dataset.path )
             # TODO: This will have to change when we start bundling inputs.
