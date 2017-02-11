@@ -106,7 +106,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         """
         galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': id } )
         message, status = trans.app.toolbox.reload_tool_by_id( id )
-        return { status: message }
+        return { status: status, message: message }
 
     @expose_api
     @web.require_admin
