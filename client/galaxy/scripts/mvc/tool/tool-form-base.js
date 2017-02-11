@@ -168,7 +168,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 menu_button.addMenu({
                     icon    : 'fa-question-circle',
                     title   : 'Question?',
-                    tooltip : 'Ask a question about this tool (Biostar)',
                     onclick : function() {
                         window.open( options.biostar_url + '/p/new/post/' );
                     }
@@ -176,7 +175,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 menu_button.addMenu({
                     icon    : 'fa-search',
                     title   : 'Search',
-                    tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
                         window.open( options.biostar_url + '/local/search/page/?q=' + options.name );
                     }
@@ -185,7 +183,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             menu_button.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
-                tooltip : 'Share this tool',
                 onclick : function() {
                     prompt( 'Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id );
                 }
@@ -196,7 +193,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
-                    tooltip : 'Download this tool',
                     onclick : function() {
                         window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
                     }
@@ -208,23 +204,14 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 menu_button.addMenu({
                     icon    : 'fa-refresh',
                     title   : 'Reload Tool XML',
-                    tooltip : 'Reload Tool XML file',
                     onclick : function() {
                         Utils.get({
                             url     : Galaxy.root + 'api/tools/' + options.id + '/reload',
-                            success : function( data ) {
-                                Galaxy.modal.show({
-                                    title   : 'Tool reloaded',
-                                    body    : data.message,
-                                    buttons : { 'Close' : function() { Galaxy.modal.hide() } }
-                                });
+                            success : function( response ) {
+                                self.message.update( { persistent : false, message : 'Tool successfully reloaded.', status : 'success' } );
                             },
                             error   : function( response ) {
-                                Galaxy.modal.show({
-                                    title   : 'Tool reload failed',
-                                    body    : $( '<div/>' ).addClass( 'errormessagelarge' ).append( $( '<p/>' ).text( response.err_msg ) ),
-                                    buttons : { 'Close' : function() { Galaxy.modal.hide() } }
-                                });
+                                self.message.update( { persistent : false, message : response.err_msg, status : 'danger' } );
                             }
                         });
                     }
@@ -236,7 +223,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 menu_button.addMenu({
                     icon    : 'fa-info-circle',
                     title   : 'Requirements',
-                    tooltip : 'Display tool requirements',
                     onclick : function() {
                         if ( !this.requirements_visible || self.portlet.collapsed ) {
                             this.requirements_visible = true;
@@ -255,7 +241,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 menu_button.addMenu({
                     icon    : 'fa-external-link',
                     title   : 'See in Tool Shed',
-                    tooltip : 'Access the repository',
                     onclick : function() {
                         window.open( options.sharable_url );
                     }

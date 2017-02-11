@@ -108,7 +108,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         message, status = trans.app.toolbox.reload_tool_by_id( id )
         if status == 'error':
             raise exceptions.MessageException( message )
-        return { message: message }
+        return { 'message': message }
 
     @expose_api
     @web.require_admin
