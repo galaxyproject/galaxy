@@ -203,7 +203,7 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             if ( Galaxy.user && Galaxy.user.get( 'is_admin' ) ) {
                 menu_button.addMenu({
                     icon    : 'fa-refresh',
-                    title   : 'Reload Tool XML',
+                    title   : 'Reload XML',
                     onclick : function() {
                         Utils.get({
                             url     : Galaxy.root + 'api/tools/' + options.id + '/reload',
