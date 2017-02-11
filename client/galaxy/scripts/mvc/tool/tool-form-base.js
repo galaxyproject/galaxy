@@ -208,24 +208,24 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                 menu_button.addMenu({
                     icon    : 'fa-refresh',
                     title   : 'Reload Tool XML',
-                    tooltip : 'Reload tool XML file',
+                    tooltip : 'Reload Tool XML file',
                     onclick : function() {
-                        $.ajax({
-                            url  : Galaxy.root + 'api/tools/' + options.id + '/reload',
-                            type : "GET",
-                        }).done( function( data ){
-                            Galaxy.modal.show({
-                                title   : data.done ? 'Tool XML Reload' : 'Tool XML Reload Error',
-                                body    : data.done ? data.done : data.error,
-                                buttons : { 'Close' : function() { Galaxy.modal.hide() } }
-                            });
-                            window.setTimeout( function() { Galaxy.modal.hide() }, 2000 );
-                        }).fail( function( error ) {
-                            Galaxy.modal.show({
-                                title   : "Tool XML Reload AJAX Error",
-                                body    : options.id + " " + error,
-                                buttons : { 'Close' : function() { Galaxy.modal.hide() } }
-                            });
+                        Utils.get({
+                            url     : Galaxy.root + 'api/tools/' + options.id + '/reload',
+                            success : function( data ) {
+                                Galaxy.modal.show({
+                                    title   : 'Tool reloaded',
+                                    body    : data.message,
+                                    buttons : { 'Close' : function() { Galaxy.modal.hide() } }
+                                });
+                            },
+                            error   : function( response ) {
+                                Galaxy.modal.show({
+                                    title   : 'Tool reload failed',
+                                    body    : $( '<div/>' ).addClass( 'errormessagelarge' ).append( $( '<p/>' ).text( response.err_msg ) ),
+                                    buttons : { 'Close' : function() { Galaxy.modal.hide() } }
+                                });
+                            }
                         });
                     }
                 });

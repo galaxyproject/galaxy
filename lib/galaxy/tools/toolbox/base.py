@@ -799,8 +799,8 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         Attempt to reload the tool identified by 'tool_id', if successful
         replace the old tool.
         """
-        if tool_id not in self._tools_by_id:
-            message = "No tool with id %s" % escape( tool_id )
+        if tool_id in self._tools_by_id:
+            message = "No tool with id '%s'." % escape( tool_id )
             status = 'error'
         else:
             old_tool = self._tools_by_id[ tool_id ]
