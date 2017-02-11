@@ -210,22 +210,21 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                     title   : 'Reload Tool XML',
                     tooltip : 'Reload tool XML file',
                     onclick : function() {
-                        var modalMessage = new Ui.Modal.View();
                         $.ajax({
                             url: Galaxy.root + 'api/tools/' + options.id + '/reload',
                             type: "GET",
                         }).done(function(data){
-                            modalMessage.show({
+                            Galaxy.modal.show({
                                 title   : data.done ? 'Tool XML Reload' : 'Tool XML Reload Error',
                                 body    : data.done ? data.done : data.error,
-                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                                buttons : { 'Close' : function() { Galaxy.modal.hide() } }
                             });
-                            window.setTimeout(function(){modalMessage.hide();}, 2000);
+                            window.setTimeout(function(){Galaxy.modal.hide();}, 2000);
                         }).fail(function(error){
-                            modalMessage.show({
+                            Galaxy.modal.show({
                                 title: "Tool XML Reload AJAX Error",
                                 body: options.id + " " + error,
-                                buttons : { 'Close' : function() { modalMessage.hide() } }
+                                buttons : { 'Close' : function() { Galaxy.modal.hide() } }
                             });
                         });
                     }
