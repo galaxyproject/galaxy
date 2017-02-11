@@ -197,10 +197,6 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
                         window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
                     }
                 });
-            }
-
-            // add admin operations for tool XML reloading
-            if ( Galaxy.user && Galaxy.user.get( 'is_admin' ) ) {
                 menu_button.addMenu({
                     icon    : 'fa-refresh',
                     title   : 'Reload XML',
