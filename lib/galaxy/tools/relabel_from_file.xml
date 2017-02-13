@@ -1,0 +1,53 @@
+<tool id="__RELABEL_FROM_FILE__"
+      name="Relabel List Identifiers"
+      version="1.0.0"
+      tool_type="relabel_from_file">
+    <description>from contents of a file</description>
+    <type class="RelabelFromFileTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection" help="A list whose identifiers will be relabelled."/>
+        <param type="data" name="labels" format="txt" label="New Identifiers" />
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (relabelled)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="labels" value="new_labels_1.txt" ftype="txt" />
+            <output_collection name="output" type="list:paired">
+              <element name="new_i1">
+                <element name="forward">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+                <element name="reverse">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+              </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help>
+        This tool will take an input list and a text file with new identifiers
+        and build a new list with the same datasets but these new identifiers.
+
+        This tool will create new history datasets from your collection
+        but your quota usage will not increase.
+    </help>
+</tool>

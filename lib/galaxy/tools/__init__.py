@@ -2506,11 +2506,31 @@ class FlattenTool( DatabaseOperationTool ):
         )
 
 
+class RelabelFromFileTool( DatabaseOperationTool ):
+    tool_type = 'relabel_from_file'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        new_labels_dataset_assoc = incoming[ "labels" ]
+        new_elements = odict()
+        log.info(new_labels_dataset_assoc)
+        new_labels_path = new_labels_dataset_assoc.file_name
+        new_labels = open(new_labels_path, "r").readlines(1024 * 1000000)
+
+        for i, dce in enumerate(hdca.collection.elements):
+            dce_object = dce.element_object
+            new_elements[new_labels[i].strip()] = dce_object.copy()
+
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool,
+                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool,
                     DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
