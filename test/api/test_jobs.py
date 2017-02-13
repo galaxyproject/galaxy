@@ -4,10 +4,14 @@ import time
 from operator import itemgetter
 
 from base import api
-from base.populators import TestsDatasets
+from base.populators import DatasetPopulator
 
 
-class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
+class JobsApiTestCase( api.ApiTestCase ):
+
+    def setUp( self ):
+        super( JobsApiTestCase, self ).setUp()
+        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
 
     def test_index( self ):
         # Create HDA to ensure at least one job exists...
@@ -69,7 +73,7 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         jobs = self.__jobs_index( data={"history_id": history_id} )
         assert len( jobs ) > 0
 
-        history_id = self._new_history()
+        history_id = self.dataset_populator.new_history()
         jobs = self.__jobs_index( data={"history_id": history_id} )
         assert len( jobs ) == 0
 
@@ -139,7 +143,7 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self.assertEquals( len( empty_search_response.json() ), 0 )
 
         self.__run_cat_tool( history_id, dataset_id )
-        self._wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
 
         search_count = -1
         # in case job and history aren't updated at exactly the same
@@ -160,7 +164,7 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
     def __run_cat_tool( self, history_id, dataset_id ):
         # Code duplication with test_jobs.py, eliminate
-        payload = self._run_tool_payload(
+        payload = self.dataset_populator.run_tool_payload(
             tool_id='cat1',
             inputs=dict(
                 input1=dict(
@@ -173,7 +177,7 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._post( "tools", data=payload )
 
     def __run_randomlines_tool( self, lines, history_id, dataset_id ):
-        payload = self._run_tool_payload(
+        payload = self.dataset_populator.run_tool_payload(
             tool_id="random_lines1",
             inputs=dict(
                 num_lines=lines,
@@ -194,13 +198,13 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
         return filter( lambda j: j[ "tool_id" ] == "upload1", jobs )
 
     def __history_with_new_dataset( self ):
-        history_id = self._new_history()
-        dataset_id = self._new_dataset( history_id )[ "id" ]
+        history_id = self.dataset_populator.new_history()
+        dataset_id = self.dataset_populator.new_dataset( history_id )[ "id" ]
         return history_id, dataset_id
 
     def __history_with_ok_dataset( self ):
-        history_id = self._new_history()
-        dataset_id = self._new_dataset( history_id, wait=True )[ "id" ]
+        history_id = self.dataset_populator.new_history()
+        dataset_id = self.dataset_populator.new_dataset( history_id, wait=True )[ "id" ]
         return history_id, dataset_id
 
     def __jobs_index( self, **kwds ):
