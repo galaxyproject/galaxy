@@ -3,12 +3,10 @@ Migration script for the password reset table
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
 
-now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 metadata = MetaData()
 
@@ -24,9 +22,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
     try:
         PasswordResetToken_table.create()
-    except Exception as e:
-        print(str(e))
-        log.exception("Creating %s table failed: %s" % (PasswordResetToken_table.name, str( e ) ) )
+    except Exception:
+        log.exception("Creating %s table failed." % PasswordResetToken_table.name)
 
 
 def downgrade(migrate_engine):
@@ -34,6 +31,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         PasswordResetToken_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.exception("Dropping %s table failed: %s" % (PasswordResetToken_table.name, str( e ) ) )
+    except Exception:
+        log.exception("Dropping %s table failed." % PasswordResetToken_table.name)

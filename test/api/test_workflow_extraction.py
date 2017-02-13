@@ -5,7 +5,8 @@ import operator
 from collections import namedtuple
 from json import dumps, loads
 
-from .helpers import skip_without_tool
+from base.populators import skip_without_tool
+
 from .test_workflows import BaseWorkflowsApiTestCase
 
 
@@ -97,7 +98,7 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
             history_id=self.history_id,
         )
         job_id2 = reduction_run_output[ "jobs" ][ 0 ][ "id" ]
-        self.dataset_populator.wait_for_history( self.history_id, assert_ok=True, timeout=20 )
+        self.dataset_populator.wait_for_history( self.history_id, assert_ok=True )
         downloaded_workflow = self._extract_and_download_workflow(
             dataset_collection_ids=[ hdca[ "hid" ] ],
             job_ids=[ job_id1, job_id2 ],
@@ -424,7 +425,7 @@ test_data:
         )
         implicit_hdca = run_output1[ "implicit_collections" ][ 0 ]
         job_id = run_output1[ "jobs" ][ 0 ][ "id" ]
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True, timeout=20 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         return implicit_hdca, job_id
 
     def __check_workflow(

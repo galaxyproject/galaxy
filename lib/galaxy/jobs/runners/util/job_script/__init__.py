@@ -45,6 +45,7 @@ OPTIONAL_TEMPLATE_PARAMS = {
     'instrument_post_commands': '',
     'integrity_injection': INTEGRITY_INJECTION,
     'shell': DEFAULT_SHELL,
+    'preserve_python_environment': True,
 }
 
 

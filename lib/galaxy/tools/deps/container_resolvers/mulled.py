@@ -33,7 +33,7 @@ CachedMulledImageMultiTarget.multi_target = True
 
 
 def list_cached_mulled_images(namespace=None):
-    command = build_docker_images_command(truncate=True, sudo_docker=False)
+    command = build_docker_images_command(truncate=True, sudo=False)
     command = "%s | tail -n +2 | tr -s ' ' | cut -d' ' -f1,2" % command
     images_and_versions = check_output(command)
     name_filter = get_filter(namespace)

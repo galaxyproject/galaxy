@@ -29,14 +29,14 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "3.19.3"
+CONDA_VERSION = "4.2.13"
 
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-MacOSX-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-MacOSX-x86_64.sh"
     else:
-        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-Linux-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh"
     return url
 
 
@@ -54,7 +54,7 @@ class CondaContext(installable.InstallableContext):
 
     def __init__(self, conda_prefix=None, conda_exec=None,
                  shell_exec=None, debug=False, ensure_channels='',
-                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT):
+                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT, copy_dependencies=False):
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
             conda_exec = commands.which("conda")
@@ -63,6 +63,7 @@ class CondaContext(installable.InstallableContext):
         self.conda_exec = conda_exec
         self.debug = debug
         self.shell_exec = shell_exec or commands.shell
+        self.copy_dependencies = copy_dependencies
 
         if conda_prefix is None:
             info = self.conda_info()
@@ -213,6 +214,17 @@ class CondaContext(installable.InstallableContext):
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
 
+    def exec_clean(self, args=[]):
+        """
+        Clean up after conda installation.
+        """
+        clean_base_args = [
+            "--tarballs",
+            "-y"
+        ]
+        clean_base_args.extend(args)
+        return self.exec_command("clean", clean_base_args)
+
     def export_list(self, name, path):
         return self.exec_command("list", [
             "--name", name,
@@ -346,10 +358,22 @@ def install_conda(conda_context=None):
     fix_version_cmd = "%s install -y -q conda=%s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), CONDA_VERSION)
     full_command = "%s && %s && %s" % (download_cmd, install_cmd, fix_version_cmd)
     try:
+        log.info("Installing Conda, this may take several minutes.")
         return conda_context.shell_exec(full_command)
     finally:
         if os.path.exists(script_path):
             os.remove(script_path)
+
+
+def install_conda_targets(conda_targets, env_name, conda_context=None):
+    conda_context = _ensure_conda_context(conda_context)
+    conda_context.ensure_channels_configured()
+    create_args = [
+        "--name", env_name,  # enviornment for package
+    ]
+    for conda_target in conda_targets:
+        create_args.append(conda_target.package_specifier)
+    return conda_context.exec_create(create_args)
 
 
 def install_conda_target(conda_target, conda_context=None):
@@ -364,10 +388,14 @@ def install_conda_target(conda_target, conda_context=None):
     return conda_context.exec_create(create_args)
 
 
-def cleanup_failed_install(conda_target, conda_context=None):
+def cleanup_failed_install_of_environment(env, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    if conda_context.has_env(conda_target.install_environment):
-        conda_context.exec_remove([conda_target.install_environment])
+    if conda_context.has_env(env):
+        conda_context.exec_remove([env])
+
+
+def cleanup_failed_install(conda_target, conda_context=None):
+    cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
 def best_search_result(conda_target, conda_context=None, channels_override=None):
@@ -487,6 +515,7 @@ def build_isolated_environment(
 
         return (path or tempdir_name, exit_code)
     finally:
+        conda_context.exec_clean()
         shutil.rmtree(tempdir)
 
 

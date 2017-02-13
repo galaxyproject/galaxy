@@ -122,30 +122,38 @@ var DatasetListItemEdit = _super.extend(
         return $details;
     },
 
-    /************************************************************************** 
+    /**************************************************************************
      * Render help button to show tool help text without rerunning the tool.
      * Issue #2100
      */
     _renderToolHelpButton : function() {
         var datasetID = this.model.attributes.dataset_id;
         var jobID = this.model.attributes.creating_job;
+        var self = this;
 
         var parseToolBuild = function(data) {
-            var toolName = data.name;
-            var toolHelp = (data.help) ? data.help : "No help is available for the tool.";
-            var helpString = '<div id="thdiv-' + datasetID + '" style="background:#eee; padding: 5px;"><hr><strong>Tool Help for ' + toolName + '</strong><br/><hr>';
-            helpString += toolHelp;
+            var helpString = '<div id="thdiv-' + datasetID + '" class="toolhelp">'
+            if (data.name && data.help){
+                helpString += '<strong>Tool help for ' + data.name + '</strong><hr/>';
+                helpString += data.help;
+            } else {
+                helpString += '<strong>Tool help is unavailable for this dataset.</strong><hr/>';
+            }
             helpString += '</div>';
-            $('#dataset-' + datasetID).append($.parseHTML(helpString));
+            self.$el.find( '.details' ).append($.parseHTML(helpString));
         };
         var parseToolID = function(data) {
             $.ajax({
-                url: '/api/tools/' + data.tool_id + '/build'
+                url: Galaxy.root + 'api/tools/' + data.tool_id + '/build'
             }).done(function(data){
                 parseToolBuild(data);
-            }).fail(function(){console.log("Failed in api tools build call")});
+            }).fail(function(){
+                parseToolBuild({})
+            });
         };
-        
+        if (Galaxy.user.id === null){
+            return null
+        }
         return faIconButton({
             title: 'Tool Help',
             classes: 'icon-btn',
@@ -153,15 +161,16 @@ var DatasetListItemEdit = _super.extend(
             faIcon: 'fa-question',
             onclick: function() {
                 var divString = 'thdiv-' + datasetID;
-                if ($("#" + divString).length > 0)
-                {
-                    $("#" + divString).toggle();     
+                if (self.$el.find(".toolhelp").length > 0){
+                    self.$el.find(".toolhelp").toggle();
                 } else {
                     $.ajax({
-                    url: '/api/jobs/' + jobID
-                }).done(function(data){
-                    parseToolID(data);
-                }).fail(function(){console.log('Failed on recovering /api/jobs/' + jobID + ' call.')});
+                        url: Galaxy.root + 'api/jobs/' + jobID
+                    }).done(function(data){
+                        parseToolID(data);
+                    }).fail(function(){
+                       console.log('Failed at recovering job information from the  Galaxy API for job id "' + jobID + '".');
+                    });
                 }
             }
         });
@@ -386,15 +395,15 @@ DatasetListItemEdit.prototype.templates = (function(){
 
     var visualizationsTemplate = BASE_MVC.wrapTemplate([
         '<% if( visualizations.length === 1 ){ %>',
-            '<a class="visualization-btn visualization-link icon-btn" href="<%- visualizations[0].href %>"',
+            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
                     ' target="<%- visualizations[0].target %>" title="', _l( 'Visualize in' ),
                     ' <%- visualizations[0].html %>">',
                 '<span class="fa fa-bar-chart-o"></span>',
             '</a>',
 
         '<% } else { %>',
-            '<div class="visualizations-dropdown dropdown">',
-                '<a class="visualization-btn icon-btn" data-toggle="dropdown" title="', _l( 'Visualize' ), '">',
+            '<div class="visualizations-dropdown dropdown icon-btn">',
+                '<a data-toggle="dropdown" title="', _l( 'Visualize' ), '">',
                     '<span class="fa fa-bar-chart-o"></span>',
                 '</a>',
                 '<ul class="dropdown-menu" role="menu">',

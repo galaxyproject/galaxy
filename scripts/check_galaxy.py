@@ -4,6 +4,7 @@ check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
 from __future__ import print_function
+
 import filecmp
 import formatter
 import getopt

@@ -2,7 +2,7 @@
 Migration script to add a last_password_change field to the user table
 """
 
-from sqlalchemy import Table, MetaData, DateTime, Column
+from sqlalchemy import Column, DateTime, MetaData, Table
 
 
 def upgrade(migrate_engine):

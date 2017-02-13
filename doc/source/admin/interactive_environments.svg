@@ -17,7 +17,7 @@
    inkscape:version="0.48.5 r10040"
    sodipodi:docname="diagram.svg">
   <title
-     id="title5754">Galaxy IPython Graphic</title>
+     id="title5754">Galaxy Jupyter Graphic</title>
   <defs
      id="defs4">
     <marker
@@ -481,7 +481,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title>Galaxy IPython Graphic</dc:title>
+        <dc:title>Galaxy Jupyter Graphic</dc:title>
         <dc:creator>
           <cc:Agent>
             <dc:title>Björn Grüning, Torsten Houwaart, Eric Rasche</dc:title>
@@ -523,7 +523,7 @@
          sodipodi:role="line"
          id="tspan3805"
          x="142.18896"
-         y="291.41959">Launch IPython</tspan><tspan
+         y="291.41959">Launch Jupyter</tspan><tspan
          sodipodi:role="line"
          x="142.18896"
          y="303.91959"
@@ -701,7 +701,7 @@
          sodipodi:role="line"
          id="tspan5090-9-4"
          x="214.56726"
-         y="364.25571">ipython_galaxy_notebook.ipynb</tspan></text>
+         y="364.25571">jupyter_galaxy_notebook.ipynb</tspan></text>
     <rect
        style="fill:#ffffff;stroke:#000000;stroke-width:0.625;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0.25"
        id="rect5068-6"
@@ -777,7 +777,7 @@
          y="306.04703"
          x="211.61868"
          id="tspan5302"
-         sodipodi:role="line">IPython + scipy stack installed</tspan></text>
+         sodipodi:role="line">Jupyter + scipy stack installed</tspan></text>
     <rect
        ry="0"
        y="281.74686"
@@ -817,7 +817,7 @@
          y="378.99741"
          x="215.05746"
          sodipodi:role="line"
-         style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;stroke:none;font-family:Sans;-inkscape-font-specification:Sans">IPython Webservice </tspan></text>
+         style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#000000;stroke:none;font-family:Sans;-inkscape-font-specification:Sans">Jupyter Webservice </tspan></text>
     <text
        xml:space="preserve"
        style="font-size:6px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier 10 Pitch;-inkscape-font-specification:Courier 10 Pitch"

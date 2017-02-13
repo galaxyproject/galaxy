@@ -198,7 +198,7 @@ class MockModule(object):
     def __init__(self, progress):
         self.progress = progress
 
-    def recover_runtime_state(self, runtime_state):
+    def decode_runtime_state(self, runtime_state):
         return True
 
     def recover_mapping(self, step, step_invocations, progress):

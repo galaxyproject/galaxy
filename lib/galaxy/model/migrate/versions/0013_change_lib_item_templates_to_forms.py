@@ -32,26 +32,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 metadata = MetaData()
 
-
-def display_migration_details():
-    print("========================================")
-    print("This migration script eliminates all of the tables that were used for the 1st version of the")
-    print("library templates where template fields and contents were each stored as a separate table row")
-    print("in various library item tables.  All of these tables are dropped in this script, eliminating all")
-    print("existing template data.  A total of 14 existing tables are dropped.")
-    print("")
-    print("We're now basing library templates on Galaxy forms, so field contents are stored as a jsonified")
-    print("list in the form_values table.  This script introduces the following 3 new association tables:")
-    print("1) library_info_association")
-    print("2) library_folder_info_association")
-    print("3) library_dataset_dataset_info_association")
-    print("")
-    print("If using mysql, this script will throw an (OperationalError) exception due to a long index name")
-    print("on the library_dataset_dataset_info_association table, which is OK because the script creates")
-    print("an index with a shortened name.")
-    print("========================================")
-
-
 LibraryInfoAssociation_table = Table( 'library_info_association', metadata,
                                       Column( "id", Integer, primary_key=True),
                                       Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
@@ -73,7 +53,7 @@ LibraryDatasetDatasetInfoAssociation_table = Table( 'library_dataset_dataset_inf
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    display_migration_details()
+    print(__doc__)
     # Load existing tables
     metadata.reflect()
     # Drop all of the original library_item_info tables
@@ -85,8 +65,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_item_info_permissions" )
     try:
         LibraryItemInfoPermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_permissions table failed.")
 
     try:
         LibraryItemInfoTemplatePermissions_table = Table( "library_item_info_template_permissions", metadata, autoload=True )
@@ -95,8 +75,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_item_info_template_permissions" )
     try:
         LibraryItemInfoTemplatePermissions_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_template_permissions table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_template_permissions table failed.")
 
     try:
         LibraryItemInfoElement_table = Table( "library_item_info_element", metadata, autoload=True )
@@ -105,8 +85,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_item_info_element" )
     try:
         LibraryItemInfoElement_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_element table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_element table failed.")
 
     try:
         LibraryItemInfoTemplateElement_table = Table( "library_item_info_template_element", metadata, autoload=True )
@@ -115,8 +95,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_item_info_template_element" )
     try:
         LibraryItemInfoTemplateElement_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_template_element table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_template_element table failed.")
 
     try:
         LibraryInfoTemplateAssociation_table = Table( "library_info_template_association", metadata, autoload=True )
@@ -125,8 +105,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_info_template_association" )
     try:
         LibraryInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_info_template_association table failed.")
 
     try:
         LibraryFolderInfoTemplateAssociation_table = Table( "library_folder_info_template_association", metadata, autoload=True )
@@ -135,8 +115,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_folder_info_template_association" )
     try:
         LibraryFolderInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_folder_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_folder_info_template_association table failed.")
 
     try:
         LibraryDatasetInfoTemplateAssociation_table = Table( "library_dataset_info_template_association", metadata, autoload=True )
@@ -145,8 +125,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_dataset_info_template_association" )
     try:
         LibraryDatasetInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_info_template_association table failed.")
 
     try:
         LibraryDatasetDatasetInfoTemplateAssociation_table = Table( "library_dataset_dataset_info_template_association", metadata, autoload=True )
@@ -155,8 +135,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_dataset_dataset_info_template_association" )
     try:
         LibraryDatasetDatasetInfoTemplateAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_dataset_info_template_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_dataset_info_template_association table failed.")
 
     try:
         LibraryInfoAssociation_table = Table( "library_info_association", metadata, autoload=True )
@@ -165,8 +145,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_info_association" )
     try:
         LibraryInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_info_association table failed.")
 
     try:
         LibraryFolderInfoAssociation_table = Table( "library_folder_info_association", metadata, autoload=True )
@@ -175,8 +155,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_folder_info_association" )
     try:
         LibraryFolderInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_folder_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_folder_info_association table failed.")
 
     try:
         LibraryDatasetInfoAssociation_table = Table( "library_dataset_info_association", metadata, autoload=True )
@@ -185,8 +165,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_dataset_info_association" )
     try:
         LibraryDatasetInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_info_association table failed.")
 
     try:
         LibraryDatasetDatasetInfoAssociation_table = Table( "library_dataset_dataset_info_association", metadata, autoload=True )
@@ -195,8 +175,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_dataset_dataset_info_association" )
     try:
         LibraryDatasetDatasetInfoAssociation_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_dataset_dataset_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_dataset_dataset_info_association table failed.")
 
     try:
         LibraryItemInfo_table = Table( "library_item_info", metadata, autoload=True )
@@ -205,8 +185,8 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_item_info" )
     try:
         LibraryItemInfo_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info table failed.")
 
     try:
         LibraryItemInfoTemplate_table = Table( "library_item_info_template", metadata, autoload=True )
@@ -215,22 +195,22 @@ def upgrade(migrate_engine):
         log.debug( "Failed loading table library_item_info_template" )
     try:
         LibraryItemInfoTemplate_table.drop()
-    except Exception as e:
-        log.debug( "Dropping library_item_info_template table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Dropping library_item_info_template table failed.")
 
     # Create all new tables above
     try:
         LibraryInfoAssociation_table.create()
-    except Exception as e:
-        log.debug( "Creating library_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating library_info_association table failed.")
     try:
         LibraryFolderInfoAssociation_table.create()
-    except Exception as e:
-        log.debug( "Creating library_folder_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating library_folder_info_association table failed.")
     try:
         LibraryDatasetDatasetInfoAssociation_table.create()
-    except Exception as e:
-        log.debug( "Creating library_dataset_dataset_info_association table failed: %s" % str( e ) )
+    except Exception:
+        log.exception("Creating library_dataset_dataset_info_association table failed.")
     # Fix index on LibraryDatasetDatasetInfoAssociation_table for mysql
     if migrate_engine.name == 'mysql':
         # Load existing tables
@@ -238,8 +218,8 @@ def upgrade(migrate_engine):
         i = Index( "ix_lddaia_ldda_id", LibraryDatasetDatasetInfoAssociation_table.c.library_dataset_dataset_association_id )
         try:
             i.create()
-        except Exception as e:
-            log.debug( "Adding index 'ix_lddaia_ldda_id' to table 'library_dataset_dataset_info_association' table failed: %s" % str( e ) )
+        except Exception:
+            log.exception("Adding index 'ix_lddaia_ldda_id' to table 'library_dataset_dataset_info_association' table failed.")
 
 
 def downgrade(migrate_engine):

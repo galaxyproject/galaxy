@@ -11,7 +11,7 @@ from sqlalchemy import true
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import MessageException, ToolMissingException
 
 from galaxy import web
 from galaxy import model
@@ -21,7 +21,7 @@ from galaxy import util
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
-from galaxy.workflow.modules import WorkflowModuleInjector, MissingToolException
+from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.item_attrs import UsesAnnotations
@@ -1139,12 +1139,11 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         for step in stored_workflow.latest_workflow.steps:
             try:
                 module_injector.inject( step )
-            except MissingToolException:
-                # Now upgrade_messages is a string instead of a dict, why?
-                step.upgrade_messages = "Unknown Tool ID"
+            except ToolMissingException:
+                pass
 
     def _import_shared_workflow( self, trans, stored):
-        """ """
+        """ Imports a shared workflow """
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
         imported_stored.name = "imported: " + stored.name
@@ -1165,7 +1164,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False, publish=False ):
+    def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=False ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1176,7 +1175,8 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
             data,
             source=source,
             add_to_menu=add_to_menu,
-            publish=publish
+            publish=publish,
+            exact_tools=exact_tools,
         )
         return created_workflow.stored_workflow, created_workflow.missing_tools
 

@@ -1,0 +1,164 @@
+selectors:
+    tooltipBalloon: '.tooltip'
+    editableText: '.editable-text'
+
+    messages:
+        all: '[class*="message"]'
+        error: '.errormessage'
+        warning: '.alert-warning'
+        done: '.donemessage'
+        info: '.infomessage'
+        donelarge: '.donemessagelarge'
+        infolarge: '.infomessagelarge'
+
+    frames: 
+        main: 'galaxy_main'
+    masthead: 
+        id: '#masthead'
+        adminLink: '#masthead a[href="/admin/index"]'
+        userMenu: 
+            userEmail_xpath: '//a[contains(text(), "Logged in as")]'
+
+        user: '//ul[@id="user"]'
+        workflow: '//ul[@id="workflow"]'
+
+    toolMenu: 
+        container: '.toolMenuContainer'
+    
+    historyPanel: 
+        current: '#current-history-panel'
+    
+    loginPage: 
+        form: 'form#login'
+        submit_xpath: "//input[@value='Login']"
+        url_regex: /\/user\/login/
+    
+    registrationPage: 
+        form: 'registration'
+        submit_xpath: "//input[@value='Submit']"
+        returnLink: '//a[contains(text(),"Return to the home page")]'
+    
+    tools: 
+        general: 
+            form: 'form#tool_form'
+            executeButton_xpath: '//input[@value="Execute"]'
+        
+        upload: 
+            fileInput: 'files_0|file_data'
+
+    workflows:
+        new_button: '#new-workflow'
+        import_button: '#import-workflow'
+
+labels: 
+    masthead: 
+        menus: 
+            analyze: 'Analyze Data'
+            workflow: 'Workflow'
+            libraries: 'Shared Data'
+            visualization: 'Visualization'
+            help: 'Help'
+            user: 'User'
+        
+        userMenu: 
+            register: 'Register'
+            login: 'Login'
+            logout: 'Logout'
+    
+    tools: 
+        upload: 
+            panelLabel : 'Upload File'
+
+text: 
+    registrationPage: 
+        badEmailError: 'Enter a real email address'
+    
+    upload: 
+        success: 'Your upload has been queued'
+    
+    tool: 
+        success: 'The following job has been successfully added to the queue'
+
+historyPanel:
+    hdaTitleButtons:
+        display:
+            selector : '.icon-btn.display-btn'
+            tooltip  : 'View data'
+        edit:
+            selector : '.icon-btn.edit-btn'
+            tooltip  : 'Edit attributes'
+        delete:
+            selector : '.icon-btn.delete-btn'
+            tooltip  : 'Delete'
+    hdaPrimaryActionButtons:
+        download:
+            selector : '.icon-btn.download-btn'
+            tooltip  : 'Download'
+        info:
+            selector : '.icon-btn.params-btn'
+            tooltip  : 'View details'
+        rerun:
+            selector : '.icon-btn.rerun-btn'
+            tooltip  : 'Run this job again'
+    selectors:
+        history:
+            title       : '.controls .title'
+            name        : '.title .name'
+            nameEditableTextInput : '.name input'
+            subtitle    : '.subtitle'
+            size        : '.history-size'
+            tagIcon     : '.actions .history-tag-btn'
+            tagArea     : '.controls .tags-display'
+            annoIcon    : '.actions .history-annotate-btn'
+            annoArea    : '.controls .annotation-display'
+            emptyMsg    : '.empty-message'
+            hdaContainer: '.datasets-list'
+        hda:
+            wrapper:
+                itemClass   : '.history-content.dataset'
+                stateClasses:
+                    prefix  : 'state-'
+                    ok      : 'state-ok'
+                    new     : 'state-new'
+            errorMessage    : '.errormessagesmall'
+
+            title           : '.title'
+            hid             : '.hid'
+            name            : '.name'
+            titleButtonArea : '.primary-actions'
+            summary         : '.summary'
+            blurb           : '.blurb .value'
+            dbkey           : '.dbkey .value'
+            info            : '.info .value'
+            body            : '.details'
+
+            primaryActionButtons    : '.actions .left'
+            secondaryActionButtons  : '.actions .right'
+
+            undeleteLink    : '.undelete-link'
+            purgeLink       : '.purge-link'
+
+            peek            : '.dataset-peek'
+    labels:
+        history:
+        hda:
+    text:
+        windowTitle : 'History'
+        anonymous:
+            tooltips:
+                name    : 'You must be logged in to edit your history name'
+        history:
+            tooltips:
+                name     : 'Click to rename history'
+                tagIcon  : 'Edit history tags'
+                annoIcon : 'Edit history annotation'
+            newName  : 'Unnamed history'
+            newSize  : '(empty)'
+            emptyMsg : "This history is empty. You can load your own data or get data from an external source"
+        hda:
+            datasetFetchErrorMsg : 'There was an error getting the data for this dataset'
+historyOptions:
+    selectors :
+        button: '#history-options-button'
+        buttonIcon: '#history-options-button span.fa-cog'
+        menu: '#history-options-button-menu'

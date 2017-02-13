@@ -30,9 +30,8 @@ def upgrade(migrate_engine):
 
     try:
         JobStateHistory_table.create()
-    except Exception as e:
-        print(str(e))
-        log.exception("Creating %s table failed: %s" % (JobStateHistory_table.name, str( e ) ) )
+    except Exception:
+        log.exception("Creating %s table failed." % JobStateHistory_table.name)
 
 
 def downgrade(migrate_engine):
@@ -41,6 +40,5 @@ def downgrade(migrate_engine):
 
     try:
         JobStateHistory_table.drop()
-    except Exception as e:
-        print(str(e))
-        log.exception("Dropping %s table failed: %s" % (JobStateHistory_table.name, str( e ) ) )
+    except Exception:
+        log.exception("Dropping %s table failed." % JobStateHistory_table.name)

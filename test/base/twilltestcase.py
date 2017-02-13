@@ -21,6 +21,8 @@ from galaxy.tools.verify import verify
 from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.web import security
 
+from .driver_util import GalaxyTestDriver
+
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
 buffer = StringIO()
 twill.set_output( buffer )
@@ -58,6 +60,21 @@ class FunctionalTestCase( unittest.TestCase ):
                 os.makedirs(self.keepOutdir)
             except:
                 pass
+
+    @classmethod
+    def setUpClass(cls):
+        """Configure and start Galaxy for a test."""
+        cls._test_driver = None
+
+        if not os.environ.get("GALAXY_TEST_ENVIRONMENT_CONFIGURED"):
+            cls._test_driver = GalaxyTestDriver()
+            cls._test_driver.setup(config_object=cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Shutdown Galaxy server and cleanup temp directory."""
+        if cls._test_driver:
+            cls._test_driver.tear_down()
 
     def get_filename( self, filename, shed_tool_id=None ):
         # For tool tests override get_filename to point at an installed tool if shed_tool_id is set.

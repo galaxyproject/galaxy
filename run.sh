@@ -14,12 +14,17 @@ then
     . $GALAXY_LOCAL_ENV_FILE
 fi
 
+INITIALIZE_TOOL_DEPENDENCIES=1  # Install Conda if needed.
 # Pop args meant for common_startup.sh
 while :
 do
     case "$1" in
         --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--no-replace-pip|--replace-pip)
             common_startup_args="$common_startup_args $1"
+            shift
+            ;;
+        --skip-tool-dependency-initialization)
+            INITIALIZE_TOOL_DEPENDENCIES=0
             shift
             ;;
         --skip-venv)
@@ -81,6 +86,7 @@ then
     export GALAXY_CONFIG_OVERRIDE_TOOL_CONFIG_FILE="test/functional/tools/samples_tool_conf.xml"
     export GALAXY_CONFIG_ENABLE_BETA_WORKFLOW_MODULES="true"
     export GALAXY_CONFIG_OVERRIDE_ENABLE_BETA_TOOL_FORMATS="true"
+    export GALAXY_CONFIG_OVERRIDE_WEBHOOKS_DIR="test/functional/webhooks"
 fi
 
 if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
@@ -96,6 +102,11 @@ if [ -z "$GALAXY_CONFIG_FILE" ]; then
         GALAXY_CONFIG_FILE=config/galaxy.ini.sample
     fi
     export GALAXY_CONFIG_FILE
+fi
+
+if [ $INITIALIZE_TOOL_DEPENDENCIES -eq 1 ]; then
+    # Install Conda environment if needed.
+    python ./scripts/manage_tool_dependencies.py -c "$GALAXY_CONFIG_FILE" init_if_needed
 fi
 
 if [ -n "$GALAXY_RUN_ALL" ]; then

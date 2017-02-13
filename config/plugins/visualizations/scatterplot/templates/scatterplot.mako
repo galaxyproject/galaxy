@@ -16,7 +16,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>${title or default_title} | ${visualization_display_name}</title>
+<title>${title or default_title | h} | ${visualization_display_name}</title>
 
 ## ----------------------------------------------------------------------------
 ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui')}

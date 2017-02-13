@@ -2,10 +2,11 @@
 Classes encapsulating Galaxy tool parameters.
 """
 import re
-from json import dumps, loads
+from json import dumps
 
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
+from galaxy.util.json import safe_loads
 
 from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
@@ -135,7 +136,7 @@ def check_param( trans, param, incoming_value, param_values ):
     return value, error
 
 
-def params_to_strings( params, param_values, app ):
+def params_to_strings( params, param_values, app, nested=False ):
     """
     Convert a dictionary of parameter values to a dictionary of strings
     suitable for persisting. The `value_to_basic` method of each parameter
@@ -147,7 +148,7 @@ def params_to_strings( params, param_values, app ):
     for key, value in param_values.items():
         if key in params:
             value = params[ key ].value_to_basic( value, app )
-        rval[ key ] = str( dumps( value ) )
+        rval[ key ] = value if nested else str( dumps( value ) )
     return rval
 
 
@@ -159,8 +160,9 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     preferred form).
     """
     rval = dict()
+    param_values = param_values or {}
     for key, value in param_values.items():
-        value = json_fix( loads( value ) )
+        value = json_fix( safe_loads( value ) )
         if key in params:
             value = params[ key ].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value

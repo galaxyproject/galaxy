@@ -95,7 +95,7 @@ function( Utils, UploadModel, UploadSettings, Popover, Select ) {
 
         render: function() {
             var options = this.model.attributes;
-            this.$title.html( options.file_name );
+            this.$title.html( _.escape( options.file_name ) );
             this.$size.html( Utils.bytesToString ( options.file_size ) );
             this.$mode.removeClass().addClass( 'upload-mode' ).addClass( 'text-primary' );
             if ( options.file_mode == 'new' ) {
@@ -120,7 +120,7 @@ function( Utils, UploadModel, UploadSettings, Popover, Select ) {
         _refreshExtension: function() {
             this.select_extension.value( this.model.get( 'extension' ) );
         },
-        
+
         /** Update genome */
         _refreshGenome: function() {
             this.select_genome.value( this.model.get( 'genome' ) );

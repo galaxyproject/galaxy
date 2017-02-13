@@ -351,7 +351,6 @@ var ToolSearch = Backbone.Model.extend({
         search_hint_string: "search tools",
         min_chars_for_search: 3,
         clear_btn_url: "",
-        search_url: "",
         visible: true,
         query: "",
         results: null,

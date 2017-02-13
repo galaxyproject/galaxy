@@ -1,4 +1,4 @@
-<tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.1">
+<tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.1.1">
   <description>using simple expressions</description>
   <command interpreter="python">
     gff_filter_by_attribute.py $input $out_file1 "$cond" '${input.metadata.attribute_types}'

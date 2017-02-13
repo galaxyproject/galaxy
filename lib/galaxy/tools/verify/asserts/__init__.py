@@ -44,7 +44,7 @@ def verify_assertion(data, assertion_description):
 
     assert_function_args = inspect.getargspec(assert_function).args
     args = {}
-    for attribute, value in assertion_description["attributes"].iteritems():
+    for attribute, value in assertion_description["attributes"].items():
         if attribute in assert_function_args:
             args[attribute] = value
 

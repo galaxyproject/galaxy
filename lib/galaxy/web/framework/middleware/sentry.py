@@ -70,7 +70,7 @@ class Sentry(object):
         # remote service) and can be considered a security risk as well. For
         # multiple services running alongside Galaxy on the same host, this
         # could allow a sentry user with access to logs to impersonate a user
-        # on another service. In the case of services like IPython, this can be
+        # on another service. In the case of services like Jupyter, this can be
         # a serious concern as that would allow for terminal access. Furthermore,
         # very little debugging information can be gained as a result of having
         # access to all of the users cookies (including Galaxy cookies)

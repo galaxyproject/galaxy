@@ -115,7 +115,7 @@ function( Utils, UploadSettings, UploadFtp, Popover, Ui, Select ) {
 
         render: function() {
             this.$el.attr( 'id', 'upload-row-' + this.model.id );
-            this.$file_name.html( this.model.get( 'file_name' ) || '-' );
+            this.$file_name.html( _.escape( this.model.get( 'file_name' ) || '-' ) );
             this.$file_desc.html( this.model.get( 'file_desc' ) || 'Unavailable' );
             this.$file_size.html( Utils.bytesToString ( this.model.get( 'file_size' ) ) );
             this.$status.removeClass().addClass( this.status_classes.init );

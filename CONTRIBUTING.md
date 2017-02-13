@@ -17,11 +17,10 @@ deeper discussion of some of these points - please see the
 If you have an idea for a feature to add or an approach for a bugfix,
 it is best to communicate with Galaxy developers early. The most
 common venues for this are
-[GitHub issues](https://github.com/galaxyproject/galaxy/issues) and the
-[Galaxy and Tool Shed Trello boards](https://wiki.galaxyproject.org/Issues).
+[GitHub issues](https://github.com/galaxyproject/galaxy/issues).
 Browse through existing GitHub issues and Trello cards and if one seems related,
-comment on it. We also maintain a [card](https://trello.com/c/eFdPIdIB) with
-links to smaller issues we believe would make the best entry points for new
+comment on it. We also maintain a [tag](https://github.com/galaxyproject/galaxy/issues?q=is%3Aissue+is%3Aopen+label%3Afriendliness%2Ffriendly) on Github for
+smaller issues we believe would make the best entry points for new
 developers.
 Galaxy developers are generally available via
 [IRC](https://wiki.galaxyproject.org/GetInvolved#IRC_Channel) and on
