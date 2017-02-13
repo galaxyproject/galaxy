@@ -465,17 +465,17 @@ class DatasetCollectionPopulator( BaseDatasetCollectionPopulator ):
         return create_response
 
 
-def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
+def wait_on_state( state_func, skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
         state = response.json()[ "state" ]
-        if state not in [ "running", "queued", "new", "ready" ]:
+        if state in skip_states:
+            return None
+        else:
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
-        else:
-            return None
     return wait_on( get_state, desc="state", timeout=timeout)
 
 
