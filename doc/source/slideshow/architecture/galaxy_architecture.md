@@ -138,7 +138,7 @@ These playbooks are used to maintain Galaxy main, cloud and Docker images, virtu
 
 ---
 
-[github.com/galaxyproject/**pulsar**](https://github.com/galaxyproject/ansible)
+[github.com/galaxyproject/**pulsar**](https://github.com/galaxyproject/pulsar)
 
 Distributed job execution engine for Galaxy.
 
@@ -159,8 +159,8 @@ Best documented path to scripting the Galaxy API.
 ---
 
 - [github.com/galaxyproject/**blend4php**](https://github.com/galaxyproject/blend4php)
-- [github.com/**jmchilton/blend4j**](https://github.com/galaxyproject/blend4j)
-- [github.com/**chapmanb/clj-blend**](https://github.com/galaxyproject/clj-blend)
+- [github.com/**jmchilton/blend4j**](https://github.com/jmchilton/blend4j)
+- [github.com/**chapmanb/clj-blend**](https://github.com/chapmanb/clj-blend)
 
 Galaxy API bindings for other languages.
 
