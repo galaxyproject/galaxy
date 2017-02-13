@@ -130,25 +130,25 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
-                title   : (!options.narrow && 'Versions') || null,
+                title   : ( !options.narrow && 'Versions' ) || null,
                 tooltip : 'Select another tool version'
             });
-            if (!options.sustain_version && options.versions && options.versions.length > 1) {
-                for (var i in options.versions) {
-                    var version = options.versions[i];
-                    if (version != options.version) {
+            if ( !options.sustain_version && options.versions && options.versions.length > 1 ) {
+                for ( var i in options.versions ) {
+                    var version = options.versions[ i ];
+                    if ( version != options.version ) {
                         versions_button.addMenu({
                             title   : 'Switch to ' + version,
                             version : version,
                             icon    : 'fa-cube',
                             onclick : function() {
                                 // here we update the tool version (some tools encode the version also in the id)
-                                var id = options.id.replace(options.version, this.version);
+                                var id = options.id.replace( options.version, this.version );
                                 var version = this.version;
                                 // queue model request
                                 self.deferred.reset();
-                                self.deferred.execute(function(process) {
-                                    self._buildModel(process, {id: id, version: version})
+                                self.deferred.execute( function( process ) {
+                                    self._buildModel( process, { id : id, version : version } )
                                 });
                             }
                         });
@@ -161,83 +161,64 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             // button for options e.g. search, help
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-caret-down',
-                title   : (!options.narrow && 'Options') || null,
+                title   : ( !options.narrow && 'Options' ) || null,
                 tooltip : 'View available options'
             });
-            if(options.biostar_url) {
+            if ( options.biostar_url ) {
                 menu_button.addMenu({
                     icon    : 'fa-question-circle',
                     title   : 'Question?',
-                    tooltip : 'Ask a question about this tool (Biostar)',
                     onclick : function() {
-                        window.open(options.biostar_url + '/p/new/post/');
+                        window.open( options.biostar_url + '/p/new/post/' );
                     }
                 });
                 menu_button.addMenu({
                     icon    : 'fa-search',
                     title   : 'Search',
-                    tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
-                        window.open(options.biostar_url + '/local/search/page/?q=' + options.name);
+                        window.open( options.biostar_url + '/local/search/page/?q=' + options.name );
                     }
                 });
             };
             menu_button.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
-                tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id);
+                    prompt( 'Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id );
                 }
             });
 
             // add admin operations
-            if (Galaxy.user && Galaxy.user.get('is_admin')) {
+            if ( Galaxy.user && Galaxy.user.get( 'is_admin' ) ) {
                 menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
-                    tooltip : 'Download this tool',
                     onclick : function() {
                         window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
                     }
                 });
-            }
-
-            // add admin operations for tool XML reloading
-            if (Galaxy.user && Galaxy.user.get('is_admin')) {
                 menu_button.addMenu({
                     icon    : 'fa-refresh',
-                    title   : 'Reload Tool XML',
-                    tooltip : 'Reload tool XML file',
+                    title   : 'Reload XML',
                     onclick : function() {
-                        var modalMessage = new Ui.Modal.View();
-                        $.ajax({
-                            url: Galaxy.root + 'api/tools/' + options.id + '/reload',
-                            type: "GET",
-                        }).done(function(data){
-                            modalMessage.show({
-                                title   : data.done ? 'Tool XML Reload' : 'Tool XML Reload Error',
-                                body    : data.done ? data.done : data.error,
-                                buttons : { 'Close' : function() { modalMessage.hide() } }
-                            });
-                            window.setTimeout(function(){modalMessage.hide();}, 2000);
-                        }).fail(function(error){
-                            modalMessage.show({
-                                title: "Tool XML Reload AJAX Error",
-                                body: options.id + " " + error,
-                                buttons : { 'Close' : function() { modalMessage.hide() } }
-                            });
+                        Utils.get({
+                            url     : Galaxy.root + 'api/tools/' + options.id + '/reload',
+                            success : function( response ) {
+                                self.message.update( { persistent : false, message : 'Tool XML has been reloaded.', status : 'success' } );
+                            },
+                            error   : function( response ) {
+                                self.message.update( { persistent : false, message : response.err_msg, status : 'danger' } );
+                            }
                         });
                     }
                 });
             }
 
             // button for version selection
-            if (options.requirements && options.requirements.length > 0) {
+            if ( options.requirements && options.requirements.length > 0 ) {
                 menu_button.addMenu({
                     icon    : 'fa-info-circle',
                     title   : 'Requirements',
-                    tooltip : 'Display tool requirements',
                     onclick : function() {
                         if ( !this.requirements_visible || self.portlet.collapsed ) {
                             this.requirements_visible = true;
@@ -252,13 +233,12 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
             }
 
             // add toolshed url
-            if (options.sharable_url) {
+            if ( options.sharable_url ) {
                 menu_button.addMenu({
                     icon    : 'fa-external-link',
                     title   : 'See in Tool Shed',
-                    tooltip : 'Access the repository',
                     onclick : function() {
-                        window.open(options.sharable_url);
+                        window.open( options.sharable_url );
                     }
                 });
             }
