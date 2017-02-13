@@ -1521,6 +1521,14 @@ class ScIdx(Tabular):
             fh = open(filename, "r")
             while True:
                 line = fh.readline()
+                if not line:
+                    # EOF
+                    if count > 1:
+                        # The second line is always the labels:
+                        # chrom index forward reverse value
+                        # We need at least the column labels and a data line.
+                        return True
+                    return False
                 line = line.strip()
                 # The first line is always a comment like this:
                 # 2015-11-23 20:18:56.51;input.bam;READ1
@@ -1530,14 +1538,6 @@ class ScIdx(Tabular):
                         continue
                     else:
                         return False
-                if not line:
-                    # EOF
-                    if count > 1:
-                        # The second line is always the labels:
-                        # chrom index forward reverse value
-                        # We need at least the column labels and a data line.
-                        return True
-                    return False
                 # Skip first line.
                 if count > 1:
                     items = line.split('\t')
