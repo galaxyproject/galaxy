@@ -82,11 +82,6 @@ class S3ObjectStore(ObjectStore):
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
-
-        # @OLD
-        # self.conn = S3Connection(self.access_key, self.secret_key)
-
-        # @NEW
         aws_config = {'aws_access_key': self.access_key,
                       'aws_secret_key': self.secret_key}
         self.conn = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
@@ -203,12 +198,6 @@ class S3ObjectStore(ObjectStore):
         it a few times. Raise error if connection is not established. """
         for i in range(5):
             try:
-                # @OLD
-                # bucket = self.conn.get_bucket(bucket_name)
-                # log.debug("Using cloud object store with bucket '%s'", bucket.name)
-                # return bucket
-
-                # @NEW
                 bucket = self.conn.object_store.get(bucket_name)
                 if bucket is None:
                     log.debug("Bucket not found, creating s3 bucket with handle '%s'", bucket_name)
@@ -285,10 +274,6 @@ class S3ObjectStore(ObjectStore):
     # TODO: Rename this function.
     def _get_size_in_s3(self, rel_path):
         try:
-            # @OLD
-            # key = self.bucket.get_key(rel_path)
-
-            # @NEW
             obj = self.bucket.get(rel_path)
             if obj:
                 return obj.size
@@ -300,24 +285,15 @@ class S3ObjectStore(ObjectStore):
         exists = False
         try:
             # A hackish way of testing if the rel_path is a folder vs a file
-            # @VAHID: comment on this section: is index `-1` correct?
+            # is index `-1` correct?
             is_dir = rel_path[-1] == '/'
             if is_dir:
-                # @OLD
-                # keyresult = self.bucket.get_all_keys(prefix=rel_path)
-
-                # @NEW
                 keyresult = self.bucket.list(prefix=rel_path)
                 if len(keyresult) > 0:
                     exists = True
                 else:
                     exists = False
             else:
-                # @OLD
-                # key = Key(self.bucket, rel_path)
-                # exists = key.exists()
-
-                # @NEW
                 exists = self.bucket.exists(rel_path)
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
@@ -371,11 +347,6 @@ class S3ObjectStore(ObjectStore):
     def _download(self, rel_path):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-
-            # @OLD
-            # key = self.bucket.get_key(rel_path)
-
-            # @NEW
             key = self.bucket.get(rel_path)
 
             # Test if cache is large enough to hold the new file
@@ -393,11 +364,6 @@ class S3ObjectStore(ObjectStore):
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 self.transfer_progress = 0  # Reset transfer progress counter
-
-                # @OLD : Don't delete this old code, rather keep it as reference.
-                # key.get_contents_to_filename(self._get_cache_path(rel_path), cb=self._transfer_cb, num_cb=10)
-
-                # @NEW
                 with open(self._get_cache_path(rel_path), "w+") as downloaded_file_handle:
                     key.save_content(downloaded_file_handle)
 
@@ -450,10 +416,6 @@ class S3ObjectStore(ObjectStore):
                         self.bucket.get(rel_path).upload(source_file)
 
                     else:
-                        # @OLD
-                        # multipart_upload(self.s3server, self.bucket, key.name, source_file, mb_size)
-
-                        # @NEW
                         multipart_upload(self.s3server, self.bucket, self.bucket.get(rel_path).name, source_file, mb_size)
 
                     end_time = datetime.now()
@@ -587,11 +549,6 @@ class S3ObjectStore(ObjectStore):
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
-
-                # @OLD
-                # results = self.bucket.get_all_keys(prefix=rel_path)
-
-                # @NEW
                 results = self.bucket.list(prefix=rel_path)
 
                 for key in results:
@@ -603,10 +560,6 @@ class S3ObjectStore(ObjectStore):
                 os.unlink(self._get_cache_path(rel_path))
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
-                    # @OLD
-                    key = Key(self.bucket, rel_path)
-
-                    # @NEW
                     key = self.bucket.get(rel_path)
                     log.debug("Deleting key %s", key.name)
                     key.delete()
@@ -695,10 +648,6 @@ class S3ObjectStore(ObjectStore):
         if self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
-                # @OLD
-                # key = Key(self.bucket, rel_path)
-
-                # @NEW
                 key = self.bucket.get(rel_path)
 
                 return key.generate_url(expires_in=86400)  # 24hrs
