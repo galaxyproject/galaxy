@@ -282,7 +282,7 @@ define([
                                 }
                             }).done(function(id){
                                 window.onbeforeunload = undefined;
-                                window.location = "/workflow/editor?id=" + id;
+                                window.location = Galaxy.root + "workflow/editor?id=" + id;
                                 hide_modal();
                             }).fail(function(){
                                 hide_modal();
