@@ -234,24 +234,23 @@ class SubWorkflowModule( WorkflowModule ):
     type = "subworkflow"
     name = "Subworkflow"
 
-    def __init__( self, trans, subworkflow=None, **kwds ):
-        super( SubWorkflowModule, self ).__init__( trans, **kwds )
-        self.subworkflow = subworkflow
-
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
+        module = Class( trans )
         if "subworkflow" in d:
-            subworkflow = d[ "subworkflow" ]
+            module.subworkflow = d["subworkflow"]
         elif "content_id" in d:
-            from galaxy.managers.workflows import WorkflowsManager
-            workflow_manager = WorkflowsManager( trans.app )
-            subworkflow = workflow_manager.get_owned_workflow( trans, d[ "content_id" ] )
-        module = super( SubWorkflowModule, Class ).from_dict( trans, d, subworkflow=subworkflow, **kwds )
+            content_id = d["content_id"]
+            module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
+        module.label = d.get( "label" )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
-        return super( SubWorkflowModule, Class ).from_workflow_step( trans, step, subworkflow=step.subworkflow, **kwds )
+        module = Class( trans )
+        module.subworkflow = step.subworkflow
+        module.label = step.label
+        return module
 
     def save_to_step( self, step ):
         step.type = self.type
