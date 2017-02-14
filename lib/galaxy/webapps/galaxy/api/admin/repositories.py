@@ -1,6 +1,7 @@
 """
 API operations on Galaxy's installed tools.
 """
+import copy
 import logging
 import os
 
@@ -51,8 +52,6 @@ class RepositoriesController( BaseAPIController ):
     def __enrich_repos(self, trans, repo_list):
         unique_dicts = self._list_unique_repos( repo_list )
         unique_dicts_w_sections = self._add_all_sections_for_repo( trans, unique_dicts )
-        # log.debug('unique_dicts_w_sections')
-        # log.debug(unique_dicts_w_sections)
         stripped_repo_dicts = self._prep_repo_dicts( unique_dicts_w_sections.values() )
         return stripped_repo_dicts
 
@@ -112,26 +111,32 @@ class RepositoriesController( BaseAPIController ):
         collapsed_trios = set()
         for repo_a in all_repos:
             # if repo_a['name'] != 'fastqc':
+            #     log.debug('not fastqc, ignoring')
             #     continue
             if ( repo_a['name'] + repo_a['owner'] + repo_a['tool_shed'] ) in collapsed_trios:
+                # log.debug('already collapsed, ignoring')
                 # the repository is already collapsed, continue
                 continue
             collapsed_repos = []
             for repo_b in all_repos:
                 if repo_a['id'] == repo_b['id']:
+                    # log.debug('identity, ignoring')
                     # we found identity, ignore
                     continue
                 if repo_a['name'] == repo_b['name'] and repo_a['owner'] == repo_b['owner'] and repo_a['tool_shed'] == repo_b['tool_shed']:
-                    # we found another revision of repo_a, store
-                    # collapsed_repos.append( (repo_b['ctx_rev'], repo_b['id']) )
-
-                    collapsed_repos.append( repo_b.copy() )
+                    # log.debug('new ctx_rev of this repo')
+                    # we found another revision of repo_a, store it
+                    collapsed_repos.append( copy.deepcopy( repo_b ) )
                     continue
             if collapsed_repos:
-                repos_to_collapse[ repo_a['id'] ] = self._order_collapsed_repos( repo_a.copy(), collapsed_repos )
+                # We found some ctx_rev to collapse
+                collapsed_repos.append(copy.deepcopy(repo_a))
+                repos_to_collapse[ repo_a['id'] ] = self._order_and_collapse_repos( collapsed_repos )
+                # repos_to_collapse[ repo_a['id'] ] = self._order_and_collapse_repos( repo_a.copy(), collapsed_repos )
                 # store the trio identifying the already collapsed repo
                 collapsed_trios.add( repo_a['name'] + repo_a['owner'] + repo_a['tool_shed'] )
             else:
+                # log.debug('only one ctx_rev present for this repo')
                 # there is only one installable revision of the repo installed
                 unique_repos[ repo_a['id'] ] = repo_a
         unique_repos.update( repos_to_collapse )
@@ -157,25 +162,23 @@ class RepositoriesController( BaseAPIController ):
                     pass
         return unique_dicts
 
-    def _order_collapsed_repos(self, head_repo, collapsed_repos):
+    def _order_and_collapse_repos(self, all_repos):
         """
-        In case there are multiple installable revisions of the
-        repository installed we want the 'head repository' to be the latest.
+        Sort multiple installable revisions of the repository
+        and collapse the older ones under 'collapsed_repos' key.
         """
-        all_repos = list(collapsed_repos)
-        all_repos.append(head_repo.copy())
-        tip_ctx_rev = head_repo.get('ctx_rev')
-        working_head_repo = head_repo.copy()
-
-        for repo in collapsed_repos:
-            # log.debug(working_head_repo)
-            if repo.get('ctx_rev') > tip_ctx_rev:
-                tip_ctx_rev = repo.get('ctx_rev')
-                new_collapsed_repos = [ x for x in all_repos if x['ctx_rev'] != tip_ctx_rev ]
-                working_head_repo = repo
-                working_head_repo['collapsed_repos'] = new_collapsed_repos
-
-        return working_head_repo
+        newest_repo = {}
+        older_repos = []
+        for repo in all_repos:
+            if not newest_repo:
+                newest_repo = repo
+            elif repo.get( "ctx_rev" ) > newest_repo.get( "ctx_rev" ):
+                older_repos.append( newest_repo )
+                newest_repo = repo
+            else:
+                older_repos.append( repo )
+        newest_repo['collapsed_repos'] = older_repos
+        return newest_repo
 
     def _prep_repo_dicts( self, repo_dicts ):
         """
