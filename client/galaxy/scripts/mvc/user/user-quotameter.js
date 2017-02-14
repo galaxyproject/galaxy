@@ -128,7 +128,7 @@ var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         return [
             '<div id="quota-meter" class="quota-meter progress">',
                 '<div class="progress-bar" style="width: ', data.quota_percent, '%"></div>',
-                '<div class="quota-meter-text" style="top: 6px"',
+                '<div class="quota-meter-text" data-placement="left" data-original-title="Logging out will force recalculation of this value." style="top: 6px"',
                     (( data.nice_total_disk_usage )?( ' title="Using ' + data.nice_total_disk_usage + '">' ):( '>' )),
                     _l( 'Using' ), ' ', data.quota_percent, '%',
                 '</div>',
@@ -139,7 +139,7 @@ var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     _templateUsage : function( data ){
         return [
             '<div id="quota-meter" class="quota-meter" style="background-color: transparent">',
-                '<div class="quota-meter-text" style="top: 6px; color: white">',
+                '<div class="quota-meter-text" data-placement="left" data-original-title="Logging out will force recalculation of this value." style="top: 6px; color: white">',
                     (( data.nice_total_disk_usage )?( _l( 'Using ' ) + data.nice_total_disk_usage ):( '' )),
                 '</div>',
             '</div>'
