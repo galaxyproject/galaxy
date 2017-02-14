@@ -46,6 +46,12 @@ define([], function() {
     }), RepoStatusCollection = Backbone.Collection.extend({
         url: Galaxy.root + "api/tool_shed/status",
         model: RepoStatusModel
+    }), WorkflowToolsModel = Backbone.Model.extend({
+        defaults: [ {} ],
+        urlRoot: Galaxy.root + "api/workflows?missing_tools=True"
+    }), WorkflowToolsCollection = Backbone.Collection.extend({
+        url: Galaxy.root + "api/workflows?missing_tools=True",
+        model: WorkflowToolsModel
     });
     return {
         ShedModel: ToolShedModel,
@@ -57,6 +63,7 @@ define([], function() {
         RepositoryModel: ToolShedRepositoryModel,
         RepositoryCollection: ToolShedRepositoryCollection,
         RepoQueue: RepoQueueCollection,
-        RepoStatus: RepoStatusCollection
+        RepoStatus: RepoStatusCollection,
+        WorkflowTools: WorkflowToolsCollection
     };
 });

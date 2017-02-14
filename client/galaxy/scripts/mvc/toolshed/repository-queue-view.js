@@ -29,6 +29,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 var repository_metadata = that.loadFromQueue($(this).attr('data-repokey'));
                 that.installFromQueue(repository_metadata, $(this).attr('data-repokey'));
             });
+            $('#from_workflow').on('click', function() { Backbone.history.navigate('workflows', {trigger: true, replace:true}); });
         },
 
         installFromQueue: function install_from_queue(repository_metadata, queue_key) {
@@ -118,8 +119,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 '</table>',
                 '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',
             '</div>',
-            ].join(''))
-    });
+            ].join('')),
 
     return {
         RepoQueueView: View,

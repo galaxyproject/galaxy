@@ -3,13 +3,15 @@ define(["mvc/toolshed/shed-list-view",
         "mvc/toolshed/repositories-view",
         "mvc/toolshed/repository-view",
         "mvc/toolshed/repository-queue-view",
-        "mvc/toolshed/repo-status-view"],
+        "mvc/toolshed/repo-status-view",
+        "mvc/toolshed/workflows-view"],
         function(mod_shed_list_view,
                  mod_categories_view,
                  mod_repositories_view,
                  mod_repository_view,
                  mod_repoqueue_view,
-                 mod_repo_status_view) {
+                 mod_repo_status_view,
+                 mod_workflows_view) {
 
     var AdminToolshedRouter = Backbone.Router.extend({
 
@@ -24,6 +26,7 @@ define(["mvc/toolshed/shed-list-view",
             ""                                           : "toolsheds",
             "sheds"                                      : "toolsheds",
             "queue"                                      : "queue",
+            "workflows"                                  : "workflows",
             "status/r/:repositories"                     : "status",
             "status"                                     : "status",
             "categories/s/:tool_shed"                    : "categories",
@@ -56,6 +59,7 @@ define(["mvc/toolshed/shed-list-view",
         initialize: function() {
             Galaxy.admintoolshedapp = this;
             this.admin_toolshed_router = new AdminToolshedRouter();
+            $("#panel_header").append('<div class="unified-panel-header-inner"><a href="#/queue">Repository Queue</a></div>');
 
             this.admin_toolshed_router.on('route:queue', function() {
                 if (Galaxy.admintoolshedapp.adminRepoQueueView) {
@@ -105,8 +109,14 @@ define(["mvc/toolshed/shed-list-view",
                     Galaxy.admintoolshedapp.adminRepoStatusView = new mod_repo_status_view.RepoStatus({repositories: repositories.split('|')});
                 }
             });
-
-            $("#panel_header").append('<span style="position: absolute; top: 0px; right: 0px;"><a href="#/queue">Repository Queue</a></span>');
+            this.admin_toolshed_router.on('route:workflows', function() {
+                if (Galaxy.admintoolshedapp.adminWorkflowsView) {
+                    Galaxy.admintoolshedapp.adminWorkflowsView.reDraw();
+                }
+                else {
+                    Galaxy.admintoolshedapp.adminWorkflowsView = new mod_workflows_view.Workflows();
+                }
+            });
 
             Backbone.history.start({pushState: false});
         },

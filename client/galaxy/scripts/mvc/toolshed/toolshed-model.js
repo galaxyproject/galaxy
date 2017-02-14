@@ -73,6 +73,16 @@ define([], function() {
         model: RepoStatusModel
     });
 
+    var WorkflowToolsModel = Backbone.Model.extend({
+        defaults: [{}],
+        urlRoot: Galaxy.root + 'api/workflows?missing_tools=True',
+    });
+
+    var WorkflowToolsCollection = Backbone.Collection.extend({
+        url: Galaxy.root + 'api/workflows?missing_tools=True',
+        model: WorkflowToolsModel
+    });
+
     return {
         ShedModel: ToolShedModel,
         ShedsCollection: ToolShedsCollection,
@@ -83,7 +93,8 @@ define([], function() {
         RepositoryModel: ToolShedRepositoryModel,
         RepositoryCollection: ToolShedRepositoryCollection,
         RepoQueue: RepoQueueCollection,
-        RepoStatus: RepoStatusCollection
+        RepoStatus: RepoStatusCollection,
+        WorkflowTools: WorkflowToolsCollection
     };
 
 });
