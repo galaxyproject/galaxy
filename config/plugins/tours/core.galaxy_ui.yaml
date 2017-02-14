@@ -145,8 +145,6 @@ steps:
       element: "#current-history-panel .fa-times:eq(0)"
       intro: "Delete your dataset by clicking the x-button."
       position: "left"
-      #postclick:
-      #  - "#current-history-panel .fa-times:eq(0)"
 
     - title: "Dataset information"
       element: "div.title-bar.clear:eq(0)"
@@ -156,11 +154,9 @@ steps:
         - "div.title-bar.clear:eq(0)"
 
     - title: "Re-run tool"
-      element: ".fa-refresh:eq(1)"
+      element: "#current-history-panel .fa-refresh:first"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
       position: "left"
-      preclick:
-        - ".fa-refresh:eq(1)"
 
 
     - title: "Panel collapse"
