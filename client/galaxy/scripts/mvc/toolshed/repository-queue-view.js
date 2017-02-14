@@ -119,7 +119,8 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 '</table>',
                 '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',
             '</div>',
-            ].join('')),
+            ].join(''))
+    });
 
     return {
         RepoQueueView: View,
