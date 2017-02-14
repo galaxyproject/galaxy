@@ -3,11 +3,10 @@ define( [ 'utilities/utils', "plugins/ngl/viewer" ], function( Utils, ngl ) {
         initialize: function( options ) {
             var dataset = options.dataset,
                 settings = options.chart.settings,
-                url = window.location.protocol + '//' + window.location.host + "/datasets/" + dataset.dataset_id +
-                      "/display?to_ext=" + dataset.extension,
                 stage = new ngl.Stage( options.targets[ 0 ], { backgroundColor: settings.get( 'backcolor' ) } );
+
             Utils.get( {
-                url     : url,
+                url     : dataset.download_url,
                 cache   : true,
                 success : function( response ) {
                     var viewer_options = {},
@@ -24,7 +23,7 @@ define( [ 'utilities/utils', "plugins/ngl/viewer" ], function( Utils, ngl ) {
                         color: settings.get( 'colorscheme' ),
                         opacity: settings.get( 'opacity' )
                     };
-                    stage.loadFile( url, {ext: dataset.extension, name: dataset.name, defaultRepresentation: true} ).then( function( o ) {
+                    stage.loadFile( dataset.download_url, {ext: dataset.extension, name: dataset.name, defaultRepresentation: true} ).then( function( o ) {
                         o.addRepresentation( viewer_options.mode, representation_parameters );
                         o.centerView();
                     } );
