@@ -1,6 +1,4 @@
-"""
-API operations on Galaxy's installed tools.
-"""
+"""API operations on Galaxy's installed tools."""
 import copy
 import logging
 import os
@@ -26,8 +24,9 @@ class RepositoriesController( BaseAPIController ):
     @require_admin
     def index( self, trans, **kwd ):
         """
+        Return a list of all installed repositories on this instance.
+
         * GET /api/admin/repos:
-            Return a list of all installed repositories on this instance.
 
         :returns:   list of repos
         :rtype:     list
@@ -49,19 +48,13 @@ class RepositoriesController( BaseAPIController ):
         enriched_repo_dicts = self.__enrich_repos( trans, repo_list )
         return enriched_repo_dicts
 
-    def __enrich_repos(self, trans, repo_list):
-        unique_dicts = self._list_unique_repos( repo_list )
-        unique_dicts_w_sections = self._add_all_sections_for_repo( trans, unique_dicts )
-        stripped_repo_dicts = self._prep_repo_dicts( unique_dicts_w_sections.values() )
-        return stripped_repo_dicts
-
     @expose_api
     @require_admin
     def show( self, trans, id, **kwd ):
         """
+        Return a detail of the installed repository identified by the given id.
+
         * GET /api/admin/repos/{encoded_id}:
-            Return a detail of the installed repository identified
-            by the given id.
 
         :param  id:      the encoded id of the repo
         :type   id:      an encoded id string
@@ -99,8 +92,16 @@ class RepositoriesController( BaseAPIController ):
         repo_revision = kwd.get('repo_revision', None)
         return self.repo_manager.get_file( trans, path, self.__decode_id(trans, id, 'repository'), repo_revision=repo_revision )
 
+    def __enrich_repos(self, trans, repo_list):
+        unique_dicts = self._list_unique_repos( repo_list )
+        unique_dicts_w_sections = self._add_all_sections_for_repo( trans, unique_dicts )
+        stripped_repo_dicts = self._prep_repo_dicts( unique_dicts_w_sections.values() )
+        return stripped_repo_dicts
+
     def _list_unique_repos( self, all_repos ):
         """
+        Create a list of unique repo/owner/ts dicts.
+
         Given the list of serialized ToolShedRepository objects
         this method will identify those that differ only in revision
         (i.e. have same name, owner and tool_shed) and collapses
@@ -143,7 +144,9 @@ class RepositoriesController( BaseAPIController ):
         return unique_repos
 
     def _add_all_sections_for_repo( self, trans, unique_dicts ):
-        """"
+        """
+        Populate repositories with data about tools' sections.
+
         Iterate over toolbox and enrich the repository dictionaries
         with data of what sections the repo's tools are in.
         """
@@ -164,6 +167,8 @@ class RepositoriesController( BaseAPIController ):
 
     def _order_and_collapse_repos(self, all_repos):
         """
+        Make one dictionary from multiple repo revisions.
+
         Sort multiple installable revisions of the repository
         and collapse the older ones under 'collapsed_repos' key.
         """
@@ -181,18 +186,16 @@ class RepositoriesController( BaseAPIController ):
         return newest_repo
 
     def _prep_repo_dicts( self, repo_dicts ):
-        """
-        Adjust and minimize the size of returning dicts.
-        """
+        """Adjust and minimize the size of returning dicts."""
         for repo in repo_dicts:
             if 'sections' in repo.keys():
-                repo['sections'] = list(repo['sections'])
+                repo['sections'] = list( repo['sections'] )
         # TODO drop collapsed repos, leave just ctx_rev and id
         return repo_dicts
 
     def __decode_id( self, trans, encoded_id, object_name=None ):
         """
-        Try to decode the id.
+        Try to decode the object's id.
 
         :param  object_name:      Name of the object the id belongs to. (optional)
         :type   object_name:      str
