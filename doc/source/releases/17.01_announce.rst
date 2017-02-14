@@ -62,6 +62,8 @@ Deprecation Notices
   If you have local tools that depend on these modules and you do not wish to use a formal dependency resolution mechanism
   such as Conda, you can change the option ``preserve_python_environment`` in galaxy.ini from ``legacy`` to ``legacy_and_local``.
 
+* Galaxy's 'repair repository' feature for installed repositories is deprecated and will be removed/replaced in the next release - `details <https://github.com/galaxyproject/galaxy/issues/2929>`__.
+
 Release Notes
 ===========================================================
 
