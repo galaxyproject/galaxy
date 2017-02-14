@@ -625,7 +625,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             else:
                 refresh_frames = [ 'masthead', 'history' ]
             # Recalculate user disk usage.
-            trans.user.calculate_disk_usage()
+            if trans.user:
+                trans.user.calculate_disk_usage()
             # Since logging an event requires a session, we'll log prior to ending the session
             trans.log_event( "User logged out" )
         else:
