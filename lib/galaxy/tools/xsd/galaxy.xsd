@@ -4888,16 +4888,17 @@ for more examples.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
-    <xs:attribute name="input" type="xs:string" use="required">
+    <xs:attribute name="input" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must be the attribute name of
+        <xs:documentation xml:lang="en">This attribute should be the name of
 the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must also be an attribute
-name of an input parameter (e.g. ``value="interval"`` above).</xs:documentation>
+        <xs:documentation xml:lang="en">This must be a possible value of the ``input``
+parameter (e.g. ``value="interval"`` above), or of the deprecated ``input_dataset``'s
+``attribute.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="required">
@@ -4906,6 +4907,16 @@ name of an input parameter (e.g. ``value="interval"`` above).</xs:documentation>
 (e.g. ``format="interval"``). See
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
 for a list of supported formats.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="input_dataset" type="xs:string" gxdocs:deprecated="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="attribute" type="xs:string" gxdocs:deprecated="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

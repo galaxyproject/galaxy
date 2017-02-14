@@ -814,7 +814,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
         replace the old tool.
         """
         if tool_id not in self._tools_by_id:
-            message = "No tool with id %s" % escape( tool_id )
+            message = "No tool with id '%s'." % escape( tool_id )
             status = 'error'
         else:
             old_tool = self._tools_by_id[ tool_id ]
@@ -841,10 +841,7 @@ class AbstractToolBox( Dictifiable, ManagesIntegratedToolPanelMixin, object ):
             # (Re-)Register the reloaded tool, this will handle
             #  _tools_by_id and _tool_versions_by_id
             self.register_tool( new_tool )
-            message = "Reloaded the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % escape( old_tool.name )
-            message += "<b>id:</b> %s<br/>" % escape( old_tool.id )
-            message += "<b>version:</b> %s" % escape( old_tool.version )
+            message = { 'name' : old_tool.name, 'id' : old_tool.id, 'version' : old_tool.version }
             status = 'done'
         return message, status
 

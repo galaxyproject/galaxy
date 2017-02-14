@@ -99,7 +99,7 @@ class Admin( object ):
         if params.get( 'reload_tool_button', False ):
             tool_id = kwd.get( 'tool_id', None )
             galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
-            message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
+            message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
         return trans.fill_template( '/admin/reload_tool.mako',
                                     tool_id=tool_id,
                                     toolbox=toolbox,
