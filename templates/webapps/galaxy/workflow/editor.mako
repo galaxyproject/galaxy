@@ -13,10 +13,10 @@
             'run_workflow'        : h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
             'rename_async'        : h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) ),
             'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
-            'get_new_module_info' : h.url_for(controller='workflow', action='get_new_module_info' ),
+            'get_new_module_info' : h.url_for( controller='workflow', action='get_new_module_info' ),
             'workflow_index'      : h.url_for( controller='workflow', action='index' ),
-            'save_workflow'       : h.url_for(controller='workflow', action='save_workflow' ),
-            'workflow_save_as'    : h.url_for(controller='workflow', action='save_workflow_as') 
+            'save_workflow'       : h.url_for( controller='workflow', action='save_workflow' ),
+            'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as') 
         },
         'workflows' : [{
             'id'                  : trans.security.encode_id( workflow.id ),
