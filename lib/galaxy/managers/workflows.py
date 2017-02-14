@@ -613,7 +613,9 @@ class WorkflowContentsManager(UsesAnnotations):
             # Data inputs
             input_dicts = []
             step_state = module.state.inputs or {}
-            input_dicts.append( { "name": step.label, "description": annotation_str } )
+            if name in step_state:
+                name = step_state.get( "name" )
+                input_dicts.append( { "name": name, "description": annotation_str } )
             for name, val in step_state.items():
                 input_type = type( val )
                 if input_type == RuntimeValue:
@@ -706,7 +708,7 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            step_label = step.label
+            step_label = step.tool_inputs.get( 'name' )
             if step_label:
                 label = step_label
             elif step_type == "data_input":
