@@ -1041,7 +1041,7 @@ class ConfiguresGalaxyMixin:
                                    object_store=self.object_store,
                                    trace_logger=getattr(self, "trace_logger", None),
                                    use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ),
-                                   slow_query_log_threshold = self.config.slow_query_log_threshold )
+                                   slow_query_log_threshold=self.config.slow_query_log_threshold )
 
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")
