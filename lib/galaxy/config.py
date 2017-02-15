@@ -124,7 +124,7 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
-        self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
+        self.slow_query_log_threshold = float( kwargs.get( "slow_query_log_threshold", 0) )
 
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
