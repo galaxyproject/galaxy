@@ -1,5 +1,6 @@
 import logging
 import time
+
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 
