@@ -21,12 +21,16 @@ define( [ 'utilities/utils', "plugins/ngl/viewer" ], function( Utils, ngl ) {
                 opacity: settings.get( 'opacity' )
             };
             stage_parameters = { ext: dataset.extension, name: dataset.name, defaultRepresentation: true };
-            stage.loadFile( dataset.download_url, stage_parameters ).then( function( component ) {
-                component.addRepresentation( viewer_options.mode, representation_parameters );
-                component.centerView();
-                options.chart.state( 'ok', 'Chart drawn.' );
+            try {
+                stage.loadFile( dataset.download_url, stage_parameters ).then( function( component ) {
+                    component.addRepresentation( viewer_options.mode, representation_parameters );
+                    options.chart.state( 'ok', 'Chart drawn.' );
+                    options.process.resolve();
+                } );
+            } catch( e ) {
+                options.chart.state( 'failed', 'Could not load PDB file.' );
                 options.process.resolve();
-            } );
+            }
             stage.setQuality( settings.get( 'quality' ) );
             if( settings.get( 'spin' ) === true || settings.get( 'spin' ) === 'true' ) {
                 stage.setSpin( [ 0, 1, 0 ], 0.01 );

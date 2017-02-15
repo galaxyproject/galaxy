@@ -45,6 +45,24 @@ define( [], function() {
                                 { label : 'Unitcell', value : 'unitcell' } ]
                 }
             },
+            radius: {
+                name  : 'radius',
+                label : 'Radius',
+                help  : 'Select a number providing a fixed radius used for rendering the representation.',
+                type  : 'float',
+                min   : 0.001,
+                max   : 10.0,
+                value : 0.05
+            },
+            scale: {
+                name  : 'scale',
+                label : 'Scale',
+                help  : 'Select a number that scales the value defined by the *radius* parameter.',
+                type  : 'float',
+                min   : 0.001,
+                max   : 10.0,
+                value : 0.7
+            },
             colorscheme : {
                 label   : 'Color Scheme',
                 help    : 'Select color scheme of the molecule scene.',
@@ -87,24 +105,6 @@ define( [], function() {
                 display : 'radio',
                 value   : false,
                 data    : [ { label : 'On', value : true }, { label : 'Off', value : false } ]
-            },
-            radius: {
-                name  : 'radius',
-                label : 'Radius',
-                help  : 'Select a number providing a fixed radius used for rendering the representation.',
-                type  : 'float',
-                min   : 0.001,
-                max   : 10.0,
-                value : 0.7
-            },
-            scale: {
-                name  : 'scale',
-                label : 'Scale',
-                help  : 'Select a number that scales the value defined by the *radius* parameter.',
-                type  : 'float',
-                min   : 0.001,
-                max   : 10.0,
-                value : 0.7
             },
             assembly : {
                 label   : 'Assembly',
