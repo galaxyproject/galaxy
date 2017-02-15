@@ -117,6 +117,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # 'galaxy.model.orm.logging_connection_proxy'
 #database_query_profiling_proxy = False
 
+# Slow query logging.  Queries slower than the threshold indicated below will
+# be logged to debug.  A value of '0' is disabled.  For example, you would set
+# this to .005 to log all queries taking longer than 5 milliseconds
+# slow_query_log_threshold = 0
+
 # By default, Galaxy will use the same database to track user data and
 # tool shed install data.  There are many situations in which it is
 # valuable to separate these - for instance bootstrapping fresh Galaxy
