@@ -708,7 +708,7 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            step_label = step.tool_inputs.get( 'name' )
+            step_label = step.label or step.tool_inputs.get( 'name' )
             if step_label:
                 label = step_label
             elif step_type == "data_input":
