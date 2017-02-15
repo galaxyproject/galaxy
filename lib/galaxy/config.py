@@ -123,6 +123,7 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         self.database_query_profiling_proxy = string_as_bool( kwargs.get( "database_query_profiling_proxy", "False" ) )
+        self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
 
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
@@ -1037,7 +1038,8 @@ class ConfiguresGalaxyMixin:
                                    database_query_profiling_proxy=self.config.database_query_profiling_proxy,
                                    object_store=self.object_store,
                                    trace_logger=getattr(self, "trace_logger", None),
-                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ) )
+                                   use_pbkdf2=self.config.get_bool( 'use_pbkdf2', True ),
+                                   slow_query_log_threshold = self.config.slow_query_log_threshold )
 
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")
