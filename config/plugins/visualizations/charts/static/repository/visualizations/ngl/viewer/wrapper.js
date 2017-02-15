@@ -20,7 +20,7 @@ define( [ 'utilities/utils', "plugins/ngl/viewer" ], function( Utils, ngl ) {
                 color: settings.get( 'colorscheme' ),
                 opacity: settings.get( 'opacity' )
             };
-            stage_parameters = { ext: dataset.extension, name: dataset.name, defaultRepresentation: true };
+            stage_parameters = { ext: dataset.extension, defaultRepresentation: true };
             try {
                 stage.loadFile( dataset.download_url, stage_parameters ).then( function( component ) {
                     component.addRepresentation( viewer_options.mode, representation_parameters );
