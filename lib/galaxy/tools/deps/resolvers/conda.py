@@ -323,9 +323,9 @@ class MergedCondaDependency(Dependency):
     def shell_commands(self, requirement):
         if self._preserve_python_environment:
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
-            # fine with just appending the PATH as done below. Other tools may require additional
+            # fine with just prepending the PATH as done below. Other tools may require additional
             # variables in the future.
-            return """export PATH=$PATH:'%s/bin' """ % (
+            return """export PATH='%s/bin':$PATH """ % (
                 self.environment_path,
             )
         else:
