@@ -35,10 +35,13 @@ security_helper = SecurityHelper(id_secret=id_secret)
 if len(sys.argv) != 3:
     sys.stdout.write("python %s (encode|decode) value\n" % sys.argv[0])
 
-if sys.argv[1] == 'decode':
-    sys.stdout.write(security_helper.decode_guid(sys.argv[2]))
-elif sys.argv[1] == 'encode':
-    sys.stdout.write(security_helper.encode_guid(sys.argv[2]))
+action = sys.argv[1]
+value = sys.argv[2]
+
+if action == 'decode':
+    sys.stdout.write(security_helper.decode_guid(value.lstrip('F')))
+elif action == 'encode':
+    sys.stdout.write(security_helper.encode_guid(value))
 else:
     sys.stdout.write("Unknown argument")
 sys.stdout.write('\n')
