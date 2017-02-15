@@ -404,8 +404,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 hda = self.hda_manager.error_if_uploading( hda )
 
         # make the actual changes
-        # TODO: is this if still needed?
-        if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
+        if hda:
             self.hda_deserializer.deserialize( hda, payload, user=trans.user, trans=trans )
             # TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):
