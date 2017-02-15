@@ -35,5 +35,5 @@ define([], function() {
         localStorage.repositories = JSON.stringify(queued_repos);
     }
 
-    return {searchShed: searchShed, shedParser: shedParser, queueKey: queueKey};
+    return {searchShed: searchShed, shedParser: shedParser, addToQueue: addToQueue};
 });

@@ -32,16 +32,21 @@ define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed
                     tool_ids: tool_ids
                 };
                 $.get(api_url, params, function(data) {
-                    var changesets = Object.keys(data.repository.metadata), current_changeset = changesets[0], current_metadata = data.repository.metadata[current_changeset];
-                    current_metadata.tool_shed_url = toolshed, toolshed_util.addToQueue(current_metadata), 
-                    elem.remove();
+                    repository_id = data.repository.id, params = {
+                        tool_shed_url: toolshed,
+                        repository_id: repository_id
+                    }, $.get(api_url, params, function(data) {
+                        var changesets = Object.keys(data.repository.metadata), current_changeset = changesets[0], current_metadata = data.repository.metadata[current_changeset];
+                        current_metadata.tool_shed_url = toolshed, toolshed_util.addToQueue(current_metadata), 
+                        elem.remove();
+                    });
                 });
             }), $("#from_workflow").on("click", that.loadWorkflows);
         },
         reDraw: function(options) {
             this.$el.empty(), this.initialize(options), this.model.fetch(), this.render(options);
         },
-        templateWorkflows: _.template([ '<table id="workflows_missing_tools" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">', '<thead id="grid-table-header">', "<tr>", '<th class="datasetRow">Workflows</th>', '<th class="datasetRow">Tool IDs</th>', '<th class="datasetRow">Shed</th>', '<th class="datasetRow">Name</th>', '<th class="datasetRow">Owner</th>', '<th class="datasetRow">Actions</th>', "</tr>", "</thead>", "<tbody>", "<% _.each(workflows, function(workflow) { %>", "<tr>", '<td class="datasetRow">', '<ul class="workflow_names">', '<% _.each(workflow.get("workflows"), function(name) { %>', '<li class="workflow_names"><%= name %></li>', "<% }); %>", "</ul>", "</td>", '<td class="datasetRow">', '<ul class="workflow_tools">', '<% _.each(workflow.get("tools"), function(tool) { %>', '<li class="workflow_tools"><%= tool %></li>', "<% }); %>", "</ul>", "</td>", '<td class="datasetRow"><%= workflow.get("shed") %></td>', '<td class="datasetRow"><%= workflow.get("repository") %></td>', '<td class="datasetRow"><%= workflow.get("owner") %></td>', '<td class="datasetRow">', '<ul class="workflow_tools">', '<li class="workflow_tools">', '<input type="button" class="show_wf_repo btn btn-primary" data-shed="<%= workflow.get("shed") %>" data-owner="<%= workflow.get("owner") %>" data-repo="<%= workflow.get("repository") %>" data-toolids="<%= workflow.get("tools").join(",") %>" value="Preview" /></li>', '<li><input type="button" class="queue_wf_repo btn btn-primary" data-shed="<%= workflow.get("shed") %>" data-owner="<%= workflow.get("owner") %>" data-repo="<%= workflow.get("repository") %>" data-toolids="<%= workflow.get("tools").join(",") %>" value="Add to queue" /></li>', "</ul>", "</td>", "</tr>", "<% }); %>", "</ul>", "</div>" ].join(""))
+        templateWorkflows: _.template([ '<table id="workflows_missing_tools" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">', '<thead id="grid-table-header">', "<tr>", '<th class="datasetRow">Workflows</th>', '<th class="datasetRow">Tool IDs</th>', '<th class="datasetRow">Shed</th>', '<th class="datasetRow">Name</th>', '<th class="datasetRow">Owner</th>', '<th class="datasetRow">Actions</th>', "</tr>", "</thead>", "<tbody>", "<% _.each(workflows, function(workflow) { %>", "<tr>", '<td class="datasetRow">', '<ul class="workflow_names">', '<% _.each(workflow.get("workflows"), function(name) { %>', '<li class="workflow_names"><%= name %></li>', "<% }); %>", "</ul>", "</td>", '<td class="datasetRow">', '<ul class="workflow_tools">', '<% _.each(workflow.get("tools"), function(tool) { %>', '<li class="workflow_tools"><%= tool %></li>', "<% }); %>", "</ul>", "</td>", '<td class="datasetRow"><%= workflow.get("shed") %></td>', '<td class="datasetRow"><%= workflow.get("repository") %></td>', '<td class="datasetRow"><%= workflow.get("owner") %></td>', '<td class="datasetRow">', '<ul class="workflow_tools">', '<li class="workflow_tools">', '<input type="button" class="show_wf_repo btn btn-primary" data-shed="<%= workflow.get("shed") %>" data-owner="<%= workflow.get("owner") %>" data-repo="<%= workflow.get("repository") %>" data-toolids="<%= workflow.get("tools").join(",") %>" value="Show Repository" /></li>', "</ul>", "</td>", "</tr>", "<% }); %>", "</ul>", "</div>" ].join(""))
     });
     return {
         Workflows: View

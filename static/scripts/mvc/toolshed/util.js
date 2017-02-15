@@ -16,10 +16,15 @@ define([], function() {
                 label: label
             }, results.push(result);
         }), results;
+    }, addToQueue = function(metadata) {
+        "/" == metadata.tool_shed_url.substr(-1) && (metadata.tool_shed_url = metadata.tool_shed_url.substr(0, metadata.tool_shed_url.length - 1));
+        var key = metadata.tool_shed_url + "|" + metadata.repository_id + "|" + metadata.changeset_revision, queued_repos = new Object();
+        localStorage.repositories && (queued_repos = JSON.parse(localStorage.repositories)), 
+        queued_repos[key] = metadata, localStorage.repositories = JSON.stringify(queued_repos);
     };
     return {
         searchShed: searchShed,
         shedParser: shedParser,
-        queueKey: queueKey
+        addToQueue: addToQueue
     };
 });

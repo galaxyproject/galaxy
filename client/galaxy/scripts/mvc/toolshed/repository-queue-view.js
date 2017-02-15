@@ -29,12 +29,23 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 var repository_metadata = that.loadFromQueue($(this).attr('data-repokey'));
                 that.installFromQueue(repository_metadata, $(this).attr('data-repokey'));
             });
+            $('.remove_one').on('click', function() {
+                var queue_key = $(this).attr('data-repokey');
+                var repo_queue = JSON.parse(localStorage.repositories);
+                if (repo_queue.hasOwnProperty(queue_key)) {
+                    var repository_id = repo_queue[queue_key].repository.id;
+                    delete repo_queue[queue_key];
+                    $('#queued_repository_' + repository_id).remove();
+                }
+                localStorage.repositories = JSON.stringify(repo_queue);
+            });
             $('#from_workflow').on('click', function() { Backbone.history.navigate('workflows', {trigger: true, replace:true}); });
         },
 
         installFromQueue: function(repository_metadata, queue_key) {
             var that = this;
             var params = Object();
+            console.log(repository_metadata);
             params.install_tool_dependencies = repository_metadata.install_tool_dependencies;
             params.install_repository_dependencies = repository_metadata.install_repository_dependencies;
             params.install_resolver_dependencies = repository_metadata.install_resolver_dependencies;
