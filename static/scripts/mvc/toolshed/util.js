@@ -16,10 +16,6 @@ define([], function() {
                 label: label
             }, results.push(result);
         }), results;
-    }, queueKey = function(repository_metadata) {
-        return void 0 === repository_metadata.tool_shed_url && (repository_metadata.tool_shed_url = $("#repository_details").attr("data-shedurl")), 
-        "/" == repository_metadata.tool_shed_url.substr(-1) && (repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(0, repository_metadata.tool_shed_url.length - 1)), 
-        repository_metadata.tool_shed_url + "|" + repository_metadata.repository_id + "|" + repository_metadata.changeset_revision;
     };
     return {
         searchShed: searchShed,

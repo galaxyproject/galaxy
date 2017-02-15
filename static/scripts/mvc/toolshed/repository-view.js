@@ -1,4 +1,4 @@
-define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mvc/ui/ui-modal", "mvc/form/form-view" ], function(toolshed_model, jstree, Utils, Modal, FormView) {
+define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mvc/ui/ui-modal", "mvc/form/form-view", "mvc/toolshed/util" ], function(toolshed_model, jstree, Utils, Modal, FormView, toolshed_util) {
     var ToolShedRepositoryView = Backbone.View.extend({
         el: "#center",
         initialize: function(params) {
@@ -58,11 +58,8 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
                 repository_metadata.install_repository_dependencies = $("#install_repository_dependencies").val(), 
                 repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val(), 
                 repository_metadata.tool_panel_section = JSON.stringify(that.panelSelect({})), repository_metadata.shed_tool_conf = $("select[name='shed_tool_conf']").find("option:selected").val(), 
-                repository_metadata.tool_shed_url = that.model.tool_shed_url, "/" == repository_metadata.tool_shed_url.substr(-1) && (repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(0, repository_metadata.tool_shed_url.length - 1));
-                var queue_key = repository_metadata.tool_shed_url + "|" + repository_metadata.repository_id + "|" + repository_metadata.changeset_revision, queued_repos = new Object();
-                localStorage.repositories && (queued_repos = JSON.parse(localStorage.repositories)), 
-                queued_repos.hasOwnProperty(queue_key) || (queued_repos[queue_key] = repository_metadata), 
-                localStorage.repositories = JSON.stringify(queued_repos), that.checkInstalled(repository_metadata);
+                repository_metadata.tool_shed_url = that.model.tool_shed_url, "/" == repository_metadata.tool_shed_url.substr(-1) && (repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(0, repository_metadata.tool_shed_url.length - 1)), 
+                toolshed_util.addToQueue(repository_metadata), that.checkInstalled(repository_metadata);
             }), $(".tool_panel_section_picker").on("change", function() {
                 new_value = $(this).find("option:selected").val(), default_tps = $("#tool_panel_section_select").find("option:selected").val(), 
                 new_value == default_tps ? $(this).attr("default", "active") : $(this).removeAttr("default");

@@ -22,15 +22,17 @@ define([], function() {
         return results;
     };
 
-    var queueKey = function(repository_metadata) {
-        if (repository_metadata.tool_shed_url === undefined) {
-            repository_metadata.tool_shed_url = $("#repository_details").attr('data-shedurl');
+    var addToQueue = function(metadata) {
+        if (metadata.tool_shed_url.substr(-1) == '/') {
+            metadata.tool_shed_url = metadata.tool_shed_url.substr(0, metadata.tool_shed_url.length - 1);
         }
-        // Make sure there is never a trailing slash on the shed URL.
-        if (repository_metadata.tool_shed_url.substr(-1) == '/') {
-            repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(0, repository_metadata.tool_shed_url.length - 1);
+        var key = metadata.tool_shed_url + '|' + metadata.repository_id + '|' + metadata.changeset_revision;
+        var queued_repos = new Object();
+        if (localStorage.repositories) {
+            queued_repos = JSON.parse(localStorage.repositories);
         }
-        return repository_metadata.tool_shed_url + '|' + repository_metadata.repository_id + '|' + repository_metadata.changeset_revision;
+        queued_repos[key] = metadata;
+        localStorage.repositories = JSON.stringify(queued_repos);
     }
 
     return {searchShed: searchShed, shedParser: shedParser, queueKey: queueKey};

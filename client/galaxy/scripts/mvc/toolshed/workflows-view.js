@@ -18,10 +18,6 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
             var that = this;
             var workflows_missing_tools = that.templateWorkflows;
             var workflows = that.model.models;
-            _.each(workflows.attributes, function(wo) {
-                console.log({wo: workflows.get(wo)});
-            });
-            console.log(workflows);
             that.$el.html(workflows_missing_tools({workflows: workflows}));
             $("#center").css('overflow', 'auto');
             that.bindEvents();
@@ -40,6 +36,21 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                     Backbone.history.navigate(new_route, {trigger: true, replace:true});
                 });
              });
+            $('.queue_wf_repo').on('click', function() {
+                var elem = $(this);
+                var tool_ids = elem.attr('data-toolids');
+                var toolshed = elem.attr('data-shed');
+                var api_url = Galaxy.root + 'api/tool_shed/repository'
+                var params = {'tool_ids': tool_ids};
+                $.get(api_url, params, function(data) {
+                    var changesets = Object.keys(data.repository.metadata);
+                    var current_changeset = changesets[0];
+                    var current_metadata = data.repository.metadata[current_changeset];
+                    current_metadata.tool_shed_url = toolshed;
+                    toolshed_util.addToQueue(current_metadata);
+                    elem.remove();
+                });
+            });
             $('#from_workflow').on('click', that.loadWorkflows);
         },
 

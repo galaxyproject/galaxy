@@ -254,11 +254,10 @@ class ToolShedController( BaseAPIController ):
             repository_data[ 'current_changeset' ] = found_repository[ 'current_changeset' ]
             repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', repository_id ] ) )
             del found_repository[ 'current_changeset' ]
-            repository_data[ 'repository' ][ 'metadata' ] = found_repository
             repository_data[ 'tool_shed_url' ] = tool_shed_url
         else:
             repository_data[ 'repository' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', repository_id ] ) )
-            repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', repository_id, 'metadata' ] ) )
+        repository_data[ 'repository' ][ 'metadata' ] = json.loads( util.url_get( tool_shed_url, pathspec=[ 'api', 'repositories', repository_id, 'metadata' ] ) )
         repository_data[ 'shed_conf' ] = tool_util.build_shed_tool_conf_select_field( trans.app ).get_html().replace('\n', '')
         repository_data[ 'panel_section_html' ] = tool_panel_section_select_field.get_html( extra_attr={ 'style': 'width: 30em;' } ).replace( '\n', '' )
         repository_data[ 'panel_section_dict' ] = tool_panel_section_dict

@@ -2,11 +2,13 @@ define(['mvc/toolshed/toolshed-model',
         'libs/jquery/jstree',
         'utils/utils',
         'mvc/ui/ui-modal',
-        'mvc/form/form-view'], function(toolshed_model,
-                                        jstree,
-                                        Utils,
-                                        Modal,
-                                        FormView) {
+        'mvc/form/form-view',
+        'mvc/toolshed/util'], function(toolshed_model,
+                                       jstree,
+                                       Utils,
+                                       Modal,
+                                       FormView,
+                                       toolshed_util) {
 
     var ToolShedRepositoryView = Backbone.View.extend({
 
@@ -100,15 +102,7 @@ define(['mvc/toolshed/toolshed-model',
                 if (repository_metadata.tool_shed_url.substr(-1) == '/') {
                     repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(0, repository_metadata.tool_shed_url.length - 1);
                 }
-                var queue_key = repository_metadata.tool_shed_url + '|' + repository_metadata.repository_id + '|' + repository_metadata.changeset_revision;
-                var queued_repos = new Object();
-                if (localStorage.repositories) {
-                    queued_repos = JSON.parse(localStorage.repositories);
-                }
-                if (!queued_repos.hasOwnProperty(queue_key)) {
-                    queued_repos[queue_key] = repository_metadata;
-                }
-                localStorage.repositories = JSON.stringify(queued_repos);
+                toolshed_util.addToQueue(repository_metadata);
                 that.checkInstalled(repository_metadata);
             });
             $('.tool_panel_section_picker').on('change', function() {

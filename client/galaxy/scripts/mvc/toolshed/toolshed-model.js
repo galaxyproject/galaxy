@@ -57,7 +57,6 @@ define([], function() {
                 repo.queue_key = key;
                 repositories.push(repo);
             });
-            console.log({collection: repositories});
             collection.reset(repositories);
             return Backbone.Collection.prototype.fetch.call(this);
         },

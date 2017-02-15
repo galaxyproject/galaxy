@@ -36,8 +36,6 @@ define([], function() {
             return _.each(queue_keys, function(key) {
                 var repo = repositories_enc[key];
                 repo.queue_key = key, repositories.push(repo);
-            }), console.log({
-                collection: repositories
             }), collection.reset(repositories), Backbone.Collection.prototype.fetch.call(this);
         }
     }), RepoStatusModel = Backbone.Model.extend({

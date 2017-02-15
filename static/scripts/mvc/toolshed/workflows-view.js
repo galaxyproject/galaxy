@@ -1,4 +1,4 @@
-define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed_model) {
+define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed_model, toolshed_util) {
     var View = Backbone.View.extend({
         el: "#center",
         defaults: [ {} ],
@@ -9,11 +9,7 @@ define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed
         },
         render: function() {
             var that = this, workflows_missing_tools = that.templateWorkflows, workflows = that.model.models;
-            _.each(workflows.attributes, function(wo) {
-                console.log({
-                    wo: workflows.get(wo)
-                });
-            }), console.log(workflows), that.$el.html(workflows_missing_tools({
+            that.$el.html(workflows_missing_tools({
                 workflows: workflows
             })), $("#center").css("overflow", "auto"), that.bindEvents();
         },
@@ -30,6 +26,15 @@ define([ "mvc/toolshed/toolshed-model", "mvc/toolshed/util" ], function(toolshed
                         trigger: !0,
                         replace: !0
                     });
+                });
+            }), $(".queue_wf_repo").on("click", function() {
+                var elem = $(this), tool_ids = elem.attr("data-toolids"), toolshed = elem.attr("data-shed"), api_url = Galaxy.root + "api/tool_shed/repository", params = {
+                    tool_ids: tool_ids
+                };
+                $.get(api_url, params, function(data) {
+                    var changesets = Object.keys(data.repository.metadata), current_changeset = changesets[0], current_metadata = data.repository.metadata[current_changeset];
+                    current_metadata.tool_shed_url = toolshed, toolshed_util.addToQueue(current_metadata), 
+                    elem.remove();
                 });
             }), $("#from_workflow").on("click", that.loadWorkflows);
         },

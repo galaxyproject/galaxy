@@ -32,7 +32,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
             $('#from_workflow').on('click', function() { Backbone.history.navigate('workflows', {trigger: true, replace:true}); });
         },
 
-        installFromQueue: function install_from_queue(repository_metadata, queue_key) {
+        installFromQueue: function(repository_metadata, queue_key) {
             var that = this;
             var params = Object();
             params.install_tool_dependencies = repository_metadata.install_tool_dependencies;
@@ -63,7 +63,6 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 var new_route = 'status/r/' + repositories.join('|');
                 $.post(Galaxy.root + 'admin_toolshed/manage_repositories', iri_params, function(data) {
                     console.log( "Initializing repository installation succeeded" );
-                    // window.location.assign(Galaxy.root + 'admin_toolshed/monitor_repository_installation');
                 });
                 Backbone.history.navigate(new_route, {trigger: true, replace:true});
             });
