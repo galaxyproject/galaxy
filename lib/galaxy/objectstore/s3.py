@@ -38,7 +38,7 @@ except ImportError:
 NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependency available."
                          "Please install and properly configure boto or modify object store configuration.")
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
