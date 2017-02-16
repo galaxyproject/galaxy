@@ -233,7 +233,6 @@ class SubWorkflowModule( WorkflowModule ):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
-    subworkflow = None
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
@@ -244,6 +243,8 @@ class SubWorkflowModule( WorkflowModule ):
             content_id = d["content_id"]
             from galaxy.managers.workflows import WorkflowsManager
             module.subworkflow = WorkflowsManager( trans.app ).get_owned_workflow( trans, content_id )
+        else:
+            raise Exception( "Step associated subworkflow could not be found." )
         module.label = d.get( "label" )
         return module
 
