@@ -1461,7 +1461,7 @@ class BaseDataToolParameter( ToolParameter ):
         if history is not None:
             dataset_matcher = DatasetMatcher( trans, self, None, other_values )
             if isinstance( self, DataToolParameter ):
-                for hda in reversed( history.active_datasets_children_and_roles ):
+                for hda in reversed( history.active_datasets_and_roles ):
                     match = dataset_matcher.hda_match( hda, check_security=False )
                     if match:
                         return match.hda
@@ -1581,25 +1581,6 @@ class DataToolParameter( BaseDataToolParameter ):
         for history_dataset_collection in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
                 yield history_dataset_collection
-
-    def match_datasets( self, history, dataset_matcher ):
-
-        def dataset_collector( hdas, parent_hid ):
-            for i, hda in enumerate( hdas ):
-                if parent_hid is not None:
-                    hid = "%s.%d" % ( parent_hid, i + 1 )
-                else:
-                    hid = str( hda.hid )
-                hda_match = dataset_matcher.hda_match( hda )
-                if not hda_match:
-                    continue
-                yield (hda_match, hid)
-                # Also collect children via association object
-                for item in dataset_collector( hda.children, hid ):
-                    yield item
-
-        for item in dataset_collector( history.active_datasets_children_and_roles, None ):
-            yield item
 
     def from_json( self, value, trans, other_values={} ):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
@@ -1799,7 +1780,7 @@ class DataToolParameter( BaseDataToolParameter ):
         # add datasets
         visible_hda = other_values.get( self.name )
         has_matched = False
-        for hda in history.active_datasets_children_and_roles:
+        for hda in history.active_datasets_and_roles:
             match = dataset_matcher.hda_match( hda, check_security=False )
             if match:
                 m = match.hda
