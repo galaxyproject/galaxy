@@ -368,26 +368,30 @@ def install_conda(conda_context=None):
 def install_conda_targets(conda_targets, env_name=None, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     conda_context.ensure_channels_configured()
-    create_args = []
-    if env_name:
-        create_args.extend([
+    if env_name is not None:
+        create_args = [
             "--name", env_name,  # environment for package
-        ])
-    for conda_target in conda_targets:
-        create_args.append(conda_target.package_specifier)
-    return conda_context.exec_create(create_args)
+        ]
+        for conda_target in conda_targets:
+            create_args.append(conda_target.package_specifier)
+        return conda_context.exec_create(create_args)
+    else:
+        return conda_context.exec_install(create_args)
 
 
-def install_conda_target(conda_target, conda_context=None):
+def install_conda_target(conda_target, conda_context=None, skip_environment=False):
     """ Install specified target into a its own environment.
     """
     conda_context = _ensure_conda_context(conda_context)
     conda_context.ensure_channels_configured()
-    create_args = [
-        "--name", conda_target.install_environment,  # enviornment for package
-        conda_target.package_specifier,
-    ]
-    return conda_context.exec_create(create_args)
+    if not skip_environment:
+        create_args = [
+            "--name", conda_target.install_environment,  # environment for package
+            conda_target.package_specifier,
+        ]
+        return conda_context.exec_create(create_args)
+    else:
+        return conda_context.exec_install([conda_target.package_specifier])
 
 
 def cleanup_failed_install_of_environment(env, conda_context=None):
