@@ -365,12 +365,14 @@ def install_conda(conda_context=None):
             os.remove(script_path)
 
 
-def install_conda_targets(conda_targets, env_name, conda_context=None):
+def install_conda_targets(conda_targets, env_name=None, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
     conda_context.ensure_channels_configured()
-    create_args = [
-        "--name", env_name,  # enviornment for package
-    ]
+    create_args = []
+    if env_name:
+        create_args.extend([
+            "--name", env_name,  # environment for package
+        ])
     for conda_target in conda_targets:
         create_args.append(conda_target.package_specifier)
     return conda_context.exec_create(create_args)
