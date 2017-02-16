@@ -77,9 +77,6 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 });
                 Backbone.history.navigate(new_route, {trigger: true, replace:true});
             });
-
-            // this.$el.empty();
-            // this.$el.html(page);
         },
 
         loadFromQueue: function(queue_key) {

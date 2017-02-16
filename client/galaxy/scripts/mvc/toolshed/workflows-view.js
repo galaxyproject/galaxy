@@ -61,8 +61,6 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         reDraw: function(options) {
             this.$el.empty();
             this.initialize(options);
-            this.model.fetch();
-            this.render(options);
         },
 
         templateWorkflows: _.template([

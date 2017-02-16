@@ -59,8 +59,6 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
             this.$el.empty();
             this.model.url = this.model.url + '?tool_shed_url=' + this.options.tool_shed;
             this.initialize(options);
-            // this.model.fetch();
-            // this.render(options);
         },
 
         templateCategoryList: _.template([
