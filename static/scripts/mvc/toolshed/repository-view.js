@@ -107,9 +107,9 @@ define([ "mvc/toolshed/toolshed-model", "libs/jquery/jstree", "utils/utils", "mv
                     already_installed ? ($("#install_repository").prop("disabled", !0), $("#install_repository").val("This revision is already installed")) : ($("#install_repository").prop("disabled", !1), 
                     $("#install_repository").val("Install this revision"));
                 }
-            }), that.repoQueued(metadata) || already_installed ? ($("#queue_install").hide(), 
-            $("#queue_install").val("This revision is already in the queue")) : ($("#queue_install").show(), 
-            $("#queue_install").val("Install this revision later"));
+                that.repoQueued(metadata) || already_installed ? ($("#queue_install").hide(), $("#queue_install").val("This revision is already in the queue")) : ($("#queue_install").show(), 
+                $("#queue_install").val("Install this revision later"));
+            });
         },
         panelSelect: function(params) {
             var tool_panel_section = {};

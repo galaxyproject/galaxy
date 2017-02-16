@@ -113,7 +113,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                             '<td>',
                                 '<div id="" class="">',
                                     '<label id="RepositoryStatus-<%= repository.get("id") %>" for="<%= repository.get("id") %>">',
-                                        '<div class="repo-status count-box state-color-<%= repository.get("status").toLowerCase().replace(" ", "-") %>" id="RepositoryStatus-<%= repository.get("id") %>">',
+                                        '<div class="repo-status count-box state-color-<%= repository.get("status").toLowerCase().replace(/ /g, "-") %>" id="RepositoryStatus-<%= repository.get("id") %>">',
                                             '<%= repository.get("status") %>',
                                         '</div>',
                                     '</label>',

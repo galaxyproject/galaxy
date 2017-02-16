@@ -171,15 +171,15 @@ define(['mvc/toolshed/toolshed-model',
                         $('#install_repository').val('Install this revision');
                     }
                 }
+                if (that.repoQueued(metadata) || already_installed) {
+                    $('#queue_install').hide();
+                    $('#queue_install').val('This revision is already in the queue');
+                }
+                else {
+                    $('#queue_install').show();
+                    $('#queue_install').val('Install this revision later');
+                }
             });
-            if (that.repoQueued(metadata) || already_installed) {
-                $('#queue_install').hide();
-                $('#queue_install').val('This revision is already in the queue');
-            }
-            else {
-                $('#queue_install').show();
-                $('#queue_install').val('Install this revision later');
-            }
         },
 
         panelSelect: function(params) {
