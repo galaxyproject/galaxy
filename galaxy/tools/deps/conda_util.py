@@ -371,7 +371,7 @@ def install_conda_targets(conda_targets, env_name=None, conda_context=None):
     create_args = []
     if env_name:
         create_args.extend([
-            "--name", env_name,  # enviornment for package
+            "--name", env_name,  # environment for package
         ])
     for conda_target in conda_targets:
         create_args.append(conda_target.package_specifier)
