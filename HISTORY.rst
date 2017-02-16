@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.0.dev0
+17.5.0 (2017-02-16)
 ---------------------
 
 * Bring in the last of the Galaxy dev changes.
