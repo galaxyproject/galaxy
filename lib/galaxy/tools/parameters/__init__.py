@@ -219,6 +219,44 @@ def update_param( prefixed_name, input_values, new_value ):
 def populate_state( request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True ):
     """
     Populates nested state dict from incoming parameter values.
+    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util.odict import odict
+    >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
+    >>> from galaxy.tools.parameters.grouping import Repeat
+    >>> trans = Bunch( workflow_building_mode=False )
+    >>> a = TextToolParameter( None, XML( '<param name="a"/>' ) )
+    >>> b = Repeat()
+    >>> b.min = 0
+    >>> b.max = 1
+    >>> c = TextToolParameter( None, XML( '<param name="c"/>' ) )
+    >>> d = Repeat()
+    >>> d.min = 0
+    >>> d.max = 1
+    >>> e = TextToolParameter( None, XML( '<param name="e"/>' ) )
+    >>> f = Conditional()
+    >>> g = BooleanToolParameter( None, XML( '<param name="g"/>' ) )
+    >>> h = TextToolParameter( None, XML( '<param name="h"/>' ) )
+    >>> i = TextToolParameter( None, XML( '<param name="i"/>' ) )
+    >>> b.name = 'b'
+    >>> b.inputs = odict([ ('c', c), ('d', d) ])
+    >>> d.name = 'd'
+    >>> d.inputs = odict([ ('e', e), ('f', f) ])
+    >>> f.test_param = g
+    >>> f.name = 'f'
+    >>> f.cases = [ Bunch( value='true', inputs= { 'h': h } ), Bunch( value='false', inputs= { 'i': i } ) ]
+    >>> inputs = odict([('a',a),('b',b)])
+    >>> flat = odict([ ('a', 1 ), ( 'b_0|c', 2 ), ( 'b_0|d_0|e', 3 ), ( 'b_0|d_0|f|h', 4 ), ( 'b_0|d_0|f|g', True ) ])
+    >>> state = odict()
+    >>> populate_state( trans, inputs, flat, state, check=False )
+    >>> print state[ 'a' ]
+    1
+    >>> print state[ 'b' ][ 0 ][ 'c' ]
+    2
+    >>> print state[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'e' ]
+    3
+    >>> print state[ 'b' ][ 0 ][ 'd' ][ 0 ][ 'f' ][ 'h' ]
+    4
     """
     context = ExpressionContext( state, context )
     for input in inputs.values():
