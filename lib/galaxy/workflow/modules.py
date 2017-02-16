@@ -233,6 +233,7 @@ class SubWorkflowModule( WorkflowModule ):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
+    subworkflow = None
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
