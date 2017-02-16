@@ -238,11 +238,10 @@ class SubWorkflowModule( WorkflowModule ):
     def from_dict( Class, trans, d, **kwds ):
         module = Class( trans )
         if "subworkflow" in d:
-            module.subworkflow = d["subworkflow"]
+            module.subworkflow = d[ "subworkflow" ]
         elif "content_id" in d:
-            content_id = d["content_id"]
             from galaxy.managers.workflows import WorkflowsManager
-            module.subworkflow = WorkflowsManager( trans.app ).get_owned_workflow( trans, content_id )
+            module.subworkflow = WorkflowsManager( trans.app ).get_owned_workflow( trans, d[ "content_id" ] )
         else:
             raise Exception( "Step associated subworkflow could not be found." )
         module.label = d.get( "label" )
