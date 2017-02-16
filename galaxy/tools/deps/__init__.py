@@ -36,7 +36,6 @@ def build_dependency_manager( config ):
             'app_config': config,
         }
         if getattr(config, "use_cached_dependency_manager", False):
-            dependency_manager_kwds['tool_dependency_cache_dir'] = config.tool_dependency_cache_dir
             dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
         else:
             dependency_manager = DependencyManager( **dependency_manager_kwds )
@@ -92,15 +91,20 @@ class DependencyManager( object ):
         global_key = "%s_%s" % (config_prefix, key)
         value = explicit_resolver_options.get(key, CONFIG_VAL_NOT_FOUND)
         if value is CONFIG_VAL_NOT_FOUND:
-            if isinstance(self.__app_config, dict):
-                value = self.__app_config.get(global_key, CONFIG_VAL_NOT_FOUND)
-            else:
-                value = getattr(self.__app_config, global_key, CONFIG_VAL_NOT_FOUND)
+            value = self.get_app_option(global_key, default)
+
+        return value
+
+    def get_app_option(self, key, default=None):
+        value = CONFIG_VAL_NOT_FOUND
+        if isinstance(self.__app_config, dict):
+            value = self.__app_config.get(key, CONFIG_VAL_NOT_FOUND)
+        else:
+            value = getattr(self.__app_config, key, CONFIG_VAL_NOT_FOUND)
         if value is CONFIG_VAL_NOT_FOUND and hasattr(self.__app_config, "config_dict"):
-            value = self.__app_config.config_dict.get(global_key, CONFIG_VAL_NOT_FOUND)
+            value = self.__app_config.config_dict.get(key, CONFIG_VAL_NOT_FOUND)
         if value is CONFIG_VAL_NOT_FOUND:
             value = default
-
         return value
 
     def dependency_shell_commands( self, requirements, **kwds ):
@@ -210,8 +214,9 @@ class DependencyManager( object ):
 
 
 class CachedDependencyManager(DependencyManager):
-    def __init__(self, default_base_path, conf_file=None, app_config={}):
+    def __init__(self, default_base_path, conf_file=None, app_config={}, tool_dependency_cache_dir=None):
         super(CachedDependencyManager, self).__init__(default_base_path=default_base_path, conf_file=conf_file, app_config=app_config)
+        self.tool_dependency_cache_dir = self.get_app_option("tool_dependency_cache_dir")
 
     def build_cache(self, requirements, **kwds):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
@@ -240,7 +245,7 @@ class CachedDependencyManager(DependencyManager):
         resolved_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         cacheable_dependencies = [dep for dep in resolved_dependencies.values() if dep.cacheable]
         hashed_dependencies_dir = self.get_hashed_dependencies_path(cacheable_dependencies)
-        if not os.path.exists(hashed_dependencies_dir) and self.__app_config.getattr("precache_dependencies", False):
+        if not os.path.exists(hashed_dependencies_dir) and self.get_app_option("precache_dependencies", False):
             # Cache not present, try to create it
             self.build_cache(requirements, **kwds)
         if os.path.exists(hashed_dependencies_dir):
@@ -265,4 +270,4 @@ class CachedDependencyManager(DependencyManager):
         :rtype: str
         """
         req_hashes = self.hash_dependencies(resolved_dependencies)
-        return os.path.abspath(os.path.join(self.extra_config['tool_dependency_cache_dir'], req_hashes))
+        return os.path.abspath(os.path.join(self.tool_dependency_cache_dir, req_hashes))

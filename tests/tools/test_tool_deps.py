@@ -194,6 +194,34 @@ blast/2.24
         assert module.module_version == "2.24", module.module_version
 
 
+def test_module_resolver_with_mapping_specificity_rules():
+    # If a requirement demands a specific version,
+    # do not map to a different version when the version
+    # has not been specified explicitly
+    with __test_base_path() as temp_directory:
+        module_script = _setup_module_command(temp_directory, '''
+-------------------------- /soft/modules/modulefiles ---------------------------
+blast/2.24
+''')
+        mapping_file = os.path.join(temp_directory, "mapping")
+        with open(mapping_file, "w") as f:
+            f.write('''
+- from:
+    name: blast
+    unversioned: true
+  to:
+    name: blast
+    version: 2.24
+''')
+
+        resolver = ModuleDependencyResolver(_SimpleDependencyManager(), modulecmd=module_script, mapping_files=mapping_file)
+        module = resolver.resolve( ToolRequirement( name="blast", type="package" ) )
+        assert module.module_name == "blast"
+        assert module.module_version == "2.24", module.module_version  # successful resolution, because Requirement does not ask for a specific version
+        module = resolver.resolve( ToolRequirement( name="blast", version="2.22", type="package" ) )
+        assert isinstance(module, NullDependency)  # NullDependency, because we don't map `version: Null` over a Requirement that asks for a specific version
+
+
 def test_module_resolver_with_mapping_versions():
     with __test_base_path() as temp_directory:
         module_script = _setup_module_command(temp_directory, '''
