@@ -62,6 +62,10 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         templateCategoryList: _.template([
+            '<style type="text/css">',
+                '.ui-autocomplete { background-color: #fff; }',
+                'li.ui-menu-item { list-style-type: none; }',
+            '</style>',
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
                 '<div class="unified-panel-header-inner" style="layout: inline;">Categories in <%= tool_shed.replace(/%2f/g, "/") %></div>',
                 '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
