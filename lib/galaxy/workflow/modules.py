@@ -241,7 +241,8 @@ class SubWorkflowModule( WorkflowModule ):
             module.subworkflow = d["subworkflow"]
         elif "content_id" in d:
             content_id = d["content_id"]
-            module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
+            from galaxy.managers.workflows import WorkflowsManager
+            module.subworkflow = WorkflowsManager( trans.app ).get_owned_workflow( trans, content_id )
         module.label = d.get( "label" )
         return module
 
