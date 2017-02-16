@@ -6,10 +6,11 @@ History
 .. to_doc
 
 ---------------------
-17.1.3.dev0
+17.5.0.dev0
 ---------------------
 
-    
+* Bring in the last of the Galaxy dev changes.
+* Allow Conda installs to target global Conda config (for Planemo)
 
 ---------------------
 17.1.2 (2017-01-23)

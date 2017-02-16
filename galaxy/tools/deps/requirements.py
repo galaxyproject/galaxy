@@ -1,5 +1,7 @@
 import copy
 
+import six
+
 from galaxy.util import (
     asbool,
     xml_text,
@@ -11,6 +13,7 @@ DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
 
 
+@six.python_2_unicode_compatible
 class ToolRequirement( object ):
     """
     Represents an external requirement that must be available for the tool to
@@ -46,6 +49,11 @@ class ToolRequirement( object ):
 
     def __hash__(self):
         return hash((self.name, self.type, self.version, frozenset(self.specs)))
+
+    def __str__(self):
+        return "ToolRequirement[%s,version=%s,type=%s,specs=%s]" % (self.name, self.version, self.type, self.specs)
+
+    __repr__ = __str__
 
 
 class RequirementSpecification(object):

@@ -53,6 +53,18 @@ def swap_inf_nan( val ):
         return val
 
 
+def safe_loads( arg ):
+    """
+    This is a wrapper around loads that returns the parsed value instead of
+    raising a value error.
+    """
+    try:
+        loaded = json.loads( arg )
+    except ( TypeError, ValueError ):
+        loaded = arg
+    return loaded
+
+
 def safe_dumps( *args, **kwargs ):
     """
     This is a wrapper around dumps that encodes Infinity and NaN values.  It's a
