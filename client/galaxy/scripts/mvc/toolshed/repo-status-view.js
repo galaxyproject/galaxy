@@ -1,4 +1,4 @@
-define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
+define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_model, toolshed_util) {
 
     var ToolShedRepoStatusView = Backbone.View.extend({
 
@@ -38,7 +38,7 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
         render: function(options) {
             this.options = _.extend(this.options, options);
             var repo_status_template = this.templateRepoStatus;
-            this.$el.html(repo_status_template({repositories: this.model.models}));
+            this.$el.html(repo_status_template({title: 'Repository Status', repositories: this.model.models, queue: toolshed_util.queueLength()}));
             $("#center").css('overflow', 'auto');
             this.bindEvents();
         },
@@ -53,6 +53,10 @@ define(['mvc/toolshed/toolshed-model'], function(toolshed_model) {
         },
 
         templateRepoStatus: _.template([
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
+                '<div class="unified-panel-header-inner"><%= title %></div>',
+                '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '</div>',
             '<style type="text/css">',
                 '.state-color-new,',
                 '.state-color-deactivated,',

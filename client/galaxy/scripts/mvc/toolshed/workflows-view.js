@@ -18,7 +18,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
             var that = this;
             var workflows_missing_tools = that.templateWorkflows;
             var workflows = that.model.models;
-            that.$el.html(workflows_missing_tools({workflows: workflows}));
+            that.$el.html(workflows_missing_tools({title: 'Workflows Missing Tools', workflows: workflows, queue: toolshed_util.queueLength()}));
             $("#center").css('overflow', 'auto');
             that.bindEvents();
         },
@@ -66,6 +66,13 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         templateWorkflows: _.template([
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
+                '<div class="unified-panel-header-inner"><%= title %></div>',
+                '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '</div>',
+            '<style type="text/css">',
+                '.workflow_names, .workflow_tools { list-style-type: none; } ul.workflow_tools, ul.workflow_names {  padding-left: 0px; }',
+            '</style>',
             '<table id="workflows_missing_tools" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
                 '<thead id="grid-table-header">',
                     '<tr>',

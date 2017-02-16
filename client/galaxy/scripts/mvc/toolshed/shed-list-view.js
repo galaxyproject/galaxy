@@ -1,4 +1,4 @@
-define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
+define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_model, toolshed_util) {
 
     var View = Backbone.View.extend({
 
@@ -19,7 +19,7 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
         render: function(options) {
             this.options = _.defaults(this.options || {}, options, this.defaults);
             var toolshed_list_template = this.templateToolshedList;
-            this.$el.html(toolshed_list_template({tool_sheds: this.model.models}));
+            this.$el.html(toolshed_list_template({title: 'Accessible Galaxy ToolSheds', tool_sheds: this.model.models, queue: toolshed_util.queueLength()}));
         },
 
         reDraw: function(options){
@@ -29,8 +29,8 @@ define(['mvc/toolshed/toolshed-model',], function(toolshed_model) {
 
         templateToolshedList: _.template([
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-                '<div class="unified-panel-header-inner">Accessible Galaxy tool sheds</div>',
-                '<a href="#queue">Repository Queue</a>',
+                '<div class="unified-panel-header-inner"><%= title %></div>',
+                '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             '</div>',
             '<div class="unified-panel-body" id="list_toolsheds">',
                 '<div class="form-row">',

@@ -28,7 +28,6 @@ define([ "mvc/toolshed/shed-list-view", "mvc/toolshed/categories-view", "mvc/too
         },
         initialize: function() {
             Galaxy.admintoolshedapp = this, this.admin_toolshed_router = new AdminToolshedRouter(), 
-            $("#panel_header").append('<div class="unified-panel-header-inner"><a href="#/queue">Repository Queue</a></div>'), 
             this.admin_toolshed_router.on("route:queue", function() {
                 Galaxy.admintoolshedapp.adminRepoQueueView ? Galaxy.admintoolshedapp.adminRepoQueueView.reDraw() : Galaxy.admintoolshedapp.adminRepoQueueView = new mod_repoqueue_view.RepoQueueView();
             }), this.admin_toolshed_router.on("route:toolsheds", function() {

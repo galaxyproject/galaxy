@@ -22,6 +22,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         render: function(options) {
             this.options = _.extend(this.options, options);
             this.options.categories = this.model.models;
+            this.options.queue = toolshed_util.queueLength();
             var category_list_template = this.templateCategoryList;
             this.$el.html(category_list_template(this.options));
             $("#center").css('overflow', 'auto');
@@ -65,6 +66,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         templateCategoryList: _.template([
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
                 '<div class="unified-panel-header-inner" style="layout: inline;">Categories in <%= tool_shed.replace(/%2f/g, "/") %></div>',
+                '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             '</div>',
             '<div class="unified-panel-body" id="list_categories">',
                 '<div id="standard-search" style="height: 2em; margin: 1em;">',

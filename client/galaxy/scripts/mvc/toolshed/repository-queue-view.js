@@ -18,7 +18,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
             var that = this;
             var repo_queue_template = that.templateRepoQueue;
             var repositories = that.model.models;
-            that.$el.html(repo_queue_template({repositories: repositories}));
+            that.$el.html(repo_queue_template({title: 'Repository Installation Queue', repositories: repositories, queue: toolshed_util.queueLength()}));
             $("#center").css('overflow', 'auto');
             that.bindEvents();
         },
@@ -98,6 +98,10 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         },
 
         templateRepoQueue: _.template([
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
+                '<div class="unified-panel-header-inner"><%= title %></div>',
+                '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '</div>',
             '<div class="tab-pane" id="panel_header" id="repository_queue">',
                 '<table id="queued_repositories" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
                     '<thead id="grid-table-header">',

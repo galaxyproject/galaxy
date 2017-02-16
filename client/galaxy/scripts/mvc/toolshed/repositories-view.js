@@ -18,7 +18,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         render: function(options) {
             this.options = _.extend(this.options, options);
             var category_contents_template = this.templateCategoryContents;
-            this.$el.html(category_contents_template({category: this.model.models[0], tool_shed: this.model.tool_shed}));
+            this.$el.html(category_contents_template({category: this.model.models[0], tool_shed: this.model.tool_shed, queue: toolshed_util.queueLength()}));
             $("#center").css('overflow', 'auto');
             this.bindEvents();
         },
@@ -54,6 +54,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
         templateCategoryContents: _.template([
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
                 '<div class="unified-panel-header-inner">Repositories in <%= category.get("name") %></div>',
+                '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             '</div>',
             '<div class="unified-panel-body" id="list_repositories">',
                 '<div id="standard-search" style="height: 2em; margin: 1em;">',

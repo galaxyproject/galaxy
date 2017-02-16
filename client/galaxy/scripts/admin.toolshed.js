@@ -59,7 +59,6 @@ define(["mvc/toolshed/shed-list-view",
         initialize: function() {
             Galaxy.admintoolshedapp = this;
             this.admin_toolshed_router = new AdminToolshedRouter();
-            $("#panel_header").append('<div class="unified-panel-header-inner"><a href="#/queue">Repository Queue</a></div>');
 
             this.admin_toolshed_router.on('route:queue', function() {
                 if (Galaxy.admintoolshedapp.adminRepoQueueView) {

@@ -21,10 +21,14 @@ define([], function() {
         var key = metadata.tool_shed_url + "|" + metadata.repository_id + "|" + metadata.changeset_revision, queued_repos = new Object();
         localStorage.repositories && (queued_repos = JSON.parse(localStorage.repositories)), 
         queued_repos[key] = metadata, localStorage.repositories = JSON.stringify(queued_repos);
+    }, queueLength = function() {
+        return localStorage.hasOwnProperty("repositories") ? (repo_queue = JSON.parse(localStorage.repositories), 
+        queue_length = Object.keys(repo_queue).length, queue_length) : 0;
     };
     return {
         searchShed: searchShed,
         shedParser: shedParser,
-        addToQueue: addToQueue
+        addToQueue: addToQueue,
+        queueLength: queueLength
     };
 });

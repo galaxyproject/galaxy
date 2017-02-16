@@ -35,5 +35,16 @@ define([], function() {
         localStorage.repositories = JSON.stringify(queued_repos);
     }
 
-    return {searchShed: searchShed, shedParser: shedParser, addToQueue: addToQueue};
+    var queueLength = function() {
+        if (localStorage.hasOwnProperty('repositories')) {
+            repo_queue = JSON.parse(localStorage.repositories);
+            queue_length = Object.keys(repo_queue).length;
+            return queue_length;
+        }
+        else {
+            return 0;
+        }
+    }
+
+    return {searchShed: searchShed, shedParser: shedParser, addToQueue: addToQueue, queueLength: queueLength};
 });
