@@ -111,7 +111,8 @@ class InteractiveEnvironmentRequest(object):
             'command_inject': '--sig-proxy=true -e DEBUG=false',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
-            'docker_galaxy_temp_dir': None
+            'docker_galaxy_temp_dir': None,
+            'docker_connect_port': None
         }
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
