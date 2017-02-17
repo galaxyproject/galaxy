@@ -199,7 +199,7 @@ class MockTrans( object ):
         self.app = app
         self.history = history
         self.user = None
-        self.history._active_datasets_children_and_roles = [hda for hda in self.app.model.context.model_objects[ galaxy.model.HistoryDatasetAssociation ] if hda.active and hda.history == history]
+        self.history._active_datasets_and_roles = [hda for hda in self.app.model.context.model_objects[ galaxy.model.HistoryDatasetAssociation ] if hda.active and hda.history == history]
         self.workflow_building_mode = False
         self.webapp = Bunch( name="galaxy" )
         self.sa_session = self.app.model.context
