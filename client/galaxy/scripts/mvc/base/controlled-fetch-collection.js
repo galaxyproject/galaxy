@@ -201,6 +201,8 @@ var PaginatedCollection = ControlledFetchCollection.extend({
         pageNum = self.constrainPageNum( pageNum );
         self.currentPage = pageNum;
         options = _.defaults( options || {}, self.getPageLimitOffset( pageNum ) );
+        console.log("fetchPage");
+        console.log(options);
 
         self.trigger( 'fetching-more' );
         return self.fetch( options )

@@ -29,6 +29,8 @@ def get_random( line_offsets, num_lines ):
 
 
 def __main__():
+    import time
+    time.sleep(500000)
     parser = optparse.OptionParser()
     parser.add_option( '-s', '--seed', dest='seed', action='store', type="string", default=None, help='Set the random seed.' )
     (options, args) = parser.parse_args()
