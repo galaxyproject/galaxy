@@ -490,11 +490,9 @@ class Tool( object, Dictifiable ):
         else:
             unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
             versioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_VERSIONED
-            legacy_tool = unversioned_legacy_tool or versioned_legacy_tool
-            if not legacy_tool:
-                return False
-            else:
-                return unversioned_legacy_tool or self.version_object < GALAXY_LIB_TOOLS_VERSIONED[self.old_id]
+            legacy_tool = unversioned_legacy_tool or \
+                (versioned_legacy_tool and self.version_object < GALAXY_LIB_TOOLS_VERSIONED[self.old_id])
+            return legacy_tool
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
