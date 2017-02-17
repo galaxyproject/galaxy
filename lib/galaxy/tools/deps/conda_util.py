@@ -529,8 +529,11 @@ def build_isolated_environment(
             )
             export_paths.append(export_path)
         create_args = ["--unknown"]
-        if conda_context.conda_version < LooseVersion("4.3"):
-            create_args.append("--offline")
+        # Works in 3.19 and 4.2 - not in 4.0 and 4.3.
+        offline_works = conda_context.conda_version < LooseVersion("4") or \
+            (conda_context.conda_version >= LooseVersion("4.2") and conda_context.conda_version < LooseVersion("4.3"))
+        if offline_works:
+            create_args.extend(["--offline"])
         else:
             create_args.extend(["--use-index-cache"])
         if path is None:
