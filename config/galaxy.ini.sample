@@ -1317,8 +1317,11 @@ use_interactive = True
 
 # -- Galaxy Application Internal Message Queue
 
-# Galaxy uses AMQP internally TODO more documentation on what for.
-# For examples, see http://ask.github.io/kombu/userguide/connections.html
+# Galaxy uses AMQP internally for communicating between processes.  For
+# example, when reloading the toolbox or locking job execution, the process
+# that handled that particular request will tell all others to also reload,
+# lock jobs, etc.
+# For connection examples, see http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
 #
 # Without specifying anything here, galaxy will first attempt to use your
 # specified database_connection above.  If that's not specified either, Galaxy
