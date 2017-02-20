@@ -48,7 +48,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                 }
                 step = Utils.merge( {
                     index                   : i,
-                    title                   : title,
+                    title                   : _.escape( title ),
                     icon                    : icon || '',
                     help                    : null,
                     citations               : null,
