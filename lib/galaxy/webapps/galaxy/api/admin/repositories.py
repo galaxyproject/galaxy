@@ -92,7 +92,11 @@ class RepositoriesController( BaseAPIController ):
     @require_admin
     def load_tree( self, trans, id, **kwd ):
         repo_revision = kwd.get( 'repo_revison', None )
-        return self.repo_manager.get_tree( trans, self.__decode_id(trans, id, 'repository'), repo_revision )
+        tree = self.repo_manager.get_tree( trans, self.__decode_id(trans, id, 'repository'), repo_revision )
+        if not tree:
+            raise exceptions.ObjectNotFound("The folder containing the repository couldn't be loaded.")
+        else:
+            return tree
 
     @expose_api
     @require_admin

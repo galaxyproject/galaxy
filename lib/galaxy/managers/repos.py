@@ -73,8 +73,9 @@ class RepoManager( base.ModelManager ):
 
     def get_tree( self, trans, repo_id, repo_revision=None ):
         """
-        Retrieve the contents of the repository's folder and return
-        it in a form of json-serialized jstree object.
+        Retrieve the contents of the repository's folder.
+
+        Return it in a form of json-serialized jstree object.
 
         :param  repo_id:        the decoded id of the repo
         :type   repo_id:        a decoded id string
@@ -88,7 +89,12 @@ class RepoManager( base.ModelManager ):
         if not repo_revision:
             # if there is no revision specified grab the latest
             repo_revision = repo.changeset_revision
-        repo_path = os.path.abspath( os.path.join( repo.repo_path( trans.app, repo_revision ), repo.name ) )
+        repository_path = repo.repo_path( trans.app, repo_revision )
+        if repository_path:
+            repo_path = os.path.abspath( os.path.join( repo.repo_path( trans.app, repo_revision ), repo.name ) )
+        else:
+            log.error("The repository {0} from owner {1} couldn't be loaded.".format( repo.name, repo.owner ))
+            return None
         try:
             repo_jstree = self.__create_jstree( repo_path )
             response = repo_jstree.jsonData()
