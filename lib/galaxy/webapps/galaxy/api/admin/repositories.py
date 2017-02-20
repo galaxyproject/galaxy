@@ -3,6 +3,8 @@ import copy
 import logging
 import os
 
+from operator import itemgetter
+
 from galaxy import exceptions
 from galaxy.managers import repos
 from galaxy.util import string_as_bool
@@ -44,6 +46,7 @@ class RepositoriesController( BaseAPIController ):
                 repo_dict['update'] = 'minor update'
             if repo.upgrade_available:
                 repo_dict['update'] = 'new version'
+            repo_dict['ctx_rev'] = int( repo_dict['ctx_rev'] )
             repo_list.append( repo_dict )
         enriched_repo_dicts = self.__enrich_repos( trans, repo_list )
         return enriched_repo_dicts
@@ -179,11 +182,9 @@ class RepositoriesController( BaseAPIController ):
         """
         newest_repo = {}
         older_repos = []
-        for repo in all_repos:
+        sorted_repos = sorted( all_repos, key=itemgetter('ctx_rev'), reverse=True )
+        for repo in sorted_repos:
             if not newest_repo:
-                newest_repo = repo
-            elif repo.get( "ctx_rev" ) > newest_repo.get( "ctx_rev" ):
-                older_repos.append( newest_repo )
                 newest_repo = repo
             else:
                 older_repos.append( repo )

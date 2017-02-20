@@ -113,8 +113,9 @@ class RepoManager( base.ModelManager ):
         repos = trans.sa_session.query( self.model_class ).filter( and_( self.model_class.table.c.name == repo.name,
                                                                          self.model_class.table.c.owner == repo.owner ) ).all()
         for repo in repos:
-            versions.append( {'ctx_rev': repo.ctx_rev, 'changeset_revision': repo.changeset_revision, 'id': repo.id } )
-        return sorted( versions, key=itemgetter('ctx_rev'), reverse=True )
+            versions.append( {'ctx_rev': int(repo.ctx_rev), 'changeset_revision': repo.changeset_revision, 'id': repo.id } )
+        sorted_versions = sorted( versions, key=itemgetter('ctx_rev'), reverse=True )
+        return sorted_versions
 
     def get_file( self, trans, file_path, decoded_repo_id, repo_revision=None ):
         """
