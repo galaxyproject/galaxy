@@ -100,10 +100,12 @@ class CondaContext(installable.InstallableContext):
 
         if os.path.exists(conda_meta_path):
             for package in os.listdir(conda_meta_path):
-                package_parts = package.split("-", 2)
+                package_parts = package.split("-")
                 if len(package_parts) < 3:
                     continue
-                package, version, build = package_parts
+                package = '-'.join(package_parts[:-2])
+                version = package_parts[-2]
+                # build = package_parts[-1]
                 if package == "conda":
                     conda_version = LooseVersion(version)
                 if package == "python" and version.startswith("2"):
@@ -529,9 +531,11 @@ def build_isolated_environment(
             )
             export_paths.append(export_path)
         create_args = ["--unknown"]
-        # Works in 3.19 and 4.2 - not in 4.0 and 4.3.
-        offline_works = conda_context.conda_version < LooseVersion("4") or \
-            (conda_context.conda_version >= LooseVersion("4.2") and conda_context.conda_version < LooseVersion("4.3"))
+        # Works in 3.19, 4.0 - 4.2 - not in 4.3.
+        # Adjust fix if they fix Conda - xref
+        # - https://github.com/galaxyproject/galaxy/issues/3635
+        # - https://github.com/conda/conda/issues/2035
+        offline_works = conda_context.conda_version < LooseVersion("4.3")
         if offline_works:
             create_args.extend(["--offline"])
         else:
