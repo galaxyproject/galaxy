@@ -71,7 +71,12 @@ class RepositoriesController( BaseAPIController ):
             versions = self.repo_manager.get_versions( trans, repo )
         repo_dict = self.repo_serializer.serialize_to_view(repo, view='detailed')
         repo_dict['revision_url'] = repo.get_sharable_url( trans.app ) + '/' + repo_dict.get('changeset_revision')
-        repo_dict['repo_location'] = os.path.abspath( repo.repo_path( trans.app, repo.changeset_revision ))
+        repository_path = repo.repo_path( trans.app, repo.changeset_revision )
+        if repository_path:
+            repo_dict['repo_location'] = os.path.abspath( repository_path )
+        else:
+            repo_dict['repo_location'] = "The repository couldn't be located."
+            log.warning("The repository {0} from owner {1} couldn't be located.".format( repo.name, repo.owner ))
         if all_versions:
             for version in versions:
                 for key in version.keys():
