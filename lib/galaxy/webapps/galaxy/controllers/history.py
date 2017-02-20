@@ -827,6 +827,22 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                     send_to_err=send_to_err )
 
     @web.expose
+    def adjust_hidden( self, trans, id=None, **kwd ):
+        """ THIS METHOD IS A TEMPORARY ADDITION. It'll allow us to fix the
+        regression in history-wide actions, and will be removed in the first
+        release after 17.01 """
+        action = kwd.get('user_action', None)
+        if action == 'delete':
+            for hda in trans.history.datasets:
+                if not hda.visible:
+                    hda.mark_deleted()
+            print 'deleting hidden'
+        elif action == 'unhide':
+            trans.history.unhide_datasets()
+            print 'unhiding hidden'
+        trans.sa_session.flush()
+
+    @web.expose
     @web.require_login( "share restricted histories with other users" )
     def share_restricted( self, trans, id=None, email="", **kwd ):
         if 'action' in kwd:
