@@ -836,10 +836,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             for hda in trans.history.datasets:
                 if not hda.visible:
                     hda.mark_deleted()
-            print 'deleting hidden'
         elif action == 'unhide':
             trans.history.unhide_datasets()
-            print 'unhiding hidden'
         trans.sa_session.flush()
 
     @web.expose
