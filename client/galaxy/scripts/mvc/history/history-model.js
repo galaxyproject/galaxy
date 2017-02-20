@@ -177,8 +177,7 @@ var History = Backbone.Model
         // if we don't flip this, then a fully-fetched list will not be re-checked via fetch
         this.contents.allFetched = false;
         var fetchFn = self.contents.currentPage !== 0
-            ? function(){ console.log("FETCH PAGE PARTICULAR" + self.contents.currentPage);
-                    return self.contents.fetchPage( self.contents.currentPage ); }
+            ? function(){ return self.contents.fetchPage( self.contents.currentPage ); }
             : function(){ return self.contents.fetchUpdated( lastUpdateTime ); };
         // note: if there was no previous update time, all summary contents will be fetched
         return fetchFn()
@@ -194,7 +193,6 @@ var History = Backbone.Model
 
     /** continuously fetch updated contents every UPDATE_DELAY ms if this history's datasets or jobs are unfinished */
     checkForUpdates : function( options ){
-        console.log("CHECK FOR UPDATES");
         // console.log( this + '.checkForUpdates' );
         options = options || {};
         var delay = this.UPDATE_DELAY;

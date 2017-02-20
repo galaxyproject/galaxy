@@ -241,7 +241,6 @@ var HistoryView = _super.extend(
 
     /** override to render pagination also */
     renderItems: function( $whereTo ){
-        console.log("RENDER ITEMS");
         // console.log( this + '.renderItems-----------------', new Date() );
         $whereTo = $whereTo || this.$el;
         var self = this;
