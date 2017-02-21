@@ -21,7 +21,7 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], func
                             input.type = 'hidden';
                             input.info = 'Data input \'' + input.name + '\' (' + Utils.textify( input.extensions ) + ')';
                             input.value = { '__class__': 'RuntimeValue' };
-                        } else {
+                        } else if ( !input.fixed ) {
                             input.collapsible_value = { '__class__': 'RuntimeValue' };
                             input.is_workflow = ( input.options && input.options.length == 0 ) ||
                                                 ( [ 'integer', 'float' ].indexOf( input.type ) != -1 );

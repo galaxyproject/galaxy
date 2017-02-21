@@ -156,6 +156,7 @@ function( Utils, Ui, Portlet, Repeat, InputElement, Parameters ) {
                 style               : input_def.style,
                 backdrop            : input_def.backdrop,
                 hidden              : input_def.hidden,
+                fixed               : input_def.fixed,
                 field               : field
             });
             this.app.element_list[ id ] = input_element;

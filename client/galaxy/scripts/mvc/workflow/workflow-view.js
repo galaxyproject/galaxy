@@ -670,6 +670,7 @@ define([
                     type    : 'text',
                     name    : '__annotation',
                     label   : 'Annotation',
+                    fixed   : true,
                     value   : node.annotation,
                     area    : true,
                     help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
@@ -680,6 +681,7 @@ define([
                     label   : 'Label',
                     value   : node.label,
                     help    : 'Add a step label.',
+                    fixed   : true,
                     onchange: function( new_label ) {
                         var duplicate = false;
                         for ( var i in self.workflow.nodes ) {
