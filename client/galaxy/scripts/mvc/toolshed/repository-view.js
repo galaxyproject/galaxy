@@ -116,7 +116,7 @@ define(['mvc/toolshed/toolshed-model',
                     $(this).removeAttr('default');
                 }
             });
-            $('#repository_dependencies').jstree();
+            $(function() { $('#repository_dependencies').jstree(); });
             $('.tool_form').on('click', function() {
                 var guid = $(this).attr('data-guid');
                 var clean = $(this).attr('data-clean');
@@ -378,30 +378,31 @@ define(['mvc/toolshed/toolshed-model',
 
         templateRepoDependencies: _.template([
             '<div class="toolFormTitle">Repository Dependencies</div>',
-            '<div class="toolFormBody tables container-table" id="repository_dependencies_table">',
-                '<span class="repository_dependency_row"><p>Repository installation requires the following:</p></span>',
-                '<ul id="repository_dependencies">',
-                    '<% if (has_repository_dependencies) { %>',
-                        '<% _.each(repository_dependencies, function(dependency) { %>',
-                            '<% dependency.repository_dependency_template = repository_dependency_template; %>',
-                            '<%= repository_dependency_template(dependency) %>',
-                        '<% }); %>',
-                    '<% } %>',
+            '<div class="toolFormBody tables container-table" id="repository_dependencies">',
+                '<ul>',
+                    '<li>Repository installation requires the following',
+                        '<% if (has_repository_dependencies) { %>',
+                            '<% _.each(repository_dependencies, function(dependency) { %>',
+                                '<% dependency.repository_dependency_template = repository_dependency_template; %>',
+                                '<%= repository_dependency_template(dependency) %>',
+                            '<% }); %>',
+                        '<% } %>',
+                    '</li>',
                 '</ul>',
             '</div>'].join('')),
 
         templateRepoDependency: _.template([
             '<li id="metadata_<%= id %>" class="datasetRow repository_dependency_row" style="display: table-row;">',
                 'Repository <b><%= repository.name %></b> revision <b><%= changeset_revision %></b> owned by <b><%= repository.owner %></b>',
+                '<% if (has_repository_dependencies) { %>',
+                    '<ul class="child_dependencies">',
+                        '<% _.each(repository_dependencies, function(dependency) { %>',
+                            '<% dependency.repository_dependency_template = repository_dependency_template; %>',
+                            '<%= repository_dependency_template(dependency) %>',
+                        '<% }); %>',
+                    '</ul>',
+                '<% } %>',
             '</li>',
-            '<% if (has_repository_dependencies) { %>',
-                '<ul class="child_dependencies">',
-                    '<% _.each(repository_dependencies, function(dependency) { %>',
-                        '<% dependency.repository_dependency_template = repository_dependency_template; %>',
-                        '<%= repository_dependency_template(dependency) %>',
-                    '<% }); %>',
-                '</ul>',
-            '<% } %>'
         ].join('')),
 
         templateShedToolConf: _.template([

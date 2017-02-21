@@ -39,13 +39,15 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                 }
                 localStorage.repositories = JSON.stringify(repo_queue);
             });
+            $('#clear_queue').on('click', function() {
+                localStorage.repositories = "{}";
+            });
             $('#from_workflow').on('click', function() { Backbone.history.navigate('workflows', {trigger: true, replace:true}); });
         },
 
         installFromQueue: function(repository_metadata, queue_key) {
             var that = this;
             var params = Object();
-            console.log(repository_metadata);
             params.install_tool_dependencies = repository_metadata.install_tool_dependencies;
             params.install_repository_dependencies = repository_metadata.install_repository_dependencies;
             params.install_resolver_dependencies = repository_metadata.install_resolver_dependencies;
@@ -107,7 +109,7 @@ define(['mvc/toolshed/toolshed-model', 'mvc/toolshed/util'], function(toolshed_m
                             '<th class="datasetRow">Owner</th>',
                             '<th class="datasetRow">Revision</th>',
                             '<th class="datasetRow">ToolShed</th>',
-                            '<th class="datasetRow"><input class="btn btn-primary" type="submit" id="install_all" name="install_all" value="Install all" /></th>',
+                            '<th class="datasetRow">Install</th>',
                             '<th class="datasetRow"><input class="btn btn-primary" type="submit" id="clear_queue" name="clear_queue" value="Clear queue" /></th>',
                         '</tr>',
                     '</thead>',
