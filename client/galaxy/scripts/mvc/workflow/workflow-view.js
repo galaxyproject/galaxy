@@ -669,6 +669,14 @@ define([
                 content.cls = 'ui-portlet-narrow';
                 content.inputs.unshift({
                     type    : 'text',
+                    name    : '__annotation',
+                    label   : 'Annotation',
+                    value   : node.annotation,
+                    area    : true,
+                    help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
+                });
+                content.inputs.unshift({
+                    type    : 'text',
                     name    : '__label',
                     label   : 'Label',
                     value   : node.label,
@@ -687,14 +695,6 @@ define([
                         input_element.model.set( 'error_text', duplicate && 'Duplicate label. Please fix this before saving the workflow.' );
                         form.trigger( 'change' );
                     }
-                });
-                content.inputs.push({
-                    type    : 'text',
-                    name    : '__annotation',
-                    label   : 'Annotation',
-                    value   : node.annotation,
-                    area    : true,
-                    help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
                 });
                 content.onchange = function() {
                     Utils.request({
