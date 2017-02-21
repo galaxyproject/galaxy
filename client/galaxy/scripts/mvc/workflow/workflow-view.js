@@ -6,7 +6,7 @@ define([
     'mvc/workflow/workflow-canvas',
     'mvc/workflow/workflow-node',
     'mvc/workflow/workflow-icons',
-    'mvc/tool/tool-form-workflow',
+    'mvc/workflow/workflow-view-form',
     'mvc/form/form-view',
     'mvc/ui/ui-misc',
     'utils/async-save-text',
