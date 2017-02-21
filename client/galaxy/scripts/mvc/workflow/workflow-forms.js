@@ -1,6 +1,13 @@
-/** This is the workflow tool form. */
-define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ],
-    function( Utils, Form, ToolFormBase ) {
+define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ], function( Utils, Form, ToolFormBase ) {
+
+    /** Default form wrapper for non-tool modules in the workflow editor. */
+    var Default = Backbone.View.extend({
+        initialize: function( options ) {
+            this.form = new Form( options );
+        }
+    });
+
+    /** Tool form wrapper for the workflow editor. */
     var Tool = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
@@ -245,14 +252,8 @@ define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ],
         }
     });
 
-    var Default = Backbone.View.extend({
-        initialize: function( options ) {
-            this.form = new Form( options );
-        }
-    });
-
     return {
-        Tool: Tool,
-        Default: Default
+        Default: Default,
+        Tool: Tool
     };
 });
