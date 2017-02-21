@@ -9,7 +9,7 @@ History
 17.5.2.dev0
 ---------------------
 
-    
+* Conda utility enhancements to fix a Planemo bug.
 
 ---------------------
 17.5.1 (2017-02-21)
