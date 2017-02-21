@@ -57,14 +57,14 @@ class WorkflowModule( object ):
     def from_dict( Class, trans, d, **kwds ):
         module = Class( trans, **kwds )
         module.recover_state( d.get( "tool_state" ) )
-        module.label = d.get( "label" )
+        module.label = d.get( "label", module.state.inputs.get( 'name' ) )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
         module = Class( trans, **kwds )
         module.recover_state( step.tool_inputs )
-        module.label = step.label
+        module.label = step.label or module.state.inputs.get( 'name' )
         return module
 
     # ---- Saving in various forms ------------------------------------------
