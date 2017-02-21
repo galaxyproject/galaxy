@@ -38,6 +38,7 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                         var current_state = {
                             tool_id         : options.id,
                             tool_version    : options.version,
+                            type            : 'tool',
                             inputs          : $.extend( true, {}, form.data.create() )
                         }
                         Galaxy.emit.debug( 'tool-form-workflow::postchange()', 'Sending current state.', current_state );
@@ -46,8 +47,8 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                             url     : Galaxy.root + 'api/workflows/build_module',
                             data    : current_state,
                             success : function( data ) {
-                                form.update( data.tool_model );
-                                form.errors( data.tool_model );
+                                form.update( data.config_form );
+                                form.errors( data.config_form );
                                 // This hasn't modified the workflow, just returned
                                 // module information for the tool to update the workflow
                                 // state stored on the client with. User needs to save

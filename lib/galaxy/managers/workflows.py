@@ -370,10 +370,6 @@ class WorkflowContentsManager(UsesAnnotations):
         step_models = []
         for i, step in enumerate( workflow.steps ):
             step_model = None
-
-            def step_title(step, default_name):
-                return "%d: %s" % (step.order_index + 1, step.label or default_name)
-
             if step.type == 'tool':
                 incoming = {}
                 tool = trans.app.toolbox.get_tool( step.tool_id )
@@ -385,14 +381,15 @@ class WorkflowContentsManager(UsesAnnotations):
                     'output_name'       : pja.output_name,
                     'action_arguments'  : pja.action_arguments
                 } for pja in step.post_job_actions ]
-                step_model["name"] = step_title(step, step_model.get("name"))
             else:
                 inputs = step.module.get_runtime_inputs( connections=step.output_connections )
                 step_model = {
-                    'name'   : step_title(step, step.module.name),
                     'inputs' : [ input.to_dict( trans ) for input in inputs.itervalues() ]
                 }
             step_model[ 'step_type' ] = step.type
+            step_model[ 'step_label' ] = step.label
+            step_model[ 'step_name' ] = step.module.get_name()
+            step_model[ 'step_version' ] = step.module.get_version()
             step_model[ 'step_index' ] = step.order_index
             step_model[ 'output_connections' ] = [ {
                 'input_step_index'  : step_order_indices.get( oc.input_step_id ),
@@ -452,6 +449,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict = {
                 'id': step.order_index,
                 'type': module.type,
+                'label': module.label,
                 'content_id': module.get_content_id(),
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
@@ -463,7 +461,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 'annotation': annotation_str,
                 'post_job_actions': {},
                 'uuid': str(step.uuid) if step.uuid else None,
-                'label': step.label or None,
                 'workflow_outputs': []
             }
             # Connections
@@ -615,7 +612,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # Data inputs
             input_dicts = []
-            step_state = module.state.inputs
+            step_state = module.state.inputs or {}
             if "name" in step_state:
                 name = step_state.get( "name" )
                 input_dicts.append( { "name": name, "description": annotation_str } )
@@ -711,9 +708,9 @@ class WorkflowContentsManager(UsesAnnotations):
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
-            step_name = step.name
-            if step_name:
-                label = step_name
+            step_label = step.label or step.tool_inputs.get( 'name' )
+            if step_label:
+                label = step_label
             elif step_type == "data_input":
                 label = "Input Dataset"
             elif step_type == "data_collection_input":

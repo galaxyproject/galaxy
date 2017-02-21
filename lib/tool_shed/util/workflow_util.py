@@ -233,7 +233,7 @@ def get_workflow_data_outputs( step, module, steps ):
             found = False
             for workflow_step in steps:
                 for wfsc in workflow_step.input_connections:
-                    if step.name == wfsc.output_step.name:
+                    if step.label == wfsc.output_step.label:
                         data_outputs_dict[ 'name' ] = wfsc.output_name
                         found = True
                         break
