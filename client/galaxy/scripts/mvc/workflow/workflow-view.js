@@ -6,13 +6,12 @@ define([
     'mvc/workflow/workflow-canvas',
     'mvc/workflow/workflow-node',
     'mvc/workflow/workflow-icons',
-    'mvc/workflow/workflow-view-form',
-    'mvc/form/form-view',
+    'mvc/workflow/workflow-forms',
     'mvc/ui/ui-misc',
     'utils/async-save-text',
     'libs/toastr',
     'ui/editable-text'
-], function( Utils, Globals, Workflow, WorkflowCanvas, Node, WorkflowIcons, ToolForm, Form, Ui, async_save_text, Toastr ){
+], function( Utils, Globals, Workflow, WorkflowCanvas, Node, WorkflowIcons, FormWrappers, Ui, async_save_text, Toastr ){
 
     // Reset tool search to start state.
     function reset_tool_search( initValue ) {
@@ -661,7 +660,7 @@ define([
             var $container = $( '#' + cls );
             if ( content && $container.find( '#' + id ).length == 0 ) {
                 var $el = $( '<div id="' + id + '" class="' + cls + '"/>' );
-                var form = null;
+                var form_wrapper = null;
                 content.node = node;
                 content.workflow = this.workflow;
                 content.datatypes = this.datatypes;
@@ -690,10 +689,10 @@ define([
                                 break;
                             }
                         }
-                        var input_id = form.data.match( '__label' );
-                        var input_element = form.element_list[ input_id ];
+                        var input_id = form_wrapper.form.data.match( '__label' );
+                        var input_element = form_wrapper.form.element_list[ input_id ];
                         input_element.model.set( 'error_text', duplicate && 'Duplicate label. Please fix this before saving the workflow.' );
-                        form.trigger( 'change' );
+                        form_wrapper.form.trigger( 'change' );
                     }
                 });
                 content.onchange = function() {
@@ -712,11 +711,11 @@ define([
                     });
                 };
                 if ( node.type == 'tool' ) {
-                    form = new ToolForm.View( content );
+                    form_wrapper = new FormWrappers.Tool( content );
                 } else {
-                    form = new Form( content );
+                    form_wrapper = new FormWrappers.Default( content );
                 }
-                $el.append( form.$el );
+                $el.append( form_wrapper.form.$el );
                 $container.append( $el );
             }
             $( '.' + cls ).hide();

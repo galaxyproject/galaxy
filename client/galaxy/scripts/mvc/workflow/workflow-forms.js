@@ -1,12 +1,11 @@
 /** This is the workflow tool form. */
-define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
-    function( Utils, ToolFormBase ) {
-    var View = Backbone.View.extend({
+define( [ 'utils/utils', 'mvc/form/form-view', 'mvc/tool/tool-form-base' ],
+    function( Utils, Form, ToolFormBase ) {
+    var Tool = Backbone.View.extend({
         initialize: function( options ) {
             var self = this;
             this.workflow = options.workflow;
             this.node     = options.node;
-            this.setElement( '<div/>' );
             if ( this.node ) {
                 this.post_job_actions = this.node.post_job_actions || {};
                 Utils.deepeach( options.inputs, function( input ) {
@@ -64,7 +63,6 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
                         });
                     },
                 }));
-                this.$el.append( this.form.$el );
             } else {
                 Galaxy.emit.debug('tool-form-workflow::initialize()', 'Node not found in workflow.');
             }
@@ -247,7 +245,14 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
         }
     });
 
+    var Default = Backbone.View.extend({
+        initialize: function( options ) {
+            this.form = new Form( options );
+        }
+    });
+
     return {
-        View: View
+        Tool: Tool,
+        Default: Default
     };
 });
