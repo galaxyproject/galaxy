@@ -381,7 +381,7 @@ class InputDataModule( InputModule ):
 
     def get_inputs( self ):
         name = self.state.inputs.get( 'name', self.default_name )
-        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) )
+        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", hidden="true", value=name ) ) )
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
@@ -412,7 +412,7 @@ class InputDataCollectionModule( InputModule ):
     def get_inputs( self ):
         name = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) )
+        input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", hidden="true", value=name ) )
         input_collection_type = TextToolParameter( None, XML(
             '''
             <param name="collection_type" label="Collection type" type="text" value="%s">
