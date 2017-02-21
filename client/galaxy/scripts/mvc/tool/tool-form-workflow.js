@@ -74,14 +74,6 @@ define( [ 'utils/utils', 'mvc/tool/tool-form-base' ],
         _makeSections: function( options ){
             var inputs = options.inputs;
             var datatypes = options.datatypes;
-            inputs.push({
-                label   : 'Annotation / Notes',
-                name    : '__annotation',
-                type    : 'text',
-                area    : true,
-                help    : 'Add an annotation or note for this step. It will be shown with the workflow.',
-                value   : this.node.annotation
-            });
             var output_id = this.node.output_terminals && Object.keys( this.node.output_terminals )[ 0 ];
             if ( output_id ) {
                 inputs.push({
