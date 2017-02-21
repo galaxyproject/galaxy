@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.1.dev0
+17.5.1 (2017-02-21)
 ---------------------
 
 * Various improvements to Galaxy tool linting.
