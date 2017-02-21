@@ -9,7 +9,7 @@ History
 17.5.1.dev0
 ---------------------
 
-    
+* Various improvements to Galaxy tool linting.
 
 ---------------------
 17.5.0 (2017-02-16)
