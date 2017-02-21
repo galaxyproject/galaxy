@@ -670,54 +670,50 @@ define([
                     content.datatypes = this.datatypes;
                     form = new ToolForm.View( content );
                 } else {
-                    if ( content.inputs && content.inputs.length > 0 ) {
-                        content.inputs.unshift({
-                            type    : 'text',
-                            name    : '__label',
-                            label   : 'Label',
-                            value   : node.label,
-                            help    : 'Add a step label.',
-                            onchange: function( new_label ) {
-                                var duplicate = false;
-                                for ( var i in self.workflow.nodes ) {
-                                    var n = self.workflow.nodes[ i ];
-                                    if ( n.label && n.label == new_label && n.id != node.id ) {
-                                        duplicate = true;
-                                        break;
-                                    }
+                    content.inputs.unshift({
+                        type    : 'text',
+                        name    : '__label',
+                        label   : 'Label',
+                        value   : node.label,
+                        help    : 'Add a step label.',
+                        onchange: function( new_label ) {
+                            var duplicate = false;
+                            for ( var i in self.workflow.nodes ) {
+                                var n = self.workflow.nodes[ i ];
+                                if ( n.label && n.label == new_label && n.id != node.id ) {
+                                    duplicate = true;
+                                    break;
                                 }
-                                var input_id = form.data.match( '__label' );
-                                var input_element = form.element_list[ input_id ];
-                                input_element.model.set( 'error_text', duplicate && 'Duplicate label. Please fix this before saving the workflow.' );
-                                form.trigger( 'change' );
+                            }
+                            var input_id = form.data.match( '__label' );
+                            var input_element = form.element_list[ input_id ];
+                            input_element.model.set( 'error_text', duplicate && 'Duplicate label. Please fix this before saving the workflow.' );
+                            form.trigger( 'change' );
+                        }
+                    });
+                    content.inputs.push({
+                        type    : 'text',
+                        name    : '__annotation',
+                        label   : 'Annotation',
+                        value   : node.annotation,
+                        area    : true,
+                        help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
+                    });
+                    content.onchange = function() {
+                        Utils.request({
+                            type    : 'POST',
+                            url     :  Galaxy.root + 'api/workflows/build_module',
+                            data    : {
+                                id          : node.id,
+                                type        : node.type,
+                                content_id  : node.content_id,
+                                inputs      : form.data.create()
+                            },
+                            success : function( data ) {
+                                node.update_field_data( data );
                             }
                         });
-                        content.inputs.push({
-                            type    : 'text',
-                            name    : '__annotation',
-                            label   : 'Annotation',
-                            value   : node.annotation,
-                            area    : true,
-                            help    : 'Add an annotation or notes to this step. Annotations are available when a workflow is viewed.'
-                        });
-                        content.onchange = function() {
-                            Utils.request({
-                                type    : 'POST',
-                                url     :  Galaxy.root + 'api/workflows/build_module',
-                                data    : {
-                                    id          : node.id,
-                                    type        : node.type,
-                                    inputs      : form.data.create()
-                                },
-                                success : function( data ) {
-                                    node.update_field_data( data );
-                                }
-                            });
-                        };
-                    } else {
-                        content.message = 'No inputs available for this module.';
-                        content.message_status = 'info';
-                    }
+                    };
                     form = new Form( content );
                 }
                 $el.append( form.$el );

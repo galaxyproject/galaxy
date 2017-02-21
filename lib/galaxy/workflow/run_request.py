@@ -63,10 +63,9 @@ def _normalize_inputs(steps, inputs, inputs_by):
             elif inputs_by_el == "step_uuid":
                 possible_input_keys.append(str( step.uuid ))
             elif inputs_by_el == "name":
-                possible_input_keys.append( step.name )
+                possible_input_keys.append( step.label or step.tool_inputs.get( 'name' ) )
             else:
-                message = "Workflow cannot be run because unexpected inputs_by value specified."
-                raise exceptions.MessageException( message )
+                raise exceptions.MessageException( "Workflow cannot be run because unexpected inputs_by value specified." )
         inputs_key = None
         for possible_input_key in possible_input_keys:
             if possible_input_key in inputs:
@@ -369,13 +368,11 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
 
 def workflow_request_to_run_config( work_request_context, workflow_invocation ):
     param_types = model.WorkflowRequestInputParameter.types
-
     history = workflow_invocation.history
     replacement_dict = {}
     inputs = {}
     param_map = {}
     copy_inputs_to_history = None
-
     for parameter in workflow_invocation.input_parameters:
         parameter_type = parameter.type
 
@@ -384,25 +381,14 @@ def workflow_request_to_run_config( work_request_context, workflow_invocation ):
         elif parameter_type == param_types.META_PARAMETERS:
             if parameter.name == "copy_inputs_to_history":
                 copy_inputs_to_history = (parameter.value == "true")
-
-    # for parameter in workflow_invocation.step_parameters:
-    #    step_id = parameter.workflow_step_id
-    #    if step_id not in param_map:
-    #        param_map[ step_id ] = {}
-    #    param_map[ step_id ][ parameter.name ] = parameter.value
-
     for input_association in workflow_invocation.input_datasets:
         inputs[ input_association.workflow_step_id ] = input_association.dataset
-
     for input_association in workflow_invocation.input_dataset_collections:
         inputs[ input_association.workflow_step_id ] = input_association.dataset_collection
-
     for input_association in workflow_invocation.input_step_parameters:
         inputs[ input_association.workflow_step_id ] = input_association.parameter_value
-
     if copy_inputs_to_history is None:
         raise exceptions.InconsistentDatabase("Failed to find copy_inputs_to_history parameter loading workflow_invocation from database.")
-
     workflow_run_config = WorkflowRunConfig(
         target_history=history,
         replacement_dict=replacement_dict,

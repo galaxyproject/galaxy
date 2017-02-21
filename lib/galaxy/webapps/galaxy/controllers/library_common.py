@@ -19,6 +19,7 @@ from sqlalchemy.orm import eagerload_all
 from galaxy import util, web
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
+from galaxy.tools.parameters import populate_state
 from galaxy.util import inflector, unicodify, FILENAME_VALID_CHARS
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
@@ -1044,7 +1045,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        tool.populate_state( trans, tool.inputs, kwd, state.inputs )
+        populate_state( trans, tool.inputs, kwd, state.inputs )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():

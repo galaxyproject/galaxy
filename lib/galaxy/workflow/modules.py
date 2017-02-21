@@ -81,6 +81,9 @@ class WorkflowModule( object ):
     def get_name( self ):
         return self.name
 
+    def get_version( self ):
+        return None
+
     def get_content_id( self ):
         """ If this component has an identifier external to the step (such
         as a tool or another workflow) return the identifier for that content.
@@ -114,7 +117,7 @@ class WorkflowModule( object ):
         if inputs:
             self.state.decode( state, Bunch( inputs=inputs ), self.trans.app )
         else:
-            self.state.inputs = safe_loads( state )
+            self.state.inputs = safe_loads( state ) or {}
 
     def get_errors( self ):
         """ This returns a step related error message as string or None """
@@ -129,6 +132,9 @@ class WorkflowModule( object ):
         return []
 
     def get_data_outputs( self ):
+        return []
+
+    def get_post_job_actions( self, incoming ):
         return []
 
     def check_and_update_state( self ):
@@ -227,17 +233,18 @@ class SubWorkflowModule( WorkflowModule ):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
-    default_name = "Subworkflow"
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
         module = Class( trans )
         if "subworkflow" in d:
-            module.subworkflow = d["subworkflow"]
+            module.subworkflow = d[ "subworkflow" ]
         elif "content_id" in d:
-            content_id = d["content_id"]
-            module.subworkflow = SubWorkflowModule.subworkflow_from_content_id( trans, content_id )
-        module.label = d.get( "label", None ) or None
+            from galaxy.managers.workflows import WorkflowsManager
+            module.subworkflow = WorkflowsManager( trans.app ).get_owned_workflow( trans, d[ "content_id" ] )
+        else:
+            raise Exception( "Step associated subworkflow could not be found." )
+        module.label = d.get( "label" )
         return module
 
     @classmethod
@@ -252,7 +259,7 @@ class SubWorkflowModule( WorkflowModule ):
         step.subworkflow = self.subworkflow
 
     def get_name( self ):
-        if hasattr( self, 'subworkflow' ) and hasattr( self.subworkflow, 'name' ):
+        if hasattr( self.subworkflow, 'name' ):
             return self.subworkflow.name
         return self.name
 
@@ -264,43 +271,45 @@ class SubWorkflowModule( WorkflowModule ):
             "data_collection_input": "dataset_collection",
         }
         inputs = []
-        for step in self.subworkflow.input_steps:
-            name = step.label
-            if name is None:
-                step_module = module_factory.from_workflow_step( self.trans, step )
-                name = step_module.state.inputs.get( "name" )
-            if not name:
-                raise Exception( "Failed to find name for workflow module." )
-            step_type = step.type
-            assert step_type in step_to_input_type
-            input = dict(
-                input_subworkflow_step_id=step.order_index,
-                name=name,
-                label=name,
-                multiple=False,
-                extensions="input",
-                input_type=step_to_input_type[step_type],
-            )
-            inputs.append(input)
+        if hasattr( self.subworkflow, 'input_steps' ):
+            for step in self.subworkflow.input_steps:
+                name = step.label
+                if name is None:
+                    step_module = module_factory.from_workflow_step( self.trans, step )
+                    name = step_module.state.inputs.get( "name" )
+                if not name:
+                    raise Exception( "Failed to find name for workflow module." )
+                step_type = step.type
+                assert step_type in step_to_input_type
+                input = dict(
+                    input_subworkflow_step_id=step.order_index,
+                    name=name,
+                    label=name,
+                    multiple=False,
+                    extensions="input",
+                    input_type=step_to_input_type[step_type],
+                )
+                inputs.append(input)
         return inputs
 
     def get_data_outputs( self ):
         outputs = []
-        for workflow_output in self.subworkflow.workflow_outputs:
-            output_step = workflow_output.workflow_step
-            label = workflow_output.label
-            if label is None:
-                label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
-            output = dict(
-                name=label,
-                label=label,
-                extensions=['input'],  # TODO
-            )
-            outputs.append(output)
+        if hasattr( self.subworkflow, 'workflow_outputs' ):
+            for workflow_output in self.subworkflow.workflow_outputs:
+                output_step = workflow_output.workflow_step
+                label = workflow_output.label
+                if label is None:
+                    label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
+                output = dict(
+                    name=label,
+                    label=label,
+                    extensions=['input'],  # TODO
+                )
+                outputs.append(output)
         return outputs
 
     def get_content_id( self ):
-        return self.trans.security.encode_id(self.subworkflow.id)
+        return self.trans.security.encode_id( self.subworkflow.id )
 
     def execute( self, trans, progress, invocation, step ):
         """ Execute the given workflow step in the given workflow invocation.
@@ -316,7 +325,6 @@ class SubWorkflowModule( WorkflowModule ):
             workflow_output_label = workflow_output.label
             replacement = subworkflow_progress.get_replacement_workflow_output( workflow_output )
             outputs[ workflow_output_label ] = replacement
-
         progress.set_step_outputs( step, outputs )
         return None
 
@@ -324,13 +332,6 @@ class SubWorkflowModule( WorkflowModule ):
         state = DefaultToolState()
         state.inputs = dict( )
         return state
-
-    @classmethod
-    def subworkflow_from_content_id(clazz, trans, content_id):
-        from galaxy.managers.workflows import WorkflowsManager
-        workflow_manager = WorkflowsManager(trans.app)
-        subworkflow = workflow_manager.get_owned_workflow( trans, content_id )
-        return subworkflow
 
 
 class InputModule( WorkflowModule ):
@@ -404,10 +405,10 @@ class InputDataModule( InputModule ):
 
 
 class InputDataCollectionModule( InputModule ):
-    default_name = "Input Dataset Collection"
-    default_collection_type = "list"
     type = "data_collection_input"
     name = "Input dataset collection"
+    default_name = "Input Dataset Collection"
+    default_collection_type = "list"
     collection_type = default_collection_type
 
     def get_inputs( self ):
@@ -442,17 +443,15 @@ class InputDataCollectionModule( InputModule ):
 
 
 class InputParameterModule( WorkflowModule ):
-    default_name = "input_parameter"
+    type = "parameter_input"
+    name = "Input parameter"
     default_parameter_type = "text"
     default_optional = False
-    type = "parameter_input"
-    name = default_name
     parameter_type = default_parameter_type
     optional = default_optional
 
     def get_inputs( self ):
         # TODO: Use an external xml or yaml file to load the parameter definition
-        name = self.state.inputs.get( "name", self.default_name )
         parameter_type = self.state.inputs.get( "parameter_type", self.default_parameter_type )
         optional = self.state.inputs.get( "optional", self.default_optional )
         input_parameter_type = SelectToolParameter( None, XML(
@@ -465,12 +464,10 @@ class InputParameterModule( WorkflowModule ):
                 <option value="color">Color</option>
             </param>
             ''' % parameter_type ) )
-        return odict([( "name", TextToolParameter( None, Element( "param", name="name", label="Name", type="text", value=name ) ) ),
-                      ( "parameter_type", input_parameter_type ),
+        return odict([( "parameter_type", input_parameter_type ),
                       ( "optional", BooleanToolParameter( None, Element( "param", name="optional", label="Optional", type="boolean", value=optional )))])
 
     def get_runtime_inputs( self, **kwds ):
-        label = self.state.inputs.get( "name", self.default_name )
         parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
         optional = self.state.inputs.get("optional", self.default_optional)
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
@@ -481,7 +478,7 @@ class InputParameterModule( WorkflowModule ):
             parameter_kwds["value"] = str(0)
 
         # TODO: Use a dict-based description from YAML tool source
-        element = Element("param", name="input", label=label, type=parameter_type, optional=str(optional), **parameter_kwds )
+        element = Element("param", name="input", label=self.label, type=parameter_type, optional=str(optional), **parameter_kwds )
         input = parameter_class( None, element )
         return dict( input=input )
 
@@ -505,11 +502,6 @@ class PauseModule( WorkflowModule ):
     """
     type = "pause"
     name = "Pause for dataset review"
-    default_name = "Pause for Dataset Review"
-
-    def get_inputs( self ):
-        name = self.state.inputs.get( "name", self.default_name )
-        return dict( name=TextToolParameter( None, Element( "param", name="name", type="text", value=name ) ) )
 
     def get_data_inputs( self ):
         input = dict(
@@ -559,6 +551,7 @@ class PauseModule( WorkflowModule ):
 class ToolModule( WorkflowModule ):
 
     type = "tool"
+    name = "Tool"
 
     def __init__( self, trans, tool_id, tool_version=None, exact_tools=False, **kwds ):
         super( ToolModule, self ).__init__( trans, content_id=tool_id, **kwds )
@@ -588,8 +581,8 @@ class ToolModule( WorkflowModule ):
             message = ""
             if tool_id != module.tool_id:
                 message += "The tool (id '%s') specified in this step is not available. Using the tool with id %s instead." % (tool_id, module.tool_id)
-            if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_tool_version(), d.get( 'tool_version', 'Unspecified' ) )
+            if d.get('tool_version', 'Unspecified') != module.get_version():
+                message += "%s: using version '%s' instead of version '%s' specified in this workflow." % ( tool_id, module.get_version(), d.get( 'tool_version', 'Unspecified' ) )
             if message:
                 log.debug( message )
                 module.version_changes.append( message )
@@ -629,7 +622,7 @@ class ToolModule( WorkflowModule ):
     def save_to_step( self, step ):
         super( ToolModule, self ).save_to_step( step )
         step.tool_id = self.tool_id
-        step.tool_version = self.get_tool_version()
+        step.tool_version = self.get_version()
         for k, v in self.post_job_actions.iteritems():
             pja = self.__to_pja( k, v, step )
             self.trans.sa_session.add( pja )
@@ -642,7 +635,7 @@ class ToolModule( WorkflowModule ):
     def get_content_id( self ):
         return self.tool_id
 
-    def get_tool_version( self ):
+    def get_version( self ):
         return self.tool.version if self.tool else self.tool_version
 
     def get_tooltip( self, static_path='' ):
