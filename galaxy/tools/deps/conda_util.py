@@ -214,7 +214,7 @@ class CondaContext(installable.InstallableContext):
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
 
-    def exec_clean(self, args=[]):
+    def exec_clean(self, args=[], quiet=False):
         """
         Clean up after conda installation.
         """
@@ -222,8 +222,10 @@ class CondaContext(installable.InstallableContext):
             "--tarballs",
             "-y"
         ]
-        clean_base_args.extend(args)
-        return self.exec_command("clean", clean_base_args)
+        clean_args = clean_base_args + args
+        if quiet:
+            clean_args.extend([">", "/dev/null"])
+        return self.exec_command("clean", clean_args)
 
     def export_list(self, name, path):
         return self.exec_command("list", [
@@ -478,6 +480,7 @@ def build_isolated_environment(
     path=None,
     copy=False,
     conda_context=None,
+    quiet=False,
 ):
     """ Build a new environment (or reuse an existing one from hashes)
     for specified conda packages.
@@ -514,6 +517,9 @@ def build_isolated_environment(
                 "--file", export_path, ">", "/dev/null"
             ])
 
+        if quiet:
+            create_args.extend([">", "/dev/null"])
+
         if path is not None and os.path.exists(path):
             exit_code = conda_context.exec_install(create_args)
         else:
@@ -521,7 +527,7 @@ def build_isolated_environment(
 
         return (path or tempdir_name, exit_code)
     finally:
-        conda_context.exec_clean()
+        conda_context.exec_clean(quiet=quiet)
         shutil.rmtree(tempdir)
 
 
