@@ -236,7 +236,7 @@ class SubWorkflowModule( WorkflowModule ):
 
     @classmethod
     def from_dict( Class, trans, d, **kwds ):
-        module = Class( trans )
+        module = super( SubWorkflowModule, Class ).from_dict( trans, d, **kwds )
         if "subworkflow" in d:
             module.subworkflow = d[ "subworkflow" ]
         elif "content_id" in d:
@@ -244,14 +244,12 @@ class SubWorkflowModule( WorkflowModule ):
             module.subworkflow = WorkflowsManager( trans.app ).get_owned_workflow( trans, d[ "content_id" ] )
         else:
             raise Exception( "Step associated subworkflow could not be found." )
-        module.label = d.get( "label" )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
-        module = Class( trans )
+        module = super( SubWorkflowModule, Class ).from_workflow_step( trans, step, **kwds )
         module.subworkflow = step.subworkflow
-        module.label = step.label
         return module
 
     def save_to_step( self, step ):
