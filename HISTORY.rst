@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-17.5.2.dev0
+17.5.2 (2017-02-21)
 ---------------------
 
 * Conda utility enhancements to fix a Planemo bug.
