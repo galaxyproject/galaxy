@@ -5,7 +5,6 @@
 import logging
 import os
 import shutil
-from kamaki.clients import astakos, pithos, utils, ClientError
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
@@ -13,6 +12,17 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from ..objectstore import ObjectStore
+
+try:
+    from kamaki.clients import (
+        astakos, pithos, utils, ClientError, Client as KamakiClient)
+except ImportError:
+    KamakiClient = None
+
+NO_KAMAKI_ERROR_MESSAGE = (
+    "ObjectStore configured, but no kamaki.clients dependency available."
+    "Please install and properly configure kamaki.clients or modify Object "
+    "Store configuration.")
 
 log = logging.getLogger(__name__)
 
@@ -66,6 +76,8 @@ class PithosObjectStore(ObjectStore):
     Cache is ignored for the time being.
     """
     def __init__(self, config, config_xml):
+        if KamakiClient is None:
+            raise Exception(NO_KAMAKI_ERROR_MESSAGE)
         super(PithosObjectStore, self).__init__(config)
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
