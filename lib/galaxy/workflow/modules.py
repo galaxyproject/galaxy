@@ -272,9 +272,6 @@ class SubWorkflowModule( WorkflowModule ):
         if hasattr( self.subworkflow, 'input_steps' ):
             for step in self.subworkflow.input_steps:
                 name = step.label
-                if name is None:
-                    step_module = module_factory.from_workflow_step( self.trans, step )
-                    name = step_module.label
                 if not name:
                     raise Exception( "Failed to find name for workflow module." )
                 step_type = step.type
