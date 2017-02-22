@@ -926,9 +926,8 @@ class WorkflowContentsManager(UsesAnnotations):
             del step.temp_input_connections
 
     def __set_default_label( self, module, state ):
-        """ Previously data input modules used a `name` attribute stored in their state, to label steps. Here, this value
-        is transferred to the label attribute which is unique, available for all module types and stored in its own database
-        column. This is necessary for backward compatibility.
+        """ Previously data input modules had a `name` attribute to rename individual steps. Here, this value is transferred
+        to the actual `label` attribute which is available for all module types, unique, and mapped to its own database column.
         """
         if not module.label and module.type in [ 'data_input', 'data_collection_input' ] and isinstance( state, dict ):
             default_label = state.get( 'name' )
