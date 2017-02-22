@@ -931,7 +931,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if not module.label and module.type in [ 'data_input', 'data_collection_input' ] and isinstance( state, dict ):
             default_label = state.get( 'name' )
-            if str( default_label ).lower() != module.name.lower():
+            if str( default_label ).lower() not in [ 'input dataset', 'input dataset collection' ]:
                 module.label = default_label
 
 
