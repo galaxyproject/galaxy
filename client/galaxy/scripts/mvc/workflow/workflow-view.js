@@ -705,7 +705,7 @@ define([
                             id          : node.id,
                             type        : node.type,
                             content_id  : node.content_id,
-                            inputs      : form.data.create()
+                            inputs      : form_wrapper.form.data.create()
                         },
                         success : function( data ) {
                             node.update_field_data( data );
