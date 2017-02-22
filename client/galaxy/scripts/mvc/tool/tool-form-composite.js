@@ -306,6 +306,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                     var is_simple_input = ([ 'data_input', 'data_collection_input' ]).indexOf( step.step_type ) != -1;
                     _.each( step.inputs, function( input ) { input.flavor = 'module'; input.hide_label = is_simple_input; } );
                     form = new Form( Utils.merge({
+                        title    : '<b>' + step.name + '</b>' + step.description,
                         onchange : function() { _.each( self.links[ step.index ], function( link ) { self._refreshStep( link ) } ) },
                         inputs   : step.inputs && step.inputs.length > 0 ? step.inputs : [ { type: 'hidden', name: 'No options available.', ignore: null } ]
                     }, step ) );
@@ -450,7 +451,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                         Galaxy.emit.debug( 'tool-form-composite::submit', 'Submission successful.', response );
                         self.$el.children().hide();
                         self.$el.append( self._templateSuccess( response ) );
-                        
+
                         // Show Webhook if job is running
                         if ($.isArray( response ) && response.length > 0) {
                             self.$el.append( $( '<div/>', { id: 'webhook-view' } ) );

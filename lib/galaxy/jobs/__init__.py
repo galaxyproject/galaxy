@@ -15,6 +15,7 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 from json import loads
+from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
 import six
@@ -1321,6 +1322,16 @@ class JobWrapper( object, HasResourceParameters ):
                     dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
                 dataset.set_size()
+                # Handle composite datatypes of auto_primary_file type
+                if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
+                    try:
+                        with NamedTemporaryFile() as temp_fh:
+                            temp_fh.write( dataset.datatype.generate_primary_file( dataset ) )
+                            temp_fh.flush()
+                            self.app.object_store.update_from_file( dataset.dataset, file_name=temp_fh.name, create=True )
+                            dataset.set_size()
+                    except Exception as e:
+                        log.warning( 'Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e )
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
