@@ -369,6 +369,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return {
             'label'             : inputs.get( '__label', '' ),
             'annotation'        : inputs.get( '__annotation', '' ),
+            'name'              : module.get_name(),
             'tool_state'        : module.get_state(),
             'data_inputs'       : module.get_data_inputs(),
             'data_outputs'      : module.get_data_outputs(),
