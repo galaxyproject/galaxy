@@ -149,6 +149,7 @@ class DependencyManager( object ):
                 if dependencies:
                     assert len(dependencies) == len(resolvable_requirements)
                     for requirement, dependency in zip(resolvable_requirements, dependencies):
+                        log.debug(dependency.resolver_msg)
                         requirement_to_dependency[requirement] = dependency
 
                     # Shortcut - resolution complete.
