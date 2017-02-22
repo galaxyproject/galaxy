@@ -82,6 +82,41 @@ class CondaContext(installable.InstallableContext):
             ensure_channels = None
         self.ensure_channels = ensure_channels
         self.ensured_channels = False
+        self._conda_version = None
+        self._miniconda_version = None
+
+    @property
+    def conda_version(self):
+        if self._conda_version is None:
+            self._guess_conda_version()
+        return self._conda_version
+
+    def _guess_conda_version(self):
+        conda_meta_path = self._conda_meta_path
+        # Perhaps we should call "conda info --json" and parse it but for now we are going
+        # to assume the default.
+        conda_version = LooseVersion(CONDA_VERSION)
+        miniconda_version = "3"
+
+        if os.path.exists(conda_meta_path):
+            for package in os.listdir(conda_meta_path):
+                package_parts = package.split("-")
+                if len(package_parts) < 3:
+                    continue
+                package = '-'.join(package_parts[:-2])
+                version = package_parts[-2]
+                # build = package_parts[-1]
+                if package == "conda":
+                    conda_version = LooseVersion(version)
+                if package == "python" and version.startswith("2"):
+                    miniconda_version = "2"
+
+        self._conda_version = conda_version
+        self._miniconda_version = miniconda_version
+
+    @property
+    def _conda_meta_path(self):
+        return os.path.join(self.conda_prefix, "conda-meta")
 
     def ensure_channels_configured(self):
         if not self.ensured_channels:
@@ -495,7 +530,16 @@ def build_isolated_environment(
                 export_path
             )
             export_paths.append(export_path)
-        create_args = ["--unknown", "--offline"]
+        create_args = ["--unknown"]
+        # Works in 3.19, 4.0 - 4.2 - not in 4.3.
+        # Adjust fix if they fix Conda - xref
+        # - https://github.com/galaxyproject/galaxy/issues/3635
+        # - https://github.com/conda/conda/issues/2035
+        offline_works = conda_context.conda_version < LooseVersion("4.3")
+        if offline_works:
+            create_args.extend(["--offline"])
+        else:
+            create_args.extend(["--use-index-cache"])
         if path is None:
             create_args.extend(["--name", tempdir_name])
         else:

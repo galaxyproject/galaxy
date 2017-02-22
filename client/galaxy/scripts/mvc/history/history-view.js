@@ -369,14 +369,17 @@ var HistoryView = _super.extend(
     }),
 
     _clickPrevPage : function( ev ){
+        this.model.clearUpdateTimeout();
         this.model.contents.fetchPrevPage();
     },
 
     _clickNextPage : function( ev ){
+        this.model.clearUpdateTimeout();
         this.model.contents.fetchNextPage();
     },
 
     _changePageSelect : function( ev ){
+        this.model.clearUpdateTimeout();
         var page = $( ev.currentTarget ).val();
         this.model.contents.fetchPage( page );
     },
