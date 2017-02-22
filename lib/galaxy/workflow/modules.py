@@ -57,15 +57,21 @@ class WorkflowModule( object ):
     def from_dict( Class, trans, d, **kwds ):
         module = Class( trans, **kwds )
         module.recover_state( d.get( "tool_state" ) )
-        module.label = d.get( "label", module.state.inputs.get( 'name' ) )
+        module.label = d.get( "label", module._get_default_label( d.get( "tool_state" ) ) )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
         module = Class( trans, **kwds )
         module.recover_state( step.tool_inputs )
-        module.label = step.label or module.state.inputs.get( 'name' )
+        module.label = step.label or module._get_default_label( step.tool_inputs )
         return module
+
+    def _get_default_label( self, state ):
+        if isinstance( state, dict ):
+            default_label = state.get( "name" )
+            if str( default_label ).lower() != self.name.lower():
+                return default_label
 
     # ---- Saving in various forms ------------------------------------------
 
@@ -377,13 +383,6 @@ class InputModule( WorkflowModule ):
 class InputDataModule( InputModule ):
     type = "data_input"
     name = "Input dataset"
-    default_name = "Input Dataset"
-
-    def get_inputs( self ):
-        name = self.state.inputs.get( 'name' )
-        if name == self.default_name:
-            name = None
-        return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", hidden="true", value=name ) ) )
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
@@ -400,23 +399,17 @@ class InputDataModule( InputModule ):
         return ', '.join( filter_set )
 
     def get_runtime_inputs( self, connections=None ):
-        label = self.state.inputs.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=self.label, multiple=False, type="data", format=self.get_filter_set( connections ) ), self.trans ) )
 
 
 class InputDataCollectionModule( InputModule ):
     type = "data_collection_input"
     name = "Input dataset collection"
-    default_name = "Input Dataset Collection"
     default_collection_type = "list"
     collection_type = default_collection_type
 
     def get_inputs( self ):
-        name = self.state.inputs.get( "name" )
-        if name == self.default_name:
-            name = None
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", hidden="true", value=name ) )
         input_collection_type = TextToolParameter( None, XML(
             '''
             <param name="collection_type" label="Collection type" type="text" value="%s">
@@ -425,7 +418,7 @@ class InputDataCollectionModule( InputModule ):
                 <option value="list:paired">List of Dataset Pairs</option>
             </param>
             ''' % collection_type ) )
-        return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )
+        return dict( collection_type=input_collection_type )
 
     def get_runtime_inputs( self, **kwds ):
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
