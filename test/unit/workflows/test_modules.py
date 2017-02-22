@@ -193,9 +193,6 @@ steps:
 
 def test_subworkflow_new_inputs():
     subworkflow_module = __new_subworkflow_module()
-    for step in subworkflow_module.subworkflow.input_steps:
-        print step.label
-
     inputs = subworkflow_module.get_data_inputs()
     assert len(inputs) == 2, len(inputs)
     input1, input2 = inputs
