@@ -274,7 +274,7 @@ class SubWorkflowModule( WorkflowModule ):
                 name = step.label
                 if name is None:
                     step_module = module_factory.from_workflow_step( self.trans, step )
-                    name = step_module.state.inputs.get( "name" )
+                    name = step_module.label
                 if not name:
                     raise Exception( "Failed to find name for workflow module." )
                 step_type = step.type
