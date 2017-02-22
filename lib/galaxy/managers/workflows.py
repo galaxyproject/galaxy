@@ -412,8 +412,6 @@ class WorkflowContentsManager(UsesAnnotations):
         }
 
     def _workflow_to_dict_editor(self, trans, stored):
-        """
-        """
         workflow = stored.latest_workflow
         # Pack workflow data into a dictionary and return
         data = {}
@@ -426,6 +424,8 @@ class WorkflowContentsManager(UsesAnnotations):
             module = module_factory.from_workflow_step( trans, step )
             if not module:
                 raise exceptions.MessageException( 'Unrecognized step type: %s' % step.type )
+            # Load label from state of data input modules, necessary for backward compatibility
+            self.__set_default_label( module, step.tool_inputs )
             # Fix any missing parameters
             upgrade_message = module.check_and_update_state()
             if upgrade_message:
@@ -835,6 +835,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["subworkflow"] = subworkflow
 
         module = module_factory.from_dict( trans, step_dict, **kwds )
+        self.__set_default_label( module, step_dict.get( 'tool_state' ) )
         module.save_to_step( step )
 
         annotation = step_dict[ 'annotation' ]
@@ -923,6 +924,16 @@ class WorkflowContentsManager(UsesAnnotations):
                         conn.input_subworkflow_step = step.subworkflow.step_by_index(input_subworkflow_step_index)
 
             del step.temp_input_connections
+
+    def __set_default_label( self, module, state ):
+        """ Previously data input modules used a `name` attribute stored in their state, to label steps. Here, this value
+        is transferred to the label attribute which is unique, available for all module types and stored in its own database
+        column. This is necessary for backward compatibility.
+        """
+        if not module.label and module.type in [ 'data_input', 'data_collection_input' ] and isinstance( state, dict ):
+            default_label = state.get( 'name' )
+            if str( default_label ).lower() != module.name.lower():
+                module.label = default_label
 
 
 class MissingToolsException(exceptions.MessageException):

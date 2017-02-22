@@ -57,21 +57,15 @@ class WorkflowModule( object ):
     def from_dict( Class, trans, d, **kwds ):
         module = Class( trans, **kwds )
         module.recover_state( d.get( "tool_state" ) )
-        module.label = d.get( "label", module._get_default_label( d.get( "tool_state" ) ) )
+        module.label = d.get( "label" )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step, **kwds ):
         module = Class( trans, **kwds )
         module.recover_state( step.tool_inputs )
-        module.label = step.label or module._get_default_label( step.tool_inputs )
+        module.label = step.label
         return module
-
-    def _get_default_label( self, state ):
-        if isinstance( state, dict ):
-            default_label = state.get( "name" )
-            if str( default_label ).lower() != self.name.lower():
-                return default_label
 
     # ---- Saving in various forms ------------------------------------------
 
