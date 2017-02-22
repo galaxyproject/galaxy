@@ -257,7 +257,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     onclick : function() {
                         var modalMessage = new Ui.Modal.View();
                         $.ajax({
-                            url: '/api/tools/' + options.id + '/reload',
+                            url: Galaxy.root + 'api/tools/' + options.id + '/reload',
                             type: "GET",
                         }).done(function(data){
                             modalMessage.show({

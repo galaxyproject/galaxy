@@ -16,7 +16,7 @@ $(document).ready(function() {
         imgTemplate: _.template('<img src="<%= src %>"">'),
 
         events: {
-            'click #phdcomics-random': 'getRandomPHDComics'
+            'click #phdcomics-random': 'getRandomComic'
         },
 
         initialize: function() {
@@ -25,31 +25,32 @@ $(document).ready(function() {
 
         render: function() {
             this.$el.html(this.appTemplate());
-            this.phdComicsImg = this.$('#phdcomics-img');
-            this.getRandomPHDComics();
+            this.$comicImg = this.$('#phdcomics-img');
+            this.getRandomComic();
             return this;
         },
 
-        getRandomPHDComics: function() {
+        getRandomComic: function() {
             var me = this,
                 url = galaxyRoot + 'api/webhooks/phdcomics/get_data';
 
-            this.phdComicsImg.html($('<div/>', {id: 'phdcomics-loader'}));
+            this.$comicImg.html($('<div/>', {
+                id: 'phdcomics-loader'
+            }));
+
             $.getJSON(url, function(data) {
                 if (data.success) {
-                    me.phdComics = {src: data.data.src};
-                    me.renderImg();
+                    me.renderImg(data.src);
                 } else {
-                    console.log('[ERROR] "' + url + '":\n' + data.error);
+                    console.error('[ERROR] "' + url + '":\n' + data.error);
                 }
             });
         },
 
-        renderImg: function() {
-            this.phdComicsImg.html(this.imgTemplate({src: this.phdComics.src}));
+        renderImg: function(src) {
+            this.$comicImg.html(this.imgTemplate({src: src}));
         }
     });
 
-    var PHDComicsApp = new PHDComicsAppView;
-
+    new PHDComicsAppView();
 });

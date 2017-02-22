@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 
@@ -5,7 +6,6 @@ from galaxy.tools.actions import ToolAction
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
 from galaxy.util.odict import odict
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -51,7 +51,7 @@ class ImportHistoryToolAction( ToolAction ):
 
         # Set additional parameters.
         incoming[ '__DEST_DIR__' ] = jiha.archive_dir
-        for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
+        for name, value in tool.params_to_strings( incoming, trans.app ).items():
             job.add_parameter( name, value )
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state
@@ -73,7 +73,7 @@ class ExportHistoryToolAction( ToolAction ):
         # Get history to export.
         #
         history = None
-        for name, value in incoming.iteritems():
+        for name, value in incoming.items():
             if isinstance( value, trans.app.model.History ):
                 history_param_name = name
                 history = value
@@ -130,7 +130,7 @@ class ExportHistoryToolAction( ToolAction ):
         # Set additional parameters.
         incoming[ '__HISTORY_TO_EXPORT__' ] = history.id
         incoming[ '__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__' ] = cmd_line
-        for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
+        for name, value in tool.params_to_strings( incoming, trans.app ).items():
             job.add_parameter( name, value )
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state

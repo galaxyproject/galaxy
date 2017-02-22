@@ -4,6 +4,7 @@ Renames a dataset file by appending _purged to the file name so that it can late
 Usage: python rename_purged_datasets.py purge.log
 """
 from __future__ import print_function
+
 import os
 import sys
 

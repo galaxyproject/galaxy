@@ -29,14 +29,14 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "3.19.3"
+CONDA_VERSION = "4.2.13"
 
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-MacOSX-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-MacOSX-x86_64.sh"
     else:
-        url = "https://repo.continuum.io/miniconda/Miniconda2-4.0.5-Linux-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh"
     return url
 
 
@@ -82,6 +82,41 @@ class CondaContext(installable.InstallableContext):
             ensure_channels = None
         self.ensure_channels = ensure_channels
         self.ensured_channels = False
+        self._conda_version = None
+        self._miniconda_version = None
+
+    @property
+    def conda_version(self):
+        if self._conda_version is None:
+            self._guess_conda_version()
+        return self._conda_version
+
+    def _guess_conda_version(self):
+        conda_meta_path = self._conda_meta_path
+        # Perhaps we should call "conda info --json" and parse it but for now we are going
+        # to assume the default.
+        conda_version = LooseVersion(CONDA_VERSION)
+        miniconda_version = "3"
+
+        if os.path.exists(conda_meta_path):
+            for package in os.listdir(conda_meta_path):
+                package_parts = package.split("-")
+                if len(package_parts) < 3:
+                    continue
+                package = '-'.join(package_parts[:-2])
+                version = package_parts[-2]
+                # build = package_parts[-1]
+                if package == "conda":
+                    conda_version = LooseVersion(version)
+                if package == "python" and version.startswith("2"):
+                    miniconda_version = "2"
+
+        self._conda_version = conda_version
+        self._miniconda_version = miniconda_version
+
+    @property
+    def _conda_meta_path(self):
+        return os.path.join(self.conda_prefix, "conda-meta")
 
     def ensure_channels_configured(self):
         if not self.ensured_channels:
@@ -358,10 +393,22 @@ def install_conda(conda_context=None):
     fix_version_cmd = "%s install -y -q conda=%s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), CONDA_VERSION)
     full_command = "%s && %s && %s" % (download_cmd, install_cmd, fix_version_cmd)
     try:
+        log.info("Installing Conda, this may take several minutes.")
         return conda_context.shell_exec(full_command)
     finally:
         if os.path.exists(script_path):
             os.remove(script_path)
+
+
+def install_conda_targets(conda_targets, env_name, conda_context=None):
+    conda_context = _ensure_conda_context(conda_context)
+    conda_context.ensure_channels_configured()
+    create_args = [
+        "--name", env_name,  # enviornment for package
+    ]
+    for conda_target in conda_targets:
+        create_args.append(conda_target.package_specifier)
+    return conda_context.exec_create(create_args)
 
 
 def install_conda_target(conda_target, conda_context=None):
@@ -376,10 +423,14 @@ def install_conda_target(conda_target, conda_context=None):
     return conda_context.exec_create(create_args)
 
 
-def cleanup_failed_install(conda_target, conda_context=None):
+def cleanup_failed_install_of_environment(env, conda_context=None):
     conda_context = _ensure_conda_context(conda_context)
-    if conda_context.has_env(conda_target.install_environment):
-        conda_context.exec_remove([conda_target.install_environment])
+    if conda_context.has_env(env):
+        conda_context.exec_remove([env])
+
+
+def cleanup_failed_install(conda_target, conda_context=None):
+    cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
 def best_search_result(conda_target, conda_context=None, channels_override=None):
@@ -479,7 +530,16 @@ def build_isolated_environment(
                 export_path
             )
             export_paths.append(export_path)
-        create_args = ["--unknown", "--offline"]
+        create_args = ["--unknown"]
+        # Works in 3.19, 4.0 - 4.2 - not in 4.3.
+        # Adjust fix if they fix Conda - xref
+        # - https://github.com/galaxyproject/galaxy/issues/3635
+        # - https://github.com/conda/conda/issues/2035
+        offline_works = conda_context.conda_version < LooseVersion("4.3")
+        if offline_works:
+            create_args.extend(["--offline"])
+        else:
+            create_args.extend(["--use-index-cache"])
         if path is None:
             create_args.extend(["--name", tempdir_name])
         else:

@@ -1,0 +1,19 @@
+version: '2'
+services:
+  postgres:
+    image: postgres
+  galaxy:
+    build: .
+    image: ubuntu
+    volumes:
+      - "${TARGET_ROOT}:${TARGET_PATH}"
+    links:
+      - postgres
+    ports:
+      - "${GALAXY_PORT}:8080"
+  selenium:
+    image: selenium/standalone-chrome:3.0.1-aluminum
+    ports:
+      - "${SELENIUM_PORT}:4444"
+    links:
+      - galaxy

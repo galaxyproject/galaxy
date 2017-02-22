@@ -2,6 +2,7 @@
 Sequence classes
 """
 
+import bz2
 import gzip
 import json
 import logging
@@ -15,10 +16,14 @@ import bx.align.maf
 
 from galaxy import util
 from galaxy.datatypes import metadata
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size
-from galaxy.util.checkers import is_gzip
+from galaxy.util.checkers import (
+    is_bz2,
+    is_gzip
+)
 from galaxy.util.image_util import check_image_type
 
 from . import data
@@ -27,6 +32,8 @@ if sys.version_info > (3,):
     long = int
 
 log = logging.getLogger(__name__)
+
+SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
 
 
 class SequenceSplitLocations( data.Text ):
@@ -553,8 +560,8 @@ class csFasta( Sequence ):
         return Sequence.set_meta( self, dataset, **kwd )
 
 
-class Fastq ( Sequence ):
-    """Class representing a generic FASTQ sequence"""
+class BaseFastq ( Sequence ):
+    """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
 
@@ -571,24 +578,35 @@ class Fastq ( Sequence ):
         data_lines = 0
         sequences = 0
         seq_counter = 0     # blocks should be 4 lines long
-        for line in open( dataset.file_name ):
-            line = line.strip()
-            if line and line.startswith( '#' ) and not data_lines:
-                # We don't count comment lines for sequence data types
-                continue
-            seq_counter += 1
-            data_lines += 1
-            if line and line.startswith( '@' ):
-                if seq_counter >= 4:
-                    # count previous block
-                    # blocks should be 4 lines long
-                    sequences += 1
-                    seq_counter = 1
-        if seq_counter >= 4:
-            # count final block
-            sequences += 1
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.sequences = sequences
+        compressed_gzip = is_gzip(dataset.file_name)
+        compressed_bzip2 = is_bz2(dataset.file_name)
+        try:
+            if compressed_gzip:
+                in_file = gzip.GzipFile(dataset.file_name)
+            elif compressed_bzip2:
+                in_file = bz2.BZ2File(dataset.file_name)
+            else:
+                in_file = open(dataset.file_name)
+            for line in in_file:
+                line = line.strip()
+                if line and line.startswith( '#' ) and not data_lines:
+                    # We don't count comment lines for sequence data types
+                    continue
+                seq_counter += 1
+                data_lines += 1
+                if line and line.startswith( '@' ):
+                    if seq_counter >= 4:
+                        # count previous block
+                        # blocks should be 4 lines long
+                        sequences += 1
+                        seq_counter = 1
+            if seq_counter >= 4:
+                # count final block
+                sequences += 1
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.sequences = sequences
+        finally:
+            in_file.close()
 
     def sniff( self, filename ):
         """
@@ -606,6 +624,9 @@ class Fastq ( Sequence ):
         >>> Fastq().sniff( fname )
         True
         """
+        compressed = is_gzip(filename) or is_bz2(filename)
+        if compressed and not isinstance(self, Binary):
+            return False
         headers = get_headers( filename, None )
         bases_regexp = re.compile( "^[NGTAC]*" )
         # check that first block looks like a fastq block
@@ -668,6 +689,12 @@ class Fastq ( Sequence ):
     process_split_file = staticmethod(process_split_file)
 
 
+class Fastq( BaseFastq ):
+    """Class representing a generic FASTQ sequence"""
+    edam_format = "format_1930"
+    file_ext = "fastq"
+
+
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
@@ -689,6 +716,86 @@ class FastqIllumina( Fastq ):
 class FastqCSSanger( Fastq ):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger"
+
+
+class FastqGz ( BaseFastq, Binary ):
+    """Class representing a generic compressed FASTQ sequence"""
+    edam_format = "format_1930"
+    file_ext = "fastq.gz"
+    compressed = True
+
+    def sniff( self, filename ):
+        """Determines whether the file is in gzip-compressed FASTQ format"""
+        if not is_gzip(filename):
+            return False
+        return BaseFastq.sniff( self, filename )
+
+
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
+
+
+class FastqSangerGz( FastqGz ):
+    """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
+    edam_format = "format_1932"
+    file_ext = "fastqsanger.gz"
+
+
+class FastqSolexaGz( FastqGz ):
+    """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
+    edam_format = "format_1933"
+    file_ext = "fastqsolexa.gz"
+
+
+class FastqIlluminaGz( FastqGz ):
+    """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
+    edam_format = "format_1931"
+    file_ext = "fastqillumina.gz"
+
+
+class FastqCSSangerGz( FastqGz ):
+    """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
+    file_ext = "fastqcssanger.gz"
+
+
+class FastqBz2 ( BaseFastq, Binary ):
+    """Class representing a generic compressed FASTQ sequence"""
+    edam_format = "format_1930"
+    file_ext = "fastq.bz2"
+    compressed = True
+
+    def sniff( self, filename ):
+        """Determine whether the file is in bzip2-compressed FASTQ format"""
+        if not is_bz2(filename):
+            return False
+        return BaseFastq.sniff( self, filename )
+
+
+if SNIFF_COMPRESSED_FASTQS:
+    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
+
+
+class FastqSangerBz2( FastqBz2 ):
+    """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
+    edam_format = "format_1932"
+    file_ext = "fastqsanger.bz2"
+
+
+class FastqSolexaBz2( FastqBz2 ):
+    """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
+    edam_format = "format_1933"
+    file_ext = "fastqsolexa.bz2"
+
+
+class FastqIlluminaBz2( FastqBz2 ):
+    """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
+    edam_format = "format_1931"
+    file_ext = "fastqillumina.bz2"
+
+
+class FastqCSSangerBz2( FastqBz2 ):
+    """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
+    file_ext = "fastqcssanger.bz2"
 
 
 class Maf( Alignment ):
@@ -1065,4 +1172,20 @@ class DotBracket ( Sequence ):
                             return True
 
         # Number of lines is less than 3
+        return False
+
+
+class Genbank(data.Text):
+    """Class representing a Genbank sequence"""
+    edam_format = "format_1936"
+    edam_data = "data_0849"
+    file_ext = "genbank"
+
+    def sniff(self, filename):
+        try:
+            with open(filename, 'r') as handle:
+                return 'LOCUS ' == handle.read(6)
+        except:
+            pass
+
         return False

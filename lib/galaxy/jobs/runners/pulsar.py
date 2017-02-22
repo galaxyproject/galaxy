@@ -615,7 +615,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     @staticmethod
     def __dependency_resolution( pulsar_client ):
-        dependency_resolution = pulsar_client.destination_params.get( "dependency_resolution", "local" )
+        dependency_resolution = pulsar_client.destination_params.get( "dependency_resolution", "remote" )
         if dependency_resolution not in ["none", "local", "remote"]:
             raise Exception("Unknown dependency_resolution value encountered %s" % dependency_resolution)
         return dependency_resolution

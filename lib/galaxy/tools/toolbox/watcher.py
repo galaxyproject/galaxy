@@ -2,7 +2,6 @@ import logging
 import os.path
 import threading
 import time
-from galaxy.util.hash_util import md5_hash_file
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -15,6 +14,7 @@ except ImportError:
     PollingObserver = None
     can_watch = False
 
+from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.postfork import register_postfork_function
 
 log = logging.getLogger( __name__ )
@@ -98,8 +98,10 @@ class ToolConfWatcher(object):
                 if os.path.exists(path):
                     new_mod_time = time.ctime(os.path.getmtime(path))
                 if new_mod_time != mod_time:
-                    if hashes[path] != md5_hash_file(path):
+                    new_hash = md5_hash_file(path)
+                    if hashes[path] != new_hash:
                         self.paths[path] = new_mod_time
+                        hashes[path] = new_hash
                         log.debug("The file '%s' has changes.", path)
                         do_reload = True
 

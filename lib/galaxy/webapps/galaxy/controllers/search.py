@@ -2,6 +2,7 @@
 Contains a basic search interface for Galaxy
 """
 import logging
+
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 

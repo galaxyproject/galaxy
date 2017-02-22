@@ -1,6 +1,7 @@
 import logging
 import os
 import os.path
+
 from six import string_types
 
 import galaxy.tools.parameters.basic
@@ -183,7 +184,7 @@ class ToolTestBuilder( object ):
                         expanded_inputs[ case_context.for_state() ] = processed_value
             elif isinstance( value, galaxy.tools.parameters.grouping.Section ):
                 context = ParamContext( name=value.name, parent_context=parent_context )
-                for r_name, r_value in value.inputs.iteritems():
+                for r_name, r_value in value.inputs.items():
                     expanded_input = self.__process_raw_inputs( { context.for_state(): r_value }, raw_inputs, parent_context=context )
                     if expanded_input:
                         expanded_inputs.update( expanded_input )
@@ -192,7 +193,7 @@ class ToolTestBuilder( object ):
                 while True:
                     context = ParamContext( name=value.name, index=repeat_index, parent_context=parent_context )
                     updated = False
-                    for r_name, r_value in value.inputs.iteritems():
+                    for r_name, r_value in value.inputs.items():
                         expanded_input = self.__process_raw_inputs( { context.for_state(): r_value }, raw_inputs, parent_context=context )
                         if expanded_input:
                             expanded_inputs.update( expanded_input )
@@ -253,7 +254,7 @@ def _process_simple_value( param, param_value ):
         # Do replacement described above for lists or singleton
         # values.
         if isinstance( param_value, list ):
-            processed_value = map( process_param_value, param_value )
+            processed_value = list( map( process_param_value, param_value ) )
         else:
             processed_value = process_param_value( param_value )
     elif isinstance( param, galaxy.tools.parameters.basic.BooleanToolParameter ):

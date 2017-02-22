@@ -1,6 +1,9 @@
 import uuid
 
-from galaxy.jobs import JobDestination
+from galaxy.jobs import (
+    HasResourceParameters,
+    JobDestination,
+)
 from galaxy.jobs.mapper import (
     ERROR_MESSAGE_NO_RULE_FUNCTION,
     ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND,
@@ -127,7 +130,7 @@ class MockJobConfig( object ):
         return DYNAMICALLY_GENERATED_DESTINATION
 
 
-class MockJobWrapper( object ):
+class MockJobWrapper( object, HasResourceParameters ):
 
     def __init__( self, tool_job_destination ):
         self.tool = MockTool( tool_job_destination )

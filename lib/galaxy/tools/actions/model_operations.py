@@ -1,3 +1,5 @@
+import logging
+
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
@@ -5,7 +7,6 @@ from galaxy.tools.actions import (
 )
 from galaxy.util.odict import odict
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -30,7 +31,7 @@ class ModelOperationToolAction( DefaultToolAction ):
         wrapped_params = self._wrapped_params( trans, tool, incoming )
 
         out_data = odict()
-        input_collections = dict( [ (k, v[0][0]) for k, v in inp_dataset_collections.iteritems() ] )
+        input_collections = dict( (k, v[0][0]) for k, v in inp_dataset_collections.items() )
         output_collections = OutputCollections(
             trans,
             history,

@@ -4,11 +4,13 @@ Updates dataset.size column.
 Remember to backup your database before running.
 """
 from __future__ import print_function
+
 import os
 import sys
 
-import galaxy.app
 from six.moves import configparser
+
+import galaxy.app
 
 assert sys.version_info[:2] >= ( 2, 4 )
 

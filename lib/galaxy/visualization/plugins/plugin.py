@@ -244,7 +244,7 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
 # =============================================================================
 class InteractiveEnvironmentPlugin( VisualizationPlugin ):
     """
-    Serves web-based REPLs such as IPython and RStudio.
+    Serves web-based REPLs such as Jupyter and RStudio.
     """
     INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnvironmentRequest
 
@@ -262,7 +262,7 @@ class InteractiveEnvironmentPlugin( VisualizationPlugin ):
         #   this feels hacky to me but it's what mako recommends:
         #   http://docs.makotemplates.org/en/latest/runtime.html
         render_vars.update( vars={} )
-        # No longer needed but being left around for a few releases as ipython-galaxy
+        # No longer needed but being left around for a few releases as jupyter-galaxy
         # as an external visualization plugin is deprecated in favor of core interactive
         # environment plugin.
         if 'get_api_key' not in render_vars:

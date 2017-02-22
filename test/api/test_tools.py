@@ -2,10 +2,13 @@
 import json
 
 from base import api
+from base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+    LibraryPopulator,
+    skip_without_tool
+)
 from galaxy.tools.verify.test_data import TestDataResolver
-
-from .helpers import (DatasetCollectionPopulator, DatasetPopulator,
-    LibraryPopulator, skip_without_tool)
 
 
 class ToolsTestCase( api.ApiTestCase ):
@@ -748,7 +751,7 @@ class ToolsTestCase( api.ApiTestCase ):
     @skip_without_tool( "identifier_single" )
     def test_identifier_outside_map( self ):
         history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123', name="Plain HDA" )
         inputs = {
             "input1": { 'src': 'hda', 'id': new_dataset1["id"] },
         }
@@ -763,7 +766,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( implicit_collections ), 0 )
         output1 = outputs[ 0 ]
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
-        self.assertEquals( output1_content.strip(), "Pasted Entry" )
+        self.assertEquals( output1_content.strip(), "Plain HDA" )
 
     @skip_without_tool( "identifier_multiple" )
     def test_identifier_in_multiple_reduce( self ):
@@ -788,8 +791,8 @@ class ToolsTestCase( api.ApiTestCase ):
     @skip_without_tool( "identifier_multiple" )
     def test_identifier_with_multiple_normal_datasets( self ):
         history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
-        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123', name="Normal HDA1" )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456', name="Normal HDA2" )
         inputs = {
             "input1": [
                 { 'src': 'hda', 'id': new_dataset1["id"] },
@@ -807,7 +810,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( implicit_collections ), 0 )
         output1 = outputs[ 0 ]
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
-        self.assertEquals( output1_content.strip(), "Pasted Entry\nPasted Entry" )
+        self.assertEquals( output1_content.strip(), "Normal HDA1\nNormal HDA2" )
 
     @skip_without_tool( "identifier_collection" )
     def test_identifier_with_data_collection( self ):
@@ -850,6 +853,24 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         self._check_simple_cat1_over_nested_collections( history_id, inputs )
 
+    @skip_without_tool( "paired_collection_map_over_structured_like" )
+    def test_paired_input_map_over_nested_collections( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_nested_list( history_id )
+        inputs = {
+            "input1": { 'batch': True, 'values': [ dict( map_over_type='paired', src="hdca", id=hdca_id ) ] },
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create = self._run( "paired_collection_map_over_structured_like", history_id, inputs, assert_ok=True )
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 2 )
+        self.assertEquals( len( implicit_collections ), 1 )
+        implicit_collection = implicit_collections[ 0 ]
+        assert implicit_collection[ "collection_type" ] == "list:paired", implicit_collection
+        outer_elements = implicit_collection[ "elements" ]
+        assert len( outer_elements ) == 2
+
     def _check_simple_cat1_over_nested_collections( self, history_id, inputs ):
         create = self._run_cat1( history_id, inputs=inputs, assert_ok=True )
         outputs = create[ 'outputs' ]
@@ -891,7 +912,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( outputs ), 2 )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        self.dataset_populator.wait_for_history( history_id, timeout=25 )
+        self.dataset_populator.wait_for_history( history_id )
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         self.assertEquals( output1_content.strip(), "123\n789" )

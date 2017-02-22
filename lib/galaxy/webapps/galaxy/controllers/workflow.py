@@ -1052,6 +1052,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 history=history
             )
         else:
+            # If there is just one dataset name selected or one dataset collection, these
+            # come through as string types instead of lists. xref #3247.
+            dataset_names = util.listify(dataset_names)
+            dataset_collection_names = util.listify(dataset_collection_names)
             stored_workflow = extract_workflow(
                 trans,
                 user=user,

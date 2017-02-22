@@ -478,7 +478,7 @@ class Registry( object ):
             data.init_meta( copy_from=data )
         return data
 
-    def load_datatype_converters( self, toolbox, installed_repository_dict=None, deactivate=False ):
+    def load_datatype_converters( self, toolbox, installed_repository_dict=None, deactivate=False, use_cached=False ):
         """
         If deactivate is False, add datatype converters from self.converters or self.proprietary_converters
         to the calling app's toolbox.  If deactivate is True, eliminates relevant converters from the calling
@@ -500,7 +500,7 @@ class Registry( object ):
                 converter_path = self.converters_path
             try:
                 config_path = os.path.join( converter_path, tool_config )
-                converter = toolbox.load_tool( config_path )
+                converter = toolbox.load_tool( config_path, use_cached=use_cached )
                 if installed_repository_dict:
                     # If the converter is included in an installed tool shed repository, set the tool
                     # shed related tool attributes.

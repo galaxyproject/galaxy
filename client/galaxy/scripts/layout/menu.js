@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-define(['mvc/tours', 'layout/generic-nav-view', 'mvc/webhooks'], function( Tours, GenericNav, Webhooks ) {
+define(['layout/generic-nav-view', 'mvc/webhooks'], function( GenericNav, Webhooks ) {
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -15,7 +15,7 @@ var Collection = Backbone.Collection.extend({
         // Chat server tab
         //
         var extendedNavItem = new GenericNav.GenericNavView();
-        this.add(extendedNavItem.render()); 
+        this.add(extendedNavItem.render());
 
         //
         // Analyze data tab.
@@ -117,13 +117,25 @@ var Collection = Backbone.Collection.extend({
                     $.each(webhooks.models, function(index, model) {
                         var webhook = model.toJSON();
                         if (webhook.activate) {
-                            Galaxy.page.masthead.collection.add({
-                                id      : webhook.name,
-                                icon    : webhook.config.icon,
-                                url     : webhook.config.url,
-                                tooltip : webhook.config.tooltip,
-                                onclick : webhook.config.function && new Function(webhook.config.function),
-                            });
+                            // Galaxy.page is undefined for data libraries, workflows pages
+                            if( Galaxy.page ) {
+                                Galaxy.page.masthead.collection.add({
+                                    id      : webhook.name,
+                                    icon    : webhook.config.icon,
+                                    url     : webhook.config.url,
+                                    tooltip : webhook.config.tooltip,
+                                    onclick : webhook.config.function && new Function(webhook.config.function),
+                                });
+                            }
+                            else if( Galaxy.masthead ) {
+                                Galaxy.masthead.collection.add({
+                                    id      : webhook.name,
+                                    icon    : webhook.config.icon,
+                                    url     : webhook.config.url,
+                                    tooltip : webhook.config.tooltip,
+                                    onclick : webhook.config.function && new Function(webhook.config.function),
+                                });
+                            }
                         }
                     });
                 });
@@ -147,7 +159,7 @@ var Collection = Backbone.Collection.extend({
         var helpTab = {
             id              : 'help',
             title           : 'Help',
-            tooltip         : 'Support, contact, and community hubs',
+            tooltip         : 'Support, contact, and community',
             menu            : [{
                     title   : 'Support',
                     url     : options.support_url,
@@ -176,8 +188,8 @@ var Collection = Backbone.Collection.extend({
                     title   : 'Interactive Tours',
                     url     : 'tours',
                     onclick : function(){
-                        if (Galaxy.app){
-                            Galaxy.app.display(new Tours.ToursView());
+                        if (Galaxy.router){
+                            Galaxy.router.navigate('tours', {'trigger': true});
                         } else {
                             // Redirect and use clientside routing to go to tour index
                             window.location = Galaxy.root + "tours";
@@ -230,13 +242,16 @@ var Collection = Backbone.Collection.extend({
                 id              : 'user',
                 title           : 'User',
                 cls             : 'loggedin-only',
-                tooltip         : 'Account preferences and saved data',
+                tooltip         : 'Account and saved data',
                 menu            : [{
                         title   : 'Logged in as ' + Galaxy.user.get( 'email' )
                     },{
                         title   : 'Preferences',
-                        url     : 'user?cntrller=user',
-                        target  : 'galaxy_main'
+                        url     : 'users',
+                        target  : 'galaxy_main',
+                        onclick : function() {
+                            window.location = Galaxy.root + 'users';
+                        }
                     },{
                         title   : 'Custom Builds',
                         url     : 'user/dbkeys',
@@ -258,17 +273,8 @@ var Collection = Backbone.Collection.extend({
                         title   : 'Saved Pages',
                         url     : 'page/list',
                         target  : '_top'
-                    },{
-                        title   : 'API Keys',
-                        url     : 'user/api_keys?cntrller=user',
-                        target  : 'galaxy_main'
-                }]
+                    }]
             };
-            options.use_remote_user && userTab.menu.push({
-                title   : 'Public Name',
-                url     : 'user/edit_username?cntrller=user',
-                target  : 'galaxy_main'
-            });
             this.add( userTab );
         }
         var activeView = this.get( options.active_view );

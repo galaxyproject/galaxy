@@ -42,6 +42,7 @@ class InteractiveEnvironmentRequest(object):
         self.load_deploy_config()
         self.load_allowed_images()
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
+        self.attr.docker_connect_port = self.attr.viz_config.get("docker", "docker_connect_port") or None
 
         # Generate per-request passwords the IE plugin can use to configure
         # the destination container.
@@ -110,7 +111,8 @@ class InteractiveEnvironmentRequest(object):
             'command_inject': '--sig-proxy=true -e DEBUG=false',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
-            'docker_galaxy_temp_dir': None
+            'docker_galaxy_temp_dir': None,
+            'docker_connect_port': None
         }
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
@@ -306,13 +308,22 @@ class InteractiveEnvironmentRequest(object):
             port_mappings = self.get_container_port_mapping(inspect_data)
             self.attr.docker_hostname = self.get_container_host(inspect_data)
             log.debug( "Container host: %s", self.attr.docker_hostname )
+            host_port = None
+
             if len(port_mappings) > 1:
-                log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first")
+                if self.attr.docker_connect_port is not None:
+                    for _service, _host_ip, _host_port in port_mappings:
+                        if _service == self.attr.docker_connect_port:
+                            host_port = _host_port
+                else:
+                    log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first. Please set 'docker_connect_port' in your config file to be more specific.")
             elif len(port_mappings) == 0:
                 log.warning("No exposed ports to map! Images MUST EXPOSE")
                 return None
-            # Fetch the first port_mapping
-            (service, host_ip, host_port) = port_mappings[0]
+
+            if host_port is None:
+                # Fetch the first port_mapping
+                (service, host_ip, host_port) = port_mappings[0]
 
             # Now we configure our proxy_requst object and we manually specify
             # the port to map to and ensure the proxy is available.

@@ -81,7 +81,7 @@ def main():
     """call fbater
     need to work with rgenetics composite datatypes
     so in and out are html files with data in extrafiles path
-    <command interpreter="python">rg_convert_lped_fped.py '$input1/$input1.metadata.base_name'
+    <command>python '$__tool_directory__/rg_convert_lped_fped.py' '$input1/$input1.metadata.base_name'
     '$output1' '$output1.extra_files_path'
     </command>
     """

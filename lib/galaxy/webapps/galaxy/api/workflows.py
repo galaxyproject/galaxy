@@ -4,8 +4,8 @@ API operations for Workflows
 from __future__ import absolute_import
 
 import logging
-from six.moves.urllib.parse import unquote_plus
 
+from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
 
 from galaxy import (
@@ -402,6 +402,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         publish = util.string_as_bool( payload.get( "publish", False ) )
         # If 'publish' set, default to importable.
         importable = util.string_as_bool( payload.get( "importable", publish ) )
+        # Galaxy will try to upgrade tool versions that don't match exactly during import,
+        # this prevents that.
+        exact_tools = util.string_as_bool( payload.get( "exact_tools", False ) )
 
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException( "Published workflow must be importable." )
@@ -409,6 +412,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         from_dict_kwds = dict(
             source="API",
             publish=publish,
+            exact_tools=exact_tools,
         )
         workflow, missing_tool_tups = self._workflow_from_dict( trans, data, **from_dict_kwds )
 
