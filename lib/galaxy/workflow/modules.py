@@ -380,7 +380,9 @@ class InputDataModule( InputModule ):
     default_name = "Input Dataset"
 
     def get_inputs( self ):
-        name = self.state.inputs.get( 'name', self.default_name )
+        name = self.state.inputs.get( 'name' )
+        if name == self.default_name:
+            name = None
         return dict( name=TextToolParameter( None, Element( "param", name="name", label="Name", type="text", hidden="true", value=name ) ) )
 
     def get_data_outputs( self ):
@@ -410,7 +412,9 @@ class InputDataCollectionModule( InputModule ):
     collection_type = default_collection_type
 
     def get_inputs( self ):
-        name = self.state.inputs.get( "name", self.default_name )
+        name = self.state.inputs.get( "name" )
+        if name == self.default_name:
+            name = None
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
         input_name = TextToolParameter( None, Element( "param", name="name", label="Name", type="text", hidden="true", value=name ) )
         input_collection_type = TextToolParameter( None, XML(
@@ -424,9 +428,8 @@ class InputDataCollectionModule( InputModule ):
         return odict( [ ( "name", input_name ), ( "collection_type", input_collection_type ) ] )
 
     def get_runtime_inputs( self, **kwds ):
-        label = self.state.inputs.get( "name", self.default_name )
         collection_type = self.state.inputs.get( "collection_type", self.default_collection_type )
-        input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
+        input_element = Element( "param", name="input", label=self.label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
     def get_data_outputs( self ):
