@@ -11,6 +11,7 @@ import tempfile
 import threading
 from cgi import FieldStorage
 from datetime import datetime
+from distutils.version import LooseVersion
 from xml.etree import ElementTree
 
 from mako.template import Template
@@ -98,7 +99,7 @@ log = logging.getLogger( __name__ )
 HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
-GALAXY_LIB_TOOLS = [
+GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",
     # Legacy tools bundled with Galaxy.
     "vcf_to_maf_customtrack1",
@@ -134,10 +135,14 @@ GALAXY_LIB_TOOLS = [
     "sam_pileup",
     "find_diag_hits",
     "cufflinks",
-    "sam_to_bam",  # This was fixed with version 1.1.3 of the tool - TODO add Galaxy to PYTHONPATH only for older versions
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
 ]
+# Tools that needed galaxy on the PATH in the past but no longer do along
+# with the version at which they were fixed.
+GALAXY_LIB_TOOLS_VERSIONED = {
+    "sam_to_bam": LooseVersion("1.1.3"),
+}
 
 
 class ToolErrorLog:
@@ -408,6 +413,10 @@ class Tool( object, Dictifiable ):
         self._view = views.DependencyResolversView(app)
 
     @property
+    def version_object(self):
+        return LooseVersion(self.version)
+
+    @property
     def sa_session( self ):
         """Returns a SQLAlchemy session"""
         return self.app.model.context
@@ -479,7 +488,11 @@ class Tool( object, Dictifiable ):
         elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
             return True
         else:
-            return self.old_id in GALAXY_LIB_TOOLS
+            unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
+            versioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_VERSIONED
+            legacy_tool = unversioned_legacy_tool or \
+                (versioned_legacy_tool and self.version_object < GALAXY_LIB_TOOLS_VERSIONED[self.old_id])
+            return legacy_tool
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
