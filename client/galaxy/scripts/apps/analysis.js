@@ -118,7 +118,7 @@ window.app = function app( options, bootstrapped ){
         },
 
         show_user_form : function( form_id ) {
-            centerPanel.display( new UserPreferences.Forms( { form_id: form_id } ) );
+            centerPanel.display( new UserPreferences.Forms( { form_id: form_id, user_id: Galaxy.params.id } ) );
         },
 
         /**  */

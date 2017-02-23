@@ -3,38 +3,41 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
 
     /** Contains descriptive dictionaries describing user forms */
     var Model = Backbone.Model.extend({
-        initialize: function() {
+        initialize: function( options ) {
+            options = options || {};
+            options.user_id = options.user_id || Galaxy.user.id;
             this.set({
+                'user_id'           : options.user_id,
                 'information': {
                     title           : 'Manage information',
                     description     : 'Edit your email, addresses and custom parameters or change your username.',
-                    url             : 'api/users/' + Galaxy.user.id + '/information/inputs',
+                    url             : 'api/users/' + options.user_id + '/information/inputs',
                     icon            : 'fa-user'
                 },
                 'password': {
                     title           : 'Change password',
                     description     : 'Allows you to change your login credentials.',
                     icon            : 'fa-unlock-alt',
-                    url             : 'api/users/' + Galaxy.user.id + '/password/inputs',
+                    url             : 'api/users/' + options.user_id + '/password/inputs',
                     submit_title    : 'Save password',
                 },
                 'communication': {
                     title           : 'Change communication settings',
                     description     : 'Enable or disable the communication feature to chat with other users.',
-                    url             : 'api/users/' + Galaxy.user.id + '/communication/inputs',
+                    url             : 'api/users/' + options.user_id + '/communication/inputs',
                     icon            : 'fa-comments-o'
                 },
                 'permissions': {
                     title           : 'Set dataset permissions for new histories',
                     description     : 'Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.',
-                    url             : 'api/users/' + Galaxy.user.id + '/permissions/inputs',
+                    url             : 'api/users/' + options.user_id + '/permissions/inputs',
                     icon            : 'fa-users',
                     submit_title    : 'Save permissions'
                 },
                 'api_key': {
                     title           : 'Manage API key',
                     description     : 'Access your current API key or create a new one.',
-                    url             : 'api/users/' + Galaxy.user.id + '/api_key/inputs',
+                    url             : 'api/users/' + options.user_id + '/api_key/inputs',
                     icon            : 'fa-key',
                     submit_title    : 'Create a new key',
                     submit_icon     : 'fa-check'
@@ -42,7 +45,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                 'toolbox_filters': {
                     title           : 'Manage Toolbox filters',
                     description     : 'Customize your Toolbox by displaying or omitting sets of Tools.',
-                    url             : 'api/users/' + Galaxy.user.id + '/toolbox_filters/inputs',
+                    url             : 'api/users/' + options.user_id + '/toolbox_filters/inputs',
                     icon            : 'fa-filter',
                     submit_title    : 'Save filters'
                 },
@@ -150,7 +153,7 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
     var Forms = Backbone.View.extend({
 
         initialize: function( options ) {
-            this.model = new Model();
+            this.model = new Model( options );
             this.page = this.model.get( options.form_id );
             this.setElement( '<div/>' );
             this.render();
@@ -176,9 +179,8 @@ define( [ 'mvc/form/form-view', 'mvc/ui/ui-misc' ], function( Form, Ui ) {
                         }),
                         'back': new Ui.ButtonIcon({
                             icon     : 'fa-caret-left',
-                            tooltip  : 'Return to user preferences',
-                            title    : 'Preferences',
-                            onclick  : function() { window.location.href = Galaxy.root + 'users' }
+                            title    : 'Cancel',
+                            onclick  : function() { window.history.back() }
                         })
                     }
                 });
