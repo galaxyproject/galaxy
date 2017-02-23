@@ -18,10 +18,6 @@ from base.populators import (
 from galaxy.exceptions import error_codes
 from galaxy.tools.verify.test_data import TestDataResolver
 
-from base.workflows_format_2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
 
 SIMPLE_NESTED_WORKFLOW_YAML = """
 class: GalaxyWorkflow
@@ -69,7 +65,7 @@ test_data:
 """
 
 
-class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
+class BaseWorkflowsApiTestCase( api.ApiTestCase ):
     # TODO: Find a new file for this class.
 
     def setUp( self ):
@@ -88,20 +84,12 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         names = [w[ "name" ] for w in index_response.json()]
         return names
 
-    # Import importer interface...
     def import_workflow(self, workflow, **kwds):
-        workflow_str = dumps(workflow, indent=4)
-        data = {
-            'workflow': workflow_str,
-        }
-        data.update(**kwds)
-        upload_response = self._post( "workflows", data=data )
-        self._assert_status_code_is( upload_response, 200 )
-        return upload_response.json()
+        upload_response = self.workflow_populator.import_workflow(workflow, **kwds)
+        return upload_response
 
     def _upload_yaml_workflow(self, has_yaml, **kwds):
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow[ "id" ]
+        return self.workflow_populator.upload_yaml_workflow(has_yaml, **kwds)
 
     def _setup_workflow_run( self, workflow, inputs_by='step_id', history_id=None ):
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
