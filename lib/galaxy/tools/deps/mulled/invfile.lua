@@ -34,6 +34,12 @@ for i = 1, #binds_table do
     table.insert(bind_args, binds_table[i])
 end
 
+local test_bind_args = {}
+local test_binds_table = VAR.TEST_BINDS:split(",")
+for i = 1, #test_binds_table do
+    table.insert(test_bind_args, test_binds_table[i])
+end
+
 inv.task('build')
     .using('continuumio/miniconda:latest')
         .withHostConfig({binds = {"build:/data"}})
@@ -49,10 +55,18 @@ inv.task('build')
         .inImage('bgruening/busybox-bash:0.1')
         .as(repo)
 
-inv.task('test')
-    .using(repo)
-    .withConfig({entrypoint = {'/bin/sh', '-c'}})
-    .run(VAR.TEST)
+if VAR.TEST_BINDS == '' then
+    inv.task('test')
+        .using(repo)
+        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        .run(VAR.TEST)
+else
+    inv.task('test')
+        .using(repo)
+        .withHostConfig({binds = test_bind_args})
+        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        .run(VAR.TEST)
+end
 
 inv.task('push')
     .push(repo)
