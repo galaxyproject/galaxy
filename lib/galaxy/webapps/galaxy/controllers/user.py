@@ -1372,6 +1372,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     cntrller=cntrller,
                                     user=user,
                                     email=email,
+                                    is_admin=True,
                                     username=username,
                                     user_type_fd_id_select_field=user_type_fd_id_select_field,
                                     user_info_forms=user_info_forms,
