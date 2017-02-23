@@ -1195,6 +1195,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.require_admin
     def edit_info( self, trans, cntrller, **kwd ):
         """
+        TEMPORARY ENDPOINT - added back to support admin-level user info
+        editing prior to adminjs.  This is code that was prematurely removed
+        from the user controller when the user-side admin functionality was
+        replaced.
+
+        The method manage_user_info, which follows this, should also be removed
+        at that time.
+
         Edit user information = username, email or password.
         """
         params = util.Params( kwd )
@@ -1294,7 +1302,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         '''TEMPORARY ENDPOINT - added back to support admin-level user info
         editing prior to adminjs.  This is code that was prematurely removed
         from the user controller when the user-side admin functionality was
-        replaced.  Manage a user's login, password, public username, type,
+        replaced.
+
+        When this is removed, templates/webapps/galaxy/user/manage_info.mako
+        should go as well.
+
+        Manage a user's login, password, public username, type,
         addresses, etc.'''
 
         def __get_user_type_form_definition( trans, user=None, **kwd ):
