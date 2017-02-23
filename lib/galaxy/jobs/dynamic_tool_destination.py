@@ -28,6 +28,22 @@ class ScannerError(Exception):
     pass
 
 
+def is_arg_in_options(arg_list,options):
+    """
+    This recursive function check if an argument in the options dictionary
+    The argument can have those shape: input or inputs|input
+    """
+    arg_parent = arg_list[0]
+    log.debug(arg_parent)
+    log.debug(options)
+    if not arg_parent in options:
+        return False
+    else:
+        if len(arg_list) > 1:
+            return(is_arg_in_options(arg_list[1:],options[arg_parent]))
+        else:
+            return options[arg_parent]
+
 class RuleValidator:
     """
     This class is the primary facility for validating configs. It's always called
@@ -1290,18 +1306,18 @@ def map_tool_to_destination(
                             elif rule["rule_type"] == "arguments":
                                 options = job.get_param_values(app)
                                 matched = True
-
                                 # check if the args in the config file are available
                                 for arg in rule["arguments"]:
-                                    if arg in options:
-                                        if rule["arguments"][arg] != options[arg]:
+                                    value = is_arg_in_options(arg.split("|"),options)
+                                    if value:
+                                        if rule["arguments"][arg] != value:
                                             matched = False
                                             options = "test"
                                     else:
                                         matched = False
                                         if verbose:
                                             error = "Argument '" + str(arg)
-                                            error = + "' not recognized!"
+                                            error += "' not recognized!"
                                             log.debug(error)
 
                             # if we matched a rule
