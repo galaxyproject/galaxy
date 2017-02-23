@@ -1197,7 +1197,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """
         TEMPORARY ENDPOINT - added back to support admin-level user info
         editing prior to adminjs.  This is code that was prematurely removed
-        from the user controller when the user-side admin functionality was
+        from the user controller when the user-side editing functionality was
         replaced.
 
         The method manage_user_info, which follows this, should also be removed
@@ -1301,7 +1301,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def manage_user_info( self, trans, cntrller, **kwd ):
         '''TEMPORARY ENDPOINT - added back to support admin-level user info
         editing prior to adminjs.  This is code that was prematurely removed
-        from the user controller when the user-side admin functionality was
+        from the user controller when the user-side editing functionality was
         replaced.
 
         When this is removed, templates/webapps/galaxy/user/manage_info.mako
