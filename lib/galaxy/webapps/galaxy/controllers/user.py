@@ -626,10 +626,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             else:
                 refresh_frames = [ 'masthead', 'history' ]
             if trans.user:
-                # Send a queue recalculation
-                queue_async_task(trans.app,
-                                 'recalculate_user_disk_usage',
-                                 {'user_id': trans.security.encode_id(trans.user.id)})
+                # Queue a quota recalculation (async) task -- this takes a
+                # while sometimes, so we don't want to block on logout.
+                queue_async_task( trans.app,
+                                  'recalculate_user_disk_usage',
+                                  {'user_id': trans.security.encode_id(trans.user.id)} )
             # Since logging an event requires a session, we'll log prior to ending the session
             trans.log_event( "User logged out" )
         else:
