@@ -111,7 +111,7 @@ class HistoryListGrid( grids.Grid ):
         grids.GridOperation( "View", allow_multiple=False ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, inbound=True  ),
+        grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False, target="inbound"  ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True ),
         grids.GridOperation( "Delete Permanently", condition=( lambda item: not item.purged ), confirm="History contents will be removed from disk, this cannot be undone.  Continue?", async_compatible=True ),
         grids.GridOperation( "Undelete", condition=( lambda item: item.deleted and not item.purged ), async_compatible=True ),

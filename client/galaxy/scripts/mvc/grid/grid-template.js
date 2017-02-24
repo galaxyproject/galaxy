@@ -63,7 +63,7 @@ return {
             for (i in options.global_actions) {
                 var action = options.global_actions[i];
                 var label_cls = '';
-                if (action.inbound) {
+                if (action.target == 'inbound') {
                     label_cls = 'use-inbound'
                 } else {
                     label_cls = 'use-outbound'
