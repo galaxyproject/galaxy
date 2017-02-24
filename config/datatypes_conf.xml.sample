@@ -218,6 +218,7 @@
     <datatype extension="mgf" type="galaxy.datatypes.proteomics:Mgf" display_in_upload="true" />
     <datatype extension="wiff" type="galaxy.datatypes.proteomics:Wiff" display_in_upload="true" />
     <datatype extension="mzxml" type="galaxy.datatypes.proteomics:MzXML" mimetype="application/xml" display_in_upload="true" />
+    <datatype extension="mzdata" type="galaxy.datatypes.proteomics:MzData" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="ms2" type="galaxy.datatypes.proteomics:Ms2" display_in_upload="true" />
     <datatype extension="mzq" type="galaxy.datatypes.proteomics:MzQuantML" mimetype="application/xml" display_in_upload="true" />
     <datatype extension="mz.sqlite" type="galaxy.datatypes.binary:MzSQlite" mimetype="application/octet-stream" display_in_upload="true" />
