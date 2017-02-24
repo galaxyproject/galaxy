@@ -30,6 +30,7 @@ VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
 CONDA_VERSION = "4.2.13"
+CONDA_BUILD_VERSION = "2.1.5"
 USE_LOCAL_DEFAULT = False
 
 
@@ -86,19 +87,31 @@ class CondaContext(installable.InstallableContext):
         self.ensured_channels = False
         self._conda_version = None
         self._miniconda_version = None
+        self._conda_build_available = None
         self._use_local = use_local
 
     @property
     def conda_version(self):
         if self._conda_version is None:
-            self._guess_conda_version()
+            self._guess_conda_properties()
         return self._conda_version
 
-    def _guess_conda_version(self):
+    @property
+    def conda_build_available(self):
+        if self._conda_build_available is None:
+            self._guess_conda_properties()
+        return self._conda_build_available
+
+    @property
+    def use_local(self):
+        return self._use_local
+
+    def _guess_conda_properties(self):
         conda_meta_path = self._conda_meta_path
         # Perhaps we should call "conda info --json" and parse it but for now we are going
         # to assume the default.
         conda_version = LooseVersion(CONDA_VERSION)
+        conda_build_available = False
         miniconda_version = "3"
 
         if os.path.exists(conda_meta_path):
@@ -113,9 +126,12 @@ class CondaContext(installable.InstallableContext):
                     conda_version = LooseVersion(version)
                 if package == "python" and version.startswith("2"):
                     miniconda_version = "2"
+                if package == "conda-build":
+                    conda_build_available = True
 
         self._conda_version = conda_version
         self._miniconda_version = miniconda_version
+        self._conda_build_available = conda_build_available
 
     @property
     def _conda_meta_path(self):
@@ -137,6 +153,13 @@ class CondaContext(installable.InstallableContext):
 
             if changed:
                 self.save_condarc(conda_conf)
+
+    def ensure_conda_build_installed_if_needed(self):
+        if self.use_local and not self.conda_build_available:
+            conda_targets = [CondaTarget("conda-build", version=CONDA_BUILD_VERSION)]
+            return install_conda_targets(conda_targets, env_name=None, conda_context=self)
+        else:
+            return 0
 
     def conda_info(self):
         if self.conda_exec is not None:
@@ -393,13 +416,18 @@ def hash_conda_packages(conda_packages, conda_target=None):
 
 # shell makes sense for planemo, in Galaxy this should just execute
 # these commands as Python
-def install_conda(conda_context=None):
+def install_conda(conda_context=None, force_conda_build=False):
     conda_context = _ensure_conda_context(conda_context)
     f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
     download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
     install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)
-    fix_version_cmd = "%s install -y -q conda=%s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), CONDA_VERSION)
+    package_targets = [
+        "conda=%s" % CONDA_VERSION,
+    ]
+    if force_conda_build or conda_context.use_local:
+        package_targets.append("conda-build=%s" % CONDA_BUILD_VERSION)
+    fix_version_cmd = "%s install -y -q %s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), " ".join(package_targets))
     full_command = "%s && %s && %s" % (download_cmd, install_cmd, fix_version_cmd)
     try:
         log.info("Installing Conda, this may take several minutes.")

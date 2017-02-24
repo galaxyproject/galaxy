@@ -113,6 +113,8 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
         self.disabled = not galaxy.tools.deps.installable.ensure_installed(conda_context, install_conda, self.auto_init)
+        if self.auto_init and not self.disabled:
+            self.conda_context.ensure_conda_build_installed_if_needed()
         self.auto_install = auto_install
         self.copy_dependencies = copy_dependencies
 
