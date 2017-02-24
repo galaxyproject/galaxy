@@ -55,6 +55,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         'auto_install': False,
         'auto_init': True,
         'copy_dependencies': False,
+        'use_local': False,
     }
     _specification_pattern = re.compile(r"https\:\/\/anaconda.org\/\w+\/\w+")
 
@@ -83,6 +84,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             )
 
         copy_dependencies = _string_as_bool(get_option("copy_dependencies"))
+        use_local = _string_as_bool(get_option("use_local"))
         conda_exec = get_option("exec")
         debug = _string_as_bool(get_option("debug"))
         ensure_channels = get_option("ensure_channels")
@@ -101,7 +103,8 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             ensure_channels=ensure_channels,
             condarc_override=condarc_override,
             use_path_exec=use_path_exec,
-            copy_dependencies=copy_dependencies
+            copy_dependencies=copy_dependencies,
+            use_local=use_local,
         )
         self.ensure_channels = ensure_channels
 

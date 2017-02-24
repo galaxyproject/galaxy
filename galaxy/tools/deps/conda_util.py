@@ -30,6 +30,7 @@ VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
 CONDA_VERSION = "4.2.13"
+USE_LOCAL_DEFAULT = False
 
 
 def conda_link():
@@ -54,7 +55,8 @@ class CondaContext(installable.InstallableContext):
 
     def __init__(self, conda_prefix=None, conda_exec=None,
                  shell_exec=None, debug=False, ensure_channels='',
-                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT, copy_dependencies=False):
+                 condarc_override=None, use_path_exec=USE_PATH_EXEC_DEFAULT,
+                 use_local=USE_LOCAL_DEFAULT, copy_dependencies=False):
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
             conda_exec = commands.which("conda")
@@ -84,6 +86,7 @@ class CondaContext(installable.InstallableContext):
         self.ensured_channels = False
         self._conda_version = None
         self._miniconda_version = None
+        self._use_local = use_local
 
     @property
     def conda_version(self):
@@ -230,6 +233,8 @@ class CondaContext(installable.InstallableContext):
         create_base_args = [
             "-y"
         ]
+        if self._use_local:
+            create_base_args.extend(["--use-local"])
         create_base_args.extend(args)
         return self.exec_command("create", create_base_args)
 
@@ -246,6 +251,8 @@ class CondaContext(installable.InstallableContext):
         install_base_args = [
             "-y"
         ]
+        if self._use_local:
+            install_base_args.extend(["--use-local"])
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
 
