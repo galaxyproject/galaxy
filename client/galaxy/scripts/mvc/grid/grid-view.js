@@ -221,23 +221,14 @@ return Backbone.View.extend({
         //
         // add inbound/outbound events
         //
-        this.$el.find('.use-inbound').each( function() {
+        this.$el.find('.use-target').each( function() {
             $(this).click( function(e) {
                 self.execute({
                     href : $(this).attr('href'),
-                    target : 'inbound'
+                    target : $(this).attr('target')
                 });
                 return false;
 
-            });
-        });
-
-        this.$el.find('.use-outbound').each( function() {
-            $(this).click( function(e) {
-                self.execute({
-                    href : $(this).attr('href')
-                });
-                return false;
             });
         });
 
@@ -614,17 +605,21 @@ return Backbone.View.extend({
             item_ids: undefined,
             async: async
         });
-
-        if (target == 'inbound') {
-            // this currently assumes that there is only a single grid shown at a time
-            var $div = $('.grid-header').closest('.inbound');
-            if ($div.length !== 0) {
-                $div.load(href);
-                return;
-            }
+        switch (target) {
+            case 'inbound':
+                // this currently assumes that there is only a single grid shown at a time
+                var $div = $('.grid-header').closest('.inbound');
+                if ($div.length !== 0) {
+                    $div.load(href);
+                    return;
+                }
+                break;
+            case 'top':
+                window.top.location = href;
+                break;
+            default:
+                window.location = href;
         }
-
-        window.location = href;
     },
 
     // Update grid.

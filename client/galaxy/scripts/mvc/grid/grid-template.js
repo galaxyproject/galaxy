@@ -179,7 +179,7 @@ return {
                     // load attributes
                     var link = column_settings.link;
                     var value = column_settings.value;
-                    var inbound = column_settings.inbound;
+                    var target = column_settings.target;
                         
                     // unescape value
                     if (jQuery.type( value ) === 'string') {
@@ -206,14 +206,7 @@ return {
                         if (options.operations.length != 0) {
                             tmpl += '<div id="' + id + '" class="' + cls + '" style="float: left;">';
                         }
-
-                        var label_class = '';
-                        if (inbound) {
-                            label_class = 'use-inbound';
-                        } else {
-                            label_class = 'use-outbound';
-                        }
-                        tmpl += '<a class="menubutton-label ' + label_class + '" href="' + link + '" onclick="return false;">' + value + '</a>';
+                        tmpl += '<a class="menubutton-label use-target" target="' + target + '" href="' + link + '" onclick="return false;">' + value + '</a>';
                         if (options.operations.length != 0) {
                             tmpl += '</div>';
                         }
