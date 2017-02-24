@@ -9,7 +9,8 @@ History
 17.5.3.dev0
 ---------------------
 
-    
+* Update against the latest Galaxy dev branch changes.
+* Update Conda utilities to allow using locally built packages.
 
 ---------------------
 17.5.2 (2017-02-21)
