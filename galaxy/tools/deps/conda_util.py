@@ -47,7 +47,16 @@ def find_conda_prefix(conda_prefix=None):
     for Miniconda installs.
     """
     if conda_prefix is None:
-        return os.path.join(os.path.expanduser("~"), "miniconda2")
+        home = os.path.expanduser("~")
+        miniconda_2_dest = os.path.join(home, "miniconda2")
+        miniconda_3_dest = os.path.join(home, "miniconda3")
+        # Prefer miniconda3 install if both available
+        if os.path.exists(miniconda_3_dest):
+            return miniconda_3_dest
+        elif os.path.exists(miniconda_2_dest):
+            return miniconda_2_dest
+        else:
+            return miniconda_3_dest
     return conda_prefix
 
 
