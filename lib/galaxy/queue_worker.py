@@ -26,8 +26,9 @@ def queue_async_task(app, task, kwargs={}):
     try:
         c = Connection(app.config.amqp_internal_connection)
         with producers[c].acquire(block=True) as producer:
-            producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
-                             declare=[galaxy.queues.galaxy_exchange].append(galaxy.queues.control_queue_from_config(app.config)),
+            producer.publish(payload,
+                             exchange=galaxy.queues.galaxy_exchange,
+                             declare=[galaxy.queues.galaxy_exchange] + [galaxy.queues.control_queue_from_config(app.config)],
                              routing_key='control')
     except Exception:
         log.exception("Error queueing async task: %s." % payload)
