@@ -629,8 +629,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 # Send a queue recalculation
                 queue_async_task(trans.app,
                                  'recalculate_user_disk_usage',
-                                 # {'user_id': trans.security.encode_id(trans.user.id)})
-                                 {'user_id': trans.user.id})
+                                 {'user_id': trans.security.encode_id(trans.user.id)})
             # Since logging an event requires a session, we'll log prior to ending the session
             trans.log_event( "User logged out" )
         else:

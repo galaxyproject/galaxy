@@ -131,8 +131,7 @@ def recalculate_user_disk_usage(app, **kwargs):
     user_id = kwargs.get('user_id', None)
     sa_session = app.model.context
     if user_id:
-        # user = sa_session.query( app.model.User ).get( trans.security.decode_id( user_id ) )
-        user = sa_session.query( app.model.User ).get( user_id )
+        user = sa_session.query( app.model.User ).get( app.security.decode_id( user_id ) )
         if user:
             if sa_session.get_bind().dialect.name not in ( 'postgres', 'postgresql' ):
                 new = user.calculate_disk_usage()
