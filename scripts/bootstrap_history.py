@@ -100,15 +100,17 @@ Highlights
 **Feature3**
   Feature description.
 
-`Github <https://github.com/galaxyproject/galaxy>`__
-===========================================================
+Get Galaxy
+==========
 
-New Galaxy repository
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
   .. code-block:: shell
 
       $$ git clone -b release_${release} https://github.com/galaxyproject/galaxy.git
 
-Update of existing Galaxy repository
+To update an existing Galaxy repository run:
   .. code-block:: shell
 
       $$ git checkout release_${release} && git pull --ff-only origin release_${release}
