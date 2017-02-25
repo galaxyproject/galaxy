@@ -19,7 +19,11 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-def queue_async_task(app, task, kwargs={}):
+def send_local_control_task(app, task, kwargs={}):
+    """
+    This sends a message to the process-local control worker, which is useful
+    for one-time asynchronous tasks like recalculating user disk usage.
+    """
     log.info("Queuing async task %s." % task)
     payload = {'task': task,
                'kwargs': kwargs}
@@ -35,6 +39,11 @@ def queue_async_task(app, task, kwargs={}):
 
 
 def send_control_task(app, task, noop_self=False, kwargs={}):
+    """
+    This sends a control task out to all processes, useful for things like
+    reloading a data table, which needs to happen individually in all
+    processes.
+    """
     log.info("Sending %s control task." % task)
     payload = {'task': task,
                'kwargs': kwargs}
